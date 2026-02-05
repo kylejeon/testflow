@@ -23,7 +23,9 @@ export default function ProjectsPage() {
               refresh_token: refreshToken,
             });
             
+            // URL 정리 후 페이지 새로고침
             window.history.replaceState(null, '', window.location.pathname);
+            window.location.reload();
           } catch (error) {
             console.error('Failed to set session:', error);
           }
