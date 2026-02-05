@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase, type Project } from '../../../lib/supabase';
 import CreateProjectModal from './CreateProjectModal';
@@ -18,6 +18,19 @@ export default function ProjectsContent() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     fetchProjects();
@@ -113,7 +126,7 @@ export default function ProjectsContent() {
     }
   };
 
-  const handleCreateProject = async (data: { name: string; description: string; status: string }) => {
+  const handleCreateProject = async (data: { name: string; description: string; status: string; jira_project_key: string }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -125,6 +138,7 @@ export default function ProjectsContent() {
           name: data.name,
           description: data.description,
           status: data.status,
+          jira_project_key: data.jira_project_key || null,
           owner_id: user.id
         }]);
 
@@ -174,7 +188,7 @@ export default function ProjectsContent() {
     }
   };
 
-  const handleUpdateProject = async (id: string, data: { name: string; description: string; status: string }) => {
+  const handleUpdateProject = async (id: string, data: { name: string; description: string; status: string; jira_project_key: string }) => {
     try {
       const { error } = await supabase
         .from('projects')
@@ -182,6 +196,7 @@ export default function ProjectsContent() {
           name: data.name,
           description: data.description,
           status: data.status,
+          jira_project_key: data.jira_project_key || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id);
@@ -399,26 +414,45 @@ export default function ProjectsContent() {
                           <p className="text-sm text-gray-600 line-clamp-1">{project.description || '설명 없음'}</p>
                         </div>
                       </Link>
-                      <div className="relative group">
-                        <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer">
+                      <div className="relative" ref={openMenuId === project.id ? menuRef : null}>
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === project.id ? null : project.id);
+                          }}
+                          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+                        >
                           <i className="ri-more-2-fill text-xl"></i>
                         </button>
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                          <button
-                            onClick={() => setEditingProject(project)}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                          >
-                            <i className="ri-edit-line w-4 h-4 flex items-center justify-center"></i>
-                            수정
-                          </button>
-                          <button
-                            onClick={() => setDeletingProject(project)}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                          >
-                            <i className="ri-delete-bin-line w-4 h-4 flex items-center justify-center"></i>
-                            삭제
-                          </button>
-                        </div>
+                        {openMenuId === project.id && (
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setEditingProject(project);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                            >
+                              <i className="ri-edit-line w-4 h-4 flex items-center justify-center"></i>
+                              수정
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDeletingProject(project);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                            >
+                              <i className="ri-delete-bin-line w-4 h-4 flex items-center justify-center"></i>
+                              삭제
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 

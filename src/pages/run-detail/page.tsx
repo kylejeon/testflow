@@ -1663,44 +1663,54 @@ export default function RunDetail() {
                         );
                       }
 
-                      return uniqueIssues.map((issue, idx) => (
-                        <div key={idx} className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                              <i className="ri-bug-line text-red-600"></i>
-                            </div>
-                            <div className="flex-1">
-                              <a
-                                href={getJiraIssueUrl(issue.issueKey)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm font-semibold text-gray-900 hover:text-teal-600 transition-colors"
-                              >
-                                {issue.issueKey}
-                              </a>
-                              <p className="text-xs text-gray-500 mt-1">
-                                From run: <span className="font-medium text-gray-700">{issue.runName}</span>
-                              </p>
-                              <div className="flex items-center gap-2 mt-2">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                  issue.status === 'passed' ? 'bg-green-100 text-green-700' :
-                                  issue.status === 'failed' ? 'bg-red-100 text-red-700' :
-                                  'bg-gray-100 text-gray-700'
-                                }`}>
-                                  {issue.status}
-                                </span>
-                                <span className="text-xs text-gray-400">
-                                  {issue.createdAt.toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                  })}
-                                </span>
+                      return uniqueIssues.map((issue, idx) => {
+                        // Jira URL 생성
+                        const issueUrl = jiraDomain && issue.issueKey
+                          ? `https://${jiraDomain}/browse/${issue.issueKey}`
+                          : '';
+
+                        const CardContent = (
+                          <>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i className="ri-bug-line text-red-600"></i>
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-sm font-semibold text-gray-900">
+                                  {issue.issueKey}
+                                </div>
+                                <p className="text-sm text-gray-700 mt-1">{issue.summary}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  From run: <span className="font-medium text-gray-700">{issue.runName}</span>
+                                </p>
                               </div>
                             </div>
+                          </>
+                        );
+
+                        if (issueUrl) {
+                          return (
+                            <a
+                              key={idx}
+                              href={issueUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block bg-white border rounded-lg p-4 transition-all hover:border-teal-500 hover:shadow-md cursor-pointer"
+                            >
+                              {CardContent}
+                            </a>
+                          );
+                        }
+
+                        return (
+                          <div
+                            key={idx}
+                            className="bg-white border rounded-lg p-4"
+                          >
+                            {CardContent}
                           </div>
-                        </div>
-                      ));
+                        );
+                      });
                     })()}
                   </div>
                 )}
@@ -1885,7 +1895,7 @@ export default function RunDetail() {
                           />
                           <button 
                             onClick={handleToggleTimer}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all cursor-pointer"
                           >
                             <i className={`${isTimerRunning ? 'ri-pause-circle-line' : 'ri-play-circle-line'} text-lg`}></i>
                           </button>
@@ -2119,7 +2129,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, onClose }: ResultDeta
               <i className={`text-lg ${
                 result.status === 'passed' ? 'ri-checkbox-circle-line text-green-600' :
                 result.status === 'failed' ? 'ri-close-circle-line text-red-600' :
-                result.status === 'blocked' ? 'ri-forbid-line text-gray-600' :
+                result.status === 'blocked' ? 'ri-forbid-line text-orange-600' :
                 result.status === 'retest' ? 'ri-refresh-line text-yellow-600' :
                 'ri-question-line text-gray-500'
               }`}></i>

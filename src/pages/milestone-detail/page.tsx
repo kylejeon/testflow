@@ -39,6 +39,18 @@ interface Session {
   activityData?: string[];
 }
 
+interface Issue {
+  id: string;
+  title: string;
+  url: string;
+  status?: string;
+  runId: string;
+  runName: string;
+  testCaseId: string;
+  testCaseName?: string;
+  createdAt: string;
+}
+
 export default function MilestoneDetail() {
   const { projectId, milestoneId } = useParams();
   const [project, setProject] = useState<any>(null);
@@ -46,6 +58,7 @@ export default function MilestoneDetail() {
   const [subMilestones, setSubMilestones] = useState<Milestone[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<'results' | 'status' | 'activity' | 'issues'>('results');
@@ -69,6 +82,23 @@ export default function MilestoneDetail() {
 
       if (projectError) throw projectError;
       setProject(projectData);
+
+      // Get jira_project_key from project and jira domain from jira_settings
+      const jiraProjectKey = projectData?.jira_project_key || '';
+      
+      // Fetch Jira settings for domain (global settings, not project-specific)
+      const { data: jiraSettings } = await supabase
+        .from('jira_settings')
+        .select('*')
+        .maybeSingle();
+
+      // Add https:// prefix if domain exists and doesn't already have it
+      let jiraDomain = '';
+      if (jiraSettings?.domain) {
+        jiraDomain = jiraSettings.domain.startsWith('http') 
+          ? jiraSettings.domain 
+          : `https://${jiraSettings.domain}`;
+      }
 
       // Fetch milestone
       const { data: milestoneData, error: milestoneError } = await supabase
@@ -99,12 +129,40 @@ export default function MilestoneDetail() {
 
       if (runsError) throw runsError;
 
-      // Calculate actual progress for each test run
+      // Create a map of run names for issue display
+      const runNameMap = new Map<string, string>();
+      (runsData || []).forEach(run => {
+        runNameMap.set(run.id, run.name);
+      });
+
+      // Fetch all test case ids from runs
+      const allTestCaseIds = new Set<string>();
+      (runsData || []).forEach(run => {
+        run.test_case_ids.forEach((id: string) => allTestCaseIds.add(id));
+      });
+
+      // Fetch test case names
+      const testCaseNameMap = new Map<string, string>();
+      if (allTestCaseIds.size > 0) {
+        const { data: testCasesData } = await supabase
+          .from('test_cases')
+          .select('id, title')
+          .in('id', Array.from(allTestCaseIds));
+        
+        (testCasesData || []).forEach(tc => {
+          testCaseNameMap.set(tc.id, tc.title);
+        });
+      }
+
+      // Calculate actual progress for each test run and collect issues
+      const allIssues: Issue[] = [];
+      const issueIdSet = new Set<string>();
+
       const runsWithProgress = await Promise.all(
         (runsData || []).map(async (run) => {
           const { data: testResultsData } = await supabase
             .from('test_results')
-            .select('test_case_id, status')
+            .select('test_case_id, status, issues, created_at')
             .eq('run_id', run.id)
             .order('created_at', { ascending: false });
 
@@ -113,6 +171,59 @@ export default function MilestoneDetail() {
           testResultsData?.forEach(result => {
             if (!statusMap.has(result.test_case_id)) {
               statusMap.set(result.test_case_id, result.status);
+            }
+
+            // Collect issues from test results
+            if (result.issues && Array.isArray(result.issues)) {
+              result.issues.forEach((issue: any) => {
+                let issueId: string;
+                let issueTitle: string;
+                let issueUrl: string;
+                let issueStatus: string | undefined;
+
+                if (typeof issue === 'string') {
+                  // If issue is just a string (issue number like "151" or "GW-151")
+                  issueId = issue;
+                  issueTitle = issue.includes('-') ? issue : `${jiraProjectKey}-${issue}`;
+                  // Build URL: domain + /browse/ + full issue key
+                  const fullIssueKey = issue.includes('-') ? issue : `${jiraProjectKey}-${issue}`;
+                  issueUrl = jiraDomain ? `${jiraDomain}/browse/${fullIssueKey}` : '';
+                  issueStatus = undefined;
+                } else {
+                  // If issue is an object
+                  issueId = issue.id || issue.key || issue.title || '';
+                  issueTitle = issue.title || issue.key || issue.id || '';
+                  
+                  // Construct URL: use provided URL or build from domain + issue key
+                  if (issue.url) {
+                    issueUrl = issue.url;
+                  } else if (jiraDomain) {
+                    // Extract issue key - if it already has project prefix, use as is
+                    const issueKey = issue.key || issue.id || '';
+                    const fullIssueKey = issueKey.includes('-') ? issueKey : `${jiraProjectKey}-${issueKey}`;
+                    issueUrl = `${jiraDomain}/browse/${fullIssueKey}`;
+                  } else {
+                    issueUrl = '';
+                  }
+                  
+                  issueStatus = issue.status;
+                }
+
+                if (issueId && !issueIdSet.has(issueId)) {
+                  issueIdSet.add(issueId);
+                  allIssues.push({
+                    id: issueId,
+                    title: issueTitle,
+                    url: issueUrl,
+                    status: issueStatus,
+                    runId: run.id,
+                    runName: run.name,
+                    testCaseId: result.test_case_id,
+                    testCaseName: testCaseNameMap.get(result.test_case_id),
+                    createdAt: result.created_at,
+                  });
+                }
+              });
             }
           });
 
@@ -154,6 +265,7 @@ export default function MilestoneDetail() {
       );
 
       setRuns(runsWithProgress);
+      setIssues(allIssues.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
 
       // Fetch sessions for this milestone
       const { data: sessionsData, error: sessionsError } = await supabase
@@ -703,8 +815,6 @@ export default function MilestoneDetail() {
                                     </span>
                                   </div>
                                 </div>
-
-                                <i className="ri-arrow-right-s-line text-xl text-gray-400 group-hover:text-teal-600 transition-colors"></i>
                               </Link>
                             );
                           })}
@@ -761,8 +871,6 @@ export default function MilestoneDetail() {
                                   </div>
                                 </div>
                               </div>
-
-                              <i className="ri-arrow-right-s-line text-xl text-gray-400 group-hover:text-teal-600 transition-colors"></i>
                             </Link>
                           ))}
                         </div>
@@ -784,8 +892,129 @@ export default function MilestoneDetail() {
                 )}
 
                 {activeTab === 'issues' && (
-                  <div className="text-center py-12 text-gray-500">
-                    Issues view coming soon
+                  <div className="space-y-4">
+                    {issues.length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <i className="ri-bug-line text-3xl text-gray-400"></i>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No issues found</h3>
+                        <p className="text-gray-500">이 마일스톤에 등록된 이슈가 없습니다.</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-sm font-semibold text-gray-600 uppercase">
+                            REGISTERED ISSUES ({issues.length})
+                          </h3>
+                        </div>
+                        <div className="space-y-3">
+                          {issues.map((issue, index) => {
+                            const hasValidUrl = issue.url && issue.url.length > 0;
+                            
+                            return hasValidUrl ? (
+                              <a
+                                key={`${issue.id}-${index}`}
+                                href={issue.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-start gap-4 p-4 border border-gray-200 rounded-lg transition-all bg-white hover:border-teal-500 hover:shadow-md cursor-pointer block"
+                              >
+                                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <i className="ri-bug-line text-red-600 text-lg"></i>
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium text-gray-900 truncate">
+                                      {issue.title}
+                                    </span>
+                                    <i className="ri-external-link-line text-sm text-gray-400 flex-shrink-0"></i>
+                                    {issue.status && (
+                                      <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                                        issue.status.toLowerCase() === 'open' || issue.status.toLowerCase() === 'to do'
+                                          ? 'bg-red-100 text-red-700'
+                                          : issue.status.toLowerCase() === 'in progress'
+                                          ? 'bg-yellow-100 text-yellow-700'
+                                          : issue.status.toLowerCase() === 'done' || issue.status.toLowerCase() === 'closed'
+                                          ? 'bg-green-100 text-green-700'
+                                          : 'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        {issue.status}
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                                    <div className="flex items-center gap-1">
+                                      <i className="ri-play-circle-line text-xs"></i>
+                                      <span className="truncate max-w-[150px]">{issue.runName}</span>
+                                    </div>
+                                    {issue.testCaseName && (
+                                      <div className="flex items-center gap-1">
+                                        <i className="ri-file-list-line text-xs"></i>
+                                        <span className="truncate max-w-[200px]">{issue.testCaseName}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-1">
+                                      <i className="ri-time-line text-xs"></i>
+                                      <span>{new Date(issue.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </a>
+                            ) : (
+                              <div
+                                key={`${issue.id}-${index}`}
+                                className="flex items-start gap-4 p-4 border border-gray-200 rounded-lg bg-white"
+                              >
+                                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <i className="ri-bug-line text-red-600 text-lg"></i>
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium text-gray-900 truncate">
+                                      {issue.title}
+                                    </span>
+                                    {issue.status && (
+                                      <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                                        issue.status.toLowerCase() === 'open' || issue.status.toLowerCase() === 'to do'
+                                          ? 'bg-red-100 text-red-700'
+                                          : issue.status.toLowerCase() === 'in progress'
+                                          ? 'bg-yellow-100 text-yellow-700'
+                                          : issue.status.toLowerCase() === 'done' || issue.status.toLowerCase() === 'closed'
+                                          ? 'bg-green-100 text-green-700'
+                                          : 'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        {issue.status}
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                                    <div className="flex items-center gap-1">
+                                      <i className="ri-play-circle-line text-xs"></i>
+                                      <span className="truncate max-w-[150px]">{issue.runName}</span>
+                                    </div>
+                                    {issue.testCaseName && (
+                                      <div className="flex items-center gap-1">
+                                        <i className="ri-file-list-line text-xs"></i>
+                                        <span className="truncate max-w-[200px]">{issue.testCaseName}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-1">
+                                      <i className="ri-time-line text-xs"></i>
+                                      <span>{new Date(issue.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

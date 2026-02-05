@@ -421,7 +421,14 @@ export default function ProjectDetail() {
     if (diffInDays === 0) return 'Today';
     if (diffInDays === 1) return 'Yesterday';
     if (diffInDays < 7) return `${diffInDays} days ago`;
-    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+    if (diffInDays < 30) {
+      const weeks = Math.floor(diffInDays / 7);
+      return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
+    }
+    if (diffInDays < 365) {
+      const months = Math.floor(diffInDays / 30);
+      return `${months} ${months === 1 ? 'month' : 'months'} ago`;
+    }
     return formatDate(dateStr);
   };
 

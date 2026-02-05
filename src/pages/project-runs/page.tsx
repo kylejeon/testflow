@@ -85,9 +85,576 @@ export default function ProjectRunsPage() {
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
+  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
 
   const handleRunClick = (runId: string) => {
     navigate(`/projects/${id}/runs/${runId}`);
+  };
+
+  const generateMilestonePdf = async (milestone: Milestone, runs: TestRun[]) => {
+    setGeneratingPdf(milestone.id);
+    
+    try {
+      // Calculate totals
+      const totalPassed = runs.reduce((sum, run) => sum + run.passed, 0);
+      const totalFailed = runs.reduce((sum, run) => sum + run.failed, 0);
+      const totalBlocked = runs.reduce((sum, run) => sum + run.blocked, 0);
+      const totalRetest = runs.reduce((sum, run) => sum + run.retest, 0);
+      const totalUntested = runs.reduce((sum, run) => sum + run.untested, 0);
+      const totalTests = totalPassed + totalFailed + totalBlocked + totalRetest + totalUntested;
+      const passRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
+
+      // Fetch all test cases for these runs
+      const allTestCaseIds = [...new Set(runs.flatMap(run => run.test_case_ids))];
+      const { data: testCasesData } = await supabase
+        .from('test_cases')
+        .select('*')
+        .in('id', allTestCaseIds);
+
+      // Fetch all test results for these runs
+      const { data: allTestResultsData } = await supabase
+        .from('test_results')
+        .select('*')
+        .in('run_id', runs.map(r => r.id))
+        .order('created_at', { ascending: false });
+
+      // Create a map of test cases
+      const testCasesMap = new Map(testCasesData?.map(tc => [tc.id, tc]) || []);
+
+      // Create PDF content
+      const pdfContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Test Report - ${milestone.name}</title>
+  <style>
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+      padding: 40px; 
+      color: #333; 
+      background: #fff;
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .header { 
+      border-bottom: 3px solid #14b8a6; 
+      padding-bottom: 20px; 
+      margin-bottom: 30px; 
+    }
+    .header h1 { 
+      font-size: 24px; 
+      color: #14b8a6; 
+      margin-bottom: 8px; 
+      font-weight: 600;
+    }
+    .header .subtitle { 
+      color: #666; 
+      font-size: 13px; 
+    }
+    .section { 
+      margin-bottom: 30px; 
+      page-break-inside: avoid;
+    }
+    .section-title { 
+      font-size: 14px; 
+      font-weight: 600; 
+      color: #333; 
+      margin-bottom: 15px; 
+      padding-bottom: 8px; 
+      border-bottom: 2px solid #e5e7eb; 
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .info-grid { 
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr); 
+      gap: 15px; 
+      margin-bottom: 20px;
+    }
+    .info-item { 
+      background: #f9fafb; 
+      padding: 12px 15px; 
+      border-radius: 6px; 
+      border: 1px solid #e5e7eb;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .info-label { 
+      font-size: 11px; 
+      color: #666; 
+      margin-bottom: 4px; 
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .info-value { 
+      font-size: 14px; 
+      font-weight: 600; 
+      color: #333; 
+    }
+    
+    /* Summary Stats */
+    .summary-container {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .summary-left {
+      flex: 0 0 200px;
+    }
+    .summary-right {
+      flex: 1;
+    }
+    .pass-rate-circle { 
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #14b8a6, #0d9488);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      margin: 0 auto;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .pass-rate-number { 
+      font-size: 48px; 
+      font-weight: 700; 
+      line-height: 1;
+      color: white;
+    }
+    .pass-rate-label { 
+      font-size: 12px; 
+      opacity: 0.9; 
+      margin-top: 5px;
+      color: white;
+    }
+    
+    .stats-grid { 
+      display: grid; 
+      grid-template-columns: repeat(5, 1fr); 
+      gap: 10px;
+    }
+    .stat-box { 
+      text-align: center; 
+      padding: 15px 10px; 
+      border-radius: 6px; 
+      border: 1px solid #e5e7eb;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .stat-box.passed { 
+      background: #dcfce7 !important; 
+      border-color: #86efac !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .stat-box.failed { 
+      background: #fee2e2 !important; 
+      border-color: #fca5a5 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .stat-box.blocked { 
+      background: #f3f4f6 !important; 
+      border-color: #d1d5db !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .stat-box.retest { 
+      background: #fef3c7 !important; 
+      border-color: #fde047 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .stat-box.untested { 
+      background: #e5e7eb !important; 
+      border-color: #d1d5db !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .stat-number { 
+      font-size: 28px; 
+      font-weight: 700; 
+      margin-bottom: 4px;
+    }
+    .stat-box.passed .stat-number { color: #166534 !important; }
+    .stat-box.failed .stat-number { color: #991b1b !important; }
+    .stat-box.blocked .stat-number { color: #374151 !important; }
+    .stat-box.retest .stat-number { color: #92400e !important; }
+    .stat-box.untested .stat-number { color: #6b7280 !important; }
+    .stat-label { 
+      font-size: 10px; 
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Tables */
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 15px; 
+      font-size: 11px;
+    }
+    th, td { 
+      padding: 10px 12px; 
+      text-align: left; 
+      border-bottom: 1px solid #e5e7eb; 
+    }
+    th { 
+      background: #f9fafb !important; 
+      font-weight: 600; 
+      font-size: 10px; 
+      color: #666; 
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    td { 
+      font-size: 11px; 
+      color: #333;
+    }
+    tr:hover {
+      background: #f9fafb;
+    }
+    
+    .status-badge { 
+      display: inline-block; 
+      padding: 3px 8px; 
+      border-radius: 4px; 
+      font-size: 10px; 
+      font-weight: 600;
+      text-transform: uppercase;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .status-passed { 
+      background: #dcfce7 !important; 
+      color: #166534 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .status-failed { 
+      background: #fee2e2 !important; 
+      color: #991b1b !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .status-blocked { 
+      background: #f3f4f6 !important; 
+      color: #374151 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .status-retest { 
+      background: #fef3c7 !important; 
+      color: #92400e !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .status-untested { 
+      background: #e5e7eb !important; 
+      color: #6b7280 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .status-completed { 
+      background: #dcfce7 !important; 
+      color: #166534 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .status-in-progress { 
+      background: #dbeafe !important; 
+      color: #1e40af !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .status-new { 
+      background: #fef3c7 !important; 
+      color: #92400e !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .progress-bar { 
+      width: 80px; 
+      height: 6px; 
+      background: #e5e7eb !important; 
+      border-radius: 3px; 
+      overflow: hidden; 
+      display: inline-block; 
+      vertical-align: middle;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .progress-fill { 
+      height: 100%; 
+      background: #14b8a6 !important; 
+      border-radius: 3px;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .priority-high { color: #dc2626 !important; font-weight: 600; }
+    .priority-medium { color: #f59e0b !important; font-weight: 600; }
+    .priority-low { color: #6b7280 !important; font-weight: 600; }
+    
+    .test-case-row {
+      background: #fafafa !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .test-case-row td {
+      padding: 8px 12px 8px 30px;
+      font-size: 10px;
+      color: #666;
+    }
+    
+    .run-header {
+      background: #f9fafb !important;
+      font-weight: 600;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .footer { 
+      margin-top: 40px; 
+      padding-top: 20px; 
+      border-top: 1px solid #e5e7eb; 
+      text-align: center; 
+      color: #999; 
+      font-size: 11px; 
+    }
+    
+    @media print {
+      body { 
+        padding: 20px;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .no-print { display: none; }
+      .section { page-break-inside: avoid; }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>${project?.name || 'Test Report'}</h1>
+    <div class="subtitle">${milestone.name} - Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Milestone Information</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Milestone Name</div>
+        <div class="info-value">${milestone.name}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Project</div>
+        <div class="info-value">${project?.name || 'N/A'}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Duration</div>
+        <div class="info-value">${formatDate(milestone.start_date)} - ${formatDate(milestone.end_date)}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Status</div>
+        <div class="info-value">Completed</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Test Results Summary</div>
+    <div class="summary-container">
+      <div class="summary-left">
+        <div class="pass-rate-circle">
+          <div class="pass-rate-number">${passRate}%</div>
+          <div class="pass-rate-label">Pass Rate</div>
+        </div>
+      </div>
+      <div class="summary-right">
+        <div class="stats-grid">
+          <div class="stat-box passed">
+            <div class="stat-number">${totalPassed}</div>
+            <div class="stat-label">Passed</div>
+          </div>
+          <div class="stat-box failed">
+            <div class="stat-number">${totalFailed}</div>
+            <div class="stat-label">Failed</div>
+          </div>
+          <div class="stat-box blocked">
+            <div class="stat-number">${totalBlocked}</div>
+            <div class="stat-label">Blocked</div>
+          </div>
+          <div class="stat-box retest">
+            <div class="stat-number">${totalRetest}</div>
+            <div class="stat-label">Retest</div>
+          </div>
+          <div class="stat-box untested">
+            <div class="stat-number">${totalUntested}</div>
+            <div class="stat-label">Untested</div>
+          </div>
+        </div>
+        <div style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 6px; border: 1px solid #e5e7eb; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span style="font-size: 11px; color: #666; font-weight: 500;">Total Test Cases</span>
+            <span style="font-size: 14px; font-weight: 700; color: #333;">${totalTests}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="font-size: 11px; color: #666; font-weight: 500;">Total Test Runs</span>
+            <span style="font-size: 14px; font-weight: 700; color: #333;">${runs.length}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Test Runs & Cases (${runs.length} runs)</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 30%;">Test Case / Run Name</th>
+          <th style="width: 12%;">Status</th>
+          <th style="width: 10%;">Priority</th>
+          <th style="width: 10%;">Passed</th>
+          <th style="width: 10%;">Failed</th>
+          <th style="width: 10%;">Blocked</th>
+          <th style="width: 18%;">Progress</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${runs.map(run => {
+          // Get test results for this run
+          const runResults = allTestResultsData?.filter(r => r.run_id === run.id) || [];
+          const statusMap = new Map<string, any>();
+          
+          runResults.forEach(result => {
+            if (!statusMap.has(result.test_case_id)) {
+              statusMap.set(result.test_case_id, result);
+            }
+          });
+
+          const runStatusBadge = run.status === 'completed' ? 'status-completed' : 
+                                 run.status === 'in_progress' ? 'status-in-progress' : 
+                                 'status-new';
+          const runStatusLabel = run.status === 'completed' ? 'Completed' : 
+                                run.status === 'in_progress' ? 'In Progress' : 
+                                'New';
+
+          return `
+            <tr class="run-header">
+              <td colspan="7" style="background: #f3f4f6; font-weight: 600; font-size: 12px; padding: 12px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
+                <i style="color: #14b8a6;">▶</i> ${run.name}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-left: 30px; font-weight: 500;">${run.name}</td>
+              <td><span class="status-badge ${runStatusBadge}">${runStatusLabel}</span></td>
+              <td>-</td>
+              <td style="font-weight: 600; color: #166534;">${run.passed}</td>
+              <td style="font-weight: 600; color: #991b1b;">${run.failed}</td>
+              <td style="font-weight: 600; color: #374151;">${run.blocked}</td>
+              <td>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${run.progress}%"></div>
+                </div>
+                <span style="font-size: 11px; color: #666; margin-left: 8px;">${run.progress}%</span>
+              </td>
+            </tr>
+            ${run.test_case_ids.map(tcId => {
+              const testCase = testCasesMap.get(tcId);
+              if (!testCase) return '';
+              
+              const result = statusMap.get(tcId);
+              const status = result?.status || 'untested';
+              const statusClass = `status-${status}`;
+              const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+              
+              const priorityClass = testCase.priority === 'high' ? 'priority-high' : 
+                                   testCase.priority === 'medium' ? 'priority-medium' : 
+                                   'priority-low';
+              const priorityLabel = testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1);
+              
+              return `
+                <tr class="test-case-row">
+                  <td style="padding-left: 50px;">
+                    <span style="color: #999; margin-right: 8px;">└</span>
+                    ${testCase.title}
+                  </td>
+                  <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                  <td><span class="${priorityClass}">${priorityLabel}</span></td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td>-</td>
+                </tr>
+              `;
+            }).join('')}
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <p><strong>TestFlow</strong> - Test Management Platform</p>
+    <p style="margin-top: 5px; font-size: 10px;">This report was automatically generated on ${new Date().toLocaleString('en-US')}</p>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    };
+  </script>
+</body>
+</html>
+      `;
+
+      // Create a Blob from the HTML content
+      const blob = new Blob([pdfContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      // Open in new window
+      const printWindow = window.open(url, '_blank');
+      
+      if (printWindow) {
+        printWindow.onbeforeunload = () => {
+          URL.revokeObjectURL(url);
+        };
+      } else {
+        alert('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('PDF 생성에 실패했습니다.');
+    } finally {
+      setGeneratingPdf(null);
+    }
   };
 
   useEffect(() => {
@@ -464,7 +1031,37 @@ export default function ProjectRunsPage() {
     const successRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
     const closedRuns = testRuns.filter(run => run.status === 'completed').length;
 
-    return { activeRuns, successRate, closedRuns };
+    // Calculate date range from actual test runs
+    const runDates = testRuns
+      .filter(run => run.created_at)
+      .map(run => new Date(run.created_at));
+    
+    let dateRangeText = 'No data yet';
+    if (runDates.length > 0) {
+      const minDate = new Date(Math.min(...runDates.map(d => d.getTime())));
+      const maxDate = new Date(Math.max(...runDates.map(d => d.getTime())));
+      
+      const formatDateShort = (date: Date) => {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      };
+      
+      if (minDate.getTime() === maxDate.getTime()) {
+        dateRangeText = formatDateShort(minDate);
+      } else {
+        dateRangeText = `${formatDateShort(minDate)} - ${formatDateShort(maxDate)}`;
+      }
+    }
+
+    // Calculate this month's closed runs
+    const now = new Date();
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const closedThisMonth = testRuns.filter(run => {
+      if (run.status !== 'completed') return false;
+      const runDate = new Date(run.created_at);
+      return runDate >= thisMonthStart;
+    }).length;
+
+    return { activeRuns, successRate, closedRuns, dateRangeText, closedThisMonth };
   };
 
   const stats = calculateStats();
@@ -861,7 +1458,7 @@ export default function ProjectRunsPage() {
                     </div>
                   </div>
                   <div className="text-sm text-gray-600">
-                    May 1st - May 31st
+                    {stats.dateRangeText}
                   </div>
                 </div>
 
@@ -897,7 +1494,7 @@ export default function ProjectRunsPage() {
                     </div>
                   </div>
                   <div className="text-sm text-green-600 font-semibold">
-                    +{Math.floor(stats.closedRuns * 0.15)} this month
+                    +{stats.closedThisMonth} this month
                   </div>
                 </div>
               </div>
@@ -983,6 +1580,28 @@ export default function ProjectRunsPage() {
                             </div>
                             <div className="flex items-center gap-4">
                               <span className="text-sm text-gray-500">{formatDateRange(milestone.start_date, milestone.end_date)}</span>
+                              {activeTab === 'closed' && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    generateMilestonePdf(milestone, milestoneRuns);
+                                  }}
+                                  disabled={generatingPdf === milestone.id}
+                                  className="flex items-center gap-2 px-3 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                  {generatingPdf === milestone.id ? (
+                                    <>
+                                      <i className="ri-loader-4-line animate-spin"></i>
+                                      <span>Generating...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <i className="ri-file-pdf-line"></i>
+                                      <span>Export PDF</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
                               <button className="text-gray-400 hover:text-gray-600 cursor-pointer">
                                 <i className="ri-arrow-down-s-line"></i>
                               </button>
