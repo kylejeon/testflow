@@ -438,14 +438,17 @@ export default function AuthPage() {
             onClick={async () => {
               try {
                 const inviteToken = invitation?.token || searchParams.get('invite');
+                // Vercel 배포 URL 또는 localhost 자동 감지
+                const currentOrigin = window.location.origin;
                 const redirectUrl = inviteToken
-                  ? `${window.location.origin}/auth?invite=${inviteToken}`
-                  : `${window.location.origin}/projects`;
+                  ? `${currentOrigin}/auth?invite=${inviteToken}`
+                  : `${currentOrigin}/projects`;
                   
                 await supabase.auth.signInWithOAuth({
                   provider: 'google',
                   options: {
                     redirectTo: redirectUrl,
+                    skipBrowserRedirect: false,
                   },
                 });
               } catch (err: any) {
