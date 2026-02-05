@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProjectsContent from './components/ProjectsContent';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,32 @@ import { supabase } from '../../lib/supabase';
 export default function ProjectsPage() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token')) {
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (accessToken && refreshToken) {
+          try {
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            
+            window.history.replaceState(null, '', window.location.pathname);
+          } catch (error) {
+            console.error('Failed to set session:', error);
+          }
+        }
+      }
+    };
+
+    handleOAuthCallback();
+  }, []);
 
   const handleLogout = async () => {
     try {
