@@ -40,16 +40,25 @@ export default function AuthPage() {
       setEmail(lastEmail);
     }
 
-    // Handle OAuth callback
+    // Handle OAuth callback - check for hash parameters
     const handleOAuthCallback = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check if there's an invitation token
-        const inviteToken = searchParams.get('invite');
-        if (inviteToken) {
-          await acceptInvitation(inviteToken);
-        } else {
-          navigate('/projects');
+      // Check if there's a hash with access_token
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      
+      if (accessToken) {
+        // OAuth callback detected, wait for session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // Check if there's an invitation token
+          const inviteToken = searchParams.get('invite');
+          if (inviteToken) {
+            await acceptInvitation(inviteToken);
+          } else {
+            // Clean up the hash and navigate to projects
+            window.history.replaceState(null, '', window.location.pathname);
+            navigate('/projects');
+          }
         }
       }
     };
