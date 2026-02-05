@@ -17,6 +17,7 @@ export default function ProjectsContent() {
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProjects();
@@ -25,12 +26,25 @@ export default function ProjectsContent() {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      setError(null);
       
-      if (!user) {
+      // 세션 확인
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('세션 확인 오류:', sessionError);
+        setError('세션을 확인할 수 없습니다.');
         navigate('/auth');
         return;
       }
+
+      if (!session) {
+        console.log('세션이 없습니다. 로그인 페이지로 이동합니다.');
+        navigate('/auth');
+        return;
+      }
+
+      const user = session.user;
 
       // Fetch projects where user is a member
       const { data: memberData, error: memberError } = await supabase
@@ -38,7 +52,10 @@ export default function ProjectsContent() {
         .select('project_id')
         .eq('user_id', user.id);
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error('멤버 데이터 조회 오류:', memberError);
+        throw memberError;
+      }
 
       const projectIds = memberData?.map(m => m.project_id) || [];
 
@@ -54,7 +71,10 @@ export default function ProjectsContent() {
         .in('id', projectIds)
         .order('created_at', { ascending: false });
 
-      if (projectsError) throw projectsError;
+      if (projectsError) {
+        console.error('프로젝트 데이터 조회 오류:', projectsError);
+        throw projectsError;
+      }
 
       setProjects(projectsData || []);
 
@@ -87,6 +107,7 @@ export default function ProjectsContent() {
       }
     } catch (error) {
       console.error('프로젝트 로딩 오류:', error);
+      setError('프로젝트를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
