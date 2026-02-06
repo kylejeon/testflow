@@ -103,7 +103,21 @@ export default function ProjectTestCases() {
         .eq('id', updatedTestCase.id);
 
       if (error) throw error;
-      setTestCases(testCases.map(tc => tc.id === updatedTestCase.id ? updatedTestCase : tc));
+
+      // 업데이트된 데이터를 creator 정보와 함께 다시 조회
+      const { data: refreshedData, error: fetchError } = await supabase
+        .from('test_cases')
+        .select(`
+          *,
+          creator:profiles!test_cases_created_by_fkey(full_name, email)
+        `)
+        .eq('id', updatedTestCase.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // 상태 업데이트
+      setTestCases(testCases.map(tc => tc.id === updatedTestCase.id ? refreshedData : tc));
     } catch (error) {
       console.error('테스트 케이스 수정 오류:', error);
     }
@@ -121,6 +135,11 @@ export default function ProjectTestCases() {
     } catch (error) {
       console.error('테스트 케이스 삭제 오류:', error);
     }
+  };
+
+  // 전체 데이터 새로고침 함수 추가
+  const handleRefreshData = async () => {
+    await fetchData();
   };
 
   const handleRestoreToBefore = async () => {
@@ -339,6 +358,7 @@ export default function ProjectTestCases() {
                 onAdd={handleAddTestCase}
                 onUpdate={handleUpdateTestCase}
                 onDelete={handleDeleteTestCase}
+                onRefresh={handleRefreshData}
                 projectId={id!}
               />
             </div>

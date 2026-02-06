@@ -5,6 +5,7 @@ interface TestCase {
   id: string;
   title: string;
   description?: string;
+  precondition?: string;
   folder?: string;
   priority: string;
   status: string;
@@ -28,6 +29,7 @@ interface TestCaseListProps {
   onAdd: (testCase: any) => void;
   onUpdate: (testCase: any) => void;
   onDelete: (id: string) => void;
+  onRefresh: () => Promise<void>;
   projectId: string;
 }
 
@@ -55,6 +57,7 @@ interface TestStep {
 interface TestCaseSnapshot {
   title: string;
   description: string;
+  precondition: string;
   priority: string;
   folder: string;
   tags: string;
@@ -116,7 +119,7 @@ interface ProjectMember {
   };
 }
 
-export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, projectId }: TestCaseListProps) {
+export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId }: TestCaseListProps) {
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [showNewCaseModal, setShowNewCaseModal] = useState(false);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -157,6 +160,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
   const [newTestCase, setNewTestCase] = useState({
     title: '',
     description: '',
+    precondition: '',
     priority: 'medium' as 'critical' | 'high' | 'medium' | 'low',
     folder: '',
     tags: '' as string,
@@ -168,6 +172,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
     id: string;
     title: string;
     description: string;
+    precondition: string;
     priority: 'critical' | 'high' | 'medium' | 'low';
     folder: string;
     tags: string;
@@ -180,6 +185,17 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
   const [tagInput, setTagInput] = useState('');
   const [isComposing, setIsComposing] = useState(false);
   const [selectedTestCaseIds, setSelectedTestCaseIds] = useState<Set<string>>(new Set());
+  const [showBulkFolderModal, setShowBulkFolderModal] = useState(false);
+  
+  // Toast 상태 추가
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+  // 폴더 삭제 확인 모달 상태 추가
+  const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null);
+  const [deletingFolder, setDeletingFolder] = useState(false);
 
   const iconOptions = [
     'ri-folder-line',
@@ -203,26 +219,140 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
     { name: 'indigo', class: 'bg-indigo-100 text-indigo-700' },
   ];
 
-  const handleAddFolder = () => {
+  // 컴포넌트 마운트 시 데이터베이스에서 폴더 불러오기
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('folders')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const loadedFolders = data.map(f => ({
+            id: f.id,
+            name: f.name,
+            icon: f.icon || 'ri-folder-line',
+            color: f.color || 'gray',
+          }));
+          setFolders(loadedFolders);
+        }
+      } catch (error) {
+        console.error('폴더 로딩 오류:', error);
+      }
+    };
+
+    fetchFolders();
+  }, [projectId]);
+
+  const handleAddFolder = async () => {
     if (newFolder.name.trim()) {
-      const folder: Folder = {
-        id: newFolder.name.toLowerCase().replace(/\s+/g, '-'),
-        name: newFolder.name,
-        icon: newFolder.icon,
-        color: newFolder.color,
-      };
-      setFolders([...folders, folder]);
-      setNewFolder({ name: '', icon: 'ri-folder-line', color: 'gray' });
-      setShowNewFolderModal(false);
+      try {
+        const { data, error } = await supabase
+          .from('folders')
+          .insert({
+            project_id: projectId,
+            name: newFolder.name,
+            icon: newFolder.icon,
+            color: newFolder.color,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const folder: Folder = {
+          id: data.id,
+          name: data.name,
+          icon: data.icon,
+          color: data.color,
+        };
+        setFolders([...folders, folder]);
+        setNewFolder({ name: '', icon: 'ri-folder-line', color: 'gray' });
+        setShowNewFolderModal(false);
+
+        // 토스트 메시지 표시
+        setToastMessage(`"${folder.name}" 폴더가 생성되었습니다.`);
+        setToastType('success');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      } catch (error) {
+        console.error('폴더 생성 오류:', error);
+        setToastMessage('폴더 생성에 실패했습니다.');
+        setToastType('error');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      }
     }
   };
 
-  const handleDeleteFolder = (folderId: string) => {
-    if (confirm('이 폴더를 삭제하시겠습니까? 폴더 내의 테스트 케이스는 삭제되지 않습니다.')) {
-      setFolders(folders.filter(f => f.id !== folderId));
-      if (selectedFolder === folderId) {
+  const handleDeleteFolder = async (folderId: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+    
+    // 모달 표시
+    setFolderToDelete(folder);
+    setShowDeleteFolderModal(true);
+  };
+
+  // 실제 폴더 삭제 처리 함수
+  const confirmDeleteFolder = async () => {
+    if (!folderToDelete) return;
+    
+    try {
+      setDeletingFolder(true);
+      
+      // 해당 폴더에 속한 테스트 케이스들의 folder를 null로 업데이트
+      const testCasesInFolder = testCases.filter(tc => tc.folder === folderToDelete.name);
+      
+      for (const tc of testCasesInFolder) {
+        const { error } = await supabase
+          .from('test_cases')
+          .update({ folder: null, updated_at: new Date().toISOString() })
+          .eq('id', tc.id);
+
+        if (error) throw error;
+
+        // UI 업데이트
+        onUpdate({ ...tc, folder: null });
+      }
+
+      // 데이터베이스에서 폴더 삭제
+      const { error: deleteFolderError } = await supabase
+        .from('folders')
+        .delete()
+        .eq('id', folderToDelete.id);
+
+      if (deleteFolderError) throw deleteFolderError;
+
+      // 로컬 상태 업데이트
+      setFolders(folders.filter(f => f.id !== folderToDelete.id));
+      
+      if (selectedFolder === folderToDelete.id) {
         setSelectedFolder('all');
       }
+
+      // 전체 데이터 새로고침
+      await onRefresh();
+
+      // 토스트 메시지 표시
+      setToastMessage(`"${folderToDelete.name}" 폴더가 삭제되었습니다. ${testCasesInFolder.length}개의 테스트 케이스가 폴더 미지정 상태로 변경되었습니다.`);
+      setToastType('success');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (error) {
+      console.error('폴더 삭제 오류:', error);
+      setToastMessage('폴더 삭제에 실패했습니다.');
+      setToastType('error');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setDeletingFolder(false);
+      setShowDeleteFolderModal(false);
+      setFolderToDelete(null);
     }
   };
 
@@ -379,7 +509,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
     ? testCases 
     : testCases.filter(tc => {
         const folder = folders.find(f => f.id === selectedFolder);
-        return tc.folder === folder?.name;
+        return folder && tc.folder === folder.name;
       });
 
   // 전체 선택 여부 확인
@@ -471,6 +601,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
         const oldSnapshot: TestCaseSnapshot = {
           title: editingTestCase.title || '',
           description: editingTestCase.description || '',
+          precondition: editingTestCase.precondition || '',
           priority: editingTestCase.priority || 'medium',
           folder: editingTestCase.folder || '',
           tags: editingTestCase.tags || '',
@@ -484,6 +615,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
         const newSnapshot: TestCaseSnapshot = {
           title: newTestCase.title,
           description: newTestCase.description,
+          precondition: newTestCase.precondition,
           priority: newTestCase.priority,
           folder: newTestCase.folder,
           tags: newTestCase.tags,
@@ -497,6 +629,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
         const changedFields: string[] = [];
         if (oldSnapshot.title !== newSnapshot.title) changedFields.push('title');
         if (oldSnapshot.description !== newSnapshot.description) changedFields.push('description');
+        if (oldSnapshot.precondition !== newSnapshot.precondition) changedFields.push('precondition');
         if (oldSnapshot.priority !== newSnapshot.priority) changedFields.push('priority');
         if (oldSnapshot.folder !== newSnapshot.folder) changedFields.push('folder');
         if (oldSnapshot.tags !== newSnapshot.tags) changedFields.push('tags');
@@ -542,6 +675,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
     setNewTestCase({
       title: '',
       description: '',
+      precondition: '',
       folder: '',
       priority: 'medium',
       assignee: '',
@@ -560,6 +694,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
     setNewTestCase({
       title: testCase.title,
       description: testCase.description || '',
+      precondition: testCase.precondition || '',
       folder: testCase.folder || '',
       priority: testCase.priority,
       assignee: testCase.assignee || '',
@@ -834,40 +969,32 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
     }
   };
 
-  const handleUpdateTestCase = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingTestCase) return;
-
+  const handleUpdateTestCase = async (testCaseId: string, updates: any) => {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('test_cases')
-        .update({
-          title: editingTestCase.title.trim(),
-          description: editingTestCase.description.trim() || null,
-          priority: editingTestCase.priority,
-          folder: editingTestCase.folder.trim() || null,
-          tags: editingTestCase.tags.trim() || null,
-          steps: editingTestCase.steps.filter(s => s.step.trim() || s.expectedResult.trim()),
-          attachments: editingTestCase.attachments,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', editingTestCase.id)
-        .select()
-        .single();
+        .update(updates)
+        .eq('id', testCaseId);
 
       if (error) throw error;
 
-      onUpdate(data);
-      
-      if (selectedTestCase?.id === data.id) {
-        setSelectedTestCase(data);
-      }
+      // Fetch updated test case with creator info
+      const { data: updatedTestCase, error: fetchError } = await supabase
+        .from('test_cases')
+        .select(`
+          *,
+          creator:profiles!test_cases_created_by_fkey(id, full_name, email)
+        `)
+        .eq('id', testCaseId)
+        .single();
 
-      setEditingTestCase(null);
-      setShowNewCaseModal(false);
+      if (fetchError) throw fetchError;
+
+      // Update via parent component's onUpdate callback
+      onUpdate(updatedTestCase);
     } catch (error) {
-      console.error('테스트 케이스 수정 오류:', error);
-      alert('테스트 케이스 수정에 실패했습니다.');
+      console.error('Error updating test case:', error);
+      throw error;
     }
   };
 
@@ -1055,6 +1182,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
         const currentSnapshot: TestCaseSnapshot = {
           title: selectedTestCase.title,
           description: selectedTestCase.description || '',
+          precondition: selectedTestCase.precondition || '',
           priority: selectedTestCase.priority,
           folder: selectedTestCase.folder || '',
           tags: selectedTestCase.tags || '',
@@ -1103,6 +1231,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
     const labels: Record<string, string> = {
       title: 'Title',
       description: 'Description',
+      precondition: 'PreCondition',
       priority: 'Priority',
       folder: 'Folder',
       tags: 'Tags',
@@ -1259,6 +1388,94 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
     }
   }, [selectedTestCase, activeTab]);
 
+  // 선택된 테스트 케이스들을 폴더에 일괄 추가
+  const handleBulkAddToFolder = async (folderName: string) => {
+    if (selectedTestCaseIds.size === 0) return;
+
+    try {
+      const selectedIds = Array.from(selectedTestCaseIds);
+      
+      // 각 테스트 케이스 업데이트
+      for (const id of selectedIds) {
+        const { error } = await supabase
+          .from('test_cases')
+          .update({ folder: folderName, updated_at: new Date().toISOString() })
+          .eq('id', id);
+
+        if (error) throw error;
+      }
+
+      const addedCount = selectedIds.length;
+      
+      // 선택 초기화 및 모달 닫기
+      setSelectedTestCaseIds(new Set());
+      setShowBulkFolderModal(false);
+      
+      // 전체 데이터 새로고침
+      await onRefresh();
+      
+      // 토스트 메시지 표시
+      setToastMessage(`${addedCount}개의 테스트 케이스가 "${folderName}" 폴더로 이동되었습니다.`);
+      setToastType('success');
+      setShowToast(true);
+      
+      // 3초 후 토스트 자동 숨김
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
+    } catch (error) {
+      console.error('폴더 일괄 추가 오류:', error);
+      setToastMessage('폴더 추가에 실패했습니다.');
+      setToastType('error');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
+    }
+  };
+
+  // 선택된 테스트 케이스들의 폴더 제거
+  const handleBulkRemoveFromFolder = async () => {
+    if (selectedTestCaseIds.size === 0) return;
+
+    try {
+      const selectedIds = Array.from(selectedTestCaseIds);
+      
+      for (const id of selectedIds) {
+        const { error } = await supabase
+          .from('test_cases')
+          .update({ folder: null, updated_at: new Date().toISOString() })
+          .eq('id', id);
+
+        if (error) throw error;
+      }
+
+      const removedCount = selectedIds.length;
+      setSelectedTestCaseIds(new Set());
+      
+      // 전체 데이터 새로고침
+      await onRefresh();
+      
+      // 토스트 메시지 표시
+      setToastMessage(`${removedCount}개의 테스트 케이스가 폴더에서 제거되었습니다.`);
+      setToastType('success');
+      setShowToast(true);
+      
+      // 3초 후 토스트 자동 숨김
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
+    } catch (error) {
+      console.error('폴더 제거 오류:', error);
+      setToastMessage('폴더 제거에 실패했습니다.');
+      setToastType('error');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
+    }
+  };
+
   return (
     <div className="flex h-full">
       {/* 폴더 사이드바 */}
@@ -1283,16 +1500,21 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
                       </div>
                       <span className="font-medium">{folder.name}</span>
                     </div>
-                    <span className="text-sm font-semibold">{folder.count}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{folder.count}</span>
+                      {folder.id !== 'all' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteFolder(folder.id);
+                          }}
+                          className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                        >
+                          <i className="ri-delete-bin-line text-sm"></i>
+                        </button>
+                      )}
+                    </div>
                   </button>
-                  {folder.id !== 'all' && (
-                    <button
-                      onClick={() => handleDeleteFolder(folder.id)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                    >
-                      <i className="ri-delete-bin-line text-sm"></i>
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
@@ -1301,7 +1523,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
           <div className="pt-6 border-t border-gray-200">
             <button
               onClick={() => setShowNewFolderModal(true)}
-              className="w-full px-4 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+              className="w-full px-4 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
               New Folder
@@ -1324,32 +1546,74 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Test Cases</h1>
-              <p className="text-gray-600">Manage and execute all test cases</p>
+              <p className="text-gray-600 mb-6">Manage and execute all test cases</p>
+              <button
+                onClick={() => {
+                  setEditingTestCase(null);
+                  // 현재 선택된 폴더가 있으면 해당 폴더로 설정
+                  const currentFolder = selectedFolder !== 'all' 
+                    ? folders.find(f => f.id === selectedFolder)?.name || ''
+                    : '';
+                  setNewTestCase({
+                    title: '',
+                    description: '',
+                    precondition: '',
+                    folder: currentFolder,
+                    priority: 'medium',
+                    assignee: '',
+                    is_automated: false,
+                    steps: '',
+                    expected_result: '',
+                    tags: '',
+                    attachments: [],
+                  });
+                  setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
+                  setShowNewCaseModal(true);
+                }}
+                className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
+                New Test Case
+              </button>
             </div>
-            <button
-              onClick={() => {
-                setEditingTestCase(null);
-                setNewTestCase({
-                  title: '',
-                  description: '',
-                  folder: '',
-                  priority: 'medium',
-                  assignee: '',
-                  is_automated: false,
-                  steps: '',
-                  expected_result: '',
-                  tags: '',
-                  attachments: [],
-                });
-                setShowNewCaseModal(true);
-              }}
-              className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
-            >
-              <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
-              New Test Case
-            </button>
           </div>
         </div>
+
+        {/* Bulk Action Bar */}
+        {selectedTestCaseIds.size > 0 && (
+          <div className="mb-4 bg-teal-50 border border-teal-200 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                {selectedTestCaseIds.size}
+              </div>
+              <span className="text-sm font-medium text-teal-800">
+                {selectedTestCaseIds.size}개의 테스트 케이스 선택됨
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowBulkFolderModal(true)}
+                className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <i className="ri-folder-add-line"></i>
+                폴더에 추가
+              </button>
+              <button
+                onClick={handleBulkRemoveFromFolder}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <i className="ri-folder-reduce-line"></i>
+                폴더에서 제거
+              </button>
+              <button
+                onClick={() => setSelectedTestCaseIds(new Set())}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-all font-medium text-sm cursor-pointer whitespace-nowrap"
+              >
+                선택 해제
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white rounded-xl border border-gray-200">
           {filteredTestCases.length === 0 ? (
@@ -1360,7 +1624,28 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No test cases</h3>
               <p className="text-gray-600 mb-6">Create your first test case</p>
               <button
-                onClick={() => setShowNewCaseModal(true)}
+                onClick={() => {
+                  setEditingTestCase(null);
+                  // 현재 선택된 폴더가 있으면 해당 폴더로 설정
+                  const currentFolder = selectedFolder !== 'all' 
+                    ? folders.find(f => f.id === selectedFolder)?.name || ''
+                    : '';
+                  setNewTestCase({
+                    title: '',
+                    description: '',
+                    precondition: '',
+                    folder: currentFolder,
+                    priority: 'medium',
+                    assignee: '',
+                    is_automated: false,
+                    steps: '',
+                    expected_result: '',
+                    tags: '',
+                    attachments: [],
+                  });
+                  setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
+                  setShowNewCaseModal(true);
+                }}
                 className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
               >
                 Create Test Case
@@ -1541,6 +1826,15 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
                   </p>
                 </div>
               </div>
+
+              {selectedTestCase.precondition && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">PreCondition</label>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedTestCase.precondition}</p>
+                  </div>
+                </div>
+              )}
 
               {selectedTestCase.steps && (
                 <div>
@@ -2092,6 +2386,17 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
                     ></textarea>
                   </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">PreCondition</label>
+                    <textarea
+                      value={newTestCase.precondition}
+                      onChange={(e) => setNewTestCase({ ...newTestCase, precondition: e.target.value })}
+                      placeholder="Enter preconditions required before executing this test case"
+                      rows={3}
+                      maxLength={500}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                    ></textarea>
+                  </div>
                   
                   {/* Steps Section */}
                   <div>
@@ -2384,6 +2689,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
                             <p className="text-sm text-gray-900 whitespace-pre-wrap">{oldSnapshot.description || '-'}</p>
                           </div>
                           <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PreCondition</label>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{oldSnapshot.precondition || '-'}</p>
+                          </div>
+                          <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Priority</label>
                             <p className="text-sm text-gray-900">{oldSnapshot.priority || '-'}</p>
                           </div>
@@ -2438,6 +2747,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Description</label>
                             <p className="text-sm text-gray-900 whitespace-pre-wrap">{newSnapshot.description || '-'}</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PreCondition</label>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{newSnapshot.precondition || '-'}</p>
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Priority</label>
@@ -2509,6 +2822,169 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, pro
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 폴더 일괄 추가 모달 */}
+      {showBulkFolderModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">폴더에 추가</h2>
+                <button
+                  onClick={() => setShowBulkFolderModal(false)}
+                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+                >
+                  <i className="ri-close-line text-xl"></i>
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-2">
+                {selectedTestCaseIds.size}개의 테스트 케이스를 이동할 폴더를 선택하세요
+              </p>
+            </div>
+            <div className="p-4 max-h-80 overflow-y-auto">
+              <div className="space-y-2">
+                {folders.map((folder) => (
+                  <button
+                    key={folder.id}
+                    onClick={() => handleBulkAddToFolder(folder.name)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-all cursor-pointer text-left"
+                  >
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getFolderColorClass(folder.color)}`}>
+                      <i className={`${folder.icon} text-xl`}></i>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{folder.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {testCases.filter(tc => tc.folder === folder.name).length}개의 테스트 케이스
+                      </p>
+                    </div>
+                    <i className="ri-arrow-right-s-line text-gray-400"></i>
+                  </button>
+                ))}
+                {folders.length === 0 && (
+                  <div className="text-center py-8">
+                    <i className="ri-folder-line text-3xl text-gray-300 mb-2"></i>
+                    <p className="text-sm text-gray-500">폴더가 없습니다</p>
+                    <p className="text-xs text-gray-400 mt-1">먼저 폴더를 생성해주세요</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowBulkFolderModal(false)}
+                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium cursor-pointer whitespace-nowrap"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 폴더 삭제 확인 모달 */}
+      {showDeleteFolderModal && folderToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">폴더 삭제</h2>
+                <button
+                  onClick={() => {
+                    setShowDeleteFolderModal(false);
+                    setFolderToDelete(null);
+                  }}
+                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+                >
+                  <i className="ri-close-line text-xl"></i>
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getFolderColorClass(folderToDelete.color)}`}>
+                  <i className={`${folderToDelete.icon} text-2xl`}></i>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">{folderToDelete.name}</p>
+                  <p className="text-sm text-gray-500">
+                    {testCases.filter(tc => tc.folder === folderToDelete.name).length}개의 테스트 케이스 포함
+                  </p>
+                </div>
+              </div>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start gap-3">
+                  <i className="ri-alert-line text-yellow-600 text-xl mt-0.5"></i>
+                  <div>
+                    <p className="text-sm font-medium text-yellow-800">주의</p>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      이 폴더를 삭제하면 폴더 내의 테스트 케이스는 삭제되지 않고 폴더 미지정 상태로 변경됩니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                정말로 "<span className="font-semibold">{folderToDelete.name}</span>" 폴더를 삭제하시겠습니까?
+              </p>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteFolderModal(false);
+                  setFolderToDelete(null);
+                }}
+                disabled={deletingFolder}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmDeleteFolder}
+                disabled={deletingFolder}
+                className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 flex items-center gap-2"
+              >
+                {deletingFolder ? (
+                  <>
+                    <i className="ri-loader-4-line animate-spin"></i>
+                    삭제 중...
+                  </>
+                ) : (
+                  <>
+                    <i className="ri-delete-bin-line"></i>
+                    삭제
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 토스트 메시지 */}
+      {showToast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
+          <div className={`flex items-center gap-3 px-5 py-4 rounded-lg shadow-lg ${
+            toastType === 'success' 
+              ? 'bg-teal-500 text-white' 
+              : 'bg-red-500 text-white'
+          }`}>
+            <div className="w-6 h-6 flex items-center justify-center">
+              <i className={`text-xl ${
+                toastType === 'success' 
+                  ? 'ri-checkbox-circle-fill' 
+                  : 'ri-error-warning-fill'
+              }`}></i>
+            </div>
+            <span className="font-medium">{toastMessage}</span>
+            <button
+              onClick={() => setShowToast(false)}
+              className="ml-2 w-6 h-6 flex items-center justify-center hover:bg-white/20 rounded transition-all cursor-pointer"
+            >
+              <i className="ri-close-line"></i>
+            </button>
           </div>
         </div>
       )}

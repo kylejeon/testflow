@@ -20,6 +20,59 @@ serve(async (req) => {
       throw new Error("서버 설정 오류");
     }
 
+    const { token, action } = await req.json();
+
+    if (!token) {
+      throw new Error("초대 토큰이 필요합니다");
+    }
+
+    // Use service role client for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get invitation
+    const { data: invitation, error: invitationError } = await supabase
+      .from("project_invitations")
+      .select(`
+        *,
+        projects:project_id (
+          id,
+          name
+        )
+      `)
+      .eq("token", token)
+      .is("accepted_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+
+    if (invitationError) {
+      console.error("Invitation error:", invitationError);
+      throw new Error("초대 정보를 찾을 수 없습니다");
+    }
+
+    if (!invitation) {
+      throw new Error("유효하지 않거나 만료된 초대입니다");
+    }
+
+    // If action is 'verify', just return invitation info
+    if (action === 'verify') {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          invitation: {
+            email: invitation.email,
+            role: invitation.role,
+            projectName: invitation.projects?.name || '알 수 없는 프로젝트',
+            projectId: invitation.project_id,
+          }
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
+
+    // For accept action, we need authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("인증 정보가 없습니다");
@@ -33,33 +86,6 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       throw new Error("인증에 실패했습니다");
-    }
-
-    const { token } = await req.json();
-
-    if (!token) {
-      throw new Error("초대 토큰이 필요합니다");
-    }
-
-    // Use service role client for database operations
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get invitation
-    const { data: invitation, error: invitationError } = await supabase
-      .from("project_invitations")
-      .select("*")
-      .eq("token", token)
-      .is("accepted_at", null)
-      .gt("expires_at", new Date().toISOString())
-      .maybeSingle();
-
-    if (invitationError) {
-      console.error("Invitation error:", invitationError);
-      throw new Error("초대 정보를 찾을 수 없습니다");
-    }
-
-    if (!invitation) {
-      throw new Error("유효하지 않거나 만료된 초대입니다");
     }
 
     // Check if user email matches invitation email

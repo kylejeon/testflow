@@ -123,8 +123,6 @@ serve(async (req) => {
     const inviteUrl = `${baseUrl}/accept-invitation?token=${token}`;
     const inviterName = inviter?.full_name || inviter?.email || "Someone";
 
-    // Note: Email sending is disabled since email confirmation is turned off in Supabase
-    // Users should manually share the invite link
     console.log(`Invitation created for ${email}. Share this link: ${inviteUrl}`);
 
     return new Response(
@@ -134,7 +132,7 @@ serve(async (req) => {
         inviteUrl,
         projectName: project.name,
         inviterName: inviterName,
-        emailSent: false, // Email sending is disabled
+        emailSent: false,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
