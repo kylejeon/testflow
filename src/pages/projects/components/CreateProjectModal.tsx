@@ -34,14 +34,44 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get user's subscription tier
-      const { data: profile } = await supabase
+      // Ensure profile exists (for OAuth users)
+      let profile = await supabase
         .from('profiles')
         .select('subscription_tier')
         .eq('id', user.id)
         .maybeSingle();
 
-      const tier = profile?.subscription_tier || 1;
+      // If profile doesn't exist, create it
+      if (!profile.data) {
+        const { error: insertError } = await supabase.from('profiles').insert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || null,
+          role: 'member',
+          subscription_tier: 1,
+        });
+
+        if (insertError && insertError.code !== '23505') {
+          console.error('Failed to create profile:', insertError);
+          throw new Error('프로필 생성에 실패했습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+        }
+
+        // Wait for profile to be created
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Fetch the newly created profile
+        profile = await supabase
+          .from('profiles')
+          .select('subscription_tier')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!profile.data) {
+          throw new Error('프로필을 찾을 수 없습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+        }
+      }
+
+      const tier = profile.data?.subscription_tier || 1;
       setSubscriptionTier(tier);
       const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS];
       setMaxProjects(limits.maxProjects);
@@ -57,6 +87,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
       setCanCreate(projectCount < limits.maxProjects);
     } catch (error) {
       console.error('Error checking project limit:', error);
+      alert(error instanceof Error ? error.message : '프로젝트 한도를 확인하는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }

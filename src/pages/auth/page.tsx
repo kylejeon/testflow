@@ -113,9 +113,21 @@ export default function AuthPage() {
           if (error.code !== '23505') {
             throw error;
           }
-        } else {
-          // Wait a bit to ensure the profile is fully committed
-          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        // Wait longer to ensure the profile is fully committed
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Verify profile was created
+        const { data: verifyProfile, error: verifyError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+          
+        if (verifyError || !verifyProfile) {
+          console.error('Profile verification failed:', verifyError);
+          throw new Error('프로필 생성에 실패했습니다. 다시 시도해주세요.');
         }
       }
     } catch (err) {
