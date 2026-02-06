@@ -120,112 +120,21 @@ serve(async (req) => {
       }
     }
 
-    const inviteUrl = `${baseUrl}/auth?invite=${token}`;
+    const inviteUrl = `${baseUrl}/accept-invitation?token=${token}`;
     const inviterName = inviter?.full_name || inviter?.email || "Someone";
 
-    // Send invitation email using Supabase Auth Admin API
-    try {
-      const emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-            .button { display: inline-block; background: #14B8A6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
-            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
-            .info-box { background: #f0fdfa; border-left: 4px solid #14B8A6; padding: 15px; margin: 20px 0; border-radius: 4px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1 style="margin: 0; font-size: 24px;">프로젝트 초대</h1>
-            </div>
-            <div class="content">
-              <p>안녕하세요${fullName ? ` ${fullName}님` : ''},</p>
-              <p><strong>${inviterName}</strong>님이 <strong>${project.name}</strong> 프로젝트에 당신을 초대했습니다.</p>
-              
-              <div class="info-box">
-                <p style="margin: 0;"><strong>프로젝트:</strong> ${project.name}</p>
-                <p style="margin: 10px 0 0 0;"><strong>역할:</strong> ${role === 'admin' ? 'Admin (관리자)' : role === 'member' ? 'Member (멤버)' : 'Viewer (뷰어)'}</p>
-              </div>
-
-              <p>아래 버튼을 클릭하여 초대를 수락하고 프로젝트에 참여하세요:</p>
-              
-              <div style="text-align: center;">
-                <a href="${inviteUrl}" class="button">초대 수락하기</a>
-              </div>
-
-              <p style="color: #6b7280; font-size: 14px;">또는 아래 링크를 복사하여 브라우저에 붙여넣으세요:</p>
-              <p style="word-break: break-all; background: #f9fafb; padding: 10px; border-radius: 4px; font-size: 12px;">${inviteUrl}</p>
-
-              <p style="color: #ef4444; font-size: 14px; margin-top: 30px;">⚠️ 이 초대는 7일 후 만료됩니다.</p>
-            </div>
-            <div class="footer">
-              <p>이 이메일은 자동으로 발송되었습니다.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-
-      // Send email using Supabase Auth's built-in email functionality
-      const { data: emailData, error: emailError } = await supabase.auth.admin.inviteUserByEmail(email, {
-        data: {
-          project_id: projectId,
-          project_name: project.name,
-          inviter_name: inviterName,
-          role: role,
-          invite_token: token,
-          full_name: fullName || null,
-        },
-        redirectTo: inviteUrl,
-      });
-
-      if (emailError) {
-        console.error('Supabase email error:', emailError);
-        
-        // Fallback: Try to send a custom email notification
-        try {
-          const notificationResponse = await fetch(`${supabaseUrl}/functions/v1/send-email-notification`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-            },
-            body: JSON.stringify({
-              to: email,
-              subject: `${inviterName}님이 ${project.name} 프로젝트에 초대했습니다`,
-              html: emailHtml,
-            }),
-          });
-          
-          if (!notificationResponse.ok) {
-            console.error('Notification email failed');
-          }
-        } catch (notifError) {
-          console.error('Notification error:', notifError);
-        }
-      } else {
-        console.log('Email sent successfully:', emailData);
-      }
-
-    } catch (emailError) {
-      console.error('Email sending error:', emailError);
-      // Don't throw - invitation is still created, user can use the link manually
-    }
+    // Note: Email sending is disabled since email confirmation is turned off in Supabase
+    // Users should manually share the invite link
+    console.log(`Invitation created for ${email}. Share this link: ${inviteUrl}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "초대가 생성되고 이메일이 발송되었습니다",
+        message: "초대 링크가 생성되었습니다. 아래 링크를 팀원에게 전달해주세요.",
         inviteUrl,
         projectName: project.name,
         inviterName: inviterName,
+        emailSent: false, // Email sending is disabled
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

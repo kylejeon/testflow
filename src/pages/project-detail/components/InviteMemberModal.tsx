@@ -119,6 +119,15 @@ export default function InviteMemberModal({
 
         setInvitationType('existing');
         setSuccess(`${email} 사용자를 프로젝트에 추가했습니다.`);
+        
+        setEmail('');
+        setFullName('');
+        setRole('member');
+
+        setTimeout(() => {
+          onInvited();
+          onClose();
+        }, 2000);
       } else {
         // New user - create invitation
         const { data: { session } } = await supabase.auth.getSession();
@@ -149,17 +158,10 @@ export default function InviteMemberModal({
 
         setInvitationType('new');
         setInviteLink(result.inviteUrl);
-        setSuccess(`초대 링크가 생성되었습니다. 아래 링크를 ${email}에게 전달해주세요.`);
+        setSuccess('초대 링크가 생성되었습니다! 아래 링크를 복사해서 팀원에게 전달해주세요.');
+        
+        // Don't clear form or close modal - let user copy the link
       }
-
-      setEmail('');
-      setFullName('');
-      setRole('member');
-
-      setTimeout(() => {
-        onInvited();
-        onClose();
-      }, 3000);
     } catch (err: any) {
       console.error('Invitation error:', err);
       setError(err.message || '초대에 실패했습니다.');
@@ -171,8 +173,18 @@ export default function InviteMemberModal({
   const copyInviteLink = () => {
     if (inviteLink) {
       navigator.clipboard.writeText(inviteLink);
-      setSuccess('초대 링크가 클립보드에 복사되었습니다!');
+      setSuccess('초대 링크가 클립보드에 복사되었습니다! 팀원에게 전달해주세요.');
     }
+  };
+
+  const resetForm = () => {
+    setEmail('');
+    setFullName('');
+    setRole('member');
+    setError('');
+    setSuccess('');
+    setInviteLink(null);
+    setInvitationType(null);
   };
 
   if (!isOpen) return null;
@@ -192,7 +204,10 @@ export default function InviteMemberModal({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => {
+              resetForm();
+              onClose();
+            }}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
           >
             <i className="ri-close-line text-xl text-gray-500"></i>
@@ -238,7 +253,7 @@ export default function InviteMemberModal({
             </div>
           </div>
         ) : (
-          <form onSubmit={(e) => { e.preventDefault(); handleInvite(); }} className="p-6">
+          <div className="p-6">
             {subscriptionTier === 1 && (
               <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
                 <i className="ri-information-line text-gray-500"></i>
@@ -254,157 +269,184 @@ export default function InviteMemberModal({
                 {error}
               </div>
             )}
-            {success && (
-              <div className="p-4 bg-teal-50 border border-teal-200 rounded-lg">
-                <div className="flex items-start gap-3">
+            
+            {success && inviteLink && (
+              <div className="mb-4 p-4 bg-teal-50 border border-teal-200 rounded-lg">
+                <div className="flex items-start gap-3 mb-3">
                   <i className="ri-checkbox-circle-fill text-teal-600 text-xl"></i>
                   <div className="flex-1">
-                    <p className="text-sm text-teal-800">{success}</p>
-                    {inviteLink && (
-                      <div className="mt-3">
-                        <div className="flex items-center gap-2 p-3 bg-white border border-teal-200 rounded">
-                          <input
-                            type="text"
-                            value={inviteLink}
-                            readOnly
-                            className="flex-1 text-sm text-gray-700 bg-transparent border-none outline-none"
-                          />
-                          <button
-                            onClick={copyInviteLink}
-                            className="px-3 py-1 text-sm text-teal-600 hover:bg-teal-50 rounded transition-colors whitespace-nowrap"
-                          >
-                            <i className="ri-file-copy-line mr-1"></i>
-                            복사
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                    <p className="text-sm text-teal-800 font-semibold mb-2">{success}</p>
+                    <p className="text-xs text-teal-700 mb-3">
+                      <i className="ri-information-line mr-1"></i>
+                      이메일 자동 발송이 비활성화되어 있습니다. 아래 링크를 복사해서 직접 전달해주세요.
+                    </p>
                   </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-white border border-teal-200 rounded-lg">
+                  <input
+                    type="text"
+                    value={inviteLink}
+                    readOnly
+                    className="flex-1 text-sm text-gray-700 bg-transparent border-none outline-none"
+                  />
+                  <button
+                    onClick={copyInviteLink}
+                    className="px-3 py-1.5 text-sm text-white bg-teal-600 hover:bg-teal-700 rounded transition-colors whitespace-nowrap flex items-center gap-1 cursor-pointer"
+                  >
+                    <i className="ri-file-copy-line"></i>
+                    복사
+                  </button>
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    onClick={() => {
+                      resetForm();
+                      onInvited();
+                      onClose();
+                    }}
+                    className="px-4 py-2 text-sm text-teal-600 hover:bg-teal-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    완료
+                  </button>
                 </div>
               </div>
             )}
-
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                이름
-              </label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="홍길동"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                <i className="ri-information-line mr-1"></i>
-                미가입 사용자의 경우 가입 시 이 이름이 프로필에 저장됩니다
-              </p>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                이메일 주소 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="teammate@email.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                <i className="ri-information-line mr-1"></i>
-                가입된 사용자는 바로 추가되고, 미가입 사용자에게는 초대 메일이 발송됩니다
-              </p>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                역할
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="admin"
-                    checked={role === 'admin'}
-                    onChange={() => setRole('admin')}
-                    className="w-4 h-4 text-teal-600 focus:ring-teal-500"
-                  />
-                  <div className="flex-1">
-                    <div className="font-semibold text-gray-900 text-sm">Admin</div>
-                    <div className="text-xs text-gray-500">
-                      모든 권한 (멤버 관리, 설정 변경)
-                    </div>
-                  </div>
-                  <i className="ri-shield-star-line text-orange-500"></i>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="member"
-                    checked={role === 'member'}
-                    onChange={() => setRole('member')}
-                    className="w-4 h-4 text-teal-600 focus:ring-teal-500"
-                  />
-                  <div className="flex-1">
-                    <div className="font-semibold text-gray-900 text-sm">Member</div>
-                    <div className="text-xs text-gray-500">
-                      테스트 케이스, 세션 생성 및 편집
-                    </div>
-                  </div>
-                  <i className="ri-user-line text-teal-500"></i>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="viewer"
-                    checked={role === 'viewer'}
-                    onChange={() => setRole('viewer')}
-                    className="w-4 h-4 text-teal-600 focus:ring-teal-500"
-                  />
-                  <div className="flex-1">
-                    <div className="font-semibold text-gray-900 text-sm">Viewer</div>
-                    <div className="text-xs text-gray-500">읽기 전용 접근</div>
-                  </div>
-                  <i className="ri-eye-line text-gray-500"></i>
-                </label>
+            
+            {success && !inviteLink && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+                <i className="ri-check-line"></i>
+                {success}
               </div>
-            </div>
+            )}
 
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
-              >
-                취소
-              </button>
-              <button
-                type="submit"
-                disabled={loading || !email}
-                className="flex-1 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <i className="ri-loader-4-line animate-spin"></i>
-                    처리 중...
-                  </>
-                ) : (
-                  <>
-                    <i className="ri-send-plane-line"></i>
-                    초대하기
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+            {!inviteLink && (
+              <form onSubmit={(e) => { e.preventDefault(); handleInvite(); }}>
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    이름
+                  </label>
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="홍길동"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    <i className="ri-information-line mr-1"></i>
+                    미가입 사용자의 경우 가입 시 이 이름이 프로필에 저장됩니다
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    이메일 주소 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="teammate@email.com"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    <i className="ri-information-line mr-1"></i>
+                    가입된 사용자는 바로 추가되고, 미가입 사용자에게는 초대 링크가 생성됩니다
+                  </p>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    역할
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                      <input
+                        type="radio"
+                        name="role"
+                        value="admin"
+                        checked={role === 'admin'}
+                        onChange={() => setRole('admin')}
+                        className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900 text-sm">Admin</div>
+                        <div className="text-xs text-gray-500">
+                          모든 권한 (멤버 관리, 설정 변경)
+                        </div>
+                      </div>
+                      <i className="ri-shield-star-line text-orange-500"></i>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                      <input
+                        type="radio"
+                        name="role"
+                        value="member"
+                        checked={role === 'member'}
+                        onChange={() => setRole('member')}
+                        className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900 text-sm">Member</div>
+                        <div className="text-xs text-gray-500">
+                          테스트 케이스, 세션 생성 및 편집
+                        </div>
+                      </div>
+                      <i className="ri-user-line text-teal-500"></i>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                      <input
+                        type="radio"
+                        name="role"
+                        value="viewer"
+                        checked={role === 'viewer'}
+                        onChange={() => setRole('viewer')}
+                        className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900 text-sm">Viewer</div>
+                        <div className="text-xs text-gray-500">읽기 전용 접근</div>
+                      </div>
+                      <i className="ri-eye-line text-gray-500"></i>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetForm();
+                      onClose();
+                    }}
+                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || !email}
+                    className="flex-1 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <i className="ri-loader-4-line animate-spin"></i>
+                        처리 중...
+                      </>
+                    ) : (
+                      <>
+                        <i className="ri-send-plane-line"></i>
+                        초대하기
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         )}
       </div>
     </div>
