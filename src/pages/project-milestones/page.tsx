@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 interface Milestone {
@@ -22,8 +22,15 @@ interface MilestoneWithProgress extends Milestone {
   subMilestones?: MilestoneWithProgress[];
 }
 
+const TIER_INFO = {
+  1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
+  2: { name: 'Professional', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  3: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
+};
+
 export default function ProjectMilestones() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [project, setProject] = useState<any>(null);
   const [milestones, setMilestones] = useState<MilestoneWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,12 +45,35 @@ export default function ProjectMilestones() {
     start_date: '',
     end_date: ''
   });
+  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number } | null>(null);
 
   useEffect(() => {
     if (id) {
       fetchData();
+      fetchUserProfile();
     }
   }, [id]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email, subscription_tier')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        setUserProfile({
+          full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
+          email: profile?.email || user.email || '',
+          subscription_tier: profile?.subscription_tier || 1
+        });
+      }
+    } catch (error) {
+      console.error('프로필 로딩 오류:', error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -458,6 +488,19 @@ export default function ProjectMilestones() {
     );
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setShowProfileMenu(false);
+      navigate('/auth');
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
+
+  const currentTier = userProfile?.subscription_tier || 1;
+  const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
+
   if (loading) {
     return (
       <div className="flex h-screen bg-white">
@@ -476,7 +519,7 @@ export default function ProjectMilestones() {
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer">
-                  JK
+                  {userProfile?.full_name?.charAt(0) || 'U'}
                 </div>
               </div>
             </div>
@@ -560,9 +603,11 @@ export default function ProjectMilestones() {
               <div className="flex items-center gap-3 relative">
                 <div 
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
+                  className="flex items-center gap-2 cursor-pointer"
                 >
-                  JK
+                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                    {userProfile?.full_name?.charAt(0) || 'U'}
+                  </div>
                 </div>
                 
                 {showProfileMenu && (
@@ -571,7 +616,15 @@ export default function ProjectMilestones() {
                       className="fixed inset-0 z-10" 
                       onClick={() => setShowProfileMenu(false)}
                     ></div>
-                    <div className="absolute right-0 top-12 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                    <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+                        <p className="text-xs text-gray-500">{userProfile?.email}</p>
+                        <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded border ${tierInfo.color}`}>
+                          <i className={`${tierInfo.icon} text-sm`}></i>
+                          {tierInfo.name}
+                        </div>
+                      </div>
                       <Link
                         to="/settings"
                         onClick={() => setShowProfileMenu(false)}
@@ -581,13 +634,10 @@ export default function ProjectMilestones() {
                         <span>Settings</span>
                       </Link>
                       <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          alert('Log out 기능이 실행됩니다.');
-                        }}
+                        onClick={handleLogout}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
                       >
-                        <i className="ri-logout-box-line text-lg w-5 h-5 flex items-center justify-center"></i>
+                        <i className="ri-logout-box-line text-lg"></i>
                         <span>Log out</span>
                       </button>
                     </div>

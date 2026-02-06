@@ -53,6 +53,7 @@ export default function ProjectSessions() {
     tags: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: string } | null>(null);
 
   const fetchData = async () => {
     if (!projectId) return;
@@ -190,8 +191,48 @@ export default function ProjectSessions() {
     }
   };
 
+  const fetchUserProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email, subscription_tier')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        setUserProfile({
+          full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
+          email: profile?.email || user.email || '',
+          subscription_tier: profile?.subscription_tier || 'free'
+        });
+      }
+    } catch (error) {
+      console.error('프로필 로딩 오류:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
+  const getTierInfo = (tier: string) => {
+    switch (tier) {
+      case 'pro':
+        return { name: 'Pro', icon: 'ri-vip-crown-line', color: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent' };
+      case 'enterprise':
+        return { name: 'Enterprise', icon: 'ri-building-line', color: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-transparent' };
+      default:
+        return { name: 'Free', icon: 'ri-user-line', color: 'bg-gray-100 text-gray-700 border-gray-200' };
+    }
+  };
+
+  const tierInfo = getTierInfo(userProfile?.subscription_tier || 'free');
+
   useEffect(() => {
     fetchData();
+    fetchUserProfile();
   }, [projectId, activeTab]);
 
   useEffect(() => {
@@ -498,36 +539,67 @@ export default function ProjectSessions() {
                 </Link>
               </nav>
               
-              <div className="flex items-center gap-3">
-                <div className="relative" ref={profileMenuRef}>
-                  <div 
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
-                  >
-                    JK
+              <div className="flex items-center gap-3 relative">
+                <div 
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                    {userProfile?.full_name?.charAt(0) || 'U'}
                   </div>
-                  {showProfileMenu && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                </div>
+                
+                {showProfileMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowProfileMenu(false)}
+                    ></div>
+                    <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                      <div className="flex items-center gap-3 px-3 py-2 border-b border-gray-100">
+                        <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-white font-medium">
+                          {userProfile?.full_name?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 truncate text-sm">
+                            {userProfile?.full_name || 'User'}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate">
+                            {userProfile?.email}
+                          </div>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          userProfile?.subscription_tier === 2 
+                            ? 'bg-purple-100 text-purple-700'
+                            : userProfile?.subscription_tier === 3
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {userProfile?.subscription_tier === 2 
+                            ? 'Pro' 
+                            : userProfile?.subscription_tier === 3
+                            ? 'Enterprise'
+                            : 'Free'}
+                        </span>
+                      </div>
                       <Link
                         to="/settings"
+                        onClick={() => setShowProfileMenu(false)}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
                       >
-                        <i className="ri-settings-3-line text-lg"></i>
+                        <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
                         <span>Settings</span>
                       </Link>
                       <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          alert('로그아웃되었습니다.');
-                        }}
+                        onClick={handleLogout}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
                       >
                         <i className="ri-logout-box-line text-lg"></i>
                         <span>Log out</span>
                       </button>
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

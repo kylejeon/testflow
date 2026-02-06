@@ -1547,34 +1547,36 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Test Cases</h1>
               <p className="text-gray-600 mb-6">Manage and execute all test cases</p>
-              <button
-                onClick={() => {
-                  setEditingTestCase(null);
-                  // 현재 선택된 폴더가 있으면 해당 폴더로 설정
-                  const currentFolder = selectedFolder !== 'all' 
-                    ? folders.find(f => f.id === selectedFolder)?.name || ''
-                    : '';
-                  setNewTestCase({
-                    title: '',
-                    description: '',
-                    precondition: '',
-                    folder: currentFolder,
-                    priority: 'medium',
-                    assignee: '',
-                    is_automated: false,
-                    steps: '',
-                    expected_result: '',
-                    tags: '',
-                    attachments: [],
-                  });
-                  setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
-                  setShowNewCaseModal(true);
-                }}
-                className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
-              >
-                <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
-                New Test Case
-              </button>
+              {selectedFolder === 'all' && (
+                <button
+                  onClick={() => {
+                    setEditingTestCase(null);
+                    // 현재 선택된 폴더가 있으면 해당 폴더로 설정
+                    const currentFolder = selectedFolder !== 'all' 
+                      ? folders.find(f => f.id === selectedFolder)?.name || ''
+                      : '';
+                    setNewTestCase({
+                      title: '',
+                      description: '',
+                      precondition: '',
+                      folder: currentFolder,
+                      priority: 'medium',
+                      assignee: '',
+                      is_automated: false,
+                      steps: '',
+                      expected_result: '',
+                      tags: '',
+                      attachments: [],
+                    });
+                    setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
+                    setShowNewCaseModal(true);
+                  }}
+                  className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
+                  New Test Case
+                </button>
+              )}
             </div>
           </div>
         </div>

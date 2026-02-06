@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import type { Project } from '../../../lib/supabase';
 
@@ -24,10 +23,15 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">프로젝트 수정</h2>
+      <div className="bg-white rounded-xl w-full max-w-lg shadow-2xl">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+              <i className="ri-edit-line text-teal-600 text-xl"></i>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Edit Project</h2>
+          </div>
+          <div>
             <button
               onClick={onClose}
               className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
@@ -41,13 +45,13 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
           <div className="p-6 space-y-5">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                프로젝트 이름 <span className="text-red-500">*</span>
+                Project Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="예: 모바일 앱 테스트"
+                placeholder="e.g., Mobile App Testing"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                 required
               />
@@ -55,12 +59,12 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                설명
+                Description
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="프로젝트에 대한 간단한 설명을 입력하세요"
+                placeholder="Enter a brief description of the project"
                 rows={4}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
               />
@@ -68,32 +72,33 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                상태
+                Status
               </label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
               >
-                <option value="active">활성</option>
-                <option value="archived">보관됨</option>
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
               </select>
             </div>
           </div>
 
-          <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
+          <div className="flex gap-3 p-6 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all cursor-pointer whitespace-nowrap"
+              className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
             >
-              취소
+              Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium transition-all cursor-pointer whitespace-nowrap"
+              className="flex-1 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
             >
-              저장
+              <i className="ri-save-line"></i>
+              Save Changes
             </button>
           </div>
         </form>

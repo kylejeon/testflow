@@ -78,6 +78,7 @@ export default function ProjectRunsPage() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: string } | null>(null);
   const [showSelectCasesModal, setShowSelectCasesModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [caseSearchQuery, setCaseSearchQuery] = useState('');
@@ -659,7 +660,47 @@ export default function ProjectRunsPage() {
 
   useEffect(() => {
     fetchData();
+    fetchUserProfile();
   }, [id, activeTab]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email, subscription_tier')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        setUserProfile({
+          full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
+          email: profile?.email || user.email || '',
+          subscription_tier: profile?.subscription_tier || 'free'
+        });
+      }
+    } catch (error) {
+      console.error('프로필 로딩 오류:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
+  const getTierInfo = (tier: string) => {
+    switch (tier) {
+      case 'pro':
+        return { name: 'Pro', icon: 'ri-vip-crown-line', color: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent' };
+      case 'enterprise':
+        return { name: 'Enterprise', icon: 'ri-building-line', color: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-transparent' };
+      default:
+        return { name: 'Free', icon: 'ri-user-line', color: 'bg-gray-100 text-gray-700 border-gray-200' };
+    }
+  };
+
+  const tierInfo = getTierInfo(userProfile?.subscription_tier || 'free');
 
   const fetchData = async () => {
     try {
@@ -1313,36 +1354,49 @@ export default function ProjectRunsPage() {
                 </Link>
               </nav>
               
-              <div className="flex items-center gap-3">
-                <div className="relative" ref={profileMenuRef}>
-                  <div 
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
-                  >
-                    JK
+              <div className="flex items-center gap-3 relative">
+                <div 
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                    {userProfile?.full_name?.charAt(0) || 'U'}
                   </div>
-                  {showProfileMenu && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                </div>
+                
+                {showProfileMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowProfileMenu(false)}
+                    ></div>
+                    <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+                        <p className="text-xs text-gray-500">{userProfile?.email}</p>
+                        <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
+                          <i className={`${tierInfo.icon} text-sm`}></i>
+                          {tierInfo.name}
+                        </div>
+                      </div>
                       <Link
                         to="/settings"
+                        onClick={() => setShowProfileMenu(false)}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
                       >
                         <i className="ri-settings-3-line text-lg"></i>
                         <span>Settings</span>
                       </Link>
                       <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          alert('로그아웃되었습니다.');
-                        }}
+                        onClick={handleLogout}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
                       >
                         <i className="ri-logout-box-line text-lg"></i>
                         <span>Log out</span>
                       </button>
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
