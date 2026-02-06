@@ -6,11 +6,39 @@ interface JiraSettings {
   domain: string;
 }
 
+interface UserProfile {
+  email: string;
+  full_name: string;
+  subscription_tier: number;
+}
+
+const TIER_INFO = {
+  1: {
+    name: 'Free',
+    color: 'bg-gray-100 text-gray-700 border-gray-300',
+    icon: 'ri-user-line',
+    features: ['프로젝트 3개까지', '팀 멤버 5명까지', '기본 테스트 관리', 'Jira 연동', '커뮤니티 지원'],
+  },
+  2: {
+    name: 'Professional',
+    color: 'bg-teal-50 text-teal-700 border-teal-300',
+    icon: 'ri-vip-crown-line',
+    features: ['무제한 프로젝트', '팀 멤버 50명까지', 'Jira 연동', '고급 리포팅', '우선 지원'],
+  },
+  3: {
+    name: 'Enterprise',
+    color: 'bg-amber-50 text-amber-700 border-amber-300',
+    icon: 'ri-vip-diamond-line',
+    features: ['모든 Professional 기능', '무제한 팀 멤버', '전용 지원 담당자', '커스텀 통합', 'SLA 보장'],
+  },
+};
+
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'general' | 'integrations' | 'notifications'>('integrations');
+  const [activeTab, setActiveTab] = useState<'general' | 'integrations' | 'notifications'>('general');
   const [jiraSettings, setJiraSettings] = useState<JiraSettings>({
     domain: '',
   });
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -18,6 +46,7 @@ export default function SettingsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    fetchUserProfile();
     fetchJiraSettings();
   }, []);
 
@@ -41,6 +70,31 @@ export default function SettingsPage() {
       navigate('/auth');
     } catch (err) {
       console.error('Logout failed:', err);
+    }
+  };
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('email, full_name, subscription_tier')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setUserProfile({
+          email: data.email || user.email || '',
+          full_name: data.full_name || '',
+          subscription_tier: data.subscription_tier || 1,
+        });
+      }
+    } catch (error) {
+      console.error('프로필 로딩 오류:', error);
     }
   };
 
@@ -106,6 +160,9 @@ export default function SettingsPage() {
     }
   };
 
+  const currentTier = userProfile?.subscription_tier || 1;
+  const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
+
   return (
     <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -128,10 +185,19 @@ export default function SettingsPage() {
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
                 >
-                  JK
+                  {userProfile?.full_name?.charAt(0) || 'U'}
                 </div>
                 {showProfileMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+                      <p className="text-xs text-gray-500">{userProfile?.email}</p>
+                      <div className="mt-2">
+                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
+                          {tierInfo.name}
+                        </span>
+                      </div>
+                    </div>
                     <Link
                       to="/settings"
                       className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
@@ -199,10 +265,105 @@ export default function SettingsPage() {
 
               <div className="p-8">
                 {activeTab === 'general' && (
-                  <div className="space-y-6">
+                  <div className="space-y-8">
+                    {/* Subscription Tier Section */}
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900 mb-4">General Settings</h2>
-                      <p className="text-gray-600">Configure your general application preferences</p>
+                      <h2 className="text-xl font-bold text-gray-900 mb-2">Subscription Plan</h2>
+                      <p className="text-gray-600 mb-6">현재 구독 중인 요금제를 확인하세요</p>
+
+                      {/* Current Plan Card */}
+                      <div className={`p-6 rounded-xl border-2 ${tierInfo.color} mb-6`}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                              currentTier === 1 ? 'bg-gray-200' : currentTier === 2 ? 'bg-teal-100' : 'bg-amber-100'
+                            }`}>
+                              <i className={`${tierInfo.icon} text-2xl ${
+                                currentTier === 1 ? 'text-gray-600' : currentTier === 2 ? 'text-teal-600' : 'text-amber-600'
+                              }`}></i>
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-bold">{tierInfo.name}</h3>
+                              <p className="text-sm opacity-80">현재 요금제</p>
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                            currentTier === 1 ? 'bg-gray-200 text-gray-700' : currentTier === 2 ? 'bg-teal-200 text-teal-800' : 'bg-amber-200 text-amber-800'
+                          }`}>
+                            Active
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {tierInfo.features.map((feature, index) => (
+                            <div key={index} className="flex items-center gap-2 text-sm">
+                              <i className="ri-check-line"></i>
+                              <span>{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* All Plans Comparison */}
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">모든 요금제 비교</h3>
+                      <div className="grid grid-cols-3 gap-4">
+                        {Object.entries(TIER_INFO).map(([tier, info]) => {
+                          const tierNum = parseInt(tier);
+                          const isCurrentTier = tierNum === currentTier;
+                          return (
+                            <div
+                              key={tier}
+                              className={`p-5 rounded-xl border-2 transition-all ${
+                                isCurrentTier
+                                  ? info.color
+                                  : 'border-gray-200 bg-white hover:border-gray-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-3">
+                                <i className={`${info.icon} text-xl ${
+                                  tierNum === 1 ? 'text-gray-500' : tierNum === 2 ? 'text-teal-500' : 'text-amber-500'
+                                }`}></i>
+                                <h4 className="font-bold text-gray-900">{info.name}</h4>
+                                {isCurrentTier && (
+                                  <span className="ml-auto px-2 py-0.5 bg-teal-500 text-white text-xs rounded-full">
+                                    현재
+                                  </span>
+                                )}
+                              </div>
+                              <ul className="space-y-2">
+                                {info.features.map((feature, index) => (
+                                  <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
+                                    <i className={`ri-check-line mt-0.5 ${
+                                      tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-teal-500' : 'text-amber-500'
+                                    }`}></i>
+                                    <span>{feature}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                              {!isCurrentTier && tierNum > currentTier && (
+                                <button className="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-all cursor-pointer whitespace-nowrap">
+                                  업그레이드 문의
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Profile Section */}
+                    <div className="pt-6 border-t border-gray-200">
+                      <h2 className="text-xl font-bold text-gray-900 mb-2">Profile Information</h2>
+                      <p className="text-gray-600 mb-4">계정 정보를 확인하세요</p>
+                      <div className="grid grid-cols-2 gap-4 max-w-lg">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-500 mb-1">이름</label>
+                          <p className="text-gray-900 font-medium">{userProfile?.full_name || '-'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-500 mb-1">이메일</label>
+                          <p className="text-gray-900 font-medium">{userProfile?.email || '-'}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

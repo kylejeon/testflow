@@ -50,6 +50,9 @@ export default function AuthPage() {
         // OAuth callback detected, wait for session
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
+          // Ensure profile exists for OAuth users (auto signup)
+          await ensureProfileExists(session.user);
+          
           // Check if there's an invitation token
           const inviteToken = searchParams.get('invite');
           if (inviteToken) {
@@ -64,7 +67,58 @@ export default function AuthPage() {
     };
 
     handleOAuthCallback();
+
+    // Listen for auth state changes (for OAuth redirects)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Ensure profile exists for OAuth users
+        await ensureProfileExists(session.user);
+        
+        const inviteToken = searchParams.get('invite');
+        if (inviteToken) {
+          await acceptInvitation(inviteToken);
+        } else if (!window.location.hash) {
+          navigate('/projects');
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [searchParams]);
+
+  const ensureProfileExists = async (user: any) => {
+    try {
+      // Check if profile exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        // Create profile for OAuth user (auto signup)
+        const { error } = await supabase.from('profiles').insert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || null,
+          role: 'member',
+          subscription_tier: 1, // Default to Free tier
+        });
+        
+        if (error) {
+          console.error('Failed to create profile:', error);
+          // If insert fails due to conflict, it means profile already exists
+          if (error.code !== '23505') {
+            throw error;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to ensure profile exists:', err);
+    }
+  };
 
   const checkInvitation = async (token: string) => {
     setCheckingInvitation(true);

@@ -33,6 +33,11 @@ export default function ProjectMilestones() {
   const [editingMilestone, setEditingMilestone] = useState<MilestoneWithProgress | null>(null);
   const [parentMilestoneId, setParentMilestoneId] = useState<string | null>(null);
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    start_date: '',
+    end_date: ''
+  });
 
   useEffect(() => {
     if (id) {
@@ -327,10 +332,7 @@ export default function ProjectMilestones() {
 
     return (
       <div key={milestone.id}>
-        <Link
-          to={`/projects/${id}/milestones/${milestone.id}`}
-          className="block bg-white rounded-lg border border-gray-200 p-6 hover:border-teal-500 transition-all cursor-pointer"
-        >
+        <div className="block bg-white rounded-lg border border-gray-200 p-6 hover:border-teal-500 transition-all">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3 flex-1">
               {hasSubMilestones && (
@@ -348,9 +350,12 @@ export default function ProjectMilestones() {
               <div className={`w-8 h-8 ${isSubMilestone ? 'bg-gray-50' : 'bg-gray-100'} rounded flex items-center justify-center`}>
                 <i className={`${isSubMilestone ? 'ri-run-line' : 'ri-flag-line'} text-gray-600`}></i>
               </div>
-              <span className="font-semibold text-teal-600 hover:text-teal-700 transition-colors">
+              <Link 
+                to={`/projects/${id}/milestones/${milestone.id}`}
+                className="font-semibold text-teal-600 hover:text-teal-700 transition-colors cursor-pointer"
+              >
                 {milestone.name}
-              </span>
+              </Link>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-600">
@@ -377,6 +382,11 @@ export default function ProjectMilestones() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  setEditFormData({
+                    name: milestone.name,
+                    start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '',
+                    end_date: milestone.end_date ? milestone.end_date.split('T')[0] : ''
+                  });
                   setEditingMilestone(milestone);
                 }}
                 className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
@@ -432,7 +442,7 @@ export default function ProjectMilestones() {
               {milestone.actualProgress}%
             </span>
           </div>
-        </Link>
+        </div>
 
         {/* Sub Milestones */}
         {hasSubMilestones && isExpanded && (
@@ -785,7 +795,7 @@ export default function ProjectMilestones() {
                   <input
                     type="text"
                     name="name"
-                    defaultValue={editingMilestone.name}
+                    defaultValue={editFormData.name}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
@@ -795,7 +805,7 @@ export default function ProjectMilestones() {
                   <input
                     type="date"
                     name="start_date"
-                    defaultValue={editingMilestone.start_date || ''}
+                    defaultValue={editFormData.start_date}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
@@ -805,7 +815,7 @@ export default function ProjectMilestones() {
                   <input
                     type="date"
                     name="end_date"
-                    defaultValue={editingMilestone.end_date || ''}
+                    defaultValue={editFormData.end_date}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />

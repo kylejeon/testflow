@@ -51,6 +51,15 @@ interface Issue {
   createdAt: string;
 }
 
+interface ActivityLog {
+  id: string;
+  type: 'note' | 'passed' | 'failed' | 'retest' | 'blocked';
+  testCaseName: string;
+  runName: string;
+  timestamp: Date;
+  author: string;
+}
+
 export default function MilestoneDetail() {
   const { projectId, milestoneId } = useParams();
   const [project, setProject] = useState<any>(null);
@@ -62,6 +71,13 @@ export default function MilestoneDetail() {
   const [loading, setLoading] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<'results' | 'status' | 'activity' | 'issues'>('results');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({ name: '', start_date: '', end_date: '' });
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [activityStats, setActivityStats] = useState({ notes: 0, passed: 0, failed: 0, retest: 0 });
+  const [activityStatusFilter, setActivityStatusFilter] = useState<string>('all');
+  const [activityPage, setActivityPage] = useState(1);
+  const activityPerPage = 10;
 
   useEffect(() => {
     if (projectId && milestoneId) {
@@ -157,12 +173,17 @@ export default function MilestoneDetail() {
       // Calculate actual progress for each test run and collect issues
       const allIssues: Issue[] = [];
       const issueIdSet = new Set<string>();
+      const allActivityLogs: ActivityLog[] = [];
+      let notesCount = 0;
+      let passedCount = 0;
+      let failedCount = 0;
+      let retestCount = 0;
 
       const runsWithProgress = await Promise.all(
         (runsData || []).map(async (run) => {
           const { data: testResultsData } = await supabase
             .from('test_results')
-            .select('test_case_id, status, issues, created_at')
+            .select('test_case_id, status, issues, created_at, note, author')
             .eq('run_id', run.id)
             .order('created_at', { ascending: false });
 
@@ -172,6 +193,23 @@ export default function MilestoneDetail() {
             if (!statusMap.has(result.test_case_id)) {
               statusMap.set(result.test_case_id, result.status);
             }
+
+            // Collect activity logs
+            const activityType = result.note && result.note.trim() ? 'note' : result.status;
+            allActivityLogs.push({
+              id: `${run.id}-${result.test_case_id}-${result.created_at}`,
+              type: activityType as ActivityLog['type'],
+              testCaseName: testCaseNameMap.get(result.test_case_id) || 'Unknown Test Case',
+              runName: run.name,
+              timestamp: new Date(result.created_at),
+              author: result.author || 'Unknown',
+            });
+
+            // Count stats
+            if (result.note && result.note.trim()) notesCount++;
+            if (result.status === 'passed') passedCount++;
+            if (result.status === 'failed') failedCount++;
+            if (result.status === 'retest') retestCount++;
 
             // Collect issues from test results
             if (result.issues && Array.isArray(result.issues)) {
@@ -266,6 +304,8 @@ export default function MilestoneDetail() {
 
       setRuns(runsWithProgress);
       setIssues(allIssues.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setActivityLogs(allActivityLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
+      setActivityStats({ notes: notesCount, passed: passedCount, failed: failedCount, retest: retestCount });
 
       // Fetch sessions for this milestone
       const { data: sessionsData, error: sessionsError } = await supabase
@@ -397,6 +437,69 @@ export default function MilestoneDetail() {
     });
 
     return totalTests > 0 ? Math.round((completedTests / totalTests) * 100) : 0;
+  };
+
+  const generateChartPoints = (logs: ActivityLog[], type: string) => {
+    const days = 14;
+    const width = 100;
+    const height = 100;
+    const now = new Date();
+    
+    // Count activities per day for the last 14 days
+    const dailyCounts: number[] = new Array(days).fill(0);
+    
+    logs.forEach(log => {
+      if (log.type === type || (type === 'note' && log.type === 'note')) {
+        const daysDiff = Math.floor((now.getTime() - log.timestamp.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff >= 0 && daysDiff < days) {
+          dailyCounts[days - 1 - daysDiff]++;
+        }
+      }
+    });
+    
+    const maxCount = Math.max(...dailyCounts, 1);
+    
+    return dailyCounts.map((count, idx) => {
+      const x = (idx / (days - 1)) * width;
+      const y = height - (count / maxCount) * height;
+      return `${x},${y}`;
+    }).join(' ');
+  };
+
+  const generateDateLabels = () => {
+    const labels: string[] = [];
+    const now = new Date();
+    
+    for (let i = 13; i >= 0; i -= 2) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      labels.push(date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }));
+    }
+    
+    return labels;
+  };
+
+  const handleUpdateMilestone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!milestone) return;
+
+    try {
+      const { error } = await supabase
+        .from('milestones')
+        .update({
+          name: editFormData.name,
+          start_date: editFormData.start_date,
+          end_date: editFormData.end_date
+        })
+        .eq('id', milestone.id);
+
+      if (error) throw error;
+      
+      setShowEditModal(false);
+      fetchData();
+    } catch (error) {
+      console.error('마일스톤 수정 오류:', error);
+      alert('마일스톤 수정에 실패했습니다.');
+    }
   };
 
   if (loading) {
@@ -559,7 +662,19 @@ export default function MilestoneDetail() {
                   <span className={`px-4 py-2 rounded-lg text-sm font-semibold ${badge.className}`}>
                     {badge.label}
                   </span>
-                  <button className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap">
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setEditFormData({
+                        name: milestone.name,
+                        start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '',
+                        end_date: milestone.end_date ? milestone.end_date.split('T')[0] : ''
+                      });
+                      setShowEditModal(true);
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                  >
                     Edit
                   </button>
                   <button className="px-4 py-2 text-white bg-teal-500 hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">
@@ -886,8 +1001,270 @@ export default function MilestoneDetail() {
                 )}
 
                 {activeTab === 'activity' && (
-                  <div className="text-center py-12 text-gray-500">
-                    Activity view coming soon
+                  <div className="space-y-6">
+                    {/* RUN ACTIVITY Chart */}
+                    <div className="border border-gray-200 rounded-lg p-6">
+                      <div className="flex items-center gap-2 mb-6">
+                        <h3 className="text-sm font-semibold text-gray-600 uppercase">RUN ACTIVITY</h3>
+                        <div className="w-4 h-4 flex items-center justify-center">
+                          <i className="ri-information-line text-gray-400 text-sm"></i>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-8">
+                        {/* Chart Area */}
+                        <div className="flex-1">
+                          <div className="h-48 relative">
+                            {/* Y-axis labels */}
+                            <div className="absolute left-0 top-0 bottom-8 w-8 flex flex-col justify-between text-xs text-gray-400">
+                              <span>100</span>
+                              <span>50</span>
+                              <span>0</span>
+                            </div>
+                            
+                            {/* Chart grid and lines */}
+                            <div className="ml-10 h-40 relative border-b border-l border-gray-200">
+                              {/* Grid lines */}
+                              <div className="absolute inset-0">
+                                <div className="absolute top-0 left-0 right-0 border-t border-gray-100"></div>
+                                <div className="absolute top-1/2 left-0 right-0 border-t border-gray-100"></div>
+                              </div>
+                              
+                              {/* Activity lines visualization */}
+                              <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                                {/* Notes line (blue) */}
+                                <polyline
+                                  fill="none"
+                                  stroke="#3b82f6"
+                                  strokeWidth="2"
+                                  points={generateChartPoints(activityLogs, 'note')}
+                                />
+                                {/* Passed line (green) */}
+                                <polyline
+                                  fill="none"
+                                  stroke="#22c55e"
+                                  strokeWidth="2"
+                                  points={generateChartPoints(activityLogs, 'passed')}
+                                />
+                                {/* Failed line (red) */}
+                                <polyline
+                                  fill="none"
+                                  stroke="#ef4444"
+                                  strokeWidth="2"
+                                  points={generateChartPoints(activityLogs, 'failed')}
+                                />
+                                {/* Retest line (orange) */}
+                                <polyline
+                                  fill="none"
+                                  stroke="#f97316"
+                                  strokeWidth="2"
+                                  points={generateChartPoints(activityLogs, 'retest')}
+                                />
+                              </svg>
+                            </div>
+                            
+                            {/* X-axis labels */}
+                            <div className="ml-10 flex justify-between text-xs text-gray-400 mt-2">
+                              {generateDateLabels().map((label, idx) => (
+                                <span key={idx}>{label}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Stats */}
+                        <div className="w-48 space-y-4">
+                          <div>
+                            <div className="text-lg font-bold text-gray-900">Last 14 days</div>
+                            <div className="text-sm text-gray-500">{activityStats.notes + activityStats.passed + activityStats.failed + activityStats.retest} recent changes</div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">Notes</div>
+                                <div className="text-xs text-gray-500">{activityStats.notes} notes added</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-4 h-4 bg-green-500 rounded-sm"></div>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">Passed</div>
+                                <div className="text-xs text-gray-500">{activityStats.passed} set to Passed</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-4 h-4 bg-red-500 rounded-sm"></div>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">Failed</div>
+                                <div className="text-xs text-gray-500">{activityStats.failed} set to Failed</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-4 h-4 bg-orange-500 rounded-sm"></div>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">Retest</div>
+                                <div className="text-xs text-gray-500">{activityStats.retest} set to Retest</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ACTIVITY List */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-semibold text-gray-600 uppercase">ACTIVITY</h3>
+                        <div className="relative">
+                          <select
+                            value={activityStatusFilter}
+                            onChange={(e) => {
+                              setActivityStatusFilter(e.target.value);
+                              setActivityPage(1);
+                            }}
+                            className="appearance-none pl-3 pr-8 py-1.5 text-sm border border-gray-300 rounded-lg bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          >
+                            <option value="all">Statuses</option>
+                            <option value="passed">Passed</option>
+                            <option value="failed">Failed</option>
+                            <option value="retest">Retest</option>
+                            <option value="blocked">Blocked</option>
+                            <option value="note">Notes</option>
+                          </select>
+                          <i className="ri-arrow-down-s-line absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                      </div>
+
+                      {/* Activity Timeline */}
+                      <div className="space-y-6">
+                        {(() => {
+                          const filteredLogs = activityStatusFilter === 'all' 
+                            ? activityLogs 
+                            : activityLogs.filter(log => log.type === activityStatusFilter);
+                          
+                          // Group by date
+                          const groupedByDate = filteredLogs.reduce((acc, log) => {
+                            const dateKey = log.timestamp.toDateString();
+                            const today = new Date().toDateString();
+                            const yesterday = new Date(Date.now() - 86400000).toDateString();
+                            
+                            let displayDate = dateKey;
+                            if (dateKey === today) displayDate = 'Today';
+                            else if (dateKey === yesterday) displayDate = 'Yesterday';
+                            else displayDate = log.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                            
+                            if (!acc[displayDate]) acc[displayDate] = [];
+                            acc[displayDate].push(log);
+                            return acc;
+                          }, {} as Record<string, ActivityLog[]>);
+
+                          const dateGroups = Object.entries(groupedByDate);
+                          const totalPages = Math.ceil(filteredLogs.length / activityPerPage);
+                          const startIdx = (activityPage - 1) * activityPerPage;
+                          const paginatedLogs = filteredLogs.slice(startIdx, startIdx + activityPerPage);
+
+                          // Re-group paginated logs
+                          const paginatedGrouped = paginatedLogs.reduce((acc, log) => {
+                            const dateKey = log.timestamp.toDateString();
+                            const today = new Date().toDateString();
+                            const yesterday = new Date(Date.now() - 86400000).toDateString();
+                            
+                            let displayDate = dateKey;
+                            if (dateKey === today) displayDate = 'Today';
+                            else if (dateKey === yesterday) displayDate = 'Yesterday';
+                            else displayDate = log.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                            
+                            if (!acc[displayDate]) acc[displayDate] = [];
+                            acc[displayDate].push(log);
+                            return acc;
+                          }, {} as Record<string, ActivityLog[]>);
+
+                          if (filteredLogs.length === 0) {
+                            return (
+                              <div className="text-center py-12">
+                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                  <i className="ri-history-line text-3xl text-gray-400"></i>
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">No activity yet</h3>
+                                <p className="text-gray-500">Activity will appear here when test results are recorded.</p>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <>
+                              {Object.entries(paginatedGrouped).map(([date, logs]) => (
+                                <div key={date}>
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                                    <span className="text-sm font-semibold text-gray-700">{date}</span>
+                                  </div>
+                                  
+                                  <div className="ml-4 border-l-2 border-gray-200 pl-6 space-y-3">
+                                    {logs.map((log) => (
+                                      <div key={log.id} className="flex items-center gap-4 py-2">
+                                        <span className={`px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap ${
+                                          log.type === 'passed' ? 'bg-green-100 text-green-700' :
+                                          log.type === 'failed' ? 'bg-red-100 text-red-700' :
+                                          log.type === 'retest' ? 'bg-orange-100 text-orange-700' :
+                                          log.type === 'blocked' ? 'bg-gray-200 text-gray-700' :
+                                          'bg-blue-100 text-blue-700'
+                                        }`}>
+                                          {log.type === 'note' ? 'Note' : log.type.charAt(0).toUpperCase() + log.type.slice(1)}
+                                        </span>
+                                        
+                                        <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                                          <i className="ri-file-text-line text-gray-500 text-sm"></i>
+                                        </div>
+                                        
+                                        <span className="text-sm text-teal-600 hover:text-teal-700 cursor-pointer truncate max-w-[300px]">
+                                          {log.testCaseName}
+                                        </span>
+                                        
+                                        <span className="text-sm text-gray-500 ml-auto whitespace-nowrap">
+                                          {log.timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                                        </span>
+                                        
+                                        <div className="w-7 h-7 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                          {log.author.substring(0, 2).toUpperCase()}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+
+                              {/* Pagination */}
+                              {totalPages > 1 && (
+                                <div className="flex items-center justify-center gap-2 mt-6">
+                                  <button
+                                    onClick={() => setActivityPage(p => Math.max(1, p - 1))}
+                                    disabled={activityPage === 1}
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                  >
+                                    <i className="ri-arrow-left-s-line"></i>
+                                  </button>
+                                  
+                                  <div className="flex items-center gap-1 px-3 py-1.5 bg-teal-50 border border-teal-200 rounded-lg">
+                                    <span className="text-sm font-semibold text-teal-700">{activityPage}/{totalPages}</span>
+                                  </div>
+                                  
+                                  <button
+                                    onClick={() => setActivityPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={activityPage === totalPages}
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                  >
+                                    <i className="ri-arrow-right-s-line"></i>
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1054,6 +1431,64 @@ export default function MilestoneDetail() {
           </div>
         </main>
       </div>
+
+      {/* Edit Milestone Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Edit Milestone</h2>
+            <form onSubmit={handleUpdateMilestone}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={editFormData.start_date}
+                    onChange={(e) => setEditFormData({ ...editFormData, start_date: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={editFormData.end_date}
+                    onChange={(e) => setEditFormData({ ...editFormData, end_date: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 text-white bg-teal-500 hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
