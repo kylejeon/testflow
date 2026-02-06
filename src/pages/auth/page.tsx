@@ -113,10 +113,14 @@ export default function AuthPage() {
           if (error.code !== '23505') {
             throw error;
           }
+        } else {
+          // Wait a bit to ensure the profile is fully committed
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
     } catch (err) {
       console.error('Failed to ensure profile exists:', err);
+      throw err; // Re-throw to handle in caller
     }
   };
 
