@@ -16,6 +16,7 @@ export default function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -264,6 +265,13 @@ export default function AuthPage() {
     setError('');
     setSuccess('');
 
+    // 비밀번호 확인 검증
+    if (password !== confirmPassword) {
+      setError('비밀번호가 일치하지 않습니다.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -273,6 +281,7 @@ export default function AuthPage() {
             full_name: fullName,
             invitation_token: invitation?.token,
           },
+          emailRedirectTo: `${window.location.origin}/projects`,
         },
       });
 
@@ -280,28 +289,51 @@ export default function AuthPage() {
 
       if (data.user) {
         // Create or update profile row
-        await supabase.from('profiles').upsert({
+        const { error: profileError } = await supabase.from('profiles').upsert({
           id: data.user.id,
           email,
           full_name: fullName,
           role: 'member',
+          subscription_tier: 1, // Default to Free tier
         });
+
+        if (profileError && profileError.code !== '23505') {
+          console.error('Profile creation error:', profileError);
+        }
+
+        // Wait for profile to be committed
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // If there's an invitation and user is confirmed, accept it
         if (invitation?.token && data.session) {
           await acceptInvitation(invitation.token);
         } else if (invitation?.token) {
-          setSuccess('회원가입이 완료되었습니다! 이메일을 확인 후 로그인하면 프로젝트에 자동으로 참여됩니다.');
+          setSuccess('회원가입이 완료되었습니다! 로그인하면 프로젝트에 자동으로 참여됩니다.');
           setMode('login');
           setPassword('');
         } else {
-          setSuccess('회원가입이 완료되었습니다! 이메일을 확인해주세요.');
-          setMode('login');
-          setPassword('');
+          // Check if email confirmation is required
+          if (data.session) {
+            // User is auto-confirmed, redirect to projects
+            setSuccess('회원가입이 완료되었습니다!');
+            setTimeout(() => {
+              navigate('/projects');
+            }, 1000);
+          } else {
+            // Email confirmation required
+            setSuccess('회원가입이 완료되었습니다! 이메일을 확인해주세요.');
+            setMode('login');
+            setPassword('');
+          }
         }
       }
     } catch (err: any) {
-      setError(err.message || '회원가입에 실패했습니다.');
+      // Handle rate limit error gracefully
+      if (err.message?.includes('rate limit') || err.message?.includes('Email rate limit exceeded')) {
+        setError('이메일 발송 제한에 도달했습니다. 잠시 후 다시 시도하거나, Google로 계속하기를 이용해주세요.');
+      } else {
+        setError(err.message || '회원가입에 실패했습니다.');
+      }
     } finally {
       setLoading(false);
     }
@@ -477,6 +509,39 @@ export default function AuthPage() {
                 <p className="text-xs text-gray-500 mt-1">최소 6자 이상</p>
               )}
             </div>
+
+            {mode === 'signup' && (
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  비밀번호 확인
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm ${
+                    confirmPassword && password !== confirmPassword
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-gray-300'
+                  }`}
+                  required
+                  minLength={6}
+                />
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                    <i className="ri-error-warning-line"></i>
+                    비밀번호가 일치하지 않습니다
+                  </p>
+                )}
+                {confirmPassword && password === confirmPassword && (
+                  <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                    <i className="ri-check-line"></i>
+                    비밀번호가 일치합니다
+                  </p>
+                )}
+              </div>
+            )}
 
             {mode === 'login' && (
               <div className="mb-6 flex items-center gap-2">
