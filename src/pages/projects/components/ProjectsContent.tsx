@@ -4,8 +4,10 @@ import { supabase, type Project } from '../../../lib/supabase';
 import CreateProjectModal from './CreateProjectModal';
 import EditProjectModal from './EditProjectModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
+import { useTranslation } from 'react-i18next';
 
 export default function ProjectsContent() {
+  const { t } = useTranslation(['projects', 'common']);
   const navigate = useNavigate();
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [projects, setProjects] = useState<Project[]>([]);
@@ -235,28 +237,28 @@ export default function ProjectsContent() {
 
   const stats = [
     {
-      label: '전체 프로젝트',
+      label: t('projects:allProjects'),
       value: projects.length.toString(),
       icon: 'ri-folder-line',
       color: 'text-teal-600',
       bg: 'bg-teal-50',
     },
     {
-      label: '활성 프로젝트',
+      label: t('common:active'),
       value: projects.filter(p => p.status === 'active').length.toString(),
       icon: 'ri-play-circle-line',
       color: 'text-green-600',
       bg: 'bg-green-50',
     },
     {
-      label: '보관된 프로젝트',
+      label: t('common:archived'),
       value: projects.filter(p => p.status === 'archived').length.toString(),
       icon: 'ri-archive-line',
       color: 'text-gray-600',
       bg: 'bg-gray-50',
     },
     {
-      label: '이번 달 생성',
+      label: t('projects:createdThisMonth'),
       value: projects.filter(p => {
         const projectDate = new Date(p.created_at);
         const now = new Date();
@@ -287,7 +289,7 @@ export default function ProjectsContent() {
       <div className="p-8 flex items-center justify-center h-full">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">프로젝트를 불러오는 중...</p>
+          <p className="text-gray-600">{t('common:loading')}</p>
         </div>
       </div>
     );
@@ -299,15 +301,15 @@ export default function ProjectsContent() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">프로젝트</h1>
-              <p className="text-gray-600">테스트 프로젝트를 생성하고 관리하세요</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('projects:title')}</h1>
+              <p className="text-gray-600">{t('projects:subtitle')}</p>
             </div>
             <button 
               onClick={() => setShowCreateModal(true)}
               className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
-              새 프로젝트
+              {t('projects:createProject')}
             </button>
           </div>
 
@@ -329,7 +331,7 @@ export default function ProjectsContent() {
         <div className="bg-white rounded-xl border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">프로젝트 목록</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('projects:projectList')}</h2>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
                   <button
@@ -354,9 +356,9 @@ export default function ProjectsContent() {
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="px-4 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
                 >
-                  <option value="all">모든 상태</option>
-                  <option value="active">활성</option>
-                  <option value="archived">보관됨</option>
+                  <option value="all">{t('projects:allStatus')}</option>
+                  <option value="active">{t('common:active')}</option>
+                  <option value="archived">{t('common:archived')}</option>
                 </select>
               </div>
             </div>
@@ -365,7 +367,7 @@ export default function ProjectsContent() {
               <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
               <input
                 type="text"
-                placeholder="프로젝트 검색..."
+                placeholder={t('projects:searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -380,17 +382,17 @@ export default function ProjectsContent() {
                   <i className="ri-folder-line text-3xl text-gray-400"></i>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {searchQuery || filterStatus !== 'all' ? '검색 결과가 없습니다' : '프로젝트가 없습니다'}
+                  {searchQuery || filterStatus !== 'all' ? t('projects:noSearchResults') : t('projects:noProjects')}
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  {searchQuery || filterStatus !== 'all' ? '다른 검색어나 필터를 시도해보세요' : '첫 번째 테스트 프로젝트를 생성해보세요'}
+                  {searchQuery || filterStatus !== 'all' ? t('projects:tryDifferentSearch') : t('projects:createFirstProject')}
                 </p>
                 {!searchQuery && filterStatus === 'all' && (
                   <button 
                     onClick={() => setShowCreateModal(true)}
                     className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
                   >
-                    새 프로젝트 만들기
+                    {t('projects:createProject')}
                   </button>
                 )}
               </div>
@@ -411,7 +413,7 @@ export default function ProjectsContent() {
                         </div>
                         <div className="flex-1">
                           <h3 className="text-lg font-bold text-gray-900 mb-1 hover:text-teal-600 transition-colors">{project.name}</h3>
-                          <p className="text-sm text-gray-600 line-clamp-1">{project.description || '설명 없음'}</p>
+                          <p className="text-sm text-gray-600 line-clamp-1">{project.description || t('projects:noDescription')}</p>
                         </div>
                       </Link>
                       <div className="relative" ref={openMenuId === project.id ? menuRef : null}>
@@ -437,7 +439,7 @@ export default function ProjectsContent() {
                               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
                             >
                               <i className="ri-edit-line w-4 h-4 flex items-center justify-center"></i>
-                              수정
+                              {t('common:edit')}
                             </button>
                             <button
                               onClick={(e) => {
@@ -449,7 +451,7 @@ export default function ProjectsContent() {
                               className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
                             >
                               <i className="ri-delete-bin-line w-4 h-4 flex items-center justify-center"></i>
-                              삭제
+                              {t('common:delete')}
                             </button>
                           </div>
                         )}
@@ -458,17 +460,17 @@ export default function ProjectsContent() {
 
                     <div className="grid grid-cols-3 gap-4 mb-4 pb-4 border-b border-gray-200">
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">테스트 케이스</div>
+                        <div className="text-xs text-gray-500 mb-1">{t('common:testCases')}</div>
                         <div className="text-lg font-bold text-gray-900">{testCaseCounts[project.id] || 0}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">테스트 실행</div>
+                        <div className="text-xs text-gray-500 mb-1">{t('projects:testRuns')}</div>
                         <div className="text-lg font-bold text-gray-900">{testRunCounts[project.id] || 0}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">생성일</div>
+                        <div className="text-xs text-gray-500 mb-1">{t('common:createdAt')}</div>
                         <div className="text-sm font-semibold text-gray-700">
-                          {new Date(project.created_at).toLocaleDateString('ko-KR')}
+                          {new Date(project.created_at).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
@@ -478,13 +480,13 @@ export default function ProjectsContent() {
                         project.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                       }`}>
                         <i className={`${project.status === 'active' ? 'ri-checkbox-circle-fill' : 'ri-archive-line'} mr-1 w-3 h-3 flex items-center justify-center`}></i>
-                        {project.status === 'active' ? '활성' : '보관됨'}
+                        {project.status === 'active' ? t('common:active') : t('common:archived')}
                       </span>
                       <Link
                         to={`/projects/${project.id}`}
                         className="text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1 cursor-pointer whitespace-nowrap"
                       >
-                        상세보기
+                        {t('projects:viewDetails')}
                         <i className="ri-arrow-right-line w-4 h-4 flex items-center justify-center"></i>
                       </Link>
                     </div>

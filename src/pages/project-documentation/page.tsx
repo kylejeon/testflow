@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import AddLinkModal from './components/AddLinkModal';
 import UploadFileModal from './components/UploadFileModal';
@@ -27,6 +28,7 @@ const TIER_INFO = {
 export default function ProjectDocumentation() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation('documentation');
   const [project, setProject] = useState<any>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,7 @@ export default function ProjectDocumentation() {
   };
 
   const handleDeleteDocument = async (docId: string) => {
-    if (!confirm('이 문서를 삭제하시겠습니까?')) return;
+    if (!confirm(t('deleteConfirm'))) return;
 
     try {
       const { error } = await supabase
@@ -106,7 +108,7 @@ export default function ProjectDocumentation() {
       setDocuments(documents.filter(doc => doc.id !== docId));
     } catch (error) {
       console.error('삭제 오류:', error);
-      alert('문서 삭제에 실패했습니다.');
+      alert(t('deleteFailed'));
     }
   };
 
@@ -176,7 +178,7 @@ export default function ProjectDocumentation() {
           <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600">문서를 불러오는 중...</p>
+              <p className="text-gray-600">{t('loading')}</p>
             </div>
           </main>
         </div>
@@ -239,7 +241,7 @@ export default function ProjectDocumentation() {
                   to={`/projects/${id}/runs`}
                   className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
                 >
-                  Runs & Results
+                  Runs &amp; Results
                 </Link>
                 <Link 
                   to={`/projects/${id}/sessions`}
@@ -280,14 +282,14 @@ export default function ProjectDocumentation() {
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
                       >
                         <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                        <span>Settings</span>
+                        <span>{t('settings')}</span>
                       </Link>
                       <button
                         onClick={handleLogout}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
                       >
                         <i className="ri-logout-box-line text-lg"></i>
-                        <span>Log out</span>
+                        <span>{t('logout')}</span>
                       </button>
                     </div>
                   </>
@@ -305,7 +307,7 @@ export default function ProjectDocumentation() {
                   <i className="ri-file-text-line text-white text-xl"></i>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Documentation</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
                   <p className="text-sm text-gray-500">{project?.name}</p>
                 </div>
               </div>
@@ -315,14 +317,14 @@ export default function ProjectDocumentation() {
                   className="px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
                 >
                   <i className="ri-link text-lg w-5 h-5 flex items-center justify-center"></i>
-                  링크 추가
+                  {t('addLink')}
                 </button>
                 <button 
                   onClick={() => setShowUploadModal(true)}
                   className="px-4 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
                 >
                   <i className="ri-upload-2-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                  파일 업로드
+                  {t('uploadFile')}
                 </button>
               </div>
             </div>
@@ -338,7 +340,7 @@ export default function ProjectDocumentation() {
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    전체 ({documents.length})
+                    {t('all')} ({documents.length})
                   </button>
                   <button
                     onClick={() => setFilterType('link')}
@@ -348,7 +350,7 @@ export default function ProjectDocumentation() {
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    링크 ({documents.filter(d => d.type === 'link').length})
+                    {t('link')} ({documents.filter(d => d.type === 'link').length})
                   </button>
                   <button
                     onClick={() => setFilterType('file')}
@@ -358,7 +360,7 @@ export default function ProjectDocumentation() {
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    파일 ({documents.filter(d => d.type === 'file').length})
+                    {t('file')} ({documents.filter(d => d.type === 'file').length})
                   </button>
                 </div>
               </div>
@@ -369,20 +371,20 @@ export default function ProjectDocumentation() {
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <i className="ri-file-text-line text-3xl text-gray-400"></i>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">문서가 없습니다</h3>
-                    <p className="text-gray-500 mb-6">링크를 추가하거나 파일을 업로드하여 시작하세요.</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('noDocuments')}</h3>
+                    <p className="text-gray-500 mb-6">{t('noDocumentsDesc')}</p>
                     <div className="flex items-center justify-center gap-3">
                       <button 
                         onClick={() => setShowAddLinkModal(true)}
                         className="px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
                       >
-                        링크 추가
+                        {t('addLink')}
                       </button>
                       <button 
                         onClick={() => setShowUploadModal(true)}
                         className="px-4 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
                       >
-                        파일 업로드
+                        {t('uploadFile')}
                       </button>
                     </div>
                   </div>
@@ -422,7 +424,7 @@ export default function ProjectDocumentation() {
                               rel="noopener noreferrer"
                               className="px-3 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap text-sm font-medium"
                             >
-                              열기
+                              {t('open')}
                             </a>
                           )}
                           {doc.type === 'file' && doc.file_url && (
@@ -431,7 +433,7 @@ export default function ProjectDocumentation() {
                               download={doc.file_name}
                               className="px-3 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap text-sm font-medium"
                             >
-                              다운로드
+                              {t('download')}
                             </a>
                           )}
                           <button

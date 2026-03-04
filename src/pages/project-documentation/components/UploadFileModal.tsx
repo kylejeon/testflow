@@ -1,4 +1,6 @@
+
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../../lib/supabase';
 
 interface UploadFileModalProps {
@@ -8,6 +10,7 @@ interface UploadFileModalProps {
 }
 
 export default function UploadFileModal({ projectId, onClose, onSuccess }: UploadFileModalProps) {
+  const { t } = useTranslation('documentation');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -28,7 +31,7 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
     e.preventDefault();
     
     if (!title.trim() || !file) {
-      alert('제목과 파일을 선택해주세요.');
+      alert(t('titleAndFileRequired'));
       return;
     }
 
@@ -73,7 +76,7 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
       onSuccess();
     } catch (error) {
       console.error('파일 업로드 오류:', error);
-      alert('파일 업로드에 실패했습니다.');
+      alert(t('uploadFileFailed'));
     } finally {
       setLoading(false);
       setUploadProgress(0);
@@ -90,7 +93,7 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">파일 업로드</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t('uploadFileTitle')}</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
@@ -102,7 +105,7 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              파일 선택 <span className="text-red-500">*</span>
+              {t('selectFile')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -125,8 +128,8 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
                 ) : (
                   <div className="text-center">
                     <i className="ri-upload-cloud-2-line text-3xl text-gray-400 mb-2"></i>
-                    <p className="text-sm font-medium text-gray-700">클릭하여 파일 선택</p>
-                    <p className="text-xs text-gray-500 mt-1">또는 파일을 드래그하세요</p>
+                    <p className="text-sm font-medium text-gray-700">{t('clickToSelect')}</p>
+                    <p className="text-xs text-gray-500 mt-1">{t('dragAndDrop')}</p>
                   </div>
                 )}
               </label>
@@ -135,13 +138,13 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              제목 <span className="text-red-500">*</span>
+              {t('linkTitle')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="파일 제목"
+              placeholder={t('fileTitlePlaceholder')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
               required
             />
@@ -149,12 +152,12 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              설명 (선택)
+              {t('fileDescription')}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="파일에 대한 간단한 설명을 입력하세요"
+              placeholder={t('fileDescriptionPlaceholder')}
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm resize-none"
             />
@@ -163,7 +166,7 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
           {loading && uploadProgress > 0 && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">업로드 중...</span>
+                <span className="text-gray-600">{t('uploadingProgress')}</span>
                 <span className="font-semibold text-teal-600">{uploadProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -182,14 +185,14 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
               disabled={loading}
               className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              취소
+              {t('cancel')}
             </button>
             <button
               type="submit"
               disabled={loading || !file}
               className="px-4 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '업로드 중...' : '파일 업로드'}
+              {loading ? t('uploading') : t('uploadFile')}
             </button>
           </div>
         </form>

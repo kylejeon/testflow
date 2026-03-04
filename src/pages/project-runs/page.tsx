@@ -2119,7 +2119,7 @@ export default function ProjectRunsPage() {
                       <label className="block text-sm font-medium text-gray-700">
                         Issues
                       </label>
-                      <button className="text-teal-600 hover:text-teal-700 text-sm cursor-pointer whitespace-nowrap">
+                      <button className="text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap">
                         + Add
                       </button>
                     </div>

@@ -3,6 +3,7 @@ import ProjectsContent from './components/ProjectsContent';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useTranslation } from 'react-i18next';
 
 interface UserProfile {
   email: string;
@@ -17,6 +18,7 @@ const TIER_INFO = {
 };
 
 export default function ProjectsPage() {
+  const { t } = useTranslation(['common', 'settings']);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
@@ -133,14 +135,14 @@ export default function ProjectsPage() {
                       className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
                     >
                       <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                      <span>Settings</span>
+                      <span>{t('common:settings')}</span>
                     </Link>
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
                     >
                       <i className="ri-logout-box-line text-lg"></i>
-                      <span>Log out</span>
+                      <span>{t('common:logout')}</span>
                     </button>
                   </div>
                 </>

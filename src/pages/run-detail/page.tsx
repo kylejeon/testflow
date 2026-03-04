@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useTranslation } from 'react-i18next';
 
 interface TestCase {
   id: string;
@@ -46,8 +47,16 @@ interface ProjectMember {
   role: string;
 }
 
+const TIER_INFO = {
+  1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
+  2: { name: 'Professional', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  3: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
+};
+
 export default function RunDetail() {
   const { projectId, runId } = useParams();
+  const navigate = useNavigate();
+  const { t } = useTranslation(['common']);
   const [project, setProject] = useState<any>(null);
   const [run, setRun] = useState<any>(null);
   const [testCases, setTestCases] = useState<TestCaseWithRunStatus[]>([]);
@@ -82,6 +91,7 @@ export default function RunDetail() {
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; full_name: string | null } | null>(null);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ email: string; full_name: string; subscription_tier: number } | null>(null);
 
   useEffect(() => {
     if (projectId && runId) {
@@ -105,7 +115,7 @@ export default function RunDetail() {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('email, full_name')
+          .select('email, full_name, subscription_tier')
           .eq('id', user.id)
           .maybeSingle();
         
@@ -113,6 +123,12 @@ export default function RunDetail() {
           id: user.id,
           email: profile?.email || user.email || '',
           full_name: profile?.full_name || null,
+        });
+
+        setUserProfile({
+          email: profile?.email || user.email || '',
+          full_name: profile?.full_name || '',
+          subscription_tier: profile?.subscription_tier || 1,
         });
       }
     } catch (error) {
@@ -936,6 +952,16 @@ export default function RunDetail() {
     return `https://${jiraDomain}/browse/${issueKey}`;
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setShowProfileMenu(false);
+      navigate('/auth');
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen bg-white">
@@ -952,10 +978,49 @@ export default function RunDetail() {
                   </span>
                 </Link>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer">
-                  JK
+              <div className="flex items-center gap-3 relative">
+                <div 
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                    {userProfile?.full_name?.charAt(0) || 'U'}
+                  </div>
                 </div>
+                
+                {showProfileMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowProfileMenu(false)}
+                    ></div>
+                    <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+                        <p className="text-xs text-gray-500">{userProfile?.email}</p>
+                        <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
+                          <i className={`${tierInfo.icon} text-sm`}></i>
+                          {tierInfo.name}
+                        </div>
+                      </div>
+                      <Link
+                        to="/settings"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
+                      >
+                        <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
+                        <span>{t('common:settings')}</span>
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
+                      >
+                        <i className="ri-logout-box-line text-lg w-5 h-5 flex items-center justify-center"></i>
+                        <span>{t('common:logout')}</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </header>
@@ -969,6 +1034,9 @@ export default function RunDetail() {
       </div>
     );
   }
+
+  const currentTier = userProfile?.subscription_tier || 1;
+  const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
 
   return (
     <div className="flex h-screen bg-white">
@@ -998,9 +1066,11 @@ export default function RunDetail() {
             <div className="flex items-center gap-3 relative">
               <div 
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
+                className="flex items-center gap-2 cursor-pointer"
               >
-                JK
+                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                  {userProfile?.full_name?.charAt(0) || 'U'}
+                </div>
               </div>
               
               {showProfileMenu && (
@@ -1009,25 +1079,29 @@ export default function RunDetail() {
                     className="fixed inset-0 z-10" 
                     onClick={() => setShowProfileMenu(false)}
                   ></div>
-                  <div className="absolute right-0 top-12 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                  <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+                      <p className="text-xs text-gray-500">{userProfile?.email}</p>
+                      <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
+                        <i className={`${tierInfo.icon} text-sm`}></i>
+                        {tierInfo.name}
+                      </div>
+                    </div>
                     <Link
                       to="/settings"
                       onClick={() => setShowProfileMenu(false)}
                       className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
                     >
                       <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                      <span>Settings</span>
+                      <span>{t('common:settings')}</span>
                     </Link>
                     <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        // Log out 로직 추가 가능
-                        alert('Log out 기능이 실행됩니다.');
-                      }}
+                      onClick={handleLogout}
                       className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
                     >
                       <i className="ri-logout-box-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                      <span>Log out</span>
+                      <span>{t('common:logout')}</span>
                     </button>
                   </div>
                 </>
@@ -1193,7 +1267,10 @@ export default function RunDetail() {
                     <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" className="w-4 h-4 text-teal-600 cursor-pointer" />
                     </div>
-                    <div className="col-span-6">
+                    <div className="col-span-2">
+                      <span className="text-xs font-semibold text-gray-600 uppercase">ID</span>
+                    </div>
+                    <div className="col-span-4">
                       <span className="text-xs font-semibold text-gray-600 uppercase">Test Case</span>
                     </div>
                     <div className="col-span-2">
@@ -1224,7 +1301,12 @@ export default function RunDetail() {
                         <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                           <input type="checkbox" className="w-4 h-4 text-teal-600 cursor-pointer" />
                         </div>
-                        <div className="col-span-6">
+                        <div className="col-span-2 flex items-center">
+                          <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded truncate max-w-full" title={testCase.id}>
+                            {(testCase as any).custom_id || testCase.id.substring(0, 8)}
+                          </span>
+                        </div>
+                        <div className="col-span-4">
                           <h3 className="text-sm font-semibold text-gray-900 mb-1 hover:text-teal-600">
                             {testCase.title}
                           </h3>
