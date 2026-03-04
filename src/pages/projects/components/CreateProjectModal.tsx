@@ -3,7 +3,7 @@ import { supabase } from '../../../lib/supabase';
 
 interface CreateProjectModalProps {
   onClose: () => void;
-  onCreate: (data: { name: string; description: string; status: string }) => void;
+  onCreate: (data: { name: string; description: string; status: string; prefix: string }) => void;
 }
 
 const TIER_LIMITS = {
@@ -17,6 +17,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
     name: '',
     description: '',
     status: 'active',
+    prefix: '',
   });
   const [loading, setLoading] = useState(true);
   const [canCreate, setCanCreate] = useState(true);
@@ -93,10 +94,43 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
     }
   };
 
+  // 프로젝트 이름이 변경될 때 prefix 자동 생성
+  const handleNameChange = (name: string) => {
+    setFormData(prev => {
+      // prefix가 비어있거나 이전 자동생성값과 같을 때만 자동 생성
+      const shouldAutoGenerate = !prev.prefix || prev.prefix === generatePrefix(prev.name);
+      
+      return {
+        ...prev,
+        name,
+        prefix: shouldAutoGenerate ? generatePrefix(name) : prev.prefix
+      };
+    });
+  };
+
+  // prefix 자동 생성 함수
+  const generatePrefix = (projectName: string): string => {
+    if (!projectName.trim()) return '';
+    
+    // 영문자만 추출
+    const letters = projectName.replace(/[^a-zA-Z]/g, '').toUpperCase();
+    
+    if (letters.length === 0) {
+      // 영문자가 없으면 숫자나 다른 문자 사용
+      const cleaned = projectName.replace(/\s+/g, '').toUpperCase();
+      return cleaned.slice(0, 3);
+    }
+    
+    // 2~3글자 추출
+    return letters.slice(0, Math.min(3, letters.length));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.name.trim() && canCreate) {
-      onCreate(formData);
+      // prefix가 비어있으면 자동 생성
+      const finalPrefix = formData.prefix.trim() || generatePrefix(formData.name);
+      onCreate({ ...formData, prefix: finalPrefix });
     }
   };
 
@@ -170,11 +204,33 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="예: 모바일 앱 테스트"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  테스트 케이스 ID Prefix
+                </label>
+                <input
+                  type="text"
+                  value={formData.prefix}
+                  onChange={(e) => setFormData({ ...formData, prefix: e.target.value.toUpperCase() })}
+                  placeholder="예: TC, LOGIN (영문 대문자 권장, 최대 10자)"
+                  maxLength={10}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-mono"
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  테스트 케이스 ID 형식: <span className="font-mono font-semibold text-teal-600">{formData.prefix || 'PREFIX'}-001</span>
+                  {!formData.prefix && formData.name && (
+                    <span className="ml-2 text-gray-400">
+                      (비워두면 "<span className="font-mono font-semibold">{generatePrefix(formData.name)}</span>" 사용)
+                    </span>
+                  )}
+                </p>
               </div>
 
               <div>

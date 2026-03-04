@@ -2,6 +2,7 @@
   "dependencies": {
     "@stripe/react-stripe-js": "4.0.2",
     "@supabase/supabase-js": "2.57.4",
+    "@tiptap/extension-image": "^2.10.5",
     "@tiptap/extension-text-align": "^2.10.5",
     "@tiptap/extension-underline": "^2.10.5",
     "@tiptap/react": "^2.10.5",

@@ -284,7 +284,8 @@ export default function RunDetail() {
         const { data: testCasesData, error: testCasesError } = await supabase
           .from('test_cases')
           .select('*')
-          .in('id', runData.test_case_ids);
+          .in('id', runData.test_case_ids)
+          .order('created_at', { ascending: false });
 
         if (testCasesError) throw testCasesError;
 
@@ -1389,8 +1390,33 @@ export default function RunDetail() {
                   {selectedTestCase.steps && (
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Test Steps</label>
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedTestCase.steps}</p>
+                      <div className="space-y-2">
+                        {selectedTestCase.steps.split('\n').filter((s: string) => s.trim()).map((step: string, index: number) => {
+                          const content = step.replace(/^\d+\.\s*/, '');
+                          const isHtml = /<[^>]+>/.test(content);
+                          return (
+                            <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                              <div className="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-xs flex-shrink-0 mt-0.5">
+                                {index + 1}
+                              </div>
+                              {isHtml ? (
+                                <div
+                                  className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                  dangerouslySetInnerHTML={{ __html: content }}
+                                  onClick={(e) => {
+                                    const target = e.target as HTMLElement;
+                                    if (target.tagName === 'IMG') {
+                                      const img = target as HTMLImageElement;
+                                      setPreviewImage({ url: img.src, name: img.alt || 'image' });
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -1398,8 +1424,33 @@ export default function RunDetail() {
                   {selectedTestCase.expected_result && (
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Expected Result</label>
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedTestCase.expected_result}</p>
+                      <div className="space-y-2">
+                        {selectedTestCase.expected_result.split('\n').filter((s: string) => s.trim()).map((result: string, index: number) => {
+                          const content = result.replace(/^\d+\.\s*/, '');
+                          const isHtml = /<[^>]+>/.test(content);
+                          return (
+                            <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-semibold text-xs flex-shrink-0 mt-0.5">
+                                {index + 1}
+                              </div>
+                              {isHtml ? (
+                                <div
+                                  className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                  dangerouslySetInnerHTML={{ __html: content }}
+                                  onClick={(e) => {
+                                    const target = e.target as HTMLElement;
+                                    if (target.tagName === 'IMG') {
+                                      const img = target as HTMLImageElement;
+                                      setPreviewImage({ url: img.src, name: img.alt || 'image' });
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

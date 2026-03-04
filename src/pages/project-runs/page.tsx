@@ -82,7 +82,7 @@ export default function ProjectRunsPage() {
   const [showSelectCasesModal, setShowSelectCasesModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [caseSearchQuery, setCaseSearchQuery] = useState('');
-  const [priorityFilters, setPriorityFilters] = useState<string[]>([]);
+  const [priorityFilters, setPriorityFilters] = useState<string[]>(['high', 'medium', 'low']);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
@@ -1204,6 +1204,13 @@ export default function ProjectRunsPage() {
   
   // Filter test cases based on search and filters
   const filteredTestCases = testCases.filter(tc => {
+    // Folder filter
+    const matchesFolder = selectedFolder === null
+      ? true
+      : selectedFolder === 'Uncategorized'
+      ? !tc.folder
+      : tc.folder === selectedFolder;
+
     // Search filter
     const matchesSearch = tc.title.toLowerCase().includes(caseSearchQuery.toLowerCase()) ||
       (tc.description && tc.description.toLowerCase().includes(caseSearchQuery.toLowerCase()));
@@ -1214,7 +1221,7 @@ export default function ProjectRunsPage() {
     // Tags filter
     const matchesTags = tagFilters.length === 0 || (tc.tags && tagFilters.some(tag => tc.tags.includes(tag)));
     
-    return matchesSearch && matchesPriority && matchesTags;
+    return matchesFolder && matchesSearch && matchesPriority && matchesTags;
   });
 
   const handlePriorityFilterChange = (priority: string) => {
@@ -2063,7 +2070,10 @@ export default function ProjectRunsPage() {
                       {!formData.include_all_cases && (
                         <div className="ml-6 mt-3">
                           <button
-                            onClick={() => setShowSelectCasesModal(true)}
+                            onClick={() => {
+                              setSelectedFolder(null);
+                              setShowSelectCasesModal(true);
+                            }}
                             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm font-medium cursor-pointer whitespace-nowrap flex items-center gap-2"
                           >
                             <i className="ri-checkbox-multiple-line"></i>
@@ -2175,6 +2185,7 @@ export default function ProjectRunsPage() {
                 <button 
                   onClick={() => {
                     setShowSelectCasesModal(false);
+                    setSelectedFolder(null);
                     setCaseSearchQuery('');
                   }}
                   className="text-gray-400 hover:text-gray-600 cursor-pointer"
@@ -2338,6 +2349,7 @@ export default function ProjectRunsPage() {
                       <button
                         onClick={() => {
                           setShowSelectCasesModal(false);
+                          setSelectedFolder(null);
                           setCaseSearchQuery('');
                         }}
                         className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
@@ -2347,6 +2359,7 @@ export default function ProjectRunsPage() {
                       <button
                         onClick={() => {
                           setShowSelectCasesModal(false);
+                          setSelectedFolder(null);
                           setCaseSearchQuery('');
                         }}
                         className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap"

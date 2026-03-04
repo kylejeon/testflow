@@ -1,10 +1,11 @@
+
 import { useState } from 'react';
 import type { Project } from '../../../lib/supabase';
 
 interface EditProjectModalProps {
   project: Project;
   onClose: () => void;
-  onUpdate: (id: string, data: { name: string; description: string; status: string }) => void;
+  onUpdate: (id: string, data: { name: string; description: string; status: string; prefix: string }) => void;
 }
 
 export default function EditProjectModal({ project, onClose, onUpdate }: EditProjectModalProps) {
@@ -12,6 +13,7 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
     name: project.name,
     description: project.description || '',
     status: project.status,
+    prefix: (project as any).prefix || '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -55,6 +57,23 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Test Case ID Prefix
+              </label>
+              <input
+                type="text"
+                value={formData.prefix}
+                onChange={(e) => setFormData({ ...formData, prefix: e.target.value.toUpperCase() })}
+                placeholder="e.g., TC, LOGIN (uppercase recommended, max 10 chars)"
+                maxLength={10}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-mono"
+              />
+              <p className="mt-2 text-xs text-gray-500">
+                Test case ID format: <span className="font-mono font-semibold text-teal-600">{formData.prefix || 'PREFIX'}-001</span>
+              </p>
             </div>
 
             <div>

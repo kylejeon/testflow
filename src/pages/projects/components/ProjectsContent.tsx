@@ -126,7 +126,7 @@ export default function ProjectsContent() {
     }
   };
 
-  const handleCreateProject = async (data: { name: string; description: string; status: string; jira_project_key: string }) => {
+  const handleCreateProject = async (data: { name: string; description: string; status: string; prefix: string }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -138,7 +138,7 @@ export default function ProjectsContent() {
           name: data.name,
           description: data.description,
           status: data.status,
-          jira_project_key: data.jira_project_key || null,
+          prefix: data.prefix,
           owner_id: user.id
         }]);
 
@@ -188,7 +188,7 @@ export default function ProjectsContent() {
     }
   };
 
-  const handleUpdateProject = async (id: string, data: { name: string; description: string; status: string; jira_project_key: string }) => {
+  const handleUpdateProject = async (id: string, data: { name: string; description: string; status: string; prefix: string }) => {
     try {
       const { error } = await supabase
         .from('projects')
@@ -196,7 +196,7 @@ export default function ProjectsContent() {
           name: data.name,
           description: data.description,
           status: data.status,
-          jira_project_key: data.jira_project_key || null,
+          prefix: data.prefix,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id);

@@ -108,10 +108,44 @@ export default function ProjectTestCases() {
   const handleAddTestCase = async (testCase: any) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
+      // 프로젝트 prefix를 DB에서 직접 조회 (상태 의존 제거)
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('prefix')
+        .eq('id', id)
+        .maybeSingle();
+
+      const prefix = projectData?.prefix;
+
+      // custom_id 자동 생성 (prefix가 있을 경우)
+      let custom_id: string | undefined;
+      if (prefix) {
+        // 현재 프로젝트의 테스트 케이스 중 custom_id가 있는 것들의 최대 번호 조회
+        const { data: existingCases } = await supabase
+          .from('test_cases')
+          .select('custom_id')
+          .eq('project_id', id)
+          .not('custom_id', 'is', null);
+
+        let maxNum = 0;
+        if (existingCases && existingCases.length > 0) {
+          existingCases.forEach((tc: any) => {
+            if (tc.custom_id) {
+              const match = tc.custom_id.match(/-(\d+)$/);
+              if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNum) maxNum = num;
+              }
+            }
+          });
+        }
+        custom_id = `${prefix}-${maxNum + 1}`;
+      }
+
       const { data, error } = await supabase
         .from('test_cases')
-        .insert([{ ...testCase, project_id: id, created_by: user?.id }])
+        .insert([{ ...testCase, project_id: id, created_by: user?.id, ...(custom_id ? { custom_id } : {}) }])
         .select(`
           *,
           creator:profiles!test_cases_created_by_fkey(full_name, email)
@@ -176,6 +210,71 @@ export default function ProjectTestCases() {
       setTestCases(testCases.filter(tc => tc.id !== testCaseId));
     } catch (error) {
       console.error('테스트 케이스 삭제 오류:', error);
+    }
+  };
+
+  // 기존 케이스에 ID 일괄 부여
+  const handleAssignMissingIds = async () => {
+    try {
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('prefix')
+        .eq('id', id)
+        .maybeSingle();
+
+      const prefix = projectData?.prefix;
+      if (!prefix) {
+        alert('프로젝트에 Prefix가 설정되어 있지 않습니다. 프로젝트 설정에서 Prefix를 먼저 설정해주세요.');
+        return;
+      }
+
+      // custom_id가 없는 케이스들 조회 (생성일 오름차순)
+      const { data: casesWithoutId } = await supabase
+        .from('test_cases')
+        .select('id, custom_id, created_at')
+        .eq('project_id', id)
+        .is('custom_id', null)
+        .order('created_at', { ascending: true });
+
+      if (!casesWithoutId || casesWithoutId.length === 0) {
+        alert('모든 테스트 케이스에 이미 ID가 부여되어 있습니다.');
+        return;
+      }
+
+      // 현재 최대 번호 조회
+      const { data: existingCases } = await supabase
+        .from('test_cases')
+        .select('custom_id')
+        .eq('project_id', id)
+        .not('custom_id', 'is', null);
+
+      let maxNum = 0;
+      if (existingCases && existingCases.length > 0) {
+        existingCases.forEach((tc: any) => {
+          if (tc.custom_id) {
+            const match = tc.custom_id.match(/-(\d+)$/);
+            if (match) {
+              const num = parseInt(match[1], 10);
+              if (num > maxNum) maxNum = num;
+            }
+          }
+        });
+      }
+
+      // 순차적으로 ID 부여
+      for (let i = 0; i < casesWithoutId.length; i++) {
+        const newId = `${prefix}-${maxNum + i + 1}`;
+        await supabase
+          .from('test_cases')
+          .update({ custom_id: newId })
+          .eq('id', casesWithoutId[i].id);
+      }
+
+      await fetchData();
+      alert(`${casesWithoutId.length}개의 테스트 케이스에 ID가 부여되었습니다.`);
+    } catch (error) {
+      console.error('ID 일괄 부여 오류:', error);
+      alert('ID 부여에 실패했습니다.');
     }
   };
 
@@ -353,6 +452,15 @@ export default function ProjectTestCases() {
                   {project?.name} • {filteredTestCases.length} test cases
                 </p>
               </div>
+              {testCases.some(tc => !tc.custom_id) && project?.prefix && (
+                <button
+                  onClick={handleAssignMissingIds}
+                  className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all font-semibold text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <i className="ri-price-tag-3-line"></i>
+                  ID 없는 케이스에 ID 부여
+                </button>
+              )}
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200">

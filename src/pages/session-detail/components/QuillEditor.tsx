@@ -1,22 +1,37 @@
+
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
-import { useEffect } from 'react';
+import Image from '@tiptap/extension-image';
+import { useEffect, useRef, useState } from 'react';
+import { supabase } from '../../../lib/supabase';
 
 interface TipTapEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  projectId?: string;
 }
 
-export default function TipTapEditor({ value, onChange, placeholder = 'Enter text...' }: TipTapEditorProps) {
+export default function TipTapEditor({ value, onChange, placeholder = 'Enter text...', projectId }: TipTapEditorProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
+      }),
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'max-w-full rounded-lg my-2 cursor-pointer',
+          style: 'max-height: 400px; object-fit: contain;',
+        },
       }),
     ],
     content: value,
@@ -25,7 +40,7 @@ export default function TipTapEditor({ value, onChange, placeholder = 'Enter tex
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[200px] p-4',
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[80px] p-3',
       },
     },
   });
@@ -36,12 +51,71 @@ export default function TipTapEditor({ value, onChange, placeholder = 'Enter tex
     }
   }, [value, editor]);
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editor) return;
+
+    // 이미지 파일 검증
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드할 수 있습니다.');
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+
+      if (projectId) {
+        // Supabase Storage에 업로드
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${projectId}/testcases/inline/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('test-case-attachments')
+          .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('test-case-attachments')
+          .getPublicUrl(filePath);
+
+        editor.chain().focus().setImage({ src: urlData.publicUrl, alt: file.name }).run();
+      } else {
+        // projectId 없을 경우 base64로 삽입
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const src = ev.target?.result as string;
+          if (src) {
+            editor.chain().focus().setImage({ src, alt: file.name }).run();
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (error) {
+      console.error('이미지 업로드 오류:', error);
+      alert('이미지 업로드에 실패했습니다.');
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   if (!editor) {
     return null;
   }
 
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden">
+      {/* 숨겨진 파일 입력 */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageUpload}
+      />
+
       <div className="flex items-center gap-1 p-2 border-b border-gray-200 bg-gray-50 flex-wrap">
         <button
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
@@ -167,6 +241,21 @@ export default function TipTapEditor({ value, onChange, placeholder = 'Enter tex
           <i className="ri-align-right text-gray-600"></i>
         </button>
         <div className="w-px h-6 bg-gray-300 mx-1"></div>
+        {/* 이미지 업로드 버튼 */}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadingImage}
+          className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          type="button"
+          title="이미지 첨부"
+        >
+          {uploadingImage ? (
+            <i className="ri-loader-4-line animate-spin text-gray-600"></i>
+          ) : (
+            <i className="ri-image-add-line text-gray-600"></i>
+          )}
+        </button>
+        <div className="w-px h-6 bg-gray-300 mx-1"></div>
         <button
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
@@ -189,8 +278,8 @@ export default function TipTapEditor({ value, onChange, placeholder = 'Enter tex
       <EditorContent editor={editor} />
       <style>{`
         .ProseMirror {
-          min-height: 200px;
-          padding: 1rem;
+          min-height: 80px;
+          padding: 0.75rem;
         }
         .ProseMirror:focus {
           outline: none;
@@ -242,8 +331,16 @@ export default function TipTapEditor({ value, onChange, placeholder = 'Enter tex
           font-family: monospace;
           font-size: 0.875rem;
         }
+        .ProseMirror img {
+          max-width: 100%;
+          border-radius: 0.5rem;
+          margin: 0.5rem 0;
+          max-height: 400px;
+          object-fit: contain;
+          cursor: pointer;
+        }
         .ProseMirror p.is-editor-empty:first-child::before {
-          content: '${placeholder}';
+          content: attr(data-placeholder);
           color: #9ca3af;
           pointer-events: none;
           height: 0;

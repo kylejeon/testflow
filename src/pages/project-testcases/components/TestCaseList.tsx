@@ -1,27 +1,24 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import TipTapEditor from '../../session-detail/components/QuillEditor';
 
 interface TestCase {
   id: string;
+  custom_id?: string;
   title: string;
-  description?: string;
-  precondition?: string;
-  folder?: string;
-  priority: string;
-  status: string;
-  assignee?: string;
+  description: string;
+  precondition: string;
+  folder: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  assignee: string;
   is_automated: boolean;
+  steps: string;
+  expected_result: string;
+  tags: string;
+  attachments: { name: string; url: string; size: number }[];
   created_at: string;
-  updated_at?: string;
-  steps?: string;
-  expected_result?: string;
-  tags?: string;
-  attachments?: string[];
-  created_by?: string;
-  creator?: {
-    full_name: string;
-    email: string;
-  };
+  updated_at: string;
+  project_id: string;
 }
 
 interface TestCaseListProps {
@@ -944,50 +941,6 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  const handleCreateTestCase = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTestCase.title.trim()) {
-      alert('제목을 입력해주세요.');
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('test_cases')
-        .insert({
-          project_id: projectId,
-          title: newTestCase.title.trim(),
-          description: newTestCase.description.trim() || null,
-          priority: newTestCase.priority,
-          status: 'untested',
-          is_automated: false,
-          folder: newTestCase.folder.trim() || null,
-          tags: newTestCase.tags.trim() || null,
-          steps: newTestCase.steps.filter(s => s.step.trim() || s.expectedResult.trim()),
-          attachments: newTestCase.attachments,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      onAdd(data);
-      setShowNewCaseModal(false);
-      setNewTestCase({
-        title: '',
-        description: '',
-        priority: 'medium',
-        folder: '',
-        tags: '',
-        steps: [{ step: '', expectedResult: '' }],
-        attachments: [],
-      });
-    } catch (error) {
-      console.error('테스트 케이스 생성 오류:', error);
-      alert('테스트 케이스 생성에 실패했습니다.');
-    }
-  };
-
   const handleUpdateTestCase = async (testCaseId: string, updates: any) => {
     try {
       const { error } = await supabase
@@ -1246,21 +1199,41 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     }
   };
 
-  const getFieldLabel = (field: string): string => {
-    const labels: Record<string, string> = {
-      title: 'Title',
-      description: 'Description',
-      precondition: 'PreCondition',
-      priority: 'Priority',
-      folder: 'Folder',
-      tags: 'Tags',
-      steps: 'Steps',
-      expected_result: 'Expected Result',
-      assignee: 'Assignee',
-      is_automated: 'Automated',
-      status: 'Status',
-    };
-    return labels[field] || field;
+  // HTML 태그를 제거하고 텍스트만 추출하는 함수
+  const stripHtml = (html: string): string => {
+    if (!html) return '';
+    // HTML 태그 제거
+    const withoutTags = html.replace(/<[^>]*>/g, ' ');
+    // HTML 엔티티 디코딩
+    const decoded = withoutTags
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
+    // 연속 공백 정리
+    return decoded.replace(/\s+/g, ' ').trim();
+  };
+
+  // HTML을 줄바꿈 구조로 변환하는 함수 (p, li, br 태그를 줄바꿈으로)
+  const htmlToText = (html: string): string => {
+    if (!html) return '';
+    return html
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '• ')
+      .replace(/<\/h[1-6]>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   };
 
   // Tag 관련 함수들
@@ -1533,7 +1506,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setToastMessage('테스트 케이스 삭제에 실패했습니다.');
       setToastType('error');
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
     } finally {
       setBulkDeleting(false);
     }
@@ -1672,11 +1647,31 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setToastMessage('테스트 케이스 복사에 실패했습니다.');
       setToastType('error');
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
     } finally {
       setCopyingToProject(false);
       setCopyTargetProjectId(null);
     }
+  };
+
+  // 필드 레이블 변환 함수
+  const getFieldLabel = (field: string): string => {
+    const fieldLabels: Record<string, string> = {
+      title: 'Title',
+      description: 'Description',
+      precondition: 'PreCondition',
+      priority: 'Priority',
+      folder: 'Folder',
+      tags: 'Tags',
+      steps: 'Steps',
+      expected_result: 'Expected Result',
+      assignee: 'Assignee',
+      is_automated: 'Automated',
+      status: 'Status',
+    };
+    return fieldLabels[field] || field;
   };
 
   return (
@@ -1750,36 +1745,34 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Test Cases</h1>
               <p className="text-gray-600 mb-6">Manage and execute all test cases</p>
-              {selectedFolder === 'all' && (
-                <button
-                  onClick={() => {
-                    setEditingTestCase(null);
-                    // 현재 선택된 폴더가 있으면 해당 폴더로 설정
-                    const currentFolder = selectedFolder !== 'all' 
-                      ? folders.find(f => f.id === selectedFolder)?.name || ''
-                      : '';
-                    setNewTestCase({
-                      title: '',
-                      description: '',
-                      precondition: '',
-                      folder: currentFolder,
-                      priority: 'medium',
-                      assignee: '',
-                      is_automated: false,
-                      steps: '',
-                      expected_result: '',
-                      tags: '',
-                      attachments: [],
-                    });
-                    setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
-                    setShowNewCaseModal(true);
-                  }}
-                  className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                >
-                  <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
-                  New Test Case
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setEditingTestCase(null);
+                  // 현재 선택된 폴더가 있으면 해당 폴더로 설정
+                  const currentFolder = selectedFolder !== 'all' 
+                    ? folders.find(f => f.id === selectedFolder)?.name || ''
+                    : '';
+                  setNewTestCase({
+                    title: '',
+                    description: '',
+                    precondition: '',
+                    folder: currentFolder,
+                    priority: 'medium',
+                    assignee: '',
+                    is_automated: false,
+                    steps: '',
+                    expected_result: '',
+                    tags: '',
+                    attachments: [],
+                  });
+                  setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
+                  setShowNewCaseModal(true);
+                }}
+                className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
+                New Test Case
+              </button>
             </div>
           </div>
         </div>
@@ -1892,6 +1885,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       />
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      ID
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Test Case
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -1918,6 +1914,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           checked={selectedTestCaseIds.has(testCase.id)}
                           onChange={() => handleSelectTestCase(testCase.id)}
                         />
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-gray-500 font-mono">
+                          {testCase.custom_id || '-'}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -1963,10 +1964,22 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       {/* 우측 상세 패널 */}
       {selectedTestCase && (
-        <div className="w-96 bg-white border-l border-gray-200 flex flex-col overflow-hidden">
+        <div className="w-2/5 bg-white border-l border-gray-200 flex flex-col">
           <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Details</h2>
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1">
+                {selectedTestCase.custom_id && (
+                  <div className="text-sm text-gray-500 font-mono mb-2">
+                    {selectedTestCase.custom_id}
+                  </div>
+                )}
+                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  {selectedTestCase.title}
+                </h2>
+                {selectedTestCase.description && (
+                  <p className="text-sm text-gray-600">{selectedTestCase.description}</p>
+                )}
+              </div>
               <button
                 onClick={() => setSelectedTestCase(null)}
                 className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
@@ -1979,7 +1992,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   {selectedTestCase.is_automated && (
-                    <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                    <div className="w-6 h-6 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                       {selectedTestCase.assignee.substring(0, 2).toUpperCase()}
                     </div>
                   )}
@@ -2016,7 +2029,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       {selectedTestCase.tags.split(',').map((tag, index) => (
                         <span
                           key={index}
-                          className="inline-flex items-center px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-medium"
+                          className="inline-flex items-center px-2 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-medium"
                         >
                           {tag.trim()}
                         </span>
@@ -2053,7 +2066,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">PreCondition</label>
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedTestCase.precondition}</p>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{htmlToText(selectedTestCase.precondition)}</p>
                   </div>
                 </div>
               )}
@@ -2061,8 +2074,26 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               {selectedTestCase.steps && (
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Test Steps</label>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedTestCase.steps}</p>
+                  <div className="space-y-2">
+                    {selectedTestCase.steps.split('\n').filter(s => s.trim()).map((step, index) => {
+                      const content = step.replace(/^\d+\.\s*/, '');
+                      const isHtml = /<[^>]+>/.test(content);
+                      return (
+                        <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                          <div className="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-xs flex-shrink-0 mt-0.5">
+                            {index + 1}
+                          </div>
+                          {isHtml ? (
+                            <div
+                              className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                              dangerouslySetInnerHTML={{ __html: content }}
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -2070,8 +2101,26 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               {selectedTestCase.expected_result && (
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Expected Result</label>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedTestCase.expected_result}</p>
+                  <div className="space-y-2">
+                    {selectedTestCase.expected_result.split('\n').filter(s => s.trim()).map((result, index) => {
+                      const content = result.replace(/^\d+\.\s*/, '');
+                      const isHtml = /<[^>]+>/.test(content);
+                      return (
+                        <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                          <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-semibold text-xs flex-shrink-0 mt-0.5">
+                            {index + 1}
+                          </div>
+                          {isHtml ? (
+                            <div
+                              className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                              dangerouslySetInnerHTML={{ __html: content }}
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -2213,9 +2262,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           </div>
                           <button
                             onClick={() => handleDeleteComment(comment.id)}
-                            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all cursor-pointer flex-shrink-0"
+                            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
                           >
-                            <i className="ri-delete-bin-line text-sm"></i>
+                            <i className="ri-delete-bin-line"></i>
                           </button>
                         </div>
                       </div>
@@ -2479,7 +2528,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           <div className="bg-white rounded-xl w-full max-w-md">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">New Folder</h2>
+                <h2 className="text-xl font-bold text-gray-900">New Folder</h2>
                 <button
                   onClick={() => setShowNewFolderModal(false)}
                   className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
@@ -2636,7 +2685,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       {testSteps.map((step, index) => (
                         <div key={step.id} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-sm flex-shrink-0">
+                            <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-sm flex-shrink-0 mt-1">
                               {index + 1}
                             </div>
                             <div className="flex-1 space-y-3">
@@ -2644,31 +2693,29 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">
                                   Step
                                 </label>
-                                <input
-                                  type="text"
+                                <TipTapEditor
                                   value={step.step}
-                                  onChange={(e) => handleStepChange(step.id, 'step', e.target.value)}
+                                  onChange={(val) => handleStepChange(step.id, 'step', val)}
                                   placeholder="Click Add new slides from the main toolbar"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                                  projectId={projectId}
                                 />
                               </div>
                               <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">
                                   Expected Result
                                 </label>
-                                <input
-                                  type="text"
+                                <TipTapEditor
                                   value={step.expectedResult}
-                                  onChange={(e) => handleStepChange(step.id, 'expectedResult', e.target.value)}
+                                  onChange={(val) => handleStepChange(step.id, 'expectedResult', val)}
                                   placeholder="Popup with slide types should be displayed"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                                  projectId={projectId}
                                 />
                               </div>
                             </div>
                             {testSteps.length > 1 && (
                               <button
                                 onClick={() => handleDeleteStep(step.id)}
-                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer flex-shrink-0"
+                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer flex-shrink-0 mt-1"
                               >
                                 <i className="ri-delete-bin-line text-lg"></i>
                               </button>
@@ -2908,11 +2955,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Description</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{oldSnapshot.description || '-'}</p>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(oldSnapshot.description || '-')}</p>
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PreCondition</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{oldSnapshot.precondition || '-'}</p>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(oldSnapshot.precondition || '-')}</p>
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Priority</label>
@@ -2928,11 +2975,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Steps</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{oldSnapshot.steps || '-'}</p>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(oldSnapshot.steps || '-')}</p>
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Expected Result</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{oldSnapshot.expected_result || '-'}</p>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(oldSnapshot.expected_result || '-')}</p>
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Assignee</label>
@@ -2968,11 +3015,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Description</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{newSnapshot.description || '-'}</p>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(newSnapshot.description || '-')}</p>
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PreCondition</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{newSnapshot.precondition || '-'}</p>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(newSnapshot.precondition || '-')}</p>
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Priority</label>
@@ -2988,11 +3035,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Steps</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{newSnapshot.steps || '-'}</p>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(newSnapshot.steps || '-')}</p>
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Expected Result</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{newSnapshot.expected_result || '-'}</p>
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(newSnapshot.expected_result || '-')}</p>
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Assignee</label>
@@ -3095,10 +3142,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 )}
               </div>
             </div>
-            <div className="p-4 border-t border-gray-200">
+            <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
               <button
                 onClick={() => setShowBulkFolderModal(false)}
-                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium cursor-pointer whitespace-nowrap"
+                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white transition-all font-medium cursor-pointer whitespace-nowrap"
               >
                 취소
               </button>
@@ -3139,13 +3186,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               </div>
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                 <div className="flex items-start gap-3">
-                  <i className="ri-alert-line text-yellow-600 text-xl mt-0.5"></i>
-                  <div>
-                    <p className="text-sm font-medium text-yellow-800">주의</p>
-                    <p className="text-sm text-yellow-700 mt-1">
-                      이 폴더를 삭제하면 폴더 내의 테스트 케이스는 삭제되지 않고 폴더 미지정 상태로 변경됩니다.
-                    </p>
-                  </div>
+                  <i className="ri-alert-line text-yellow-600 text-xl mt-0.5 flex-shrink-0"></i>
+                  <p className="text-sm text-yellow-700">
+                    이 폴더를 삭제하면 폴더 내의 테스트 케이스는 삭제되지 않고 폴더 미지정 상태로 변경됩니다.
+                  </p>
                 </div>
               </div>
               <p className="text-sm text-gray-600">
@@ -3181,98 +3225,6 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 )}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 일괄 삭제 확인 모달 */}
-      {showBulkDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Delete Test Cases</h2>
-                <button
-                  onClick={() => setShowBulkDeleteModal(false)}
-                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
-                >
-                  <i className="ri-close-line text-xl"></i>
-                </button>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <i className="ri-delete-bin-line text-2xl text-red-600"></i>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {selectedTestCaseIds.size} test case{selectedTestCaseIds.size > 1 ? 's' : ''} selected
-                  </p>
-                  <p className="text-sm text-gray-500 mt-0.5">This action cannot be undone.</p>
-                </div>
-              </div>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <i className="ri-alert-line text-red-600 text-xl mt-0.5 flex-shrink-0"></i>
-                  <p className="text-sm text-red-700">
-                    All selected test cases and their associated comments, results, and history will be permanently deleted.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
-              <button
-                onClick={() => setShowBulkDeleteModal(false)}
-                disabled={bulkDeleting}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBulkDelete}
-                disabled={bulkDeleting}
-                className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 flex items-center gap-2"
-              >
-                {bulkDeleting ? (
-                  <>
-                    <i className="ri-loader-4-line animate-spin"></i>
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <i className="ri-delete-bin-line"></i>
-                    Delete {selectedTestCaseIds.size} Test Case{selectedTestCaseIds.size > 1 ? 's' : ''}
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 토스트 메시지 */}
-      {showToast && (
-        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
-          <div className={`flex items-center gap-3 px-5 py-4 rounded-lg shadow-lg ${
-            toastType === 'success' 
-              ? 'bg-teal-500 text-white' 
-              : 'bg-red-500 text-white'
-          }`}>
-            <div className="w-6 h-6 flex items-center justify-center">
-              <i className={`text-xl ${
-                toastType === 'success' 
-                  ? 'ri-checkbox-circle-fill' 
-                  : 'ri-error-warning-fill'
-              }`}></i>
-            </div>
-            <span className="font-medium">{toastMessage}</span>
-            <button
-              onClick={() => setShowToast(false)}
-              className="ml-2 w-6 h-6 flex items-center justify-center hover:bg-white/20 rounded transition-all cursor-pointer"
-            >
-              <i className="ri-close-line"></i>
-            </button>
           </div>
         </div>
       )}
@@ -3375,7 +3327,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Delete Test Cases</h2>
+                <h2 className="text-xl font-bold text-gray-900">테스트 케이스 삭제</h2>
                 <button
                   onClick={() => setShowBulkDeleteModal(false)}
                   className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
@@ -3387,20 +3339,22 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             <div className="p-6">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <i className="ri-delete-bin-line text-2xl text-red-600"></i>
+                  <i className="ri-delete-bin-line text-red-600 text-2xl"></i>
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">
-                    {selectedTestCaseIds.size} test case{selectedTestCaseIds.size > 1 ? 's' : ''} selected
+                    {selectedTestCaseIds.size}개의 테스트 케이스 삭제
                   </p>
-                  <p className="text-sm text-gray-500 mt-0.5">This action cannot be undone.</p>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    선택된 테스트 케이스가 영구적으로 삭제됩니다.
+                  </p>
                 </div>
               </div>
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <i className="ri-alert-line text-red-600 text-xl mt-0.5 flex-shrink-0"></i>
                   <p className="text-sm text-red-700">
-                    All selected test cases and their associated comments, results, and history will be permanently deleted.
+                    이 작업은 되돌릴 수 없습니다. 삭제된 테스트 케이스와 관련된 모든 데이터(히스토리, 코멘트 등)도 함께 삭제됩니다.
                   </p>
                 </div>
               </div>
@@ -3411,7 +3365,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 disabled={bulkDeleting}
                 className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50"
               >
-                Cancel
+                취소
               </button>
               <button
                 onClick={handleBulkDelete}
@@ -3421,16 +3375,42 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 {bulkDeleting ? (
                   <>
                     <i className="ri-loader-4-line animate-spin"></i>
-                    Deleting...
+                    삭제 중...
                   </>
                 ) : (
                   <>
                     <i className="ri-delete-bin-line"></i>
-                    Delete {selectedTestCaseIds.size} Test Case{selectedTestCaseIds.size > 1 ? 's' : ''}
+                    삭제
                   </>
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 토스트 메시지 */}
+      {showToast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
+          <div className={`flex items-center gap-3 px-5 py-4 rounded-lg shadow-lg ${
+            toastType === 'success' 
+              ? 'bg-teal-500 text-white' 
+              : 'bg-red-500 text-white'
+          }`}>
+            <div className="w-6 h-6 flex items-center justify-center">
+              <i className={`text-xl ${
+                toastType === 'success' 
+                  ? 'ri-checkbox-circle-fill' 
+                  : 'ri-error-warning-fill'
+              }`}></i>
+            </div>
+            <span className="font-medium">{toastMessage}</span>
+            <button
+              onClick={() => setShowToast(false)}
+              className="ml-2 w-6 h-6 flex items-center justify-center hover:bg-white/20 rounded transition-all cursor-pointer"
+            >
+              <i className="ri-close-line"></i>
+            </button>
           </div>
         </div>
       )}
