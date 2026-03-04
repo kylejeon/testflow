@@ -119,6 +119,13 @@ interface ProjectMember {
   };
 }
 
+interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  status?: string;
+}
+
 export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId }: TestCaseListProps) {
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [showNewCaseModal, setShowNewCaseModal] = useState(false);
@@ -136,7 +143,6 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id: string; full_name: string; email: string } | null>(null);
   const [selectedHistory, setSelectedHistory] = useState<TestCaseHistory | null>(null);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [restoringHistory, setRestoringHistory] = useState(false);
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -196,6 +202,19 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
   const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null);
   const [deletingFolder, setDeletingFolder] = useState(false);
+
+  const [showCopyToProjectModal, setShowCopyToProjectModal] = useState(false);
+  const [availableProjects, setAvailableProjects] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [copyingToProject, setCopyingToProject] = useState(false);
+  const [copyTargetProjectId, setCopyTargetProjectId] = useState<string | null>(null);
+
+  // 일괄 삭제 상태
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  // 히스토리 모달 상태
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   const iconOptions = [
     'ri-folder-line',
@@ -1476,6 +1495,190 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     }
   };
 
+  // 선택된 테스트 케이스 일괄 삭제
+  const handleBulkDelete = async () => {
+    if (selectedTestCaseIds.size === 0) return;
+
+    try {
+      setBulkDeleting(true);
+      const selectedIds = Array.from(selectedTestCaseIds);
+
+      for (const id of selectedIds) {
+        const { error } = await supabase
+          .from('test_cases')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        onDelete(id);
+      }
+
+      const deletedCount = selectedIds.length;
+      setSelectedTestCaseIds(new Set());
+      setShowBulkDeleteModal(false);
+
+      if (selectedTestCase && selectedIds.includes(selectedTestCase.id)) {
+        setSelectedTestCase(null);
+      }
+
+      await onRefresh();
+
+      setToastMessage(`${deletedCount}개의 테스트 케이스가 삭제되었습니다.`);
+      setToastType('success');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (error) {
+      console.error('일괄 삭제 오류:', error);
+      setToastMessage('테스트 케이스 삭제에 실패했습니다.');
+      setToastType('error');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  // 복사 가능한 프로젝트 목록 가져오기
+  const fetchAvailableProjects = async () => {
+    try {
+      setLoadingProjects(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 현재 프로젝트를 제외한 사용자의 프로젝트 목록
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name, description, status')
+        .neq('id', projectId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAvailableProjects(data || []);
+    } catch (error) {
+      console.error('프로젝트 목록 조회 오류:', error);
+      setAvailableProjects([]);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  // 선택한 테스트 케이스를 다른 프로젝트로 복사
+  const handleCopyToProject = async (targetProjectId: string) => {
+    if (selectedTestCaseIds.size === 0) return;
+
+    try {
+      setCopyingToProject(true);
+      setCopyTargetProjectId(targetProjectId);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const selectedIds = Array.from(selectedTestCaseIds);
+      const selectedCases = testCases.filter(tc => selectedIds.includes(tc.id));
+
+      // 복사할 테스트 케이스에서 사용된 폴더 이름 목록 추출
+      const requiredFolderNames = [...new Set(
+        selectedCases.map(tc => tc.folder).filter((f): f is string => !!f)
+      )];
+
+      // 대상 프로젝트의 기존 폴더 조회
+      const { data: existingFolders, error: folderFetchError } = await supabase
+        .from('folders')
+        .select('name, icon, color')
+        .eq('project_id', targetProjectId);
+
+      if (folderFetchError) throw folderFetchError;
+
+      const existingFolderNames = new Set((existingFolders || []).map(f => f.name));
+
+      // 현재 프로젝트의 폴더 정보 조회 (icon, color 복사용)
+      const { data: sourceFolders } = await supabase
+        .from('folders')
+        .select('name, icon, color')
+        .eq('project_id', projectId);
+
+      const sourceFolderMap = new Map(
+        (sourceFolders || []).map(f => [f.name, { icon: f.icon, color: f.color }])
+      );
+
+      // 대상 프로젝트에 없는 폴더 자동 생성
+      const foldersToCreate = requiredFolderNames.filter(name => !existingFolderNames.has(name));
+
+      if (foldersToCreate.length > 0) {
+        const newFoldersData = foldersToCreate.map(name => {
+          const sourceInfo = sourceFolderMap.get(name);
+          return {
+            project_id: targetProjectId,
+            name,
+            icon: sourceInfo?.icon || 'ri-folder-line',
+            color: sourceInfo?.color || 'gray',
+          };
+        });
+
+        const { error: folderCreateError } = await supabase
+          .from('folders')
+          .insert(newFoldersData);
+
+        if (folderCreateError) throw folderCreateError;
+      }
+
+      // 테스트 케이스 복사
+      const insertData = selectedCases.map(tc => ({
+        project_id: targetProjectId,
+        title: tc.title,
+        description: tc.description || null,
+        precondition: tc.precondition || null,
+        priority: tc.priority,
+        status: 'untested',
+        is_automated: tc.is_automated,
+        folder: tc.folder || null,
+        tags: tc.tags || null,
+        steps: tc.steps || null,
+        expected_result: tc.expected_result || null,
+        assignee: null,
+        created_by: user?.id || null,
+      }));
+
+      const { data: inserted, error } = await supabase
+        .from('test_cases')
+        .insert(insertData)
+        .select('id');
+
+      if (error) throw error;
+
+      // 히스토리 기록
+      if (inserted && user) {
+        const historyData = inserted.map((tc: { id: string }) => ({
+          test_case_id: tc.id,
+          user_id: user.id,
+          action_type: 'created',
+        }));
+        await supabase.from('test_case_history').insert(historyData);
+      }
+
+      const targetProject = availableProjects.find(p => p.id === targetProjectId);
+      setSelectedTestCaseIds(new Set());
+      setShowCopyToProjectModal(false);
+
+      const folderMsg = foldersToCreate.length > 0
+        ? ` (${foldersToCreate.length}개 폴더 자동 생성됨)`
+        : '';
+
+      setToastMessage(`${selectedIds.length}개의 테스트 케이스가 "${targetProject?.name}" 프로젝트로 복사되었습니다.${folderMsg}`);
+      setToastType('success');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 4000);
+    } catch (error) {
+      console.error('복사 오류:', error);
+      setToastMessage('테스트 케이스 복사에 실패했습니다.');
+      setToastType('error');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setCopyingToProject(false);
+      setCopyTargetProjectId(null);
+    }
+  };
+
   return (
     <div className="flex h-full">
       {/* 폴더 사이드바 */}
@@ -1589,7 +1792,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 {selectedTestCaseIds.size}
               </div>
               <span className="text-sm font-medium text-teal-800">
-                {selectedTestCaseIds.size}개의 테스트 케이스 선택됨
+                {selectedTestCaseIds.size} test case{selectedTestCaseIds.size > 1 ? 's' : ''} selected
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -1598,20 +1801,37 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-folder-add-line"></i>
-                폴더에 추가
+                Add to Folder
               </button>
               <button
                 onClick={handleBulkRemoveFromFolder}
                 className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-folder-reduce-line"></i>
-                폴더에서 제거
+                Remove from Folder
+              </button>
+              <button
+                onClick={() => {
+                  fetchAvailableProjects();
+                  setShowCopyToProjectModal(true);
+                }}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <i className="ri-file-copy-line"></i>
+                Copy to Project
+              </button>
+              <button
+                onClick={() => setShowBulkDeleteModal(true)}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <i className="ri-delete-bin-line"></i>
+                Delete
               </button>
               <button
                 onClick={() => setSelectedTestCaseIds(new Set())}
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-all font-medium text-sm cursor-pointer whitespace-nowrap"
               >
-                선택 해제
+                Deselect
               </button>
             </div>
           </div>
@@ -2215,7 +2435,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                               onClick={() => handleHistoryClick(history)}
                               className="text-sm text-teal-600 hover:text-teal-700 mt-1 flex items-center gap-1 cursor-pointer"
                             >
-                              <i className="ri-eye-line text-sm"></i>
+                              <i className="ri-eye-line"></i>
                               Click to view changes
                             </button>
                           )}
@@ -2854,8 +3074,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     onClick={() => handleBulkAddToFolder(folder.name)}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-all cursor-pointer text-left"
                   >
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getFolderColorClass(folder.color)}`}>
-                      <i className={`${folder.icon} text-xl`}></i>
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getFolderColorClass(folder.color)}`}>
+                      <i className={`${folder.icon} text-2xl`}></i>
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">{folder.name}</p>
@@ -2965,6 +3185,72 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         </div>
       )}
 
+      {/* 일괄 삭제 확인 모달 */}
+      {showBulkDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">Delete Test Cases</h2>
+                <button
+                  onClick={() => setShowBulkDeleteModal(false)}
+                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+                >
+                  <i className="ri-close-line text-xl"></i>
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <i className="ri-delete-bin-line text-2xl text-red-600"></i>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    {selectedTestCaseIds.size} test case{selectedTestCaseIds.size > 1 ? 's' : ''} selected
+                  </p>
+                  <p className="text-sm text-gray-500 mt-0.5">This action cannot be undone.</p>
+                </div>
+              </div>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <i className="ri-alert-line text-red-600 text-xl mt-0.5 flex-shrink-0"></i>
+                  <p className="text-sm text-red-700">
+                    All selected test cases and their associated comments, results, and history will be permanently deleted.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowBulkDeleteModal(false)}
+                disabled={bulkDeleting}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+                className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 flex items-center gap-2"
+              >
+                {bulkDeleting ? (
+                  <>
+                    <i className="ri-loader-4-line animate-spin"></i>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <i className="ri-delete-bin-line"></i>
+                    Delete {selectedTestCaseIds.size} Test Case{selectedTestCaseIds.size > 1 ? 's' : ''}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 토스트 메시지 */}
       {showToast && (
         <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
@@ -2987,6 +3273,164 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             >
               <i className="ri-close-line"></i>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Copy to Project 모달 */}
+      {showCopyToProjectModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Copy to Project</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {selectedTestCaseIds.size} test case{selectedTestCaseIds.size > 1 ? 's' : ''} will be copied
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCopyToProjectModal(false)}
+                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+                >
+                  <i className="ri-close-line text-xl"></i>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 max-h-80 overflow-y-auto">
+              {loadingProjects ? (
+                <div className="text-center py-10">
+                  <i className="ri-loader-4-line animate-spin text-2xl text-teal-500 mb-2"></i>
+                  <p className="text-sm text-gray-500">Loading projects...</p>
+                </div>
+              ) : availableProjects.length === 0 ? (
+                <div className="text-center py-10">
+                  <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i className="ri-folder-line text-2xl text-gray-400"></i>
+                  </div>
+                  <p className="text-sm font-medium text-gray-700">No other projects found</p>
+                  <p className="text-xs text-gray-400 mt-1">Create another project to copy test cases</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {availableProjects.map((project) => (
+                    <button
+                      key={project.id}
+                      onClick={() => handleCopyToProject(project.id)}
+                      disabled={copyingToProject}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-orange-50 border border-transparent hover:border-orange-200 transition-all cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed group"
+                    >
+                      <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        {copyingToProject && copyTargetProjectId === project.id ? (
+                          <i className="ri-loader-4-line animate-spin text-white text-lg"></i>
+                        ) : (
+                          <i className="ri-folder-line text-white text-lg"></i>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">{project.name}</p>
+                        {project.description && (
+                          <p className="text-xs text-gray-500 truncate mt-0.5">{project.description}</p>
+                        )}
+                        {project.status && (
+                          <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            project.status === 'active' ? 'bg-green-100 text-green-700' :
+                            project.status === 'archived' ? 'bg-gray-100 text-gray-600' :
+                            project.status === 'completed' ? 'bg-teal-100 text-teal-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                          </span>
+                        )}
+                      </div>
+                      <i className="ri-arrow-right-s-line text-gray-400 group-hover:text-orange-500 transition-colors flex-shrink-0"></i>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <div className="flex items-start gap-2 mb-3">
+                <i className="ri-information-line text-teal-500 mt-0.5 flex-shrink-0"></i>
+                <p className="text-xs text-gray-500">
+                  Copied test cases will have <strong>Untested</strong> status and no assignee. Folder structure and tags will be preserved.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCopyToProjectModal(false)}
+                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white transition-all font-medium text-sm cursor-pointer whitespace-nowrap"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 일괄 삭제 확인 모달 */}
+      {showBulkDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">Delete Test Cases</h2>
+                <button
+                  onClick={() => setShowBulkDeleteModal(false)}
+                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+                >
+                  <i className="ri-close-line text-xl"></i>
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <i className="ri-delete-bin-line text-2xl text-red-600"></i>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    {selectedTestCaseIds.size} test case{selectedTestCaseIds.size > 1 ? 's' : ''} selected
+                  </p>
+                  <p className="text-sm text-gray-500 mt-0.5">This action cannot be undone.</p>
+                </div>
+              </div>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <i className="ri-alert-line text-red-600 text-xl mt-0.5 flex-shrink-0"></i>
+                  <p className="text-sm text-red-700">
+                    All selected test cases and their associated comments, results, and history will be permanently deleted.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowBulkDeleteModal(false)}
+                disabled={bulkDeleting}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+                className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 flex items-center gap-2"
+              >
+                {bulkDeleting ? (
+                  <>
+                    <i className="ri-loader-4-line animate-spin"></i>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <i className="ri-delete-bin-line"></i>
+                    Delete {selectedTestCaseIds.size} Test Case{selectedTestCaseIds.size > 1 ? 's' : ''}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
