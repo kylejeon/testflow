@@ -723,6 +723,15 @@ export default function RunDetail() {
     const matchesPriority = priorityFilter === 'all' || testCase.priority === priorityFilter;
     
     return matchesSearch && matchesStatus && matchesPriority;
+  }).sort((a, b) => {
+    const aId = (a as any).custom_id || '';
+    const bId = (b as any).custom_id || '';
+    const aMatch = aId.match(/(\D+)(\d+)$/);
+    const bMatch = bId.match(/(\D+)(\d+)$/);
+    if (aMatch && bMatch && aMatch[1] === bMatch[1]) {
+      return parseInt(aMatch[2], 10) - parseInt(bMatch[2], 10);
+    }
+    return aId.localeCompare(bId);
   });
 
   const getPriorityColor = (priority: string) => {

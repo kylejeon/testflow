@@ -53,7 +53,7 @@ export default function ProjectSessions() {
     tags: '',
   });
   const [submitting, setSubmitting] = useState(false);
-  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: string } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number } | null>(null);
 
   const fetchData = async () => {
     if (!projectId) return;
@@ -204,7 +204,7 @@ export default function ProjectSessions() {
         setUserProfile({
           full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
           email: profile?.email || user.email || '',
-          subscription_tier: profile?.subscription_tier || 'free'
+          subscription_tier: profile?.subscription_tier || 1
         });
       }
     } catch (error) {
@@ -217,18 +217,18 @@ export default function ProjectSessions() {
     navigate('/auth');
   };
 
-  const getTierInfo = (tier: string) => {
+  const getTierInfo = (tier: number) => {
     switch (tier) {
-      case 'pro':
-        return { name: 'Pro', icon: 'ri-vip-crown-line', color: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent' };
-      case 'enterprise':
-        return { name: 'Enterprise', icon: 'ri-building-line', color: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-transparent' };
+      case 2:
+        return { name: 'Professional', icon: 'ri-vip-crown-line', color: 'bg-teal-50 text-teal-700 border-teal-300' };
+      case 3:
+        return { name: 'Enterprise', icon: 'ri-vip-diamond-line', color: 'bg-amber-50 text-amber-700 border-amber-300' };
       default:
         return { name: 'Free', icon: 'ri-user-line', color: 'bg-gray-100 text-gray-700 border-gray-200' };
     }
   };
 
-  const tierInfo = getTierInfo(userProfile?.subscription_tier || 'free');
+  const tierInfo = getTierInfo(userProfile?.subscription_tier || 1);
 
   useEffect(() => {
     fetchData();
@@ -556,31 +556,13 @@ export default function ProjectSessions() {
                       onClick={() => setShowProfileMenu(false)}
                     ></div>
                     <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                      <div className="flex items-center gap-3 px-3 py-2 border-b border-gray-100">
-                        <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-white font-medium">
-                          {userProfile?.full_name?.charAt(0).toUpperCase() || 'U'}
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+                        <p className="text-xs text-gray-500">{userProfile?.email}</p>
+                        <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
+                          <i className={`${tierInfo.icon} text-sm`}></i>
+                          {tierInfo.name}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate text-sm">
-                            {userProfile?.full_name || 'User'}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate">
-                            {userProfile?.email}
-                          </div>
-                        </div>
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          userProfile?.subscription_tier === 2 
-                            ? 'bg-purple-100 text-purple-700'
-                            : userProfile?.subscription_tier === 3
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {userProfile?.subscription_tier === 2 
-                            ? 'Pro' 
-                            : userProfile?.subscription_tier === 3
-                            ? 'Enterprise'
-                            : 'Free'}
-                        </span>
                       </div>
                       <Link
                         to="/settings"

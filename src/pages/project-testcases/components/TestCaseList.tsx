@@ -521,12 +521,21 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     })),
   ];
 
-  const filteredTestCases = selectedFolder === 'all' 
+  const filteredTestCases = (selectedFolder === 'all' 
     ? testCases 
     : testCases.filter(tc => {
         const folder = folders.find(f => f.id === selectedFolder);
         return folder && tc.folder === folder.name;
-      });
+      })
+  ).slice().sort((a, b) => {
+    const idA = a.custom_id || '';
+    const idB = b.custom_id || '';
+    // 숫자 부분 추출하여 숫자 정렬, 없으면 문자열 정렬
+    const numA = parseInt(idA.replace(/\D/g, ''), 10);
+    const numB = parseInt(idB.replace(/\D/g, ''), 10);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return idA.localeCompare(idB);
+  });
 
   // 전체 선택 여부 확인
   const isAllSelected = filteredTestCases.length > 0 && filteredTestCases.every(tc => selectedTestCaseIds.has(tc.id));
@@ -2094,6 +2103,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         </div>
                       );
                     })}
+                    {/* 하단 Add step 버튼 */}
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        onClick={handleAddStep}
+                        className="flex items-center gap-1 px-3 py-1 text-sm text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        <i className="ri-add-line text-lg w-4 h-4 flex items-center justify-center"></i>
+                        Add step
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -2723,6 +2742,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           </div>
                         </div>
                       ))}
+                    </div>
+                    {/* 하단 Add step 버튼 */}
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        onClick={handleAddStep}
+                        className="flex items-center gap-1 px-3 py-1 text-sm text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        <i className="ri-add-line text-lg w-4 h-4 flex items-center justify-center"></i>
+                        Add step
+                      </button>
                     </div>
                   </div>
 

@@ -12,7 +12,7 @@ export default function ProjectTestCases() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: string } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function ProjectTestCases() {
         setUserProfile({
           full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
           email: profile?.email || user.email || '',
-          subscription_tier: profile?.subscription_tier || 'free'
+          subscription_tier: profile?.subscription_tier || 1
         });
       }
     } catch (error) {
@@ -48,18 +48,18 @@ export default function ProjectTestCases() {
     navigate('/auth');
   };
 
-  const getTierInfo = (tier: string) => {
+  const getTierInfo = (tier: number) => {
     switch (tier) {
-      case 'pro':
-        return { name: 'Pro', icon: 'ri-vip-crown-line', color: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent' };
-      case 'enterprise':
-        return { name: 'Enterprise', icon: 'ri-building-line', color: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-transparent' };
+      case 2:
+        return { name: 'Professional', icon: 'ri-vip-crown-line', color: 'bg-teal-50 text-teal-700 border-teal-300' };
+      case 3:
+        return { name: 'Enterprise', icon: 'ri-vip-diamond-line', color: 'bg-amber-50 text-amber-700 border-amber-300' };
       default:
         return { name: 'Free', icon: 'ri-user-line', color: 'bg-gray-100 text-gray-700 border-gray-200' };
     }
   };
 
-  const tierInfo = getTierInfo(userProfile?.subscription_tier || 'free');
+  const tierInfo = getTierInfo(userProfile?.subscription_tier || 1);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
