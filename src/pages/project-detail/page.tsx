@@ -12,8 +12,9 @@ interface UserProfile {
 
 const TIER_INFO = {
   1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
-  2: { name: 'Professional', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
-  3: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
+  2: { name: 'Starter', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
+  4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
 };
 
 export default function ProjectDetail() {
@@ -121,7 +122,16 @@ export default function ProjectDetail() {
 
         if (milestoneRuns.length === 0) {
           console.log('Runs가 없어서 진행률 0%');
-          return { ...milestone, progress: 0 };
+          // Auto-correct status
+          let status = milestone.status;
+          if (status === 'upcoming' && milestone.start_date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const startDate = new Date(milestone.start_date);
+            startDate.setHours(0, 0, 0, 0);
+            if (startDate <= today) status = 'started';
+          }
+          return { ...milestone, status, progress: 0 };
         }
 
         // Calculate progress for each run
@@ -161,7 +171,17 @@ export default function ProjectDetail() {
           averageProgress: `${averageProgress}%`
         });
 
-        return { ...milestone, progress: averageProgress };
+        // Auto-correct status
+        let status = milestone.status;
+        if (status === 'upcoming' && milestone.start_date) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const startDate = new Date(milestone.start_date);
+          startDate.setHours(0, 0, 0, 0);
+          if (startDate <= today) status = 'started';
+        }
+
+        return { ...milestone, status, progress: averageProgress };
       });
 
       console.log('\n=== 최종 마일스톤 데이터 (진행률 포함) ===');
@@ -316,11 +336,16 @@ export default function ProjectDetail() {
         const sessionLogs = logsBySession.get(session.id) || [];
         const activityData = generateActivityData(sessionLogs);
         
-        // Determine actual status based on logs
-        let actualStatus = session.status;
-        if (session.status === 'active') {
-          // If no logs, status is 'new', otherwise 'in_progress'
-          actualStatus = sessionLogs.length === 0 ? 'new' : 'in_progress';
+        // Determine actual status based on started_at / ended_at (same logic as session-detail page)
+        let actualStatus: string;
+        if (session.ended_at || session.status === 'closed' || session.status === 'completed') {
+          actualStatus = 'completed';
+        } else if (session.status === 'paused' || session.paused_at) {
+          actualStatus = 'paused';
+        } else if (session.started_at) {
+          actualStatus = 'in_progress';
+        } else {
+          actualStatus = 'new';
         }
         
         return {
@@ -340,7 +365,7 @@ export default function ProjectDetail() {
           name: m.name,
           created_at: m.created_at,
         })),
-        ...(runsWithProgress || []).map((r: any) => ({
+        ...(testRuns || []).map((r: any) => ({
           type: 'run',
           action: 'created',
           name: r.name,
@@ -361,7 +386,7 @@ export default function ProjectDetail() {
             name: m.name,
             created_at: m.updated_at,
           })),
-        ...(runsWithProgress || [])
+        ...(testRuns || [])
           .filter((r: any) => r.status === 'completed' && r.executed_at)
           .map((r: any) => ({
             type: 'run',
@@ -849,8 +874,31 @@ export default function ProjectDetail() {
                                 </div>
                                 
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-gray-900 mb-2 group-hover:text-teal-600 transition-colors">
-                                    {run.name}
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="font-medium text-gray-900 group-hover:text-teal-600 transition-colors truncate">
+                                      {run.name}
+                                    </span>
+                                    {run.status === 'completed' ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-700 whitespace-nowrap flex-shrink-0">
+                                        <i className="ri-check-double-line text-xs"></i>
+                                        Completed
+                                      </span>
+                                    ) : run.status === 'paused' ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 whitespace-nowrap flex-shrink-0">
+                                        <i className="ri-pause-circle-line text-xs"></i>
+                                        Paused
+                                      </span>
+                                    ) : run.status === 'in_progress' ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 whitespace-nowrap flex-shrink-0">
+                                        <i className="ri-loader-line text-xs"></i>
+                                        In Progress
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 whitespace-nowrap flex-shrink-0">
+                                        <i className="ri-file-line text-xs"></i>
+                                        New
+                                      </span>
+                                    )}
                                   </div>
                                   
                                   <div className="flex items-center gap-2">
@@ -959,12 +1007,14 @@ export default function ProjectDetail() {
                                   <div className="flex items-center gap-2">
                                     <i className={`${
                                       session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
-                                      session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' : 
+                                      session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' :
+                                      session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
                                       'ri-check-line text-purple-500'
                                     }`}></i>
                                     <span className="text-sm text-gray-700">
                                       {session.actualStatus === 'new' ? 'New' :
-                                       session.actualStatus === 'in_progress' ? 'In progress' : 
+                                       session.actualStatus === 'in_progress' ? 'In progress' :
+                                       session.actualStatus === 'paused' ? 'Paused' :
                                        'Completed'}
                                     </span>
                                   </div>

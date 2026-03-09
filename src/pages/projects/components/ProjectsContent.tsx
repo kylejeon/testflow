@@ -128,7 +128,7 @@ export default function ProjectsContent() {
     }
   };
 
-  const handleCreateProject = async (data: { name: string; description: string; status: string; prefix: string }) => {
+  const handleCreateProject = async (data: { name: string; description: string; status: string; prefix: string; jiraProjectKey: string }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -141,6 +141,7 @@ export default function ProjectsContent() {
           description: data.description,
           status: data.status,
           prefix: data.prefix,
+          jira_project_key: data.jiraProjectKey || null,
           owner_id: user.id
         }]);
 
@@ -190,7 +191,7 @@ export default function ProjectsContent() {
     }
   };
 
-  const handleUpdateProject = async (id: string, data: { name: string; description: string; status: string; prefix: string }) => {
+  const handleUpdateProject = async (id: string, data: { name: string; description: string; status: string; prefix: string; jiraProjectKey: string }) => {
     try {
       const { error } = await supabase
         .from('projects')
@@ -199,13 +200,14 @@ export default function ProjectsContent() {
           description: data.description,
           status: data.status,
           prefix: data.prefix,
+          jira_project_key: data.jiraProjectKey || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id);
 
       if (error) throw error;
 
-      setProjects(projects.map(p => p.id === id ? { ...p, ...data, updated_at: new Date().toISOString() } : p));
+      setProjects(projects.map(p => p.id === id ? { ...p, ...data, jira_project_key: data.jiraProjectKey || null, updated_at: new Date().toISOString() } : p));
       setEditingProject(null);
     } catch (error) {
       console.error('Error updating project:', error);

@@ -1,5 +1,10 @@
+import { useState, useEffect, useRef } from 'react';
 
-import { useState, useEffect } from 'react';
+interface ProjectMember {
+  user_id: string;
+  full_name: string;
+  email: string;
+}
 
 interface EditSessionModalProps {
   isOpen: boolean;
@@ -10,6 +15,7 @@ interface EditSessionModalProps {
     milestone_id: string | null;
     tags: string[];
     estimated_duration: number;
+    assignees: string[];
   }) => void;
   session: {
     name: string;
@@ -17,11 +23,13 @@ interface EditSessionModalProps {
     milestone_id: string | null;
     tags: string[];
     duration_minutes: number;
+    assignees?: string[];
   };
   milestones: Array<{
     id: string;
     name: string;
   }>;
+  projectMembers?: ProjectMember[];
 }
 
 export default function EditSessionModal({
@@ -30,12 +38,17 @@ export default function EditSessionModal({
   onSave,
   session,
   milestones,
+  projectMembers = [],
 }: EditSessionModalProps) {
   const [name, setName] = useState(session.name);
   const [mission, setMission] = useState(session.charter || '');
   const [milestoneId, setMilestoneId] = useState(session.milestone_id || '');
   const [tags, setTags] = useState(session.tags?.join(', ') || '');
   const [estimatedDuration, setEstimatedDuration] = useState(session.duration_minutes || 60);
+  const [assignees, setAssignees] = useState<string[]>(session.assignees || []);
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
+  const assigneeDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -44,8 +57,27 @@ export default function EditSessionModal({
       setMilestoneId(session.milestone_id || '');
       setTags(session.tags?.join(', ') || '');
       setEstimatedDuration(session.duration_minutes || 60);
+      setAssignees(session.assignees || []);
+      setShowAssigneeDropdown(false);
+      setAssigneeSearch('');
     }
   }, [isOpen, session]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(e.target as Node)) {
+        setShowAssigneeDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleAssigneeToggle = (userId: string) => {
+    setAssignees(prev =>
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,8 +87,17 @@ export default function EditSessionModal({
       milestone_id: milestoneId || null,
       tags: tags.split(',').map(t => t.trim()).filter(t => t),
       estimated_duration: estimatedDuration,
+      assignees,
     });
   };
+
+  const avatarColors = [
+    'from-teal-400 to-teal-600',
+    'from-orange-400 to-orange-600',
+    'from-violet-400 to-violet-600',
+    'from-pink-400 to-pink-600',
+    'from-sky-400 to-sky-600',
+  ];
 
   if (!isOpen) return null;
 
@@ -122,6 +163,117 @@ export default function EditSessionModal({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Assignees */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assignees
+                </label>
+
+                {/* Selected chips */}
+                {assignees.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {assignees.map((userId) => {
+                      const member = projectMembers.find(m => m.user_id === userId);
+                      if (!member) return null;
+                      const colorIdx = projectMembers.findIndex(m => m.user_id === userId);
+                      const colorClass = avatarColors[colorIdx % avatarColors.length];
+                      return (
+                        <div
+                          key={userId}
+                          className="flex items-center gap-1.5 pl-1 pr-2 py-1 bg-teal-50 border border-teal-200 rounded-full"
+                        >
+                          <div className={`w-5 h-5 bg-gradient-to-br ${colorClass} rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
+                            {member.full_name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-xs font-medium text-teal-700">{member.full_name}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleAssigneeToggle(userId)}
+                            className="w-4 h-4 flex items-center justify-center text-teal-400 hover:text-teal-700 cursor-pointer ml-0.5"
+                          >
+                            <i className="ri-close-line text-xs"></i>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Dropdown trigger */}
+                <div className="relative" ref={assigneeDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAssigneeDropdown(prev => !prev);
+                      setAssigneeSearch('');
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-500 hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer bg-white"
+                  >
+                    <span>
+                      {assignees.length > 0 ? `${assignees.length}명 선택됨` : '멤버 선택...'}
+                    </span>
+                    <i className={`ri-arrow-${showAssigneeDropdown ? 'up' : 'down'}-s-line text-gray-400`}></i>
+                  </button>
+
+                  {showAssigneeDropdown && (
+                    <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                      {/* Search */}
+                      <div className="p-2 border-b border-gray-100">
+                        <div className="relative">
+                          <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                          <input
+                            type="text"
+                            value={assigneeSearch}
+                            onChange={e => setAssigneeSearch(e.target.value)}
+                            placeholder="멤버 검색..."
+                            className="w-full pl-7 pr-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500"
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+
+                      {/* Member list */}
+                      <div className="max-h-48 overflow-y-auto">
+                        {projectMembers.length === 0 ? (
+                          <p className="text-xs text-gray-400 italic text-center py-4">프로젝트 멤버가 없습니다.</p>
+                        ) : (
+                          projectMembers
+                            .filter(m =>
+                              m.full_name.toLowerCase().includes(assigneeSearch.toLowerCase()) ||
+                              m.email.toLowerCase().includes(assigneeSearch.toLowerCase())
+                            )
+                            .map((member) => {
+                              const isSelected = assignees.includes(member.user_id);
+                              const colorIdx = projectMembers.findIndex(m => m.user_id === member.user_id);
+                              const colorClass = avatarColors[colorIdx % avatarColors.length];
+                              return (
+                                <div
+                                  key={member.user_id}
+                                  onClick={() => handleAssigneeToggle(member.user_id)}
+                                  className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
+                                    isSelected ? 'bg-teal-50' : 'hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <div className={`w-7 h-7 bg-gradient-to-br ${colorClass} rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
+                                    {member.full_name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">{member.full_name}</p>
+                                    <p className="text-xs text-gray-400 truncate">{member.email}</p>
+                                  </div>
+                                  {isSelected && (
+                                    <i className="ri-check-line text-teal-500 text-sm flex-shrink-0"></i>
+                                  )}
+                                </div>
+                              );
+                            })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Tags */}

@@ -7,7 +7,7 @@ interface TestRun {
   project_id: string;
   milestone_id: string;
   name: string;
-  status: 'new' | 'in_progress' | 'under_review' | 'completed';
+  status: 'new' | 'in_progress' | 'paused' | 'under_review' | 'completed';
   progress: number;
   passed: number;
   failed: number;
@@ -94,9 +94,13 @@ export default function ProjectRunsPage() {
 
   const generateMilestonePdf = async (milestone: Milestone, runs: TestRun[]) => {
     setGeneratingPdf(milestone.id);
+
+    const fmtDate = (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
     
     try {
-      // Calculate totals
       const totalPassed = runs.reduce((sum, run) => sum + run.passed, 0);
       const totalFailed = runs.reduce((sum, run) => sum + run.failed, 0);
       const totalBlocked = runs.reduce((sum, run) => sum + run.blocked, 0);
@@ -105,24 +109,282 @@ export default function ProjectRunsPage() {
       const totalTests = totalPassed + totalFailed + totalBlocked + totalRetest + totalUntested;
       const passRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
 
-      // Fetch all test cases for these runs
+      // Fetch all test cases for these runs — created_at 오름차순 정렬
       const allTestCaseIds = [...new Set(runs.flatMap(run => run.test_case_ids))];
       const { data: testCasesData } = await supabase
         .from('test_cases')
         .select('*')
-        .in('id', allTestCaseIds);
+        .in('id', allTestCaseIds)
+        .order('created_at', { ascending: true });
 
-      // Fetch all test results for these runs
       const { data: allTestResultsData } = await supabase
         .from('test_results')
         .select('*')
         .in('run_id', runs.map(r => r.id))
         .order('created_at', { ascending: false });
 
-      // Create a map of test cases
-      const testCasesMap = new Map(testCasesData?.map(tc => [tc.id, tc]) || []);
+      const { data: allCommentsData } = await supabase
+        .from('test_case_comments')
+        .select(`
+          id,
+          comment,
+          created_at,
+          test_case_id,
+          user_id,
+          profiles:user_id (
+            email,
+            full_name
+          )
+        `)
+        .in('test_case_id', allTestCaseIds)
+        .order('created_at', { ascending: false });
 
-      // Create PDF content
+      const { data: jiraSettingsData } = await supabase
+        .from('jira_settings')
+        .select('domain')
+        .maybeSingle();
+      const jiraDomain = jiraSettingsData?.domain || '';
+
+      const testCasesMap = new Map((testCasesData || []).map(tc => [tc.id, tc]));
+
+      const commentsMap = new Map<string, any[]>();
+      (allCommentsData || []).forEach(comment => {
+        const existing = commentsMap.get(comment.test_case_id) || [];
+        commentsMap.set(comment.test_case_id, [...existing, comment]);
+      });
+
+      const resultsMap = new Map<string, any[]>();
+      (allTestResultsData || []).forEach(result => {
+        const key = `${result.run_id}_${result.test_case_id}`;
+        const existing = resultsMap.get(key) || [];
+        resultsMap.set(key, [...existing, result]);
+      });
+
+      const runsSectionHtml = runs.map(run => {
+        const runResults = (allTestResultsData || []).filter(r => r.run_id === run.id);
+        const statusMap = new Map<string, any>();
+        runResults.forEach(result => {
+          if (!statusMap.has(result.test_case_id)) {
+            statusMap.set(result.test_case_id, result);
+          }
+        });
+
+        const runStatusBadge = run.status === 'completed' ? 'status-completed'
+          : run.status === 'in_progress' ? 'status-in-progress'
+          : run.status === 'paused' ? 'status-paused'
+          : 'status-new';
+        const runStatusLabel = run.status === 'completed' ? 'Completed'
+          : run.status === 'in_progress' ? 'In Progress'
+          : run.status === 'paused' ? 'Paused'
+          : 'New';
+
+        // created_at 오름차순으로 테스트 케이스 정렬
+        const sortedTcIds = [...run.test_case_ids].sort((a, b) => {
+          const tcA = testCasesMap.get(a);
+          const tcB = testCasesMap.get(b);
+          if (!tcA || !tcB) return 0;
+          return new Date(tcA.created_at).getTime() - new Date(tcB.created_at).getTime();
+        });
+
+        const testCaseBlocksHtml = sortedTcIds.map(tcId => {
+          const testCase = testCasesMap.get(tcId);
+          if (!testCase) return '';
+
+          const latestResult = statusMap.get(tcId);
+          const status = latestResult?.status || 'untested';
+          const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+
+          const priorityClass = testCase.priority === 'high' ? 'priority-high'
+            : testCase.priority === 'medium' ? 'priority-medium'
+            : 'priority-low';
+          const priorityLabel = testCase.priority
+            ? testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1)
+            : '-';
+
+          const tcResults = runResults.filter(r => r.test_case_id === tcId);
+          const tcComments = commentsMap.get(tcId) || [];
+
+          const allIssues: string[] = [];
+          tcResults.forEach(r => {
+            if (r.issues && Array.isArray(r.issues)) {
+              r.issues.forEach((iss: string) => {
+                if (!allIssues.includes(iss)) allIssues.push(iss);
+              });
+            }
+          });
+
+          const resultsHtml = tcResults.length === 0
+            ? '<div class="no-data">No results recorded.</div>'
+            : tcResults.map(r => {
+                const rStatusLabel = r.status ? r.status.charAt(0).toUpperCase() + r.status.slice(1) : '-';
+                const rDate = new Date(r.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const issuesHtml = r.issues && r.issues.length > 0
+                  ? `<div style="margin-top:5px;">${r.issues.map((iss: string) => `<span class="issue-badge">🐛 ${iss}</span>`).join('')}</div>`
+                  : '';
+                const noteHtml = r.note ? `<div style="font-size:11px;color:#444;margin-top:4px;white-space:pre-wrap;">${r.note}</div>` : '';
+                const authorHtml = r.author ? `<span style="font-size:10px;color:#555;margin-left:auto;">by ${r.author}</span>` : '';
+                const elapsedHtml = r.elapsed ? `<span style="font-size:10px;color:#888;">⏱ ${r.elapsed}</span>` : '';
+                return `
+                  <div class="result-item">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                      <span class="status-badge status-${r.status}">${rStatusLabel}</span>
+                      ${elapsedHtml}
+                      ${authorHtml}
+                    </div>
+                    ${noteHtml}
+                    ${issuesHtml}
+                    <div class="result-meta">${rDate}</div>
+                  </div>`;
+              }).join('');
+
+          const commentsHtml = tcComments.length === 0
+            ? '<div class="no-data">No comments.</div>'
+            : tcComments.map((c: any) => {
+                const author = (c.profiles as any)?.full_name || (c.profiles as any)?.email || 'Unknown';
+                const cDate = new Date(c.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                return `
+                  <div class="comment-item">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                      <span style="font-size:10px;font-weight:700;color:#065f46;">${author}</span>
+                      <span style="font-size:10px;color:#888;margin-left:auto;">${cDate}</span>
+                    </div>
+                    <div style="font-size:11px;color:#333;white-space:pre-wrap;">${c.comment}</div>
+                  </div>`;
+              }).join('');
+
+          const issuesSummaryHtml = allIssues.length === 0
+            ? '<div class="no-data">No linked issues.</div>'
+            : `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+                ${allIssues.map(iss => {
+                  const issUrl = jiraDomain ? ` (https://${jiraDomain}/browse/${iss})` : '';
+                  return `<span class="issue-badge">🐛 ${iss}${issUrl}</span>`;
+                }).join('')}
+              </div>`;
+
+          const stepsHtml = (() => {
+            if (!testCase.steps) return '<div class="no-data">No steps defined.</div>';
+
+            const isHtmlFormat = /<[^>]+>/.test(testCase.steps);
+            let stepsArr: string[] = [];
+
+            if (isHtmlFormat) {
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = testCase.steps;
+              const blocks = tempDiv.querySelectorAll('p, li, div');
+              if (blocks.length > 0) {
+                stepsArr = Array.from(blocks)
+                  .map(el => el.textContent?.trim() || '')
+                  .filter(s => s.length > 0);
+              } else {
+                stepsArr = [tempDiv.textContent?.trim() || ''].filter(s => s.length > 0);
+              }
+            } else {
+              stepsArr = testCase.steps.split('\n').filter((s: string) => s.trim());
+            }
+
+            let expectedArr: string[] = [];
+            if (testCase.expected_result) {
+              const isExpectedHtml = /<[^>]+>/.test(testCase.expected_result);
+              if (isExpectedHtml) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = testCase.expected_result;
+                const blocks = tempDiv.querySelectorAll('p, li, div');
+                if (blocks.length > 0) {
+                  expectedArr = Array.from(blocks)
+                    .map(el => el.textContent?.trim() || '')
+                    .filter(s => s.length > 0);
+                } else {
+                  expectedArr = [tempDiv.textContent?.trim() || ''].filter(s => s.length > 0);
+                }
+              } else {
+                expectedArr = testCase.expected_result.split('\n').filter((s: string) => s.trim());
+              }
+            }
+
+            if (stepsArr.length === 0) return '<div class="no-data">No steps defined.</div>';
+
+            const latestResult = statusMap.get(tcId);
+            const rawStepStatuses = latestResult?.step_statuses || {};
+            const getStepStatus = (idx: number): string => {
+              return rawStepStatuses[idx] || rawStepStatuses[String(idx)] || 'untested';
+            };
+
+            const stepStatusLabel = (s: string) => {
+              switch (s) {
+                case 'passed': return { label: 'Passed', bg: '#dcfce7', color: '#166534' };
+                case 'failed': return { label: 'Failed', bg: '#fee2e2', color: '#991b1b' };
+                case 'blocked': return { label: 'Blocked', bg: '#f3f4f6', color: '#374151' };
+                default: return { label: 'Untested', bg: '#e5e7eb', color: '#6b7280' };
+              }
+            };
+
+            return stepsArr.map((step: string, idx: number) => {
+              const stepContent = step.replace(/^\d+\.\s*/, '');
+              const expectedContent = expectedArr[idx]
+                ? expectedArr[idx].replace(/^\d+\.\s*/, '')
+                : '';
+              const stepStatus = getStepStatus(idx);
+              const statusInfo = stepStatusLabel(stepStatus);
+              return `
+                <div style="display:flex;gap:8px;margin-bottom:8px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:5px;">
+                  <div style="min-width:22px;height:22px;background:#ccfbf1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#0f766e;flex-shrink:0;">${idx + 1}</div>
+                  <div style="flex:1;">
+                    <div style="font-size:11px;color:#111;white-space:pre-wrap;">${stepContent}</div>
+                    ${expectedContent ? `
+                    <div style="margin-top:5px;padding:5px 8px;background:#f0fdf4;border-left:3px solid #86efac;border-radius:3px;">
+                      <div style="font-size:9px;font-weight:700;color:#166534;text-transform:uppercase;margin-bottom:2px;">Expected Result</div>
+                      <div style="font-size:11px;color:#166534;white-space:pre-wrap;">${expectedContent}</div>
+                    </div>` : ''}
+                    <div style="margin-top:6px;">
+                      <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:${statusInfo.bg};color:${statusInfo.color};">${statusInfo.label}</span>
+                    </div>
+                  </div>
+                </div>`;
+            }).join('');
+          })();
+
+          return `
+            <div class="tc-block">
+              <div class="tc-title">
+                <span class="status-badge status-${status}">${statusLabel}</span>
+                <span>${testCase.title}</span>
+                <span class="${priorityClass}" style="font-size:10px;margin-left:auto;">${priorityLabel}</span>
+              </div>
+              ${testCase.description ? `<div style="font-size:11px;color:#555;margin-bottom:6px;padding-left:4px;">${testCase.description}</div>` : ''}
+              <div class="tc-section-label">Steps &amp; Expected Results (${testCase.steps ? testCase.steps.split('\n').filter((s: string) => s.trim()).length : 0})</div>
+              ${stepsHtml}
+              <div class="tc-section-label">Results (${tcResults.length})</div>
+              ${resultsHtml}
+              <div class="tc-section-label">Comments (${tcComments.length})</div>
+              ${commentsHtml}
+              <div class="tc-section-label">Issues (${allIssues.length})</div>
+              ${issuesSummaryHtml}
+            </div>`;
+        }).join('');
+
+        return `
+          <div style="margin-bottom:24px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+            <div style="background:#f3f4f6;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="color:#14b8a6;font-size:14px;">▶</span>
+                <span style="font-weight:700;font-size:13px;color:#111;">${run.name}</span>
+                <span class="status-badge ${runStatusBadge}">${runStatusLabel}</span>
+              </div>
+              <div style="display:flex;gap:16px;font-size:11px;color:#555;">
+                <span>✅ ${run.passed} Passed</span>
+                <span>❌ ${run.failed} Failed</span>
+                <span>🚫 ${run.blocked} Blocked</span>
+                <span>🔄 ${run.retest} Retest</span>
+                <span>⬜ ${run.untested} Untested</span>
+                <span style="font-weight:600;color:#14b8a6;">${run.progress}%</span>
+              </div>
+            </div>
+            <div style="padding:12px 16px;">
+              ${testCaseBlocksHtml}
+            </div>
+          </div>`;
+      }).join('');
+
       const pdfContent = `
 <!DOCTYPE html>
 <html>
@@ -130,337 +392,66 @@ export default function ProjectRunsPage() {
   <meta charset="UTF-8">
   <title>Test Report - ${milestone.name}</title>
   <style>
-    * { 
-      margin: 0; 
-      padding: 0; 
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-      color-adjust: exact !important;
-    }
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
-      padding: 40px; 
-      color: #333; 
-      background: #fff;
-      font-size: 12px;
-      line-height: 1.5;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .header { 
-      border-bottom: 3px solid #14b8a6; 
-      padding-bottom: 20px; 
-      margin-bottom: 30px; 
-    }
-    .header h1 { 
-      font-size: 24px; 
-      color: #14b8a6; 
-      margin-bottom: 8px; 
-      font-weight: 600;
-    }
-    .header .subtitle { 
-      color: #666; 
-      font-size: 13px; 
-    }
-    .section { 
-      margin-bottom: 30px; 
-      page-break-inside: avoid;
-    }
-    .section-title { 
-      font-size: 14px; 
-      font-weight: 600; 
-      color: #333; 
-      margin-bottom: 15px; 
-      padding-bottom: 8px; 
-      border-bottom: 2px solid #e5e7eb; 
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .info-grid { 
-      display: grid; 
-      grid-template-columns: repeat(2, 1fr); 
-      gap: 15px; 
-      margin-bottom: 20px;
-    }
-    .info-item { 
-      background: #f9fafb; 
-      padding: 12px 15px; 
-      border-radius: 6px; 
-      border: 1px solid #e5e7eb;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .info-label { 
-      font-size: 11px; 
-      color: #666; 
-      margin-bottom: 4px; 
-      text-transform: uppercase;
-      font-weight: 500;
-    }
-    .info-value { 
-      font-size: 14px; 
-      font-weight: 600; 
-      color: #333; 
-    }
-    
-    /* Summary Stats */
-    .summary-container {
-      display: flex;
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-    .summary-left {
-      flex: 0 0 200px;
-    }
-    .summary-right {
-      flex: 1;
-    }
-    .pass-rate-circle { 
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #14b8a6, #0d9488);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      margin: 0 auto;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .pass-rate-number { 
-      font-size: 48px; 
-      font-weight: 700; 
-      line-height: 1;
-      color: white;
-    }
-    .pass-rate-label { 
-      font-size: 12px; 
-      opacity: 0.9; 
-      margin-top: 5px;
-      color: white;
-    }
-    
-    .stats-grid { 
-      display: grid; 
-      grid-template-columns: repeat(5, 1fr); 
-      gap: 10px;
-    }
-    .stat-box { 
-      text-align: center; 
-      padding: 15px 10px; 
-      border-radius: 6px; 
-      border: 1px solid #e5e7eb;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .stat-box.passed { 
-      background: #dcfce7 !important; 
-      border-color: #86efac !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .stat-box.failed { 
-      background: #fee2e2 !important; 
-      border-color: #fca5a5 !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .stat-box.blocked { 
-      background: #f3f4f6 !important; 
-      border-color: #d1d5db !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .stat-box.retest { 
-      background: #fef3c7 !important; 
-      border-color: #fde047 !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .stat-box.untested { 
-      background: #e5e7eb !important; 
-      border-color: #d1d5db !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .stat-number { 
-      font-size: 28px; 
-      font-weight: 700; 
-      margin-bottom: 4px;
-    }
-    .stat-box.passed .stat-number { color: #166534 !important; }
-    .stat-box.failed .stat-number { color: #991b1b !important; }
-    .stat-box.blocked .stat-number { color: #374151 !important; }
-    .stat-box.retest .stat-number { color: #92400e !important; }
-    .stat-box.untested .stat-number { color: #6b7280 !important; }
-    .stat-label { 
-      font-size: 10px; 
-      text-transform: uppercase;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-    
-    /* Tables */
-    table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-top: 15px; 
-      font-size: 11px;
-    }
-    th, td { 
-      padding: 10px 12px; 
-      text-align: left; 
-      border-bottom: 1px solid #e5e7eb; 
-    }
-    th { 
-      background: #f9fafb !important; 
-      font-weight: 600; 
-      font-size: 10px; 
-      color: #666; 
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    td { 
-      font-size: 11px; 
-      color: #333;
-    }
-    tr:hover {
-      background: #f9fafb;
-    }
-    
-    .status-badge { 
-      display: inline-block; 
-      padding: 3px 8px; 
-      border-radius: 4px; 
-      font-size: 10px; 
-      font-weight: 600;
-      text-transform: uppercase;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .status-passed { 
-      background: #dcfce7 !important; 
-      color: #166534 !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .status-failed { 
-      background: #fee2e2 !important; 
-      color: #991b1b !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .status-blocked { 
-      background: #f3f4f6 !important; 
-      color: #374151 !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .status-retest { 
-      background: #fef3c7 !important; 
-      color: #92400e !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .status-untested { 
-      background: #e5e7eb !important; 
-      color: #6b7280 !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .status-completed { 
-      background: #dcfce7 !important; 
-      color: #166534 !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .status-in-progress { 
-      background: #dbeafe !important; 
-      color: #1e40af !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .status-new { 
-      background: #fef3c7 !important; 
-      color: #92400e !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    
-    .progress-bar { 
-      width: 80px; 
-      height: 6px; 
-      background: #e5e7eb !important; 
-      border-radius: 3px; 
-      overflow: hidden; 
-      display: inline-block; 
-      vertical-align: middle;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .progress-fill { 
-      height: 100%; 
-      background: #14b8a6 !important; 
-      border-radius: 3px;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    
-    .priority-high { color: #dc2626 !important; font-weight: 600; }
-    .priority-medium { color: #f59e0b !important; font-weight: 600; }
-    .priority-low { color: #6b7280 !important; font-weight: 600; }
-    
-    .test-case-row {
-      background: #fafafa !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .test-case-row td {
-      padding: 8px 12px 8px 30px;
-      font-size: 10px;
-      color: #666;
-    }
-    
-    .run-header {
-      background: #f9fafb !important;
-      font-weight: 600;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    
-    .footer { 
-      margin-top: 40px; 
-      padding-top: 20px; 
-      border-top: 1px solid #e5e7eb; 
-      text-align: center; 
-      color: #999; 
-      font-size: 11px; 
-    }
-    
-    @media print {
-      body { 
-        padding: 20px;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      .no-print { display: none; }
-      .section { page-break-inside: avoid; }
-      * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica','Arial',sans-serif; padding:40px; color:#333; background:#fff; font-size:12px; line-height:1.5; }
+    .header { border-bottom:3px solid #14b8a6; padding-bottom:20px; margin-bottom:30px; }
+    .header h1 { font-size:24px; color:#14b8a6; margin-bottom:8px; font-weight:600; }
+    .header .subtitle { color:#666; font-size:13px; }
+    .section { margin-bottom:30px; }
+    .section-title { font-size:14px; font-weight:600; color:#333; margin-bottom:15px; padding-bottom:8px; border-bottom:2px solid #e5e7eb; text-transform:uppercase; letter-spacing:0.5px; }
+    .info-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; margin-bottom:20px; }
+    .info-item { background:#f9fafb; padding:12px 15px; border-radius:6px; border:1px solid #e5e7eb; }
+    .info-label { font-size:11px; color:#666; margin-bottom:4px; text-transform:uppercase; font-weight:500; }
+    .info-value { font-size:14px; font-weight:600; color:#333; }
+    .summary-container { display:flex; gap:20px; margin-bottom:30px; }
+    .summary-left { flex:0 0 200px; }
+    .summary-right { flex:1; }
+    .pass-rate-circle { width:180px; height:180px; border-radius:50%; background:linear-gradient(135deg,#14b8a6,#0d9488); display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; margin:0 auto; }
+    .pass-rate-number { font-size:48px; font-weight:700; line-height:1; color:white; }
+    .pass-rate-label { font-size:12px; opacity:0.9; margin-top:5px; color:white; }
+    .stats-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+    .stat-box { text-align:center; padding:15px 10px; border-radius:6px; border:1px solid #e5e7eb; }
+    .stat-box.passed { background:#dcfce7 !important; border-color:#86efac !important; }
+    .stat-box.failed { background:#fee2e2 !important; border-color:#fca5a5 !important; }
+    .stat-box.blocked { background:#f3f4f6 !important; border-color:#d1d5db !important; }
+    .stat-box.retest { background:#fef3c7 !important; border-color:#fde047 !important; }
+    .stat-box.untested { background:#e5e7eb !important; border-color:#d1d5db !important; }
+    .stat-number { font-size:28px; font-weight:700; margin-bottom:4px; }
+    .stat-box.passed .stat-number { color:#166534 !important; }
+    .stat-box.failed .stat-number { color:#991b1b !important; }
+    .stat-box.blocked .stat-number { color:#374151 !important; }
+    .stat-box.retest .stat-number { color:#92400e !important; }
+    .stat-box.untested .stat-number { color:#6b7280 !important; }
+    .stat-label { font-size:10px; text-transform:uppercase; font-weight:600; letter-spacing:0.5px; }
+    .status-badge { display:inline-block; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:600; text-transform:uppercase; }
+    .status-passed { background:#dcfce7 !important; color:#166534 !important; }
+    .status-failed { background:#fee2e2 !important; color:#991b1b !important; }
+    .status-blocked { background:#f3f4f6 !important; color:#374151 !important; }
+    .status-retest { background:#fef3c7 !important; color:#92400e !important; }
+    .status-untested { background:#e5e7eb !important; color:#6b7280 !important; }
+    .status-completed { background:#dcfce7 !important; color:#166534 !important; }
+    .status-in-progress { background:#d1fae5 !important; color:#065f46 !important; }
+    .status-paused { background:#fef3c7 !important; color:#92400e !important; }
+    .status-new { background:#e0f2fe !important; color:#0369a1 !important; }
+    .priority-high { color:#dc2626 !important; font-weight:600; }
+    .priority-medium { color:#f59e0b !important; font-weight:600; }
+    .priority-low { color:#6b7280 !important; font-weight:600; }
+    .tc-block { margin:0 0 16px 20px; border-left:3px solid #e5e7eb; padding-left:12px; page-break-inside:avoid; }
+    .tc-title { font-size:12px; font-weight:600; color:#111; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+    .tc-section-label { font-size:10px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin:8px 0 4px 0; }
+    .result-item { background:#f9fafb !important; border:1px solid #e5e7eb; border-radius:5px; padding:8px 10px; margin-bottom:6px; }
+    .result-meta { font-size:10px; color:#888; margin-top:4px; }
+    .comment-item { background:#f0fdf4 !important; border:1px solid #bbf7d0; border-radius:5px; padding:8px 10px; margin-bottom:6px; }
+    .issue-badge { display:inline-block; background:#fee2e2 !important; color:#991b1b !important; border:1px solid #fca5a5; border-radius:4px; padding:2px 8px; font-size:10px; font-weight:600; margin-right:4px; margin-bottom:4px; }
+    .no-data { font-size:11px; color:#aaa; font-style:italic; }
+    .footer { margin-top:40px; padding-top:20px; border-top:1px solid #e5e7eb; text-align:center; color:#999; font-size:11px; }
+    @media print { body { padding:20px; } * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; } }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>${project?.name || 'Test Report'}</h1>
-    <div class="subtitle">${milestone.name} - Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+    <div class="subtitle">${milestone.name} — Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
   </div>
 
   <div class="section">
@@ -476,11 +467,11 @@ export default function ProjectRunsPage() {
       </div>
       <div class="info-item">
         <div class="info-label">Duration</div>
-        <div class="info-value">${formatDate(milestone.start_date)} - ${formatDate(milestone.end_date)}</div>
+        <div class="info-value">${fmtDate(milestone.start_date)} — ${fmtDate(milestone.end_date)}</div>
       </div>
       <div class="info-item">
         <div class="info-label">Status</div>
-        <div class="info-value">Completed</div>
+        <div class="info-value">${milestone.status === 'completed' ? 'Completed' : 'Active'}</div>
       </div>
     </div>
   </div>
@@ -496,35 +487,20 @@ export default function ProjectRunsPage() {
       </div>
       <div class="summary-right">
         <div class="stats-grid">
-          <div class="stat-box passed">
-            <div class="stat-number">${totalPassed}</div>
-            <div class="stat-label">Passed</div>
-          </div>
-          <div class="stat-box failed">
-            <div class="stat-number">${totalFailed}</div>
-            <div class="stat-label">Failed</div>
-          </div>
-          <div class="stat-box blocked">
-            <div class="stat-number">${totalBlocked}</div>
-            <div class="stat-label">Blocked</div>
-          </div>
-          <div class="stat-box retest">
-            <div class="stat-number">${totalRetest}</div>
-            <div class="stat-label">Retest</div>
-          </div>
-          <div class="stat-box untested">
-            <div class="stat-number">${totalUntested}</div>
-            <div class="stat-label">Untested</div>
-          </div>
+          <div class="stat-box passed"><div class="stat-number">${totalPassed}</div><div class="stat-label">Passed</div></div>
+          <div class="stat-box failed"><div class="stat-number">${totalFailed}</div><div class="stat-label">Failed</div></div>
+          <div class="stat-box blocked"><div class="stat-number">${totalBlocked}</div><div class="stat-label">Blocked</div></div>
+          <div class="stat-box retest"><div class="stat-number">${totalRetest}</div><div class="stat-label">Retest</div></div>
+          <div class="stat-box untested"><div class="stat-number">${totalUntested}</div><div class="stat-label">Untested</div></div>
         </div>
-        <div style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 6px; border: 1px solid #e5e7eb; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <span style="font-size: 11px; color: #666; font-weight: 500;">Total Test Cases</span>
-            <span style="font-size: 14px; font-weight: 700; color: #333;">${totalTests}</span>
+        <div style="margin-top:20px;padding:15px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-size:11px;color:#666;font-weight:500;">Total Test Cases</span>
+            <span style="font-size:14px;font-weight:700;color:#333;">${totalTests}</span>
           </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="font-size: 11px; color: #666; font-weight: 500;">Total Test Runs</span>
-            <span style="font-size: 14px; font-weight: 700; color: #333;">${runs.length}</span>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:11px;color:#666;font-weight:500;">Total Test Runs</span>
+            <span style="font-size:14px;font-weight:700;color:#333;">${runs.length}</span>
           </div>
         </div>
       </div>
@@ -532,120 +508,26 @@ export default function ProjectRunsPage() {
   </div>
 
   <div class="section">
-    <div class="section-title">Test Runs & Cases (${runs.length} runs)</div>
-    <table>
-      <thead>
-        <tr>
-          <th style="width: 30%;">Test Case / Run Name</th>
-          <th style="width: 12%;">Status</th>
-          <th style="width: 10%;">Priority</th>
-          <th style="width: 10%;">Passed</th>
-          <th style="width: 10%;">Failed</th>
-          <th style="width: 10%;">Blocked</th>
-          <th style="width: 18%;">Progress</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${runs.map(run => {
-          // Get test results for this run
-          const runResults = allTestResultsData?.filter(r => r.run_id === run.id) || [];
-          const statusMap = new Map<string, any>();
-          
-          runResults.forEach(result => {
-            if (!statusMap.has(result.test_case_id)) {
-              statusMap.set(result.test_case_id, result);
-            }
-          });
-
-          const runStatusBadge = run.status === 'completed' ? 'status-completed' : 
-                                 run.status === 'in_progress' ? 'status-in-progress' : 
-                                 'status-new';
-          const runStatusLabel = run.status === 'completed' ? 'Completed' : 
-                                run.status === 'in_progress' ? 'In Progress' : 
-                                'New';
-
-          return `
-            <tr class="run-header">
-              <td colspan="7" style="background: #f3f4f6; font-weight: 600; font-size: 12px; padding: 12px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
-                <i style="color: #14b8a6;">▶</i> ${run.name}
-              </td>
-            </tr>
-            <tr>
-              <td style="padding-left: 30px; font-weight: 500;">${run.name}</td>
-              <td><span class="status-badge ${runStatusBadge}">${runStatusLabel}</span></td>
-              <td>-</td>
-              <td style="font-weight: 600; color: #166534;">${run.passed}</td>
-              <td style="font-weight: 600; color: #991b1b;">${run.failed}</td>
-              <td style="font-weight: 600; color: #374151;">${run.blocked}</td>
-              <td>
-                <div class="progress-bar">
-                  <div class="progress-fill" style="width: ${run.progress}%"></div>
-                </div>
-                <span style="font-size: 11px; color: #666; margin-left: 8px;">${run.progress}%</span>
-              </td>
-            </tr>
-            ${run.test_case_ids.map(tcId => {
-              const testCase = testCasesMap.get(tcId);
-              if (!testCase) return '';
-              
-              const result = statusMap.get(tcId);
-              const status = result?.status || 'untested';
-              const statusClass = `status-${status}`;
-              const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
-              
-              const priorityClass = testCase.priority === 'high' ? 'priority-high' : 
-                                   testCase.priority === 'medium' ? 'priority-medium' : 
-                                   'priority-low';
-              const priorityLabel = testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1);
-              
-              return `
-                <tr class="test-case-row">
-                  <td style="padding-left: 50px;">
-                    <span style="color: #999; margin-right: 8px;">└</span>
-                    ${testCase.title}
-                  </td>
-                  <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
-                  <td><span class="${priorityClass}">${priorityLabel}</span></td>
-                  <td>-</td>
-                  <td>-</td>
-                  <td>-</td>
-                  <td>-</td>
-                </tr>
-              `;
-            }).join('')}
-          `;
-        }).join('')}
-      </tbody>
-    </table>
+    <div class="section-title">Test Runs &amp; Cases — Results, Comments, Issues (${runs.length} runs)</div>
+    ${runsSectionHtml}
   </div>
 
   <div class="footer">
-    <p><strong>TestFlow</strong> - Test Management Platform</p>
-    <p style="margin-top: 5px; font-size: 10px;">This report was automatically generated on ${new Date().toLocaleString('en-US')}</p>
+    <p><strong>TestFlow</strong> — Test Management Platform</p>
+    <p style="margin-top:5px;font-size:10px;">This report was automatically generated on ${new Date().toLocaleString('en-US')}</p>
   </div>
 
   <script>
-    window.onload = function() {
-      setTimeout(() => {
-        window.print();
-      }, 500);
-    };
+    window.onload = function() { setTimeout(function(){ window.print(); }, 500); };
   </script>
 </body>
-</html>
-      `;
+</html>`;
 
-      // Create a Blob from the HTML content
       const blob = new Blob([pdfContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
-      
-      // Open in new window
       const printWindow = window.open(url, '_blank');
-      
       if (printWindow) {
-        printWindow.onbeforeunload = () => {
-          URL.revokeObjectURL(url);
-        };
+        printWindow.onbeforeunload = () => { URL.revokeObjectURL(url); };
       } else {
         alert('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
         URL.revokeObjectURL(url);
@@ -692,8 +574,10 @@ export default function ProjectRunsPage() {
   const getTierInfo = (tier: number) => {
     switch (tier) {
       case 2:
-        return { name: 'Professional', icon: 'ri-vip-crown-line', color: 'bg-teal-50 text-teal-700 border-teal-300' };
+        return { name: 'Starter', icon: 'ri-vip-crown-line', color: 'bg-teal-50 text-teal-700 border-teal-300' };
       case 3:
+        return { name: 'Professional', icon: 'ri-vip-diamond-line', color: 'bg-violet-50 text-violet-700 border-violet-300' };
+      case 4:
         return { name: 'Enterprise', icon: 'ri-vip-diamond-line', color: 'bg-amber-50 text-amber-700 border-amber-300' };
       default:
         return { name: 'Free', icon: 'ri-user-line', color: 'bg-gray-100 text-gray-700 border-gray-200' };
@@ -706,7 +590,6 @@ export default function ProjectRunsPage() {
     try {
       setLoading(true);
       
-      // Fetch project
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .select('*')
@@ -716,7 +599,6 @@ export default function ProjectRunsPage() {
       if (projectError) throw projectError;
       setProject(projectData);
 
-      // Fetch milestones
       const { data: milestonesData, error: milestonesError } = await supabase
         .from('milestones')
         .select('*')
@@ -730,7 +612,6 @@ export default function ProjectRunsPage() {
       
       setMilestones(milestonesData || []);
 
-      // Fetch test cases
       const { data: testCasesData, error: testCasesError } = await supabase
         .from('test_cases')
         .select('*')
@@ -740,7 +621,6 @@ export default function ProjectRunsPage() {
       if (testCasesError) throw testCasesError;
       setTestCases(testCasesData || []);
 
-      // Fetch test runs
       const { data: testRunsData, error: testRunsError } = await supabase
         .from('test_runs')
         .select('*')
@@ -752,16 +632,14 @@ export default function ProjectRunsPage() {
       console.log('=== 전체 Test Runs 데이터 (DB에서 가져온 직후) ===');
       console.log('testRunsData:', testRunsData);
 
-      // Fetch all test results for these runs
       const { data: testResultsData, error: testResultsError } = await supabase
         .from('test_results')
-        .select('run_id, test_case_id, status, author')
+        .select('run_id, test_case_id, status, author, step_statuses')
         .in('run_id', (testRunsData || []).map(r => r.id))
         .order('created_at', { ascending: false });
 
       if (testResultsError) throw testResultsError;
 
-      // Get unique authors from test results
       const uniqueAuthors = new Set<string>();
       testResultsData?.forEach(result => {
         if (result.author) {
@@ -769,7 +647,6 @@ export default function ProjectRunsPage() {
         }
       });
 
-      // Fetch profiles for contributors
       if (uniqueAuthors.size > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
@@ -799,9 +676,7 @@ export default function ProjectRunsPage() {
         setContributors([]);
       }
 
-      // Calculate stats for each run
       const runsWithStats = (testRunsData || []).map(run => {
-        // Get latest status for each test case in this run
         const runResults = testResultsData?.filter(r => r.run_id === run.id) || [];
         const statusMap = new Map<string, string>();
         
@@ -811,7 +686,6 @@ export default function ProjectRunsPage() {
           }
         });
 
-        // Count statuses
         let passed = 0;
         let failed = 0;
         let blocked = 0;
@@ -888,7 +762,6 @@ export default function ProjectRunsPage() {
         : selectedTestCases;
 
       if (editingRunId) {
-        // Update existing run
         const { error } = await supabase
           .from('test_runs')
           .update({
@@ -902,7 +775,6 @@ export default function ProjectRunsPage() {
 
         if (error) throw error;
       } else {
-        // Create new run
         const newRun = {
           project_id: id,
           milestone_id: formData.milestone_id && formData.milestone_id.trim() !== '' ? formData.milestone_id : null,
@@ -928,10 +800,8 @@ export default function ProjectRunsPage() {
         if (error) throw error;
       }
 
-      // Refresh data
       await fetchData();
       
-      // Reset form and close modal
       setFormData({
         name: '',
         configuration: '',
@@ -993,13 +863,14 @@ export default function ProjectRunsPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const badges = {
+    const badges: Record<string, { label: string; className: string }> = {
       new: { label: 'New', className: 'bg-yellow-100 text-yellow-700' },
-      in_progress: { label: 'In progress', className: 'bg-blue-100 text-blue-700' },
+      in_progress: { label: 'In progress', className: 'bg-teal-100 text-teal-700' },
+      paused: { label: 'Paused', className: 'bg-amber-100 text-amber-700' },
       under_review: { label: 'Under review', className: 'bg-purple-100 text-purple-700' },
       completed: { label: 'Completed', className: 'bg-green-100 text-green-700' },
     };
-    return badges[status as keyof typeof badges] || badges.new;
+    return badges[status] || badges.new;
   };
 
   const getRunsByMilestone = (milestoneId: string) => {
@@ -1072,7 +943,6 @@ export default function ProjectRunsPage() {
     const successRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
     const closedRuns = testRuns.filter(run => run.status === 'completed').length;
 
-    // Calculate date range from actual test runs
     const runDates = testRuns
       .filter(run => run.created_at)
       .map(run => new Date(run.created_at));
@@ -1093,7 +963,6 @@ export default function ProjectRunsPage() {
       }
     }
 
-    // Calculate this month's closed runs
     const now = new Date();
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const closedThisMonth = testRuns.filter(run => {
@@ -1148,7 +1017,7 @@ export default function ProjectRunsPage() {
   };
 
   const handlePauseResumeRun = async (run: TestRun) => {
-    const newStatus = run.status === 'in_progress' ? 'new' : 'in_progress';
+    const newStatus = run.status === 'in_progress' ? 'paused' : 'in_progress';
     
     try {
       const { error } = await supabase
@@ -1202,24 +1071,19 @@ export default function ProjectRunsPage() {
   const folders = getFolders();
   const displayedTestCases = selectedFolder ? getTestCasesByFolder(selectedFolder) : testCases;
   
-  // Filter test cases based on search and filters
   const filteredTestCases = testCases.filter(tc => {
-    // Folder filter
     const matchesFolder = selectedFolder === null
       ? true
       : selectedFolder === 'Uncategorized'
       ? !tc.folder
       : tc.folder === selectedFolder;
 
-    // Search filter
     const matchesSearch = tc.title.toLowerCase().includes(caseSearchQuery.toLowerCase()) ||
       (tc.description && tc.description.toLowerCase().includes(caseSearchQuery.toLowerCase()));
     
-    // Priority filter - 대소문자 구분 없이 비교
     const matchesPriority = priorityFilters.length === 0 || priorityFilters.some(p => p.toLowerCase() === tc.priority.toLowerCase());
     
-    // Tags filter
-    const matchesTags = tagFilters.length === 0 || (tc.tags && tagFilters.some(tag => tc.tags.includes(tag)));
+    const matchesTags = tagFilters.length === 0 || (tc.tags && tagFilters.some(tag => tc.tags!.includes(tag)));
     
     return matchesFolder && matchesSearch && matchesPriority && matchesTags;
   });
@@ -1261,14 +1125,11 @@ export default function ProjectRunsPage() {
 
   const selectedInFolder = filteredTestCases.filter(tc => selectedTestCases.includes(tc.id)).length;
 
-  // Get all unique tags from test cases
   const getAllTags = () => {
     const tagsSet = new Set<string>();
     testCases.forEach(tc => {
-      // Handle both string and array formats
       if (tc.tags) {
         if (typeof tc.tags === 'string') {
-          // If tags is a string, split by comma
           tc.tags.split(',').forEach((tag: string) => {
             const trimmedTag = tag.trim();
             if (trimmedTag) {
@@ -1276,7 +1137,6 @@ export default function ProjectRunsPage() {
             }
           });
         } else if (Array.isArray(tc.tags)) {
-          // If tags is already an array
           tc.tags.forEach((tag: string) => {
             const trimmedTag = tag.trim();
             if (trimmedTag) {
@@ -1411,7 +1271,6 @@ export default function ProjectRunsPage() {
         
         <main className="flex-1 overflow-y-auto bg-gray-50/30">
           <div className="p-8">
-            {/* Header */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Runs & Results</h1>
@@ -1439,9 +1298,7 @@ export default function ProjectRunsPage() {
                 </div>
               </div>
 
-              {/* Stats Cards */}
               <div className="grid grid-cols-3 gap-6 mb-6">
-                {/* Active Runs */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -1485,7 +1342,6 @@ export default function ProjectRunsPage() {
                   </div>
                 </div>
 
-                {/* Latest Results */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -1494,36 +1350,18 @@ export default function ProjectRunsPage() {
                     </div>
                     <div className="relative w-16 h-16">
                       <svg className="w-16 h-16 transform -rotate-90">
-                        <circle
-                          cx="32"
-                          cy="32"
-                          r="28"
-                          stroke="#e5e7eb"
-                          strokeWidth="6"
-                          fill="none"
-                        />
-                        <circle
-                          cx="32"
-                          cy="32"
-                          r="28"
-                          stroke="#10b981"
-                          strokeWidth="6"
-                          fill="none"
-                          strokeDasharray={`${stats.successRate * 1.76} 176`}
-                          strokeLinecap="round"
-                        />
+                        <circle cx="32" cy="32" r="28" stroke="#e5e7eb" strokeWidth="6" fill="none" />
+                        <circle cx="32" cy="32" r="28" stroke="#10b981" strokeWidth="6" fill="none"
+                          strokeDasharray={`${stats.successRate * 1.76} 176`} strokeLinecap="round" />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <i className="ri-check-line text-green-600 text-xl"></i>
                       </div>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {stats.dateRangeText}
-                  </div>
+                  <div className="text-sm text-gray-600">{stats.dateRangeText}</div>
                 </div>
 
-                {/* Recently Closed */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -1532,19 +1370,8 @@ export default function ProjectRunsPage() {
                     </div>
                     <div className="w-20 h-12">
                       <svg className="w-full h-full" viewBox="0 0 80 48">
-                        <polyline
-                          points="0,40 20,35 40,30 60,20 80,10"
-                          fill="none"
-                          stroke="#10b981"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <polyline
-                          points="0,40 20,35 40,30 60,20 80,10 80,48 0,48"
-                          fill="url(#gradient)"
-                          opacity="0.2"
-                        />
+                        <polyline points="0,40 20,35 40,30 60,20 80,10" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <polyline points="0,40 20,35 40,30 60,20 80,10 80,48 0,48" fill="url(#gradient)" opacity="0.2" />
                         <defs>
                           <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
                             <stop offset="0%" stopColor="#10b981" />
@@ -1554,13 +1381,10 @@ export default function ProjectRunsPage() {
                       </svg>
                     </div>
                   </div>
-                  <div className="text-sm text-green-600 font-semibold">
-                    +{stats.closedThisMonth} this month
-                  </div>
+                  <div className="text-sm text-green-600 font-semibold">+{stats.closedThisMonth} this month</div>
                 </div>
               </div>
 
-              {/* Tabs */}
               <div className="flex space-x-8 border-b border-gray-200">
                 <button
                   onClick={() => setActiveTab('active')}
@@ -1585,7 +1409,6 @@ export default function ProjectRunsPage() {
               </div>
             </div>
 
-            {/* Search and Filter */}
             <div className="flex items-center gap-3 mb-6">
               <div className="flex-1 relative">
                 <i className="ri-search-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
@@ -1602,14 +1425,12 @@ export default function ProjectRunsPage() {
               </button>
             </div>
 
-            {/* Test Runs List */}
             {loading ? (
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Milestone-based Runs */}
                 {milestones.length > 0 && (
                   <div className="bg-white rounded-lg border border-gray-200">
                     {milestones.map((milestone, index) => {
@@ -1621,7 +1442,6 @@ export default function ProjectRunsPage() {
                       console.log('activeTab:', activeTab);
                       console.log('milestoneRuns.length:', milestoneRuns.length);
                       
-                      // 이 마일스톤에 표시할 Runs가 없으면 숨김
                       if (milestoneRuns.length === 0) {
                         console.log('이 마일스톤에 표시할 runs가 없어서 숨김');
                         return null;
@@ -1669,7 +1489,6 @@ export default function ProjectRunsPage() {
                             </div>
                           </div>
 
-                          {/* Test Runs for this Milestone */}
                           <div className="divide-y divide-gray-100">
                             {milestoneRuns.map((run) => (
                               <div 
@@ -1796,7 +1615,6 @@ export default function ProjectRunsPage() {
                   </div>
                 )}
 
-                {/* Runs without Milestone */}
                 {getRunsWithoutMilestone().length > 0 && (
                   <div className="bg-white rounded-lg border border-gray-200">
                     <div className="flex items-center justify-between p-4 bg-gray-50">
@@ -1935,7 +1753,6 @@ export default function ProjectRunsPage() {
                   </div>
                 )}
 
-                {/* Empty State */}
                 {milestones.filter(m => getRunsByMilestone(m.id).length > 0).length === 0 && getRunsWithoutMilestone().length === 0 && (
                   <div className="text-center py-12">
                     <i className="ri-flag-line text-6xl text-gray-300 mb-4"></i>
@@ -1949,7 +1766,6 @@ export default function ProjectRunsPage() {
         </main>
       </div>
 
-      {/* Add/Edit Run Modal */}
       {showAddRunModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
@@ -1978,7 +1794,6 @@ export default function ProjectRunsPage() {
                 </div>
 
                 <div className="space-y-6">
-                  {/* Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Name <span className="text-red-500">*</span>
@@ -1993,15 +1808,10 @@ export default function ProjectRunsPage() {
                     />
                   </div>
 
-                  {/* Configuration */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Configuration
-                      </label>
-                      <button className="text-xs text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap">
-                        Apply to cases
-                      </button>
+                      <label className="block text-sm font-medium text-gray-700">Configuration</label>
+                      <button className="text-xs text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap">Apply to cases</button>
                     </div>
                     <select 
                       name="configuration"
@@ -2014,12 +1824,9 @@ export default function ProjectRunsPage() {
                     <p className="text-xs text-gray-500 mt-1">The environment or configuration to test against, if any.</p>
                   </div>
 
-                  {/* Milestone */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Milestone
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">Milestone</label>
                       <button className="text-teal-600 hover:text-teal-700 cursor-pointer">
                         <i className="ri-add-line"></i>
                       </button>
@@ -2042,7 +1849,6 @@ export default function ProjectRunsPage() {
                     <p className="text-xs text-gray-500 mt-1">Optionally choose a milestone for this run or add a new one.</p>
                   </div>
 
-                  {/* Test Cases Selection */}
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                     <div className="space-y-3">
                       <label className="flex items-center gap-2 cursor-pointer">
@@ -2095,7 +1901,6 @@ export default function ProjectRunsPage() {
                     </div>
                   </div>
 
-                  {/* State */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       State <span className="text-red-500">*</span>
@@ -2113,15 +1918,10 @@ export default function ProjectRunsPage() {
                     </select>
                   </div>
 
-                  {/* Issues */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Issues
-                      </label>
-                      <button className="text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap">
-                        + Add
-                      </button>
+                      <label className="block text-sm font-medium text-gray-700">Issues</label>
+                      <button className="text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap">+ Add</button>
                     </div>
                     <select 
                       name="issues"
@@ -2133,11 +1933,8 @@ export default function ProjectRunsPage() {
                     </select>
                   </div>
 
-                  {/* Tags */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tags
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
                     <input
                       type="text"
                       name="tags"
@@ -2175,7 +1972,6 @@ export default function ProjectRunsPage() {
         </div>
       )}
 
-      {/* Select Test Cases Modal */}
       {showSelectCasesModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
@@ -2196,7 +1992,6 @@ export default function ProjectRunsPage() {
             </div>
 
             <div className="flex h-[calc(90vh-140px)]">
-              {/* Left Sidebar - Folders */}
               <div className="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto">
                 <div className="p-4">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Folders</h3>
@@ -2213,8 +2008,8 @@ export default function ProjectRunsPage() {
                       <span className="font-medium">All Cases</span>
                       <span className={`ml-auto text-xs px-2 py-1 rounded ${
                         selectedFolder === null 
-                          ? 'bg-teal-200 text-teal-700' 
-                          : 'text-gray-500'
+                            ? 'bg-teal-200 text-teal-700' 
+                            : 'text-gray-500'
                       }`}>
                         {selectedTestCases.length}/{testCases.length}
                       </span>
@@ -2235,7 +2030,7 @@ export default function ProjectRunsPage() {
                           selectedFolder === folder.name 
                             ? 'bg-teal-200 text-teal-700' 
                             : 'text-gray-500'
-                        }`}>
+                      }`}>
                           {getTestCasesByFolder(folder.name).filter(tc => selectedTestCases.includes(tc.id)).length}/{folder.count}
                         </span>
                       </div>
@@ -2244,9 +2039,7 @@ export default function ProjectRunsPage() {
                 </div>
               </div>
 
-              {/* Main Content - Test Cases */}
               <div className="flex-1 flex flex-col">
-                {/* Header */}
                 <div className="p-4 border-b border-gray-200 bg-white">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900">
@@ -2267,7 +2060,6 @@ export default function ProjectRunsPage() {
                   </div>
                 </div>
 
-                {/* Test Cases List */}
                 <div className="flex-1 overflow-y-auto">
                   {filteredTestCases.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -2339,7 +2131,6 @@ export default function ProjectRunsPage() {
                   )}
                 </div>
 
-                {/* Footer */}
                 <div className="p-4 bg-gray-50 border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-medium text-gray-900">
@@ -2371,7 +2162,6 @@ export default function ProjectRunsPage() {
                 </div>
               </div>
 
-              {/* Right Sidebar - Filters */}
               <div className="w-64 bg-gray-50 border-l border-gray-200 overflow-y-auto">
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-4">
@@ -2453,7 +2243,6 @@ export default function ProjectRunsPage() {
                             )}
                           </div>
                           
-                          {/* Selected Tags */}
                           {tagFilters.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-2">
                               {tagFilters.map((tag) => (
@@ -2474,7 +2263,7 @@ export default function ProjectRunsPage() {
                           )}
                           
                           {tagFilters.length === 0 && (
-                            <div className="text-xs text-gray-500 italic mt-2">No tags selected</div>
+                            <div className="text-xs text-gray-500 italic">No tags selected</div>
                           )}
                         </div>
                       ) : (

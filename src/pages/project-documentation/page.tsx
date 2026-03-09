@@ -21,8 +21,9 @@ interface DocumentItem {
 
 const TIER_INFO = {
   1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
-  2: { name: 'Professional', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
-  3: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
+  2: { name: 'Starter', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
+  4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
 };
 
 export default function ProjectDocumentation() {

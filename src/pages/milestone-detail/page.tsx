@@ -68,8 +68,9 @@ interface UserProfile {
 
 const TIER_INFO = {
   1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
-  2: { name: 'Professional', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
-  3: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
+  2: { name: 'Starter', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
+  4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
 };
 
 export default function MilestoneDetail() {
@@ -174,7 +175,31 @@ export default function MilestoneDetail() {
         .single();
 
       if (milestoneError) throw milestoneError;
-      setMilestone(milestoneData);
+
+      // Auto-correct milestone status
+      let correctedMilestone = { ...milestoneData };
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (correctedMilestone.start_date && correctedMilestone.status === 'upcoming') {
+        const [sy, sm, sd] = correctedMilestone.start_date.split('T')[0].split('-');
+        const startDate = new Date(parseInt(sy), parseInt(sm) - 1, parseInt(sd));
+        if (startDate <= today) {
+          correctedMilestone.status = 'started';
+          await supabase.from('milestones').update({ status: 'started' }).eq('id', milestoneId);
+        }
+      }
+
+      if (correctedMilestone.end_date && correctedMilestone.status !== 'completed') {
+        const [ey, em, ed] = correctedMilestone.end_date.split('T')[0].split('-');
+        const endDate = new Date(parseInt(ey), parseInt(em) - 1, parseInt(ed));
+        if (endDate < today) {
+          correctedMilestone.status = 'past_due';
+          await supabase.from('milestones').update({ status: 'past_due' }).eq('id', milestoneId);
+        }
+      }
+
+      setMilestone(correctedMilestone);
 
       // Fetch sub milestones
       const { data: subMilestonesData, error: subMilestonesError } = await supabase
@@ -244,75 +269,37 @@ export default function MilestoneDetail() {
               statusMap.set(result.test_case_id, result.status);
             }
 
-            // Collect activity logs
-            const activityType = result.note && result.note.trim() ? 'note' : result.status;
-            allActivityLogs.push({
-              id: `${run.id}-${result.test_case_id}-${result.created_at}`,
-              type: activityType as ActivityLog['type'],
-              testCaseName: testCaseNameMap.get(result.test_case_id) || 'Unknown Test Case',
-              runName: run.name,
-              timestamp: new Date(result.created_at),
-              author: result.author || 'Unknown',
-            });
+            // status 로그 추가 (untested 제외)
+            if (result.status && result.status !== 'untested') {
+              allActivityLogs.push({
+                id: `${run.id}-${result.test_case_id}-${result.created_at}-status`,
+                type: result.status as ActivityLog['type'],
+                testCaseName: testCaseNameMap.get(result.test_case_id) || 'Unknown Test Case',
+                runName: run.name,
+                timestamp: new Date(result.created_at),
+                author: result.author || 'Unknown',
+              });
+            }
+
+            // note가 있으면 별도 note 로그 추가 (자동 생성 텍스트 제외)
+            const autoNotePatterns = ['Status changed to', 'Passed via', 'via Pass', 'via pass'];
+            const isAutoNote = autoNotePatterns.some(pattern => result.note?.includes(pattern));
+            if (result.note && result.note.trim() && !isAutoNote) {
+              allActivityLogs.push({
+                id: `${run.id}-${result.test_case_id}-${result.created_at}-note`,
+                type: 'note',
+                testCaseName: testCaseNameMap.get(result.test_case_id) || 'Unknown Test Case',
+                runName: run.name,
+                timestamp: new Date(result.created_at),
+                author: result.author || 'Unknown',
+              });
+            }
 
             // Count stats
-            if (result.note && result.note.trim()) notesCount++;
+            if (result.note && result.note.trim() && !isAutoNote) notesCount++;
             if (result.status === 'passed') passedCount++;
             if (result.status === 'failed') failedCount++;
             if (result.status === 'retest') retestCount++;
-
-            // Collect issues from test results
-            if (result.issues && Array.isArray(result.issues)) {
-              result.issues.forEach((issue: any) => {
-                let issueId: string;
-                let issueTitle: string;
-                let issueUrl: string;
-                let issueStatus: string | undefined;
-
-                if (typeof issue === 'string') {
-                  // If issue is just a string (issue number like "151" or "GW-151")
-                  issueId = issue;
-                  issueTitle = issue.includes('-') ? issue : `${jiraProjectKey}-${issue}`;
-                  // Build URL: domain + /browse/ + full issue key
-                  const fullIssueKey = issue.includes('-') ? issue : `${jiraProjectKey}-${issue}`;
-                  issueUrl = jiraDomain ? `${jiraDomain}/browse/${fullIssueKey}` : '';
-                  issueStatus = undefined;
-                } else {
-                  // If issue is an object
-                  issueId = issue.id || issue.key || issue.title || '';
-                  issueTitle = issue.title || issue.key || issue.id || '';
-                  
-                  // Construct URL: use provided URL or build from domain + issue key
-                  if (issue.url) {
-                    issueUrl = issue.url;
-                  } else if (jiraDomain) {
-                    // Extract issue key - if it already has project prefix, use as is
-                    const issueKey = issue.key || issue.id || '';
-                    const fullIssueKey = issueKey.includes('-') ? issueKey : `${jiraProjectKey}-${issueKey}`;
-                    issueUrl = `${jiraDomain}/browse/${fullIssueKey}`;
-                  } else {
-                    issueUrl = '';
-                  }
-                  
-                  issueStatus = issue.status;
-                }
-
-                if (issueId && !issueIdSet.has(issueId)) {
-                  issueIdSet.add(issueId);
-                  allIssues.push({
-                    id: issueId,
-                    title: issueTitle,
-                    url: issueUrl,
-                    status: issueStatus,
-                    runId: run.id,
-                    runName: run.name,
-                    testCaseId: result.test_case_id,
-                    testCaseName: testCaseNameMap.get(result.test_case_id),
-                    createdAt: result.created_at,
-                  });
-                }
-              });
-            }
           });
 
           let passed_count = 0;
@@ -494,38 +481,48 @@ export default function MilestoneDetail() {
     const width = 100;
     const height = 100;
     const now = new Date();
-    
+    now.setHours(23, 59, 59, 999);
+
     // Count activities per day for the last 14 days
     const dailyCounts: number[] = new Array(days).fill(0);
-    
+
     logs.forEach(log => {
-      if (log.type === type || (type === 'note' && log.type === 'note')) {
-        const daysDiff = Math.floor((now.getTime() - log.timestamp.getTime()) / (1000 * 60 * 60 * 24));
+      if (log.type === type) {
+        const logDate = new Date(log.timestamp);
+        logDate.setHours(0, 0, 0, 0);
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        const daysDiff = Math.floor((todayStart.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24));
         if (daysDiff >= 0 && daysDiff < days) {
           dailyCounts[days - 1 - daysDiff]++;
         }
       }
     });
-    
-    const maxCount = Math.max(...dailyCounts, 1);
-    
-    return dailyCounts.map((count, idx) => {
-      const x = (idx / (days - 1)) * width;
-      const y = height - (count / maxCount) * height;
-      return `${x},${y}`;
-    }).join(' ');
+
+    return dailyCounts;
   };
 
   const generateDateLabels = () => {
     const labels: string[] = [];
     const now = new Date();
-    
+
     for (let i = 13; i >= 0; i -= 2) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       labels.push(date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }));
     }
-    
+
     return labels;
+  };
+
+  const buildPolylinePoints = (dailyCounts: number[], maxCount: number) => {
+    const days = 14;
+    const width = 100;
+    const height = 100;
+    return dailyCounts.map((count, idx) => {
+      const x = (idx / (days - 1)) * width;
+      const y = height - (maxCount > 0 ? (count / maxCount) * height : 0);
+      return `${x},${y}`;
+    }).join(' ');
   };
 
   const handleUpdateMilestone = async (e: React.FormEvent) => {
@@ -554,6 +551,36 @@ export default function MilestoneDetail() {
 
   const currentTier = userProfile?.subscription_tier || 1;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
+
+  // Derive unique contributors from activity logs
+  const contributors = Array.from(
+    new Map(
+      activityLogs.map(log => [log.author, log.author])
+    ).values()
+  ).slice(0, 8);
+
+  const getContributorColor = (index: number) => {
+    const colors = [
+      'from-teal-400 to-teal-600',
+      'from-orange-400 to-orange-600',
+      'from-green-400 to-green-600',
+      'from-pink-400 to-pink-600',
+      'from-amber-400 to-amber-600',
+      'from-cyan-400 to-cyan-600',
+      'from-rose-400 to-rose-600',
+      'from-indigo-400 to-indigo-600',
+    ];
+    return colors[index % colors.length];
+  };
+
+  const getContributorInitials = (author: string) => {
+    if (!author || author === 'Unknown') return 'UN';
+    const parts = author.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return author.substring(0, 2).toUpperCase();
+  };
 
   if (loading) {
     return (
@@ -893,7 +920,7 @@ export default function MilestoneDetail() {
                             <span className="text-sm text-gray-700 font-medium">Runs</span>
                             <div className="flex items-center gap-3">
                               <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div className="bg-teal-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                                <div className="bg-teal-500 h-2 rounded-full" style={{ width: runs.length > 0 ? '100%' : '0%' }}></div>
                               </div>
                               <span className="text-sm font-semibold text-gray-900 min-w-[30px] text-right">{runs.length}</span>
                             </div>
@@ -902,7 +929,7 @@ export default function MilestoneDetail() {
                             <span className="text-sm text-gray-700 font-medium">Sessions</span>
                             <div className="flex items-center gap-3">
                               <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                                <div className="bg-teal-500 h-2 rounded-full" style={{ width: sessions.length > 0 ? '100%' : '0%' }}></div>
                               </div>
                               <span className="text-sm font-semibold text-gray-900 min-w-[30px] text-right">{sessions.length}</span>
                             </div>
@@ -933,7 +960,7 @@ export default function MilestoneDetail() {
                                 to={`/projects/${projectId}/milestones/${sub.id}`}
                                 className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-teal-500 transition-all cursor-pointer"
                               >
-                                <div className="w-8 h-8 bg-gray-50 rounded flex items-center justify-center">
+                                <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
                                   <i className="ri-run-line text-gray-600"></i>
                                 </div>
                                 <div className="flex-1">
@@ -1080,107 +1107,148 @@ export default function MilestoneDetail() {
                           <i className="ri-information-line text-gray-400 text-sm"></i>
                         </div>
                       </div>
-                      
-                      <div className="flex gap-8">
-                        {/* Chart Area */}
-                        <div className="flex-1">
-                          <div className="h-48 relative">
-                            {/* Y-axis labels */}
-                            <div className="absolute left-0 top-0 bottom-8 w-8 flex flex-col justify-between text-xs text-gray-400">
-                              <span>100</span>
-                              <span>50</span>
-                              <span>0</span>
-                            </div>
-                            
-                            {/* Chart grid and lines */}
-                            <div className="ml-10 h-40 relative border-b border-l border-gray-200">
-                              {/* Grid lines */}
-                              <div className="absolute inset-0">
-                                <div className="absolute top-0 left-0 right-0 border-t border-gray-100"></div>
-                                <div className="absolute top-1/2 left-0 right-0 border-t border-gray-100"></div>
+
+                      {(() => {
+                        const noteCounts = generateChartPoints(activityLogs, 'note');
+                        const passedCounts = generateChartPoints(activityLogs, 'passed');
+                        const failedCounts = generateChartPoints(activityLogs, 'failed');
+                        const retestCounts = generateChartPoints(activityLogs, 'retest');
+
+                        const allCounts = [...noteCounts, ...passedCounts, ...failedCounts, ...retestCounts];
+                        const maxCount = Math.max(...allCounts, 1);
+
+                        const yLabels = [maxCount, Math.round(maxCount / 2), 0];
+
+                        const hasNotes = noteCounts.some(c => c > 0);
+                        const hasPassed = passedCounts.some(c => c > 0);
+                        const hasFailed = failedCounts.some(c => c > 0);
+                        const hasRetest = retestCounts.some(c => c > 0);
+
+                        return (
+                          <div className="flex gap-8">
+                            {/* Chart Area */}
+                            <div className="flex-1">
+                              <div className="h-48 relative">
+                                {/* Y-axis labels */}
+                                <div className="absolute left-0 top-0 bottom-8 w-8 flex flex-col justify-between text-xs text-gray-400">
+                                  {yLabels.map((v, i) => (
+                                    <span key={i}>{v}</span>
+                                  ))}
+                                </div>
+
+                                {/* Chart grid and lines */}
+                                <div className="ml-10 h-40 relative border-b border-l border-gray-200">
+                                  {/* Grid lines */}
+                                  <div className="absolute inset-0">
+                                    <div className="absolute top-0 left-0 right-0 border-t border-gray-100"></div>
+                                    <div className="absolute top-1/2 left-0 right-0 border-t border-gray-100"></div>
+                                  </div>
+
+                                  {/* Activity lines visualization */}
+                                  <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+                                    {hasNotes && (
+                                      <polyline
+                                        fill="none"
+                                        stroke="#3b82f6"
+                                        strokeWidth="2"
+                                        vectorEffect="non-scaling-stroke"
+                                        points={buildPolylinePoints(noteCounts, maxCount)}
+                                      />
+                                    )}
+                                    {hasPassed && (
+                                      <polyline
+                                        fill="none"
+                                        stroke="#22c55e"
+                                        strokeWidth="2"
+                                        vectorEffect="non-scaling-stroke"
+                                        points={buildPolylinePoints(passedCounts, maxCount)}
+                                      />
+                                    )}
+                                    {hasFailed && (
+                                      <polyline
+                                        fill="none"
+                                        stroke="#ef4444"
+                                        strokeWidth="2"
+                                        vectorEffect="non-scaling-stroke"
+                                        points={buildPolylinePoints(failedCounts, maxCount)}
+                                      />
+                                    )}
+                                    {hasRetest && (
+                                      <polyline
+                                        fill="none"
+                                        stroke="#f97316"
+                                        strokeWidth="2"
+                                        vectorEffect="non-scaling-stroke"
+                                        points={buildPolylinePoints(retestCounts, maxCount)}
+                                      />
+                                    )}
+                                    {!hasNotes && !hasPassed && !hasFailed && !hasRetest && (
+                                      <line x1="0" y1="100" x2="100" y2="100" stroke="#e5e7eb" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                                    )}
+                                  </svg>
+                                </div>
+
+                                {/* X-axis labels */}
+                                <div className="ml-10 flex justify-between text-xs text-gray-400 mt-2">
+                                  {generateDateLabels().map((label, idx) => (
+                                    <span key={idx}>{label}</span>
+                                  ))}
+                                </div>
                               </div>
-                              
-                              {/* Activity lines visualization */}
-                              <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-                                {/* Notes line (blue) */}
-                                <polyline
-                                  fill="none"
-                                  stroke="#3b82f6"
-                                  strokeWidth="2"
-                                  points={generateChartPoints(activityLogs, 'note')}
-                                />
-                                {/* Passed line (green) */}
-                                <polyline
-                                  fill="none"
-                                  stroke="#22c55e"
-                                  strokeWidth="2"
-                                  points={generateChartPoints(activityLogs, 'passed')}
-                                />
-                                {/* Failed line (red) */}
-                                <polyline
-                                  fill="none"
-                                  stroke="#ef4444"
-                                  strokeWidth="2"
-                                  points={generateChartPoints(activityLogs, 'failed')}
-                                />
-                                {/* Retest line (orange) */}
-                                <polyline
-                                  fill="none"
-                                  stroke="#f97316"
-                                  strokeWidth="2"
-                                  points={generateChartPoints(activityLogs, 'retest')}
-                                />
-                              </svg>
                             </div>
-                            
-                            {/* X-axis labels */}
-                            <div className="ml-10 flex justify-between text-xs text-gray-400 mt-2">
-                              {generateDateLabels().map((label, idx) => (
-                                <span key={idx}>{label}</span>
-                              ))}
+
+                            {/* Stats */}
+                            <div className="w-48 space-y-4">
+                              <div>
+                                <div className="text-lg font-bold text-gray-900">Last 14 days</div>
+                                <div className="text-sm text-gray-500">{activityStats.notes + activityStats.passed + activityStats.failed + activityStats.retest} recent changes</div>
+                              </div>
+
+                              <div className="space-y-3">
+                                {hasNotes && (
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-4 h-4 bg-blue-500 rounded-sm flex-shrink-0"></div>
+                                    <div>
+                                      <div className="text-sm font-semibold text-gray-900">Notes</div>
+                                      <div className="text-xs text-gray-500">{activityStats.notes} notes added</div>
+                                    </div>
+                                  </div>
+                                )}
+                                {hasPassed && (
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-4 h-4 bg-green-500 rounded-sm flex-shrink-0"></div>
+                                    <div>
+                                      <div className="text-sm font-semibold text-gray-900">Passed</div>
+                                      <div className="text-xs text-gray-500">{activityStats.passed} set to Passed</div>
+                                    </div>
+                                  </div>
+                                )}
+                                {hasFailed && (
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-4 h-4 bg-red-500 rounded-sm flex-shrink-0"></div>
+                                    <div>
+                                      <div className="text-sm font-semibold text-gray-900">Failed</div>
+                                      <div className="text-xs text-gray-500">{activityStats.failed} set to Failed</div>
+                                    </div>
+                                  </div>
+                                )}
+                                {hasRetest && (
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-4 h-4 bg-orange-500 rounded-sm flex-shrink-0"></div>
+                                    <div>
+                                      <div className="text-sm font-semibold text-gray-900">Retest</div>
+                                      <div className="text-xs text-gray-500">{activityStats.retest} set to Retest</div>
+                                    </div>
+                                  </div>
+                                )}
+                                {!hasNotes && !hasPassed && !hasFailed && !hasRetest && (
+                                  <div className="text-sm text-gray-400">No activity in last 14 days</div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        
-                        {/* Stats */}
-                        <div className="w-48 space-y-4">
-                          <div>
-                            <div className="text-lg font-bold text-gray-900">Last 14 days</div>
-                            <div className="text-sm text-gray-500">{activityStats.notes + activityStats.passed + activityStats.failed + activityStats.retest} recent changes</div>
-                          </div>
-                          
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
-                              <div>
-                                <div className="text-sm font-semibold text-gray-900">Notes</div>
-                                <div className="text-xs text-gray-500">{activityStats.notes} notes added</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="w-4 h-4 bg-green-500 rounded-sm"></div>
-                              <div>
-                                <div className="text-sm font-semibold text-gray-900">Passed</div>
-                                <div className="text-xs text-gray-500">{activityStats.passed} set to Passed</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="w-4 h-4 bg-red-500 rounded-sm"></div>
-                              <div>
-                                <div className="text-sm font-semibold text-gray-900">Failed</div>
-                                <div className="text-xs text-gray-500">{activityStats.failed} set to Failed</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="w-4 h-4 bg-orange-500 rounded-sm"></div>
-                              <div>
-                                <div className="text-sm font-semibold text-gray-900">Retest</div>
-                                <div className="text-xs text-gray-500">{activityStats.retest} set to Retest</div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                        );
+                      })()}
                     </div>
 
                     {/* ACTIVITY List */}
@@ -1486,14 +1554,21 @@ export default function MilestoneDetail() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-gray-900">Contributors</div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                        JD
+                    {contributors.length === 0 ? (
+                      <div className="text-xs text-gray-400 mt-2">No contributors yet</div>
+                    ) : (
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        {contributors.map((author, index) => (
+                          <div
+                            key={author}
+                            className={`w-8 h-8 bg-gradient-to-br ${getContributorColor(index)} rounded-full flex items-center justify-center text-white font-semibold text-xs cursor-default`}
+                            title={author}
+                          >
+                            {getContributorInitials(author)}
+                          </div>
+                        ))}
                       </div>
-                      <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                        SK
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -24,8 +24,9 @@ interface MilestoneWithProgress extends Milestone {
 
 const TIER_INFO = {
   1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
-  2: { name: 'Professional', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
-  3: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
+  2: { name: 'Starter', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
+  4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
 };
 
 export default function ProjectMilestones() {
@@ -117,7 +118,23 @@ export default function ProjectMilestones() {
       const milestonesWithProgress = (milestonesData || []).map((milestone) => {
         // Check if milestone is past due
         let currentStatus = milestone.status;
-        if (milestone.end_date && milestone.status !== 'completed') {
+
+        if (milestone.start_date && milestone.status === 'upcoming') {
+          const [sy, sm, sd] = milestone.start_date.split('T')[0].split('-');
+          const startDate = new Date(parseInt(sy), parseInt(sm) - 1, parseInt(sd));
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          if (startDate <= today) {
+            currentStatus = 'started';
+            supabase
+              .from('milestones')
+              .update({ status: 'started' })
+              .eq('id', milestone.id);
+          }
+        }
+
+        if (milestone.end_date && currentStatus !== 'completed') {
           const [year, month, day] = milestone.end_date.split('T')[0].split('-');
           const endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
           const today = new Date();

@@ -18,6 +18,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
     description: '',
     status: 'active',
     prefix: '',
+    jiraProjectKey: '',
   });
   const [loading, setLoading] = useState(true);
   const [canCreate, setCanCreate] = useState(true);
@@ -128,7 +129,6 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.name.trim() && canCreate) {
-      // prefix가 비어있으면 자동 생성
       const finalPrefix = formData.prefix.trim() || generatePrefix(formData.name);
       onCreate({ ...formData, prefix: finalPrefix });
     }
@@ -244,6 +244,21 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Jira Project Key
+                </label>
+                <input
+                  type="text"
+                  value={formData.jiraProjectKey}
+                  onChange={(e) => setFormData({ ...formData, jiraProjectKey: e.target.value.toUpperCase() })}
+                  placeholder="예: PROJ, SUI (Jira 프로젝트 키)"
+                  maxLength={20}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-mono uppercase"
+                />
+                <p className="mt-1 text-xs text-gray-500">이 프로젝트와 연결할 Jira 프로젝트 키를 입력하세요 (선택사항)</p>
               </div>
 
               <div>

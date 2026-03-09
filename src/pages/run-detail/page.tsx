@@ -36,6 +36,11 @@ interface TestResult {
   run?: {
     id: string;
     name: string;
+    milestone_id?: string | null;
+    milestone?: {
+      id: string;
+      name: string;
+    } | null;
   };
 }
 
@@ -47,10 +52,19 @@ interface ProjectMember {
   role: string;
 }
 
+interface JiraSettings {
+  domain: string;
+  email: string;
+  api_token: string;
+  project_key: string;
+  issue_type: string;
+}
+
 const TIER_INFO = {
   1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
-  2: { name: 'Professional', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
-  3: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
+  2: { name: 'Starter', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
+  4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
 };
 
 export default function RunDetail() {
@@ -92,6 +106,20 @@ export default function RunDetail() {
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; full_name: string | null } | null>(null);
   const [loadingComments, setLoadingComments] = useState(false);
   const [userProfile, setUserProfile] = useState<{ email: string; full_name: string; subscription_tier: number } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showAddIssueModal, setShowAddIssueModal] = useState(false);
+  const [jiraSettings, setJiraSettings] = useState<JiraSettings | null>(null);
+  const [issueFormData, setIssueFormData] = useState({
+    summary: '',
+    description: '',
+    issueType: 'Bug',
+    priority: 'Medium',
+    labels: '',
+    assignee: '',
+    components: '',
+  });
+  const [creatingIssue, setCreatingIssue] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     if (projectId && runId) {
@@ -178,8 +206,8 @@ export default function RunDetail() {
     try {
       const { data, error } = await supabase
         .from('jira_settings')
-        .select('domain')
-        .single();
+        .select('domain, email, api_token, issue_type')
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Jira 설정 로딩 오류:', error);
@@ -188,6 +216,13 @@ export default function RunDetail() {
 
       if (data && data.domain) {
         setJiraDomain(data.domain);
+        setJiraSettings(prev => ({
+          domain: data.domain,
+          email: data.email || '',
+          api_token: data.api_token || '',
+          project_key: prev?.project_key || '',
+          issue_type: data.issue_type || 'Bug',
+        }));
       }
     } catch (error) {
       console.error('Jira 설정 로딩 오류:', error);
@@ -247,7 +282,12 @@ export default function RunDetail() {
           attachments,
           run:test_runs!test_results_run_id_fkey(
             id,
-            name
+            name,
+            milestone_id,
+            milestone:milestones(
+              id,
+              name
+            )
           )
         `)
         .eq('test_case_id', selectedTestCase.id)
@@ -265,7 +305,12 @@ export default function RunDetail() {
         timestamp: new Date(item.created_at),
         stepStatuses: item.step_statuses,
         issues: item.issues || [],
-        run: item.run,
+        run: item.run ? {
+          id: item.run.id,
+          name: item.run.name,
+          milestone_id: item.run.milestone_id,
+          milestone: item.run.milestone,
+        } : undefined,
       }));
 
       setTestResults(results);
@@ -286,6 +331,11 @@ export default function RunDetail() {
 
       if (projectError) throw projectError;
       setProject(projectData);
+
+      // 프로젝트의 jira_project_key를 jiraSettings에 반영
+      if (projectData?.jira_project_key) {
+        setJiraSettings(prev => prev ? { ...prev, project_key: projectData.jira_project_key } : null);
+      }
 
       const { data: runData, error: runError } = await supabase
         .from('test_runs')
@@ -429,29 +479,15 @@ export default function RunDetail() {
         return;
       }
 
-      // Create a new test result for this run
-      const { data, error } = await supabase
-        .from('test_results')
-        .insert({
-          test_case_id: testCaseId,
-          run_id: runId,
-          status: newStatus,
-          author: currentUser.full_name || currentUser.email,
-          note: `Status changed to ${newStatus}`,
-          elapsed: '00:00',
-          attachments: [],
-          step_statuses: {},
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Update local state
+      // Update local state only (do NOT insert a new test result here)
       const updatedTestCases = testCases.map(tc => 
         tc.id === testCaseId ? { ...tc, runStatus: newStatus as any } : tc
       );
       setTestCases(updatedTestCases);
+
+      if (selectedTestCase?.id === testCaseId) {
+        setSelectedTestCase({ ...selectedTestCase, runStatus: newStatus as any });
+      }
       
       // Calculate untested count
       const untestedCount = updatedTestCases.filter(tc => tc.runStatus === 'untested').length;
@@ -497,7 +533,7 @@ export default function RunDetail() {
           run_id: runId,
           status: 'passed',
           author: currentUser.full_name || currentUser.email,
-          note: 'Passed via Pass & Next button',
+          note: '',
           elapsed: '00:00',
           attachments: [],
           step_statuses: {},
@@ -603,23 +639,20 @@ export default function RunDetail() {
   };
 
   const handleIssueKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && resultFormData.issues.trim()) {
+    // IME 조합 중(한글 입력 등)에는 무시
+    if (e.nativeEvent.isComposing) return;
+
+    if ((e.key === 'Enter' || e.key === ',') && resultFormData.issues.trim()) {
       e.preventDefault();
-      const issueKey = resultFormData.issues.trim().toUpperCase();
-      
-      // Validate issue key format (e.g., PROJ-123)
-      const issueKeyPattern = /^[A-Z]+-\d+$/;
-      if (!issueKeyPattern.test(issueKey)) {
-        alert('올바른 Jira 이슈 키 형식이 아닙니다 (예: PROJ-123)');
-        return;
-      }
-      
+      const issueKey = resultFormData.issues.trim().replace(/,$/, '').toUpperCase();
+      if (!issueKey) return;
+
       // Check if already exists
       if (resultFormData.issuesList.includes(issueKey)) {
-        alert('이미 추가된 이슈 키입니다');
+        setResultFormData({ ...resultFormData, issues: '' });
         return;
       }
-      
+
       setResultFormData({
         ...resultFormData,
         issues: '',
@@ -642,6 +675,15 @@ export default function RunDetail() {
       // 타이머 정지
       setIsTimerRunning(false);
 
+      // 입력 중인 이슈가 있으면 자동으로 추가
+      let finalIssuesList = [...resultFormData.issuesList];
+      if (resultFormData.issues.trim()) {
+        const pendingIssue = resultFormData.issues.trim().toUpperCase();
+        if (!finalIssuesList.includes(pendingIssue)) {
+          finalIssuesList = [...finalIssuesList, pendingIssue];
+        }
+      }
+
       // Save to Supabase
       const { data, error } = await supabase
         .from('test_results')
@@ -654,7 +696,7 @@ export default function RunDetail() {
           elapsed: resultFormData.elapsed,
           attachments: resultFormData.attachments.map(f => f.url),
           step_statuses: stepStatuses,
-          issues: resultFormData.issuesList,
+          issues: finalIssuesList,
         })
         .select()
         .single();
@@ -971,81 +1013,181 @@ export default function RunDetail() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-screen bg-white">
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
-                  <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                    <i className="ri-test-tube-line text-xl text-white"></i>
-                  </div>
-                  <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                    TestFlow
-                  </span>
-                </Link>
-              </div>
-              <div className="flex items-center gap-3 relative">
-                <div 
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {userProfile?.full_name?.charAt(0) || 'U'}
-                  </div>
-                </div>
-                
-                {showProfileMenu && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-10" 
-                      onClick={() => setShowProfileMenu(false)}
-                    ></div>
-                    <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
-                        <p className="text-xs text-gray-500">{userProfile?.email}</p>
-                        <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
-                          <i className={`${tierInfo.icon} text-sm`}></i>
-                          {tierInfo.name}
-                        </div>
-                      </div>
-                      <Link
-                        to="/settings"
-                        onClick={() => setShowProfileMenu(false)}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
-                      >
-                        <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                        <span>{t('common:settings')}</span>
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
-                      >
-                        <i className="ri-logout-box-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                        <span>{t('common:logout')}</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </header>
-          <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600">로딩 중...</p>
-            </div>
-          </main>
-        </div>
-      </div>
-    );
-  }
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(filteredTestCases.map(tc => tc.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    const next = new Set(selectedIds);
+    if (checked) {
+      next.add(id);
+    } else {
+      next.delete(id);
+    }
+    setSelectedIds(next);
+  };
+
+  const handleAddIssueClick = () => {
+    const isProfessionalOrHigher = (userProfile?.subscription_tier || 1) >= 2;
+    
+    if (!isProfessionalOrHigher) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    if (!jiraSettings || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.api_token) {
+      if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) {
+        navigate('/settings');
+      }
+      return;
+    }
+
+    setShowAddIssueModal(true);
+  };
+
+  const handleCreateJiraIssue = async (fromIssuesTab = false) => {
+    if (!issueFormData.summary.trim()) {
+      alert('Summary는 필수 항목입니다.');
+      return;
+    }
+
+    if (!jiraSettings || !selectedTestCase) {
+      return;
+    }
+
+    try {
+      setCreatingIssue(true);
+
+      const labelsArray = issueFormData.labels
+        .split(',')
+        .map(l => l.trim())
+        .filter(l => l);
+
+      const componentsArray = issueFormData.components
+        .split(',')
+        .map(c => c.trim())
+        .filter(c => c);
+
+      const { data, error } = await supabase.functions.invoke('create-jira-issue', {
+        body: {
+          domain: jiraSettings.domain,
+          email: jiraSettings.email,
+          apiToken: jiraSettings.api_token,
+          projectKey: jiraSettings.project_key,
+          summary: issueFormData.summary,
+          description: issueFormData.description,
+          issueType: issueFormData.issueType,
+          priority: issueFormData.priority,
+          labels: labelsArray,
+          assignee: issueFormData.assignee || undefined,
+          components: componentsArray.length > 0 ? componentsArray : undefined,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.issue && data.issue.key) {
+        const newIssueKey = data.issue.key;
+
+        if (testResults.length > 0) {
+          // 최신 result에 이슈 추가
+          const latestResult = testResults[0];
+          const updatedIssues = [...(latestResult.issues || []), newIssueKey];
+
+          const { error: updateError } = await supabase
+            .from('test_results')
+            .update({ issues: updatedIssues })
+            .eq('id', latestResult.id);
+
+          if (updateError) throw updateError;
+
+          // Update local state
+          setTestResults(testResults.map(r =>
+            r.id === latestResult.id
+              ? { ...r, issues: updatedIssues }
+              : r
+          ));
+        } else {
+          // testResults가 없을 경우 새 result 생성 (Issues 탭에서 Add Issue 시)
+          const { data: newResultData, error: insertError } = await supabase
+            .from('test_results')
+            .insert({
+              test_case_id: selectedTestCase.id,
+              run_id: runId,
+              status: 'failed',
+              author: currentUser?.full_name || currentUser?.email || '',
+              note: `Jira 이슈 생성: ${newIssueKey}`,
+              elapsed: '00:00',
+              attachments: [],
+              step_statuses: {},
+              issues: [newIssueKey],
+            })
+            .select()
+            .single();
+
+          if (insertError) throw insertError;
+
+          const newResult: TestResult = {
+            id: newResultData.id,
+            status: newResultData.status,
+            note: newResultData.note,
+            elapsed: newResultData.elapsed,
+            attachments: newResultData.attachments || [],
+            author: newResultData.author,
+            timestamp: new Date(newResultData.created_at),
+            stepStatuses: newResultData.step_statuses,
+            issues: newResultData.issues || [],
+            run: { id: runId!, name: run?.name || '' },
+          };
+
+          setTestResults([newResult]);
+
+          // 테스트케이스 상태도 업데이트
+          const updatedTestCases = testCases.map(tc =>
+            tc.id === selectedTestCase.id ? { ...tc, runStatus: 'failed' as any } : tc
+          );
+          setTestCases(updatedTestCases);
+          setSelectedTestCase({ ...selectedTestCase, runStatus: 'failed' as any });
+
+          const untestedCount = updatedTestCases.filter(tc => tc.runStatus === 'untested').length;
+          await updateRunStatus(runId!, { untested: untestedCount });
+        }
+
+        alert(`Jira 이슈가 생성되었습니다: ${newIssueKey}`);
+        setShowAddIssueModal(false);
+        setIssueFormData({
+          summary: '',
+          description: '',
+          issueType: 'Bug',
+          priority: 'Medium',
+          labels: '',
+          assignee: '',
+          components: '',
+        });
+
+        // Issues 탭으로 전환
+        setActiveTab('issues');
+
+        // 최신 결과 다시 로드
+        await fetchTestResults();
+      } else {
+        throw new Error(data.error || data.message || 'Jira 이슈 생성에 실패했습니다.');
+      }
+    } catch (error: any) {
+      console.error('Jira 이슈 생성 오류:', error);
+      alert(`Jira 이슈 생성에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+    } finally {
+      setCreatingIssue(false);
+    }
+  };
 
   const currentTier = userProfile?.subscription_tier || 1;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
+  const isProfessionalOrHigher = currentTier >= 2;
 
   return (
     <div className="flex h-screen bg-white">
@@ -1055,7 +1197,7 @@ export default function RunDetail() {
             <div className="flex items-center gap-4">
               <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
                 <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                  <i className="ri-test-tube-line text-xl text-white"></i>
+                  <i className="ri-user-line text-xl text-white"></i>
                 </div>
                 <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
                   TestFlow
@@ -1141,17 +1283,20 @@ export default function RunDetail() {
                       run?.status === 'completed' ? 'bg-green-100 text-green-700' :
                       run?.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
                       run?.status === 'under_review' ? 'bg-purple-100 text-purple-700' :
+                      run?.status === 'paused' ? 'bg-amber-100 text-amber-700' :
                       'bg-yellow-100 text-yellow-700'
                     }`}>
                       <i className={`${
                       run?.status === 'completed' ? 'ri-checkbox-circle-fill' :
                       run?.status === 'in_progress' ? 'ri-loader-4-line animate-spin' :
                       run?.status === 'under_review' ? 'ri-eye-line' :
+                      run?.status === 'paused' ? 'ri-pause-circle-fill' :
                       'ri-time-fill'
                     } text-lg`}></i>
                       {run?.status === 'completed' ? 'Completed' :
                        run?.status === 'in_progress' ? 'In Progress' :
                        run?.status === 'under_review' ? 'Under Review' :
+                       run?.status === 'paused' ? 'Paused' :
                        'New'}
                     </span>
                   </div>
@@ -1274,7 +1419,12 @@ export default function RunDetail() {
                 <div>
                   <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200">
                     <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" className="w-4 h-4 text-teal-600 cursor-pointer" />
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-teal-600 cursor-pointer"
+                        checked={filteredTestCases.length > 0 && selectedIds.size === filteredTestCases.length}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                      />
                     </div>
                     <div className="col-span-2">
                       <span className="text-xs font-semibold text-gray-600 uppercase">ID</span>
@@ -1308,7 +1458,12 @@ export default function RunDetail() {
                         onClick={() => setSelectedTestCase(testCase)}
                       >
                         <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
-                          <input type="checkbox" className="w-4 h-4 text-teal-600 cursor-pointer" />
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-teal-600 cursor-pointer"
+                            checked={selectedIds.has(testCase.id)}
+                            onChange={(e) => handleSelectOne(testCase.id, e.target.checked)}
+                          />
                         </div>
                         <div className="col-span-2 flex items-center">
                           <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded truncate max-w-full" title={testCase.id}>
@@ -1324,7 +1479,7 @@ export default function RunDetail() {
                           )}
                         </div>
                         <div className="col-span-2 flex items-center">
-                          <span className={`inline-flex items-center gap-1 text-xs font-medium ${
+                          <span className={`inline-flex items-center gap-1 text-xs font-normal ${
                             testCase.priority === 'high' ? 'text-red-600' :
                             testCase.priority === 'medium' ? 'text-yellow-600' :
                             'text-gray-600'
@@ -1350,512 +1505,629 @@ export default function RunDetail() {
           {/* 우측 상세 패널 */}
           {selectedTestCase && (
             <div className="w-[576px] bg-white border-l border-gray-200 flex flex-col overflow-hidden">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">Details</h2>
-                  <div className="flex items-center gap-3">
-                    <select
-                      value={selectedTestCase.runStatus}
-                      onChange={(e) => handleStatusChange(selectedTestCase.id, e.target.value)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${getStatusColor(selectedTestCase.runStatus)}`}
+              <div className="flex-1 overflow-y-auto p-6 border-b border-gray-200">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">Details</h2>
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={selectedTestCase.runStatus}
+                        onChange={(e) => handleStatusChange(selectedTestCase.id, e.target.value)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${getStatusColor(selectedTestCase.runStatus)}`}
+                      >
+                        <option value="untested">Untested</option>
+                        <option value="passed">Passed</option>
+                        <option value="failed">Failed</option>
+                        <option value="blocked">Blocked</option>
+                        <option value="retest">Retest</option>
+                      </select>
+                      <button
+                        onClick={() => setSelectedTestCase(null)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+                      >
+                        <i className="ri-close-line text-xl"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 mb-6">
+                    <button 
+                      onClick={handleAddResult}
+                      className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
                     >
-                      <option value="untested">Untested</option>
-                      <option value="passed">Passed</option>
-                      <option value="failed">Failed</option>
-                      <option value="blocked">Blocked</option>
-                      <option value="retest">Retest</option>
-                    </select>
+                      Add result
+                    </button>
+                    <button 
+                      onClick={handlePassAndNext}
+                      className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
+                    >
+                      Pass & Next
+                    </button>
                     <button
-                      onClick={() => setSelectedTestCase(null)}
+                      onClick={handlePreviousTestCase}
+                      disabled={filteredTestCases.findIndex(tc => tc.id === selectedTestCase.id) === 0}
+                      className="w-10 h-10 flex items-center justify-center bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <i className="ri-arrow-left-s-line text-xl w-5 h-5 flex items-center justify-center"></i>
+                    </button>
+                    <button
+                      onClick={handleNextTestCase}
+                      disabled={filteredTestCases.findIndex(tc => tc.id === selectedTestCase.id) === filteredTestCases.length - 1}
+                      className="w-10 h-10 flex items-center justify-center bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <i className="ri-arrow-right-s-line text-xl w-5 h-5 flex items-center justify-center"></i>
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        {selectedTestCase.is_automated && (
+                          <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
+                            <i className="ri-robot-line text-purple-600 text-lg"></i>
+                          </div>
+                        )}
+                        <h3 className="text-lg font-bold text-gray-900">{selectedTestCase.title}</h3>
+                      </div>
+                      {selectedTestCase.description && (
+                        <p className="text-sm text-gray-600">{selectedTestCase.description}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Priority</label>
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
+                            selectedTestCase.priority
+                          )}`}
+                        >
+                          {selectedTestCase.priority.toUpperCase()}
+                        </span>
+                      </div>
+
+                      {selectedTestCase.folder && (
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Folder</label>
+                          <p className="text-sm text-gray-900">{selectedTestCase.folder}</p>
+                        </div>
+                      )}
+
+                      {selectedTestCase.tags && (
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Tags</label>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedTestCase.tags.split(',').map((tag, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
+                              >
+                                {tag.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedTestCase.assignee && (
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Assignee</label>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                              {selectedTestCase.assignee.substring(0, 2).toUpperCase()}
+                            </div>
+                            <span className="text-sm text-gray-900">{selectedTestCase.assignee}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Created</label>
+                        <p className="text-sm text-gray-900">
+                          {new Date(selectedTestCase.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedTestCase.steps && (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Test Steps</label>
+                        <div className="space-y-2">
+                          {selectedTestCase.steps.split('\n').filter((s: string) => s.trim()).map((step: string, index: number) => {
+                            const content = step.replace(/^\d+\.\s*/, '');
+                            const isHtml = /<[^>]+>/.test(content);
+                            return (
+                              <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                                <div className="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <span className="text-teal-700 text-xs font-bold">{index + 1}</span>
+                                </div>
+                                {isHtml ? (
+                                  <div
+                                    className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                    dangerouslySetInnerHTML={{ __html: content }}
+                                    onClick={(e) => {
+                                      const target = e.target as HTMLElement;
+                                      if (target.tagName === 'IMG') {
+                                        const img = target as HTMLImageElement;
+                                        setPreviewImage({ url: img.src, name: img.alt || 'image' });
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedTestCase.expected_result && (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Expected Result</label>
+                        <div className="space-y-2">
+                          {selectedTestCase.expected_result.split('\n').filter((s: string) => s.trim()).map((result: string, index: number) => {
+                            const content = result.replace(/^\d+\.\s*/, '');
+                            const isHtml = /<[^>]+>/.test(content);
+                            return (
+                              <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                                <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <span className="text-green-700 text-xs font-bold">{index + 1}</span>
+                                </div>
+                                {isHtml ? (
+                                  <div
+                                    className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                    dangerouslySetInnerHTML={{ __html: content }}
+                                    onClick={(e) => {
+                                      const target = e.target as HTMLElement;
+                                      if (target.tagName === 'IMG') {
+                                        const img = target as HTMLImageElement;
+                                        setPreviewImage({ url: img.src, name: img.alt || 'image' });
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedTestCase.attachments && selectedTestCase.attachments.length > 0 && (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Attachments</label>
+                        <div className="grid grid-cols-3 gap-3">
+                          {selectedTestCase.attachments.map((file, index) => (
+                            <div
+                              key={index}
+                              className="aspect-square rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:border-teal-500 hover:shadow-md transition-all"
+                              onClick={() => setPreviewImage({ url: file.url, name: file.name })}
+                            >
+                              <img
+                                src={file.url}
+                                alt={file.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 탭 메뉴 */}
+                <div className="border-b border-gray-200">
+                  <div className="flex">
+                    <button
+                      onClick={() => setActiveTab('comments')}
+                      className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                        activeTab === 'comments'
+                          ? 'text-teal-600 border-b-2 border-teal-600'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Comments
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('results')}
+                      className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                        activeTab === 'results'
+                          ? 'text-teal-600 border-b-2 border-teal-600'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Results
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('issues')}
+                      className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                        activeTab === 'issues'
+                          ? 'text-teal-600 border-b-2 border-teal-600'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Issues
+                    </button>
+                  </div>
+                </div>
+
+                {/* 탭 콘텐츠 */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  {activeTab === 'comments' && (
+                    <div className="space-y-4">
+                      <div>
+                        <textarea
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder="Add a comment..."
+                          rows={3}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                        ></textarea>
+                        <button 
+                          onClick={handlePostComment}
+                          disabled={!commentText.trim() || !currentUser}
+                          className="mt-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Post Comment
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        {loadingComments ? (
+                          <div className="text-center py-8">
+                            <i className="ri-loader-4-line animate-spin text-2xl text-gray-400 mb-2"></i>
+                            <p className="text-sm text-gray-500">Loading comments...</p>
+                          </div>
+                        ) : comments.length === 0 ? (
+                          <div className="text-center py-8">
+                            <i className="ri-chat-3-line text-3xl text-gray-300 mb-2"></i>
+                            <p className="text-sm text-gray-500">No comments yet</p>
+                          </div>
+                        ) : (
+                          comments.map((comment) => (
+                            <div key={comment.id} className="bg-white border border-gray-200 rounded-lg p-4 group relative">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0">
+                                  <span className="inline-flex items-center px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-semibold">
+                                    전용
+                                  </span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-sm font-semibold text-gray-900">{comment.author}</span>
+                                    <span className="text-xs text-gray-500">
+                                      {comment.timestamp.toLocaleString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      })}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{comment.text}</p>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteComment(comment.id)}
+                                  className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                                >
+                                  <i className="ri-delete-bin-line text-sm"></i>
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'results' && (
+                    <div className="space-y-3">
+                      {testResults.length === 0 ? (
+                        <div className="text-center py-8">
+                          <i className="ri-file-list-line text-3xl text-gray-300 mb-2"></i>
+                          <p className="text-sm text-gray-500">No test results yet</p>
+                        </div>
+                      ) : (
+                        testResults.map((result) => (
+                          <div 
+                            key={result.id}
+                            className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all cursor-pointer"
+                            onClick={() => setSelectedResult(result)}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                  result.status === 'passed' ? 'bg-green-100' :
+                                  result.status === 'failed' ? 'bg-red-100' :
+                                  result.status === 'blocked' ? 'bg-orange-100' :
+                                  result.status === 'retest' ? 'bg-yellow-100' :
+                                  'bg-gray-100'
+                                }`}>
+                                  <i className={`text-sm ${
+                                    result.status === 'passed' ? 'ri-checkbox-circle-fill text-green-600' :
+                                    result.status === 'failed' ? 'ri-close-circle-fill text-red-600' :
+                                    result.status === 'blocked' ? 'ri-forbid-fill text-orange-600' :
+                                    result.status === 'retest' ? 'ri-refresh-fill text-yellow-600' :
+                                    'ri-question-fill text-gray-600'
+                                  }`}></i>
+                                </div>
+                                <span className={`text-sm font-semibold capitalize ${
+                                  result.status === 'passed' ? 'text-green-700' :
+                                  result.status === 'failed' ? 'text-red-700' :
+                                  result.status === 'blocked' ? 'text-orange-700' :
+                                  result.status === 'retest' ? 'text-yellow-700' :
+                                  'text-gray-700'
+                                }`}>
+                                  {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
+                                </span>
+                              </div>
+                              {result.elapsed && (
+                                <span className="text-xs text-gray-500 flex items-center gap-1">
+                                  <i className="ri-time-line"></i>
+                                  {result.elapsed}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mb-2">
+                              <p className="text-xs text-gray-500 mb-1">Run</p>
+                              <p className="text-sm text-gray-900 font-medium">{result.run?.name || run?.name || 'Unknown Run'}</p>
+                            </div>
+                            {result.run?.milestone && (
+                              <div className="mb-2">
+                                <p className="text-xs text-gray-500 mb-1">Milestone</p>
+                                <div className="flex items-center gap-1.5">
+                                  <i className="ri-flag-2-line text-teal-600 text-xs"></i>
+                                  <p className="text-sm text-gray-900 font-medium">{result.run.milestone.name}</p>
+                                </div>
+                              </div>
+                            )}
+                            {result.author && (
+                              <div className="mb-2">
+                                <p className="text-xs text-gray-500 mb-1">Executed by</p>
+                                <p className="text-sm text-gray-700">{result.author}</p>
+                              </div>
+                            )}
+                            {result.note && (
+                              <div className="mb-2">
+                                <p className="text-xs text-gray-500 mb-1">Note</p>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{result.note}</p>
+                              </div>
+                            )}
+                            {result.issues && result.issues.length > 0 && (
+                              <div className="mb-2">
+                                <p className="text-xs text-gray-500 mb-1">Linked Issues</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {result.issues.map((issueKey, idx) => (
+                                    <a
+                                      key={idx}
+                                      href={getJiraIssueUrl(issueKey)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 transition-all"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <i className="ri-bug-line mr-1"></i>
+                                      {issueKey}
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            <p className="text-xs text-gray-400 mt-2">
+                              {result.timestamp.toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'issues' && (
+                    <div className="space-y-3">
+                      {/* Add Issue Button */}
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-semibold text-gray-700">Linked Issues</h3>
+                        <button
+                          onClick={() => {
+                            if (!isProfessionalOrHigher) {
+                              setShowUpgradeModal(true);
+                              return;
+                            }
+                            if (!jiraSettings || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.api_token) {
+                              if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) {
+                                navigate('/settings');
+                              }
+                              return;
+                            }
+                            setShowAddIssueModal(true);
+                          }}
+                          className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                            isProfessionalOrHigher
+                              ? 'bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200'
+                              : 'bg-gray-100 text-gray-400 border border-gray-200'
+                          }`}
+                        >
+                          <i className="ri-add-line"></i>
+                          Add Issue
+                          {!isProfessionalOrHigher && <i className="ri-lock-line ml-0.5"></i>}
+                        </button>
+                      </div>
+
+                      {!isProfessionalOrHigher && (
+                        <div className="mb-4 p-4 bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <i className="ri-lock-line text-teal-600 text-xl"></i>
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900 mb-1">Jira 이슈 생성은 Professional 이상 요금제에서 사용 가능합니다</h4>
+                              <p className="text-sm text-gray-600 mb-3">
+                                테스트 결과에서 바로 Jira 이슈를 생성하고 관리하세요.
+                              </p>
+                              <button className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap">
+                                <i className="ri-arrow-up-circle-line mr-2"></i>
+                                업그레이드 문의
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {(() => {
+                        // Collect all unique issues from test results
+                        const allIssues = testResults
+                          .filter(r => r.issues && r.issues.length > 0)
+                          .flatMap(r => (r.issues || []).map(issueKey => ({
+                            issueKey,
+                            runName: r.run?.name || run?.name || 'Unknown Run',
+                            runId: r.run?.id || runId,
+                            status: r.status,
+                            createdAt: r.timestamp,
+                          })));
+                        
+                        // Remove duplicates by issue key
+                        const uniqueIssuesMap = new Map();
+                        allIssues.forEach(issue => {
+                          if (!uniqueIssuesMap.has(issue.issueKey)) {
+                            uniqueIssuesMap.set(issue.issueKey, issue);
+                          }
+                        });
+                        const uniqueIssues = Array.from(uniqueIssuesMap.values());
+
+                        if (uniqueIssues.length === 0) {
+                          return (
+                            <div className="text-center py-8">
+                              <i className="ri-bug-line text-3xl text-gray-300 mb-2"></i>
+                              <p className="text-sm text-gray-500">No issues linked</p>
+                            </div>
+                          );
+                        }
+
+                        return uniqueIssues.map((issue, idx) => {
+                          // Jira URL 생성
+                          const issueUrl = jiraDomain && issue.issueKey
+                            ? `https://${jiraDomain}/browse/${issue.issueKey}`
+                            : '';
+
+                          const CardContent = (
+                            <>
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <i className="ri-bug-line text-red-600"></i>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-semibold text-gray-900">
+                                    {issue.issueKey}
+                                  </div>
+                                  <p className="text-sm text-gray-700 mt-1">{issue.summary}</p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    From run: <span className="font-medium text-gray-700">{issue.runName}</span>
+                                  </p>
+                                </div>
+                              </div>
+                            </>
+                          );
+
+                          if (issueUrl) {
+                            return (
+                              <a
+                                key={idx}
+                                href={issueUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block bg-white border rounded-lg p-4 transition-all hover:border-teal-500 hover:shadow-md cursor-pointer"
+                              >
+                                {CardContent}
+                              </a>
+                            );
+                          }
+
+                          return (
+                            <div
+                              key={idx}
+                              className="bg-white border rounded-lg p-4"
+                            >
+                              {CardContent}
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Upgrade Modal */}
+          {showUpgradeModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                      <i className="ri-vip-crown-line text-amber-600 text-2xl"></i>
+                    </div>
+                    <button
+                      onClick={() => setShowUpgradeModal(false)}
                       className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
                     >
                       <i className="ri-close-line text-xl"></i>
                     </button>
                   </div>
+                  <h2 className="text-lg font-bold text-gray-900 mb-2">Professional 요금제가 필요합니다</h2>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Jira 이슈 생성 기능은 <span className="font-semibold text-teal-700">Professional</span> 이상 요금제에서 사용할 수 있습니다. 업그레이드하면 테스트 결과에서 바로 Jira 이슈를 생성하고 관리할 수 있습니다.
+                  </p>
+                  <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <i className="ri-checkbox-circle-fill text-teal-500"></i>
+                      테스트 결과에서 Jira 이슈 즉시 생성
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <i className="ri-checkbox-circle-fill text-teal-500"></i>
+                      이슈 키 연동 및 추적
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <i className="ri-checkbox-circle-fill text-teal-500"></i>
+                      최대 50명 팀 멤버 초대
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowUpgradeModal(false)}
+                      className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      닫기
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUpgradeModal(false);
+                        navigate('/settings');
+                      }}
+                      className="flex-1 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
+                    >
+                      <i className="ri-arrow-up-circle-line"></i>
+                      요금제 업그레이드
+                    </button>
+                  </div>
                 </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 mb-6">
-                  <button 
-                    onClick={handleAddResult}
-                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
-                  >
-                    Add result
-                  </button>
-                  <button 
-                    onClick={handlePassAndNext}
-                    className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
-                  >
-                    Pass & Next
-                  </button>
-                  <button
-                    onClick={handlePreviousTestCase}
-                    disabled={filteredTestCases.findIndex(tc => tc.id === selectedTestCase.id) === 0}
-                    className="w-10 h-10 flex items-center justify-center bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <i className="ri-arrow-left-s-line text-xl w-5 h-5 flex items-center justify-center"></i>
-                  </button>
-                  <button
-                    onClick={handleNextTestCase}
-                    disabled={filteredTestCases.findIndex(tc => tc.id === selectedTestCase.id) === filteredTestCases.length - 1}
-                    className="w-10 h-10 flex items-center justify-center bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <i className="ri-arrow-right-s-line text-xl w-5 h-5 flex items-center justify-center"></i>
-                  </button>
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      {selectedTestCase.is_automated && (
-                        <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
-                          <i className="ri-robot-line text-purple-600 text-lg"></i>
-                        </div>
-                      )}
-                      <h3 className="text-lg font-bold text-gray-900">{selectedTestCase.title}</h3>
-                    </div>
-                    {selectedTestCase.description && (
-                      <p className="text-sm text-gray-600">{selectedTestCase.description}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Priority</label>
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
-                          selectedTestCase.priority
-                        )}`}
-                      >
-                        {selectedTestCase.priority.toUpperCase()}
-                      </span>
-                    </div>
-
-                    {selectedTestCase.folder && (
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Folder</label>
-                        <p className="text-sm text-gray-900">{selectedTestCase.folder}</p>
-                      </div>
-                    )}
-
-                    {selectedTestCase.tags && (
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Tags</label>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedTestCase.tags.split(',').map((tag, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
-                            >
-                              {tag.trim()}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedTestCase.assignee && (
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Assignee</label>
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                            {selectedTestCase.assignee.substring(0, 2).toUpperCase()}
-                          </div>
-                          <span className="text-sm text-gray-900">{selectedTestCase.assignee}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Created</label>
-                      <p className="text-sm text-gray-900">
-                        {new Date(selectedTestCase.created_at).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-
-                  {selectedTestCase.steps && (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Test Steps</label>
-                      <div className="space-y-2">
-                        {selectedTestCase.steps.split('\n').filter((s: string) => s.trim()).map((step: string, index: number) => {
-                          const content = step.replace(/^\d+\.\s*/, '');
-                          const isHtml = /<[^>]+>/.test(content);
-                          return (
-                            <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
-                              <div className="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-xs flex-shrink-0 mt-0.5">
-                                {index + 1}
-                              </div>
-                              {isHtml ? (
-                                <div
-                                  className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                                  dangerouslySetInnerHTML={{ __html: content }}
-                                  onClick={(e) => {
-                                    const target = e.target as HTMLElement;
-                                    if (target.tagName === 'IMG') {
-                                      const img = target as HTMLImageElement;
-                                      setPreviewImage({ url: img.src, name: img.alt || 'image' });
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedTestCase.expected_result && (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Expected Result</label>
-                      <div className="space-y-2">
-                        {selectedTestCase.expected_result.split('\n').filter((s: string) => s.trim()).map((result: string, index: number) => {
-                          const content = result.replace(/^\d+\.\s*/, '');
-                          const isHtml = /<[^>]+>/.test(content);
-                          return (
-                            <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
-                              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-semibold text-xs flex-shrink-0 mt-0.5">
-                                {index + 1}
-                              </div>
-                              {isHtml ? (
-                                <div
-                                  className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                                  dangerouslySetInnerHTML={{ __html: content }}
-                                  onClick={(e) => {
-                                    const target = e.target as HTMLElement;
-                                    if (target.tagName === 'IMG') {
-                                      const img = target as HTMLImageElement;
-                                      setPreviewImage({ url: img.src, name: img.alt || 'image' });
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedTestCase.attachments && selectedTestCase.attachments.length > 0 && (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Attachments</label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {selectedTestCase.attachments.map((file, index) => (
-                          <div
-                            key={index}
-                            className="aspect-square rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:border-teal-500 hover:shadow-md transition-all"
-                            onClick={() => setPreviewImage({ url: file.url, name: file.name })}
-                          >
-                            <img
-                              src={file.url}
-                              alt={file.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 탭 메뉴 */}
-              <div className="border-b border-gray-200">
-                <div className="flex">
-                  <button
-                    onClick={() => setActiveTab('comments')}
-                    className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                      activeTab === 'comments'
-                        ? 'text-teal-600 border-b-2 border-teal-600'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Comments
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('results')}
-                    className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                      activeTab === 'results'
-                        ? 'text-teal-600 border-b-2 border-teal-600'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Results
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('issues')}
-                    className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                      activeTab === 'issues'
-                        ? 'text-teal-600 border-b-2 border-teal-600'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Issues
-                  </button>
-                </div>
-              </div>
-
-              {/* 탭 콘텐츠 */}
-              <div className="flex-1 overflow-y-auto p-6">
-                {activeTab === 'comments' && (
-                  <div className="space-y-4">
-                    <div>
-                      <textarea
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Add a comment..."
-                        rows={3}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
-                      ></textarea>
-                      <button 
-                        onClick={handlePostComment}
-                        disabled={!commentText.trim() || !currentUser}
-                        className="mt-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Post Comment
-                      </button>
-                    </div>
-                    <div className="space-y-3">
-                      {loadingComments ? (
-                        <div className="text-center py-8">
-                          <i className="ri-loader-4-line animate-spin text-2xl text-gray-400 mb-2"></i>
-                          <p className="text-sm text-gray-500">Loading comments...</p>
-                        </div>
-                      ) : comments.length === 0 ? (
-                        <div className="text-center py-8">
-                          <i className="ri-chat-3-line text-3xl text-gray-300 mb-2"></i>
-                          <p className="text-sm text-gray-500">No comments yet</p>
-                        </div>
-                      ) : (
-                        comments.map((comment) => (
-                          <div key={comment.id} className="bg-white border border-gray-200 rounded-lg p-4 group relative">
-                            <div className="flex items-start gap-3">
-                              <div className="flex-shrink-0">
-                                <span className="inline-flex items-center px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-semibold">
-                                  전용
-                                </span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-sm font-semibold text-gray-900">{comment.author}</span>
-                                  <span className="text-xs text-gray-500">
-                                    {comment.timestamp.toLocaleString('en-US', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                      hour12: true
-                                    })}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{comment.text}</p>
-                              </div>
-                              <button
-                                onClick={() => handleDeleteComment(comment.id)}
-                                className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all cursor-pointer flex-shrink-0"
-                              >
-                                <i className="ri-delete-bin-line text-sm"></i>
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'results' && (
-                  <div className="space-y-3">
-                    {testResults.length === 0 ? (
-                      <div className="text-center py-8">
-                        <i className="ri-file-list-line text-3xl text-gray-300 mb-2"></i>
-                        <p className="text-sm text-gray-500">No test results yet</p>
-                      </div>
-                    ) : (
-                      testResults.map((result) => (
-                        <div 
-                          key={result.id}
-                          className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all cursor-pointer"
-                          onClick={() => setSelectedResult(result)}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                result.status === 'passed' ? 'bg-green-100' :
-                                result.status === 'failed' ? 'bg-red-100' :
-                                result.status === 'blocked' ? 'bg-orange-100' :
-                                result.status === 'retest' ? 'bg-yellow-100' :
-                                'bg-gray-100'
-                              }`}>
-                                <i className={`text-sm ${
-                                  result.status === 'passed' ? 'ri-checkbox-circle-fill text-green-600' :
-                                  result.status === 'failed' ? 'ri-close-circle-fill text-red-600' :
-                                  result.status === 'blocked' ? 'ri-forbid-fill text-orange-600' :
-                                  result.status === 'retest' ? 'ri-refresh-line text-yellow-600' :
-                                  'ri-question-fill text-gray-600'
-                                }`}></i>
-                              </div>
-                              <span className={`text-sm font-semibold capitalize ${
-                                result.status === 'passed' ? 'text-green-700' :
-                                result.status === 'failed' ? 'text-red-700' :
-                                result.status === 'blocked' ? 'text-orange-700' :
-                                result.status === 'retest' ? 'text-yellow-700' :
-                                'text-gray-700'
-                              }`}>
-                                {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
-                              </span>
-                            </div>
-                            {result.elapsed && (
-                              <span className="text-xs text-gray-500 flex items-center gap-1">
-                                <i className="ri-time-line"></i>
-                                {result.elapsed}
-                              </span>
-                            )}
-                          </div>
-                          <div className="mb-2">
-                            <p className="text-xs text-gray-500 mb-1">Run</p>
-                            <p className="text-sm text-gray-900 font-medium">{result.run?.name || run?.name || 'Unknown Run'}</p>
-                          </div>
-                          {result.author && (
-                            <div className="mb-2">
-                              <p className="text-xs text-gray-500 mb-1">Executed by</p>
-                              <p className="text-sm text-gray-700">{result.author}</p>
-                            </div>
-                          )}
-                          {result.note && (
-                            <div className="mb-2">
-                              <p className="text-xs text-gray-500 mb-1">Note</p>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{result.note}</p>
-                            </div>
-                          )}
-                          {result.issues && result.issues.length > 0 && (
-                            <div className="mb-2">
-                              <p className="text-xs text-gray-500 mb-1">Linked Issues</p>
-                              <div className="flex flex-wrap gap-1">
-                                {result.issues.map((issueKey, idx) => (
-                                  <a
-                                    key={idx}
-                                    href={getJiraIssueUrl(issueKey)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 transition-all"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <i className="ri-bug-line mr-1"></i>
-                                    {issueKey}
-                                  </a>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          <p className="text-xs text-gray-400 mt-2">
-                            {result.timestamp.toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-
-                {activeTab === 'issues' && (
-                  <div className="space-y-3">
-                    {(() => {
-                      // Collect all unique issues from test results
-                      const allIssues = testResults
-                        .filter(r => r.issues && r.issues.length > 0)
-                        .flatMap(r => (r.issues || []).map(issueKey => ({
-                          issueKey,
-                          runName: r.run?.name || run?.name || 'Unknown Run',
-                          runId: r.run?.id || runId,
-                          status: r.status,
-                          createdAt: r.timestamp,
-                        })));
-                      
-                      // Remove duplicates by issue key
-                      const uniqueIssuesMap = new Map();
-                      allIssues.forEach(issue => {
-                        if (!uniqueIssuesMap.has(issue.issueKey)) {
-                          uniqueIssuesMap.set(issue.issueKey, issue);
-                        }
-                      });
-                      const uniqueIssues = Array.from(uniqueIssuesMap.values());
-
-                      if (uniqueIssues.length === 0) {
-                        return (
-                          <div className="text-center py-8">
-                            <i className="ri-bug-line text-3xl text-gray-300 mb-2"></i>
-                            <p className="text-sm text-gray-500">No issues linked</p>
-                          </div>
-                        );
-                      }
-
-                      return uniqueIssues.map((issue, idx) => {
-                        // Jira URL 생성
-                        const issueUrl = jiraDomain && issue.issueKey
-                          ? `https://${jiraDomain}/browse/${issue.issueKey}`
-                          : '';
-
-                        const CardContent = (
-                          <>
-                            <div className="flex items-start gap-3">
-                              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <i className="ri-bug-line text-red-600"></i>
-                              </div>
-                              <div className="flex-1">
-                                <div className="text-sm font-semibold text-gray-900">
-                                  {issue.issueKey}
-                                </div>
-                                <p className="text-sm text-gray-700 mt-1">{issue.summary}</p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  From run: <span className="font-medium text-gray-700">{issue.runName}</span>
-                                </p>
-                              </div>
-                            </div>
-                          </>
-                        );
-
-                        if (issueUrl) {
-                          return (
-                            <a
-                              key={idx}
-                              href={issueUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block bg-white border rounded-lg p-4 transition-all hover:border-teal-500 hover:shadow-md cursor-pointer"
-                            >
-                              {CardContent}
-                            </a>
-                          );
-                        }
-
-                        return (
-                          <div
-                            key={idx}
-                            className="bg-white border rounded-lg p-4"
-                          >
-                            {CardContent}
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -1966,19 +2238,37 @@ export default function RunDetail() {
                           {selectedTestCase.steps.split('\n').filter(s => s.trim()).map((step, index) => {
                             const expectedResults = selectedTestCase.expected_result?.split('\n').filter(s => s.trim()) || [];
                             const expectedResult = expectedResults[index] || '';
-                            
+                            const stepContent = step.replace(/^\d+\.\s*/, '');
+                            const expectedContent = expectedResult.replace(/^\d+\.\s*/, '');
+                            const stepIsHtml = /<[^>]+>/.test(stepContent);
+                            const expectedIsHtml = /<[^>]+>/.test(expectedContent);
+
                             return (
                               <div key={index} className="border border-gray-200 rounded-lg p-3">
                                 <div className="flex items-start gap-3 mb-2">
-                                  <div className="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center">
-                                    <i className="ri-flag-fill text-teal-700"></i>
+                                  <div className="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <span className="text-teal-700 text-xs font-bold">{index + 1}</span>
                                   </div>
                                   <div className="flex-1">
-                                    <p className="text-sm text-gray-700 mb-2">{step.replace(/^\d+\.\s*/, '')}</p>
-                                    {expectedResult && (
+                                    {stepIsHtml ? (
+                                      <div
+                                        className="text-sm text-gray-700 mb-2 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                        dangerouslySetInnerHTML={{ __html: stepContent }}
+                                      />
+                                    ) : (
+                                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{stepContent}</p>
+                                    )}
+                                    {expectedContent && (
                                       <div className="bg-gray-50 rounded p-2 mb-2">
                                         <p className="text-xs text-gray-600 mb-1 font-semibold">Expected Result:</p>
-                                        <p className="text-xs text-gray-700">{expectedResult.replace(/^\d+\.\s*/, '')}</p>
+                                        {expectedIsHtml ? (
+                                          <div
+                                            className="text-xs text-gray-700 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                            dangerouslySetInnerHTML={{ __html: expectedContent }}
+                                          />
+                                        ) : (
+                                          <p className="text-xs text-gray-700 whitespace-pre-wrap">{expectedContent}</p>
+                                        )}
                                       </div>
                                     )}
                                     <select
@@ -2008,7 +2298,7 @@ export default function RunDetail() {
                         <select
                           value={resultFormData.assignTo}
                           onChange={(e) => setResultFormData({ ...resultFormData, assignTo: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
                         >
                           <option value="">Select assignee</option>
                           {projectMembers.map((member) => (
@@ -2047,7 +2337,34 @@ export default function RunDetail() {
 
                     {/* Issues */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Issues</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-semibold text-gray-700">Issues</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isProfessionalOrHigher) {
+                              setShowUpgradeModal(true);
+                              return;
+                            }
+                            if (!jiraSettings || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.api_token) {
+                              if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) {
+                                navigate('/settings');
+                              }
+                              return;
+                            }
+                            setShowAddIssueModal(true);
+                          }}
+                          className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                            isProfessionalOrHigher
+                              ? 'bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200'
+                              : 'bg-gray-100 text-gray-400 border border-gray-200'
+                          }`}
+                        >
+                          <i className="ri-add-line"></i>
+                          Add Issue
+                          {!isProfessionalOrHigher && <i className="ri-lock-line ml-0.5"></i>}
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={resultFormData.issues}
@@ -2170,6 +2487,164 @@ export default function RunDetail() {
                     className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap"
                   >
                     Add result
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Add Issue Modal */}
+          {showAddIssueModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Create Jira Issue</h2>
+                  <button
+                    onClick={() => setShowAddIssueModal(false)}
+                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+                  >
+                    <i className="ri-close-line text-xl"></i>
+                  </button>
+                </div>
+
+                <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6">
+                  <div className="space-y-6">
+                    {/* Summary */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Summary <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={issueFormData.summary}
+                        onChange={(e) => setIssueFormData({ ...issueFormData, summary: e.target.value })}
+                        placeholder="Brief description of the issue"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                      <textarea
+                        value={issueFormData.description}
+                        onChange={(e) => setIssueFormData({ ...issueFormData, description: e.target.value })}
+                        placeholder="Detailed description of the issue"
+                        rows={6}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                      ></textarea>
+                    </div>
+
+                    {/* Issue Type and Priority */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Issue Type</label>
+                        <select
+                          value={issueFormData.issueType}
+                          onChange={(e) => setIssueFormData({ ...issueFormData, issueType: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                        >
+                          <option value="Bug">Bug</option>
+                          <option value="Task">Task</option>
+                          <option value="Story">Story</option>
+                          <option value="Epic">Epic</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Priority</label>
+                        <select
+                          value={issueFormData.priority}
+                          onChange={(e) => setIssueFormData({ ...issueFormData, priority: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                        >
+                          <option value="Highest">Highest</option>
+                          <option value="High">High</option>
+                          <option value="Medium">Medium</option>
+                          <option value="Low">Low</option>
+                          <option value="Lowest">Lowest</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Labels */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Labels</label>
+                      <input
+                        type="text"
+                        value={issueFormData.labels}
+                        onChange={(e) => setIssueFormData({ ...issueFormData, labels: e.target.value })}
+                        placeholder="Enter labels separated by commas (e.g., bug, ui, critical)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">쉼표로 구분하여 여러 라벨을 입력하세요</p>
+                    </div>
+
+                    {/* Assignee */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Assignee</label>
+                      <input
+                        type="text"
+                        value={issueFormData.assignee}
+                        onChange={(e) => setIssueFormData({ ...issueFormData, assignee: e.target.value })}
+                        placeholder="Jira 계정 ID 또는 이메일 (예: user@example.com)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">비워두면 자동 할당됩니다</p>
+                    </div>
+
+                    {/* Components */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Components</label>
+                      <input
+                        type="text"
+                        value={issueFormData.components}
+                        onChange={(e) => setIssueFormData({ ...issueFormData, components: e.target.value })}
+                        placeholder="컴포넌트 이름을 쉼표로 구분 (예: Frontend, API, Database)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Jira 프로젝트에 등록된 컴포넌트 이름을 입력하세요</p>
+                    </div>
+
+                    {/* Test Case Info */}
+                    {selectedTestCase && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Related Test Case</h4>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <p className="text-sm text-gray-900 font-normal">{selectedTestCase.title}</p>
+                          {selectedTestCase.description && (
+                            <p className="text-xs text-gray-600 mt-1">{selectedTestCase.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50">
+                  <button
+                    onClick={() => setShowAddIssueModal(false)}
+                    disabled={creatingIssue}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleCreateJiraIssue(activeTab === 'issues')}
+                    disabled={creatingIssue || !issueFormData.summary.trim()}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {creatingIssue ? (
+                      <>
+                        <i className="ri-loader-4-line animate-spin"></i>
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <i className="ri-add-line"></i>
+                        Create Issue
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

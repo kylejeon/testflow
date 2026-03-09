@@ -51,8 +51,10 @@ export default function ProjectTestCases() {
   const getTierInfo = (tier: number) => {
     switch (tier) {
       case 2:
-        return { name: 'Professional', icon: 'ri-vip-crown-line', color: 'bg-teal-50 text-teal-700 border-teal-300' };
+        return { name: 'Starter', icon: 'ri-vip-crown-line', color: 'bg-teal-50 text-teal-700 border-teal-300' };
       case 3:
+        return { name: 'Professional', icon: 'ri-vip-diamond-line', color: 'bg-violet-50 text-violet-700 border-violet-300' };
+      case 4:
         return { name: 'Enterprise', icon: 'ri-vip-diamond-line', color: 'bg-amber-50 text-amber-700 border-amber-300' };
       default:
         return { name: 'Free', icon: 'ri-user-line', color: 'bg-gray-100 text-gray-700 border-gray-200' };

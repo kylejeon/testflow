@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import type { Project } from '../../../lib/supabase';
 
@@ -14,6 +13,7 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
     description: project.description || '',
     status: project.status,
     prefix: (project as any).prefix || '',
+    jiraProjectKey: (project as any).jira_project_key || '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -87,6 +87,21 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
                 rows={4}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Jira Project Key
+              </label>
+              <input
+                type="text"
+                value={formData.jiraProjectKey}
+                onChange={(e) => setFormData({ ...formData, jiraProjectKey: e.target.value.toUpperCase() })}
+                placeholder="e.g., PROJ, SUI"
+                maxLength={20}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-mono uppercase"
+              />
+              <p className="mt-1 text-xs text-gray-500">이 프로젝트와 연결할 Jira 프로젝트 키 (선택사항)</p>
             </div>
 
             <div>

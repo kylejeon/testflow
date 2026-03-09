@@ -10,9 +10,10 @@ interface Session {
   status: 'active' | 'closed';
   milestone_id: string;
   tags: string[];
+  assignees: string[];
   created_at: string;
   updated_at: string;
-  actualStatus?: 'new' | 'in_progress' | 'completed';
+  actualStatus?: 'new' | 'in_progress' | 'paused' | 'completed';
   activityData?: string[];
 }
 
@@ -24,12 +25,19 @@ interface Milestone {
   status: 'active' | 'completed';
 }
 
+interface ProjectMember {
+  user_id: string;
+  full_name: string;
+  email: string;
+}
+
 export default function ProjectSessions() {
   const { id: projectId } = useParams();
   const navigate = useNavigate();
   const [project, setProject] = useState<any>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showAddSessionModal, setShowAddSessionModal] = useState(false);
@@ -41,19 +49,45 @@ export default function ProjectSessions() {
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
   const [globalActivityData, setGlobalActivityData] = useState<string[]>([]);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
-  const filterDropdownRef = useRef<HTMLDivElement>(null);
-  const tagsDropdownRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [formData, setFormData] = useState({
+  const [memberCount, setMemberCount] = useState<number>(0);
+  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number } | null>(null);
+  const [formData, setFormData] = useState<{
+    name: string;
+    milestone_id: string;
+    charter: string;
+    tags: string;
+    assignees: string[];
+  }>({
     name: '',
     milestone_id: '',
     charter: '',
     tags: '',
+    assignees: [],
   });
   const [submitting, setSubmitting] = useState(false);
-  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number } | null>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const tagsDropdownRef = useRef<HTMLDivElement>(null);
+  const assigneeDropdownRef = useRef<HTMLDivElement>(null);
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
+
+  const handleMenuOpen = (e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation();
+    if (openMenuId === sessionId) {
+      setOpenMenuId(null);
+      setMenuPosition(null);
+      return;
+    }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setMenuPosition({
+      top: rect.bottom + window.scrollY + 4,
+      right: window.innerWidth - rect.right,
+    });
+    setOpenMenuId(sessionId);
+  };
 
   const fetchData = async () => {
     if (!projectId) return;
@@ -69,6 +103,37 @@ export default function ProjectSessions() {
 
       if (projectError) throw projectError;
       setProject(projectData);
+
+      // Fetch project member count
+      const { count: membersCount, error: membersError } = await supabase
+        .from('project_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId);
+
+      if (!membersError) {
+        setMemberCount(membersCount || 0);
+      }
+
+      // Fetch project members with profiles
+      const { data: membersData, error: membersDataError } = await supabase
+        .from('project_members')
+        .select('user_id')
+        .eq('project_id', projectId);
+
+      if (!membersDataError && membersData && membersData.length > 0) {
+        const userIds = membersData.map((m) => m.user_id);
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds);
+
+        const members: ProjectMember[] = (profilesData || []).map((p) => ({
+          user_id: p.id,
+          full_name: p.full_name || p.email?.split('@')[0] || 'Unknown',
+          email: p.email || '',
+        }));
+        setProjectMembers(members);
+      }
 
       // Fetch milestones
       const { data: milestonesData, error: milestonesError } = await supabase
@@ -168,11 +233,13 @@ export default function ProjectSessions() {
         }
 
         // Determine actual status based on ended_at and logs
-        let actualStatus: 'new' | 'in_progress' | 'completed' = 'new';
+        let actualStatus: 'new' | 'in_progress' | 'paused' | 'completed' = 'new';
         
         if (session.status === 'closed' || session.ended_at) {
           actualStatus = 'completed';
-        } else if (logs.length > 0) {
+        } else if (session.paused_at) {
+          actualStatus = 'paused';
+        } else if (session.started_at) {
           actualStatus = 'in_progress';
         }
 
@@ -220,8 +287,10 @@ export default function ProjectSessions() {
   const getTierInfo = (tier: number) => {
     switch (tier) {
       case 2:
-        return { name: 'Professional', icon: 'ri-vip-crown-line', color: 'bg-teal-50 text-teal-700 border-teal-300' };
+        return { name: 'Starter', icon: 'ri-vip-crown-line', color: 'bg-teal-50 text-teal-700 border-teal-300' };
       case 3:
+        return { name: 'Professional', icon: 'ri-vip-diamond-line', color: 'bg-violet-50 text-violet-700 border-violet-300' };
+      case 4:
         return { name: 'Enterprise', icon: 'ri-vip-diamond-line', color: 'bg-amber-50 text-amber-700 border-amber-300' };
       default:
         return { name: 'Free', icon: 'ri-user-line', color: 'bg-gray-100 text-gray-700 border-gray-200' };
@@ -246,20 +315,40 @@ export default function ProjectSessions() {
       if (tagsDropdownRef.current && !tagsDropdownRef.current.contains(event.target as Node)) {
         setShowTagsDropdown(false);
       }
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(event.target as Node)) {
+        setShowAssigneeDropdown(false);
+      }
+      const target = event.target as Node;
+      const menuContainers = document.querySelectorAll('[data-session-menu]');
+      let clickedInsideMenu = false;
+      menuContainers.forEach(container => {
+        if (container.contains(target)) {
+          clickedInsideMenu = true;
+        }
+      });
+      if (!clickedInsideMenu) {
         setOpenMenuId(null);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
     };
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAssigneeToggle = (userId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      assignees: prev.assignees.includes(userId)
+        ? prev.assignees.filter(id => id !== userId)
+        : [...prev.assignees, userId],
+    }));
   };
 
   const handleAddSession = async () => {
@@ -277,6 +366,7 @@ export default function ProjectSessions() {
         milestone_id: formData.milestone_id || null,
         charter: formData.charter,
         tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
+        assignees: formData.assignees,
         status: 'active',
       };
 
@@ -306,6 +396,7 @@ export default function ProjectSessions() {
         milestone_id: '',
         charter: '',
         tags: '',
+        assignees: [],
       });
       setEditingSessionId(null);
       setShowAddSessionModal(false);
@@ -324,6 +415,7 @@ export default function ProjectSessions() {
       milestone_id: session.milestone_id || '',
       charter: session.charter || '',
       tags: session.tags ? session.tags.join(', ') : '',
+      assignees: (session as any).assignees || [],
     });
     setShowAddSessionModal(true);
     setOpenMenuId(null);
@@ -466,7 +558,7 @@ export default function ProjectSessions() {
   const calculateStats = () => {
     const activeSessions = sessions.filter(s => s.status === 'active').length;
     const unstarted = sessions.filter(s => s.status === 'active' && s.actualStatus === 'new').length;
-    const contributors = 3; // Mock data
+    const contributors = memberCount;
     const closedSessions = sessions.filter(s => s.status === 'closed').length;
 
     return { activeSessions, unstarted, contributors, closedSessions };
@@ -555,7 +647,7 @@ export default function ProjectSessions() {
                       className="fixed inset-0 z-10" 
                       onClick={() => setShowProfileMenu(false)}
                     ></div>
-                    <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                    <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
                         <p className="text-xs text-gray-500">{userProfile?.email}</p>
@@ -569,7 +661,7 @@ export default function ProjectSessions() {
                         onClick={() => setShowProfileMenu(false)}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
                       >
-                        <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
+                        <i className="ri-settings-3-line text-lg"></i>
                         <span>Settings</span>
                       </Link>
                       <button
@@ -602,6 +694,7 @@ export default function ProjectSessions() {
                         milestone_id: '',
                         charter: '',
                         tags: '',
+                        assignees: [],
                       });
                       setShowAddSessionModal(true);
                     }}
@@ -925,7 +1018,12 @@ export default function ProjectSessions() {
                                       </td>
                                       <td className="px-4 py-4">
                                         <div className="flex items-center gap-3">
-                                          <i className="ri-refresh-line text-gray-400"></i>
+                                          <i className={`${
+                                            session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
+                                            session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' :
+                                            session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
+                                            'ri-check-line text-purple-500'
+                                          }`}></i>
                                           <Link 
                                             to={`/projects/${projectId}/sessions/${session.id}`}
                                             className="font-medium text-teal-600 hover:text-teal-700 cursor-pointer"
@@ -938,12 +1036,14 @@ export default function ProjectSessions() {
                                         <div className="flex items-center gap-2">
                                           <i className={`${
                                             session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
-                                            session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' : 
+                                            session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' :
+                                            session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
                                             'ri-check-line text-purple-500'
                                           }`}></i>
                                           <span className="text-sm text-gray-700">
                                             {session.actualStatus === 'new' ? 'New' :
-                                             session.actualStatus === 'in_progress' ? 'In progress' : 
+                                             session.actualStatus === 'in_progress' ? 'In progress' :
+                                             session.actualStatus === 'paused' ? 'Paused' :
                                              'Completed'}
                                           </span>
                                         </div>
@@ -958,10 +1058,37 @@ export default function ProjectSessions() {
                                         </div>
                                       </td>
                                       <td className="px-4 py-4">
-                                        <div className="flex -space-x-2">
-                                          <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-2 border-white"></div>
-                                          <div className="w-7 h-7 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full border-2 border-white"></div>
-                                        </div>
+                                        {session.assignees && session.assignees.length > 0 ? (
+                                          <div className="flex -space-x-2">
+                                            {session.assignees.slice(0, 4).map((userId, idx) => {
+                                              const member = projectMembers.find(m => m.user_id === userId);
+                                              const colors = [
+                                                'from-teal-400 to-teal-600',
+                                                'from-orange-400 to-orange-600',
+                                                'from-violet-400 to-violet-600',
+                                                'from-pink-400 to-pink-600',
+                                                'from-sky-400 to-sky-600',
+                                              ];
+                                              const colorClass = colors[idx % colors.length];
+                                              return (
+                                                <div
+                                                  key={userId}
+                                                  className={`w-7 h-7 bg-gradient-to-br ${colorClass} rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-semibold`}
+                                                  title={member?.full_name || userId}
+                                                >
+                                                  {member ? member.full_name.charAt(0).toUpperCase() : '?'}
+                                                </div>
+                                              );
+                                            })}
+                                            {session.assignees.length > 4 && (
+                                              <div className="w-7 h-7 bg-gray-200 rounded-full border-2 border-white flex items-center justify-center text-gray-600 text-xs font-semibold">
+                                                +{session.assignees.length - 4}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <span className="text-xs text-gray-400">-</span>
+                                        )}
                                       </td>
                                       <td className="px-4 py-4">
                                         <div className="flex gap-1">
@@ -976,52 +1103,13 @@ export default function ProjectSessions() {
                                         </div>
                                       </td>
                                       <td className="px-4 py-4">
-                                        <div className="relative" ref={openMenuId === session.id ? menuRef : null}>
+                                        <div className="relative" data-session-menu>
                                           <button 
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setOpenMenuId(openMenuId === session.id ? null : session.id);
-                                            }}
+                                            onClick={(e) => handleMenuOpen(e, session.id)}
                                             className="text-gray-400 hover:text-gray-600 p-2 cursor-pointer"
                                           >
                                             <i className="ri-more-2-fill"></i>
                                           </button>
-                                          {openMenuId === session.id && (
-                                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleEditSession(session);
-                                                }}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                                              >
-                                                <i className="ri-edit-line"></i>
-                                                <span>Edit</span>
-                                              </button>
-                                              {session.status === 'active' && (
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleCloseSession(session.id);
-                                                  }}
-                                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                                                >
-                                                  <i className="ri-check-line"></i>
-                                                  <span>Close Session</span>
-                                                </button>
-                                              )}
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleDeleteSession(session.id);
-                                                }}
-                                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
-                                              >
-                                                <i className="ri-delete-bin-line"></i>
-                                                <span>Delete</span>
-                                              </button>
-                                            </div>
-                                          )}
                                         </div>
                                       </td>
                                     </tr>
@@ -1067,7 +1155,12 @@ export default function ProjectSessions() {
                               <tr key={session.id} className="hover:bg-gray-50">
                                 <td className="px-4 py-4">
                                   <div className="flex items-center gap-3">
-                                    <i className="ri-refresh-line text-gray-400"></i>
+                                    <i className={`${
+                                      session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
+                                      session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' :
+                                      session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
+                                      'ri-check-line text-purple-500'
+                                    }`}></i>
                                     <Link 
                                       to={`/projects/${projectId}/sessions/${session.id}`}
                                       className="font-medium text-teal-600 hover:text-teal-700 cursor-pointer"
@@ -1078,8 +1171,18 @@ export default function ProjectSessions() {
                                 </td>
                                 <td className="px-4 py-4">
                                   <div className="flex items-center gap-2">
-                                    <i className={`${session.status === 'active' ? 'ri-loader-line text-blue-500' : 'ri-check-line text-purple-500'}`}></i>
-                                    <span className="text-sm text-gray-700">{session.status === 'active' ? 'In progress' : 'Under review'}</span>
+                                    <i className={`${
+                                      session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
+                                      session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' :
+                                      session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
+                                      'ri-check-line text-purple-500'
+                                    }`}></i>
+                                    <span className="text-sm text-gray-700">
+                                      {session.actualStatus === 'new' ? 'New' :
+                                       session.actualStatus === 'in_progress' ? 'In progress' :
+                                       session.actualStatus === 'paused' ? 'Paused' :
+                                       'Completed'}
+                                    </span>
                                   </div>
                                 </td>
                                 <td className="px-4 py-4">
@@ -1092,10 +1195,37 @@ export default function ProjectSessions() {
                                   </div>
                                 </td>
                                 <td className="px-4 py-4">
-                                  <div className="flex -space-x-2">
-                                    <div className="w-7 h-7 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-2 border-white"></div>
-                                    <div className="w-7 h-7 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full border-2 border-white"></div>
-                                  </div>
+                                  {session.assignees && session.assignees.length > 0 ? (
+                                    <div className="flex -space-x-2">
+                                      {session.assignees.slice(0, 4).map((userId, idx) => {
+                                        const member = projectMembers.find(m => m.user_id === userId);
+                                        const colors = [
+                                          'from-teal-400 to-teal-600',
+                                          'from-orange-400 to-orange-600',
+                                          'from-violet-400 to-violet-600',
+                                          'from-pink-400 to-pink-600',
+                                          'from-sky-400 to-sky-600',
+                                        ];
+                                        const colorClass = colors[idx % colors.length];
+                                        return (
+                                          <div
+                                            key={userId}
+                                            className={`w-7 h-7 bg-gradient-to-br ${colorClass} rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-semibold`}
+                                            title={member?.full_name || userId}
+                                          >
+                                            {member ? member.full_name.charAt(0).toUpperCase() : '?'}
+                                          </div>
+                                        );
+                                      })}
+                                      {session.assignees.length > 4 && (
+                                        <div className="w-7 h-7 bg-gray-200 rounded-full border-2 border-white flex items-center justify-center text-gray-600 text-xs font-semibold">
+                                          +{session.assignees.length - 4}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">-</span>
+                                  )}
                                 </td>
                                 <td className="px-4 py-4">
                                   <div className="flex gap-1">
@@ -1110,52 +1240,13 @@ export default function ProjectSessions() {
                                   </div>
                                 </td>
                                 <td className="px-4 py-4">
-                                  <div className="relative" ref={openMenuId === session.id ? menuRef : null}>
+                                  <div className="relative" data-session-menu>
                                     <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setOpenMenuId(openMenuId === session.id ? null : session.id);
-                                      }}
+                                      onClick={(e) => handleMenuOpen(e, session.id)}
                                       className="text-gray-400 hover:text-gray-600 p-2 cursor-pointer"
                                     >
                                       <i className="ri-more-2-fill"></i>
                                     </button>
-                                    {openMenuId === session.id && (
-                                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleEditSession(session);
-                                          }}
-                                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                                        >
-                                          <i className="ri-edit-line"></i>
-                                          <span>Edit</span>
-                                        </button>
-                                        {session.status === 'active' && (
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleCloseSession(session.id);
-                                            }}
-                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                                          >
-                                            <i className="ri-check-line"></i>
-                                            <span>Close Session</span>
-                                          </button>
-                                        )}
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteSession(session.id);
-                                          }}
-                                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
-                                        >
-                                          <i className="ri-delete-bin-line"></i>
-                                          <span>Delete</span>
-                                        </button>
-                                      </div>
-                                    )}
                                   </div>
                                 </td>
                               </tr>
@@ -1180,6 +1271,58 @@ export default function ProjectSessions() {
           </div>
         </main>
       </div>
+
+      {/* Session Context Menu - Fixed Position */}
+      {openMenuId && menuPosition && (
+        <>
+          <div className="fixed inset-0 z-[998]" onClick={() => { setOpenMenuId(null); setMenuPosition(null); }}></div>
+          <div
+            className="fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-[999]"
+            style={{ top: menuPosition.top, right: menuPosition.right }}
+          >
+            {(() => {
+              const session = sessions.find(s => s.id === openMenuId);
+              if (!session) return null;
+              return (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditSession(session);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                  >
+                    <i className="ri-edit-line"></i>
+                    <span>Edit</span>
+                  </button>
+                  {session.status === 'active' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCloseSession(session.id);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                    >
+                      <i className="ri-check-line"></i>
+                      <span>Close Session</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSession(session.id);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
+                  >
+                    <i className="ri-delete-bin-line"></i>
+                    <span>Delete</span>
+                  </button>
+                </>
+              );
+            })()}
+          </div>
+        </>
+      )}
 
       {/* Add/Edit Session Modal */}
       {showAddSessionModal && (
@@ -1239,6 +1382,128 @@ export default function ProjectSessions() {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  {/* Assignees */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Assignees
+                    </label>
+
+                    {/* Selected chips */}
+                    {formData.assignees.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {formData.assignees.map((userId, idx) => {
+                          const member = projectMembers.find(m => m.user_id === userId);
+                          if (!member) return null;
+                          const colors = [
+                            'from-teal-400 to-teal-600',
+                            'from-orange-400 to-orange-600',
+                            'from-violet-400 to-violet-600',
+                            'from-pink-400 to-pink-600',
+                            'from-sky-400 to-sky-600',
+                          ];
+                          const memberIdx = projectMembers.findIndex(m => m.user_id === userId);
+                          const colorClass = colors[memberIdx % colors.length];
+                          return (
+                            <div
+                              key={userId}
+                              className="flex items-center gap-1.5 pl-1 pr-2 py-1 bg-teal-50 border border-teal-200 rounded-full text-sm text-teal-700"
+                            >
+                              <div className={`w-5 h-5 bg-gradient-to-br ${colorClass} rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
+                                {member.full_name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-xs font-medium">{member.full_name}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleAssigneeToggle(userId)}
+                                className="w-4 h-4 flex items-center justify-center text-teal-400 hover:text-teal-700 cursor-pointer ml-0.5"
+                              >
+                                <i className="ri-close-line text-xs"></i>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Dropdown trigger */}
+                    <div className="relative" ref={assigneeDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAssigneeDropdown(prev => !prev);
+                          setAssigneeSearch('');
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-500 hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer bg-white"
+                      >
+                        <span>{formData.assignees.length > 0 ? `${formData.assignees.length}명 선택됨` : '멤버 선택...'}</span>
+                        <i className={`ri-arrow-${showAssigneeDropdown ? 'up' : 'down'}-s-line text-gray-400`}></i>
+                      </button>
+
+                      {showAssigneeDropdown && (
+                        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                          {/* Search */}
+                          <div className="p-2 border-b border-gray-100">
+                            <div className="relative">
+                              <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                              <input
+                                type="text"
+                                value={assigneeSearch}
+                                onChange={e => setAssigneeSearch(e.target.value)}
+                                placeholder="멤버 검색..."
+                                className="w-full pl-7 pr-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                autoFocus
+                              />
+                            </div>
+                          </div>
+
+                          {/* Member list */}
+                          <div className="max-h-48 overflow-y-auto">
+                            {projectMembers.length === 0 ? (
+                              <p className="text-xs text-gray-400 italic text-center py-4">프로젝트 멤버가 없습니다.</p>
+                            ) : (
+                              projectMembers
+                                .filter(m =>
+                                  m.full_name.toLowerCase().includes(assigneeSearch.toLowerCase()) ||
+                                  m.email.toLowerCase().includes(assigneeSearch.toLowerCase())
+                                )
+                                .map((member, idx) => {
+                                  const isSelected = formData.assignees.includes(member.user_id);
+                                  const colors = [
+                                    'from-teal-400 to-teal-600',
+                                    'from-orange-400 to-orange-600',
+                                    'from-violet-400 to-violet-600',
+                                    'from-pink-400 to-pink-600',
+                                    'from-sky-400 to-sky-600',
+                                  ];
+                                  const colorClass = colors[projectMembers.findIndex(m => m.user_id === member.user_id) % colors.length];
+                                  return (
+                                    <div
+                                      key={member.user_id}
+                                      onClick={() => handleAssigneeToggle(member.user_id)}
+                                      className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
+                                        isSelected ? 'bg-teal-50' : 'hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      <div className={`w-7 h-7 bg-gradient-to-br ${colorClass} rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
+                                        {member.full_name.charAt(0).toUpperCase()}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate">{member.full_name}</p>
+                                        <p className="text-xs text-gray-400 truncate">{member.email}</p>
+                                      </div>
+                                      {isSelected && (
+                                        <i className="ri-check-line text-teal-500 text-sm flex-shrink-0"></i>
+                                      )}
+                                    </div>
+                                  );
+                                })
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Mission */}
