@@ -182,7 +182,7 @@ export default function ProjectMilestones() {
           let completedTests = 0;
           run.test_case_ids.forEach((tcId: string) => {
             const status = statusMap.get(tcId);
-            if (status === 'passed' || status === 'failed') {
+            if (status === 'passed' || status === 'failed' || status === 'blocked' || status === 'retest') {
               completedTests++;
             }
           });
@@ -530,7 +530,7 @@ export default function ProjectMilestones() {
                     <i className="ri-test-tube-line text-xl text-white"></i>
                   </div>
                   <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                    TestFlow
+                    Testably
                   </span>
                 </Link>
               </div>
@@ -563,7 +563,7 @@ export default function ProjectMilestones() {
                   <i className="ri-test-tube-line text-xl text-white"></i>
                 </div>
                 <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                  TestFlow
+                  Testably
                 </span>
               </Link>
               

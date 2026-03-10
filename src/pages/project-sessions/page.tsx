@@ -577,7 +577,7 @@ export default function ProjectSessions() {
                   <i className="ri-test-tube-line text-xl text-white"></i>
                 </div>
                 <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                  TestFlow
+                  Testably
                 </span>
               </Link>
               

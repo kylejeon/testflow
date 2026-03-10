@@ -513,7 +513,7 @@ export default function ProjectRunsPage() {
   </div>
 
   <div class="footer">
-    <p><strong>TestFlow</strong> — Test Management Platform</p>
+    <p><strong>Testably</strong> — Test Management Platform</p>
     <p style="margin-top:5px;font-size:10px;">This report was automatically generated on ${new Date().toLocaleString('en-US')}</p>
   </div>
 
@@ -1167,7 +1167,7 @@ export default function ProjectRunsPage() {
                   <i className="ri-test-tube-line text-xl text-white"></i>
                 </div>
                 <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                  TestFlow
+                  Testably
                 </span>
               </Link>
               

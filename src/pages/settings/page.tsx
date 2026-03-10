@@ -13,6 +13,9 @@ interface UserProfile {
   email: string;
   full_name: string;
   subscription_tier: number;
+  trial_started_at: string | null;
+  trial_ends_at: string | null;
+  is_trial: boolean;
 }
 
 const TIER_INFO = {
@@ -104,17 +107,38 @@ export default function SettingsPage() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('email, full_name, subscription_tier')
+        .select('email, full_name, subscription_tier, trial_started_at, trial_ends_at, is_trial')
         .eq('id', user.id)
         .maybeSingle();
 
       if (error) throw error;
 
       if (data) {
+        // 체험 기간 만료 시 자동으로 Free 티어로 전환
+        let tier = data.subscription_tier || 1;
+        let isTrial = data.is_trial || false;
+
+        if (isTrial && data.trial_ends_at) {
+          const now = new Date();
+          const trialEnd = new Date(data.trial_ends_at);
+          if (now > trialEnd) {
+            // 만료 → Free 티어로 전환
+            await supabase
+              .from('profiles')
+              .update({ subscription_tier: 1, is_trial: false })
+              .eq('id', user.id);
+            tier = 1;
+            isTrial = false;
+          }
+        }
+
         setUserProfile({
           email: data.email || user.email || '',
           full_name: data.full_name || '',
-          subscription_tier: data.subscription_tier || 1,
+          subscription_tier: tier,
+          trial_started_at: data.trial_started_at || null,
+          trial_ends_at: data.trial_ends_at || null,
+          is_trial: isTrial,
         });
       }
     } catch (error) {
@@ -231,6 +255,15 @@ export default function SettingsPage() {
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO] || TIER_INFO[1];
   const isProfessionalOrHigher = currentTier >= 3;
 
+  // 무료 체험 남은 일수 계산
+  const trialDaysLeft = (() => {
+    if (!userProfile?.is_trial || !userProfile?.trial_ends_at) return null;
+    const now = new Date();
+    const end = new Date(userProfile.trial_ends_at);
+    const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  })();
+
   const formatPrice = (monthlyPrice: number, isAnnual: boolean) => {
     if (monthlyPrice === 0) return '₩0';
     if (monthlyPrice === -1) return '문의';
@@ -249,7 +282,7 @@ export default function SettingsPage() {
                   <i className="ri-test-tube-line text-xl text-white"></i>
                 </div>
                 <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                  TestFlow
+                  Testably
                 </span>
               </Link>
             </div>
@@ -341,6 +374,67 @@ export default function SettingsPage() {
               <div className="p-8">
                 {activeTab === 'general' && (
                   <div className="space-y-8">
+                    {/* Trial Banner */}
+                    {userProfile?.is_trial && trialDaysLeft !== null && (
+                      <div className={`mb-6 p-5 rounded-xl border-2 flex items-start gap-4 ${
+                        trialDaysLeft <= 3
+                          ? 'bg-red-50 border-red-200'
+                          : trialDaysLeft <= 7
+                          ? 'bg-amber-50 border-amber-200'
+                          : 'bg-teal-50 border-teal-200'
+                      }`}>
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                          trialDaysLeft <= 3 ? 'bg-red-100' : trialDaysLeft <= 7 ? 'bg-amber-100' : 'bg-teal-100'
+                        }`}>
+                          <i className={`ri-time-line text-xl ${
+                            trialDaysLeft <= 3 ? 'text-red-600' : trialDaysLeft <= 7 ? 'text-amber-600' : 'text-teal-600'
+                          }`}></i>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className={`font-bold text-base ${
+                              trialDaysLeft <= 3 ? 'text-red-800' : trialDaysLeft <= 7 ? 'text-amber-800' : 'text-teal-800'
+                            }`}>
+                              14일 무료 체험 진행 중
+                            </h3>
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                              trialDaysLeft <= 3
+                                ? 'bg-red-200 text-red-800'
+                                : trialDaysLeft <= 7
+                                ? 'bg-amber-200 text-amber-800'
+                                : 'bg-teal-200 text-teal-800'
+                            }`}>
+                              {trialDaysLeft}일 남음
+                            </span>
+                          </div>
+                          <p className={`text-sm mb-3 ${
+                            trialDaysLeft <= 3 ? 'text-red-700' : trialDaysLeft <= 7 ? 'text-amber-700' : 'text-teal-700'
+                          }`}>
+                            {trialDaysLeft <= 3
+                              ? `체험 기간이 ${trialDaysLeft}일 후 종료됩니다. 지금 업그레이드하여 서비스를 계속 이용하세요.`
+                              : `Professional 플랜의 모든 기능을 무료로 체험하고 있습니다. 체험 종료 후 Free 플랜으로 자동 전환됩니다.`}
+                          </p>
+                          {userProfile.trial_ends_at && (
+                            <p className={`text-xs ${
+                              trialDaysLeft <= 3 ? 'text-red-500' : trialDaysLeft <= 7 ? 'text-amber-500' : 'text-teal-500'
+                            }`}>
+                              <i className="ri-calendar-line mr-1"></i>
+                              체험 종료일: {new Date(userProfile.trial_ends_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
+                          )}
+                        </div>
+                        <button className={`px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer whitespace-nowrap flex-shrink-0 transition-all ${
+                          trialDaysLeft <= 3
+                            ? 'bg-red-600 text-white hover:bg-red-700'
+                            : trialDaysLeft <= 7
+                            ? 'bg-amber-600 text-white hover:bg-amber-700'
+                            : 'bg-teal-600 text-white hover:bg-teal-700'
+                        }`}>
+                          업그레이드 문의
+                        </button>
+                      </div>
+                    )}
+
                     {/* Subscription Tier Section */}
                     <div>
                       <h2 className="text-xl font-bold text-gray-900 mb-2">Subscription Plan</h2>

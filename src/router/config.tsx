@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { RouteObject } from 'react-router-dom';
 
+const HomePage = lazy(() => import('../pages/home/page'));
 const AuthPage = lazy(() => import('../pages/auth/page'));
 const Projects = lazy(() => import('../pages/projects/page'));
 const ProjectDetail = lazy(() => import('../pages/project-detail/page'));
@@ -16,15 +17,17 @@ const TestCases = lazy(() => import('../pages/testcases/page'));
 const SettingsPage = lazy(() => import('../pages/settings/page'));
 const NotFound = lazy(() => import('../pages/NotFound'));
 const AcceptInvitationPage = lazy(() => import('../pages/accept-invitation/page'));
+const PrivacyPage = lazy(() => import('../pages/privacy/page'));
+const TermsPage = lazy(() => import('../pages/terms/page'));
 
 const routes: RouteObject[] = [
   {
-    path: '/auth',
-    element: <AuthPage />,
+    path: '/',
+    element: <HomePage />,
   },
   {
-    path: '/',
-    element: <Projects />,
+    path: '/auth',
+    element: <AuthPage />,
   },
   {
     path: '/projects',
@@ -77,6 +80,14 @@ const routes: RouteObject[] = [
   {
     path: '/accept-invitation',
     element: <AcceptInvitationPage />,
+  },
+  {
+    path: '/privacy',
+    element: <PrivacyPage />,
+  },
+  {
+    path: '/terms',
+    element: <TermsPage />,
   },
   {
     path: '*',

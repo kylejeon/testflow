@@ -102,7 +102,7 @@ export default function ProjectsPage() {
                 <i className="ri-test-tube-line text-xl text-white"></i>
               </div>
               <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                TestFlow
+                Testably
               </span>
             </div>
             <div className="flex items-center gap-3 relative">

@@ -151,7 +151,7 @@ export default function ProjectDetail() {
           let completedTests = 0;
           run.test_case_ids.forEach((tcId: string) => {
             const status = statusMap.get(tcId);
-            if (status === 'passed' || status === 'failed') {
+            if (status === 'passed' || status === 'failed' || status === 'blocked' || status === 'retest') {
               completedTests++;
             }
           });
@@ -222,7 +222,8 @@ export default function ProjectDetail() {
             .from('test_results')
             .select('test_case_id, status')
             .eq('run_id', run.id)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(50);
 
           const statusMap = new Map<string, string>();
           
@@ -357,54 +358,132 @@ export default function ProjectDetail() {
 
       setSessions(sessionsWithActivity || []);
 
+      // ── TIMELINE: 더 많은 이벤트 수집 ──
+      // 최근 test_results 활동 집계 (run별 요약)
+      const runResultSummary: Record<string, { passed: number; failed: number; blocked: number; retest: number; latestAt: string; runName: string }> = {};
+      const allRunsForTimeline = allRunsData || [];
+
+      // 각 run의 최신 test_results 가져오기
+      const recentResultsPerRun = await Promise.all(
+        allRunsForTimeline.slice(0, 10).map(async (run) => {
+          const { data } = await supabase
+            .from('test_results')
+            .select('status, created_at')
+            .eq('run_id', run.id)
+            .order('created_at', { ascending: false })
+            .limit(50);
+          return { run, results: data || [] };
+        })
+      );
+
+      recentResultsPerRun.forEach(({ run, results }) => {
+        if (results.length === 0) return;
+        let passed = 0, failed = 0, blocked = 0, retest = 0;
+        results.forEach(r => {
+          if (r.status === 'passed') passed++;
+          else if (r.status === 'failed') failed++;
+          else if (r.status === 'blocked') blocked++;
+          else if (r.status === 'retest') retest++;
+        });
+        runResultSummary[run.id] = {
+          passed, failed, blocked, retest,
+          latestAt: results[0].created_at,
+          runName: run.name,
+        };
+      });
+
+      // 모든 runs (타임라인용, 더 많이)
+      const { data: allRunsTimeline } = await supabase
+        .from('test_runs')
+        .select('*')
+        .eq('project_id', id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      // 모든 sessions (타임라인용)
+      const { data: allSessionsTimeline } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('project_id', id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      // 모든 milestones (타임라인용)
+      const { data: allMilestonesTimeline } = await supabase
+        .from('milestones')
+        .select('*')
+        .eq('project_id', id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
       const activities = [
-        // Created events
-        ...(organizedMilestones || []).map((m: any) => ({
+        // Milestone events
+        ...(allMilestonesTimeline || []).map((m: any) => ({
           type: 'milestone',
           action: 'created',
           name: m.name,
           created_at: m.created_at,
+          meta: { status: m.status, start_date: m.start_date, end_date: m.end_date },
         })),
-        ...(testRuns || []).map((r: any) => ({
-          type: 'run',
-          action: 'created',
-          name: r.name,
-          created_at: r.created_at,
-        })),
-        ...(sessionsWithActivity || []).map((s: any) => ({
-          type: 'session',
-          action: 'created',
-          name: s.name,
-          created_at: s.created_at,
-        })),
-        // Completed events
-        ...(organizedMilestones || [])
+        ...(allMilestonesTimeline || [])
           .filter((m: any) => m.status === 'completed' && m.updated_at)
           .map((m: any) => ({
             type: 'milestone',
             action: 'completed',
             name: m.name,
             created_at: m.updated_at,
+            meta: { status: m.status },
           })),
-        ...(testRuns || [])
+        // Run events
+        ...(allRunsTimeline || []).map((r: any) => ({
+          type: 'run',
+          action: 'created',
+          name: r.name,
+          created_at: r.created_at,
+          meta: { testCount: r.test_case_ids?.length || 0, status: r.status },
+        })),
+        ...(allRunsTimeline || [])
           .filter((r: any) => r.status === 'completed' && r.executed_at)
           .map((r: any) => ({
             type: 'run',
             action: 'completed',
             name: r.name,
             created_at: r.executed_at,
+            meta: { testCount: r.test_case_ids?.length || 0 },
           })),
-        ...(sessionsWithActivity || [])
-          .filter((s: any) => s.status === 'completed' && s.ended_at)
+        // Test result activity events
+        ...Object.entries(runResultSummary).map(([runId, summary]) => ({
+          type: 'test_activity',
+          action: 'tested',
+          name: summary.runName,
+          created_at: summary.latestAt,
+          meta: {
+            passed: summary.passed,
+            failed: summary.failed,
+            blocked: summary.blocked,
+            retest: summary.retest,
+          },
+        })),
+        // Session events
+        ...(allSessionsTimeline || []).map((s: any) => ({
+          type: 'session',
+          action: 'created',
+          name: s.name,
+          created_at: s.created_at,
+          meta: { status: s.status },
+        })),
+        ...(allSessionsTimeline || [])
+          .filter((s: any) => (s.status === 'completed' || s.status === 'closed') && s.ended_at)
           .map((s: any) => ({
             type: 'session',
             action: 'completed',
             name: s.name,
             created_at: s.ended_at,
+            meta: {},
           })),
       ]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 10);
+        .slice(0, 20);
 
       setRecentActivity(activities);
     } catch (error) {
@@ -545,7 +624,7 @@ export default function ProjectDetail() {
                     <i className="ri-test-tube-line text-xl text-white"></i>
                   </div>
                   <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                    TestFlow
+                    Testably
                   </span>
                 </Link>
               </div>
@@ -579,7 +658,7 @@ export default function ProjectDetail() {
                     <i className="ri-test-tube-line text-xl text-white"></i>
                   </div>
                   <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                    TestFlow
+                    Testably
                   </span>
                 </Link>
               </div>
@@ -685,7 +764,7 @@ export default function ProjectDetail() {
                   <i className="ri-test-tube-line text-xl text-white"></i>
                 </div>
                 <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                  TestFlow
+                  Testably
                 </span>
               </Link>
               
@@ -1078,44 +1157,107 @@ export default function ProjectDetail() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {recentActivity.reduce((acc: any[], event, index) => {
+                      {recentActivity.reduce((acc: any[], event) => {
                         const relativeTime = getRelativeTime(event.created_at);
                         const lastGroup = acc[acc.length - 1];
-                        
                         if (!lastGroup || lastGroup.time !== relativeTime) {
-                          acc.push({
-                            time: relativeTime,
-                            events: [event]
-                          });
+                          acc.push({ time: relativeTime, events: [event] });
                         } else {
                           lastGroup.events.push(event);
                         }
-                        
                         return acc;
                       }, []).map((group, groupIndex) => (
                         <div key={groupIndex} className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-teal-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <div className="flex-1">
-                            <div className="text-xs font-semibold text-gray-500 mb-1">{group.time}</div>
-                            <div className="space-y-3">
-                              {group.events.map((event: any, eventIndex: number) => (
-                                <div key={eventIndex} className="flex items-start gap-2">
-                                  <div className={`w-6 h-6 ${event.action === 'completed' ? 'bg-green-100' : 'bg-teal-100'} rounded-full flex items-center justify-center flex-shrink-0`}>
-                                    <i className={`${event.action === 'completed' ? 'ri-check-line text-green-600' : 'ri-add-line text-teal-600'} text-xs`}></i>
+                          <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1">
+                            <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                            {groupIndex < recentActivity.length && (
+                              <div className="w-px flex-1 bg-gray-200 min-h-[8px]"></div>
+                            )}
+                          </div>
+                          <div className="flex-1 pb-3">
+                            <div className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">{group.time}</div>
+                            <div className="space-y-2">
+                              {group.events.map((event: any, eventIndex: number) => {
+                                const iconMap: Record<string, { icon: string; bg: string; color: string }> = {
+                                  'milestone-created': { icon: 'ri-flag-line', bg: 'bg-teal-100', color: 'text-teal-600' },
+                                  'milestone-completed': { icon: 'ri-flag-fill', bg: 'bg-green-100', color: 'text-green-600' },
+                                  'run-created': { icon: 'ri-play-circle-line', bg: 'bg-orange-100', color: 'text-orange-600' },
+                                  'run-completed': { icon: 'ri-checkbox-circle-line', bg: 'bg-green-100', color: 'text-green-600' },
+                                  'session-created': { icon: 'ri-refresh-line', bg: 'bg-amber-100', color: 'text-amber-600' },
+                                  'session-completed': { icon: 'ri-check-double-line', bg: 'bg-green-100', color: 'text-green-600' },
+                                  'test_activity-tested': { icon: 'ri-test-tube-line', bg: 'bg-teal-50', color: 'text-teal-600' },
+                                };
+                                const iconKey = `${event.type}-${event.action}`;
+                                const iconInfo = iconMap[iconKey] || { icon: 'ri-information-line', bg: 'bg-gray-100', color: 'text-gray-600' };
+
+                                const labelMap: Record<string, string> = {
+                                  'milestone-created': 'Milestone created',
+                                  'milestone-completed': 'Milestone completed',
+                                  'run-created': 'Test run created',
+                                  'run-completed': 'Test run completed',
+                                  'session-created': 'Session created',
+                                  'session-completed': 'Session completed',
+                                  'test_activity-tested': 'Test results updated',
+                                };
+                                const label = labelMap[iconKey] || 'Activity';
+
+                                return (
+                                  <div key={eventIndex} className="flex items-start gap-2.5 p-2.5 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <div className={`w-7 h-7 ${iconInfo.bg} rounded-full flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                                      <i className={`${iconInfo.icon} ${iconInfo.color} text-sm`}></i>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm text-gray-800 leading-snug">
+                                        <span className="font-medium text-gray-500 text-xs">{label}</span>
+                                      </p>
+                                      <p className="text-sm font-semibold text-gray-900 truncate mt-0.5">
+                                        {event.name}
+                                      </p>
+                                      {/* Meta info */}
+                                      {event.type === 'run' && event.action === 'created' && event.meta?.testCount > 0 && (
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                          <i className="ri-file-list-line mr-1"></i>
+                                          {event.meta.testCount} test cases
+                                        </p>
+                                      )}
+                                      {event.type === 'test_activity' && (
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                          {event.meta?.passed > 0 && (
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+                                              <i className="ri-check-line text-xs"></i>{event.meta.passed} passed
+                                            </span>
+                                          )}
+                                          {event.meta?.failed > 0 && (
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
+                                              <i className="ri-close-line text-xs"></i>{event.meta.failed} failed
+                                            </span>
+                                          )}
+                                          {event.meta?.blocked > 0 && (
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+                                              <i className="ri-forbid-line text-xs"></i>{event.meta.blocked} blocked
+                                            </span>
+                                          )}
+                                          {event.meta?.retest > 0 && (
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">
+                                              <i className="ri-refresh-line text-xs"></i>{event.meta.retest} retest
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                      {event.type === 'milestone' && event.action === 'created' && event.meta?.start_date && (
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                          <i className="ri-calendar-line mr-1"></i>
+                                          {formatDate(event.meta.start_date)}
+                                          {event.meta.end_date ? ` → ${formatDate(event.meta.end_date)}` : ''}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <span className="text-xs text-gray-400 flex-shrink-0 mt-0.5">
+                                      {new Date(event.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                                    </span>
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-gray-700">
-                                      <span className="font-semibold">
-                                        {event.action === 'completed' 
-                                          ? (event.type === 'milestone' ? 'Completed milestone' : event.type === 'run' ? 'Completed test run' : 'Completed session')
-                                          : (event.type === 'milestone' ? 'Created milestone' : event.type === 'run' ? 'Created test run' : 'Created session')
-                                        }
-                                      </span>{' '}
-                                      <span className={`${event.action === 'completed' ? 'text-green-600' : 'text-teal-600'} hover:underline cursor-pointer`}>{event.name}</span>
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         </div>

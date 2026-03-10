@@ -36,7 +36,7 @@ export default function AuthPage() {
     }
     
     // Load last logged in email from localStorage (only for login mode)
-    const lastEmail = localStorage.getItem('testflow_last_email');
+    const lastEmail = localStorage.getItem('testably_last_email');
     if (lastEmail && mode === 'login') {
       setEmail(lastEmail);
     }
@@ -91,7 +91,6 @@ export default function AuthPage() {
 
   const ensureProfileExists = async (user: any) => {
     try {
-      // Check if profile exists
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('id')
@@ -99,27 +98,29 @@ export default function AuthPage() {
         .maybeSingle();
 
       if (!existingProfile) {
-        // Create profile for OAuth user (auto signup)
+        const now = new Date();
+        const trialEnds = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
         const { error } = await supabase.from('profiles').insert({
           id: user.id,
           email: user.email,
           full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || null,
           role: 'member',
-          subscription_tier: 1, // Default to Free tier
+          subscription_tier: 3, // Professional tier during trial
+          trial_started_at: now.toISOString(),
+          trial_ends_at: trialEnds.toISOString(),
+          is_trial: true,
         });
         
         if (error) {
           console.error('Failed to create profile:', error);
-          // If insert fails due to conflict, it means profile already exists
           if (error.code !== '23505') {
             throw error;
           }
         }
         
-        // Wait longer to ensure the profile is fully committed
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // Verify profile was created
         const { data: verifyProfile, error: verifyError } = await supabase
           .from('profiles')
           .select('id')
@@ -133,7 +134,7 @@ export default function AuthPage() {
       }
     } catch (err) {
       console.error('Failed to ensure profile exists:', err);
-      throw err; // Re-throw to handle in caller
+      throw err;
     }
   };
 
@@ -238,7 +239,7 @@ export default function AuthPage() {
       if (error) throw error;
 
       // 로그인 성공 시 이메일 저장
-      localStorage.setItem('testflow_last_email', email);
+      localStorage.setItem('testably_last_email', email);
 
       // 초대 토큰이 있는 경우 초대 수락 페이지로 리다이렉트
       const invitationToken = sessionStorage.getItem('invitation_token');
@@ -265,7 +266,6 @@ export default function AuthPage() {
     setError('');
     setSuccess('');
 
-    // 비밀번호 확인 검증
     if (password !== confirmPassword) {
       setError('비밀번호가 일치하지 않습니다.');
       setLoading(false);
@@ -288,23 +288,26 @@ export default function AuthPage() {
       if (error) throw error;
 
       if (data.user) {
-        // Create or update profile row
+        const now = new Date();
+        const trialEnds = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
         const { error: profileError } = await supabase.from('profiles').upsert({
           id: data.user.id,
           email,
           full_name: fullName,
           role: 'member',
-          subscription_tier: 1, // Default to Free tier
+          subscription_tier: 3, // Professional tier during trial
+          trial_started_at: now.toISOString(),
+          trial_ends_at: trialEnds.toISOString(),
+          is_trial: true,
         });
 
         if (profileError && profileError.code !== '23505') {
           console.error('Profile creation error:', profileError);
         }
 
-        // Wait for profile to be committed
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // If there's an invitation and user is confirmed, accept it
         if (invitation?.token && data.session) {
           await acceptInvitation(invitation.token);
         } else if (invitation?.token) {
@@ -312,23 +315,19 @@ export default function AuthPage() {
           setMode('login');
           setPassword('');
         } else {
-          // Check if email confirmation is required
           if (data.session) {
-            // User is auto-confirmed, redirect to projects
-            setSuccess('회원가입이 완료되었습니다!');
+            setSuccess('회원가입이 완료되었습니다! 14일 무료 체험이 시작됩니다 🎉');
             setTimeout(() => {
               navigate('/projects');
             }, 1000);
           } else {
-            // Email confirmation required
-            setSuccess('회원가입이 완료되었습니다! 이메일을 확인해주세요.');
+            setSuccess('회원가입이 완료되었습니다! 이메일을 확인해주세요. 확인 후 14일 무료 체험이 시작됩니다.');
             setMode('login');
             setPassword('');
           }
         }
       }
     } catch (err: any) {
-      // Handle rate limit error gracefully
       if (err.message?.includes('rate limit') || err.message?.includes('Email rate limit exceeded')) {
         setError('이메일 발송 제한에 도달했습니다. 잠시 후 다시 시도하거나, Google로 계속하기를 이용해주세요.');
       } else {
@@ -363,7 +362,7 @@ export default function AuthPage() {
               <i className="ri-test-tube-line text-2xl text-white"></i>
             </div>
             <span className="text-2xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-              TestFlow
+              Testably
             </span>
           </div>
           <p className="text-gray-600">
@@ -406,7 +405,7 @@ export default function AuthPage() {
                 setError('');
                 setSuccess('');
                 // Load last email when switching to login
-                const lastEmail = localStorage.getItem('testflow_last_email');
+                const lastEmail = localStorage.getItem('testably_last_email');
                 if (lastEmail) {
                   setEmail(lastEmail);
                 }

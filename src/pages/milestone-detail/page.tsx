@@ -470,7 +470,7 @@ export default function MilestoneDetail() {
     runs.forEach(run => {
       const total = run.test_case_ids.length;
       totalTests += total;
-      completedTests += (run.passed_count || 0) + (run.failed_count || 0);
+      completedTests += (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0);
     });
 
     return totalTests > 0 ? Math.round((completedTests / totalTests) * 100) : 0;
