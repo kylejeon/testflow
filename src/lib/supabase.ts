@@ -15,16 +15,35 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// 유효하지 않은 리프레시 토큰 자동 처리
+// 로컬 스토리지에서 Supabase 관련 토큰 제거
+const clearSupabaseTokens = () => {
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('sb-')) {
+      localStorage.removeItem(key);
+    }
+  });
+};
+
+// 인증 상태 변경 감지 - 토큰 갱신 실패 시 자동 로그아웃
 supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') {
+    clearSupabaseTokens();
+  }
   if (event === 'TOKEN_REFRESHED' && !session) {
-    // 토큰 갱신 실패 시 로컬 스토리지 정리 후 로그아웃
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
+    clearSupabaseTokens();
     supabase.auth.signOut();
+  }
+});
+
+// 앱 시작 시 유효하지 않은 토큰 자동 정리
+supabase.auth.getSession().then(({ error }) => {
+  if (
+    error &&
+    (error.message?.includes('Refresh Token Not Found') ||
+      error.message?.includes('Invalid Refresh Token'))
+  ) {
+    clearSupabaseTokens();
+    supabase.auth.signOut().catch(() => {});
   }
 });
 
@@ -34,17 +53,6 @@ window.fetch = async (...args) => {
   const response = await originalFetch(...args);
   return response;
 };
-
-// Supabase auth 에러 자동 복구
-supabase.auth.getSession().then(({ error }) => {
-  if (error && error.message?.includes('Refresh Token Not Found')) {
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
-  }
-});
 
 export interface Project {
   id: string;

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -611,14 +610,106 @@ export default function ProjectDetail() {
           {/* Header */}
           <header className="bg-white border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
-              <Link to="/projects" className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                  <i className="ri-test-tube-line text-xl text-white"></i>
+              {/* Left: Logo / Project Name */}
+              <div className="flex items-center gap-4">
+                <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
+                  <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
+                    <i className="ri-test-tube-line text-xl text-white"></i>
+                  </div>
+                  <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+                </Link>
+
+                <div className="text-gray-300 text-xl mx-2">/</div>
+
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                    <i className="ri-folder-line text-white text-sm"></i>
+                  </div>
+                  <span className="text-lg font-semibold text-gray-900">{project.name}</span>
                 </div>
-                <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
-              </Link>
-              <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                {userProfile?.full_name?.charAt(0) || 'U'}
+              </div>
+
+              {/* Right: Nav tabs + Profile */}
+              <div className="flex items-center gap-4">
+                <nav className="flex items-center gap-1">
+                  <Link
+                    to={`/projects/${id}`}
+                    className="px-3 py-2 text-sm font-medium text-teal-600 bg-teal-50 rounded-lg cursor-pointer whitespace-nowrap"
+                  >
+                    Overview
+                  </Link>
+                  <Link
+                    to={`/projects/${id}/milestones`}
+                    className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
+                  >
+                    Milestones
+                  </Link>
+                  <Link
+                    to={`/projects/${id}/documents`}
+                    className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
+                  >
+                    Documentation
+                  </Link>
+                  <Link
+                    to={`/projects/${id}/testcases`}
+                    className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
+                  >
+                    Test Cases
+                  </Link>
+                  <Link
+                    to={`/projects/${id}/runs`}
+                    className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
+                  >
+                    Runs &amp; Results
+                  </Link>
+                  <Link
+                    to={`/projects/${id}/sessions`}
+                    className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
+                  >
+                    Sessions
+                  </Link>
+                </nav>
+
+                {/* Profile */}
+                <div className="relative" ref={profileMenuRef}>
+                  <div
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
+                  >
+                    {userProfile?.full_name?.charAt(0) || 'U'}
+                  </div>
+
+                  {showProfileMenu && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowProfileMenu(false)}></div>
+                      <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                        <div className="px-4 py-3 border-b border-gray-100">
+                          <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+                          <p className="text-xs text-gray-500">{userProfile?.email}</p>
+                          <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded border ${tierInfo.color}`}>
+                            <i className={`${tierInfo.icon} text-sm`}></i>
+                            {tierInfo.name}
+                          </div>
+                        </div>
+                        <Link
+                          to="/settings"
+                          onClick={() => setShowProfileMenu(false)}
+                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
+                        >
+                          <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
+                          <span>Settings</span>
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
+                        >
+                          <i className="ri-logout-box-line text-lg"></i>
+                          <span>Log out</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </header>

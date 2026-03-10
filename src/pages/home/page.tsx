@@ -208,16 +208,14 @@ export default function HomePage() {
       <div className="min-h-screen bg-white font-sans" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
         {/* Navbar */}
         <nav
-          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-            scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100' : 'bg-transparent'
-          }`}
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100`}
         >
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
             <a href="/" className="flex items-center gap-2.5">
               <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
                 <i className="ri-test-tube-line text-white text-base"></i>
               </div>
-              <h1 className={`text-lg font-bold transition-colors ${scrolled ? 'text-gray-900' : 'text-white'}`} style={{ fontFamily: '"Pacifico", serif' }}>
+              <h1 className="text-lg font-bold text-gray-900" style={{ fontFamily: '"Pacifico", serif' }}>
                 Testably
               </h1>
             </a>
@@ -226,9 +224,7 @@ export default function HomePage() {
                 <a
                   key={item}
                   href={`#${item}`}
-                  className={`text-sm font-medium transition-colors cursor-pointer ${
-                    scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'
-                  }`}
+                  className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
                 >
                   {item}
                 </a>
@@ -237,11 +233,7 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate('/auth')}
-                className={`text-sm font-semibold px-4 py-2 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                  scrolled
-                    ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                    : 'text-white/90 hover:text-white'
-                }`}
+                className="text-sm font-semibold px-4 py-2 rounded-lg transition-all cursor-pointer whitespace-nowrap text-gray-700 hover:text-gray-900 hover:bg-gray-100"
               >
                 로그인
               </button>
