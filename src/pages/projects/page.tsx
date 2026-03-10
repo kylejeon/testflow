@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
+import SEOHead from '../../components/SEOHead';
 
 interface UserProfile {
   email: string;
@@ -93,69 +94,76 @@ export default function ProjectsPage() {
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
 
   return (
-    <div className="flex h-screen bg-white">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 cursor-pointer">
-              <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                <i className="ri-test-tube-line text-xl text-white"></i>
-              </div>
-              <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                Testably
-              </span>
-            </div>
-            <div className="flex items-center gap-3 relative">
-              <div 
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {userProfile?.full_name?.charAt(0) || 'U'}
+    <>
+      <SEOHead
+        title="내 프로젝트 | Testably"
+        description="Testably에서 QA 테스트 프로젝트를 관리하세요. 테스트 케이스, 실행 결과, 세션을 한 곳에서 관리할 수 있습니다."
+        noindex={true}
+      />
+      <div className="flex h-screen bg-white">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <header className="bg-white border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 cursor-pointer">
+                <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
+                  <i className="ri-test-tube-line text-xl text-white"></i>
                 </div>
+                <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
+                  Testably
+                </span>
               </div>
-              
-              {showProfileMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-10" 
-                    onClick={() => setShowProfileMenu(false)}
-                  ></div>
-                  <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
-                      <p className="text-xs text-gray-500">{userProfile?.email}</p>
-                      <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
-                        <i className={`${tierInfo.icon} text-sm`}></i>
-                        {tierInfo.name}
-                      </div>
-                    </div>
-                    <Link
-                      to="/settings"
-                      onClick={() => setShowProfileMenu(false)}
-                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
-                    >
-                      <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                      <span>{t('common:settings')}</span>
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
-                    >
-                      <i className="ri-logout-box-line text-lg"></i>
-                      <span>{t('common:logout')}</span>
-                    </button>
+              <div className="flex items-center gap-3 relative">
+                <div 
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                    {userProfile?.full_name?.charAt(0) || 'U'}
                   </div>
-                </>
-              )}
+                </div>
+                
+                {showProfileMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowProfileMenu(false)}
+                    ></div>
+                    <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+                        <p className="text-xs text-gray-500">{userProfile?.email}</p>
+                        <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
+                          <i className={`${tierInfo.icon} text-sm`}></i>
+                          {tierInfo.name}
+                        </div>
+                      </div>
+                      <Link
+                        to="/settings"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
+                      >
+                        <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
+                        <span>{t('common:settings')}</span>
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
+                      >
+                        <i className="ri-logout-box-line text-lg"></i>
+                        <span>{t('common:logout')}</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        </header>
-        
-        <main className="flex-1 overflow-y-auto bg-gray-50/30">
-          <ProjectsContent />
-        </main>
+          </header>
+          
+          <main className="flex-1 overflow-y-auto bg-gray-50/30">
+            <ProjectsContent />
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

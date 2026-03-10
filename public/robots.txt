@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Disallow: /auth
+Disallow: /projects
+Disallow: /settings
+Disallow: /project-detail
+Disallow: /project-testcases
+Disallow: /project-sessions
+Disallow: /project-runs
+Disallow: /project-milestones
+Disallow: /project-documentation
+Disallow: /testcases
+Disallow: /session-detail
+Disallow: /run-detail
+Disallow: /milestone-detail
+Disallow: /accept-invitation
+
+Sitemap: https://testably.app/sitemap.xml

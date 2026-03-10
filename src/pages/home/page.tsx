@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SEOHead from '../../components/SEOHead';
 
 const features = [
   {
@@ -179,452 +180,478 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
-      {/* Navbar */}
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100' : 'bg-transparent'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
-              <i className="ri-test-tube-line text-white text-base"></i>
-            </div>
-            <span className={`text-lg font-bold transition-colors ${scrolled ? 'text-gray-900' : 'text-white'}`} style={{ fontFamily: '"Pacifico", serif' }}>
-              Testably
-            </span>
-          </div>
-          <div className="hidden md:flex items-center gap-8">
-            {['기능', '워크플로우', '요금제', '고객 사례'].map((item) => (
-              <a
-                key={item}
-                href={`#${item}`}
-                className={`text-sm font-medium transition-colors cursor-pointer ${
-                  scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'
-                }`}
-              >
-                {item}
-              </a>
-            ))}
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/auth')}
-              className={`text-sm font-semibold px-4 py-2 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                scrolled
-                  ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                  : 'text-white/90 hover:text-white'
-              }`}
-            >
-              로그인
-            </button>
-            <button
-              onClick={() => navigate('/auth')}
-              className="text-sm font-semibold px-5 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all cursor-pointer whitespace-nowrap shadow-sm"
-            >
-              무료 시작
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section
-        ref={heroRef}
-        className="relative min-h-screen flex items-center justify-center overflow-hidden"
-      >
-        <div className="absolute inset-0">
-          <img
-            src="https://readdy.ai/api/search-image?query=modern%20software%20development%20team%20working%20on%20quality%20assurance%20testing%20dashboard%20with%20multiple%20monitors%20showing%20charts%20and%20data%20analytics%20in%20a%20sleek%20dark%20office%20environment%20with%20teal%20accent%20lighting%20and%20abstract%20geometric%20patterns&width=1440&height=900&seq=hero1&orientation=landscape"
-            alt="Testably Hero"
-            className="w-full h-full object-cover object-top"
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-900/80 via-teal-900/60 to-gray-900/75"></div>
-        </div>
-
-        <div className="relative z-10 w-full max-w-5xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
-            <i className="ri-sparkling-line text-teal-300 text-sm"></i>
-            <span className="text-teal-200 text-sm font-medium">QA 팀을 위한 올인원 테스트 관리 플랫폼</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-            더 빠르고 스마트한
-            <br />
-            <span className="text-teal-400">테스트 관리</span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-white/75 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Testably로 테스트 케이스 작성부터 실행, 결과 분석까지 QA 워크플로우 전체를 하나의 플랫폼에서 관리하세요.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={() => navigate('/auth')}
-              className="px-8 py-4 bg-teal-500 text-white rounded-xl font-bold text-base hover:bg-teal-400 transition-all cursor-pointer whitespace-nowrap shadow-lg shadow-teal-500/30 flex items-center gap-2"
-            >
-              <i className="ri-rocket-line"></i>
-              무료로 시작하기
-            </button>
-            <button
-              onClick={() => navigate('/auth')}
-              className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white border border-white/30 rounded-xl font-semibold text-base hover:bg-white/20 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
-            >
-              <i className="ri-play-circle-line"></i>
-              데모 보기
-            </button>
-          </div>
-
-          <p className="text-white/50 text-sm mt-6">
-            신용카드 불필요 · 14일 무료 체험 · 언제든 취소 가능
-          </p>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
-          <span className="text-white/50 text-xs">스크롤</span>
-          <i className="ri-arrow-down-line text-white/50"></i>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="기능" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
-              <i className="ri-settings-3-line text-teal-600 text-sm"></i>
-              <span className="text-teal-700 text-sm font-medium">핵심 기능</span>
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              QA 팀에 필요한 모든 것
-            </h2>
-            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-              테스트 관리의 모든 단계를 지원하는 강력한 기능들을 경험하세요
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <div
-                key={feature.title}
-                className={`p-6 rounded-2xl border transition-all duration-300 cursor-pointer ${
-                  activeFeature === index
-                    ? 'border-teal-200 shadow-lg shadow-teal-50 scale-[1.02]'
-                    : 'border-gray-100 hover:border-teal-100 hover:shadow-md'
-                } ${feature.color}`}
-                onMouseEnter={() => setActiveFeature(index)}
-              >
-                <div className={`w-12 h-12 flex items-center justify-center rounded-xl mb-4 bg-white shadow-sm`}>
-                  <i className={`${feature.icon} text-2xl ${feature.iconColor}`}></i>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
+    <>
+      <SEOHead
+        title="Testably - QA 테스트 관리 플랫폼 | 무료로 시작하기"
+        description="더 빠르고 스마트한 QA 테스트 관리. 테스트 케이스 작성부터 실행, 결과 분석까지 하나의 플랫폼에서 관리하세요. Jira 연동, 팀 협업, 마일스톤 추적 기능 제공. 14일 무료 체험."
+        keywords="QA 테스트 관리, 테스트 케이스 관리, Test Run, 테스트 자동화, Jira 연동, 소프트웨어 테스팅, 품질 관리, QA 도구, 테스트 관리 플랫폼"
+        ogType="website"
+        structuredData={{
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareApplication',
+          name: 'Testably',
+          applicationCategory: 'BusinessApplication',
+          operatingSystem: 'Web',
+          offers: {
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'KRW',
+          },
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: '4.8',
+            ratingCount: '127',
+          },
+          description: '더 빠르고 스마트한 QA 테스트 관리 플랫폼. 테스트 케이스 작성부터 실행, 결과 분석까지 하나의 플랫폼에서 관리하세요.',
+        }}
+      />
+      <div className="min-h-screen bg-white font-sans" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
+        {/* Navbar */}
+        <nav
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+            scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100' : 'bg-transparent'
+          }`}
+        >
+          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="/" className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
+                <i className="ri-test-tube-line text-white text-base"></i>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Workflow Section */}
-      <section id="워크플로우" className="py-24 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
-              <i className="ri-flow-chart text-teal-600 text-sm"></i>
-              <span className="text-teal-700 text-sm font-medium">워크플로우</span>
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              4단계로 완성하는 QA 프로세스
-            </h2>
-            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-              복잡한 설정 없이 바로 시작할 수 있는 직관적인 워크플로우
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {workflowSteps.map((step, index) => (
-              <div key={step.step} className="relative">
-                {index < workflowSteps.length - 1 && (
-                  <div className="hidden lg:block absolute top-10 left-full w-full h-px bg-gradient-to-r from-teal-200 to-transparent z-10 -translate-y-1/2" style={{ width: 'calc(100% - 2rem)', left: 'calc(100% - 1rem)' }}></div>
-                )}
-                <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-3xl font-black text-teal-100">{step.step}</span>
-                    <div className="w-10 h-10 flex items-center justify-center bg-teal-500 rounded-xl">
-                      <i className={`${step.icon} text-white text-lg`}></i>
-                    </div>
-                  </div>
-                  <h3 className="text-base font-bold text-gray-900 mb-2">{step.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{step.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Jira Integration Banner */}
-      <section className="py-20 bg-gradient-to-r from-gray-900 to-teal-900">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
-                <i className="ri-links-line text-teal-300 text-sm"></i>
-                <span className="text-teal-200 text-sm font-medium">Jira 연동</span>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
-                Jira와 완벽하게<br />연동됩니다
-              </h2>
-              <p className="text-white/70 text-lg mb-8 leading-relaxed">
-                테스트 실패 시 자동으로 Jira 이슈를 생성하고, 개발팀과 실시간으로 협업하세요. 별도의 복사-붙여넣기 없이 QA와 개발이 하나로 연결됩니다.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {['자동 이슈 생성', '양방향 상태 동기화', '커스텀 필드 매핑', '프로젝트 연결'].map((tag) => (
-                  <span key={tag} className="px-3 py-1.5 bg-white/10 border border-white/20 rounded-full text-white/80 text-sm">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="relative">
-              <img
-                src="https://readdy.ai/api/search-image?query=Jira%20integration%20software%20development%20workflow%20issue%20tracking%20board%20kanban%20sprint%20planning%20modern%20UI%20interface%20dark%20background%20teal%20accent%20colors%20professional&width=600&height=400&seq=jira1&orientation=landscape"
-                alt="Jira Integration"
-                className="w-full h-64 object-cover object-top rounded-2xl border border-white/10"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section id="고객 사례" className="py-24 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
-              <i className="ri-chat-quote-line text-teal-600 text-sm"></i>
-              <span className="text-teal-700 text-sm font-medium">고객 사례</span>
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              팀들이 Testably를 선택한 이유
-            </h2>
-            <p className="text-gray-500 text-lg">전 세계 QA 팀들이 Testably로 더 나은 품질을 만들어가고 있습니다</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((t) => (
-              <div key={t.name} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <i key={i} className="ri-star-fill text-amber-400 text-sm"></i>
-                  ))}
-                </div>
-                <p className="text-gray-700 text-sm leading-relaxed mb-6">"{t.content}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                    <img src={t.avatar} alt={t.name} className="w-full h-full object-cover object-top" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900">{t.name}</div>
-                    <div className="text-xs text-gray-500">{t.role}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="요금제" className="py-24 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
-              <i className="ri-price-tag-3-line text-teal-600 text-sm"></i>
-              <span className="text-teal-700 text-sm font-medium">요금제</span>
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              팀 규모에 맞는 요금제
-            </h2>
-            <p className="text-gray-500 text-lg">모든 유료 요금제에 14일 무료 체험이 포함됩니다</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {pricingPlans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`rounded-2xl p-7 border transition-all flex flex-col ${
-                  plan.highlighted
-                    ? 'bg-teal-500 border-teal-500 shadow-xl shadow-teal-100 scale-[1.03]'
-                    : 'bg-white border-gray-200 hover:border-teal-200 hover:shadow-md'
-                }`}
-              >
-                <div className="mb-4">
-                  <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${
-                    plan.highlighted ? 'bg-white/20' : 'bg-teal-50'
-                  }`}>
-                    <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-teal-600'}`}></i>
-                  </div>
-                  {plan.highlighted && (
-                    <div className="inline-flex items-center gap-1 bg-white/20 rounded-full px-3 py-1 mb-2">
-                      <i className="ri-star-fill text-white text-xs"></i>
-                      <span className="text-white text-xs font-semibold">가장 인기</span>
-                    </div>
-                  )}
-                  <h3 className={`text-lg font-bold mb-1 ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>
-                    {plan.name}
-                  </h3>
-                  <p className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>
-                    {plan.description}
-                  </p>
-                </div>
-
-                <div className="mb-5 pb-5 border-b ${plan.highlighted ? 'border-white/20' : 'border-gray-100'}">
-                  <span className={`text-3xl font-black ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>
-                    {plan.price}
-                  </span>
-                  <span className={`text-xs ml-1.5 ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>
-                    {plan.period}
-                  </span>
-                </div>
-
-                <ul className="space-y-2.5 mb-7 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <div className={`w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${plan.highlighted ? 'bg-white/20' : 'bg-teal-100'}`}>
-                        <i className={`ri-check-line text-xs ${plan.highlighted ? 'text-white' : 'text-teal-600'}`}></i>
-                      </div>
-                      <span className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/90' : 'text-gray-700'}`}>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => navigate('/auth')}
-                  className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
-                    plan.highlighted
-                      ? 'bg-white text-teal-600 hover:bg-gray-50'
-                      : 'bg-teal-500 text-white hover:bg-teal-600'
+              <h1 className={`text-lg font-bold transition-colors ${scrolled ? 'text-gray-900' : 'text-white'}`} style={{ fontFamily: '"Pacifico", serif' }}>
+                Testably
+              </h1>
+            </a>
+            <div className="hidden md:flex items-center gap-8">
+              {['기능', '워크플로우', '요금제', '고객 사례'].map((item) => (
+                <a
+                  key={item}
+                  href={`#${item}`}
+                  className={`text-sm font-medium transition-colors cursor-pointer ${
+                    scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'
                   }`}
                 >
-                  {plan.cta}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 bg-gray-950 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <img
-            src="https://readdy.ai/api/search-image?query=abstract%20technology%20network%20pattern%20dark%20background%20glowing%20teal%20green%20nodes%20connections%20digital%20mesh%20futuristic&width=1440&height=500&seq=cta1&orientation=landscape"
-            alt=""
-            className="w-full h-full object-cover object-top"
-          />
-        </div>
-        <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
-            지금 바로 시작하세요
-          </h2>
-          <p className="text-white/60 text-lg mb-10">
-            신용카드 없이 무료로 시작하고, 팀과 함께 더 나은 QA 프로세스를 만들어보세요.
-          </p>
-          <button
-            onClick={() => navigate('/auth')}
-            className="px-10 py-4 bg-teal-500 text-white rounded-xl font-bold text-lg hover:bg-teal-400 transition-all cursor-pointer whitespace-nowrap shadow-lg shadow-teal-500/30 flex items-center gap-3 mx-auto"
-          >
-            <i className="ri-rocket-line"></i>
-            Get Started — 무료
-          </button>
-        </div>
-      </section>
-
-      {/* Newsletter */}
-      <section className="py-16 bg-teal-600">
-        <div className="max-w-2xl mx-auto px-6 text-center">
-          <h3 className="text-2xl font-bold text-white mb-2">업데이트 소식 받기</h3>
-          <p className="text-teal-100 text-sm mb-6">새로운 기능과 QA 팁을 이메일로 받아보세요</p>
-          {subscribed ? (
-            <div className="flex items-center justify-center gap-2 text-white">
-              <i className="ri-check-circle-line text-xl"></i>
-              <span className="font-semibold">구독해주셔서 감사합니다!</span>
-            </div>
-          ) : (
-            <form data-readdy-form onSubmit={handleSubscribe} className="flex gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                name="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="이메일 주소 입력"
-                className="flex-1 px-4 py-3 rounded-xl text-sm bg-white/20 border border-white/30 text-white placeholder-teal-200 focus:outline-none focus:bg-white/30"
-                required
-              />
-              <button
-                type="submit"
-                className="px-6 py-3 bg-white text-teal-600 rounded-xl font-semibold text-sm hover:bg-teal-50 transition-all cursor-pointer whitespace-nowrap"
-              >
-                구독하기
-              </button>
-            </form>
-          )}
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-100 py-12">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 bg-teal-500 rounded-lg flex items-center justify-center">
-                  <i className="ri-test-tube-line text-white text-sm"></i>
-                </div>
-                <span className="text-base font-bold text-gray-900" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
-              </div>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                QA 팀을 위한 올인원 테스트 관리 플랫폼. 더 빠르고 스마트한 테스트를 경험하세요.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-gray-900 mb-4">제품</h4>
-              <ul className="space-y-2">
-                {['기능 소개', '요금제', '업데이트 노트', '로드맵'].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer" rel="nofollow">{item}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-gray-900 mb-4">회사</h4>
-              <ul className="space-y-2">
-                <li>
-                  <a href="#" className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer" rel="nofollow">소개</a>
-                </li>
-                <li>
-                  <button onClick={() => navigate('/privacy')} className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer">개인정보처리방침</button>
-                </li>
-                <li>
-                  <button onClick={() => navigate('/terms')} className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer">이용약관</button>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-200 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-400 text-xs">© 2025 Testably. All rights reserved.</p>
-            <div className="flex items-center gap-4">
-              {['ri-twitter-x-line', 'ri-github-line', 'ri-linkedin-box-line'].map((icon) => (
-                <a key={icon} href="#" className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors cursor-pointer" rel="nofollow">
-                  <i className={`${icon} text-base`}></i>
+                  {item}
                 </a>
               ))}
             </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/auth')}
+                className={`text-sm font-semibold px-4 py-2 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                  scrolled
+                    ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                    : 'text-white/90 hover:text-white'
+                }`}
+              >
+                로그인
+              </button>
+              <button
+                onClick={() => navigate('/auth')}
+                className="text-sm font-semibold px-5 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all cursor-pointer whitespace-nowrap shadow-sm"
+              >
+                무료 시작
+              </button>
+            </div>
           </div>
-        </div>
-      </footer>
-    </div>
+        </nav>
+
+        {/* Hero Section */}
+        <header
+          ref={heroRef}
+          className="relative min-h-screen flex items-center justify-center overflow-hidden"
+        >
+          <div className="absolute inset-0">
+            <img
+              src="https://readdy.ai/api/search-image?query=modern%20software%20development%20team%20working%20on%20quality%20assurance%20testing%20dashboard%20with%20multiple%20monitors%20showing%20charts%20and%20data%20analytics%20in%20a%20sleek%20dark%20office%20environment%20with%20teal%20accent%20lighting%20and%20abstract%20geometric%20patterns&width=1440&height=900&seq=hero1&orientation=landscape"
+              alt="Testably QA 테스트 관리 플랫폼"
+              className="w-full h-full object-cover object-top"
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900/80 via-teal-900/60 to-gray-900/75"></div>
+          </div>
+
+          <div className="relative z-10 w-full max-w-5xl mx-auto px-6 text-center">
+            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
+              <i className="ri-sparkling-line text-teal-300 text-sm"></i>
+              <span className="text-teal-200 text-sm font-medium">QA 팀을 위한 올인원 테스트 관리 플랫폼</span>
+            </div>
+            <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+              더 빠르고 스마트한
+              <br />
+              <strong className="text-teal-400">테스트 관리</strong>
+            </h2>
+
+            <p className="text-lg md:text-xl text-white/75 mb-10 max-w-2xl mx-auto leading-relaxed">
+              Testably로 테스트 케이스 작성부터 실행, 결과 분석까지 QA 워크플로우 전체를 하나의 플랫폼에서 관리하세요.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={() => navigate('/auth')}
+                className="px-8 py-4 bg-teal-500 text-white rounded-xl font-bold text-base hover:bg-teal-400 transition-all cursor-pointer whitespace-nowrap shadow-lg shadow-teal-500/30 flex items-center gap-2"
+              >
+                <i className="ri-rocket-line"></i>
+                무료로 시작하기
+              </button>
+              <button
+                onClick={() => navigate('/auth')}
+                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white border border-white/30 rounded-xl font-semibold text-base hover:bg-white/20 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
+              >
+                <i className="ri-play-circle-line"></i>
+                데모 보기
+              </button>
+            </div>
+
+            <p className="text-white/50 text-sm mt-6">
+              신용카드 불필요 · 14일 무료 체험 · 언제든 취소 가능
+            </p>
+          </div>
+
+          {/* Scroll indicator */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
+            <span className="text-white/50 text-xs">스크롤</span>
+            <i className="ri-arrow-down-line text-white/50"></i>
+          </div>
+        </header>
+
+        {/* Features Section */}
+        <section id="기능" className="py-24 bg-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-settings-3-line text-teal-600 text-sm"></i>
+                <span className="text-teal-700 text-sm font-medium">핵심 기능</span>
+              </div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                QA 팀에 필요한 모든 것
+              </h2>
+              <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+                테스트 관리의 모든 단계를 지원하는 강력한 기능들을 경험하세요
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {features.map((feature, index) => (
+                <article
+                  key={feature.title}
+                  className={`p-6 rounded-2xl border transition-all duration-300 cursor-pointer ${
+                    activeFeature === index
+                      ? 'border-teal-200 shadow-lg shadow-teal-50 scale-[1.02]'
+                      : 'border-gray-100 hover:border-teal-100 hover:shadow-md'
+                  } ${feature.color}`}
+                  onMouseEnter={() => setActiveFeature(index)}
+                >
+                  <div className={`w-12 h-12 flex items-center justify-center rounded-xl mb-4 bg-white shadow-sm`}>
+                    <i className={`${feature.icon} text-2xl ${feature.iconColor}`}></i>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Workflow Section */}
+        <section id="워크플로우" className="py-24 bg-white">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-flow-chart text-teal-600 text-sm"></i>
+                <span className="text-teal-700 text-sm font-medium">워크플로우</span>
+              </div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                4단계로 완성하는 QA 프로세스
+              </h2>
+              <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+                복잡한 설정 없이 바로 시작할 수 있는 직관적인 워크플로우
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {workflowSteps.map((step, index) => (
+                <article key={step.step} className="relative">
+                  {index < workflowSteps.length - 1 && (
+                    <div className="hidden lg:block absolute top-10 left-full w-full h-px bg-gradient-to-r from-teal-200 to-transparent z-10 -translate-y-1/2" style={{ width: 'calc(100% - 2rem)', left: 'calc(100% - 1rem)' }}></div>
+                  )}
+                  <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-3xl font-black text-teal-100">{step.step}</span>
+                      <div className="w-10 h-10 flex items-center justify-center bg-teal-500 rounded-xl">
+                        <i className={`${step.icon} text-white text-lg`}></i>
+                      </div>
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900 mb-2">{step.title}</h3>
+                    <p className="text-gray-500 text-sm leading-relaxed">{step.description}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Jira Integration Banner */}
+        <section className="py-20 bg-gradient-to-r from-gray-900 to-teal-900">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
+                  <i className="ri-links-line text-teal-300 text-sm"></i>
+                  <span className="text-teal-200 text-sm font-medium">Jira 연동</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
+                  Jira와 완벽하게<br />연동됩니다
+                </h2>
+                <p className="text-white/70 text-lg mb-8 leading-relaxed">
+                  테스트 실패 시 자동으로 Jira 이슈를 생성하고, 개발팀과 실시간으로 협업하세요. 별도의 복사-붙여넣기 없이 QA와 개발이 하나로 연결됩니다.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {['자동 이슈 생성', '양방향 상태 동기화', '커스텀 필드 매핑', '프로젝트 연결'].map((tag) => (
+                    <span key={tag} className="px-3 py-1.5 bg-white/10 border border-white/20 rounded-full text-white/80 text-sm">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="relative">
+                <img
+                  src="https://readdy.ai/api/search-image?query=Jira%20integration%20software%20development%20workflow%20issue%20tracking%20board%20kanban%20sprint%20planning%20modern%20UI%20interface%20dark%20background%20teal%20accent%20colors%20professional&width=600&height=400&seq=jira1&orientation=landscape"
+                  alt="Jira 연동 기능"
+                  className="w-full h-64 object-cover object-top rounded-2xl border border-white/10"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials */}
+        <section id="고객 사례" className="py-24 bg-gray-50">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-chat-quote-line text-teal-600 text-sm"></i>
+                <span className="text-teal-700 text-sm font-medium">고객 사례</span>
+              </div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                팀들이 Testably를 선택한 이유
+              </h2>
+              <p className="text-gray-500 text-lg">전 세계 QA 팀들이 Testably로 더 나은 품질을 만들어가고 있습니다</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {testimonials.map((t) => (
+                <article key={t.name} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-center gap-1 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <i key={i} className="ri-star-fill text-amber-400 text-sm"></i>
+                    ))}
+                  </div>
+                  <p className="text-gray-700 text-sm leading-relaxed mb-6">"{t.content}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                      <img src={t.avatar} alt={`${t.name} 프로필`} className="w-full h-full object-cover object-top" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-gray-900">{t.name}</div>
+                      <div className="text-xs text-gray-500">{t.role}</div>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section id="요금제" className="py-24 bg-white">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-price-tag-3-line text-teal-600 text-sm"></i>
+                <span className="text-teal-700 text-sm font-medium">요금제</span>
+              </div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                팀 규모에 맞는 요금제
+              </h2>
+              <p className="text-gray-500 text-lg">모든 유료 요금제에 14일 무료 체험이 포함됩니다</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              {pricingPlans.map((plan) => (
+                <article
+                  key={plan.name}
+                  className={`rounded-2xl p-7 border transition-all flex flex-col ${
+                    plan.highlighted
+                      ? 'bg-teal-500 border-teal-500 shadow-xl shadow-teal-100 scale-[1.03]'
+                      : 'bg-white border-gray-200 hover:border-teal-200 hover:shadow-md'
+                  }`}
+                >
+                  <div className="mb-4">
+                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${
+                      plan.highlighted ? 'bg-white/20' : 'bg-teal-50'
+                    }`}>
+                      <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-teal-600'}`}></i>
+                    </div>
+                    {plan.highlighted && (
+                      <div className="inline-flex items-center gap-1 bg-white/20 rounded-full px-3 py-1 mb-2">
+                        <i className="ri-star-fill text-white text-xs"></i>
+                        <span className="text-white text-xs font-semibold">가장 인기</span>
+                      </div>
+                    )}
+                    <h3 className={`text-lg font-bold mb-1 ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>
+                      {plan.name}
+                    </h3>
+                    <p className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>
+                      {plan.description}
+                    </p>
+                  </div>
+
+                  <div className="mb-5 pb-5 border-b ${plan.highlighted ? 'border-white/20' : 'border-gray-100'}">
+                    <span className={`text-3xl font-black ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>
+                      {plan.price}
+                    </span>
+                    <span className={`text-xs ml-1.5 ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>
+                      {plan.period}
+                    </span>
+                  </div>
+
+                  <ul className="space-y-2.5 mb-7 flex-1">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2">
+                        <div className={`w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${plan.highlighted ? 'bg-white/20' : 'bg-teal-100'}`}>
+                          <i className={`ri-check-line text-xs ${plan.highlighted ? 'text-white' : 'text-teal-600'}`}></i>
+                        </div>
+                        <span className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/90' : 'text-gray-700'}`}>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button
+                    onClick={() => navigate('/auth')}
+                    className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
+                      plan.highlighted
+                        ? 'bg-white text-teal-600 hover:bg-gray-50'
+                        : 'bg-teal-500 text-white hover:bg-teal-600'
+                    }`}
+                  >
+                    {plan.cta}
+                  </button>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-24 bg-gray-950 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-20">
+            <img
+              src="https://readdy.ai/api/search-image?query=abstract%20technology%20network%20pattern%20dark%20background%20glowing%20teal%20green%20nodes%20connections%20digital%20mesh%20futuristic&width=1440&height=500&seq=cta1&orientation=landscape"
+              alt=""
+              className="w-full h-full object-cover object-top"
+            />
+          </div>
+          <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+              지금 바로 시작하세요
+            </h2>
+            <p className="text-white/60 text-lg mb-10">
+              신용카드 없이 무료로 시작하고, 팀과 함께 더 나은 QA 프로세스를 만들어보세요.
+            </p>
+            <button
+              onClick={() => navigate('/auth')}
+              className="px-10 py-4 bg-teal-500 text-white rounded-xl font-bold text-lg hover:bg-teal-400 transition-all cursor-pointer whitespace-nowrap shadow-lg shadow-teal-500/30 flex items-center gap-3 mx-auto"
+            >
+              <i className="ri-rocket-line"></i>
+              Get Started — 무료
+            </button>
+          </div>
+        </section>
+
+        {/* Newsletter */}
+        <section className="py-16 bg-teal-600">
+          <div className="max-w-2xl mx-auto px-6 text-center">
+            <h3 className="text-2xl font-bold text-white mb-2">업데이트 소식 받기</h3>
+            <p className="text-teal-100 text-sm mb-6">새로운 기능과 QA 팁을 이메일로 받아보세요</p>
+            {subscribed ? (
+              <div className="flex items-center justify-center gap-2 text-white">
+                <i className="ri-check-circle-line text-xl"></i>
+                <span className="font-semibold">구독해주셔서 감사합니다!</span>
+              </div>
+            ) : (
+              <form data-readdy-form onSubmit={handleSubscribe} className="flex gap-3 max-w-md mx-auto">
+                <input
+                  type="email"
+                  name="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="이메일 주소 입력"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm bg-white/20 border border-white/30 text-white placeholder-teal-200 focus:outline-none focus:bg-white/30"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-white text-teal-600 rounded-xl font-semibold text-sm hover:bg-teal-50 transition-all cursor-pointer whitespace-nowrap"
+                >
+                  구독하기
+                </button>
+              </form>
+            )}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="bg-gray-100 py-12">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 bg-teal-500 rounded-lg flex items-center justify-center">
+                    <i className="ri-test-tube-line text-white text-sm"></i>
+                  </div>
+                  <span className="text-base font-bold text-gray-900" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+                </div>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  QA 팀을 위한 올인원 테스트 관리 플랫폼. 더 빠르고 스마트한 테스트를 경험하세요.
+                </p>
+              </div>
+              <nav>
+                <h4 className="text-sm font-bold text-gray-900 mb-4">제품</h4>
+                <ul className="space-y-2">
+                  {['기능 소개', '요금제', '업데이트 노트', '로드맵'].map((item) => (
+                    <li key={item}>
+                      <a href="#" className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer" rel="nofollow">{item}</a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+              <nav>
+                <h4 className="text-sm font-bold text-gray-900 mb-4">회사</h4>
+                <ul className="space-y-2">
+                  <li>
+                    <a href="#" className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer" rel="nofollow">소개</a>
+                  </li>
+                  <li>
+                    <button onClick={() => navigate('/privacy')} className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer">개인정보처리방침</button>
+                  </li>
+                  <li>
+                    <button onClick={() => navigate('/terms')} className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer">이용약관</button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+            <div className="border-t border-gray-200 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+              <p className="text-gray-400 text-xs">© 2025 Testably. All rights reserved.</p>
+              <div className="flex items-center gap-4">
+                {['ri-twitter-x-line', 'ri-github-line', 'ri-linkedin-box-line'].map((icon) => (
+                  <a key={icon} href="#" className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors cursor-pointer" rel="nofollow">
+                    <i className={`${icon} text-base`}></i>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </>
   );
 }
