@@ -499,6 +499,7 @@ export default function ProjectTestCases() {
                 onDelete={handleDeleteTestCase}
                 onRefresh={handleRefreshData}
                 projectId={id!}
+                projectName={project?.name || ''}
               />
             </div>
           </div>

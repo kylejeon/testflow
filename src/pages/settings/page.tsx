@@ -26,7 +26,7 @@ const TIER_INFO = {
     icon: 'ri-user-line',
     monthlyPrice: 0,
     priceDesc: '무료',
-    features: ['프로젝트 3개까지', '팀 멤버 5명까지', '기본 테스트 관리', 'Jira 연동', '커뮤니티 지원'],
+    features: ['프로젝트 3개까지', '팀 멤버 5명까지', '기본 테스트 관리', '커뮤니티 지원'],
   },
   2: {
     name: 'Starter',
@@ -34,7 +34,7 @@ const TIER_INFO = {
     icon: 'ri-star-line',
     monthlyPrice: 9900,
     priceDesc: '/ 월',
-    features: ['프로젝트 10개까지', '팀 멤버 8명까지', 'Jira 연동', '기본 리포팅', '이메일 지원'],
+    features: ['프로젝트 10개까지', '팀 멤버 8명까지', 'Jira Integration', '기본 리포팅', 'Testcase Export/Import'],
   },
   3: {
     name: 'Professional',
@@ -42,7 +42,7 @@ const TIER_INFO = {
     icon: 'ri-vip-crown-line',
     monthlyPrice: 24900,
     priceDesc: '/ 월',
-    features: ['프로젝트 무제한', '팀 멤버 15명까지', 'Jira 연동', '고급 리포팅', '우선 지원'],
+    features: ['프로젝트 무제한', '팀 멤버 15명까지', 'Jira Integration', '고급 리포팅', 'Testcase Export/Import', '우선 지원'],
   },
   4: {
     name: 'Enterprise',
@@ -50,7 +50,7 @@ const TIER_INFO = {
     icon: 'ri-vip-diamond-line',
     monthlyPrice: -1,
     priceDesc: '맞춤 견적',
-    features: ['모든 Professional 기능', '무제한 프로젝트', '무제한 팀 멤버', '전용 지원 담당자', '커스텀 통합', 'SLA 보장'],
+    features: ['모든 Professional 기능', '무제한 프로젝트', '무제한 팀 멤버', 'Jira Integration', 'Testcase Export/Import', '전용 지원 담당자', '커스텀 통합', 'SLA 보장'],
   },
 };
 
@@ -70,6 +70,7 @@ export default function SettingsPage() {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showApiToken, setShowApiToken] = useState(false);
+  const [showJiraTooltip, setShowJiraTooltip] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -565,6 +566,30 @@ export default function SettingsPage() {
                                       <span>{feature}</span>
                                     </li>
                                   ))}
+                                  {/* Free 플랜 전용 Jira Integration (Link) 항목 */}
+                                  {tierNum === 1 && (
+                                    <li className="flex items-start gap-2 text-sm text-gray-600">
+                                      <i className="ri-check-line mt-0.5 text-gray-400"></i>
+                                      <span className="flex items-center gap-1">
+                                        Jira Integration (Link)
+                                        <div className="relative inline-flex items-center">
+                                          <button
+                                            onMouseEnter={() => setShowJiraTooltip(true)}
+                                            onMouseLeave={() => setShowJiraTooltip(false)}
+                                            className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                                          >
+                                            <i className="ri-information-line text-sm"></i>
+                                          </button>
+                                          {showJiraTooltip && (
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50 pointer-events-none">
+                                              <p className="leading-relaxed">테스트 결과에서 Jira 이슈 링크를 직접 첨부할 수 있습니다. Jira 이슈 자동 생성은 Starter 이상에서 지원됩니다.</p>
+                                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </span>
+                                    </li>
+                                  )}
                                 </ul>
                                 {!isCurrentTier && tierNum > currentTier && (
                                   <button className="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-all cursor-pointer whitespace-nowrap">

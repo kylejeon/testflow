@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import TipTapEditor from '../../session-detail/components/QuillEditor';
+import ExportImportModal from './ExportImportModal';
 
 interface TestCase {
   id: string;
@@ -28,6 +29,7 @@ interface TestCaseListProps {
   onDelete: (id: string) => void;
   onRefresh: () => Promise<void>;
   projectId: string;
+  projectName?: string;
 }
 
 interface Folder {
@@ -123,7 +125,7 @@ interface Project {
   status?: string;
 }
 
-export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId }: TestCaseListProps) {
+export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId, projectName: propProjectName }: TestCaseListProps) {
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [showNewCaseModal, setShowNewCaseModal] = useState(false);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -213,6 +215,143 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   // 히스토리 모달 상태
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
+  const [showExportImportModal, setShowExportImportModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [userTier, setUserTier] = useState<number>(1);
+
+  // projectName 상태 제거 (propProjectName을 직접 사용)
+
+  // propProjectName 동기화 useEffect 제거
+  // DB 조회 useEffect 제거
+
+  // 유저 티어 조회
+  useEffect(() => {
+    const fetchUserTier = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('subscription_tier')
+          .eq('id', user.id)
+          .maybeSingle();
+        setUserTier(data?.subscription_tier || 1);
+      }
+    };
+    fetchUserTier();
+  }, []);
+
+  const handleOpenExportImport = () => {
+    if (userTier < 2) {
+      setShowUpgradeModal(true);
+    } else {
+      setShowExportImportModal(true);
+    }
+  };
+
+  // Import 핸들러
+  const handleImportTestCases = async (importedCases: Partial<TestCase>[]) => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // 프로젝트 prefix 조회
+    const { data: projectData } = await supabase
+      .from('projects')
+      .select('prefix')
+      .eq('id', projectId)
+      .maybeSingle();
+    const prefix = projectData?.prefix;
+
+    // 현재 최대 번호 조회
+    let maxNum = 0;
+    if (prefix) {
+      const { data: existingCases } = await supabase
+        .from('test_cases')
+        .select('custom_id')
+        .eq('project_id', projectId)
+        .not('custom_id', 'is', null);
+
+      if (existingCases) {
+        existingCases.forEach((tc: any) => {
+          if (tc.custom_id) {
+            const match = tc.custom_id.match(/-(\d+)$/);
+            if (match) {
+              const num = parseInt(match[1], 10);
+              if (num > maxNum) maxNum = num;
+            }
+          }
+        });
+      }
+    }
+
+    // 폴더 자동 생성
+    const requiredFolderNames = [...new Set(
+      importedCases.map(tc => tc.folder).filter((f): f is string => !!f && f.trim() !== '')
+    )];
+
+    if (requiredFolderNames.length > 0) {
+      const { data: existingFolders } = await supabase
+        .from('folders')
+        .select('name')
+        .eq('project_id', projectId);
+
+      const existingNames = new Set((existingFolders || []).map((f: any) => f.name));
+      const toCreate = requiredFolderNames.filter(name => !existingNames.has(name));
+
+      if (toCreate.length > 0) {
+        await supabase.from('folders').insert(
+          toCreate.map(name => ({
+            project_id: projectId,
+            name,
+            icon: 'ri-folder-line',
+            color: 'gray',
+          }))
+        );
+      }
+    }
+
+    // 테스트 케이스 일괄 삽입
+    const insertData = importedCases.map((tc, idx) => ({
+      project_id: projectId,
+      title: tc.title || 'Untitled',
+      description: tc.description || null,
+      precondition: tc.precondition || null,
+      priority: tc.priority || 'medium',
+      status: 'untested',
+      is_automated: tc.is_automated || false,
+      folder: tc.folder || null,
+      tags: tc.tags || null,
+      steps: tc.steps || null,
+      expected_result: tc.expected_result || null,
+      assignee: null,
+      created_by: user?.id || null,
+      ...(prefix ? { custom_id: `${prefix}-${maxNum + idx + 1}` } : {}),
+    }));
+
+    const { data: inserted, error } = await supabase
+      .from('test_cases')
+      .insert(insertData)
+      .select('id');
+
+    if (error) throw error;
+
+    // 히스토리 기록
+    if (inserted && user) {
+      await supabase.from('test_case_history').insert(
+        inserted.map((tc: { id: string }) => ({
+          test_case_id: tc.id,
+          user_id: user.id,
+          action_type: 'created',
+        }))
+      );
+    }
+
+    await onRefresh();
+
+    setToastMessage(`${importedCases.length}개의 테스트 케이스를 성공적으로 가져왔습니다.`);
+    setToastType('success');
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
   const iconOptions = [
     'ri-folder-line',
     'ri-layout-line',
@@ -300,7 +439,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         setToastMessage('폴더 생성에 실패했습니다.');
         setToastType('error');
         setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
+        setTimeout(() => {
+          setShowToast(false);
+        }, 3000);
       }
     }
   };
@@ -364,7 +505,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setToastMessage('폴더 삭제에 실패했습니다.');
       setToastType('error');
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
     } finally {
       setDeletingFolder(false);
       setShowDeleteFolderModal(false);
@@ -1754,34 +1897,43 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Test Cases</h1>
               <p className="text-gray-600 mb-6">Manage and execute all test cases</p>
-              <button
-                onClick={() => {
-                  setEditingTestCase(null);
-                  // 현재 선택된 폴더가 있으면 해당 폴더로 설정
-                  const currentFolder = selectedFolder !== 'all' 
-                    ? folders.find(f => f.id === selectedFolder)?.name || ''
-                    : '';
-                  setNewTestCase({
-                    title: '',
-                    description: '',
-                    precondition: '',
-                    folder: currentFolder,
-                    priority: 'medium',
-                    assignee: '',
-                    is_automated: false,
-                    steps: '',
-                    expected_result: '',
-                    tags: '',
-                    attachments: [],
-                  });
-                  setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
-                  setShowNewCaseModal(true);
-                }}
-                className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
-              >
-                <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
-                New Test Case
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setEditingTestCase(null);
+                    // 현재 선택된 폴더가 있으면 해당 폴더로 설정
+                    const currentFolder = selectedFolder !== 'all' 
+                      ? folders.find(f => f.id === selectedFolder)?.name || ''
+                      : '';
+                    setNewTestCase({
+                      title: '',
+                      description: '',
+                      precondition: '',
+                      folder: currentFolder,
+                      priority: 'medium',
+                      assignee: '',
+                      is_automated: false,
+                      steps: '',
+                      expected_result: '',
+                      tags: '',
+                      attachments: [],
+                    });
+                    setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
+                    setShowNewCaseModal(true);
+                  }}
+                  className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
+                  New Test Case
+                </button>
+                <button
+                  onClick={handleOpenExportImport}
+                  className="px-5 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <i className="ri-file-transfer-line text-lg w-5 h-5 flex items-center justify-center"></i>
+                  Export / Import
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1821,6 +1973,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               >
                 <i className="ri-file-copy-line"></i>
                 Copy to Project
+              </button>
+              <button
+                onClick={() => setShowExportImportModal(true)}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <i className="ri-download-line"></i>
+                Export
               </button>
               <button
                 onClick={() => setShowBulkDeleteModal(true)}
@@ -2014,7 +2173,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Priority</label>
+                  <label className="block text-xs font-semibold text-gray-500 mb-2">Priority</label>
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
                       selectedTestCase.priority
@@ -2026,14 +2185,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
                 {selectedTestCase.folder && (
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Folder</label>
+                    <label className="block text-xs font-semibold text-gray-500 mb-2">Folder</label>
                     <p className="text-sm text-gray-900">{selectedTestCase.folder}</p>
                   </div>
                 )}
 
                 {selectedTestCase.tags && (
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Tags</label>
+                    <label className="block text-xs font-semibold text-gray-500 mb-2">Tags</label>
                     <div className="flex flex-wrap gap-2">
                       {selectedTestCase.tags.split(',').map((tag, index) => (
                         <span
@@ -2049,7 +2208,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
                 {selectedTestCase.assignee && (
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Assignee</label>
+                    <label className="block text-xs font-semibold text-gray-500 mb-2">Assignee</label>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                         {selectedTestCase.assignee.substring(0, 2).toUpperCase()}
@@ -2060,7 +2219,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Created</label>
+                  <label className="block text-xs font-semibold text-gray-500 mb-2">Created</label>
                   <p className="text-sm text-gray-900">
                     {new Date(selectedTestCase.created_at).toLocaleDateString('en-US', {
                       year: 'numeric',
@@ -2265,7 +2424,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                             {comment.author.substring(0, 2).toUpperCase()}
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-sm font-semibold text-gray-900">{comment.author}</span>
                               <span className="text-xs text-gray-500">
@@ -2930,6 +3089,62 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         </div>
       )}
 
+      {/* Export / Import 모달 */}
+      {showExportImportModal && (
+        <ExportImportModal
+          testCases={testCases}
+          selectedTestCaseIds={selectedTestCaseIds}
+          projectName={propProjectName || ''}
+          projectId={projectId}
+          onImport={handleImportTestCases}
+          onClose={() => setShowExportImportModal(false)}
+        />
+      )}
+
+      {/* 업그레이드 안내 모달 */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-2xl">
+            <div className="p-8 text-center">
+              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i className="ri-vip-crown-line text-yellow-500 text-3xl"></i>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Starter 플랜 이상 필요</h2>
+              <p className="text-gray-600 text-sm mb-6">
+                Export / Import 기능은 <strong>Starter 플랜</strong> 이상에서 사용할 수 있습니다.<br />
+                테스트 케이스를 CSV로 내보내거나 가져오려면 플랜을 업그레이드하세요.
+              </p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
+                <p className="text-sm font-semibold text-yellow-800 mb-2">Starter 플랜 혜택</p>
+                <ul className="space-y-1.5">
+                  {['CSV Export / Import', '프로젝트 10개까지', '팀 멤버 8명까지', '기본 리포팅', '이메일 지원'].map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-yellow-700">
+                      <i className="ri-check-line text-yellow-500"></i>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                >
+                  닫기
+                </button>
+                <a
+                  href="/settings"
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="flex-1 px-4 py-2.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-all font-semibold cursor-pointer whitespace-nowrap text-center"
+                >
+                  플랜 업그레이드
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 히스토리 비교 모달 */}
       {showHistoryModal && selectedHistory && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -3154,12 +3369,12 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       <i className={`${folder.icon} text-2xl`}></i>
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{folder.name}</p>
+                      <p className="font-semibold text-gray-900 truncate">{folder.name}</p>
                       <p className="text-xs text-gray-500">
                         {testCases.filter(tc => tc.folder === folder.name).length}개의 테스트 케이스
                       </p>
                     </div>
-                    <i className="ri-arrow-right-s-line text-gray-400"></i>
+                    <i className="ri-arrow-right-s-line text-gray-400 group-hover:text-orange-500 transition-colors flex-shrink-0"></i>
                   </button>
                 ))}
                 {folders.length === 0 && (
@@ -3302,7 +3517,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       disabled={copyingToProject}
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-orange-50 border border-transparent hover:border-orange-200 transition-all cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed group"
                     >
-                      <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center">
                         {copyingToProject && copyTargetProjectId === project.id ? (
                           <i className="ri-loader-4-line animate-spin text-white text-lg"></i>
                         ) : (
