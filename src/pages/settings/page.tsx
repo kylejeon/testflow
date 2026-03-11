@@ -34,7 +34,7 @@ const TIER_INFO = {
     icon: 'ri-star-line',
     monthlyPrice: 9900,
     priceDesc: '/ 월',
-    features: ['프로젝트 10개까지', '팀 멤버 8명까지', 'Jira Integration', '기본 리포팅', 'Testcase Export/Import'],
+    features: ['프로젝트 10개까지', '팀 멤버 8명까지', 'Jira Integration', '기본 리포팅', 'Testcase Export/Import', 'Export PDF Report'],
   },
   3: {
     name: 'Professional',
@@ -42,7 +42,7 @@ const TIER_INFO = {
     icon: 'ri-vip-crown-line',
     monthlyPrice: 24900,
     priceDesc: '/ 월',
-    features: ['프로젝트 무제한', '팀 멤버 15명까지', 'Jira Integration', '고급 리포팅', 'Testcase Export/Import', '우선 지원'],
+    features: ['프로젝트 무제한', '팀 멤버 15명까지', 'Jira Integration', '고급 리포팅', 'Testcase Export/Import', 'Export PDF Report', '우선 지원'],
   },
   4: {
     name: 'Enterprise',
@@ -50,7 +50,7 @@ const TIER_INFO = {
     icon: 'ri-vip-diamond-line',
     monthlyPrice: -1,
     priceDesc: '맞춤 견적',
-    features: ['모든 Professional 기능', '무제한 프로젝트', '무제한 팀 멤버', 'Jira Integration', 'Testcase Export/Import', '전용 지원 담당자', '커스텀 통합', 'SLA 보장'],
+    features: ['모든 Professional 기능', '무제한 프로젝트', '무제한 팀 멤버', 'Jira Integration', 'Testcase Export/Import', 'Export PDF Report', '전용 지원 담당자', '커스텀 통합', 'SLA 보장'],
   },
 };
 
