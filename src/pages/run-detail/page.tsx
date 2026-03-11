@@ -1659,7 +1659,7 @@ export default function RunDetail() {
                                     }}
                                   />
                                 ) : (
-                                  <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{content}</p>
                                 )}
                               </div>
                             );
@@ -1957,15 +1957,10 @@ export default function RunDetail() {
                             }
                             setShowAddIssueModal(true);
                           }}
-                          className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                            isProfessionalOrHigher
-                              ? 'bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200'
-                              : 'bg-gray-100 text-gray-400 border border-gray-200'
-                          }`}
+                          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200"
                         >
                           <i className="ri-add-line"></i>
                           Add Issue
-                          {!isProfessionalOrHigher && <i className="ri-lock-line ml-0.5"></i>}
                         </button>
                       </div>
 
@@ -2077,42 +2072,32 @@ export default function RunDetail() {
 
           {/* Upgrade Modal */}
           {showUpgradeModal && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
               <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                      <i className="ri-vip-crown-line text-amber-600 text-2xl"></i>
-                    </div>
-                    <button
-                      onClick={() => setShowUpgradeModal(false)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
-                    >
-                      <i className="ri-close-line text-xl"></i>
-                    </button>
+                <div className="p-8 text-center">
+                  <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i className="ri-vip-crown-line text-yellow-500 text-3xl"></i>
                   </div>
-                  <h2 className="text-lg font-bold text-gray-900 mb-2">Professional 요금제가 필요합니다</h2>
-                  <p className="text-sm text-gray-600 mb-6">
-                    Jira 이슈 생성 기능은 <span className="font-semibold text-teal-700">Professional</span> 이상 요금제에서 사용할 수 있습니다. 업그레이드하면 테스트 결과에서 바로 Jira 이슈를 생성하고 관리할 수 있습니다.
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">Starter 플랜 이상 필요</h2>
+                  <p className="text-gray-600 text-sm mb-6">
+                    Jira 이슈 생성 기능은 <strong>Starter 플랜</strong> 이상에서 사용할 수 있습니다.<br />
+                    업그레이드하면 테스트 결과에서 바로 Jira 이슈를 생성하고 관리할 수 있습니다.
                   </p>
-                  <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <i className="ri-checkbox-circle-fill text-teal-500"></i>
-                      테스트 결과에서 Jira 이슈 즉시 생성
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <i className="ri-checkbox-circle-fill text-teal-500"></i>
-                      이슈 키 연동 및 추적
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <i className="ri-checkbox-circle-fill text-teal-500"></i>
-                      최대 50명 팀 멤버 초대
-                    </div>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
+                    <p className="text-sm font-semibold text-yellow-800 mb-2">Starter 플랜 혜택</p>
+                    <ul className="space-y-1.5">
+                      {['프로젝트 10개까지', '팀 멤버 8명까지', 'Jira Integration', '기본 리포팅', 'Testcase Export/Import'].map((f) => (
+                        <li key={f} className="flex items-center gap-2 text-sm text-yellow-700">
+                          <i className="ri-check-line text-yellow-500"></i>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                   <div className="flex gap-3">
                     <button
                       onClick={() => setShowUpgradeModal(false)}
-                      className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                      className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap"
                     >
                       닫기
                     </button>
@@ -2121,10 +2106,9 @@ export default function RunDetail() {
                         setShowUpgradeModal(false);
                         navigate('/settings');
                       }}
-                      className="flex-1 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
+                      className="flex-1 px-4 py-2.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
                     >
-                      <i className="ri-arrow-up-circle-line"></i>
-                      요금제 업그레이드
+                      플랜 업그레이드
                     </button>
                   </div>
                 </div>
@@ -2354,15 +2338,10 @@ export default function RunDetail() {
                             }
                             setShowAddIssueModal(true);
                           }}
-                          className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                            isProfessionalOrHigher
-                              ? 'bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200'
-                              : 'bg-gray-100 text-gray-400 border border-gray-200'
-                          }`}
+                          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200"
                         >
                           <i className="ri-add-line"></i>
                           Add Issue
-                          {!isProfessionalOrHigher && <i className="ri-lock-line ml-0.5"></i>}
                         </button>
                       </div>
                       <input

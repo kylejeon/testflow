@@ -3117,7 +3117,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
                 <p className="text-sm font-semibold text-yellow-800 mb-2">Starter 플랜 혜택</p>
                 <ul className="space-y-1.5">
-                  {['CSV Export / Import', '프로젝트 10개까지', '팀 멤버 8명까지', '기본 리포팅', '이메일 지원'].map((f) => (
+                  {['프로젝트 10개까지', '팀 멤버 8명까지', 'Jira Integration', '기본 리포팅', 'Testcase Export/Import'].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-yellow-700">
                       <i className="ri-check-line text-yellow-500"></i>
                       {f}

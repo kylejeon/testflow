@@ -26,7 +26,7 @@ const TIER_INFO = {
     icon: 'ri-user-line',
     monthlyPrice: 0,
     priceDesc: '무료',
-    features: ['프로젝트 3개까지', '팀 멤버 5명까지', '기본 테스트 관리', '커뮤니티 지원'],
+    features: ['프로젝트 3개까지', '팀 멤버 5명까지', '기본 테스트 관리', 'Jira Integration (Link)', '커뮤니티 지원'],
   },
   2: {
     name: 'Starter',
@@ -474,7 +474,28 @@ export default function SettingsPage() {
                             {tierInfo.features.map((feature, index) => (
                               <div key={index} className="flex items-center gap-2 text-sm">
                                 <i className="ri-check-line"></i>
-                                <span>{feature}</span>
+                                {currentTier === 1 && feature === 'Jira Integration (Link)' ? (
+                                  <span className="flex items-center gap-1">
+                                    Jira Integration (Link)
+                                    <div className="relative inline-flex items-center">
+                                      <button
+                                        onMouseEnter={() => setShowJiraTooltip(true)}
+                                        onMouseLeave={() => setShowJiraTooltip(false)}
+                                        className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                                      >
+                                        <i className="ri-information-line text-sm"></i>
+                                      </button>
+                                      {showJiraTooltip && (
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50 pointer-events-none">
+                                          <p className="leading-relaxed">테스트 결과에서 Jira 이슈 링크를 직접 첨부할 수 있습니다. Jira 이슈 자동 생성은 Starter 이상에서 지원됩니다.</p>
+                                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </span>
+                                ) : (
+                                  <span>{feature}</span>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -513,7 +534,7 @@ export default function SettingsPage() {
                             return (
                               <div
                                 key={tier}
-                                className={`p-5 rounded-xl border-2 transition-all ${
+                                className={`p-5 rounded-xl border-2 transition-all flex flex-col ${
                                   isCurrentTier
                                     ? info.color
                                     : 'border-gray-200 bg-white hover:border-gray-300'
@@ -557,42 +578,39 @@ export default function SettingsPage() {
                                   )}
                                 </div>
 
-                                <ul className="space-y-2">
+                                <ul className="space-y-2 flex-1">
                                   {info.features.map((feature, index) => (
                                     <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
                                       <i className={`ri-check-line mt-0.5 ${
                                         tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-teal-500' : 'text-amber-500'
                                       }`}></i>
-                                      <span>{feature}</span>
+                                      {tierNum === 1 && feature === 'Jira Integration (Link)' ? (
+                                        <span className="flex items-center gap-1">
+                                          Jira Integration (Link)
+                                          <div className="relative inline-flex items-center">
+                                            <button
+                                              onMouseEnter={() => setShowJiraTooltip(true)}
+                                              onMouseLeave={() => setShowJiraTooltip(false)}
+                                              className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                                            >
+                                              <i className="ri-information-line text-sm"></i>
+                                            </button>
+                                            {showJiraTooltip && (
+                                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50 pointer-events-none">
+                                                <p className="leading-relaxed">테스트 결과에서 Jira 이슈 링크를 직접 첨부할 수 있습니다. Jira 이슈 자동 생성은 Starter 이상에서 지원됩니다.</p>
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </span>
+                                      ) : (
+                                        <span>{feature}</span>
+                                      )}
                                     </li>
                                   ))}
-                                  {/* Free 플랜 전용 Jira Integration (Link) 항목 */}
-                                  {tierNum === 1 && (
-                                    <li className="flex items-start gap-2 text-sm text-gray-600">
-                                      <i className="ri-check-line mt-0.5 text-gray-400"></i>
-                                      <span className="flex items-center gap-1">
-                                        Jira Integration (Link)
-                                        <div className="relative inline-flex items-center">
-                                          <button
-                                            onMouseEnter={() => setShowJiraTooltip(true)}
-                                            onMouseLeave={() => setShowJiraTooltip(false)}
-                                            className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
-                                          >
-                                            <i className="ri-information-line text-sm"></i>
-                                          </button>
-                                          {showJiraTooltip && (
-                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50 pointer-events-none">
-                                              <p className="leading-relaxed">테스트 결과에서 Jira 이슈 링크를 직접 첨부할 수 있습니다. Jira 이슈 자동 생성은 Starter 이상에서 지원됩니다.</p>
-                                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </span>
-                                    </li>
-                                  )}
                                 </ul>
                                 {!isCurrentTier && tierNum > currentTier && (
-                                  <button className="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-all cursor-pointer whitespace-nowrap">
+                                  <button className="w-full mt-4 px-4 py-2 bg-teal-500 text-white rounded-lg text-sm font-semibold hover:bg-teal-600 transition-all cursor-pointer whitespace-nowrap">
                                     업그레이드 문의
                                   </button>
                                 )}
