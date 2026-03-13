@@ -35,23 +35,23 @@ const TIER_INFO = {
     icon: 'ri-user-line',
     monthlyPrice: 0,
     priceDesc: '무료',
-    features: ['프로젝트 3개까지', '팀 멤버 5명까지', '기본 테스트 관리', 'Jira Integration (Link)', '커뮤니티 지원'],
+    features: ['프로젝트 3개까지', '팀 멤버 3명까지', '기본 테스트 관리', 'Jira Integration (Link)', '커뮤니티 지원'],
   },
   2: {
     name: 'Starter',
     color: 'bg-yellow-50 text-yellow-700 border-yellow-300',
     icon: 'ri-star-line',
-    monthlyPrice: 9900,
+    monthlyPrice: 19900,
     priceDesc: '/ 월',
-    features: ['프로젝트 10개까지', '팀 멤버 8명까지', 'Jira Integration', '기본 리포팅', 'Testcase Export/Import', 'Export PDF Report'],
+    features: ['프로젝트 10개까지', '팀 멤버 5명까지', 'Jira Integration', '기본 리포팅', 'Testcase Export/Import', 'Export PDF Report'],
   },
   3: {
     name: 'Professional',
     color: 'bg-teal-50 text-teal-700 border-teal-300',
     icon: 'ri-vip-crown-line',
-    monthlyPrice: 24900,
+    monthlyPrice: 49900,
     priceDesc: '/ 월',
-    features: ['프로젝트 무제한', '팀 멤버 15명까지', 'Jira Integration', '고급 리포팅', 'Testcase Export/Import', 'Export PDF Report', 'CI/CD Integration', '우선 지원'],
+    features: ['프로젝트 무제한', '팀 멤버 20명까지', 'Jira Integration', '고급 리포팅', 'Testcase Export/Import', 'Export PDF Report', 'CI/CD Integration', '우선 지원'],
   },
   4: {
     name: 'Enterprise',
@@ -999,27 +999,27 @@ def pytest_sessionfinish(session, exitstatus):
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <h2 className="text-xl font-bold text-gray-900">Jira Integration</h2>
-                          {!isProfessionalOrHigher && (
-                            <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-300 rounded-full text-xs font-semibold flex items-center gap-1">
-                              <i className="ri-vip-crown-line"></i>
-                              Professional 이상 필요
+                          {!isStarterOrHigher && (
+                            <span className="px-3 py-1 bg-yellow-50 text-yellow-700 border border-yellow-300 rounded-full text-xs font-semibold flex items-center gap-1">
+                              <i className="ri-star-line"></i>
+                              Starter 이상 필요
                             </span>
                           )}
                         </div>
                         <p className="text-gray-600 mb-6">Connect your Jira account to create issues directly from test results</p>
 
-                        {!isProfessionalOrHigher && (
-                          <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-xl">
+                        {!isStarterOrHigher && (
+                          <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl">
                             <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <i className="ri-lock-line text-teal-600 text-xl"></i>
+                              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i className="ri-lock-line text-yellow-600 text-xl"></i>
                               </div>
                               <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900 mb-1">Jira 통합은 Professional 이상 요금제에서 사용 가능합니다</h3>
+                                <h3 className="font-semibold text-gray-900 mb-1">Jira 통합은 Starter 이상 요금제에서 사용 가능합니다</h3>
                                 <p className="text-sm text-gray-600 mb-3">
                                   테스트 결과에서 바로 Jira 이슈를 생성하고, 자동으로 연동하여 팀 협업을 강화하세요.
                                 </p>
-                                <button className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap">
+                                <button className="px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all cursor-pointer whitespace-nowrap">
                                   <i className="ri-arrow-up-circle-line mr-2"></i>
                                   업그레이드 문의
                                 </button>
@@ -1033,7 +1033,7 @@ def pytest_sessionfinish(session, exitstatus):
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
                           </div>
                         ) : (
-                          <div className={`space-y-6 ${!isProfessionalOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
+                          <div className={`space-y-6 ${!isStarterOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
                             {/* Jira Domain */}
                             <div>
                               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1047,7 +1047,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   onChange={(e) => setJiraSettings({ ...jiraSettings, domain: e.target.value })}
                                   placeholder="your-domain.atlassian.net"
                                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-                                  disabled={!isProfessionalOrHigher}
+                                  disabled={!isStarterOrHigher}
                                 />
                               </div>
                               <p className="text-xs text-gray-500 mt-1">예: your-domain.atlassian.net</p>
@@ -1064,7 +1064,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 onChange={(e) => setJiraSettings({ ...jiraSettings, email: e.target.value })}
                                 placeholder="your-email@example.com"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-                                disabled={!isProfessionalOrHigher}
+                                disabled={!isStarterOrHigher}
                               />
                               <p className="text-xs text-gray-500 mt-1">Jira 계정 이메일 주소</p>
                             </div>
@@ -1081,13 +1081,13 @@ def pytest_sessionfinish(session, exitstatus):
                                   onChange={(e) => setJiraSettings({ ...jiraSettings, apiToken: e.target.value })}
                                   placeholder="Enter your Jira API token"
                                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-                                  disabled={!isProfessionalOrHigher}
+                                  disabled={!isStarterOrHigher}
                                 />
                                 <button
                                   type="button"
                                   onClick={() => setShowApiToken(!showApiToken)}
                                   className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
-                                  disabled={!isProfessionalOrHigher}
+                                  disabled={!isStarterOrHigher}
                                 >
                                   <i className={`${showApiToken ? 'ri-eye-off-line' : 'ri-eye-line'} text-lg`}></i>
                                 </button>
@@ -1113,7 +1113,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 value={jiraSettings.issueType}
                                 onChange={(e) => setJiraSettings({ ...jiraSettings, issueType: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
-                                disabled={!isProfessionalOrHigher}
+                                disabled={!isStarterOrHigher}
                               >
                                 <option value="Bug">Bug</option>
                                 <option value="Task">Task</option>
@@ -1141,7 +1141,7 @@ def pytest_sessionfinish(session, exitstatus):
                             <div className="flex items-center gap-3 pt-4">
                               <button
                                 onClick={handleTestConnection}
-                                disabled={testing || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isProfessionalOrHigher}
+                                disabled={testing || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher}
                                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {testing ? (
@@ -1158,7 +1158,7 @@ def pytest_sessionfinish(session, exitstatus):
                               </button>
                               <button
                                 onClick={handleSaveJiraSettings}
-                                disabled={saving || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isProfessionalOrHigher}
+                                disabled={saving || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher}
                                 className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {saving ? (
@@ -1677,7 +1677,7 @@ def pytest_sessionfinish(session, exitstatus):
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                 autoFocus
               />
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 mt-1">
                 <i className="ri-information-line mr-1"></i>
                 토큰은 생성 후 다시 확인할 수 없으니 안전한 곳에 보관하세요
               </p>

@@ -10,9 +10,10 @@ interface InviteMemberModalProps {
 }
 
 const TIER_LIMITS = {
-  1: { maxProjects: 3, maxMembers: 5 },
-  2: { maxProjects: Infinity, maxMembers: 50 },
-  3: { maxProjects: Infinity, maxMembers: Infinity },
+  1: { maxProjects: 3, maxMembers: 3 },
+  2: { maxProjects: 10, maxMembers: 5 },
+  3: { maxProjects: Infinity, maxMembers: 20 },
+  4: { maxProjects: Infinity, maxMembers: Infinity },
 };
 
 export default function InviteMemberModal({
@@ -227,7 +228,7 @@ export default function InviteMemberModal({
               </div>
               <h3 className="text-lg font-bold text-amber-800 mb-2">팀 멤버 한도 초과</h3>
               <p className="text-amber-700 mb-4">
-                {subscriptionTier === 1 ? 'Free' : subscriptionTier === 2 ? 'Professional' : 'Enterprise'} 요금제에서는 
+                {subscriptionTier === 1 ? 'Free' : subscriptionTier === 2 ? 'Starter' : subscriptionTier === 3 ? 'Professional' : 'Enterprise'} 요금제에서는 
                 프로젝트당 최대 {maxMembers}명의 멤버만 초대할 수 있습니다.
                 <br />
                 현재 {currentMemberCount}명의 멤버가 있습니다.
@@ -259,6 +260,22 @@ export default function InviteMemberModal({
                 <i className="ri-information-line text-gray-500"></i>
                 <span className="text-sm text-gray-600">
                   Free 요금제: {currentMemberCount}/{maxMembers}명 멤버 사용 중
+                </span>
+              </div>
+            )}
+            {subscriptionTier === 2 && (
+              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+                <i className="ri-information-line text-gray-500"></i>
+                <span className="text-sm text-gray-600">
+                  Starter 요금제: {currentMemberCount}/{maxMembers}명 멤버 사용 중
+                </span>
+              </div>
+            )}
+            {subscriptionTier === 3 && (
+              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+                <i className="ri-information-line text-gray-500"></i>
+                <span className="text-sm text-gray-600">
+                  Professional 요금제: {currentMemberCount}/{maxMembers}명 멤버 사용 중
                 </span>
               </div>
             )}

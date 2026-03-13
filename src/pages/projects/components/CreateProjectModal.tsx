@@ -7,9 +7,10 @@ interface CreateProjectModalProps {
 }
 
 const TIER_LIMITS = {
-  1: { maxProjects: 3, maxMembers: 5 },
-  2: { maxProjects: Infinity, maxMembers: 50 },
-  3: { maxProjects: Infinity, maxMembers: Infinity },
+  1: { maxProjects: 3, maxMembers: 3 },
+  2: { maxProjects: 10, maxMembers: 5 },
+  3: { maxProjects: Infinity, maxMembers: 20 },
+  4: { maxProjects: Infinity, maxMembers: Infinity },
 };
 
 export default function CreateProjectModal({ onClose, onCreate }: CreateProjectModalProps) {
@@ -161,7 +162,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
               </div>
               <h3 className="text-lg font-bold text-amber-800 mb-2">프로젝트 생성 한도 초과</h3>
               <p className="text-amber-700 mb-4">
-                Free 요금제에서는 최대 {maxProjects}개의 프로젝트만 생성할 수 있습니다.
+                {subscriptionTier === 1 ? 'Free' : subscriptionTier === 2 ? 'Starter' : 'Professional'} 요금제에서는 최대 {maxProjects}개의 프로젝트만 생성할 수 있습니다.
                 <br />
                 현재 {currentProjectCount}개의 프로젝트를 보유하고 있습니다.
               </p>
@@ -193,6 +194,14 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                   <i className="ri-information-line text-gray-500"></i>
                   <span className="text-sm text-gray-600">
                     Free 요금제: {currentProjectCount}/{maxProjects}개 프로젝트 사용 중
+                  </span>
+                </div>
+              )}
+              {subscriptionTier === 2 && (
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+                  <i className="ri-information-line text-gray-500"></i>
+                  <span className="text-sm text-gray-600">
+                    Starter 요금제: {currentProjectCount}/{maxProjects}개 프로젝트 사용 중
                   </span>
                 </div>
               )}
