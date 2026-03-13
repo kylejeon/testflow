@@ -557,7 +557,7 @@ export default function ProjectDetail() {
 
   const renderMilestone = (milestone: any, isSub = false) => {
     const badge = getStatusBadge(milestone.status);
-    const hasSubs = milestone.subMilestones && milestone.subMilestones.length;
+    const hasSubs = !!(milestone.subMilestones && milestone.subMilestones.length);
     const isExpanded = expandedMilestones.has(milestone.id);
 
     return (

@@ -24,6 +24,8 @@ export default function AuthPage() {
   const [success, setSuccess] = useState('');
   const [invitation, setInvitation] = useState<InvitationInfo | null>(null);
   const [checkingInvitation, setCheckingInvitation] = useState(false);
+  // OAuth 리다이렉트 여부를 추적하는 플래그
+  const [isOAuthRedirect, setIsOAuthRedirect] = useState(false);
 
   // -------------------------------------------------
   // 1️⃣  Check invitation token and existing session
@@ -49,6 +51,7 @@ export default function AuthPage() {
       const accessToken = hashParams.get('access_token');
       
       if (accessToken) {
+        setIsOAuthRedirect(true);
         // OAuth callback detected, wait for session
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
@@ -72,7 +75,9 @@ export default function AuthPage() {
 
     // Listen for auth state changes (for OAuth redirects)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+      // OAuth 리다이렉트인 경우에만 여기서 navigate 처리
+      // 일반 로그인/회원가입은 각 핸들러에서 직접 처리
+      if (event === 'SIGNED_IN' && session && isOAuthRedirect) {
         // Ensure profile exists for OAuth users
         await ensureProfileExists(session.user);
         
@@ -253,7 +258,6 @@ export default function AuthPage() {
       navigate('/projects');
     } catch (error: any) {
       setError(error.message || '로그인에 실패했습니다.');
-    } finally {
       setLoading(false);
     }
   };

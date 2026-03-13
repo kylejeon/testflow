@@ -5,6 +5,7 @@ export const settings = {
   profile: 'Profile',
   subscription: 'Subscription',
   integrations: 'Integrations',
+  cicd: 'CI/CD',
   
   // Profile
   profileSettings: 'Profile Settings',
@@ -31,6 +32,19 @@ export const settings = {
   disconnect: 'Disconnect',
   connected: 'Connected',
   notConnected: 'Not Connected',
+  
+  // CI/CD
+  cicdIntegration: 'CI/CD Integration',
+  apiTokens: 'API Tokens',
+  createToken: 'Create New Token',
+  tokenName: 'Token Name',
+  tokenCreated: 'Token created successfully',
+  tokenDeleted: 'Token deleted successfully',
+  copyToken: 'Copy Token',
+  deleteToken: 'Delete Token',
+  integrationGuide: 'Integration Guide',
+  githubActions: 'GitHub Actions',
+  gitlabCI: 'GitLab CI',
   
   // Messages
   profileUpdated: 'Profile updated successfully',

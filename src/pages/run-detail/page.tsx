@@ -42,6 +42,7 @@ interface TestResult {
       name: string;
     } | null;
   };
+  is_automated?: boolean; // CI/CD 자동화 여부
 }
 
 interface ProjectMember {
@@ -58,6 +59,13 @@ interface JiraSettings {
   api_token: string;
   project_key: string;
   issue_type: string;
+}
+
+interface Folder {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
 }
 
 const TIER_INFO = {
@@ -120,6 +128,10 @@ export default function RunDetail() {
   });
   const [creatingIssue, setCreatingIssue] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null); // null = All
+  const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState(true);
+  const [copiedRunId, setCopiedRunId] = useState(false);
 
   useEffect(() => {
     if (projectId && runId) {
@@ -332,7 +344,6 @@ export default function RunDetail() {
       if (projectError) throw projectError;
       setProject(projectData);
 
-      // 프로젝트의 jira_project_key를 jiraSettings에 반영
       if (projectData?.jira_project_key) {
         setJiraSettings(prev => prev ? { ...prev, project_key: projectData.jira_project_key } : null);
       }
@@ -355,7 +366,6 @@ export default function RunDetail() {
 
         if (testCasesError) throw testCasesError;
 
-        // Fetch test results for this run
         const { data: testResultsData, error: testResultsError } = await supabase
           .from('test_results')
           .select('test_case_id, status')
@@ -364,7 +374,6 @@ export default function RunDetail() {
 
         if (testResultsError) throw testResultsError;
 
-        // Create a map of test case ID to latest status
         const statusMap = new Map<string, string>();
         testResultsData?.forEach((result: any) => {
           if (!statusMap.has(result.test_case_id)) {
@@ -372,13 +381,55 @@ export default function RunDetail() {
           }
         });
 
-        // Combine test cases with their run-specific status
         const testCasesWithStatus: TestCaseWithRunStatus[] = (testCasesData || []).map((tc: any) => ({
           ...tc,
           runStatus: statusMap.get(tc.id) || 'untested',
         }));
 
         setTestCases(testCasesWithStatus);
+
+        // Run 상태 자동 업데이트: new 상태인데 이미 일부 결과가 있으면 in_progress로 변경
+        const untestedCount = testCasesWithStatus.filter(tc => tc.runStatus === 'untested').length;
+        const totalCount = testCasesWithStatus.length;
+        const hasAnyResult = (testResultsData?.length || 0) > 0;
+
+        if (runData.status === 'new' && (hasAnyResult || untestedCount < totalCount)) {
+          const newStatus = untestedCount === 0 ? 'completed' : 'in_progress';
+          await supabase
+            .from('test_runs')
+            .update({ status: newStatus })
+            .eq('id', runId);
+          // 로컬 상태는 setRun 이후에 반영되므로 runData를 직접 수정
+          runData.status = newStatus;
+        }
+
+        // 이 Run에 포함된 테스트케이스의 folder 이름 목록 추출
+        const folderNamesInRun = Array.from(
+          new Set(
+            (testCasesData || [])
+              .map((tc: any) => tc.folder)
+              .filter((f: any) => f && f.trim() !== '')
+          )
+        ) as string[];
+
+        // folders 테이블에서 해당 프로젝트의 폴더 조회
+        const { data: foldersData } = await supabase
+          .from('folders')
+          .select('*')
+          .eq('project_id', projectId);
+
+        // Run에 포함된 폴더 이름과 매칭되는 폴더만 필터링
+        const matchedFolders: Folder[] = (foldersData || []).filter((f: any) =>
+          folderNamesInRun.includes(f.name)
+        );
+
+        // folders 테이블에 없는 폴더 이름도 표시 (이름만 있는 경우)
+        const matchedNames = matchedFolders.map((f) => f.name);
+        const unmatchedFolders: Folder[] = folderNamesInRun
+          .filter((name) => !matchedNames.includes(name))
+          .map((name) => ({ id: name, name }));
+
+        setFolders([...matchedFolders, ...unmatchedFolders]);
       }
     } catch (error) {
       console.error('데이터 로딩 오류:', error);
@@ -763,8 +814,9 @@ export default function RunDetail() {
                          testCase.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || testCase.runStatus === statusFilter;
     const matchesPriority = priorityFilter === 'all' || testCase.priority === priorityFilter;
+    const matchesFolder = selectedFolder === null || testCase.folder === selectedFolder;
     
-    return matchesSearch && matchesStatus && matchesPriority;
+    return matchesSearch && matchesStatus && matchesPriority && matchesFolder;
   }).sort((a, b) => {
     const aId = (a as any).custom_id || '';
     const bId = (b as any).custom_id || '';
@@ -1185,6 +1237,14 @@ export default function RunDetail() {
     }
   };
 
+  const handleCopyRunId = () => {
+    if (!runId) return;
+    navigator.clipboard.writeText(runId).then(() => {
+      setCopiedRunId(true);
+      setTimeout(() => setCopiedRunId(false), 2000);
+    });
+  };
+
   const currentTier = userProfile?.subscription_tier || 1;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
   const isProfessionalOrHigher = currentTier >= 2;
@@ -1262,7 +1322,94 @@ export default function RunDetail() {
         </header>
         
         <main className="flex-1 overflow-hidden bg-gray-50/30 flex">
-          <div className={`${selectedTestCase ? 'flex-1' : 'w-full'} overflow-y-auto`}>
+          {/* 폴더 사이드바 */}
+          <div className={`flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto transition-all duration-200 ${isFolderSidebarOpen ? 'w-52' : 'w-12'}`}>
+            <div className={`px-3 py-4 border-b border-gray-100 flex items-center ${isFolderSidebarOpen ? 'justify-between' : 'justify-center'}`}>
+              {isFolderSidebarOpen && (
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Folders</h3>
+              )}
+              <button
+                onClick={() => setIsFolderSidebarOpen(!isFolderSidebarOpen)}
+                className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all cursor-pointer flex-shrink-0"
+                title={isFolderSidebarOpen ? '접기' : '펼치기'}
+              >
+                <i className={`ri-${isFolderSidebarOpen ? 'arrow-left-s' : 'arrow-right-s'}-line text-base`}></i>
+              </button>
+            </div>
+            <div className="flex-1 py-2">
+              {/* All */}
+              <button
+                onClick={() => { setSelectedFolder(null); setSelectedTestCase(null); }}
+                className={`w-full flex items-center gap-2.5 py-2.5 text-sm font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-4' : 'px-0 justify-center'} ${
+                  selectedFolder === null
+                    ? 'bg-teal-50 text-teal-700 border-r-2 border-teal-500'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+                title={!isFolderSidebarOpen ? 'All Cases' : undefined}
+              >
+                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                  <i className="ri-stack-line text-base"></i>
+                </div>
+                {isFolderSidebarOpen && (
+                  <>
+                    <span className="truncate">All Cases</span>
+                    <span className={`ml-auto text-xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                      selectedFolder === null ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {testCases.length}
+                    </span>
+                  </>
+                )}
+              </button>
+
+              {/* 폴더 목록 */}
+              {folders.length > 0 && (
+                <div className="mt-1">
+                  {folders.map((folder) => {
+                    const count = testCases.filter(tc => tc.folder === folder.name).length;
+                    const isSelected = selectedFolder === folder.name;
+                    return (
+                      <button
+                        key={folder.id}
+                        onClick={() => { setSelectedFolder(folder.name); setSelectedTestCase(null); }}
+                        className={`w-full flex items-center gap-2.5 py-2.5 text-sm font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-4' : 'px-0 justify-center'} ${
+                          isSelected
+                            ? 'bg-teal-50 text-teal-700 border-r-2 border-teal-500'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                        title={!isFolderSidebarOpen ? folder.name : undefined}
+                      >
+                        <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                          <i className={`${folder.icon || 'ri-folder-3-line'} text-base`}
+                            style={{ color: isSelected ? undefined : (folder.color || undefined) }}
+                          ></i>
+                        </div>
+                        {isFolderSidebarOpen && (
+                          <>
+                            <span className="truncate">{folder.name}</span>
+                            <span className={`ml-auto text-xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                              isSelected ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-500'
+                            }`}>
+                              {count}
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {folders.length === 0 && !loading && isFolderSidebarOpen && (
+                <div className="px-4 py-6 text-center">
+                  <i className="ri-folder-open-line text-2xl text-gray-300 mb-2 block"></i>
+                  <p className="text-xs text-gray-400">폴더 없음</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className={`${selectedTestCase ? 'flex-1' : 'flex-1'} overflow-y-auto`}>
             <div className="p-8">
               <div className="mb-8">
                 <Link 
@@ -1275,7 +1422,35 @@ export default function RunDetail() {
                 
                 <div className="flex items-start justify-between">
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{run?.name}</h1>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-3xl font-bold text-gray-900">{run?.name}</h1>
+                      {run?.is_automated && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold border border-purple-200">
+                          <i className="ri-robot-line"></i>
+                          Automated
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs text-gray-400 font-mono">{runId}</span>
+                      <button
+                        onClick={handleCopyRunId}
+                        title="Run ID 복사"
+                        className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-all cursor-pointer whitespace-nowrap border border-gray-200 hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700 text-gray-500 bg-white"
+                      >
+                        {copiedRunId ? (
+                          <>
+                            <i className="ri-check-line text-teal-600"></i>
+                            <span className="text-teal-600">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <i className="ri-file-copy-line"></i>
+                            Copy ID
+                          </>
+                        )}
+                      </button>
+                    </div>
                     <p className="text-gray-600">{run?.description}</p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -1372,6 +1547,102 @@ export default function RunDetail() {
                   </div>
                 </div>
               </div>
+
+              {/* 진행률 바 */}
+              {testCases.length > 0 && (() => {
+                const total = testCases.length;
+                const passed = testCases.filter(tc => tc.runStatus === 'passed').length;
+                const failed = testCases.filter(tc => tc.runStatus === 'failed').length;
+                const blocked = testCases.filter(tc => tc.runStatus === 'blocked').length;
+                const retest = testCases.filter(tc => tc.runStatus === 'retest').length;
+                const untested = testCases.filter(tc => tc.runStatus === 'untested').length;
+
+                const passedPct = (passed / total) * 100;
+                const failedPct = (failed / total) * 100;
+                const blockedPct = (blocked / total) * 100;
+                const retestPct = (retest / total) * 100;
+                const untestedPct = (untested / total) * 100;
+
+                return (
+                  <div className="bg-white rounded-xl border border-gray-200 p-5 mb-8">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-gray-700">Progress</span>
+                      <span className="text-sm font-bold text-gray-900">
+                        {total > 0 ? Math.round(((passed + failed + blocked + retest) / total) * 100) : 0}% Completed
+                      </span>
+                    </div>
+                    <div className="flex h-3 rounded-full overflow-hidden bg-gray-100 gap-px">
+                      {passed > 0 && (
+                        <div
+                          className="bg-green-500 transition-all duration-500"
+                          style={{ width: `${passedPct}%` }}
+                          title={`Passed: ${passed}`}
+                        />
+                      )}
+                      {failed > 0 && (
+                        <div
+                          className="bg-red-500 transition-all duration-500"
+                          style={{ width: `${failedPct}%` }}
+                          title={`Failed: ${failed}`}
+                        />
+                      )}
+                      {blocked > 0 && (
+                        <div
+                          className="bg-gray-400 transition-all duration-500"
+                          style={{ width: `${blockedPct}%` }}
+                          title={`Blocked: ${blocked}`}
+                        />
+                      )}
+                      {retest > 0 && (
+                        <div
+                          className="bg-yellow-400 transition-all duration-500"
+                          style={{ width: `${retestPct}%` }}
+                          title={`Retest: ${retest}`}
+                        />
+                      )}
+                      {untested > 0 && (
+                        <div
+                          className="bg-gray-200 transition-all duration-500"
+                          style={{ width: `${untestedPct}%` }}
+                          title={`Untested: ${untested}`}
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 mt-3 flex-wrap">
+                      {passed > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                          <span className="text-xs text-gray-600">Passed <strong>{passed}</strong></span>
+                        </div>
+                      )}
+                      {failed > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                          <span className="text-xs text-gray-600">Failed <strong>{failed}</strong></span>
+                        </div>
+                      )}
+                      {blocked > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div>
+                          <span className="text-xs text-gray-600">Blocked <strong>{blocked}</strong></span>
+                        </div>
+                      )}
+                      {retest > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
+                          <span className="text-xs text-gray-600">Retest <strong>{retest}</strong></span>
+                        </div>
+                      )}
+                      {untested > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full bg-gray-200 border border-gray-300"></div>
+                          <span className="text-xs text-gray-600">Untested <strong>{untested}</strong></span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="bg-white rounded-xl border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
@@ -1648,7 +1919,7 @@ export default function RunDetail() {
                                 </div>
                                 {isHtml ? (
                                   <div
-                                    className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                    className="text-sm text-gray-700 mb-2 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
                                     dangerouslySetInnerHTML={{ __html: content }}
                                     onClick={(e) => {
                                       const target = e.target as HTMLElement;
@@ -1838,102 +2109,130 @@ export default function RunDetail() {
                           <p className="text-sm text-gray-500">No test results yet</p>
                         </div>
                       ) : (
-                        testResults.map((result) => (
-                          <div 
-                            key={result.id}
-                            className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all cursor-pointer"
-                            onClick={() => setSelectedResult(result)}
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                  result.status === 'passed' ? 'bg-green-100' :
-                                  result.status === 'failed' ? 'bg-red-100' :
-                                  result.status === 'blocked' ? 'bg-orange-100' :
-                                  result.status === 'retest' ? 'bg-yellow-100' :
-                                  'bg-gray-100'
-                                }`}>
-                                  <i className={`text-sm ${
-                                    result.status === 'passed' ? 'ri-checkbox-circle-fill text-green-600' :
-                                    result.status === 'failed' ? 'ri-close-circle-fill text-red-600' :
-                                    result.status === 'blocked' ? 'ri-forbid-fill text-orange-600' :
-                                    result.status === 'retest' ? 'ri-refresh-fill text-yellow-600' :
-                                    'ri-question-fill text-gray-600'
-                                  }`}></i>
+                        testResults.map((result) => {
+                          // CI/CD 자동화 여부 판단 (author가 GitHub Actions, GitLab CI 등인 경우)
+                          const isAutomated = result.author && (
+                            result.author.includes('GitHub Actions') ||
+                            result.author.includes('GitLab CI') ||
+                            result.author.includes('Jenkins') ||
+                            result.author.includes('CI/CD') ||
+                            result.is_automated
+                          );
+
+                          return (
+                            <div 
+                              key={result.id}
+                              className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all cursor-pointer"
+                              onClick={() => setSelectedResult(result)}
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                    result.status === 'passed' ? 'bg-green-100' :
+                                    result.status === 'failed' ? 'bg-red-100' :
+                                    result.status === 'blocked' ? 'bg-orange-100' :
+                                    result.status === 'retest' ? 'bg-yellow-100' :
+                                    'bg-gray-100'
+                                  }`}>
+                                    <i className={`text-sm ${
+                                      result.status === 'passed' ? 'ri-checkbox-circle-fill text-green-600' :
+                                      result.status === 'failed' ? 'ri-close-circle-fill text-red-600' :
+                                      result.status === 'blocked' ? 'ri-forbid-fill text-orange-600' :
+                                      result.status === 'retest' ? 'ri-refresh-fill text-yellow-600' :
+                                      'ri-question-fill text-gray-600'
+                                    }`}></i>
+                                  </div>
+                                  <span className={`text-sm font-semibold capitalize ${
+                                    result.status === 'passed' ? 'text-green-700' :
+                                    result.status === 'failed' ? 'text-red-700' :
+                                    result.status === 'blocked' ? 'text-orange-700' :
+                                    result.status === 'retest' ? 'text-yellow-700' :
+                                    'text-gray-700'
+                                  }`}>
+                                    {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
+                                  </span>
+                                  {isAutomated && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-semibold">
+                                      <i className="ri-robot-line"></i>
+                                      CI/CD
+                                    </span>
+                                  )}
                                 </div>
-                                <span className={`text-sm font-semibold capitalize ${
-                                  result.status === 'passed' ? 'text-green-700' :
-                                  result.status === 'failed' ? 'text-red-700' :
-                                  result.status === 'blocked' ? 'text-orange-700' :
-                                  result.status === 'retest' ? 'text-yellow-700' :
-                                  'text-gray-700'
-                                }`}>
-                                  {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
-                                </span>
+                                {result.elapsed && (
+                                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                                    <i className="ri-time-line"></i>
+                                    {result.elapsed}
+                                  </span>
+                                )}
                               </div>
-                              {result.elapsed && (
-                                <span className="text-xs text-gray-500 flex items-center gap-1">
-                                  <i className="ri-time-line"></i>
-                                  {result.elapsed}
-                                </span>
+                              <div className="mb-2">
+                                <p className="text-xs text-gray-500 mb-1">Run</p>
+                                <p className="text-sm text-gray-900 font-medium">{result.run?.name || run?.name || 'Unknown Run'}</p>
+                              </div>
+                              {result.run?.milestone && (
+                                <div className="mb-2">
+                                  <p className="text-xs text-gray-500 mb-1">Milestone</p>
+                                  <div className="flex items-center gap-1.5">
+                                    <i className="ri-flag-2-line text-teal-600 text-xs"></i>
+                                    <p className="text-sm text-gray-900 font-medium">{result.run.milestone.name}</p>
+                                  </div>
+                                </div>
                               )}
-                            </div>
-                            <div className="mb-2">
-                              <p className="text-xs text-gray-500 mb-1">Run</p>
-                              <p className="text-sm text-gray-900 font-medium">{result.run?.name || run?.name || 'Unknown Run'}</p>
-                            </div>
-                            {result.run?.milestone && (
-                              <div className="mb-2">
-                                <p className="text-xs text-gray-500 mb-1">Milestone</p>
-                                <div className="flex items-center gap-1.5">
-                                  <i className="ri-flag-2-line text-teal-600 text-xs"></i>
-                                  <p className="text-sm text-gray-900 font-medium">{result.run.milestone.name}</p>
+                              {result.author && (
+                                <div className="mb-2">
+                                  <p className="text-xs text-gray-500 mb-1">Executed by</p>
+                                  <div className="flex items-center gap-2">
+                                    {isAutomated ? (
+                                      <div className="w-5 h-5 bg-purple-100 rounded flex items-center justify-center">
+                                        <i className="ri-robot-line text-purple-600 text-xs"></i>
+                                      </div>
+                                    ) : (
+                                      <div className="w-5 h-5 bg-gradient-to-br from-teal-400 to-teal-600 rounded flex items-center justify-center text-white text-xs font-semibold">
+                                        {result.author.substring(0, 2).toUpperCase()}
+                                      </div>
+                                    )}
+                                    <p className="text-sm text-gray-700">{result.author}</p>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            {result.author && (
-                              <div className="mb-2">
-                                <p className="text-xs text-gray-500 mb-1">Executed by</p>
-                                <p className="text-sm text-gray-700">{result.author}</p>
-                              </div>
-                            )}
-                            {result.note && (
-                              <div className="mb-2">
-                                <p className="text-xs text-gray-500 mb-1">Note</p>
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{result.note}</p>
-                              </div>
-                            )}
-                            {result.issues && result.issues.length > 0 && (
-                              <div className="mb-2">
-                                <p className="text-xs text-gray-500 mb-1">Linked Issues</p>
-                                <div className="flex flex-wrap gap-1">
-                                  {result.issues.map((issueKey, idx) => (
-                                    <a
-                                      key={idx}
-                                      href={getJiraIssueUrl(issueKey)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 transition-all"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <i className="ri-bug-line mr-1"></i>
-                                      {issueKey}
-                                    </a>
-                                  ))}
+                              )}
+                              {result.note && (
+                                <div className="mb-2">
+                                  <p className="text-xs text-gray-500 mb-1">Note</p>
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{result.note}</p>
                                 </div>
-                              </div>
-                            )}
-                            <p className="text-xs text-gray-400 mt-2">
-                              {result.timestamp.toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
-                          </div>
-                        ))
+                              )}
+                              {result.issues && result.issues.length > 0 && (
+                                <div className="mb-2">
+                                  <p className="text-xs text-gray-500 mb-1">Linked Issues</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {result.issues.map((issueKey, idx) => (
+                                      <a
+                                        key={idx}
+                                        href={getJiraIssueUrl(issueKey)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 transition-all"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <i className="ri-bug-line mr-1"></i>
+                                        {issueKey}
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              <p className="text-xs text-gray-400 mt-2">
+                                {result.timestamp.toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   )}
@@ -2233,39 +2532,37 @@ export default function RunDetail() {
                                   <div className="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <span className="text-teal-700 text-xs font-bold">{index + 1}</span>
                                   </div>
-                                  <div className="flex-1">
-                                    {stepIsHtml ? (
-                                      <div
-                                        className="text-sm text-gray-700 mb-2 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                                        dangerouslySetInnerHTML={{ __html: stepContent }}
-                                      />
-                                    ) : (
-                                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{stepContent}</p>
-                                    )}
-                                    {expectedContent && (
-                                      <div className="bg-gray-50 rounded p-2 mb-2">
-                                        <p className="text-xs text-gray-600 mb-1 font-semibold">Expected Result:</p>
-                                        {expectedIsHtml ? (
-                                          <div
-                                            className="text-xs text-gray-700 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                                            dangerouslySetInnerHTML={{ __html: expectedContent }}
-                                          />
-                                        ) : (
-                                          <p className="text-xs text-gray-700 whitespace-pre-wrap">{expectedContent}</p>
-                                        )}
-                                      </div>
-                                    )}
-                                    <select
-                                      value={stepStatuses[index] || 'untested'}
-                                      onChange={(e) => handleStepStatusChange(index, e.target.value)}
-                                      className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                    >
-                                      <option value="untested">Untested</option>
-                                      <option value="passed">Passed</option>
-                                      <option value="failed">Failed</option>
-                                      <option value="blocked">Blocked</option>
-                                    </select>
-                                  </div>
+                                  {stepIsHtml ? (
+                                    <div
+                                      className="text-sm text-gray-700 mb-2 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                      dangerouslySetInnerHTML={{ __html: stepContent }}
+                                    />
+                                  ) : (
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{stepContent}</p>
+                                  )}
+                                  {expectedContent && (
+                                    <div className="bg-gray-50 rounded p-2 mb-2">
+                                      <p className="text-xs text-gray-600 mb-1 font-semibold">Expected Result:</p>
+                                      {expectedIsHtml ? (
+                                        <div
+                                          className="text-xs text-gray-700 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                          dangerouslySetInnerHTML={{ __html: expectedContent }}
+                                        />
+                                      ) : (
+                                        <p className="text-xs text-gray-700 whitespace-pre-wrap">{expectedContent}</p>
+                                      )}
+                                    </div>
+                                  )}
+                                  <select
+                                    value={stepStatuses[index] || 'untested'}
+                                    onChange={(e) => handleStepStatusChange(index, e.target.value)}
+                                    className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                  >
+                                    <option value="untested">Untested</option>
+                                    <option value="passed">Passed</option>
+                                    <option value="failed">Failed</option>
+                                    <option value="blocked">Blocked</option>
+                                  </select>
                                 </div>
                               </div>
                             );
@@ -2681,11 +2978,28 @@ function ResultDetailModal({ result, testCase, jiraDomain, onClose }: ResultDeta
     return `https://${jiraDomain}/browse/${issueKey}`;
   };
 
+  // CI/CD 자동화 여부 판단
+  const isAutomated = result.author && (
+    result.author.includes('GitHub Actions') ||
+    result.author.includes('GitLab CI') ||
+    result.author.includes('Jenkins') ||
+    result.author.includes('CI/CD') ||
+    result.is_automated
+  );
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
-          <h2 className="text-xl font-bold text-gray-900">Test Result Details</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-gray-900">Test Result Details</h2>
+            {isAutomated && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold border border-purple-200">
+                <i className="ri-robot-line"></i>
+                CI/CD
+              </span>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
@@ -2696,9 +3010,15 @@ function ResultDetailModal({ result, testCase, jiraDomain, onClose }: ResultDeta
 
         <div className="p-6 space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-              {result.author ? result.author.substring(0, 2).toUpperCase() : 'NA'}
-            </div>
+            {isAutomated ? (
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                <i className="ri-robot-line text-purple-600 text-xl"></i>
+              </div>
+            ) : (
+              <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                {result.author ? result.author.substring(0, 2).toUpperCase() : 'NA'}
+              </div>
+            )}
             <div>
               <div className="font-semibold text-gray-900">{result.author || 'Unknown'}</div>
               <div className="text-sm text-gray-500">

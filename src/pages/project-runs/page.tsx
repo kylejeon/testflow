@@ -19,6 +19,7 @@ interface TestRun {
   test_case_ids: string[];
   executed_at: string;
   created_at: string;
+  is_automated?: boolean; // CI/CD 자동화 여부
 }
 
 interface Milestone {
@@ -72,6 +73,7 @@ export default function ProjectRunsPage() {
     issues: '',
     tags: '',
     include_all_cases: true,
+    is_ci_cd_run: false, // CI/CD Run 체크박스
   });
   const [submitting, setSubmitting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -781,6 +783,7 @@ export default function ProjectRunsPage() {
             status: formData.status,
             tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
             test_case_ids: testCaseIds,
+            is_automated: formData.is_ci_cd_run,
           })
           .eq('id', editingRunId);
 
@@ -801,6 +804,7 @@ export default function ProjectRunsPage() {
           assignees: [],
           test_case_ids: testCaseIds,
           executed_at: new Date().toISOString(),
+          is_automated: formData.is_ci_cd_run,
         };
 
         const { error } = await supabase
@@ -821,6 +825,7 @@ export default function ProjectRunsPage() {
         issues: '',
         tags: '',
         include_all_cases: true,
+        is_ci_cd_run: false,
       });
       setSelectedTestCases([]);
       setEditingRunId(null);
@@ -1056,6 +1061,7 @@ export default function ProjectRunsPage() {
       issues: '',
       tags: run.tags ? run.tags.join(', ') : '',
       include_all_cases: run.test_case_ids.length === testCases.length,
+      is_ci_cd_run: run.is_automated || false,
     });
     setSelectedTestCases(run.test_case_ids);
     setShowAddRunModal(true);
@@ -1297,6 +1303,7 @@ export default function ProjectRunsPage() {
                         issues: '',
                         tags: '',
                         include_all_cases: true,
+                        is_ci_cd_run: false,
                       });
                       setSelectedTestCases([]);
                       setShowAddRunModal(true);
@@ -1448,17 +1455,9 @@ export default function ProjectRunsPage() {
                       const milestoneRuns = getRunsByMilestone(milestone.id);
                       const milestoneStatusInfo = getMilestoneStatus(milestone);
                       
-                      console.log(`\n=== 마일스톤 "${milestone.name}" 렌더링 체크 ===`);
-                      console.log('milestone.status:', milestone.status);
-                      console.log('activeTab:', activeTab);
-                      console.log('milestoneRuns.length:', milestoneRuns.length);
-                      
                       if (milestoneRuns.length === 0) {
-                        console.log('이 마일스톤에 표시할 runs가 없어서 숨김');
                         return null;
                       }
-                      
-                      console.log('마일스톤 표시함!');
                       
                       return (
                         <div key={milestone.id} className={index !== milestones.length - 1 ? 'border-b border-gray-200' : ''}>
@@ -1505,8 +1504,12 @@ export default function ProjectRunsPage() {
                                 onClick={() => handleRunClick(run.id)}
                               >
                                 <div className="flex items-start gap-4">
-                                  <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i className="ri-play-circle-line text-teal-600"></i>
+                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                    run.is_automated ? 'bg-purple-100' : 'bg-teal-100'
+                                  }`}>
+                                    <i className={`${
+                                      run.is_automated ? 'ri-robot-line text-purple-600' : 'ri-play-circle-line text-teal-600'
+                                    }`}></i>
                                   </div>
                                   
                                   <div className="flex-1 min-w-0">
@@ -1515,6 +1518,12 @@ export default function ProjectRunsPage() {
                                       <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusBadge(run.status).className}`}>
                                         {getStatusBadge(run.status).label}
                                       </span>
+                                      {run.is_automated && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-semibold border border-purple-200">
+                                          <i className="ri-robot-line"></i>
+                                          Automated
+                                        </span>
+                                      )}
                                       {run.tags && run.tags.map((tag, idx) => (
                                         <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
                                           {tag}
@@ -1646,8 +1655,12 @@ export default function ProjectRunsPage() {
                           onClick={() => handleRunClick(run.id)}
                         >
                           <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <i className="ri-play-circle-line text-gray-600"></i>
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              run.is_automated ? 'bg-purple-100' : 'bg-gray-100'
+                            }`}>
+                              <i className={`${
+                                run.is_automated ? 'ri-robot-line text-purple-600' : 'ri-play-circle-line text-gray-600'
+                              }`}></i>
                             </div>
                             
                             <div className="flex-1 min-w-0">
@@ -1656,6 +1669,12 @@ export default function ProjectRunsPage() {
                                 <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusBadge(run.status).className}`}>
                                   {getStatusBadge(run.status).label}
                                 </span>
+                                {run.is_automated && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-semibold border border-purple-200">
+                                    <i className="ri-robot-line"></i>
+                                    Automated
+                                  </span>
+                                )}
                                 {run.tags && run.tags.map((tag, idx) => (
                                   <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
                                     {tag}
@@ -1688,10 +1707,22 @@ export default function ProjectRunsPage() {
 
                               <div className="flex items-center gap-3">
                                 <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-                                  <div 
-                                    className="h-full bg-gray-500 rounded-full transition-all"
-                                    style={{ width: `${run.progress}%` }}
-                                  ></div>
+                                  {(() => {
+                                    const total = run.passed + run.failed + run.blocked + run.retest + run.untested;
+                                    if (total === 0) return <div className="h-full bg-gray-300 rounded-full" style={{ width: '0%' }}></div>;
+                                    const passedPct = (run.passed / total) * 100;
+                                    const failedPct = (run.failed / total) * 100;
+                                    const blockedPct = (run.blocked / total) * 100;
+                                    const retestPct = (run.retest / total) * 100;
+                                    return (
+                                      <div className="h-full flex rounded-full overflow-hidden">
+                                        {run.passed > 0 && <div className="h-full bg-green-500 transition-all" style={{ width: `${passedPct}%` }}></div>}
+                                        {run.failed > 0 && <div className="h-full bg-red-500 transition-all" style={{ width: `${failedPct}%` }}></div>}
+                                        {run.blocked > 0 && <div className="h-full bg-gray-400 transition-all" style={{ width: `${blockedPct}%` }}></div>}
+                                        {run.retest > 0 && <div className="h-full bg-yellow-500 transition-all" style={{ width: `${retestPct}%` }}></div>}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                                 <span className="text-sm font-semibold text-gray-700 min-w-[40px] text-right">{run.progress}%</span>
                               </div>
@@ -1950,6 +1981,27 @@ export default function ProjectRunsPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                     />
                     <p className="text-xs text-gray-500 mt-1">You can add tags to filter runs.</p>
+                  </div>
+
+                  {/* CI/CD Run 체크박스 추가 */}
+                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.is_ci_cd_run}
+                        onChange={(e) => setFormData(prev => ({ ...prev, is_ci_cd_run: e.target.checked }))}
+                        className="w-4 h-4 text-purple-600 cursor-pointer mt-0.5"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <i className="ri-robot-line text-purple-600"></i>
+                          <span className="text-sm font-semibold text-gray-900">CI/CD Run</span>
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          이 Run을 CI/CD 자동화 전용으로 표시합니다. GitHub Actions, GitLab CI 등에서 테스트 결과를 자동으로 업로드할 때 사용하세요.
+                        </p>
+                      </div>
+                    </label>
                   </div>
                 </div>
               </div>
