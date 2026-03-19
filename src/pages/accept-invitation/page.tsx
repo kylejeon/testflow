@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { notifyProjectMembers } from '../../hooks/useNotifications';
 
 interface InvitationInfo {
   email: string;
@@ -104,6 +105,26 @@ export default function AcceptInvitationPage() {
 
       if (!response.ok) {
         throw new Error(result.error || '초대 수락에 실패했습니다.');
+      }
+
+      // Notify other project members that a new member has joined
+      if (result.projectId && session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        const userName = profile?.full_name || profile?.email || session.user.email || '새 멤버';
+
+        await notifyProjectMembers({
+          projectId: result.projectId,
+          excludeUserId: session.user.id,
+          type: 'member_joined',
+          title: '새 팀원이 합류했습니다',
+          message: `${userName}님이 프로젝트에 참여했습니다.`,
+          link: `/projects/${result.projectId}`,
+        });
       }
 
       setStatus('success');

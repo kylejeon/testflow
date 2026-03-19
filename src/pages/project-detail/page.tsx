@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import ProjectMembersPanel from './components/ProjectMembersPanel';
 import InviteMemberModal from './components/InviteMemberModal';
 import SEOHead from '../../components/SEOHead';
+import NotificationBell from '../../components/feature/NotificationBell';
 
 interface UserProfile {
   email: string;
@@ -164,6 +165,10 @@ export default function ProjectDetail() {
       setExpandedMilestones(initialExpanded);
       setMilestones(organizedMilestones);
 
+      // milestone id → name 맵 생성
+      const milestoneMap = new Map<string, string>();
+      (milestonesData || []).forEach(m => milestoneMap.set(m.id, m.name));
+
       // ── LATEST RUNS WITH PROGRESS ──
       const { data: runsData, error: runsError } = await supabase
         .from('test_runs')
@@ -198,7 +203,9 @@ export default function ProjectDetail() {
             else untested++;
           });
 
-          return { ...run, passed, failed, blocked, retest, untested };
+          const milestoneName = run.milestone_id ? milestoneMap.get(run.milestone_id) || null : null;
+
+          return { ...run, passed, failed, blocked, retest, untested, milestoneName };
         })
       );
       setTestRuns(runsWithProgress);
@@ -671,44 +678,47 @@ export default function ProjectDetail() {
                 </nav>
 
                 {/* Profile */}
-                <div className="relative" ref={profileMenuRef}>
-                  <div
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
-                  >
-                    {userProfile?.full_name?.charAt(0) || 'U'}
-                  </div>
+                <div className="flex items-center gap-2">
+                  <NotificationBell />
+                  <div className="relative" ref={profileMenuRef}>
+                    <div
+                      onClick={() => setShowProfileMenu(!showProfileMenu)}
+                      className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
+                    >
+                      {userProfile?.full_name?.charAt(0) || 'U'}
+                    </div>
 
-                  {showProfileMenu && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowProfileMenu(false)}></div>
-                      <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                        <div className="px-4 py-3 border-b border-gray-100">
-                          <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
-                          <p className="text-xs text-gray-500">{userProfile?.email}</p>
-                          <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded border ${tierInfo.color}`}>
-                            <i className={`${tierInfo.icon} text-sm`}></i>
-                            {tierInfo.name}
+                    {showProfileMenu && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowProfileMenu(false)}></div>
+                        <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                          <div className="px-4 py-3 border-b border-gray-100">
+                            <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+                            <p className="text-xs text-gray-500">{userProfile?.email}</p>
+                            <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded border ${tierInfo.color}`}>
+                              <i className={`${tierInfo.icon} text-sm`}></i>
+                              {tierInfo.name}
+                            </div>
                           </div>
+                          <Link
+                            to="/settings"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
+                          >
+                            <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
+                            <span>Settings</span>
+                          </Link>
+                          <button
+                            onClick={handleLogout}
+                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
+                          >
+                            <i className="ri-logout-box-line text-lg"></i>
+                            <span>Log out</span>
+                          </button>
                         </div>
-                        <Link
-                          to="/settings"
-                          onClick={() => setShowProfileMenu(false)}
-                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
-                        >
-                          <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                          <span>Settings</span>
-                        </Link>
-                        <button
-                          onClick={handleLogout}
-                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
-                        >
-                          <i className="ri-logout-box-line text-lg"></i>
-                          <span>Log out</span>
-                        </button>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -790,22 +800,27 @@ export default function ProjectDetail() {
                                     <i className="ri-play-circle-line text-lg text-gray-600"></i>
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-2">
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                                       <span className="font-medium text-gray-900 group-hover:text-teal-600 transition-colors truncate">{run.name}</span>
+                                      {run.milestoneName && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 whitespace-nowrap flex-shrink-0">
+                                          <i className="ri-flag-line text-xs"></i>{run.milestoneName}
+                                        </span>
+                                      )}
                                       {run.status === 'completed' ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-700">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-700 whitespace-nowrap flex-shrink-0">
                                           <i className="ri-check-double-line text-xs"></i>Completed
                                         </span>
                                       ) : run.status === 'paused' ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 whitespace-nowrap flex-shrink-0">
                                           <i className="ri-pause-circle-line text-xs"></i>Paused
                                         </span>
                                       ) : run.status === 'in_progress' ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 whitespace-nowrap flex-shrink-0">
                                           <i className="ri-loader-line text-xs"></i>In Progress
                                         </span>
                                       ) : (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 whitespace-nowrap flex-shrink-0">
                                           <i className="ri-file-line text-xs"></i>New
                                         </span>
                                       )}

@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { createNotification } from '../../../hooks/useNotifications';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -118,6 +118,23 @@ export default function InviteMemberModal({
           throw memberError;
         }
 
+        // Get project name for notification
+        const { data: projectData } = await supabase
+          .from('projects')
+          .select('name')
+          .eq('id', projectId)
+          .maybeSingle();
+
+        // Notify the invited user
+        await createNotification({
+          userId: existingUser.id,
+          type: 'member_joined',
+          title: '프로젝트에 초대되었습니다',
+          message: `${projectData?.name || '프로젝트'}에 ${role}로 추가되었습니다.`,
+          link: `/projects/${projectId}`,
+          projectId,
+        });
+
         setInvitationType('existing');
         setSuccess(`${email} 사용자를 프로젝트에 추가했습니다.`);
         
@@ -160,8 +177,6 @@ export default function InviteMemberModal({
         setInvitationType('new');
         setInviteLink(result.inviteUrl);
         setSuccess('초대 링크가 생성되었습니다! 아래 링크를 복사해서 팀원에게 전달해주세요.');
-        
-        // Don't clear form or close modal - let user copy the link
       }
     } catch (err: any) {
       console.error('Invitation error:', err);

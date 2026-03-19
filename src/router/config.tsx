@@ -19,6 +19,7 @@ const NotFound = lazy(() => import('../pages/NotFound'));
 const AcceptInvitationPage = lazy(() => import('../pages/accept-invitation/page'));
 const PrivacyPage = lazy(() => import('../pages/privacy/page'));
 const TermsPage = lazy(() => import('../pages/terms/page'));
+const AdminPage = lazy(() => import('../pages/admin/page'));
 
 const routes: RouteObject[] = [
   {
@@ -88,6 +89,10 @@ const routes: RouteObject[] = [
   {
     path: '/terms',
     element: <TermsPage />,
+  },
+  {
+    path: '/admin',
+    element: <AdminPage />,
   },
   {
     path: '*',

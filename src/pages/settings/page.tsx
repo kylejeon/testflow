@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import SEOHead from '../../components/SEOHead';
+import NotificationSettingsPanel from './components/NotificationSettingsPanel';
 
 interface JiraSettings {
   domain: string;
@@ -1643,12 +1644,7 @@ def pytest_sessionfinish(session, exitstatus):
                   )}
 
                   {activeTab === 'notifications' && (
-                    <div className="space-y-6">
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Notification Settings</h2>
-                        <p className="text-gray-600">Configure your notification preferences</p>
-                      </div>
-                    </div>
+                    <NotificationSettingsPanel />
                   )}
                 </div>
               </div>

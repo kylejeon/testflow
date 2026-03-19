@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import NotificationBell from '../../components/feature/NotificationBell';
+import { notifyProjectMembers } from '../../hooks/useNotifications';
 
 interface TestRun {
   id: string;
@@ -775,6 +777,7 @@ export default function ProjectRunsPage() {
         : selectedTestCases;
 
       if (editingRunId) {
+        const prevRun = testRuns.find(r => r.id === editingRunId);
         const { error } = await supabase
           .from('test_runs')
           .update({
@@ -788,6 +791,19 @@ export default function ProjectRunsPage() {
           .eq('id', editingRunId);
 
         if (error) throw error;
+
+        // Notify when run is completed
+        if (formData.status === 'completed' && prevRun?.status !== 'completed') {
+          const { data: { user } } = await supabase.auth.getUser();
+          await notifyProjectMembers({
+            projectId: id!,
+            excludeUserId: user?.id,
+            type: 'run_completed',
+            title: '테스트 런이 완료되었습니다',
+            message: `"${formData.name}" 런이 완료되었습니다.`,
+            link: `/projects/${id}/runs/${editingRunId}`,
+          });
+        }
       } else {
         const newRun = {
           project_id: id,
@@ -807,12 +823,34 @@ export default function ProjectRunsPage() {
           is_automated: formData.is_ci_cd_run,
         };
 
-        const { error } = await supabase
+        const { data: insertedData, error } = await supabase
           .from('test_runs')
           .insert([newRun])
           .select();
 
         if (error) throw error;
+
+        // Notify all project members when a new run is created
+        const { data: { user } } = await supabase.auth.getUser();
+        await notifyProjectMembers({
+          projectId: id!,
+          excludeUserId: user?.id,
+          type: 'run_created',
+          title: '새 테스트 런이 생성되었습니다',
+          message: `"${formData.name}" 런이 생성되었습니다. (${testCaseIds.length}개 테스트)`,
+          link: `/projects/${id}/runs${insertedData?.[0]?.id ? `/${insertedData[0].id}` : ''}`,
+        });
+
+        if (formData.status === 'completed') {
+          await notifyProjectMembers({
+            projectId: id!,
+            excludeUserId: user?.id,
+            type: 'run_completed',
+            title: '테스트 런이 완료되었습니다',
+            message: `"${formData.name}" 런이 완료되었습니다.`,
+            link: `/projects/${id}/runs`,
+          });
+        }
       }
 
       await fetchData();
@@ -1239,6 +1277,7 @@ export default function ProjectRunsPage() {
               </nav>
               
               <div className="flex items-center gap-3 relative">
+                <NotificationBell />
                 <div 
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="flex items-center gap-2 cursor-pointer"

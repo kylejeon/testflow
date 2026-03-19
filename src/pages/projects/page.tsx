@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import SEOHead from '../../components/SEOHead';
+import NotificationBell from '../../components/feature/NotificationBell';
 
 interface UserProfile {
   email: string;
@@ -113,6 +114,7 @@ export default function ProjectsPage() {
                 </span>
               </div>
               <div className="flex items-center gap-3 relative">
+                <NotificationBell />
                 <div 
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="flex items-center gap-2 cursor-pointer"

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import NotificationBell from '../../components/feature/NotificationBell';
+import { notifyProjectMembers } from '../../hooks/useNotifications';
 
 interface Milestone {
   id: string;
@@ -44,7 +46,8 @@ export default function ProjectMilestones() {
   const [editFormData, setEditFormData] = useState({
     name: '',
     start_date: '',
-    end_date: ''
+    end_date: '',
+    status: '' as Milestone['status']
   });
   const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number } | null>(null);
 
@@ -291,6 +294,26 @@ export default function ProjectMilestones() {
 
   const handleMarkAsComplete = async (milestoneId: string) => {
     await handleUpdateMilestone(milestoneId, { status: 'completed' });
+
+    // Notify project members
+    try {
+      const milestone = milestones.find(m => m.id === milestoneId || m.subMilestones?.find((s: any) => s.id === milestoneId));
+      const milestoneName = milestone?.id === milestoneId
+        ? milestone?.name
+        : milestone?.subMilestones?.find((s: any) => s.id === milestoneId)?.name || 'Milestone';
+
+      const { data: { user } } = await supabase.auth.getUser();
+      await notifyProjectMembers({
+        projectId: id!,
+        excludeUserId: user?.id,
+        type: 'milestone_completed',
+        title: '마일스톤이 완료되었습니다',
+        message: `"${milestoneName}" 마일스톤이 완료 처리되었습니다.`,
+        link: `/projects/${id}/milestones`,
+      });
+    } catch (err) {
+      console.error('마일스톤 완료 알림 오류:', err);
+    }
   };
 
   const toggleExpanded = (milestoneId: string) => {
@@ -432,7 +455,8 @@ export default function ProjectMilestones() {
                   setEditFormData({
                     name: milestone.name,
                     start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '',
-                    end_date: milestone.end_date ? milestone.end_date.split('T')[0] : ''
+                    end_date: milestone.end_date ? milestone.end_date.split('T')[0] : '',
+                    status: milestone.status
                   });
                   setEditingMilestone(milestone);
                 }}
@@ -617,49 +641,52 @@ export default function ProjectMilestones() {
                 </Link>
               </nav>
               
-              <div className="flex items-center gap-3 relative">
-                <div 
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {userProfile?.full_name?.charAt(0) || 'U'}
-                  </div>
-                </div>
-                
-                {showProfileMenu && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-10" 
-                      onClick={() => setShowProfileMenu(false)}
-                    ></div>
-                    <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
-                        <p className="text-xs text-gray-500">{userProfile?.email}</p>
-                        <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded border ${tierInfo.color}`}>
-                          <i className={`${tierInfo.icon} text-sm`}></i>
-                          {tierInfo.name}
-                        </div>
-                      </div>
-                      <Link
-                        to="/settings"
-                        onClick={() => setShowProfileMenu(false)}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
-                      >
-                        <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                        <span>Settings</span>
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
-                      >
-                        <i className="ri-logout-box-line text-lg"></i>
-                        <span>Log out</span>
-                      </button>
+              <div className="flex items-center gap-4">
+                <NotificationBell />
+                <div className="flex items-center gap-3 relative">
+                  <div 
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                      {userProfile?.full_name?.charAt(0) || 'U'}
                     </div>
-                  </>
-                )}
+                  </div>
+                  
+                  {showProfileMenu && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-10" 
+                        onClick={() => setShowProfileMenu(false)}
+                      ></div>
+                      <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                        <div className="px-4 py-3 border-b border-gray-100">
+                          <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+                          <p className="text-xs text-gray-500">{userProfile?.email}</p>
+                          <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded border ${tierInfo.color}`}>
+                            <i className={`${tierInfo.icon} text-sm`}></i>
+                            {tierInfo.name}
+                          </div>
+                        </div>
+                        <Link
+                          to="/settings"
+                          onClick={() => setShowProfileMenu(false)}
+                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
+                        >
+                          <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
+                          <span>Settings</span>
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
+                        >
+                          <i className="ri-logout-box-line text-lg"></i>
+                          <span>Log out</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -852,7 +879,8 @@ export default function ProjectMilestones() {
                 handleUpdateMilestone(editingMilestone.id, {
                   name: formData.get('name'),
                   start_date: formData.get('start_date'),
-                  end_date: formData.get('end_date')
+                  end_date: formData.get('end_date'),
+                  status: formData.get('status')
                 });
               }}
             >
@@ -866,6 +894,19 @@ export default function ProjectMilestones() {
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    name="status"
+                    defaultValue={editFormData.status}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
+                  >
+                    <option value="upcoming">Upcoming</option>
+                    <option value="started">In Progress</option>
+                    <option value="past_due">Past Due</option>
+                    <option value="completed">Completed</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
