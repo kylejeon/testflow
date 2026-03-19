@@ -97,13 +97,15 @@ export default function AdminPage() {
         { data: overviewData },
         { data: monthlyUserData },
         { data: monthlyProjectData },
-        { data: subscriptionData },
+        { data: subscriptionRaw },
         { data: usersData },
       ] = await Promise.all([
         supabase.rpc('admin_overview_stats'),
         supabase.rpc('admin_monthly_user_stats', { months_back: 12 }),
         supabase.rpc('admin_monthly_project_stats', { months_back: 12 }),
-        supabase.rpc('admin_subscription_distribution'),
+        supabase
+          .from('profiles')
+          .select('subscription_tier'),
         supabase
           .from('profiles')
           .select('id, email, full_name, subscription_tier, is_trial, is_superadmin, created_at, updated_at')
@@ -138,11 +140,26 @@ export default function AdminPage() {
         new_projects: Number(r.new_projects),
       })));
 
-      setSubscriptionDist((subscriptionData || []).map((r: any) => ({
-        tier: Number(r.tier),
-        tier_name: r.tier_name,
-        user_count: Number(r.user_count),
-      })));
+      // profiles 직접 집계로 구독 분포 계산
+      const tierCountMap: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      const tierNameMap: Record<number, string> = {
+        1: 'Free',
+        2: 'Starter',
+        3: 'Professional',
+        4: 'Enterprise',
+      };
+      (subscriptionRaw || []).forEach((row: any) => {
+        const tier = Number(row.subscription_tier) || 1;
+        if (tier >= 1 && tier <= 4) {
+          tierCountMap[tier] = (tierCountMap[tier] || 0) + 1;
+        }
+      });
+      const computedDist: SubscriptionRow[] = [1, 2, 3, 4].map((tier) => ({
+        tier,
+        tier_name: tierNameMap[tier],
+        user_count: tierCountMap[tier],
+      }));
+      setSubscriptionDist(computedDist);
 
       setRecentUsers(usersData || []);
       setLoadingCharts(false);

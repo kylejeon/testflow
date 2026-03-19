@@ -30,9 +30,18 @@ export default function AuthPage() {
 
   useEffect(() => {
     const inviteToken = searchParams.get('invite');
+
+    // ── 해시 파라미터 미리 체크 ──
+    const rawHash = window.location.hash;
+    const hashParams = rawHash ? new URLSearchParams(rawHash.substring(1)) : null;
+    const hashType = hashParams?.get('type');
+    const hashError = hashParams?.get('error');
+    const isRecoveryHash = hashType === 'recovery' || !!hashError;
+
     if (inviteToken) {
       checkInvitation(inviteToken);
-    } else {
+    } else if (!isRecoveryHash) {
+      // recovery / error 해시가 있으면 checkUser 건너뜀 (레이스 컨디션 방지)
       checkUser();
     }
 
@@ -40,17 +49,40 @@ export default function AuthPage() {
     if (lastEmail) setEmail(lastEmail);
 
     const handleOAuthCallback = async () => {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const type = hashParams.get('type');
+      const hash = window.location.hash;
+      if (!hash || hash.length <= 1) return;
 
-      // 비밀번호 재설정 콜백 처리
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get('access_token');
+      const type = params.get('type');
+      const errorCode = params.get('error_code');
+      const errorDescription = params.get('error_description');
+
+      // ── 에러 콜백 처리 (만료된 링크 등) ──
+      if (params.get('error')) {
+        window.history.replaceState(null, '', window.location.pathname);
+        if (errorCode === 'otp_expired') {
+          setMode('reset');
+          setError('비밀번호 재설정 링크가 만료되었습니다. 이메일을 다시 입력하고 새 링크를 발송해주세요.');
+        } else {
+          setMode('reset');
+          setError(
+            errorDescription
+              ? decodeURIComponent(errorDescription.replace(/\+/g, ' '))
+              : '링크가 유효하지 않습니다. 다시 시도해주세요.'
+          );
+        }
+        return;
+      }
+
+      // ── 비밀번호 재설정 성공 콜백 ──
       if (type === 'recovery' && accessToken) {
         setMode('new_password');
         window.history.replaceState(null, '', window.location.pathname);
         return;
       }
 
+      // ── OAuth 콜백 ──
       if (accessToken) {
         setIsOAuthRedirect(true);
         const { data: { session } } = await supabase.auth.getSession();
@@ -70,6 +102,13 @@ export default function AuthPage() {
     handleOAuthCallback();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // ── PASSWORD_RECOVERY 이벤트: 새 비밀번호 입력 화면으로 전환 ──
+      if (event === 'PASSWORD_RECOVERY') {
+        setMode('new_password');
+        window.history.replaceState(null, '', window.location.pathname);
+        return;
+      }
+
       if (event === 'SIGNED_IN' && session && isOAuthRedirect) {
         await ensureProfileExists(session.user);
         const invite = searchParams.get('invite');
