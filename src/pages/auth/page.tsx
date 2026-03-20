@@ -685,7 +685,7 @@ export default function AuthPage() {
                       const inviteToken = invitation?.token || searchParams.get('invite');
                       const redirectUrl = inviteToken
                         ? `${window.location.origin}/auth?invite=${inviteToken}`
-                        : `${window.location.origin}/projects`;
+                        : `${window.location.origin}/auth`;
                       await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl } });
                     } catch (err: any) {
                       setError(err.message || '소셜 로그인에 실패했습니다.');
