@@ -230,7 +230,7 @@ export default function AuthPage() {
       }
       navigate('/projects');
     } catch (error: any) {
-      setError(error.message || '로그인에 실패했습니다.');
+      setError(error.message || 'Login failed. Please try again.');
       setLoading(false);
     }
   };
@@ -241,7 +241,7 @@ export default function AuthPage() {
     setError('');
     setSuccess('');
     if (password !== confirmPassword) {
-      setError('비밀번호가 일치하지 않습니다.');
+      setError('Passwords do not match.');
       setLoading(false);
       return;
     }
@@ -267,21 +267,21 @@ export default function AuthPage() {
         if (invitation?.token && data.session) {
           await acceptInvitation(invitation.token);
         } else if (invitation?.token) {
-          setSuccess('회원가입이 완료되었습니다! 로그인하면 프로젝트에 자동으로 참여됩니다.');
+          setSuccess('Account created! Log in to join the project automatically.');
           setMode('login'); setPassword('');
         } else if (data.session) {
-          setSuccess('회원가입이 완료되었습니다! 14일 무료 체험이 시작됩니다 🎉');
+          setSuccess('Account created! Your 14-day free trial has started 🎉');
           setTimeout(() => navigate('/projects'), 1000);
         } else {
-          setSuccess('회원가입이 완료되었습니다! 이메일을 확인해주세요. 확인 후 14일 무료 체험이 시작됩니다.');
+          setSuccess('Account created! Please check your email to confirm. Your 14-day free trial starts after verification.');
           setMode('login'); setPassword('');
         }
       }
     } catch (err: any) {
       if (err.message?.includes('rate limit') || err.message?.includes('Email rate limit exceeded')) {
-        setError('이메일 발송 제한에 도달했습니다. 잠시 후 다시 시도하거나, Google로 계속하기를 이용해주세요.');
+        setError('Email sending limit reached. Please wait a moment or use Continue with Google.');
       } else {
-        setError(err.message || '회원가입에 실패했습니다.');
+        setError(err.message || 'Sign up failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -298,9 +298,9 @@ export default function AuthPage() {
         redirectTo: `${window.location.origin}/auth`,
       });
       if (error) throw error;
-      setSuccess('비밀번호 재설정 링크를 이메일로 발송했습니다. 받은 편지함을 확인해주세요.');
+      setSuccess('Password reset link sent! Please check your inbox.');
     } catch (err: any) {
-      setError(err.message || '이메일 발송에 실패했습니다.');
+      setError(err.message || 'Failed to send email. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -308,14 +308,14 @@ export default function AuthPage() {
 
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== newPasswordConfirm) { setError('비밀번호가 일치하지 않습니다.'); return; }
+    if (newPassword !== newPasswordConfirm) { setError('Passwords do not match.'); return; }
     setLoading(true);
     setError('');
     setSuccess('');
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-      setSuccess('비밀번호가 성공적으로 변경되었습니다! 로그인 페이지로 이동합니다.');
+      setSuccess('Password updated successfully! Redirecting to login...');
       setTimeout(() => {
         supabase.auth.signOut();
         setMode('login');
@@ -323,10 +323,48 @@ export default function AuthPage() {
         setNewPasswordConfirm('');
       }, 2000);
     } catch (err: any) {
-      setError(err.message || '비밀번호 변경에 실패했습니다.');
+      setError(err.message || 'Failed to update password. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const checkInvitationFixed = async (token: string) => {
+    setCheckingInvitation(true);
+    try {
+      const { data: invitationData, error: invError } = await supabase
+        .from('project_invitations')
+        .select('*, projects(name)')
+        .eq('token', token)
+        .is('accepted_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (invError || !invitationData) {
+        setError('This invitation link is invalid or has expired.');
+        return;
+      }
+      setInvitation({ token, projectName: invitationData.projects?.name, role: invitationData.role });
+      setEmail(invitationData.email);
+      setMode('signup');
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) await acceptInvitation(token);
+    } catch (err) {
+      console.error('Failed to check invitation:', err);
+    } finally {
+      setCheckingInvitation(false);
+    }
+  };
+
+  const getHashError = () => {
+    const rawHash = window.location.hash;
+    const hashParams = rawHash ? new URLSearchParams(rawHash.substring(1)) : null;
+    const errorCode = hashParams?.get('error_code');
+    const errorDescription = hashParams?.get('error_description');
+    if (errorCode === 'otp_expired') return 'Your password reset link has expired. Please enter your email again to receive a new link.';
+    if (errorDescription) return decodeURIComponent(errorDescription.replace(/\+/g, ' '));
+    return 'This link is invalid. Please try again.';
   };
 
   if (checkingInvitation) {
@@ -334,7 +372,7 @@ export default function AuthPage() {
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 flex items-center justify-center p-4">
         <div className="text-center">
           <i className="ri-loader-4-line animate-spin text-4xl text-teal-600 mb-4"></i>
-          <p className="text-gray-600">초대 정보를 확인하는 중...</p>
+          <p className="text-gray-600">Checking invitation...</p>
         </div>
       </div>
     );
@@ -343,8 +381,8 @@ export default function AuthPage() {
   return (
     <>
       <SEOHead
-        title="로그인 / 회원가입 | Testably"
-        description="Testably에 로그인하거나 새 계정을 만드세요. QA 테스트 관리를 시작하세요."
+        title="Log in / Sign up | Testably"
+        description="Log in or create a new Testably account. Start managing your QA tests today."
         noindex={true}
       />
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 flex items-center justify-center p-4">
@@ -358,11 +396,11 @@ export default function AuthPage() {
               <span className="text-2xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
             </div>
             <p className="text-gray-600">
-              {mode === 'reset' ? '비밀번호 재설정'
-                : mode === 'new_password' ? '새 비밀번호 설정'
-                : invitation ? '프로젝트 초대를 수락하려면 가입하세요'
-                : mode === 'login' ? '계정에 로그인하세요'
-                : '새 계정을 만드세요'}
+              {mode === 'reset' ? 'Reset your password'
+                : mode === 'new_password' ? 'Set a new password'
+                : invitation ? 'Sign up to accept your project invitation'
+                : mode === 'login' ? 'Welcome back'
+                : 'Create your account'}
             </p>
           </div>
 
@@ -374,13 +412,12 @@ export default function AuthPage() {
                   <i className="ri-mail-open-line text-teal-600 text-xl"></i>
                 </div>
                 <div>
-                  <p className="font-semibold text-teal-900">프로젝트 초대</p>
+                  <p className="font-semibold text-teal-900">Project Invitation</p>
                   <p className="text-sm text-teal-700">
-                    <span className="font-medium">{invitation.projectName}</span> 프로젝트에
+                    You have been invited to <span className="font-medium">{invitation.projectName}</span> as
                     <span className="ml-1 px-1.5 py-0.5 bg-teal-200 rounded text-xs font-medium">
                       {invitation.role === 'admin' ? 'Admin' : invitation.role === 'member' ? 'Member' : 'Viewer'}
                     </span>
-                    로 초대되었습니다
                   </p>
                 </div>
               </div>
@@ -390,7 +427,7 @@ export default function AuthPage() {
           {/* Auth Card */}
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
 
-            {/* ══ 비밀번호 재설정 요청 화면 ══ */}
+            {/* Reset Password */}
             {mode === 'reset' && (
               <div>
                 <button
@@ -398,14 +435,14 @@ export default function AuthPage() {
                   className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6 cursor-pointer transition-colors"
                 >
                   <i className="ri-arrow-left-line"></i>
-                  로그인으로 돌아가기
+                  Back to log in
                 </button>
                 <div className="mb-6">
                   <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center mb-4">
                     <i className="ri-lock-password-line text-teal-600 text-2xl"></i>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-1">비밀번호 재설정</h2>
-                  <p className="text-sm text-gray-500">가입한 이메일을 입력하시면 재설정 링크를 보내드립니다.</p>
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">Reset your password</h2>
+                  <p className="text-sm text-gray-500">Enter the email you used to sign up and we'll send you a reset link.</p>
                 </div>
                 {error && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
@@ -417,7 +454,7 @@ export default function AuthPage() {
                     <div className="flex items-start gap-3 text-teal-700">
                       <i className="ri-mail-check-line text-2xl flex-shrink-0"></i>
                       <div>
-                        <p className="font-semibold mb-1">이메일을 확인해주세요</p>
+                        <p className="font-semibold mb-1">Check your inbox</p>
                         <p className="text-sm">{success}</p>
                       </div>
                     </div>
@@ -425,12 +462,12 @@ export default function AuthPage() {
                 ) : (
                   <form onSubmit={handleResetPassword}>
                     <div className="mb-5">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">이메일</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="example@email.com"
+                        placeholder="you@example.com"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                         required
                       />
@@ -441,23 +478,23 @@ export default function AuthPage() {
                       className="w-full py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading
-                        ? <span className="flex items-center justify-center gap-2"><i className="ri-loader-4-line animate-spin"></i>발송 중...</span>
-                        : '재설정 링크 발송'}
+                        ? <span className="flex items-center justify-center gap-2"><i className="ri-loader-4-line animate-spin"></i>Sending...</span>
+                        : 'Send reset link'}
                     </button>
                   </form>
                 )}
               </div>
             )}
 
-            {/* ══ 새 비밀번호 설정 화면 (이메일 링크 클릭 후) ══ */}
+            {/* Set New Password */}
             {mode === 'new_password' && (
               <div>
                 <div className="mb-6">
                   <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center mb-4">
                     <i className="ri-shield-keyhole-line text-teal-600 text-2xl"></i>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-1">새 비밀번호 설정</h2>
-                  <p className="text-sm text-gray-500">사용할 새 비밀번호를 입력해주세요.</p>
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">Set new password</h2>
+                  <p className="text-sm text-gray-500">Choose a new password for your account.</p>
                 </div>
                 {error && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
@@ -474,7 +511,7 @@ export default function AuthPage() {
                 ) : (
                   <form onSubmit={handleSetNewPassword}>
                     <div className="mb-4">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">새 비밀번호</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">New password</label>
                       <input
                         type="password"
                         value={newPassword}
@@ -484,10 +521,10 @@ export default function AuthPage() {
                         required
                         minLength={6}
                       />
-                      <p className="text-xs text-gray-400 mt-1">최소 6자 이상</p>
+                      <p className="text-xs text-gray-400 mt-1">At least 6 characters</p>
                     </div>
                     <div className="mb-6">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">새 비밀번호 확인</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm new password</label>
                       <input
                         type="password"
                         value={newPasswordConfirm}
@@ -501,12 +538,12 @@ export default function AuthPage() {
                       />
                       {newPasswordConfirm && newPassword !== newPasswordConfirm && (
                         <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                          <i className="ri-error-warning-line"></i>비밀번호가 일치하지 않습니다
+                          <i className="ri-error-warning-line"></i>Passwords do not match
                         </p>
                       )}
                       {newPasswordConfirm && newPassword === newPasswordConfirm && (
                         <p className="text-xs text-teal-600 mt-1 flex items-center gap-1">
-                          <i className="ri-check-line"></i>비밀번호가 일치합니다
+                          <i className="ri-check-line"></i>Passwords match
                         </p>
                       )}
                     </div>
@@ -516,15 +553,15 @@ export default function AuthPage() {
                       className="w-full py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading
-                        ? <span className="flex items-center justify-center gap-2"><i className="ri-loader-4-line animate-spin"></i>변경 중...</span>
-                        : '비밀번호 변경하기'}
+                        ? <span className="flex items-center justify-center gap-2"><i className="ri-loader-4-line animate-spin"></i>Updating...</span>
+                        : 'Update password'}
                     </button>
                   </form>
                 )}
               </div>
             )}
 
-            {/* ══ 로그인 / 회원가입 화면 ══ */}
+            {/* Login / Sign Up */}
             {(mode === 'login' || mode === 'signup') && (
               <div>
                 {/* Tab Switcher */}
@@ -541,7 +578,7 @@ export default function AuthPage() {
                       mode === 'login' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    로그인
+                    Log in
                   </button>
                   <button
                     onClick={() => {
@@ -554,7 +591,7 @@ export default function AuthPage() {
                       mode === 'signup' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    회원가입
+                    Sign up
                   </button>
                 </div>
 
@@ -570,41 +607,41 @@ export default function AuthPage() {
                 )}
 
                 <form onSubmit={mode === 'login' ? handleLogin : handleSignup}>
-                  {/* 이름 (회원가입만) */}
+                  {/* Full Name (sign up only) */}
                   {mode === 'signup' && (
                     <div className="mb-4">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">이름</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Full name</label>
                       <input
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="홍길동"
+                        placeholder="Jane Smith"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                         required
                       />
                     </div>
                   )}
 
-                  {/* 이메일 */}
+                  {/* Email */}
                   <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">이메일</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="example@email.com"
+                      placeholder="you@example.com"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                       required
                       readOnly={!!invitation}
                     />
                     {invitation && (
-                      <p className="text-xs text-gray-500 mt-1"><i className="ri-lock-line mr-1"></i>초대받은 이메일 주소입니다</p>
+                      <p className="text-xs text-gray-500 mt-1"><i className="ri-lock-line mr-1"></i>This is the email address you were invited with</p>
                     )}
                   </div>
 
-                  {/* 비밀번호 */}
+                  {/* Password */}
                   <div className="mb-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">비밀번호</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
                     <input
                       type="password"
                       value={password}
@@ -614,10 +651,10 @@ export default function AuthPage() {
                       required
                       minLength={6}
                     />
-                    {mode === 'signup' && <p className="text-xs text-gray-500 mt-1">최소 6자 이상</p>}
+                    {mode === 'signup' && <p className="text-xs text-gray-500 mt-1">At least 6 characters</p>}
                   </div>
 
-                  {/* 비밀번호를 잊으셨나요? (로그인 모드 전용) */}
+                  {/* Forgot password (login only) */}
                   {mode === 'login' && (
                     <div className="flex justify-end mb-5">
                       <button
@@ -625,15 +662,15 @@ export default function AuthPage() {
                         onClick={() => { setMode('reset'); setError(''); setSuccess(''); }}
                         className="text-xs text-teal-600 hover:text-teal-700 hover:underline cursor-pointer transition-colors"
                       >
-                        비밀번호를 잊으셨나요?
+                        Forgot password?
                       </button>
                     </div>
                   )}
 
-                  {/* 비밀번호 확인 (회원가입만) */}
+                  {/* Confirm password (sign up only) */}
                   {mode === 'signup' && (
                     <div className="mb-6 mt-4">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">비밀번호 확인</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm password</label>
                       <input
                         type="password"
                         value={confirmPassword}
@@ -647,12 +684,12 @@ export default function AuthPage() {
                       />
                       {confirmPassword && password !== confirmPassword && (
                         <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                          <i className="ri-error-warning-line"></i>비밀번호가 일치하지 않습니다
+                          <i className="ri-error-warning-line"></i>Passwords do not match
                         </p>
                       )}
                       {confirmPassword && password === confirmPassword && (
                         <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-                          <i className="ri-check-line"></i>비밀번호가 일치합니다
+                          <i className="ri-check-line"></i>Passwords match
                         </p>
                       )}
                     </div>
@@ -664,21 +701,21 @@ export default function AuthPage() {
                     className="w-full py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading
-                      ? <span className="flex items-center justify-center gap-2"><i className="ri-loader-4-line animate-spin"></i>처리 중...</span>
+                      ? <span className="flex items-center justify-center gap-2"><i className="ri-loader-4-line animate-spin"></i>Processing...</span>
                       : mode === 'login'
-                        ? (invitation ? '로그인 후 프로젝트 참여' : '로그인')
-                        : (invitation ? '가입 후 프로젝트 참여' : '회원가입')}
+                        ? (invitation ? 'Log in and join project' : 'Log in')
+                        : (invitation ? 'Sign up and join project' : 'Create account')}
                   </button>
                 </form>
 
                 {/* Divider */}
                 <div className="flex items-center gap-4 my-6">
                   <div className="flex-1 h-px bg-gray-200"></div>
-                  <span className="text-xs text-gray-500">또는</span>
+                  <span className="text-xs text-gray-500">or</span>
                   <div className="flex-1 h-px bg-gray-200"></div>
                 </div>
 
-                {/* Google 로그인 */}
+                {/* Google login */}
                 <button
                   onClick={async () => {
                     try {
@@ -688,7 +725,7 @@ export default function AuthPage() {
                         : `${window.location.origin}/auth`;
                       await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl } });
                     } catch (err: any) {
-                      setError(err.message || '소셜 로그인에 실패했습니다.');
+                      setError(err.message || 'Social login failed. Please try again.');
                     }
                   }}
                   className="w-full py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap flex items-center justify-center gap-3"
@@ -699,14 +736,14 @@ export default function AuthPage() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                   </svg>
-                  Google로 계속하기
+                  Continue with Google
                 </button>
               </div>
             )}
           </div>
 
           <p className="text-center text-xs text-gray-500 mt-6">
-            계속 진행하면 서비스 약관 및 개인정보 처리방침에 동의하는 것으로 간주됩니다.
+            By continuing, you agree to our <button onClick={() => navigate('/terms')} className="underline hover:text-gray-700 cursor-pointer">Terms of Service</button> and <button onClick={() => navigate('/privacy')} className="underline hover:text-gray-700 cursor-pointer">Privacy Policy</button>.
           </p>
         </div>
       </div>

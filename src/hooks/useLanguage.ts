@@ -7,14 +7,13 @@ export const useLanguage = () => {
   const { i18n } = useTranslation();
 
   useEffect(() => {
-    // Load saved language from localStorage on mount
     const savedLanguage = localStorage.getItem(LANGUAGE_KEY);
     if (savedLanguage && (savedLanguage === 'ko' || savedLanguage === 'en')) {
       i18n.changeLanguage(savedLanguage);
     } else {
-      // Default to Korean if no saved language
-      i18n.changeLanguage('ko');
-      localStorage.setItem(LANGUAGE_KEY, 'ko');
+      // Default to English
+      i18n.changeLanguage('en');
+      localStorage.setItem(LANGUAGE_KEY, 'en');
     }
   }, [i18n]);
 
