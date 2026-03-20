@@ -51,6 +51,7 @@ interface ProjectMember {
   email: string;
   full_name: string | null;
   role: string;
+  avatar_emoji: string | null;
 }
 
 interface JiraSettings {
@@ -132,6 +133,9 @@ export default function RunDetail() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null); // null = All
   const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState(true);
   const [copiedRunId, setCopiedRunId] = useState(false);
+  const [bulkAssignee, setBulkAssignee] = useState('');
+  const [runAssignees, setRunAssignees] = useState<Map<string, string>>(new Map());
+  const [openAssigneeDropdown, setOpenAssigneeDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     if (projectId && runId) {
@@ -254,7 +258,8 @@ export default function RunDetail() {
           role,
           profiles:user_id (
             email,
-            full_name
+            full_name,
+            avatar_emoji
           )
         `)
         .eq('project_id', projectId);
@@ -267,6 +272,7 @@ export default function RunDetail() {
         email: item.profiles?.email || '',
         full_name: item.profiles?.full_name || null,
         role: item.role,
+        avatar_emoji: item.profiles?.avatar_emoji || null,
       }));
 
       setProjectMembers(members);
@@ -431,6 +437,20 @@ export default function RunDetail() {
           .map((name) => ({ id: name, name }));
 
         setFolders([...matchedFolders, ...unmatchedFolders]);
+
+        // Run별 assignee 불러오기
+        const { data: assigneesData } = await supabase
+          .from('run_testcase_assignees')
+          .select('test_case_id, assignee')
+          .eq('run_id', runId);
+
+        const assigneesMap = new Map<string, string>();
+        (assigneesData || []).forEach((row: any) => {
+          if (row.assignee) {
+            assigneesMap.set(row.test_case_id, row.assignee);
+          }
+        });
+        setRunAssignees(assigneesMap);
       }
     } catch (error) {
       console.error('데이터 로딩 오류:', error);
@@ -1246,6 +1266,67 @@ export default function RunDetail() {
     });
   };
 
+  const handleAssigneeChange = async (testCaseId: string, assigneeName: string) => {
+    try {
+      const { error } = await supabase
+        .from('run_testcase_assignees')
+        .upsert(
+          {
+            run_id: runId,
+            test_case_id: testCaseId,
+            assignee: assigneeName || null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'run_id,test_case_id' }
+        );
+
+      if (error) throw error;
+
+      const updatedMap = new Map(runAssignees);
+      if (assigneeName) {
+        updatedMap.set(testCaseId, assigneeName);
+      } else {
+        updatedMap.delete(testCaseId);
+      }
+      setRunAssignees(updatedMap);
+    } catch (error) {
+      console.error('Assignee 업데이트 오류:', error);
+    }
+  };
+
+  const handleBulkAssigneeChange = async (assigneeName: string) => {
+    if (selectedIds.size === 0) return;
+    try {
+      const ids = Array.from(selectedIds);
+      const rows = ids.map((testCaseId) => ({
+        run_id: runId,
+        test_case_id: testCaseId,
+        assignee: assigneeName || null,
+        updated_at: new Date().toISOString(),
+      }));
+
+      const { error } = await supabase
+        .from('run_testcase_assignees')
+        .upsert(rows, { onConflict: 'run_id,test_case_id' });
+
+      if (error) throw error;
+
+      const updatedMap = new Map(runAssignees);
+      ids.forEach((id) => {
+        if (assigneeName) {
+          updatedMap.set(id, assigneeName);
+        } else {
+          updatedMap.delete(id);
+        }
+      });
+      setRunAssignees(updatedMap);
+      setSelectedIds(new Set());
+      setBulkAssignee('');
+    } catch (error) {
+      console.error('Bulk assignee 업데이트 오류:', error);
+    }
+  };
+
   const currentTier = userProfile?.subscription_tier || 1;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
   const isProfessionalOrHigher = currentTier >= 2;
@@ -1282,7 +1363,7 @@ export default function RunDetail() {
               >
                 <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
                   {userProfile?.avatar_emoji ? (
-                    <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
+                    <span className="text-base leading-none">{userProfile.avatar_emoji}</span>
                   ) : (
                     <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
                   )}
@@ -1352,7 +1433,7 @@ export default function RunDetail() {
                 }`}
                 title={!isFolderSidebarOpen ? 'All Cases' : undefined}
               >
-                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center text-teal-700 font-semibold text-sm flex-shrink-0">
                   <i className="ri-stack-line text-base"></i>
                 </div>
                 {isFolderSidebarOpen && (
@@ -1384,7 +1465,7 @@ export default function RunDetail() {
                         }`}
                         title={!isFolderSidebarOpen ? folder.name : undefined}
                       >
-                        <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                        <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
                           <i className={`${folder.icon || 'ri-folder-3-line'} text-base`}
                             style={{ color: isSelected ? undefined : (folder.color || undefined) }}
                           ></i>
@@ -1407,7 +1488,7 @@ export default function RunDetail() {
 
               {folders.length === 0 && !loading && isFolderSidebarOpen && (
                 <div className="px-4 py-6 text-center">
-                  <i className="ri-folder-open-line text-2xl text-gray-300 mb-2 block"></i>
+                  <i className="ri-folder-open-line text-2xl text-gray-300 mb-2"></i>
                   <p className="text-sm text-gray-500">폴더 없음</p>
                 </div>
               )}
@@ -1570,7 +1651,7 @@ export default function RunDetail() {
 
                 return (
                   <div className="bg-white rounded-xl border border-gray-200 p-5 mb-8">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3 mb-3">
                       <span className="text-sm font-semibold text-gray-700">Progress</span>
                       <span className="text-sm font-bold text-gray-900">
                         {total > 0 ? Math.round(((passed + failed + blocked + retest) / total) * 100) : 0}% Completed
@@ -1663,14 +1744,14 @@ export default function RunDetail() {
                         placeholder="Search test cases..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                       />
                     </div>
                     
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm cursor-pointer"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
                     >
                       <option value="all">All Status</option>
                       <option value="passed">Passed</option>
@@ -1681,7 +1762,7 @@ export default function RunDetail() {
                     <select
                       value={priorityFilter}
                       onChange={(e) => setPriorityFilter(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm cursor-pointer"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
                     >
                       <option value="all">All Priority</option>
                       <option value="critical">Critical</option>
@@ -1693,6 +1774,44 @@ export default function RunDetail() {
                 </div>
 
                 <div>
+                  {/* Bulk Action Toolbar */}
+                  {selectedIds.size > 0 && (
+                    <div className="px-6 py-3 bg-teal-50 border-b border-teal-200 flex items-center gap-3">
+                      <div className="w-5 h-5 flex items-center justify-center">
+                        <i className="ri-checkbox-multiple-line text-teal-600"></i>
+                      </div>
+                      <span className="text-sm font-semibold text-teal-700">
+                        {selectedIds.size} item{selectedIds.size > 1 ? 's' : ''} selected
+                      </span>
+                      <div className="w-px h-4 bg-teal-300 mx-1"></div>
+                      <span className="text-sm text-gray-600 whitespace-nowrap">Assign to:</span>
+                      <select
+                        value={bulkAssignee}
+                        onChange={(e) => setBulkAssignee(e.target.value)}
+                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                      >
+                        <option value="">Unassigned</option>
+                        {projectMembers.map((member) => (
+                          <option key={member.id} value={member.full_name || member.email}>
+                            {member.avatar_emoji ? `${member.avatar_emoji} ` : ''}{member.full_name || member.email}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handleBulkAssigneeChange(bulkAssignee)}
+                        className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        Apply
+                      </button>
+                      <button
+                        onClick={() => { setSelectedIds(new Set()); setBulkAssignee(''); }}
+                        className="px-3 py-1.5 bg-white border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-all cursor-pointer whitespace-nowrap ml-auto"
+                      >
+                        Clear selection
+                      </button>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200">
                     <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -1702,16 +1821,19 @@ export default function RunDetail() {
                         onChange={(e) => handleSelectAll(e.target.checked)}
                       />
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-1">
                       <span className="text-xs font-semibold text-gray-600 uppercase">ID</span>
                     </div>
-                    <div className="col-span-4">
+                    <div className="col-span-3">
                       <span className="text-xs font-semibold text-gray-600 uppercase">Test Case</span>
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-1">
                       <span className="text-xs font-semibold text-gray-600 uppercase">Priority</span>
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-3 flex items-center">
+                      <span className="text-xs font-semibold text-gray-600 uppercase">Assignee</span>
+                    </div>
+                    <div className="col-span-3 flex items-center">
                       <span className="text-xs font-semibold text-gray-600 uppercase">Status</span>
                     </div>
                   </div>
@@ -1741,20 +1863,20 @@ export default function RunDetail() {
                             onChange={(e) => handleSelectOne(testCase.id, e.target.checked)}
                           />
                         </div>
-                        <div className="col-span-2 flex items-center">
+                        <div className="col-span-1 flex items-center">
                           <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded truncate max-w-full" title={testCase.id}>
                             {(testCase as any).custom_id || testCase.id.substring(0, 8)}
                           </span>
                         </div>
-                        <div className="col-span-4">
+                        <div className="col-span-3">
                           <h3 className="text-sm font-semibold text-gray-900 mb-1 hover:text-teal-600">
                             {testCase.title}
                           </h3>
                           {testCase.description && (
-                            <p className="text-xs text-gray-600">{testCase.description}</p>
+                            <p className="text-xs text-gray-600 truncate">{testCase.description}</p>
                           )}
                         </div>
-                        <div className="col-span-2 flex items-center">
+                        <div className="col-span-1 flex items-center">
                           <span className={`inline-flex items-center gap-1 text-xs font-normal ${
                             testCase.priority === 'high' ? 'text-red-600' :
                             testCase.priority === 'medium' ? 'text-yellow-600' :
@@ -1763,6 +1885,78 @@ export default function RunDetail() {
                             <i className="ri-flag-fill"></i>
                             {testCase.priority.toUpperCase()}
                           </span>
+                        </div>
+                        <div className="col-span-3 flex items-center" onClick={(e) => e.stopPropagation()}>
+                          {(() => {
+                            const assigneeName = runAssignees.get(testCase.id) || '';
+                            const assignedMember = assigneeName
+                              ? projectMembers.find(m => (m.full_name || m.email) === assigneeName)
+                              : null;
+                            const isOpen = openAssigneeDropdown === testCase.id;
+                            return (
+                              <div className="relative w-full">
+                                <div
+                                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors w-full"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenAssigneeDropdown(isOpen ? null : testCase.id);
+                                  }}
+                                >
+                                  {assigneeName ? (
+                                    <>
+                                      <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                        {assignedMember?.avatar_emoji ? (
+                                          <span className="text-base leading-none">{assignedMember.avatar_emoji}</span>
+                                        ) : (
+                                          <div className="w-6 h-6 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                            {assigneeName.substring(0, 2).toUpperCase()}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <span className="text-sm font-medium text-gray-900 truncate">{assigneeName}</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-sm text-gray-400">—</span>
+                                  )}
+                                </div>
+                                {isOpen && (
+                                  <>
+                                    <div
+                                      className="fixed inset-0 z-10"
+                                      onClick={(e) => { e.stopPropagation(); setOpenAssigneeDropdown(null); }}
+                                    />
+                                    <div className="absolute left-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-lg z-20 overflow-hidden py-1">
+                                      <button
+                                        className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 cursor-pointer"
+                                        onClick={(e) => { e.stopPropagation(); handleAssigneeChange(testCase.id, ''); setOpenAssigneeDropdown(null); }}
+                                      >
+                                        — Unassigned —
+                                      </button>
+                                      {projectMembers.map((member) => {
+                                        const name = member.full_name || member.email;
+                                        return (
+                                          <button
+                                            key={member.id}
+                                            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center gap-2"
+                                            onClick={(e) => { e.stopPropagation(); handleAssigneeChange(testCase.id, name); setOpenAssigneeDropdown(null); }}
+                                          >
+                                            {member.avatar_emoji ? (
+                                              <span className="text-base leading-none">{member.avatar_emoji}</span>
+                                            ) : (
+                                              <div className="w-6 h-6 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                                {name.substring(0, 2).toUpperCase()}
+                                              </div>
+                                            )}
+                                            <span className="truncate">{name}</span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         <div className="col-span-3 flex items-center">
                           <span className={`inline-flex items-center gap-1 text-xs font-medium ${getStatusColor(testCase.runStatus)}`}>
@@ -1853,7 +2047,7 @@ export default function RunDetail() {
 
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Priority</label>
+                        <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Priority</label>
                         <span
                           className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
                             selectedTestCase.priority
@@ -1865,14 +2059,14 @@ export default function RunDetail() {
 
                       {selectedTestCase.folder && (
                         <div>
-                          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Folder</label>
+                          <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Folder</label>
                           <p className="text-sm text-gray-900">{selectedTestCase.folder}</p>
                         </div>
                       )}
 
                       {selectedTestCase.tags && (
                         <div>
-                          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Tags</label>
+                          <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Tags</label>
                           <div className="flex flex-wrap gap-2">
                             {selectedTestCase.tags.split(',').map((tag, index) => (
                               <span
@@ -1886,17 +2080,50 @@ export default function RunDetail() {
                         </div>
                       )}
 
-                      {selectedTestCase.assignee && (
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Assignee</label>
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                              {selectedTestCase.assignee.substring(0, 2).toUpperCase()}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Assignee</label>
+                        {(() => {
+                          const assigneeName = runAssignees.get(selectedTestCase.id) || '';
+                          const assignedMember = assigneeName
+                            ? projectMembers.find(m => (m.full_name || m.email) === assigneeName)
+                            : null;
+                          return (
+                            <div className="relative">
+                              <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg bg-white">
+                                {assigneeName ? (
+                                  <>
+                                    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100">
+                                      {assignedMember?.avatar_emoji ? (
+                                        <span className="text-base leading-none">{assignedMember.avatar_emoji}</span>
+                                      ) : (
+                                        <div className="w-6 h-6 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                          {assigneeName.substring(0, 2).toUpperCase()}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-900 flex-1">{assigneeName}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-sm text-gray-400 flex-1">— Unassigned —</span>
+                                )}
+                                <i className="ri-arrow-down-s-line text-gray-400 flex-shrink-0"></i>
+                                <select
+                                  value={assigneeName}
+                                  onChange={(e) => handleAssigneeChange(selectedTestCase.id, e.target.value)}
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                >
+                                  <option value="">— Unassigned —</option>
+                                  {projectMembers.map((member) => (
+                                    <option key={member.id} value={member.full_name || member.email}>
+                                      {member.avatar_emoji ? `${member.avatar_emoji} ` : ''}{member.full_name || member.email}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
                             </div>
-                            <span className="text-sm text-gray-900">{selectedTestCase.assignee}</span>
-                          </div>
-                        </div>
-                      )}
+                          );
+                        })()}
+                      </div>
 
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Created</label>
@@ -1910,22 +2137,26 @@ export default function RunDetail() {
                       </div>
                     </div>
 
-                    {selectedTestCase.steps && (
+                    {selectedTestCase.steps && selectedTestCase.expected_result && (
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Test Steps</label>
+                        <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Test Steps</label>
                         <div className="space-y-2">
-                          {selectedTestCase.steps.split('\n').filter((s: string) => s.trim()).map((step: string, index: number) => {
-                            const content = step.replace(/^\d+\.\s*/, '');
-                            const isHtml = /<[^>]+>/.test(content);
+                          {selectedTestCase.steps.split('\n').filter(s => s.trim()).map((step, index) => {
+                            const stepContent = step.replace(/^\d+\.\s*/, '');
+                            const isHtml = /<[^>]+>/.test(stepContent);
+                            const expectedResults = selectedTestCase.expected_result?.split('\n').filter(s => s.trim()) || [];
+                            const expectedResult = expectedResults[index] || '';
+                            const expectedContent = expectedResult.replace(/^\d+\.\s*/, '');
+                            const expectedIsHtml = /<[^>]+>/.test(expectedContent);
                             return (
                               <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
-                                <div className="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <div className="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                                   <span className="text-teal-700 text-xs font-bold">{index + 1}</span>
                                 </div>
                                 {isHtml ? (
                                   <div
                                     className="text-sm text-gray-700 mb-2 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                                    dangerouslySetInnerHTML={{ __html: content }}
+                                    dangerouslySetInnerHTML={{ __html: stepContent }}
                                     onClick={(e) => {
                                       const target = e.target as HTMLElement;
                                       if (target.tagName === 'IMG') {
@@ -1935,7 +2166,20 @@ export default function RunDetail() {
                                     }}
                                   />
                                 ) : (
-                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{content}</p>
+                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{stepContent}</p>
+                                )}
+                                {expectedContent && (
+                                  <div className="bg-gray-50 rounded p-2 mb-2">
+                                    <p className="text-xs text-gray-600 mb-1 font-semibold">Expected Result:</p>
+                                    {expectedIsHtml ? (
+                                      <div
+                                        className="text-xs text-gray-700 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                        dangerouslySetInnerHTML={{ __html: expectedContent }}
+                                      />
+                                    ) : (
+                                      <p className="text-xs text-gray-700 whitespace-pre-wrap">{expectedContent}</p>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             );
@@ -1946,9 +2190,9 @@ export default function RunDetail() {
 
                     {selectedTestCase.expected_result && (
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Expected Result</label>
+                        <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Expected Result</label>
                         <div className="space-y-2">
-                          {selectedTestCase.expected_result.split('\n').filter((s: string) => s.trim()).map((result: string, index: number) => {
+                          {selectedTestCase.expected_result.split('\n').filter((s: string) => s.trim()).map((result, index) => {
                             const content = result.replace(/^\d+\.\s*/, '');
                             const isHtml = /<[^>]+>/.test(content);
                             return (
@@ -1980,22 +2224,71 @@ export default function RunDetail() {
 
                     {selectedTestCase.attachments && selectedTestCase.attachments.length > 0 && (
                       <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Attachments</label>
-                        <div className="grid grid-cols-3 gap-3">
-                          {selectedTestCase.attachments.map((file, index) => (
-                            <div
-                              key={index}
-                              className="aspect-square rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:border-teal-500 hover:shadow-md transition-all"
-                              onClick={() => setPreviewImage({ url: file.url, name: file.name })}
+                        <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Attachments</label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
+                            <input
+                              type="file"
+                              multiple
+                              onChange={handleFileUpload}
+                              className="hidden"
+                              id="result-file-upload"
+                              disabled={uploadingFile}
+                            />
+                            <label
+                              htmlFor="result-file-upload"
+                              className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap ${
+                              uploadingFile ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
                             >
-                              <img
-                                src={file.url}
-                                alt={file.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ))}
+                              <i className="ri-file-line"></i>
+                              Choose files
+                            </label>
+                            <span>or</span>
+                            <button
+                              onClick={handleScreenshot}
+                              disabled={uploadingFile}
+                              className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap ${
+                              uploadingFile ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
+                            >
+                              <i className="ri-screenshot-line"></i>
+                              screenshot
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">or drag/paste here</p>
                         </div>
+                        
+                        {uploadingFile && (
+                          <div className="mt-3 text-center">
+                            <i className="ri-loader-4-line animate-spin text-teal-500 text-xl"></i>
+                            <p className="text-sm text-gray-600 mt-1">업로드 중...</p>
+                          </div>
+                        )}
+
+                        {resultFormData.attachments.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {resultFormData.attachments.map((file, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-2 bg-gray-50 rounded-lg group"
+                              >
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <i className="ri-file-line text-gray-400"></i>
+                                  <span className="text-sm text-gray-700 truncate">{file.name}</span>
+                                  <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveAttachment(index)}
+                                  className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                                >
+                                  <i className="ri-close-line"></i>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2077,7 +2370,7 @@ export default function RunDetail() {
                                     전용
                                   </span>
                                 </div>
-                                <div className="flex-1 min-w-0">
+                                <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-sm font-semibold text-gray-900">{comment.author}</span>
                                     <span className="text-xs text-gray-500">
@@ -2130,111 +2423,40 @@ export default function RunDetail() {
                               className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all cursor-pointer"
                               onClick={() => setSelectedResult(result)}
                             >
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                    result.status === 'passed' ? 'bg-green-100' :
-                                    result.status === 'failed' ? 'bg-red-100' :
-                                    result.status === 'blocked' ? 'bg-orange-100' :
-                                    result.status === 'retest' ? 'bg-yellow-100' :
-                                    'bg-gray-100'
-                                  }`}>
-                                    <i className={`text-sm ${
-                                      result.status === 'passed' ? 'ri-checkbox-circle-fill text-green-600' :
-                                      result.status === 'failed' ? 'ri-close-circle-fill text-red-600' :
-                                      result.status === 'blocked' ? 'ri-forbid-fill text-orange-600' :
-                                      result.status === 'retest' ? 'ri-refresh-fill text-yellow-600' :
-                                      'ri-question-fill text-gray-600'
-                                    }`}></i>
+                              <div className="flex items-center gap-3">
+                                {isAutomated ? (
+                                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <i className="ri-robot-line text-purple-600 text-xl"></i>
                                   </div>
-                                  <span className={`text-sm font-semibold capitalize ${
-                                    result.status === 'passed' ? 'text-green-700' :
-                                    result.status === 'failed' ? 'text-red-700' :
-                                    result.status === 'blocked' ? 'text-orange-700' :
-                                    result.status === 'retest' ? 'text-yellow-700' :
-                                    'text-gray-700'
-                                  }`}>
-                                    {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
-                                  </span>
-                                  {isAutomated && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-semibold">
-                                      <i className="ri-robot-line"></i>
-                                      CI/CD
-                                    </span>
-                                  )}
-                                </div>
-                                {result.elapsed && (
-                                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                                    <i className="ri-time-line"></i>
-                                    {result.elapsed}
-                                  </span>
+                                ) : (
+                                  <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                    {result.author ? result.author.substring(0, 2).toUpperCase() : 'NA'}
+                                  </div>
                                 )}
-                              </div>
-                              <div className="mb-2">
-                                <p className="text-xs text-gray-500 mb-1">Run</p>
-                                <p className="text-sm text-gray-900 font-medium">{result.run?.name || run?.name || 'Unknown Run'}</p>
-                              </div>
-                              {result.run?.milestone && (
-                                <div className="mb-2">
-                                  <p className="text-xs text-gray-500 mb-1">Milestone</p>
-                                  <div className="flex items-center gap-1.5">
-                                    <i className="ri-flag-2-line text-teal-600 text-xs"></i>
-                                    <p className="text-sm text-gray-900 font-medium">{result.run.milestone.name}</p>
-                                  </div>
-                                </div>
-                              )}
-                              {result.author && (
-                                <div className="mb-2">
-                                  <p className="text-xs text-gray-500 mb-1">Executed by</p>
-                                  <div className="flex items-center gap-2">
-                                    {isAutomated ? (
-                                      <div className="w-5 h-5 bg-purple-100 rounded flex items-center justify-center">
-                                        <i className="ri-robot-line text-purple-600 text-xs"></i>
-                                      </div>
-                                    ) : (
-                                      <div className="w-5 h-5 bg-gradient-to-br from-teal-400 to-teal-600 rounded flex items-center justify-center text-white text-xs font-semibold">
-                                        {result.author.substring(0, 2).toUpperCase()}
-                                      </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className={`text-sm font-semibold capitalize ${
+                                      result.status === 'passed' ? 'text-green-700' :
+                                      result.status === 'failed' ? 'text-red-700' :
+                                      result.status === 'blocked' ? 'text-orange-700' :
+                                      result.status === 'retest' ? 'text-yellow-700' :
+                                      'text-gray-700'
+                                    }`}>
+                                      {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
+                                    </span>
+                                    {isAutomated && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-semibold">
+                                        <i className="ri-robot-line"></i>
+                                        CI/CD
+                                      </span>
                                     )}
-                                    <p className="text-sm text-gray-700">{result.author}</p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <i className="ri-time-line text-lg"></i>
+                                    <span className="text-sm text-gray-700">{result.elapsed}</span>
                                   </div>
                                 </div>
-                              )}
-                              {result.note && (
-                                <div className="mb-2">
-                                  <p className="text-xs text-gray-500 mb-1">Note</p>
-                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{result.note}</p>
-                                </div>
-                              )}
-                              {result.issues && result.issues.length > 0 && (
-                                <div className="mb-2">
-                                  <p className="text-xs text-gray-500 mb-1">Linked Issues</p>
-                                  <div className="flex flex-wrap gap-1">
-                                    {result.issues.map((issueKey, idx) => (
-                                      <a
-                                        key={idx}
-                                        href={getJiraIssueUrl(issueKey)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 transition-all"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <i className="ri-bug-line mr-1"></i>
-                                        {issueKey}
-                                      </a>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              <p className="text-xs text-gray-400 mt-2">
-                                {result.timestamp.toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </p>
+                              </div>
                             </div>
                           );
                         })
@@ -2271,7 +2493,7 @@ export default function RunDetail() {
                       {!isProfessionalOrHigher && (
                         <div className="mb-4 p-4 bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-xl">
                           <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
                               <i className="ri-lock-line text-teal-600 text-xl"></i>
                             </div>
                             <div className="flex-1">
@@ -2350,7 +2572,7 @@ export default function RunDetail() {
                                 href={issueUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block bg-white border rounded-lg p-4 transition-all hover:border-teal-500 hover:shadow-md cursor-pointer"
+                                className="block bg-white border border-gray-200 rounded-lg p-4 transition-all hover:border-teal-500 hover:shadow-md cursor-pointer"
                               >
                                 {CardContent}
                               </a>
@@ -2360,7 +2582,7 @@ export default function RunDetail() {
                           return (
                             <div
                               key={idx}
-                              className="bg-white border rounded-lg p-4"
+                              className="bg-white border border-gray-200 rounded-lg p-4"
                             >
                               {CardContent}
                             </div>
@@ -2527,17 +2749,16 @@ export default function RunDetail() {
                             const expectedResults = selectedTestCase.expected_result?.split('\n').filter(s => s.trim()) || [];
                             const expectedResult = expectedResults[index] || '';
                             const stepContent = step.replace(/^\d+\.\s*/, '');
+                            const isHtml = /<[^>]+>/.test(stepContent);
                             const expectedContent = expectedResult.replace(/^\d+\.\s*/, '');
-                            const stepIsHtml = /<[^>]+>/.test(stepContent);
                             const expectedIsHtml = /<[^>]+>/.test(expectedContent);
-
                             return (
                               <div key={index} className="border border-gray-200 rounded-lg p-3">
                                 <div className="flex items-start gap-3 mb-2">
                                   <div className="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <span className="text-teal-700 text-xs font-bold">{index + 1}</span>
                                   </div>
-                                  {stepIsHtml ? (
+                                  {isHtml ? (
                                     <div
                                       className="text-sm text-gray-700 mb-2 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
                                       dangerouslySetInnerHTML={{ __html: stepContent }}
@@ -2558,17 +2779,17 @@ export default function RunDetail() {
                                       )}
                                     </div>
                                   )}
-                                  <select
-                                    value={stepStatuses[index] || 'untested'}
-                                    onChange={(e) => handleStepStatusChange(index, e.target.value)}
-                                    className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                  >
-                                    <option value="untested">Untested</option>
-                                    <option value="passed">Passed</option>
-                                    <option value="failed">Failed</option>
-                                    <option value="blocked">Blocked</option>
-                                  </select>
                                 </div>
+                                <select
+                                  value={stepStatuses[index] || 'untested'}
+                                  onChange={(e) => handleStepStatusChange(index, e.target.value)}
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                >
+                                  <option value="untested">Untested</option>
+                                  <option value="passed">Passed</option>
+                                  <option value="failed">Failed</option>
+                                  <option value="blocked">Blocked</option>
+                                </select>
                               </div>
                             );
                           })}
@@ -2584,7 +2805,7 @@ export default function RunDetail() {
                         <select
                           value={resultFormData.assignTo}
                           onChange={(e) => setResultFormData({ ...resultFormData, assignTo: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                         >
                           <option value="">Select assignee</option>
                           {projectMembers.map((member) => (
@@ -2615,7 +2836,7 @@ export default function RunDetail() {
                             onClick={handleToggleTimer}
                             className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all cursor-pointer"
                           >
-                            <i className={`${isTimerRunning ? 'ri-pause-circle-line' : 'ri-play-circle-line'} text-lg`}></i>
+                            <i className={`ri-${isTimerRunning ? 'pause' : 'play'}-circle-line text-lg`}></i>
                           </button>
                         </div>
                       </div>
@@ -3089,7 +3310,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, onClose }: ResultDeta
                     
                     return (
                       <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-xs flex-shrink-0">
+                        <div className="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center text-teal-700 font-semibold text-xs flex-shrink-0">
                           {index + 1}
                         </div>
                         <div className="flex-1">

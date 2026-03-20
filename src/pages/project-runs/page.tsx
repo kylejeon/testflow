@@ -556,6 +556,10 @@ export default function ProjectRunsPage() {
   };
 
   useEffect(() => {
+    if (!id || id === 'undefined') {
+      navigate('/projects');
+      return;
+    }
     fetchData();
     fetchUserProfile();
   }, [id, activeTab]);
@@ -603,6 +607,7 @@ export default function ProjectRunsPage() {
   const tierInfo = getTierInfo(userProfile?.subscription_tier || 1);
 
   const fetchData = async () => {
+    if (!id || id === 'undefined') return;
     try {
       setLoading(true);
       
@@ -1414,7 +1419,7 @@ export default function ProjectRunsPage() {
                       <svg className="w-16 h-16 transform -rotate-90">
                         <circle cx="32" cy="32" r="28" stroke="#e5e7eb" strokeWidth="6" fill="none" />
                         <circle cx="32" cy="32" r="28" stroke="#10b981" strokeWidth="6" fill="none"
-                          strokeDasharray={`${stats.successRate * 1.76} 176`} strokeLinecap="round" />
+                          strokeDasharray={`${stats.successRate * 1.76} 176`} strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <i className="ri-check-line text-green-600 text-xl"></i>

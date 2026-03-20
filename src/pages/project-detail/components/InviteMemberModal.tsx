@@ -80,12 +80,12 @@ export default function InviteMemberModal({
 
   const handleInvite = async () => {
     if (!email.trim()) {
-      setError('이메일을 입력해주세요.');
+      setError('Please enter an email address.');
       return;
     }
 
     if (!canInvite) {
-      setError(`팀 멤버 한도(${maxMembers}명)에 도달했습니다.`);
+      setError(`You have reached the team member limit (${maxMembers}).`);
       return;
     }
 
@@ -113,7 +113,7 @@ export default function InviteMemberModal({
 
         if (memberError) {
           if (memberError.code === '23505') {
-            throw new Error('이미 프로젝트 멤버입니다.');
+            throw new Error('This user is already a project member.');
           }
           throw memberError;
         }
@@ -129,14 +129,14 @@ export default function InviteMemberModal({
         await createNotification({
           userId: existingUser.id,
           type: 'member_joined',
-          title: '프로젝트에 초대되었습니다',
-          message: `${projectData?.name || '프로젝트'}에 ${role}로 추가되었습니다.`,
+          title: 'You have been invited to a project',
+          message: `You have been added to ${projectData?.name || 'the project'} as ${role}.`,
           link: `/projects/${projectId}`,
           projectId,
         });
 
         setInvitationType('existing');
-        setSuccess(`${email} 사용자를 프로젝트에 추가했습니다.`);
+        setSuccess(`${email} has been added to the project.`);
         
         setEmail('');
         setFullName('');
@@ -171,16 +171,16 @@ export default function InviteMemberModal({
         const result = await response.json();
 
         if (!response.ok) {
-          throw new Error(result.error || '초대 생성에 실패했습니다.');
+          throw new Error(result.error || 'Failed to create invitation.');
         }
 
         setInvitationType('new');
         setInviteLink(result.inviteUrl);
-        setSuccess('초대 링크가 생성되었습니다! 아래 링크를 복사해서 팀원에게 전달해주세요.');
+        setSuccess('Invite link created! Copy the link below and share it with your teammate.');
       }
     } catch (err: any) {
       console.error('Invitation error:', err);
-      setError(err.message || '초대에 실패했습니다.');
+      setError(err.message || 'Failed to send invitation.');
     } finally {
       setLoading(false);
     }
@@ -189,7 +189,7 @@ export default function InviteMemberModal({
   const copyInviteLink = () => {
     if (inviteLink) {
       navigator.clipboard.writeText(inviteLink);
-      setSuccess('초대 링크가 클립보드에 복사되었습니다! 팀원에게 전달해주세요.');
+      setSuccess('Invite link copied to clipboard! Share it with your teammate.');
     }
   };
 
@@ -215,8 +215,8 @@ export default function InviteMemberModal({
               <i className="ri-user-add-line text-teal-600 text-xl"></i>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">멤버 초대</h2>
-              <p className="text-sm text-gray-500">프로젝트에 팀원을 초대하세요</p>
+              <h2 className="text-lg font-bold text-gray-900">Invite Member</h2>
+              <p className="text-sm text-gray-500">Invite teammates to this project</p>
             </div>
           </div>
           <button
@@ -241,29 +241,29 @@ export default function InviteMemberModal({
               <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <i className="ri-team-line text-3xl text-amber-600"></i>
               </div>
-              <h3 className="text-lg font-bold text-amber-800 mb-2">팀 멤버 한도 초과</h3>
+              <h3 className="text-lg font-bold text-amber-800 mb-2">Member Limit Reached</h3>
               <p className="text-amber-700 mb-4">
-                {subscriptionTier === 1 ? 'Free' : subscriptionTier === 2 ? 'Starter' : subscriptionTier === 3 ? 'Professional' : 'Enterprise'} 요금제에서는 
-                프로젝트당 최대 {maxMembers}명의 멤버만 초대할 수 있습니다.
+                The {subscriptionTier === 1 ? 'Free' : subscriptionTier === 2 ? 'Starter' : subscriptionTier === 3 ? 'Professional' : 'Enterprise'} plan allows
+                a maximum of {maxMembers} members per project.
                 <br />
-                현재 {currentMemberCount}명의 멤버가 있습니다.
+                You currently have {currentMemberCount} members.
               </p>
               <p className="text-sm text-amber-600 mb-4">
-                더 많은 팀원이 필요하시면 요금제를 업그레이드해 주세요.
+                Please upgrade your plan to invite more teammates.
               </p>
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={onClose}
                   className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all cursor-pointer whitespace-nowrap"
                 >
-                  닫기
+                  Close
                 </button>
                 <a
                   href="/settings"
                   className="px-5 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-2"
                 >
                   <i className="ri-vip-crown-line"></i>
-                  요금제 확인
+                  View Plans
                 </a>
               </div>
             </div>
@@ -274,7 +274,7 @@ export default function InviteMemberModal({
               <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
                 <i className="ri-information-line text-gray-500"></i>
                 <span className="text-sm text-gray-600">
-                  Free 요금제: {currentMemberCount}/{maxMembers}명 멤버 사용 중
+                  Free plan: {currentMemberCount}/{maxMembers} members used
                 </span>
               </div>
             )}
@@ -282,7 +282,7 @@ export default function InviteMemberModal({
               <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
                 <i className="ri-information-line text-gray-500"></i>
                 <span className="text-sm text-gray-600">
-                  Starter 요금제: {currentMemberCount}/{maxMembers}명 멤버 사용 중
+                  Starter plan: {currentMemberCount}/{maxMembers} members used
                 </span>
               </div>
             )}
@@ -290,7 +290,7 @@ export default function InviteMemberModal({
               <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
                 <i className="ri-information-line text-gray-500"></i>
                 <span className="text-sm text-gray-600">
-                  Professional 요금제: {currentMemberCount}/{maxMembers}명 멤버 사용 중
+                  Professional plan: {currentMemberCount}/{maxMembers} members used
                 </span>
               </div>
             )}
@@ -310,7 +310,7 @@ export default function InviteMemberModal({
                     <p className="text-sm text-teal-800 font-semibold mb-2">{success}</p>
                     <p className="text-xs text-teal-700 mb-3">
                       <i className="ri-information-line mr-1"></i>
-                      이메일 자동 발송이 비활성화되어 있습니다. 아래 링크를 복사해서 직접 전달해주세요.
+                      Auto email sending is disabled. Please copy the link below and share it directly.
                     </p>
                   </div>
                 </div>
@@ -326,7 +326,7 @@ export default function InviteMemberModal({
                     className="px-3 py-1.5 text-sm text-white bg-teal-600 hover:bg-teal-700 rounded transition-colors whitespace-nowrap flex items-center gap-1 cursor-pointer"
                   >
                     <i className="ri-file-copy-line"></i>
-                    복사
+                    Copy
                   </button>
                 </div>
                 <div className="mt-3 flex justify-end">
@@ -338,7 +338,7 @@ export default function InviteMemberModal({
                     }}
                     className="px-4 py-2 text-sm text-teal-600 hover:bg-teal-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
                   >
-                    완료
+                    Done
                   </button>
                 </div>
               </div>
@@ -355,24 +355,24 @@ export default function InviteMemberModal({
               <form onSubmit={(e) => { e.preventDefault(); handleInvite(); }}>
                 <div className="mb-4">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    이름
+                    Full Name
                   </label>
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="홍길동"
+                    placeholder="Jane Doe"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     <i className="ri-information-line mr-1"></i>
-                    미가입 사용자의 경우 가입 시 이 이름이 프로필에 저장됩니다
+                    For new users, this name will be saved to their profile upon signup
                   </p>
                 </div>
 
                 <div className="mb-4">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    이메일 주소 <span className="text-red-500">*</span>
+                    Email Address <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
@@ -384,13 +384,13 @@ export default function InviteMemberModal({
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     <i className="ri-information-line mr-1"></i>
-                    가입된 사용자는 바로 추가되고, 미가입 사용자에게는 초대 링크가 생성됩니다
+                    Existing users will be added directly; new users will receive an invite link
                   </p>
                 </div>
 
                 <div className="mb-6">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    역할
+                    Role
                   </label>
                   <div className="space-y-2">
                     <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
@@ -405,7 +405,7 @@ export default function InviteMemberModal({
                       <div className="flex-1">
                         <div className="font-semibold text-gray-900 text-sm">Admin</div>
                         <div className="text-xs text-gray-500">
-                          모든 권한 (멤버 관리, 설정 변경)
+                          Full access (manage members, change settings)
                         </div>
                       </div>
                       <i className="ri-shield-star-line text-orange-500"></i>
@@ -423,7 +423,7 @@ export default function InviteMemberModal({
                       <div className="flex-1">
                         <div className="font-semibold text-gray-900 text-sm">Member</div>
                         <div className="text-xs text-gray-500">
-                          테스트 케이스, 세션 생성 및 편집
+                          Create and edit test cases and sessions
                         </div>
                       </div>
                       <i className="ri-user-line text-teal-500"></i>
@@ -440,7 +440,7 @@ export default function InviteMemberModal({
                       />
                       <div className="flex-1">
                         <div className="font-semibold text-gray-900 text-sm">Viewer</div>
-                        <div className="text-xs text-gray-500">읽기 전용 접근</div>
+                        <div className="text-xs text-gray-500">Read-only access</div>
                       </div>
                       <i className="ri-eye-line text-gray-500"></i>
                     </label>
@@ -456,7 +456,7 @@ export default function InviteMemberModal({
                     }}
                     className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
                   >
-                    취소
+                    Cancel
                   </button>
                   <button
                     type="submit"
@@ -466,12 +466,12 @@ export default function InviteMemberModal({
                     {loading ? (
                       <>
                         <i className="ri-loader-4-line animate-spin"></i>
-                        처리 중...
+                        Processing...
                       </>
                     ) : (
                       <>
                         <i className="ri-send-plane-line"></i>
-                        초대하기
+                        Invite
                       </>
                     )}
                   </button>

@@ -93,6 +93,7 @@ export default function MilestoneDetail() {
   const [activityStatusFilter, setActivityStatusFilter] = useState<string>('all');
   const [activityPage, setActivityPage] = useState(1);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [contributorProfiles, setContributorProfiles] = useState<Map<string, string | null>>(new Map());
   const activityPerPage = 10;
 
   useEffect(() => {
@@ -346,6 +347,10 @@ export default function MilestoneDetail() {
       setActivityLogs(allActivityLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
       setActivityStats({ notes: notesCount, passed: passedCount, failed: failedCount, retest: retestCount });
 
+      // Fetch contributor profiles after activity logs are set
+      const uniqueAuthors = Array.from(new Set(allActivityLogs.map(l => l.author)));
+      fetchContributorProfiles(uniqueAuthors);
+
       // Fetch sessions for this milestone
       const { data: sessionsData, error: sessionsError } = await supabase
         .from('sessions')
@@ -422,6 +427,37 @@ export default function MilestoneDetail() {
       console.error('데이터 로딩 오류:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchContributorProfiles = async (authors: string[]) => {
+    if (authors.length === 0) return;
+    try {
+      const validAuthors = authors.filter(a => a && a !== 'Unknown');
+      if (validAuthors.length === 0) return;
+
+      // Try to match by full_name or email
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, email, avatar_emoji')
+        .or(
+          validAuthors.map(a => `full_name.eq.${a}`).join(',') +
+          ',' +
+          validAuthors.map(a => `email.eq.${a}`).join(',')
+        );
+
+      const profileMap = new Map<string, string | null>();
+      (data || []).forEach(p => {
+        if (p.full_name && validAuthors.includes(p.full_name)) {
+          profileMap.set(p.full_name, p.avatar_emoji || null);
+        }
+        if (p.email && validAuthors.includes(p.email)) {
+          profileMap.set(p.email, p.avatar_emoji || null);
+        }
+      });
+      setContributorProfiles(profileMap);
+    } catch (e) {
+      console.error('contributor profiles fetch error:', e);
     }
   };
 
@@ -1572,15 +1608,34 @@ export default function MilestoneDetail() {
                       <div className="text-xs text-gray-400 mt-2">No contributors yet</div>
                     ) : (
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        {contributors.map((author, index) => (
-                          <div
-                            key={author}
-                            className={`w-8 h-8 bg-gradient-to-br ${getContributorColor(index)} rounded-full flex items-center justify-center text-white font-semibold text-xs cursor-default`}
-                            title={author}
-                          >
-                            {getContributorInitials(author)}
-                          </div>
-                        ))}
+                        {contributors.map((author, index) => {
+                          const emoji = contributorProfiles.get(author);
+                          return (
+                            <div
+                              key={author}
+                              className="relative group"
+                            >
+                              {emoji ? (
+                                <div
+                                  className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-lg cursor-default"
+                                >
+                                  {emoji}
+                                </div>
+                              ) : (
+                                <div
+                                  className={`w-8 h-8 bg-gradient-to-br ${getContributorColor(index)} rounded-full flex items-center justify-center text-white font-semibold text-xs cursor-default`}
+                                >
+                                  {getContributorInitials(author)}
+                                </div>
+                              )}
+                              {/* Fast tooltip */}
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-75 z-10">
+                                {author}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
