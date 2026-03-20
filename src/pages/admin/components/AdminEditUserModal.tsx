@@ -159,7 +159,7 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
           {/* Trial Toggle */}
           <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center flex-shrink-0">
                 <i className="ri-time-line text-teal-600"></i>
               </div>
               <div>
@@ -168,14 +168,15 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
               </div>
             </div>
             <button
+              type="button"
               onClick={() => setIsTrial(!isTrial)}
-              className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer flex-shrink-0 ${
+              className={`relative inline-flex w-12 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0 ml-4 focus:outline-none ${
                 isTrial ? 'bg-teal-500' : 'bg-gray-300'
               }`}
             >
               <span
-                className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  isTrial ? 'translate-x-5' : 'translate-x-0.5'
+                className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                  isTrial ? 'translate-x-6' : 'translate-x-0'
                 }`}
               ></span>
             </button>
