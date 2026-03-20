@@ -366,6 +366,11 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Monthly User Growth Chart - Full Width */}
+        <div className="mb-6">
+          <AdminUserGrowthChart data={monthlyUsers} loading={loadingCharts} />
+        </div>
+
         {/* Charts Row */}
         <div className="grid grid-cols-3 gap-6 mb-8">
           <AdminSubscriptionChart
@@ -381,7 +386,11 @@ export default function AdminPage() {
         </div>
 
         {/* Recent Users */}
-        <AdminRecentUsersTable users={recentUsers} loading={loadingCharts} />
+        <AdminRecentUsersTable
+          users={recentUsers}
+          loading={loadingCharts}
+          onUserUpdated={fetchAllData}
+        />
 
         {/* Expiring Subscriptions */}
         <div className="mt-8">

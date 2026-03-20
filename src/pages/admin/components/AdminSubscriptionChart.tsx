@@ -99,14 +99,14 @@ export default function AdminSubscriptionChart({
         {allTiers.map((tier) => {
           const pct = totalUsers > 0 ? Math.round((tier.user_count / totalUsers) * 100) : 0;
           return (
-            <div key={tier.tier} className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: TIER_COLORS[tier.tier] }}></div>
-                <span className="text-sm font-semibold text-gray-700">{tier.tier_name}</span>
+            <div key={tier.tier} className="flex flex-col gap-1.5 p-3 rounded-lg bg-gray-50">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: TIER_COLORS[tier.tier] }}></div>
+                <span className="text-xs font-semibold text-gray-600 truncate">{tier.tier_name}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-900">{tier.user_count.toLocaleString()}</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded font-semibold ${TIER_BG[tier.tier]}`}>{pct}%</span>
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-base font-bold text-gray-900">{tier.user_count.toLocaleString()}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded font-semibold flex-shrink-0 ${TIER_BG[tier.tier]}`}>{pct}%</span>
               </div>
             </div>
           );
