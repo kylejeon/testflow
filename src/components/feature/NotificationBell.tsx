@@ -26,11 +26,11 @@ function getRelativeTime(dateStr: string): string {
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 60) return '방금 전';
-  if (diffMin < 60) return `${diffMin}분 전`;
-  if (diffHour < 24) return `${diffHour}시간 전`;
-  if (diffDay < 7) return `${diffDay}일 전`;
-  return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+  if (diffSec < 60) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 export default function NotificationBell() {
@@ -70,7 +70,7 @@ export default function NotificationBell() {
       <button
         onClick={() => setIsOpen((v) => !v)}
         className="relative w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-all cursor-pointer"
-        aria-label="알림"
+        aria-label="Notifications"
       >
         <i className="ri-notification-3-line text-xl"></i>
         {unreadCount > 0 && (
@@ -88,13 +88,13 @@ export default function NotificationBell() {
           {/* Header */}
           <div className="px-5 pt-4 pb-3 border-b border-gray-100">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-gray-900">알림</h3>
+              <h3 className="text-base font-bold text-gray-900">Notifications</h3>
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
                   className="text-xs text-teal-600 hover:text-teal-700 font-medium cursor-pointer whitespace-nowrap transition-colors"
                 >
-                  모두 읽음 처리
+                  Mark all as read
                 </button>
               )}
             </div>
@@ -109,7 +109,7 @@ export default function NotificationBell() {
                     : 'text-gray-500 hover:bg-gray-100'
                 }`}
               >
-                전체
+                All
               </button>
               <button
                 onClick={() => setActiveTab('unread')}
@@ -119,7 +119,7 @@ export default function NotificationBell() {
                     : 'text-gray-500 hover:bg-gray-100'
                 }`}
               >
-                읽지 않음
+                Unread
                 {unreadCount > 0 && (
                   <span className={`min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center px-1 leading-none ${
                     activeTab === 'unread' ? 'bg-white text-gray-900' : 'bg-red-500 text-white'
@@ -139,10 +139,10 @@ export default function NotificationBell() {
                   <i className="ri-notification-off-line text-2xl text-gray-400"></i>
                 </div>
                 <p className="text-sm font-semibold text-gray-700 mb-1">
-                  {activeTab === 'unread' ? '읽지 않은 알림이 없습니다' : '알림이 없습니다'}
+                  {activeTab === 'unread' ? 'No unread notifications' : 'No notifications'}
                 </p>
                 <p className="text-xs text-gray-400 text-center">
-                  팀 초대, 런 완료, 마일스톤 변경 시 알림이 표시됩니다
+                  Notifications appear for team invitations, run completions, and milestone updates
                 </p>
               </div>
             ) : (
@@ -183,7 +183,7 @@ export default function NotificationBell() {
                           deleteNotification(notification.id);
                         }}
                         className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all cursor-pointer flex-shrink-0 mt-0.5"
-                        aria-label="알림 삭제"
+                        aria-label="Delete notification"
                       >
                         <i className="ri-close-line text-sm"></i>
                       </button>
