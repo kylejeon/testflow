@@ -35,61 +35,61 @@ interface NotificationGroup {
 
 const NOTIFICATION_GROUPS: NotificationGroup[] = [
   {
-    label: '팀 활동',
+    label: 'Team Activity',
     icon: 'ri-team-line',
     color: 'text-teal-600',
     bg: 'bg-teal-50',
     items: [
       {
         key: 'invitation_sent',
-        label: '팀 초대 수신',
-        desc: '내가 프로젝트에 초대되었을 때 알림을 받습니다',
+        label: 'Invitation Received',
+        desc: 'Get notified when you are invited to a project',
       },
       {
         key: 'member_joined',
-        label: '새 멤버 합류',
-        desc: '내 프로젝트에 새로운 멤버가 참여했을 때 알림을 받습니다',
+        label: 'New Member Joined',
+        desc: 'Get notified when a new member joins your project',
       },
     ],
   },
   {
-    label: '테스트 런',
+    label: 'Test Runs',
     icon: 'ri-play-circle-line',
     color: 'text-orange-600',
     bg: 'bg-orange-50',
     items: [
       {
         key: 'run_created',
-        label: '새 런 생성',
-        desc: '프로젝트에 새로운 테스트 런이 생성되었을 때 알림을 받습니다',
+        label: 'New Run Created',
+        desc: 'Get notified when a new test run is created in your project',
       },
       {
         key: 'run_completed',
-        label: '런 완료',
-        desc: '테스트 런이 완료 상태로 변경되었을 때 알림을 받습니다',
+        label: 'Run Completed',
+        desc: 'Get notified when a test run is marked as completed',
       },
     ],
   },
   {
-    label: '마일스톤',
+    label: 'Milestones',
     icon: 'ri-flag-line',
     color: 'text-violet-600',
     bg: 'bg-violet-50',
     items: [
       {
         key: 'milestone_started',
-        label: '마일스톤 시작',
-        desc: '마일스톤이 진행 중 상태로 변경되었을 때 알림을 받습니다',
+        label: 'Milestone Started',
+        desc: 'Get notified when a milestone is set to in progress',
       },
       {
         key: 'milestone_completed',
-        label: '마일스톤 완료',
-        desc: '마일스톤이 완료 처리되었을 때 알림을 받습니다',
+        label: 'Milestone Completed',
+        desc: 'Get notified when a milestone is marked as completed',
       },
       {
         key: 'milestone_past_due',
-        label: '마일스톤 기한 초과',
-        desc: '마일스톤 기한이 지났을 때 알림을 받습니다',
+        label: 'Milestone Past Due',
+        desc: 'Get notified when a milestone deadline has passed',
       },
     ],
   },
@@ -162,7 +162,7 @@ export default function NotificationSettingsPanel() {
         setPrefs(DEFAULT_PREFS);
       }
     } catch (err) {
-      console.error('알림 설정 조회 오류:', err);
+      console.error('Failed to load notification preferences:', err);
     } finally {
       setLoading(false);
     }
@@ -211,7 +211,7 @@ export default function NotificationSettingsPanel() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      console.error('알림 설정 저장 오류:', err);
+      console.error('Failed to save notification preferences:', err);
     } finally {
       setSaving(false);
     }
@@ -263,10 +263,10 @@ export default function NotificationSettingsPanel() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-1">알림 설정</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-1">Notification Settings</h2>
           <p className="text-gray-500 text-sm">
-            어떤 이벤트에서 인앱 알림을 받을지 설정하세요.
-            현재 <span className="font-semibold text-teal-600">{enabledCount}/{totalCount}개</span> 알림이 활성화되어 있습니다.
+            Choose which in-app notifications you want to receive.{' '}
+            <span className="font-semibold text-teal-600">{enabledCount}/{totalCount}</span> notifications enabled.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -275,14 +275,14 @@ export default function NotificationSettingsPanel() {
             disabled={allDisabled}
             className="px-3 py-1.5 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            전체 끄기
+            Disable All
           </button>
           <button
             onClick={handleEnableAll}
             disabled={allEnabled}
             className="px-3 py-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition-all cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            전체 켜기
+            Enable All
           </button>
         </div>
       </div>
@@ -315,7 +315,7 @@ export default function NotificationSettingsPanel() {
                   <div>
                     <h3 className="text-sm font-bold text-gray-900">{group.label}</h3>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {group.items.filter((item) => prefs[item.key]).length}/{group.items.length}개 활성화
+                      {group.items.filter((item) => prefs[item.key]).length}/{group.items.length} enabled
                     </p>
                   </div>
                 </div>
@@ -329,7 +329,7 @@ export default function NotificationSettingsPanel() {
                       : 'bg-teal-50 text-teal-600 hover:bg-teal-100'
                   }`}
                 >
-                  {groupAllOn ? '그룹 끄기' : '그룹 켜기'}
+                  {groupAllOn ? 'Disable group' : 'Enable group'}
                 </button>
               </div>
 
@@ -373,11 +373,11 @@ export default function NotificationSettingsPanel() {
       <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl">
         <i className="ri-information-line text-gray-400 text-lg flex-shrink-0 mt-0.5"></i>
         <div className="text-sm text-gray-500">
-          <p className="font-medium text-gray-600 mb-1">알림 설정 안내</p>
+          <p className="font-medium text-gray-600 mb-1">About Notifications</p>
           <ul className="space-y-1 text-xs leading-relaxed">
-            <li>• 알림은 앱 내 알림 벨(<i className="ri-notification-3-line"></i>)을 통해 실시간으로 전달됩니다</li>
-            <li>• 설정을 끄면 해당 이벤트의 알림이 더 이상 생성되지 않습니다</li>
-            <li>• 기존에 받은 알림은 영향을 받지 않습니다</li>
+            <li>• Notifications are delivered in real-time via the notification bell <i className="ri-notification-3-line"></i> in the app</li>
+            <li>• Disabling a setting will stop new notifications from being created for that event</li>
+            <li>• Existing notifications will not be affected</li>
           </ul>
         </div>
       </div>
@@ -392,19 +392,19 @@ export default function NotificationSettingsPanel() {
           {saving ? (
             <>
               <i className="ri-loader-4-line animate-spin"></i>
-              저장 중...
+              Saving...
             </>
           ) : (
             <>
               <i className="ri-save-line"></i>
-              설정 저장
+              Save Settings
             </>
           )}
         </button>
         {saved && (
           <div className="flex items-center gap-1.5 text-sm text-teal-600 font-medium animate-pulse">
             <i className="ri-checkbox-circle-fill text-base"></i>
-            저장되었습니다
+            Saved successfully
           </div>
         )}
       </div>

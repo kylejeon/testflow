@@ -49,7 +49,7 @@ export default function ProjectMilestones() {
     end_date: '',
     status: '' as Milestone['status']
   });
-  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number; avatar_emoji: string } | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -64,14 +64,15 @@ export default function ProjectMilestones() {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, email, subscription_tier')
+          .select('full_name, email, subscription_tier, avatar_emoji')
           .eq('id', user.id)
           .maybeSingle();
         
         setUserProfile({
           full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
           email: profile?.email || user.email || '',
-          subscription_tier: profile?.subscription_tier || 1
+          subscription_tier: profile?.subscription_tier || 1,
+          avatar_emoji: profile?.avatar_emoji || '',
         });
       }
     } catch (error) {
@@ -100,7 +101,6 @@ export default function ProjectMilestones() {
 
       if (milestonesError) throw milestonesError;
 
-      // Fetch all test runs for this project
       const { data: allRunsData, error: allRunsError } = await supabase
         .from('test_runs')
         .select('*')
@@ -108,7 +108,6 @@ export default function ProjectMilestones() {
 
       if (allRunsError) throw allRunsError;
 
-      // Fetch all test results
       const { data: allTestResultsData, error: allTestResultsError } = await supabase
         .from('test_results')
         .select('run_id, test_case_id, status')
@@ -117,9 +116,7 @@ export default function ProjectMilestones() {
 
       if (allTestResultsError) throw allTestResultsError;
 
-      // Calculate progress for each milestone
       const milestonesWithProgress = (milestonesData || []).map((milestone) => {
-        // Check if milestone is past due
         let currentStatus = milestone.status;
 
         if (milestone.start_date && milestone.status === 'upcoming') {
@@ -127,13 +124,9 @@ export default function ProjectMilestones() {
           const startDate = new Date(parseInt(sy), parseInt(sm) - 1, parseInt(sd));
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-
           if (startDate <= today) {
             currentStatus = 'started';
-            supabase
-              .from('milestones')
-              .update({ status: 'started' })
-              .eq('id', milestone.id);
+            supabase.from('milestones').update({ status: 'started' }).eq('id', milestone.id);
           }
         }
 
@@ -142,26 +135,16 @@ export default function ProjectMilestones() {
           const endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          
           if (endDate < today) {
             currentStatus = 'past_due';
-            supabase
-              .from('milestones')
-              .update({ status: 'past_due' })
-              .eq('id', milestone.id);
+            supabase.from('milestones').update({ status: 'past_due' }).eq('id', milestone.id);
           }
         }
         
         const milestoneRuns = allRunsData?.filter(run => run.milestone_id === milestone.id) || [];
 
         if (milestoneRuns.length === 0) {
-          return { 
-            ...milestone,
-            status: currentStatus,
-            totalTests: 0,
-            completedTests: 0,
-            actualProgress: 0 
-          };
+          return { ...milestone, status: currentStatus, totalTests: 0, completedTests: 0, actualProgress: 0 };
         }
 
         let totalTestsSum = 0;
@@ -170,58 +153,35 @@ export default function ProjectMilestones() {
         milestoneRuns.forEach(run => {
           const runResults = allTestResultsData?.filter(r => r.run_id === run.id) || [];
           const statusMap = new Map<string, string>();
-          
           runResults.forEach(result => {
-            if (!statusMap.has(result.test_case_id)) {
-              statusMap.set(result.test_case_id, result.status);
-            }
+            if (!statusMap.has(result.test_case_id)) statusMap.set(result.test_case_id, result.status);
           });
-
           const totalTests = run.test_case_ids.length;
           totalTestsSum += totalTests;
-
           if (totalTests === 0) return;
-
           let completedTests = 0;
           run.test_case_ids.forEach((tcId: string) => {
             const status = statusMap.get(tcId);
-            if (status === 'passed' || status === 'failed' || status === 'blocked' || status === 'retest') {
-              completedTests++;
-            }
+            if (status === 'passed' || status === 'failed' || status === 'blocked' || status === 'retest') completedTests++;
           });
-
           completedTestsSum += completedTests;
         });
 
-        const averageProgress = totalTestsSum > 0 
-          ? Math.round((completedTestsSum / totalTestsSum) * 100)
-          : 0;
-
-        return { 
-          ...milestone,
-          status: currentStatus,
-          totalTests: totalTestsSum,
-          completedTests: completedTestsSum,
-          actualProgress: averageProgress 
-        };
+        const averageProgress = totalTestsSum > 0 ? Math.round((completedTestsSum / totalTestsSum) * 100) : 0;
+        return { ...milestone, status: currentStatus, totalTests: totalTestsSum, completedTests: completedTestsSum, actualProgress: averageProgress };
       });
 
-      // Organize milestones into parent-child structure
       const parentMilestones = milestonesWithProgress.filter(m => !m.parent_milestone_id);
       const organizedMilestones = parentMilestones.map(parent => ({
         ...parent,
         subMilestones: milestonesWithProgress.filter(m => m.parent_milestone_id === parent.id)
       }));
 
-      // Set all milestones with sub-milestones as expanded by default
       const initialExpanded = new Set<string>();
       organizedMilestones.forEach(milestone => {
-        if (milestone.subMilestones && milestone.subMilestones.length > 0) {
-          initialExpanded.add(milestone.id);
-        }
+        if (milestone.subMilestones && milestone.subMilestones.length > 0) initialExpanded.add(milestone.id);
       });
       setExpandedMilestones(initialExpanded);
-
       setMilestones(organizedMilestones);
     } catch (error) {
       console.error('데이터 로딩 오류:', error);
@@ -232,18 +192,8 @@ export default function ProjectMilestones() {
 
   const handleCreateMilestone = async (data: any) => {
     try {
-      const { error } = await supabase
-        .from('milestones')
-        .insert([{
-          project_id: id,
-          status: 'upcoming',
-          progress: 0,
-          parent_milestone_id: parentMilestoneId,
-          ...data
-        }]);
-
+      const { error } = await supabase.from('milestones').insert([{ project_id: id, status: 'upcoming', progress: 0, parent_milestone_id: parentMilestoneId, ...data }]);
       if (error) throw error;
-      
       setShowCreateModal(false);
       setParentMilestoneId(null);
       fetchData();
@@ -255,13 +205,8 @@ export default function ProjectMilestones() {
 
   const handleUpdateMilestone = async (milestoneId: string, data: any) => {
     try {
-      const { error } = await supabase
-        .from('milestones')
-        .update(data)
-        .eq('id', milestoneId);
-
+      const { error } = await supabase.from('milestones').update(data).eq('id', milestoneId);
       if (error) throw error;
-      
       setEditingMilestone(null);
       fetchData();
     } catch (error) {
@@ -272,15 +217,9 @@ export default function ProjectMilestones() {
 
   const handleDeleteMilestone = async (milestoneId: string) => {
     if (!confirm('이 마일스톤을 삭제하시겠습니까?')) return;
-
     try {
-      const { error } = await supabase
-        .from('milestones')
-        .delete()
-        .eq('id', milestoneId);
-
+      const { error } = await supabase.from('milestones').delete().eq('id', milestoneId);
       if (error) throw error;
-      
       fetchData();
     } catch (error) {
       console.error('마일스톤 삭제 오류:', error);
@@ -294,23 +233,11 @@ export default function ProjectMilestones() {
 
   const handleMarkAsComplete = async (milestoneId: string) => {
     await handleUpdateMilestone(milestoneId, { status: 'completed' });
-
-    // Notify project members
     try {
       const milestone = milestones.find(m => m.id === milestoneId || m.subMilestones?.find((s: any) => s.id === milestoneId));
-      const milestoneName = milestone?.id === milestoneId
-        ? milestone?.name
-        : milestone?.subMilestones?.find((s: any) => s.id === milestoneId)?.name || 'Milestone';
-
+      const milestoneName = milestone?.id === milestoneId ? milestone?.name : milestone?.subMilestones?.find((s: any) => s.id === milestoneId)?.name || 'Milestone';
       const { data: { user } } = await supabase.auth.getUser();
-      await notifyProjectMembers({
-        projectId: id!,
-        excludeUserId: user?.id,
-        type: 'milestone_completed',
-        title: '마일스톤이 완료되었습니다',
-        message: `"${milestoneName}" 마일스톤이 완료 처리되었습니다.`,
-        link: `/projects/${id}/milestones`,
-      });
+      await notifyProjectMembers({ projectId: id!, excludeUserId: user?.id, type: 'milestone_completed', title: '마일스톤이 완료되었습니다', message: `"${milestoneName}" 마일스톤이 완료 처리되었습니다.`, link: `/projects/${id}/milestones` });
     } catch (err) {
       console.error('마일스톤 완료 알림 오류:', err);
     }
@@ -318,31 +245,16 @@ export default function ProjectMilestones() {
 
   const toggleExpanded = (milestoneId: string) => {
     const newExpanded = new Set(expandedMilestones);
-    if (newExpanded.has(milestoneId)) {
-      newExpanded.delete(milestoneId);
-    } else {
-      newExpanded.add(milestoneId);
-    }
+    if (newExpanded.has(milestoneId)) newExpanded.delete(milestoneId);
+    else newExpanded.add(milestoneId);
     setExpandedMilestones(newExpanded);
-  };
-
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('ko-KR', { 
-      year: 'numeric',
-      month: 'long', 
-      day: 'numeric'
-    });
   };
 
   const formatMonthDay = (dateStr: string | null) => {
     if (!dateStr) return { month: '', day: '' };
     const [year, month, day] = dateStr.split('T')[0].split('-');
     const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    const monthName = date.toLocaleDateString('en-US', { month: 'short' });
-    const dayNum = parseInt(day);
-    return { month: monthName, day: dayNum };
+    return { month: date.toLocaleDateString('en-US', { month: 'short' }), day: parseInt(day) };
   };
 
   const getStatusBadge = (status: string) => {
@@ -355,28 +267,22 @@ export default function ProjectMilestones() {
     return badges[status as keyof typeof badges] || badges.upcoming;
   };
 
-  const getProgressBarColor = (status: string, progress: number) => {
+  const getProgressBarColor = (status: string) => {
     if (status === 'completed') return 'bg-gray-400';
     if (status === 'past_due') return 'bg-orange-500';
     if (status === 'started') return 'bg-green-500';
     return 'bg-gray-300';
   };
 
-  const filteredMilestones = activeTab === 'active' 
-    ? milestones.filter(m => m.status !== 'completed')
-    : milestones.filter(m => m.status === 'completed');
+  const filteredMilestones = activeTab === 'active' ? milestones.filter(m => m.status !== 'completed') : milestones.filter(m => m.status === 'completed');
 
-  // Group milestones by month
   const groupedMilestones = filteredMilestones.reduce((acc, milestone) => {
     const endDate = milestone.end_date ? (() => {
       const [year, month, day] = milestone.end_date.split('T')[0].split('-');
       return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     })() : null;
     const monthKey = endDate ? endDate.toLocaleDateString('en-US', { month: 'short' }) : 'No Date';
-    
-    if (!acc[monthKey]) {
-      acc[monthKey] = [];
-    }
+    if (!acc[monthKey]) acc[monthKey] = [];
     acc[monthKey].push(milestone);
     return acc;
   }, {} as Record<string, MilestoneWithProgress[]>);
@@ -385,12 +291,10 @@ export default function ProjectMilestones() {
     if (monthMilestones.length === 0) return false;
     const firstMilestone = monthMilestones[0];
     if (!firstMilestone.end_date) return false;
-    
     const [year, month, day] = firstMilestone.end_date.split('T')[0].split('-');
     const endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
     return endDate < today;
   };
 
@@ -406,122 +310,47 @@ export default function ProjectMilestones() {
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3 flex-1">
               {hasSubMilestones && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleExpanded(milestone.id);
-                  }}
-                  className="w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded cursor-pointer"
-                >
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleExpanded(milestone.id); }} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded cursor-pointer">
                   <i className={`ri-arrow-${isExpanded ? 'down' : 'right'}-s-line text-lg`}></i>
                 </button>
               )}
               <div className={`w-8 h-8 ${isSubMilestone ? 'bg-gray-50' : 'bg-gray-100'} rounded flex items-center justify-center`}>
                 <i className={`${isSubMilestone ? 'ri-run-line' : 'ri-flag-line'} text-gray-600`}></i>
               </div>
-              <Link 
-                to={`/projects/${id}/milestones/${milestone.id}`}
-                className="font-semibold text-teal-600 hover:text-teal-700 transition-colors cursor-pointer"
-              >
+              <Link to={`/projects/${id}/milestones/${milestone.id}`} className="font-semibold text-teal-600 hover:text-teal-700 transition-colors cursor-pointer">
                 {milestone.name}
               </Link>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600">
-                {formatMonthDay(milestone.start_date).month} {formatMonthDay(milestone.start_date).day} - {endDateInfo.month} {endDateInfo.day}
-              </span>
-              <span className={`px-3 py-1 rounded text-xs font-semibold ${badge.className}`}>
-                {badge.label}
-              </span>
+              <span className="text-sm text-gray-600">{formatMonthDay(milestone.start_date).month} {formatMonthDay(milestone.start_date).day} - {endDateInfo.month} {endDateInfo.day}</span>
+              <span className={`px-3 py-1 rounded text-xs font-semibold ${badge.className}`}>{badge.label}</span>
               {!isSubMilestone && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setParentMilestoneId(milestone.id);
-                    setShowCreateModal(true);
-                  }}
-                  className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
-                >
-                  <i className="ri-add-line text-base w-4 h-4 flex items-center justify-center"></i>
-                  Sub
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setParentMilestoneId(milestone.id); setShowCreateModal(true); }} className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5">
+                  <i className="ri-add-line text-base w-4 h-4 flex items-center justify-center"></i>Sub
                 </button>
               )}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setEditFormData({
-                    name: milestone.name,
-                    start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '',
-                    end_date: milestone.end_date ? milestone.end_date.split('T')[0] : '',
-                    status: milestone.status
-                  });
-                  setEditingMilestone(milestone);
-                }}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
-              >
-                <i className="ri-edit-line text-base w-4 h-4 flex items-center justify-center"></i>
-                Edit
+              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditFormData({ name: milestone.name, start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '', end_date: milestone.end_date ? milestone.end_date.split('T')[0] : '', status: milestone.status }); setEditingMilestone(milestone); }} className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5">
+                <i className="ri-edit-line text-base w-4 h-4 flex items-center justify-center"></i>Edit
               </button>
-              {milestone.status === 'upcoming' ? (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleStartMilestone(milestone.id);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                >
-                  Start
-                </button>
-              ) : milestone.status === 'started' ? (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleMarkAsComplete(milestone.id);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                >
-                  Complete
-                </button>
-              ) : milestone.status === 'past_due' ? (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleMarkAsComplete(milestone.id);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                >
-                  Complete
-                </button>
-              ) : null}
+              {milestone.status === 'upcoming' && (
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleStartMilestone(milestone.id); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap">Start</button>
+              )}
+              {(milestone.status === 'started' || milestone.status === 'past_due') && (
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleMarkAsComplete(milestone.id); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap">Complete</button>
+              )}
             </div>
           </div>
-
           <div className="flex items-center gap-4">
             <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${getProgressBarColor(milestone.status, milestone.actualProgress)}`}
-                style={{ width: `${milestone.actualProgress}%` }}
-              ></div>
+              <div className={`h-full rounded-full transition-all ${getProgressBarColor(milestone.status)}`} style={{ width: `${milestone.actualProgress}%` }}></div>
             </div>
-            <span className="text-sm font-semibold text-gray-900 min-w-[50px] text-right">
-              {milestone.actualProgress}%
-            </span>
+            <span className="text-sm font-semibold text-gray-900 min-w-[50px] text-right">{milestone.actualProgress}%</span>
           </div>
         </div>
-
-        {/* Sub Milestones */}
         {hasSubMilestones && isExpanded && (
           <div className="ml-12 mt-4 space-y-4">
             {milestone.subMilestones!.map(subMilestone => (
-              <div key={subMilestone.id}>
-                {renderMilestone(subMilestone, true)}
-              </div>
+              <div key={subMilestone.id}>{renderMilestone(subMilestone, true)}</div>
             ))}
           </div>
         )}
@@ -542,26 +371,56 @@ export default function ProjectMilestones() {
   const currentTier = userProfile?.subscription_tier || 1;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
 
+  const ProfileAvatar = () => (
+    <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden cursor-pointer" onClick={() => setShowProfileMenu(!showProfileMenu)}>
+      {userProfile?.avatar_emoji ? (
+        <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
+      ) : (
+        <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
+      )}
+    </div>
+  );
+
+  const ProfileMenu = () => (
+    <>
+      {showProfileMenu && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setShowProfileMenu(false)}></div>
+          <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+            <div className="px-4 py-3 border-b border-gray-100">
+              <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+              <p className="text-xs text-gray-500">{userProfile?.email}</p>
+              <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded border ${tierInfo.color}`}>
+                <i className={`${tierInfo.icon} text-sm`}></i>{tierInfo.name}
+              </div>
+            </div>
+            <Link to="/settings" onClick={() => setShowProfileMenu(false)} className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100">
+              <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i><span>Settings</span>
+            </Link>
+            <button onClick={handleLogout} className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer">
+              <i className="ri-logout-box-line text-lg"></i><span>Log out</span>
+            </button>
+          </div>
+        </>
+      )}
+    </>
+  );
+
   if (loading) {
     return (
       <div className="flex h-screen bg-white">
         <div className="flex-1 flex flex-col overflow-hidden">
           <header className="bg-white border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
-                  <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                    <i className="ri-test-tube-line text-xl text-white"></i>
-                  </div>
-                  <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                    Testably
-                  </span>
-                </Link>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer">
-                  {userProfile?.full_name?.charAt(0) || 'U'}
+              <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
+                <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
+                  <i className="ri-test-tube-line text-xl text-white"></i>
                 </div>
+                <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+              </Link>
+              <div className="relative">
+                <ProfileAvatar />
+                <ProfileMenu />
               </div>
             </div>
           </header>
@@ -586,13 +445,9 @@ export default function ProjectMilestones() {
                 <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
                   <i className="ri-test-tube-line text-xl text-white"></i>
                 </div>
-                <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                  Testably
-                </span>
+                <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
               </Link>
-              
               <div className="text-gray-300 text-xl mx-2">/</div>
-              
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
                   <i className="ri-folder-line text-white text-sm"></i>
@@ -600,92 +455,20 @@ export default function ProjectMilestones() {
                 <span className="text-lg font-semibold text-gray-900">{project?.name}</span>
               </div>
             </div>
-            
             <div className="flex items-center gap-4">
               <nav className="flex items-center gap-1">
-                <Link 
-                  to={`/projects/${id}`}
-                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
-                >
-                  Overview
-                </Link>
-                <Link 
-                  to={`/projects/${id}/milestones`}
-                  className="px-3 py-2 text-sm font-medium text-teal-600 bg-teal-50 rounded-lg cursor-pointer"
-                >
-                  Milestones
-                </Link>
-                <Link 
-                  to={`/projects/${id}/documentation`}
-                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
-                >
-                  Documentation
-                </Link>
-                <Link 
-                  to={`/projects/${id}/testcases`}
-                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
-                >
-                  Test Cases
-                </Link>
-                <Link 
-                  to={`/projects/${id}/runs`}
-                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
-                >
-                  Runs & Results
-                </Link>
-                <Link 
-                  to={`/projects/${id}/sessions`}
-                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
-                >
-                  Sessions
-                </Link>
+                <Link to={`/projects/${id}`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Overview</Link>
+                <Link to={`/projects/${id}/milestones`} className="px-3 py-2 text-sm font-medium text-teal-600 bg-teal-50 rounded-lg cursor-pointer">Milestones</Link>
+                <Link to={`/projects/${id}/documentation`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Documentation</Link>
+                <Link to={`/projects/${id}/testcases`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Test Cases</Link>
+                <Link to={`/projects/${id}/runs`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Runs &amp; Results</Link>
+                <Link to={`/projects/${id}/sessions`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Sessions</Link>
               </nav>
-              
               <div className="flex items-center gap-4">
                 <NotificationBell />
-                <div className="flex items-center gap-3 relative">
-                  <div 
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                      {userProfile?.full_name?.charAt(0) || 'U'}
-                    </div>
-                  </div>
-                  
-                  {showProfileMenu && (
-                    <>
-                      <div 
-                        className="fixed inset-0 z-10" 
-                        onClick={() => setShowProfileMenu(false)}
-                      ></div>
-                      <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                        <div className="px-4 py-3 border-b border-gray-100">
-                          <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
-                          <p className="text-xs text-gray-500">{userProfile?.email}</p>
-                          <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded border ${tierInfo.color}`}>
-                            <i className={`${tierInfo.icon} text-sm`}></i>
-                            {tierInfo.name}
-                          </div>
-                        </div>
-                        <Link
-                          to="/settings"
-                          onClick={() => setShowProfileMenu(false)}
-                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
-                        >
-                          <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                          <span>Settings</span>
-                        </Link>
-                        <button
-                          onClick={handleLogout}
-                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
-                        >
-                          <i className="ri-logout-box-line text-lg"></i>
-                          <span>Log out</span>
-                        </button>
-                      </div>
-                    </>
-                  )}
+                <div className="relative">
+                  <ProfileAvatar />
+                  <ProfileMenu />
                 </div>
               </div>
             </div>
@@ -696,55 +479,25 @@ export default function ProjectMilestones() {
           <div className="p-8">
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-2xl font-bold text-gray-900">Milestones</h1>
-              <button 
-                onClick={() => {
-                  setParentMilestoneId(null);
-                  setShowCreateModal(true);
-                }}
-                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
-              >
-                <i className="ri-add-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                Milestone
+              <button onClick={() => { setParentMilestoneId(null); setShowCreateModal(true); }} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2">
+                <i className="ri-add-line text-lg w-5 h-5 flex items-center justify-center"></i>Milestone
               </button>
             </div>
 
             <div className="mb-6">
               <div className="flex items-center gap-4 border-b border-gray-200">
-                <button
-                  onClick={() => setActiveTab('active')}
-                  className={`px-1 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${
-                    activeTab === 'active'
-                      ? 'text-teal-600'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('active')} className={`px-1 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'active' ? 'text-teal-600' : 'text-gray-600 hover:text-gray-900'}`}>
                   ACTIVE ({milestones.filter(m => m.status !== 'completed').length})
-                  {activeTab === 'active' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600"></div>
-                  )}
+                  {activeTab === 'active' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600"></div>}
                 </button>
-                <button
-                  onClick={() => setActiveTab('completed')}
-                  className={`px-1 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${
-                    activeTab === 'completed'
-                      ? 'text-teal-600'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('completed')} className={`px-1 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'completed' ? 'text-teal-600' : 'text-gray-600 hover:text-gray-900'}`}>
                   COMPLETED ({milestones.filter(m => m.status === 'completed').length})
-                  {activeTab === 'completed' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600"></div>
-                  )}
+                  {activeTab === 'completed' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600"></div>}
                 </button>
               </div>
             </div>
 
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading milestones...</p>
-              </div>
-            ) : filteredMilestones.length === 0 ? (
+            {filteredMilestones.length === 0 ? (
               <div className="text-center py-12">
                 <i className="ri-flag-line text-6xl text-gray-300 mb-4"></i>
                 <p className="text-gray-500 text-lg">No {activeTab} milestones</p>
@@ -759,33 +512,21 @@ export default function ProjectMilestones() {
                       const isLastInMonth = index === monthMilestones.length - 1;
                       const isLastOverall = month === Object.keys(groupedMilestones)[Object.keys(groupedMilestones).length - 1] && isLastInMonth;
                       const isPastDue = isMonthPastDue(monthMilestones);
-                      
                       return (
                         <div key={milestone.id} className="flex gap-6">
-                          {/* Date Column */}
                           <div className="flex flex-col items-center w-16 flex-shrink-0">
                             {index === 0 && (
-                              <div className={`${isPastDue ? 'bg-orange-500' : 'bg-gray-400'} text-white text-sm font-bold px-3 py-1.5 rounded mb-2`}>
-                                {month}
-                              </div>
+                              <div className={`${isPastDue ? 'bg-orange-500' : 'bg-gray-400'} text-white text-sm font-bold px-3 py-1.5 rounded mb-2`}>{month}</div>
                             )}
                             <div className="text-center">
                               <div className="text-2xl font-bold text-gray-900">{endDateInfo.day}</div>
                             </div>
                           </div>
-
-                          {/* Timeline Line */}
                           <div className="flex flex-col items-center flex-shrink-0">
                             <div className="w-3 h-3 bg-gray-300 rounded-full mt-1"></div>
-                            {!isLastOverall && (
-                              <div className="w-0.5 bg-gray-300 flex-1 min-h-[80px]"></div>
-                            )}
+                            {!isLastOverall && <div className="w-0.5 bg-gray-300 flex-1 min-h-[80px]"></div>}
                           </div>
-
-                          {/* Content */}
-                          <div className="flex-1 pb-8">
-                            {renderMilestone(milestone)}
-                          </div>
+                          <div className="flex-1 pb-8">{renderMilestone(milestone)}</div>
                         </div>
                       );
                     })}
@@ -797,111 +538,47 @@ export default function ProjectMilestones() {
         </main>
       </div>
 
-      {/* Create Milestone Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              {parentMilestoneId ? 'Create Sub Milestone' : 'Create New Milestone'}
-            </h2>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                handleCreateMilestone({
-                  name: formData.get('name'),
-                  start_date: formData.get('start_date'),
-                  end_date: formData.get('end_date')
-                });
-              }}
-            >
+            <h2 className="text-xl font-bold text-gray-900 mb-4">{parentMilestoneId ? 'Create Sub Milestone' : 'Create New Milestone'}</h2>
+            <form onSubmit={(e) => { e.preventDefault(); const formData = new FormData(e.currentTarget); handleCreateMilestone({ name: formData.get('name'), start_date: formData.get('start_date'), end_date: formData.get('end_date') }); }}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <input type="text" name="name" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    name="start_date"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <input type="date" name="start_date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    name="end_date"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <input type="date" name="end_date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setParentMilestoneId(null);
-                  }}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 text-white bg-teal-500 hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                >
-                  Create
-                </button>
+                <button type="button" onClick={() => { setShowCreateModal(false); setParentMilestoneId(null); }} className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-2 text-white bg-teal-500 hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">Create</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Edit Milestone Modal */}
       {editingMilestone && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Edit Milestone</h2>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                handleUpdateMilestone(editingMilestone.id, {
-                  name: formData.get('name'),
-                  start_date: formData.get('start_date'),
-                  end_date: formData.get('end_date'),
-                  status: formData.get('status')
-                });
-              }}
-            >
+            <form onSubmit={(e) => { e.preventDefault(); const formData = new FormData(e.currentTarget); handleUpdateMilestone(editingMilestone.id, { name: formData.get('name'), start_date: formData.get('start_date'), end_date: formData.get('end_date'), status: formData.get('status') }); }}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    defaultValue={editFormData.name}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <input type="text" name="name" defaultValue={editFormData.name} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    name="status"
-                    defaultValue={editFormData.status}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm"
-                  >
+                  <select name="status" defaultValue={editFormData.status} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm">
                     <option value="upcoming">Upcoming</option>
                     <option value="started">In Progress</option>
                     <option value="past_due">Past Due</option>
@@ -910,47 +587,18 @@ export default function ProjectMilestones() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    name="start_date"
-                    defaultValue={editFormData.start_date}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <input type="date" name="start_date" defaultValue={editFormData.start_date} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    name="end_date"
-                    defaultValue={editFormData.end_date}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <input type="date" name="end_date" defaultValue={editFormData.end_date} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => handleDeleteMilestone(editingMilestone.id)}
-                  className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                >
-                  Delete
-                </button>
+                <button type="button" onClick={() => handleDeleteMilestone(editingMilestone.id)} className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all cursor-pointer whitespace-nowrap">Delete</button>
                 <div className="flex-1"></div>
-                <button
-                  type="button"
-                  onClick={() => setEditingMilestone(null)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-white bg-teal-500 hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                >
-                  Save
-                </button>
+                <button type="button" onClick={() => setEditingMilestone(null)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap">Cancel</button>
+                <button type="submit" className="px-4 py-2 text-white bg-teal-500 hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">Save</button>
               </div>
             </form>
           </div>

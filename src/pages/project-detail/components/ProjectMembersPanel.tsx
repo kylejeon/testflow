@@ -9,6 +9,7 @@ interface Member {
   profile: {
     email: string;
     full_name: string | null;
+    avatar_emoji: string | null;
   };
 }
 
@@ -86,7 +87,7 @@ export default function ProjectMembersPanel({
       // Get profiles separately
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, email, full_name')
+        .select('id, email, full_name, avatar_emoji')
         .in('id', userIds);
 
       if (profilesError) {
@@ -110,6 +111,7 @@ export default function ProjectMembersPanel({
           profile: {
             email: profile?.email ?? '',
             full_name: profile?.full_name ?? null,
+            avatar_emoji: profile?.avatar_emoji ?? null,
           },
         };
       });
@@ -264,13 +266,19 @@ export default function ProjectMembersPanel({
                 key={member.id}
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
               >
-                <div
-                  className={`w-10 h-10 bg-gradient-to-br ${getAvatarColor(
-                    index
-                  )} rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0`}
-                >
-                  {getInitials(member.profile.full_name, member.profile.email)}
-                </div>
+                {member.profile.avatar_emoji ? (
+                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-xl flex-shrink-0">
+                    {member.profile.avatar_emoji}
+                  </div>
+                ) : (
+                  <div
+                    className={`w-10 h-10 bg-gradient-to-br ${getAvatarColor(
+                      index
+                    )} rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0`}
+                  >
+                    {getInitials(member.profile.full_name, member.profile.email)}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-gray-900 text-sm truncate">
                     {member.profile.full_name || member.profile.email}

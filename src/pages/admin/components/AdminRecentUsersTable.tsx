@@ -18,7 +18,6 @@ const TIER_BADGE: Record<number, { label: string; style: string }> = {
   1: { label: 'Free', style: 'bg-slate-100 text-slate-600' },
   2: { label: 'Starter', style: 'bg-yellow-100 text-yellow-700' },
   3: { label: 'Pro', style: 'bg-teal-100 text-teal-700' },
-  4: { label: 'Enterprise', style: 'bg-amber-100 text-amber-700' },
 };
 
 const formatDate = (dateStr: string) =>
@@ -97,12 +96,13 @@ export default function AdminRecentUsersTable({ users, loading = false }: AdminR
                     </td>
                     <td className="py-3 pr-4">
                       <div className="flex items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${badge.style}`}>
-                          {badge.label}
-                        </span>
-                        {user.is_trial && (
+                        {user.is_trial ? (
                           <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-600 border border-teal-200">
                             Trial
+                          </span>
+                        ) : (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${badge.style}`}>
+                            {badge.label}
                           </span>
                         )}
                       </div>

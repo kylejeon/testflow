@@ -6,6 +6,8 @@ import AdminUserGrowthChart from './components/AdminUserGrowthChart';
 import AdminSubscriptionChart from './components/AdminSubscriptionChart';
 import AdminProjectsChart from './components/AdminProjectsChart';
 import AdminRecentUsersTable from './components/AdminRecentUsersTable';
+import AdminMRRCard from './components/AdminMRRCard';
+import AdminExpiringSubscriptionsTable from './components/AdminExpiringSubscriptionsTable';
 
 interface OverviewStats {
   total_users: number;
@@ -45,6 +47,8 @@ interface UserRow {
   is_superadmin: boolean | null;
   created_at: string;
   updated_at: string;
+  trial_ends_at: string | null;
+  subscription_ends_at: string | null;
 }
 
 export default function AdminPage() {
@@ -108,7 +112,7 @@ export default function AdminPage() {
           .select('subscription_tier'),
         supabase
           .from('profiles')
-          .select('id, email, full_name, subscription_tier, is_trial, is_superadmin, created_at, updated_at')
+          .select('id, email, full_name, subscription_tier, is_trial, is_superadmin, created_at, updated_at, trial_ends_at, subscription_ends_at')
           .order('created_at', { ascending: false })
           .limit(50),
       ]);
@@ -141,20 +145,19 @@ export default function AdminPage() {
       })));
 
       // profiles 직접 집계로 구독 분포 계산
-      const tierCountMap: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      const tierCountMap: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
       const tierNameMap: Record<number, string> = {
         1: 'Free',
         2: 'Starter',
         3: 'Professional',
-        4: 'Enterprise',
       };
       (subscriptionRaw || []).forEach((row: any) => {
         const tier = Number(row.subscription_tier) || 1;
-        if (tier >= 1 && tier <= 4) {
+        if (tier >= 1 && tier <= 3) {
           tierCountMap[tier] = (tierCountMap[tier] || 0) + 1;
         }
       });
-      const computedDist: SubscriptionRow[] = [1, 2, 3, 4].map((tier) => ({
+      const computedDist: SubscriptionRow[] = [1, 2, 3].map((tier) => ({
         tier,
         tier_name: tierNameMap[tier],
         user_count: tierCountMap[tier],
@@ -364,14 +367,14 @@ export default function AdminPage() {
         </div>
 
         {/* Charts Row */}
-        <div className="mb-6">
-          <AdminUserGrowthChart data={monthlyUsers} loading={loadingCharts} />
-        </div>
-
-        <div className="grid grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-3 gap-6 mb-8">
           <AdminSubscriptionChart
             data={subscriptionDist}
             totalUsers={stats?.total_users || 0}
+            loading={loadingCharts}
+          />
+          <AdminMRRCard
+            data={subscriptionDist}
             loading={loadingCharts}
           />
           <AdminProjectsChart data={monthlyProjects} loading={loadingCharts} />
@@ -379,6 +382,11 @@ export default function AdminPage() {
 
         {/* Recent Users */}
         <AdminRecentUsersTable users={recentUsers} loading={loadingCharts} />
+
+        {/* Expiring Subscriptions */}
+        <div className="mt-8">
+          <AdminExpiringSubscriptionsTable users={recentUsers} loading={loadingCharts} />
+        </div>
 
         <div className="mt-8 text-center text-xs text-gray-300">
           Testably SuperAdmin Dashboard — 이 페이지는 관리자만 접근 가능합니다

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import SEOHead from '../../components/SEOHead';
 import NotificationSettingsPanel from './components/NotificationSettingsPanel';
+import ProfileSettingsPanel from './components/ProfileSettingsPanel';
 
 interface JiraSettings {
   domain: string;
@@ -18,6 +19,8 @@ interface UserProfile {
   trial_started_at: string | null;
   trial_ends_at: string | null;
   is_trial: boolean;
+  subscription_ends_at: string | null;
+  avatar_emoji: string;
 }
 
 interface CIToken {
@@ -35,37 +38,29 @@ const TIER_INFO = {
     color: 'bg-gray-100 text-gray-700 border-gray-300',
     icon: 'ri-user-line',
     monthlyPrice: 0,
-    priceDesc: '무료',
-    features: ['프로젝트 3개까지', '팀 멤버 3명까지', '기본 테스트 관리', 'Jira Integration (Link)', '커뮤니티 지원'],
+    priceDesc: 'Free',
+    features: ['Up to 3 projects', 'Up to 3 team members', 'Basic test management', 'Jira Integration (Link)', 'Community support'],
   },
   2: {
     name: 'Starter',
     color: 'bg-yellow-50 text-yellow-700 border-yellow-300',
     icon: 'ri-star-line',
-    monthlyPrice: 19900,
-    priceDesc: '/ 월',
-    features: ['프로젝트 10개까지', '팀 멤버 5명까지', 'Jira Integration', '기본 리포팅', 'Testcase Export/Import', 'Export PDF Report'],
+    monthlyPrice: 20,
+    priceDesc: '/ mo',
+    features: ['Up to 10 projects', 'Up to 5 team members', 'Jira Integration', 'Basic reporting', 'Testcase Export/Import', 'Export PDF Report'],
   },
   3: {
     name: 'Professional',
     color: 'bg-teal-50 text-teal-700 border-teal-300',
     icon: 'ri-vip-crown-line',
-    monthlyPrice: 49900,
-    priceDesc: '/ 월',
-    features: ['프로젝트 무제한', '팀 멤버 20명까지', 'Jira Integration', '고급 리포팅', 'Testcase Export/Import', 'Export PDF Report', 'CI/CD Integration', '우선 지원'],
-  },
-  4: {
-    name: 'Enterprise',
-    color: 'bg-amber-50 text-amber-700 border-amber-300',
-    icon: 'ri-vip-diamond-line',
-    monthlyPrice: -1,
-    priceDesc: '맞춤 견적',
-    features: ['모든 Professional 기능', '무제한 프로젝트', '무제한 팀 멤버', 'Jira Integration', 'Testcase Export/Import', 'Export PDF Report', '전용 지원 담당자', '커스텀 통합', 'SLA 보장'],
+    monthlyPrice: 50,
+    priceDesc: '/ mo',
+    features: ['Unlimited projects', 'Up to 20 team members', 'Jira Integration', 'Advanced reporting', 'Testcase Export/Import', 'Export PDF Report', 'CI/CD Integration', 'Priority support'],
   },
 };
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'general' | 'integrations' | 'notifications' | 'cicd'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'integrations' | 'notifications' | 'cicd' | 'profile'>('general');
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [jiraSettings, setJiraSettings] = useState<JiraSettings>({
     domain: '',
@@ -133,28 +128,50 @@ export default function SettingsPage() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('email, full_name, subscription_tier, trial_started_at, trial_ends_at, is_trial')
+        .select('email, full_name, subscription_tier, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji')
         .eq('id', user.id)
         .maybeSingle();
 
       if (error) throw error;
 
       if (data) {
-        // 체험 기간 만료 시 자동으로 Free 티어로 전환
         let tier = data.subscription_tier || 1;
         let isTrial = data.is_trial || false;
+        let subscriptionEndsAt = data.subscription_ends_at || null;
+        const now = new Date();
 
+        // ── 1. 무료 체험 만료 → Free 전환 ──────────────────
         if (isTrial && data.trial_ends_at) {
-          const now = new Date();
           const trialEnd = new Date(data.trial_ends_at);
           if (now > trialEnd) {
-            // 만료 → Free 티어로 전환
             await supabase
               .from('profiles')
               .update({ subscription_tier: 1, is_trial: false })
               .eq('id', user.id);
             tier = 1;
             isTrial = false;
+          } else {
+            // 체험 중이면 반드시 Professional(3) 티어
+            if (tier !== 3) {
+              await supabase
+                .from('profiles')
+                .update({ subscription_tier: 3 })
+                .eq('id', user.id);
+            }
+            tier = 3;
+          }
+        }
+
+        // ── 2. 유료 구독 만료 → Free 전환 ──────────────────
+        if (!isTrial && tier > 1 && subscriptionEndsAt) {
+          const subEnd = new Date(subscriptionEndsAt);
+          if (now > subEnd) {
+            await supabase
+              .from('profiles')
+              .update({ subscription_tier: 1, subscription_ends_at: null })
+              .eq('id', user.id);
+            tier = 1;
+            subscriptionEndsAt = null;
           }
         }
 
@@ -165,10 +182,12 @@ export default function SettingsPage() {
           trial_started_at: data.trial_started_at || null,
           trial_ends_at: data.trial_ends_at || null,
           is_trial: isTrial,
+          subscription_ends_at: subscriptionEndsAt,
+          avatar_emoji: data.avatar_emoji || '🐶',
         });
       }
     } catch (error) {
-      console.error('프로필 로딩 오류:', error);
+      console.error('Profile loading error:', error);
     }
   };
 
@@ -193,7 +212,7 @@ export default function SettingsPage() {
         });
       }
     } catch (error) {
-      console.error('Jira 설정 로딩 오류:', error);
+      console.error('Jira settings load error:', error);
     } finally {
       setLoading(false);
     }
@@ -201,7 +220,7 @@ export default function SettingsPage() {
 
   const handleTestConnection = async () => {
     if (!jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken) {
-      setTestResult({ success: false, message: '모든 필수 항목을 입력해주세요.' });
+      setTestResult({ success: false, message: 'Please fill in all required fields.' });
       return;
     }
 
@@ -220,13 +239,13 @@ export default function SettingsPage() {
       if (error) throw error;
 
       if (data.success) {
-        setTestResult({ success: true, message: 'Jira 연결에 성공했습니다!' });
+        setTestResult({ success: true, message: 'Jira connection successful!' });
       } else {
-        setTestResult({ success: false, message: data.message || 'Jira 연결에 실패했습니다.' });
+        setTestResult({ success: false, message: data.message || 'Jira connection failed.' });
       }
     } catch (error: any) {
-      console.error('Jira 연결 테스트 오류:', error);
-      setTestResult({ success: false, message: error.message || 'Jira 연결 테스트 중 오류가 발생했습니다.' });
+      console.error('Jira connection test error:', error);
+      setTestResult({ success: false, message: error.message || 'An error occurred while testing the Jira connection.' });
     } finally {
       setTesting(false);
     }
@@ -267,11 +286,11 @@ export default function SettingsPage() {
         if (error) throw error;
       }
 
-      alert('Jira 설정이 저장되었습니다.');
+      alert('Jira settings saved successfully.');
       setTestResult(null);
     } catch (error) {
-      console.error('Jira 설정 저장 오류:', error);
-      alert('Jira 설정 저장에 실패했습니다.');
+      console.error('Jira settings save error:', error);
+      alert('Failed to save Jira settings.');
     } finally {
       setSaving(false);
     }
@@ -297,7 +316,7 @@ export default function SettingsPage() {
 
   const handleCreateToken = async () => {
     if (!newTokenName.trim()) {
-      alert('토큰 이름을 입력해주세요.');
+      alert('Please enter a token name.');
       return;
     }
 
@@ -318,13 +337,13 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      alert('API 토큰이 생성되었습니다. 토큰을 안전한 곳에 보관하세요.');
+      alert('API token created. Please store it in a safe place.');
       setNewTokenName('');
       setShowNewTokenModal(false);
       fetchCITokens();
     } catch (error) {
-      console.error('토큰 생성 오류:', error);
-      alert('토큰 생성에 실패했습니다.');
+      console.error('Token creation error:', error);
+      alert('Failed to create token.');
     } finally {
       setCreatingToken(false);
     }
@@ -367,7 +386,7 @@ export default function SettingsPage() {
   };
 
   const handleDeleteToken = async (tokenId: string) => {
-    if (!confirm('이 토큰을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+    if (!confirm('Are you sure you want to delete this token? This action cannot be undone.')) {
       return;
     }
 
@@ -379,11 +398,11 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      alert('토큰이 삭제되었습니다.');
+      alert('Token deleted successfully.');
       fetchCITokens();
     } catch (error) {
-      console.error('토큰 삭제 오류:', error);
-      alert('토큰 삭제에 실패했습니다.');
+      console.error('Token deletion error:', error);
+      alert('Failed to delete token.');
     }
   };
 
@@ -474,39 +493,39 @@ upload_results:
     return `import requests
 import os
 
-# Testably API URL (고정값, 변경 불필요)
+# Testably API URL (fixed, no changes needed)
 TESTABLY_URL = "${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results"
 
-# 환경변수에서 토큰 읽기
+# Read token from environment variable
 TESTABLY_TOKEN = os.environ.get("TESTABLY_TOKEN")
 
-# 결과를 담을 리스트
+# List to hold results
 results = []
 
 def report_result(test_case_id: str, status: str, note: str = "", elapsed: float = 0):
-    """테스트 결과를 results 리스트에 추가합니다."""
+    """Add a test result to the results list."""
     results.append({
         "test_case_id": test_case_id,
         "status": status,       # "passed" | "failed" | "blocked" | "retest"
-        "note": note,           # 메모 (선택)
-        "elapsed": elapsed,     # 소요 시간(초, 선택)
+        "note": note,           # Optional note
+        "elapsed": elapsed,     # Elapsed time in seconds (optional)
         "author": "pytest"
     })
 
-# ── 테스트 함수 예시 ──────────────────────────────────────
+# ── Example test functions ────────────────────────────────
 def test_login():
-    result = True  # 실제 테스트 로직으로 교체하세요
+    result = True  # Replace with actual test logic
     status = "passed" if result else "failed"
-    report_result("SUI-1", status, note="로그인 테스트 정상 완료")
+    report_result("SUI-1", status, note="Login test passed")
     return result
 
 def test_signup():
     result = True
     status = "passed" if result else "failed"
-    report_result("SUI-2", status, note="회원가입 플로우 검증 완료")
+    report_result("SUI-2", status, note="Signup flow verified")
     return result
 
-# ── 결과 업로드 ───────────────────────────────────────────
+# ── Upload results ─────────────────────────────────────────
 if __name__ == "__main__":
     test_login()
     test_signup()
@@ -515,31 +534,31 @@ if __name__ == "__main__":
         TESTABLY_URL,
         headers={"Authorization": f"Bearer {TESTABLY_TOKEN}"},
         json={
-            "run_id": "YOUR_RUN_ID",   # Testably Run ID로 교체하세요
+            "run_id": "YOUR_RUN_ID",   # Replace with your Testably Run ID
             "results": results
         }
     )
-    print("응답 상태:", response.status_code)
-    print("응답 내용:", response.text)`;
+    print("Status:", response.status_code)
+    print("Response:", response.text)`;
   };
 
   const getPythonConftestSnippet = () => {
-    return `# conftest.py  ← 프로젝트 루트에 저장하세요
+    return `# conftest.py  ← Save this in your project root
 import pytest
 import requests
 import os
 import time
 
-# 환경변수에서 읽기
+# Read from environment variables
 TESTABLY_URL = os.environ.get("TESTABLY_URL", "${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results")
 TESTABLY_TOKEN = os.environ.get("TESTABLY_TOKEN")
 RUN_ID = os.environ.get("TESTABLY_RUN_ID", "YOUR_RUN_ID")
 
-# 테스트케이스 ID 매핑 (테스트 함수명 → Testably ID)
+# Test case ID mapping (test function name → Testably ID)
 TEST_CASE_MAP = {
     "test_login":  "SUI-1",
     "test_signup": "SUI-2",
-    # 필요한 만큼 추가하세요
+    # Add more mappings as needed
 }
 
 _results = []
@@ -547,31 +566,31 @@ _timings: dict[str, float] = {}
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_call(item):
-    """각 테스트 실행 시간을 측정합니다."""
+    """Measure execution time for each test."""
     start = time.time()
     yield
     _timings[item.name] = round(time.time() - start, 2)
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    """테스트 결과를 수집합니다."""
+    """Collect test results."""
     outcome = yield
     report = outcome.get_result()
 
     if report.when == "call":
         test_case_id = TEST_CASE_MAP.get(item.name)
         if not test_case_id:
-            return  # 매핑되지 않은 테스트는 건너뜀
+            return  # Skip unmapped tests
 
         if report.passed:
             status = "passed"
-            note = "자동 테스트 통과"
+            note = "Automated test passed"
         elif report.failed:
             status = "failed"
-            note = str(report.longrepr)[:300] if report.longrepr else "테스트 실패"
+            note = str(report.longrepr)[:300] if report.longrepr else "Test failed"
         else:
             status = "blocked"
-            note = "테스트 스킵/블록됨"
+            note = "Test skipped/blocked"
 
         _results.append({
             "test_case_id": test_case_id,
@@ -582,7 +601,7 @@ def pytest_runtest_makereport(item, call):
         })
 
 def pytest_sessionfinish(session, exitstatus):
-    """모든 테스트 완료 후 Testably에 결과를 업로드합니다."""
+    """Upload results to Testably after all tests complete."""
     if not _results or not TESTABLY_TOKEN:
         return
 
@@ -591,7 +610,7 @@ def pytest_sessionfinish(session, exitstatus):
         headers={"Authorization": f"Bearer {TESTABLY_TOKEN}"},
         json={"run_id": RUN_ID, "results": _results}
     )
-    print(f"\\n[Testably] 결과 업로드: {response.status_code} — {len(_results)}건")`;
+    print(f"\\n[Testably] Uploaded: {response.status_code} — {len(_results)} results")`;
   };
 
   const currentTier = userProfile?.subscription_tier || 1;
@@ -608,18 +627,32 @@ def pytest_sessionfinish(session, exitstatus):
     return diff > 0 ? diff : 0;
   })();
 
+  // 유료 구독 만료까지 남은 일수
+  const subscriptionDaysLeft = (() => {
+    if (!userProfile?.subscription_ends_at || userProfile.is_trial) return null;
+    const now = new Date();
+    const end = new Date(userProfile.subscription_ends_at);
+    const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  })();
+
   const formatPrice = (monthlyPrice: number, isAnnual: boolean) => {
-    if (monthlyPrice === 0) return '₩0';
-    if (monthlyPrice === -1) return '문의';
-    const price = isAnnual ? Math.round(monthlyPrice * 0.8) : monthlyPrice;
-    return `₩${price.toLocaleString()}`;
+    if (monthlyPrice === 0) return '$0';
+    const price = isAnnual ? (monthlyPrice * 0.8).toFixed(0) : monthlyPrice;
+    return `$${Number(price).toLocaleString()}`;
   };
+
+  // Header avatar: show emoji if set, otherwise initials
+  const headerAvatar = userProfile?.avatar_emoji
+    ? userProfile.avatar_emoji
+    : null;
+  const headerInitial = userProfile?.full_name?.charAt(0) || 'U';
 
   return (
     <>
       <SEOHead
-        title="설정 | Testably"
-        description="Testably 계정 설정 및 통합을 관리하세요. 구독 플랜, Jira 연동, 알림 설정을 구성할 수 있습니다."
+        title="Settings | Testably"
+        description="Manage your Testably account settings and integrations. Configure subscription plans, Jira integration, and notification preferences."
         noindex={true}
       />
       <div className="flex h-screen bg-white">
@@ -641,9 +674,13 @@ def pytest_sessionfinish(session, exitstatus):
                 <div className="relative" ref={profileMenuRef}>
                   <div 
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
+                    className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden"
                   >
-                    {userProfile?.full_name?.charAt(0) || 'U'}
+                    {headerAvatar ? (
+                      <span className="text-xl leading-none">{headerAvatar}</span>
+                    ) : (
+                      <span>{headerInitial}</span>
+                    )}
                   </div>
                   {showProfileMenu && (
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
@@ -686,6 +723,17 @@ def pytest_sessionfinish(session, exitstatus):
 
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="flex border-b border-gray-200">
+                  <button
+                    onClick={() => setActiveTab('profile')}
+                    className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      activeTab === 'profile'
+                        ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <i className="ri-user-settings-line mr-2"></i>
+                    Profile
+                  </button>
                   <button
                     onClick={() => setActiveTab('general')}
                     className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
@@ -733,6 +781,17 @@ def pytest_sessionfinish(session, exitstatus):
                 </div>
 
                 <div className="p-8">
+                  {activeTab === 'profile' && userProfile && (
+                    <ProfileSettingsPanel
+                      fullName={userProfile.full_name}
+                      email={userProfile.email}
+                      avatarEmoji={userProfile.avatar_emoji}
+                      onProfileUpdated={(name, emoji) => {
+                        setUserProfile((prev) => prev ? { ...prev, full_name: name, avatar_emoji: emoji } : prev);
+                      }}
+                    />
+                  )}
+
                   {activeTab === 'general' && (
                     <div className="space-y-8">
                       {/* Trial Banner */}
@@ -756,7 +815,7 @@ def pytest_sessionfinish(session, exitstatus):
                               <h3 className={`font-bold text-base ${
                           trialDaysLeft <= 3 ? 'text-red-800' : trialDaysLeft <= 7 ? 'text-amber-800' : 'text-teal-800'
                         }`}>
-                                14일 무료 체험 진행 중
+                                14-Day Free Trial Active
                               </h3>
                               <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
                           trialDaysLeft <= 3
@@ -765,22 +824,22 @@ def pytest_sessionfinish(session, exitstatus):
                             ? 'bg-amber-200 text-amber-800'
                             : 'bg-teal-200 text-teal-800'
                         }`}>
-                                {trialDaysLeft}일 남음
+                                {trialDaysLeft} days left
                               </span>
                             </div>
                             <p className={`text-sm mb-3 ${
                           trialDaysLeft <= 3 ? 'text-red-700' : trialDaysLeft <= 7 ? 'text-amber-700' : 'text-teal-700'
                         }`}>
                               {trialDaysLeft <= 3
-                                ? `체험 기간이 ${trialDaysLeft}일 후 종료됩니다. 지금 업그레이드하여 서비스를 계속 이용하세요.`
-                                : `Professional 플랜의 모든 기능을 무료로 체험하고 있습니다. 체험 종료 후 Free 플랜으로 자동 전환됩니다.`}
+                                ? `Your trial ends in ${trialDaysLeft} day${trialDaysLeft !== 1 ? 's' : ''}. Upgrade now to keep your access.`
+                                : `You are experiencing all Professional plan features for free. After the trial ends, you'll be automatically switched to the Free plan.`}
                             </p>
                             {userProfile.trial_ends_at && (
                               <p className={`text-xs ${
                           trialDaysLeft <= 3 ? 'text-red-500' : trialDaysLeft <= 7 ? 'text-amber-500' : 'text-teal-500'
                         }`}>
                                 <i className="ri-calendar-line mr-1"></i>
-                                체험 종료일: {new Date(userProfile.trial_ends_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                Trial ends: {new Date(userProfile.trial_ends_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                               </p>
                             )}
                           </div>
@@ -791,7 +850,7 @@ def pytest_sessionfinish(session, exitstatus):
                             ? 'bg-amber-600 text-white hover:bg-amber-700'
                             : 'bg-teal-600 text-white hover:bg-teal-700'
                         }`}>
-                            업그레이드 문의
+                            Upgrade Now
                           </button>
                         </div>
                       )}
@@ -799,7 +858,7 @@ def pytest_sessionfinish(session, exitstatus):
                       {/* Subscription Tier Section */}
                       <div>
                         <h2 className="text-xl font-bold text-gray-900 mb-2">Subscription Plan</h2>
-                        <p className="text-gray-600 mb-6">현재 구독 중인 요금제를 확인하세요</p>
+                        <p className="text-gray-600 mb-6">View and manage your current subscription plan</p>
 
                         {/* Current Plan Card */}
                         <div className={`p-6 rounded-xl border-2 ${tierInfo.color} mb-6`}>
@@ -814,14 +873,33 @@ def pytest_sessionfinish(session, exitstatus):
                               </div>
                               <div>
                                 <h3 className="text-lg font-bold">{tierInfo.name}</h3>
-                                <p className="text-sm opacity-80">현재 요금제</p>
+                                <p className="text-sm opacity-80">
+                                  {userProfile?.is_trial ? 'Professional free trial active' : 'Current plan'}
+                                </p>
                               </div>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                              currentTier === 1 ? 'bg-gray-200 text-gray-700' : currentTier === 2 ? 'bg-yellow-200 text-yellow-800' : currentTier === 3 ? 'bg-teal-200 text-teal-800' : 'bg-amber-200 text-amber-800'
-                            }`}>
-                              Active
-                            </span>
+                            <div className="flex flex-col items-end gap-1.5">
+                              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                currentTier === 1 ? 'bg-gray-200 text-gray-700' : currentTier === 2 ? 'bg-yellow-200 text-yellow-800' : currentTier === 3 ? 'bg-teal-200 text-teal-800' : 'bg-amber-200 text-amber-800'
+                              }`}>
+                                Active
+                              </span>
+                              {!userProfile?.is_trial && userProfile?.subscription_ends_at && currentTier > 1 && (
+                                <span className={`text-xs font-semibold flex items-center gap-1 ${
+                                  subscriptionDaysLeft !== null && subscriptionDaysLeft <= 7 ? 'text-red-500' : 'text-gray-500'
+                                }`}>
+                                  <i className="ri-calendar-line"></i>
+                                  Expires: {new Date(userProfile.subscription_ends_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                  {subscriptionDaysLeft !== null && subscriptionDaysLeft <= 30 && (
+                                    <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                                      subscriptionDaysLeft <= 7 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                                    }`}>
+                                      {subscriptionDaysLeft}d left
+                                    </span>
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             {tierInfo.features.map((feature, index) => (
@@ -840,7 +918,7 @@ def pytest_sessionfinish(session, exitstatus):
                                       </button>
                                       {showJiraTooltip && (
                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50 pointer-events-none">
-                                          <p className="leading-relaxed">테스트 결과에서 Jira 이슈 링크를 직접 첨부할 수 있습니다. Jira 이슈 자동 생성은 Starter 이상에서 지원됩니다.</p>
+                                          <p className="leading-relaxed">You can attach Jira issue links to test results. Automatic Jira issue creation is available on Starter and above.</p>
                                           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                                         </div>
                                       )}
@@ -856,7 +934,7 @@ def pytest_sessionfinish(session, exitstatus):
 
                         {/* Billing Toggle */}
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">모든 요금제 비교</h3>
+                          <h3 className="text-lg font-semibold text-gray-900">Compare All Plans</h3>
                           <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1">
                             <button
                               onClick={() => setBillingCycle('monthly')}
@@ -864,7 +942,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 billingCycle === 'monthly' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'
                               }`}
                             >
-                              월간 결제
+                              Monthly
                             </button>
                             <button
                               onClick={() => setBillingCycle('annual')}
@@ -872,14 +950,14 @@ def pytest_sessionfinish(session, exitstatus):
                                 billingCycle === 'annual' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'
                               }`}
                             >
-                              연간 결제
-                              <span className="px-1.5 py-0.5 bg-teal-500 text-white text-xs rounded-full">20% 할인</span>
+                              Annual
+                              <span className="px-1.5 py-0.5 bg-teal-500 text-white text-xs rounded-full">20% off</span>
                             </button>
                           </div>
                         </div>
 
                         {/* All Plans Comparison */}
-                        <div className="grid grid-cols-4 gap-4">
+                        <div className="grid grid-cols-3 gap-4">
                           {Object.entries(TIER_INFO).map(([tier, info]) => {
                             const tierNum = parseInt(tier);
                             const isCurrentTier = tierNum === currentTier;
@@ -904,7 +982,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   <h4 className="font-bold text-gray-900">{info.name}</h4>
                                   {isCurrentTier && (
                                     <span className="ml-auto px-2 py-0.5 bg-teal-500 text-white text-xs rounded-full">
-                                      현재
+                                      Current
                                     </span>
                                   )}
                                 </div>
@@ -913,24 +991,18 @@ def pytest_sessionfinish(session, exitstatus):
                                 <div className="mb-4 pb-4 border-b border-gray-200/70">
                                   <div className="flex items-end gap-1">
                                     <span className={`text-2xl font-bold ${
-                                      tierNum === 1 ? 'text-gray-700' : tierNum === 2 ? 'text-yellow-700' : tierNum === 3 ? 'text-teal-700' : 'text-amber-700'
+                                      tierNum === 1 ? 'text-gray-700' : tierNum === 2 ? 'text-yellow-700' : 'text-teal-700'
                                     }`}>
                                       {formatPrice(info.monthlyPrice, isAnnual)}
                                     </span>
-                                    {info.monthlyPrice > 0 && (
-                                      <span className="text-sm text-gray-500 mb-0.5">{info.priceDesc}</span>
-                                    )}
-                                    {info.monthlyPrice === 0 && (
-                                      <span className="text-sm text-gray-500 mb-0.5">{info.priceDesc}</span>
-                                    )}
-                                    {info.monthlyPrice === -1 && (
+                                    {info.monthlyPrice >= 0 && (
                                       <span className="text-sm text-gray-500 mb-0.5">{info.priceDesc}</span>
                                     )}
                                   </div>
                                   {isAnnual && info.monthlyPrice > 0 && (
                                     <p className="text-xs text-teal-600 mt-1">
                                       <i className="ri-price-tag-3-line mr-1"></i>
-                                      월 {formatPrice(info.monthlyPrice, false)} 대비 20% 절약
+                                      Save 20% vs {formatPrice(info.monthlyPrice, false)}/mo
                                     </p>
                                   )}
                                 </div>
@@ -939,7 +1011,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   {info.features.map((feature, index) => (
                                     <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
                                       <i className={`ri-check-line mt-0.5 ${
-                                        tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-teal-500' : 'text-amber-500'
+                                        tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : 'text-teal-500'
                                       }`}></i>
                                       {tierNum === 1 && feature === 'Jira Integration (Link)' ? (
                                         <span className="flex items-center gap-1">
@@ -954,7 +1026,7 @@ def pytest_sessionfinish(session, exitstatus):
                                             </button>
                                             {showJiraTooltip && (
                                               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50 pointer-events-none">
-                                                <p className="leading-relaxed">테스트 결과에서 Jira 이슈 링크를 직접 첨부할 수 있습니다. Jira 이슈 자동 생성은 Starter 이상에서 지원됩니다.</p>
+                                                <p className="leading-relaxed">You can attach Jira issue links to test results. Automatic Jira issue creation is available on Starter and above.</p>
                                                 <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                                               </div>
                                             )}
@@ -968,7 +1040,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 </ul>
                                 {!isCurrentTier && tierNum > currentTier && (
                                   <button className="w-full mt-4 px-4 py-2 bg-teal-500 text-white rounded-lg text-sm font-semibold hover:bg-teal-600 transition-all cursor-pointer whitespace-nowrap">
-                                    업그레이드 문의
+                                    Contact Us to Upgrade
                                   </button>
                                 )}
                               </div>
@@ -980,17 +1052,29 @@ def pytest_sessionfinish(session, exitstatus):
                       {/* Profile Section */}
                       <div className="pt-6 border-t border-gray-200">
                         <h2 className="text-xl font-bold text-gray-900 mb-2">Profile Information</h2>
-                        <p className="text-gray-600 mb-4">계정 정보를 확인하세요</p>
-                        <div className="grid grid-cols-2 gap-4 max-w-lg">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-500 mb-1">이름</label>
-                            <p className="text-gray-900 font-medium">{userProfile?.full_name || '-'}</p>
+                        <p className="text-gray-600 mb-4">View your account information</p>
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gray-50 border-2 border-gray-200 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+                            {userProfile?.avatar_emoji || '🐶'}
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-500 mb-1">이메일</label>
-                            <p className="text-gray-900 font-medium">{userProfile?.email || '-'}</p>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-500 mb-1">Name</label>
+                              <p className="text-gray-900 font-medium">{userProfile?.full_name || '—'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                              <p className="text-gray-900 font-medium">{userProfile?.email || '—'}</p>
+                            </div>
                           </div>
                         </div>
+                        <button
+                          onClick={() => setActiveTab('profile')}
+                          className="mt-4 px-4 py-2 text-sm font-semibold text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
+                        >
+                          <i className="ri-edit-line"></i>
+                          Edit Profile &amp; Password
+                        </button>
                       </div>
                     </div>
                   )}
@@ -1003,7 +1087,7 @@ def pytest_sessionfinish(session, exitstatus):
                           {!isStarterOrHigher && (
                             <span className="px-3 py-1 bg-yellow-50 text-yellow-700 border border-yellow-300 rounded-full text-xs font-semibold flex items-center gap-1">
                               <i className="ri-star-line"></i>
-                              Starter 이상 필요
+                              Requires Starter or above
                             </span>
                           )}
                         </div>
@@ -1016,13 +1100,13 @@ def pytest_sessionfinish(session, exitstatus):
                                 <i className="ri-lock-line text-yellow-600 text-xl"></i>
                               </div>
                               <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900 mb-1">Jira 통합은 Starter 이상 요금제에서 사용 가능합니다</h3>
+                                <h3 className="font-semibold text-gray-900 mb-1">Jira Integration is available on Starter and above</h3>
                                 <p className="text-sm text-gray-600 mb-3">
-                                  테스트 결과에서 바로 Jira 이슈를 생성하고, 자동으로 연동하여 팀 협업을 강화하세요.
+                                  Create Jira issues directly from test results and enhance team collaboration.
                                 </p>
                                 <button className="px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all cursor-pointer whitespace-nowrap">
                                   <i className="ri-arrow-up-circle-line mr-2"></i>
-                                  업그레이드 문의
+                                  Contact Us to Upgrade
                                 </button>
                               </div>
                             </div>
@@ -1051,7 +1135,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   disabled={!isStarterOrHigher}
                                 />
                               </div>
-                              <p className="text-xs text-gray-500 mt-1">예: your-domain.atlassian.net</p>
+                              <p className="text-xs text-gray-500 mt-1">e.g. your-domain.atlassian.net</p>
                             </div>
 
                             {/* Jira Email */}
@@ -1067,7 +1151,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                                 disabled={!isStarterOrHigher}
                               />
-                              <p className="text-xs text-gray-500 mt-1">Jira 계정 이메일 주소</p>
+                              <p className="text-xs text-gray-500 mt-1">Your Jira account email address</p>
                             </div>
 
                             {/* Jira API Token */}
@@ -1100,7 +1184,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   rel="noopener noreferrer"
                                   className="text-teal-600 hover:underline"
                                 >
-                                  여기에서 API 토큰 생성
+                                  Generate API token here
                                 </a>
                               </p>
                             </div>
@@ -1121,7 +1205,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 <option value="Story">Story</option>
                                 <option value="Epic">Epic</option>
                               </select>
-                              <p className="text-xs text-gray-500 mt-1">새 이슈 생성 시 기본 이슈 타입</p>
+                              <p className="text-xs text-gray-500 mt-1">Default issue type when creating new issues</p>
                             </div>
 
                             {/* Test Result Message */}
@@ -1189,11 +1273,11 @@ def pytest_sessionfinish(session, exitstatus):
                           {!isProfessionalOrHigher && (
                             <span className="px-3 py-1 bg-teal-50 text-teal-700 border border-teal-300 rounded-full text-xs font-semibold flex items-center gap-1">
                               <i className="ri-vip-crown-line"></i>
-                              Professional 이상 필요
+                              Requires Professional or above
                             </span>
                           )}
                         </div>
-                        <p className="text-gray-600 mb-6">GitHub Actions, GitLab CI 등 CI/CD 파이프라인에서 테스트 결과를 자동으로 업로드하세요</p>
+                        <p className="text-gray-600 mb-6">Automatically upload test results from GitHub Actions, GitLab CI, and other CI/CD pipelines</p>
 
                         {!isProfessionalOrHigher && (
                           <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-xl">
@@ -1202,13 +1286,13 @@ def pytest_sessionfinish(session, exitstatus):
                                 <i className="ri-lock-line text-teal-600 text-xl"></i>
                               </div>
                               <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900 mb-1">CI/CD 통합은 Professional 이상 요금제에서 사용 가능합니다</h3>
+                                <h3 className="font-semibold text-gray-900 mb-1">CI/CD Integration is available on Professional and above</h3>
                                 <p className="text-sm text-gray-600 mb-3">
-                                  자동화된 테스트 파이프라인에서 결과를 직접 업로드하고, 팀 협업을 강화하세요.
+                                  Upload results directly from your automated test pipelines and enhance team collaboration.
                                 </p>
                                 <button className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap">
                                   <i className="ri-arrow-up-circle-line mr-2"></i>
-                                  업그레이드 문의
+                                  Contact Us to Upgrade
                                 </button>
                               </div>
                             </div>
@@ -1221,7 +1305,7 @@ def pytest_sessionfinish(session, exitstatus):
                             <div className="flex items-center justify-between mb-4">
                               <div>
                                 <h3 className="text-lg font-semibold text-gray-900">API Tokens</h3>
-                                <p className="text-sm text-gray-600">CI/CD 파이프라인에서 사용할 API 토큰을 관리하세요</p>
+                                <p className="text-sm text-gray-600">Manage API tokens for your CI/CD pipeline</p>
                               </div>
                               <button
                                 onClick={() => setShowNewTokenModal(true)}
@@ -1229,7 +1313,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
                               >
                                 <i className="ri-add-line"></i>
-                                새 토큰 생성
+                                New Token
                               </button>
                             </div>
 
@@ -1242,14 +1326,14 @@ def pytest_sessionfinish(session, exitstatus):
                                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                   <i className="ri-key-2-line text-3xl text-gray-400"></i>
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">생성된 토큰이 없습니다</h3>
-                                <p className="text-sm text-gray-600 mb-4">CI/CD 통합을 시작하려면 API 토큰을 생성하세요</p>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">No tokens created yet</h3>
+                                <p className="text-sm text-gray-600 mb-4">Create an API token to start integrating with your CI/CD pipeline</p>
                                 <button
                                   onClick={() => setShowNewTokenModal(true)}
                                   className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap"
                                 >
                                   <i className="ri-add-line mr-2"></i>
-                                  첫 토큰 생성하기
+                                  Create First Token
                                 </button>
                               </div>
                             ) : (
@@ -1264,8 +1348,8 @@ def pytest_sessionfinish(session, exitstatus):
                                         <div>
                                           <h4 className="font-semibold text-gray-900">{token.name}</h4>
                                           <p className="text-xs text-gray-500">
-                                            생성일: {new Date(token.created_at).toLocaleDateString('ko-KR')}
-                                            {token.last_used_at && ` • 마지막 사용: ${new Date(token.last_used_at).toLocaleDateString('ko-KR')}`}
+                                            Created: {new Date(token.created_at).toLocaleDateString('en-US')}
+                                            {token.last_used_at && ` • Last used: ${new Date(token.last_used_at).toLocaleDateString('en-US')}`}
                                           </p>
                                         </div>
                                       </div>
@@ -1274,7 +1358,7 @@ def pytest_sessionfinish(session, exitstatus):
                                         className="px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap"
                                       >
                                         <i className="ri-delete-bin-line mr-1"></i>
-                                        삭제
+                                        Delete
                                       </button>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -1289,13 +1373,9 @@ def pytest_sessionfinish(session, exitstatus):
                                         className="flex-shrink-0 px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all cursor-pointer whitespace-nowrap"
                                       >
                                         {copiedToken === token.token ? (
-                                          <>
-                                            <i className="ri-check-line text-green-600"></i>
-                                          </>
+                                          <i className="ri-check-line text-green-600"></i>
                                         ) : (
-                                          <>
-                                            <i className="ri-file-copy-line text-gray-600"></i>
-                                          </>
+                                          <i className="ri-file-copy-line text-gray-600"></i>
                                         )}
                                       </button>
                                     </div>
@@ -1308,7 +1388,7 @@ def pytest_sessionfinish(session, exitstatus):
                           {/* Integration Guide */}
                           {ciTokens.length > 0 && (
                             <div className="pt-6 border-t border-gray-200">
-                              <h3 className="text-lg font-semibold text-gray-900 mb-4">통합 가이드</h3>
+                              <h3 className="text-lg font-semibold text-gray-900 mb-4">Integration Guide</h3>
                               
                               <div className="flex items-center gap-2 mb-4">
                                 <button
@@ -1346,16 +1426,17 @@ def pytest_sessionfinish(session, exitstatus):
                                 </button>
                               </div>
 
-                              {/* 환경변수 설정 안내 */}
+                              {/* Environment Variables Guide */}
                               <div className="mb-4 p-4 bg-teal-50 border border-teal-200 rounded-xl">
                                 <div className="flex items-center gap-2 mb-3">
                                   <i className="ri-settings-4-line text-teal-600 text-lg"></i>
                                   <p className="text-sm font-bold text-teal-800">
+                                    Register the following values in your{' '}
                                     {selectedPlatform === 'github'
                                       ? 'GitHub Secrets'
                                       : selectedPlatform === 'gitlab'
                                       ? 'GitLab CI/CD Variables'
-                                      : '환경변수'} 에 아래 값을 등록하세요
+                                      : 'environment variables'}
                                   </p>
                                 </div>
                                 <div className="space-y-2">
@@ -1369,9 +1450,9 @@ def pytest_sessionfinish(session, exitstatus):
                                       className="flex-shrink-0 px-2 py-1 bg-teal-100 hover:bg-teal-200 text-teal-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
                                     >
                                       {copiedToken === `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results` ? (
-                                        <><i className="ri-check-line mr-1"></i>복사됨</>
+                                        <><i className="ri-check-line mr-1"></i>Copied</>
                                       ) : (
-                                        <><i className="ri-file-copy-line mr-1"></i>복사</>
+                                        <><i className="ri-file-copy-line mr-1"></i>Copy</>
                                       )}
                                     </button>
                                   </div>
@@ -1383,30 +1464,29 @@ def pytest_sessionfinish(session, exitstatus):
                                       className="flex-shrink-0 px-2 py-1 bg-teal-100 hover:bg-teal-200 text-teal-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
                                     >
                                       {copiedToken === ciTokens[0].token ? (
-                                        <><i className="ri-check-line mr-1"></i>복사됨</>
+                                        <><i className="ri-check-line mr-1"></i>Copied</>
                                       ) : (
-                                        <><i className="ri-file-copy-line mr-1"></i>복사</>
+                                        <><i className="ri-file-copy-line mr-1"></i>Copy</>
                                       )}
                                     </button>
                                   </div>
                                 </div>
                                 <p className="text-xs text-teal-700 mt-2">
                                   <i className="ri-information-line mr-1"></i>
-                                  두 값 모두 환경변수로 등록하면 코드 수정 없이 안전하게 관리할 수 있습니다.
+                                  Registering both values as environment variables keeps them secure without modifying your code.
                                 </p>
                               </div>
 
-                              {/* Python 가이드 */}
+                              {/* Python Guide */}
                               {selectedPlatform === 'python' && (
                                 <div className="space-y-6">
-                                  {/* 방법 1: 함수 호출 방식 */}
                                   <div>
                                     <div className="flex items-center gap-2 mb-3">
                                       <span className="w-6 h-6 bg-teal-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
-                                      <h4 className="font-bold text-gray-900">함수 호출 방식 <span className="text-sm font-normal text-gray-500 ml-1">— 간단한 스크립트에 적합</span></h4>
+                                      <h4 className="font-bold text-gray-900">Function-based approach <span className="text-sm font-normal text-gray-500 ml-1">— suitable for simple scripts</span></h4>
                                     </div>
                                     <p className="text-sm text-gray-600 mb-3 ml-8">
-                                      <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">report_result()</code> 함수로 결과를 수집하고, 마지막에 한 번에 업로드합니다.
+                                      Collect results using the <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">report_result()</code> function and upload them all at once at the end.
                                     </p>
                                     <div className="bg-gray-900 rounded-lg p-4 relative">
                                       <button
@@ -1414,9 +1494,9 @@ def pytest_sessionfinish(session, exitstatus):
                                         className="absolute top-4 right-4 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap"
                                       >
                                         {copiedToken === getPythonFunctionSnippet() ? (
-                                          <><i className="ri-check-line mr-1"></i>복사됨</>
+                                          <><i className="ri-check-line mr-1"></i>Copied</>
                                         ) : (
-                                          <><i className="ri-file-copy-line mr-1"></i>복사</>
+                                          <><i className="ri-file-copy-line mr-1"></i>Copy</>
                                         )}
                                       </button>
                                       <pre className="text-sm text-gray-100 overflow-x-auto font-mono whitespace-pre">
@@ -1425,14 +1505,13 @@ def pytest_sessionfinish(session, exitstatus):
                                     </div>
                                   </div>
 
-                                  {/* 방법 2: conftest.py 방식 */}
                                   <div>
                                     <div className="flex items-center gap-2 mb-3">
                                       <span className="w-6 h-6 bg-teal-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
-                                      <h4 className="font-bold text-gray-900">conftest.py 방식 <span className="text-sm font-normal text-gray-500 ml-1">— pytest 프로젝트에 적합</span></h4>
+                                      <h4 className="font-bold text-gray-900">conftest.py approach <span className="text-sm font-normal text-gray-500 ml-1">— suitable for pytest projects</span></h4>
                                     </div>
                                     <p className="text-sm text-gray-600 mb-3 ml-8">
-                                      pytest hook을 활용해 테스트 코드 수정 없이 자동으로 결과를 수집·업로드합니다.
+                                      Uses pytest hooks to automatically collect and upload results without modifying test code.
                                     </p>
                                     <div className="bg-gray-900 rounded-lg p-4 relative">
                                       <button
@@ -1440,9 +1519,9 @@ def pytest_sessionfinish(session, exitstatus):
                                         className="absolute top-4 right-4 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap"
                                       >
                                         {copiedToken === getPythonConftestSnippet() ? (
-                                          <><i className="ri-check-line mr-1"></i>복사됨</>
+                                          <><i className="ri-check-line mr-1"></i>Copied</>
                                         ) : (
-                                          <><i className="ri-file-copy-line mr-1"></i>복사</>
+                                          <><i className="ri-file-copy-line mr-1"></i>Copy</>
                                         )}
                                       </button>
                                       <pre className="text-sm text-gray-100 overflow-x-auto font-mono whitespace-pre">
@@ -1451,18 +1530,17 @@ def pytest_sessionfinish(session, exitstatus):
                                     </div>
                                   </div>
 
-                                  {/* 사용 방법 안내 */}
                                   <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                                     <div className="flex items-start gap-3">
                                       <i className="ri-information-line text-gray-500 text-xl flex-shrink-0 mt-0.5"></i>
                                       <div className="text-sm text-gray-700">
-                                        <p className="font-semibold mb-2">사용 방법:</p>
+                                        <p className="font-semibold mb-2">How to use:</p>
                                         <ol className="list-decimal list-inside space-y-1.5 text-gray-600">
-                                          <li><code className="bg-gray-200 px-1 rounded text-xs">TESTABLY_TOKEN</code> 환경변수에 위 토큰을 등록하세요</li>
-                                          <li><strong>방법 1</strong>: <code className="bg-gray-200 px-1 rounded text-xs">report_result()</code>에 테스트케이스 ID와 결과를 전달하세요</li>
-                                          <li><strong>방법 2</strong>: <code className="bg-gray-200 px-1 rounded text-xs">conftest.py</code>를 프로젝트 루트에 저장하고 <code className="bg-gray-200 px-1 rounded text-xs">TEST_CASE_MAP</code>에 함수명 → ID를 매핑하세요</li>
-                                          <li><code className="bg-gray-200 px-1 rounded text-xs">run_id</code>는 Testably에서 생성한 Run의 ID로 교체하세요</li>
-                                          <li>status 값: <code className="bg-gray-200 px-1 rounded text-xs">passed</code> / <code className="bg-gray-200 px-1 rounded text-xs">failed</code> / <code className="bg-gray-200 px-1 rounded text-xs">blocked</code> / <code className="bg-gray-200 px-1 rounded text-xs">retest</code></li>
+                                          <li>Register your token in the <code className="bg-gray-200 px-1 rounded text-xs">TESTABLY_TOKEN</code> environment variable</li>
+                                          <li><strong>Method 1</strong>: Pass the test case ID and result to <code className="bg-gray-200 px-1 rounded text-xs">report_result()</code></li>
+                                          <li><strong>Method 2</strong>: Save <code className="bg-gray-200 px-1 rounded text-xs">conftest.py</code> to your project root and map function names to IDs in <code className="bg-gray-200 px-1 rounded text-xs">TEST_CASE_MAP</code></li>
+                                          <li>Replace <code className="bg-gray-200 px-1 rounded text-xs">run_id</code> with the Run ID from Testably</li>
+                                          <li>Status values: <code className="bg-gray-200 px-1 rounded text-xs">passed</code> / <code className="bg-gray-200 px-1 rounded text-xs">failed</code> / <code className="bg-gray-200 px-1 rounded text-xs">blocked</code> / <code className="bg-gray-200 px-1 rounded text-xs">retest</code></li>
                                         </ol>
                                       </div>
                                     </div>
@@ -1479,9 +1557,9 @@ def pytest_sessionfinish(session, exitstatus):
                                       className="absolute top-4 right-4 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap"
                                     >
                                       {copiedToken === getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token) ? (
-                                        <><i className="ri-check-line mr-1"></i>복사됨</>
+                                        <><i className="ri-check-line mr-1"></i>Copied</>
                                       ) : (
-                                        <><i className="ri-file-copy-line mr-1"></i>복사</>
+                                        <><i className="ri-file-copy-line mr-1"></i>Copy</>
                                       )}
                                     </button>
                                     <pre className="text-sm text-gray-100 overflow-x-auto font-mono">
@@ -1493,12 +1571,12 @@ def pytest_sessionfinish(session, exitstatus):
                                     <div className="flex items-start gap-3">
                                       <i className="ri-information-line text-gray-500 text-xl flex-shrink-0 mt-0.5"></i>
                                       <div className="text-sm text-gray-700">
-                                        <p className="font-semibold mb-2">사용 방법:</p>
+                                        <p className="font-semibold mb-2">How to use:</p>
                                         <ol className="list-decimal list-inside space-y-1 text-gray-600">
-                                          <li>위 환경변수 값을 {selectedPlatform === 'github' ? 'GitHub Secrets' : 'GitLab CI/CD Variables'}에 등록하세요</li>
-                                          <li>YAML 코드를 복사하여 CI/CD 설정 파일에 추가하세요</li>
-                                          <li><code className="bg-gray-200 px-1 rounded text-xs">test_case_id</code>에 테스트케이스 ID(예: SUI-1)를 입력하세요</li>
-                                          <li>테스트 결과에 따라 status를 passed/failed/blocked로 설정하세요</li>
+                                          <li>Register the environment variables above in {selectedPlatform === 'github' ? 'GitHub Secrets' : 'GitLab CI/CD Variables'}</li>
+                                          <li>Copy the YAML code and add it to your CI/CD configuration file</li>
+                                          <li>Set <code className="bg-gray-200 px-1 rounded text-xs">test_case_id</code> to your test case ID (e.g. SUI-1)</li>
+                                          <li>Set status to passed/failed/blocked based on test outcome</li>
                                         </ol>
                                       </div>
                                     </div>
@@ -1508,7 +1586,7 @@ def pytest_sessionfinish(session, exitstatus):
                             </div>
                           )}
 
-                          {/* API Token Scope Guide - 항상 표시 */}
+                          {/* API Token Scope Guide */}
                           <div className="pt-6 border-t border-gray-200">
                             <div className="flex items-center gap-2 mb-4">
                               <button
@@ -1540,21 +1618,21 @@ def pytest_sessionfinish(session, exitstatus):
                                 <div className="w-8 h-8 flex items-center justify-center bg-teal-50 rounded-lg">
                                   <i className="ri-shield-keyhole-line text-teal-600 text-lg"></i>
                                 </div>
-                                <h4 className="font-bold text-gray-900 text-sm">API Token Scope 설정 가이드</h4>
+                                <h4 className="font-bold text-gray-900 text-sm">API Token Scope Configuration Guide</h4>
                               </div>
 
                               {selectedPlatform === 'github' ? (
                                 <div className="space-y-4">
                                   <p className="text-sm text-gray-600">
-                                    GitHub에서 Personal Access Token(PAT) 또는 Fine-grained Token을 사용할 경우, 아래 권한만 부여하면 됩니다.
+                                    When using a Personal Access Token (PAT) or Fine-grained Token in GitHub, only the following permissions are needed.
                                   </p>
                                   <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">필수 권한 (Minimum Required Scopes)</p>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Minimum Required Scopes</p>
                                     <div className="space-y-2">
                                       {[
-                                        { scope: 'repo', desc: '저장소 읽기 권한 (private repo 사용 시 필요)', required: true },
-                                        { scope: 'workflow', desc: 'GitHub Actions 워크플로우 실행 권한', required: true },
-                                        { scope: 'read:org', desc: '조직 정보 읽기 (조직 저장소 사용 시)', required: false },
+                                        { scope: 'repo', desc: 'Repository read access (required for private repos)', required: true },
+                                        { scope: 'workflow', desc: 'GitHub Actions workflow execution permission', required: true },
+                                        { scope: 'read:org', desc: 'Read organization info (for org repositories)', required: false },
                                       ].map((item) => (
                                         <div key={item.scope} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                                           <span className={`mt-0.5 px-2 py-0.5 rounded text-xs font-bold font-mono whitespace-nowrap ${item.required ? 'bg-teal-100 text-teal-700' : 'bg-gray-200 text-gray-600'}`}>
@@ -1563,11 +1641,11 @@ def pytest_sessionfinish(session, exitstatus):
                                           <div className="flex-1">
                                             <p className="text-sm text-gray-700">{item.desc}</p>
                                             {!item.required && (
-                                              <p className="text-xs text-gray-400 mt-0.5">선택 사항</p>
+                                              <p className="text-xs text-gray-400 mt-0.5">Optional</p>
                                             )}
                                           </div>
                                           {item.required && (
-                                            <span className="text-xs font-semibold text-teal-600 whitespace-nowrap">필수</span>
+                                            <span className="text-xs font-semibold text-teal-600 whitespace-nowrap">Required</span>
                                           )}
                                         </div>
                                       ))}
@@ -1576,7 +1654,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
                                     <i className="ri-error-warning-line text-amber-500 flex-shrink-0 mt-0.5"></i>
                                     <p className="text-xs text-amber-800">
-                                      <strong>권장:</strong> GitHub Actions 워크플로우 내에서는 자동으로 제공되는 <code className="bg-amber-100 px-1 rounded">GITHUB_TOKEN</code>을 사용하는 것이 가장 안전합니다. 별도 PAT 생성 없이 바로 사용 가능합니다.
+                                      <strong>Recommended:</strong> Using the automatically provided <code className="bg-amber-100 px-1 rounded">GITHUB_TOKEN</code> within GitHub Actions workflows is the safest approach — no separate PAT creation needed.
                                     </p>
                                   </div>
                                   <a
@@ -1586,21 +1664,21 @@ def pytest_sessionfinish(session, exitstatus):
                                     className="inline-flex items-center gap-1 text-xs text-teal-600 hover:underline"
                                   >
                                     <i className="ri-external-link-line"></i>
-                                    GitHub Token 공식 문서 보기
+                                    GitHub Token Official Documentation
                                   </a>
                                 </div>
                               ) : (
                                 <div className="space-y-4">
                                   <p className="text-sm text-gray-600">
-                                    GitLab에서 Personal Access Token 또는 Project Access Token을 생성할 때 아래 scope만 선택하면 됩니다.
+                                    When creating a Personal Access Token or Project Access Token in GitLab, select only the following scopes.
                                   </p>
                                   <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">필수 권한 (Minimum Required Scopes)</p>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Minimum Required Scopes</p>
                                     <div className="space-y-2">
                                       {[
-                                        { scope: 'api', desc: 'API 전체 접근 권한 (파이프라인 트리거 및 결과 업로드)', required: true },
-                                        { scope: 'read_repository', desc: '저장소 읽기 권한', required: true },
-                                        { scope: 'write_repository', desc: '저장소 쓰기 권한 (결과 커밋 시 필요)', required: false },
+                                        { scope: 'api', desc: 'Full API access (pipeline triggers and result uploads)', required: true },
+                                        { scope: 'read_repository', desc: 'Repository read access', required: true },
+                                        { scope: 'write_repository', desc: 'Repository write access (required for committing results)', required: false },
                                       ].map((item) => (
                                         <div key={item.scope} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                                           <span className={`mt-0.5 px-2 py-0.5 rounded text-xs font-bold font-mono whitespace-nowrap ${item.required ? 'bg-orange-100 text-orange-700' : 'bg-gray-200 text-gray-600'}`}>
@@ -1609,11 +1687,11 @@ def pytest_sessionfinish(session, exitstatus):
                                           <div className="flex-1">
                                             <p className="text-sm text-gray-700">{item.desc}</p>
                                             {!item.required && (
-                                              <p className="text-xs text-gray-400 mt-0.5">선택 사항</p>
+                                              <p className="text-xs text-gray-400 mt-0.5">Optional</p>
                                             )}
                                           </div>
                                           {item.required && (
-                                            <span className="text-xs font-semibold text-orange-600 whitespace-nowrap">필수</span>
+                                            <span className="text-xs font-semibold text-orange-600 whitespace-nowrap">Required</span>
                                           )}
                                         </div>
                                       ))}
@@ -1622,7 +1700,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
                                     <i className="ri-error-warning-line text-amber-500 flex-shrink-0 mt-0.5"></i>
                                     <p className="text-xs text-amber-800">
-                                      <strong>권장:</strong> GitLab CI 파이프라인 내에서는 자동으로 제공되는 <code className="bg-amber-100 px-1 rounded">CI_JOB_TOKEN</code>을 사용하는 것이 가장 안전합니다. 별도 토큰 생성 없이 바로 사용 가능합니다.
+                                      <strong>Recommended:</strong> Using the automatically provided <code className="bg-amber-100 px-1 rounded">CI_JOB_TOKEN</code> within GitLab CI pipelines is the safest approach — no separate token creation needed.
                                     </p>
                                   </div>
                                   <a
@@ -1632,7 +1710,7 @@ def pytest_sessionfinish(session, exitstatus):
                                     className="inline-flex items-center gap-1 text-xs text-teal-600 hover:underline"
                                   >
                                     <i className="ri-external-link-line"></i>
-                                    GitLab Token 공식 문서 보기
+                                    GitLab Token Official Documentation
                                   </a>
                                 </div>
                               )}
@@ -1658,24 +1736,24 @@ def pytest_sessionfinish(session, exitstatus):
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
             <div className="p-6 border-b border-gray-200">
-              <h3 className="text-xl font-bold text-gray-900">새 API 토큰 생성</h3>
-              <p className="text-sm text-gray-600 mt-1">CI/CD 파이프라인에서 사용할 토큰을 생성합니다</p>
+              <h3 className="text-xl font-bold text-gray-900">Create New API Token</h3>
+              <p className="text-sm text-gray-600 mt-1">Generate a token for your CI/CD pipeline</p>
             </div>
             <div className="p-6">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                토큰 이름 <span className="text-red-500">*</span>
+                Token Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={newTokenName}
                 onChange={(e) => setNewTokenName(e.target.value)}
-                placeholder="예: GitHub Actions Token"
+                placeholder="e.g. GitHub Actions Token"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                 autoFocus
               />
               <p className="text-xs text-gray-500 mt-1">
                 <i className="ri-information-line mr-1"></i>
-                토큰은 생성 후 다시 확인할 수 없으니 안전한 곳에 보관하세요
+                Store this token in a safe place — it cannot be viewed again after creation
               </p>
             </div>
             <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
@@ -1686,7 +1764,7 @@ def pytest_sessionfinish(session, exitstatus):
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap"
               >
-                취소
+                Cancel
               </button>
               <button
                 onClick={handleCreateToken}
@@ -1696,12 +1774,12 @@ def pytest_sessionfinish(session, exitstatus):
                 {creatingToken ? (
                   <>
                     <i className="ri-loader-4-line animate-spin mr-2"></i>
-                    생성 중...
+                    Creating...
                   </>
                 ) : (
                   <>
                     <i className="ri-add-line mr-2"></i>
-                    토큰 생성
+                    Create Token
                   </>
                 )}
               </button>

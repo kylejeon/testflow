@@ -113,7 +113,7 @@ export default function RunDetail() {
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; full_name: string | null } | null>(null);
   const [loadingComments, setLoadingComments] = useState(false);
-  const [userProfile, setUserProfile] = useState<{ email: string; full_name: string; subscription_tier: number } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ email: string; full_name: string; subscription_tier: number; avatar_emoji: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showAddIssueModal, setShowAddIssueModal] = useState(false);
   const [jiraSettings, setJiraSettings] = useState<JiraSettings | null>(null);
@@ -155,7 +155,7 @@ export default function RunDetail() {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('email, full_name, subscription_tier')
+          .select('email, full_name, subscription_tier, avatar_emoji')
           .eq('id', user.id)
           .maybeSingle();
         
@@ -169,6 +169,7 @@ export default function RunDetail() {
           email: profile?.email || user.email || '',
           full_name: profile?.full_name || '',
           subscription_tier: profile?.subscription_tier || 1,
+          avatar_emoji: profile?.avatar_emoji || '',
         });
       }
     } catch (error) {
@@ -1279,8 +1280,12 @@ export default function RunDetail() {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center gap-2 cursor-pointer"
               >
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {userProfile?.full_name?.charAt(0) || 'U'}
+                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                  {userProfile?.avatar_emoji ? (
+                    <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
+                  ) : (
+                    <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
+                  )}
                 </div>
               </div>
               
@@ -1403,7 +1408,7 @@ export default function RunDetail() {
               {folders.length === 0 && !loading && isFolderSidebarOpen && (
                 <div className="px-4 py-6 text-center">
                   <i className="ri-folder-open-line text-2xl text-gray-300 mb-2 block"></i>
-                  <p className="text-xs text-gray-400">폴더 없음</p>
+                  <p className="text-sm text-gray-500">폴더 없음</p>
                 </div>
               )}
             </div>
@@ -2091,7 +2096,7 @@ export default function RunDetail() {
                                   onClick={() => handleDeleteComment(comment.id)}
                                   className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
                                 >
-                                  <i className="ri-delete-bin-line text-sm"></i>
+                                  <i className="ri-delete-bin-line"></i>
                                 </button>
                               </div>
                             </div>

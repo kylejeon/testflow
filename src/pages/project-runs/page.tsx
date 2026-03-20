@@ -82,7 +82,7 @@ export default function ProjectRunsPage() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number; avatar_emoji: string } | null>(null);
   const [showSelectCasesModal, setShowSelectCasesModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [caseSearchQuery, setCaseSearchQuery] = useState('');
@@ -566,14 +566,15 @@ export default function ProjectRunsPage() {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, email, subscription_tier')
+          .select('full_name, email, subscription_tier, avatar_emoji')
           .eq('id', user.id)
           .maybeSingle();
         
         setUserProfile({
           full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
           email: profile?.email || user.email || '',
-          subscription_tier: profile?.subscription_tier || 1
+          subscription_tier: profile?.subscription_tier || 1,
+          avatar_emoji: profile?.avatar_emoji || '',
         });
       }
     } catch (error) {
@@ -1282,8 +1283,12 @@ export default function ProjectRunsPage() {
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="flex items-center gap-2 cursor-pointer"
                 >
-                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {userProfile?.full_name?.charAt(0) || 'U'}
+                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                    {userProfile?.avatar_emoji ? (
+                      <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
+                    ) : (
+                      <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
+                    )}
                   </div>
                 </div>
                 

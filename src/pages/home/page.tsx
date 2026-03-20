@@ -71,7 +71,7 @@ const testimonials = [
 const pricingPlans = [
   {
     name: 'Free',
-    price: '₩0',
+    price: '$0',
     period: '영구 무료',
     description: '소규모 팀을 위한 기본 기능',
     features: ['프로젝트 3개까지', '팀 멤버 5명까지', '기본 테스트 관리', 'Jira 연동', '커뮤니티 지원'],
@@ -81,7 +81,7 @@ const pricingPlans = [
   },
   {
     name: 'Starter',
-    price: '₩9,900',
+    price: '$20',
     period: '/ 월',
     description: '성장하는 팀을 위한 핵심 기능',
     features: ['프로젝트 10개까지', '팀 멤버 8명까지', 'Jira 연동', '기본 리포팅', '이메일 지원'],
@@ -91,23 +91,13 @@ const pricingPlans = [
   },
   {
     name: 'Professional',
-    price: '₩24,900',
+    price: '$50',
     period: '/ 월',
     description: '전문 QA 팀을 위한 완전한 기능',
-    features: ['프로젝트 무제한', '팀 멤버 15명까지', 'Jira 연동', '고급 리포팅', '우선 지원'],
+    features: ['프로젝트 무제한', '팀 멤버 15명까지', 'Jira 연동', '고급 리포팅', 'CI/CD Integration', '우선 지원'],
     cta: '14일 무료 체험',
     highlighted: true,
     icon: 'ri-vip-crown-line',
-  },
-  {
-    name: 'Enterprise',
-    price: '문의',
-    period: '맞춤 견적',
-    description: '대규모 조직을 위한 엔터프라이즈',
-    features: ['모든 Professional 기능', '무제한 팀 멤버', 'SSO / SAML', '전담 지원 담당자', 'SLA 보장', '온프레미스 옵션'],
-    cta: '영업팀 문의',
-    highlighted: false,
-    icon: 'ri-vip-diamond-line',
   },
 ];
 
@@ -467,7 +457,7 @@ export default function HomePage() {
               <p className="text-gray-500 text-lg">모든 유료 요금제에 14일 무료 체험이 포함됩니다</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {pricingPlans.map((plan) => (
                 <article
                   key={plan.name}

@@ -64,6 +64,7 @@ interface UserProfile {
   email: string;
   full_name: string;
   subscription_tier: number;
+  avatar_emoji: string;
 }
 
 const TIER_INFO = {
@@ -108,7 +109,7 @@ export default function MilestoneDetail() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('email, full_name, subscription_tier')
+        .select('email, full_name, subscription_tier, avatar_emoji')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -119,6 +120,7 @@ export default function MilestoneDetail() {
           email: data.email || user.email || '',
           full_name: data.full_name || '',
           subscription_tier: data.subscription_tier || 1,
+          avatar_emoji: data.avatar_emoji || '',
         });
       }
     } catch (error) {
@@ -599,8 +601,12 @@ export default function MilestoneDetail() {
                 </Link>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer">
-                  {userProfile?.full_name?.charAt(0) || 'U'}
+                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
+                  {userProfile?.avatar_emoji ? (
+                    <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
+                  ) : (
+                    <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -633,8 +639,12 @@ export default function MilestoneDetail() {
                 </Link>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer">
-                  {userProfile?.full_name?.charAt(0) || 'U'}
+                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
+                  {userProfile?.avatar_emoji ? (
+                    <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
+                  ) : (
+                    <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -697,8 +707,12 @@ export default function MilestoneDetail() {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center gap-2 cursor-pointer"
               >
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {userProfile?.full_name?.charAt(0) || 'U'}
+                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
+                  {userProfile?.avatar_emoji ? (
+                    <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
+                  ) : (
+                    <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
+                  )}
                 </div>
               </div>
               
