@@ -230,35 +230,47 @@ export default function ProjectIntegrationsPage() {
     setTestingId(integration.id);
     setTestResult(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const testPayload = integration.type === 'slack'
+        ? {
+            blocks: [
+              { type: 'header', text: { type: 'plain_text', text: '🧪 Testably Test Message', emoji: true } },
+              { type: 'section', text: { type: 'mrkdwn', text: `Webhook connection verified for *${project?.name ?? 'your project'}*.` } },
+              { type: 'divider' },
+            ],
+          }
+        : {
+            type: 'message',
+            attachments: [{
+              contentType: 'application/vnd.microsoft.card.adaptive',
+              contentUrl: null,
+              content: {
+                $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+                type: 'AdaptiveCard',
+                version: '1.4',
+                body: [
+                  { type: 'TextBlock', size: 'Medium', weight: 'Bolder', text: '🧪 Testably Test Message' },
+                  { type: 'TextBlock', text: `Webhook connection verified for ${project?.name ?? 'your project'}.`, wrap: true },
+                ],
+              },
+            }],
+          };
+
       const res = await fetch(
         `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/send-webhook`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({
-            project_id: id,
-            event_type: 'run_created',
-            event_data: {
-              project_id:   id,
-              project_name: project?.name ?? 'Test Project',
-              run_id:       'test-run-id',
-              run_name:     'Test Run (Webhook Check)',
-            },
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: integration.webhook_url, payload: testPayload }),
         },
       );
       const json = await res.json();
-      const ok = res.ok && (json.sent ?? 0) > 0;
+      const ok = res.ok && json.status >= 200 && json.status < 300;
       setTestResult({
         id: integration.id,
         ok,
         msg: ok
           ? 'Test message sent successfully!'
-          : json.error ?? 'Delivery failed — check your webhook URL.',
+          : `Delivery failed (HTTP ${json.status ?? '?'}) — check your webhook URL.`,
       });
     } catch (err: any) {
       setTestResult({ id: integration.id, ok: false, msg: err.message ?? 'Network error' });
@@ -300,8 +312,9 @@ export default function ProjectIntegrationsPage() {
 
   // ── Render helpers ────────────────────────────────────────────────────────
 
-  const currentTier = userProfile?.subscription_tier ?? 1;
-  const tierInfo    = TIER_INFO[currentTier as keyof typeof TIER_INFO];
+  const currentTier      = userProfile?.subscription_tier ?? 1;
+  const tierInfo         = TIER_INFO[currentTier as keyof typeof TIER_INFO];
+  const isStarterOrHigher = currentTier >= 2;
 
   if (loading) {
     return (
@@ -399,14 +412,45 @@ export default function ProjectIntegrationsPage() {
                   Send real-time notifications to Slack or Microsoft Teams when events occur in this project.
                 </p>
               </div>
-              <button
-                onClick={openAddModal}
-                className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold text-sm cursor-pointer whitespace-nowrap"
-              >
-                <i className="ri-add-line text-lg"></i>
-                Add Integration
-              </button>
+              {isStarterOrHigher ? (
+                <button
+                  onClick={openAddModal}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold text-sm cursor-pointer whitespace-nowrap"
+                >
+                  <i className="ri-add-line text-lg"></i>
+                  Add Integration
+                </button>
+              ) : (
+                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 text-yellow-700 border border-yellow-300 rounded-full text-xs font-semibold">
+                  <i className="ri-star-line"></i>
+                  Requires Starter or above
+                </span>
+              )}
             </div>
+
+            {/* Upgrade banner for Free tier */}
+            {!isStarterOrHigher && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i className="ri-lock-line text-yellow-600 text-xl"></i>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 mb-1">Slack & Teams Integration is available on Starter and above</h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Get real-time notifications in Slack or Microsoft Teams when test runs complete, milestones change, and more.
+                    </p>
+                    <a
+                      href="/settings"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      <i className="ri-arrow-up-circle-line"></i>
+                      Contact Us to Upgrade
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Integration list */}
             {integrations.length === 0 ? (
@@ -418,13 +462,23 @@ export default function ProjectIntegrationsPage() {
                 <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
                   Connect Slack or Microsoft Teams to receive real-time alerts about test runs, milestones, and team activity.
                 </p>
-                <button
-                  onClick={openAddModal}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold text-sm cursor-pointer"
-                >
-                  <i className="ri-add-line"></i>
-                  Add your first integration
-                </button>
+                {isStarterOrHigher ? (
+                  <button
+                    onClick={openAddModal}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold text-sm cursor-pointer"
+                  >
+                    <i className="ri-add-line"></i>
+                    Add your first integration
+                  </button>
+                ) : (
+                  <a
+                    href="/settings"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-semibold text-sm cursor-pointer"
+                  >
+                    <i className="ri-arrow-up-circle-line"></i>
+                    Upgrade to Starter
+                  </a>
+                )}
               </div>
             ) : (
               <div className="space-y-4">

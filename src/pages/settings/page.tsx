@@ -39,7 +39,7 @@ const TIER_INFO = {
     icon: 'ri-user-line',
     monthlyPrice: 0,
     priceDesc: 'Free',
-    features: ['Up to 3 projects', 'Up to 3 team members', 'Basic test management', 'Jira Integration (Link)', 'Community support'],
+    features: ['Up to 3 projects', 'Up to 3 team members', 'Basic test management', 'Jira Integration (Link)', 'Community support', 'No Slack / Teams Integration'],
   },
   2: {
     name: 'Starter',
@@ -47,7 +47,7 @@ const TIER_INFO = {
     icon: 'ri-star-line',
     monthlyPrice: 20,
     priceDesc: '/ mo',
-    features: ['Up to 10 projects', 'Up to 5 team members', 'Jira Integration', 'Basic reporting', 'Testcase Export/Import', 'Export PDF Report'],
+    features: ['Up to 10 projects', 'Up to 5 team members', 'Jira Integration', 'Slack & Teams Integration', 'Basic reporting', 'Testcase Export/Import', 'Export PDF Report'],
   },
   3: {
     name: 'Professional',
@@ -55,7 +55,7 @@ const TIER_INFO = {
     icon: 'ri-vip-crown-line',
     monthlyPrice: 50,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', 'Up to 20 team members', 'Jira Integration', 'Advanced reporting', 'Testcase Export/Import', 'Export PDF Report', 'CI/CD Integration', 'Priority support'],
+    features: ['Unlimited projects', 'Up to 20 team members', 'Jira Integration', 'Slack & Teams Integration', 'Advanced reporting', 'Testcase Export/Import', 'Export PDF Report', 'CI/CD Integration', 'Priority support'],
   },
 };
 
