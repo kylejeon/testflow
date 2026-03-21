@@ -704,7 +704,7 @@ export default function HomePage() {
         <header className="relative min-h-screen flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0">
             <img
-              src="/hero-project-overview.jpg"
+              src="/hero-project-overview.png"
               alt="Testably QA test management platform"
               className="w-full h-full object-cover object-top"
             />
