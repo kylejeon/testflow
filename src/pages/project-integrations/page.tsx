@@ -230,11 +230,23 @@ export default function ProjectIntegrationsPage() {
     setTestingId(integration.id);
     setTestResult(null);
     try {
+      const projectLink = `https://www.testably.app/projects/${id}`;
       const testPayload = integration.type === 'slack'
         ? {
             blocks: [
               { type: 'header', text: { type: 'plain_text', text: '🧪 Testably Test Message', emoji: true } },
               { type: 'section', text: { type: 'mrkdwn', text: `Webhook connection verified for *${project?.name ?? 'your project'}*.` } },
+              {
+                type: 'actions',
+                elements: [
+                  {
+                    type: 'button',
+                    text: { type: 'plain_text', text: 'View in Testably', emoji: true },
+                    url: projectLink,
+                    style: 'primary',
+                  },
+                ],
+              },
               { type: 'divider' },
             ],
           }
@@ -250,6 +262,9 @@ export default function ProjectIntegrationsPage() {
                 body: [
                   { type: 'TextBlock', size: 'Medium', weight: 'Bolder', text: '🧪 Testably Test Message' },
                   { type: 'TextBlock', text: `Webhook connection verified for ${project?.name ?? 'your project'}.`, wrap: true },
+                ],
+                actions: [
+                  { type: 'Action.OpenUrl', title: 'View in Testably', url: projectLink },
                 ],
               },
             }],
