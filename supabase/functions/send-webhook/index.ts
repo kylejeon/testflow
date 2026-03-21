@@ -25,7 +25,7 @@ interface Integration {
 
 // ── Message formatters ────────────────────────────────────────────────────────
 
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://testably.io';
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://www.testably.app';
 
 function eventMeta(eventType: string, data: Record<string, unknown>): { title: string; body: string; link: string } {
   const projectName = (data.project_name as string) ?? 'Project';
