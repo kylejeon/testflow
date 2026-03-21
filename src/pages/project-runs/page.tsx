@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import NotificationBell from '../../components/feature/NotificationBell';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
+import { triggerWebhook } from '../../hooks/useWebhooks';
 
 interface TestRun {
   id: string;
@@ -809,6 +810,16 @@ export default function ProjectRunsPage() {
             message: `"${formData.name}" 런이 완료되었습니다.`,
             link: `/projects/${id}/runs/${editingRunId}`,
           });
+          const prevRunData = testRuns.find(r => r.id === editingRunId);
+          triggerWebhook(id!, 'run_completed', {
+            project_id: id!,
+            project_name: project?.name ?? '',
+            run_id: editingRunId,
+            run_name: formData.name,
+            passed: prevRunData?.passed ?? 0,
+            failed: prevRunData?.failed ?? 0,
+            total: (prevRunData?.passed ?? 0) + (prevRunData?.failed ?? 0) + (prevRunData?.blocked ?? 0) + (prevRunData?.retest ?? 0) + (prevRunData?.untested ?? 0),
+          });
         }
       } else {
         const newRun = {
@@ -846,6 +857,12 @@ export default function ProjectRunsPage() {
           message: `"${formData.name}" 런이 생성되었습니다. (${testCaseIds.length}개 테스트)`,
           link: `/projects/${id}/runs${insertedData?.[0]?.id ? `/${insertedData[0].id}` : ''}`,
         });
+        triggerWebhook(id!, 'run_created', {
+          project_id: id!,
+          project_name: project?.name ?? '',
+          run_id: insertedData?.[0]?.id ?? '',
+          run_name: formData.name,
+        });
 
         if (formData.status === 'completed') {
           await notifyProjectMembers({
@@ -855,6 +872,15 @@ export default function ProjectRunsPage() {
             title: '테스트 런이 완료되었습니다',
             message: `"${formData.name}" 런이 완료되었습니다.`,
             link: `/projects/${id}/runs`,
+          });
+          triggerWebhook(id!, 'run_completed', {
+            project_id: id!,
+            project_name: project?.name ?? '',
+            run_id: insertedData?.[0]?.id ?? '',
+            run_name: formData.name,
+            passed: 0,
+            failed: 0,
+            total: testCaseIds.length,
           });
         }
       }

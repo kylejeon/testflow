@@ -685,6 +685,12 @@ export default function ProjectDetail() {
                   >
                     Sessions
                   </Link>
+                  <Link
+                    to={`/projects/${id}/integrations`}
+                    className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
+                  >
+                    Integrations
+                  </Link>
                 </nav>
 
                 {/* Profile */}

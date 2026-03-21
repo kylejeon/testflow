@@ -20,6 +20,7 @@ const AcceptInvitationPage = lazy(() => import('../pages/accept-invitation/page'
 const PrivacyPage = lazy(() => import('../pages/privacy/page'));
 const TermsPage = lazy(() => import('../pages/terms/page'));
 const AdminPage = lazy(() => import('../pages/admin/page'));
+const ProjectIntegrations = lazy(() => import('../pages/project-integrations/page'));
 
 const routes: RouteObject[] = [
   {
@@ -69,6 +70,10 @@ const routes: RouteObject[] = [
   {
     path: '/projects/:projectId/runs/:runId',
     element: <RunDetail />,
+  },
+  {
+    path: '/projects/:id/integrations',
+    element: <ProjectIntegrations />,
   },
   {
     path: '/testcases',

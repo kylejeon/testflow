@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { createNotification } from '../../../hooks/useNotifications';
+import { triggerWebhook } from '../../../hooks/useWebhooks';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -133,6 +134,28 @@ export default function InviteMemberModal({
           message: `You have been added to ${projectData?.name || 'the project'} as ${role}.`,
           link: `/projects/${projectId}`,
           projectId,
+        });
+
+        // Fire webhook events for member notifications
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const { data: inviterProfile } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', currentUser?.id ?? '')
+          .maybeSingle();
+
+        triggerWebhook(projectId, 'invitation_received', {
+          project_id: projectId,
+          project_name: projectData?.name ?? '',
+          invited_by: inviterProfile?.full_name || inviterProfile?.email || 'Someone',
+          role,
+        });
+        triggerWebhook(projectId, 'member_joined', {
+          project_id: projectId,
+          project_name: projectData?.name ?? '',
+          member_name: email,
+          member_email: email,
+          role,
         });
 
         setInvitationType('existing');

@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import NotificationBell from '../../components/feature/NotificationBell';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
+import { triggerWebhook } from '../../hooks/useWebhooks';
 
 interface Milestone {
   id: string;
@@ -138,6 +139,18 @@ export default function ProjectMilestones() {
           if (endDate < today) {
             currentStatus = 'past_due';
             supabase.from('milestones').update({ status: 'past_due' }).eq('id', milestone.id);
+            if (milestone.status !== 'past_due') {
+              // Fire webhook only when status transitions to past_due for the first time
+              supabase.from('projects').select('name').eq('id', id!).maybeSingle().then(({ data: proj }) => {
+                triggerWebhook(id!, 'milestone_past_due', {
+                  project_id: id!,
+                  project_name: proj?.name ?? '',
+                  milestone_id: milestone.id,
+                  milestone_name: milestone.name,
+                  end_date: milestone.end_date,
+                });
+              });
+            }
           }
         }
         
@@ -229,6 +242,19 @@ export default function ProjectMilestones() {
 
   const handleStartMilestone = async (milestoneId: string) => {
     await handleUpdateMilestone(milestoneId, { status: 'started' });
+    try {
+      const milestone = milestones.find(m => m.id === milestoneId || m.subMilestones?.find((s: any) => s.id === milestoneId));
+      const milestoneName = milestone?.id === milestoneId ? milestone?.name : milestone?.subMilestones?.find((s: any) => s.id === milestoneId)?.name || 'Milestone';
+      const { data: projectData } = await supabase.from('projects').select('name').eq('id', id!).maybeSingle();
+      triggerWebhook(id!, 'milestone_started', {
+        project_id: id!,
+        project_name: projectData?.name ?? '',
+        milestone_id: milestoneId,
+        milestone_name: milestoneName,
+      });
+    } catch (err) {
+      console.warn('milestone_started webhook error:', err);
+    }
   };
 
   const handleMarkAsComplete = async (milestoneId: string) => {
@@ -237,7 +263,14 @@ export default function ProjectMilestones() {
       const milestone = milestones.find(m => m.id === milestoneId || m.subMilestones?.find((s: any) => s.id === milestoneId));
       const milestoneName = milestone?.id === milestoneId ? milestone?.name : milestone?.subMilestones?.find((s: any) => s.id === milestoneId)?.name || 'Milestone';
       const { data: { user } } = await supabase.auth.getUser();
+      const { data: projectData } = await supabase.from('projects').select('name').eq('id', id!).maybeSingle();
       await notifyProjectMembers({ projectId: id!, excludeUserId: user?.id, type: 'milestone_completed', title: '마일스톤이 완료되었습니다', message: `"${milestoneName}" 마일스톤이 완료 처리되었습니다.`, link: `/projects/${id}/milestones` });
+      triggerWebhook(id!, 'milestone_completed', {
+        project_id: id!,
+        project_name: projectData?.name ?? '',
+        milestone_id: milestoneId,
+        milestone_name: milestoneName,
+      });
     } catch (err) {
       console.error('마일스톤 완료 알림 오류:', err);
     }
