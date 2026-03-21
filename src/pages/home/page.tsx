@@ -704,7 +704,7 @@ export default function HomePage() {
         <header className="relative min-h-screen flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0">
             <img
-              src="https://readdy.ai/api/search-image?query=modern%20software%20quality%20assurance%20team%20working%20with%20multiple%20monitors%20showing%20dashboard%20analytics%20test%20results%20charts%20minimal%20sleek%20dark%20office%20abstract%20geometric%20teal%20emerald%20lighting&width=1440&height=900&seq=hero-v2&orientation=landscape"
+              src="/hero-project-overview.jpg"
               alt="Testably QA test management platform"
               className="w-full h-full object-cover object-top"
             />
