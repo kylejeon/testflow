@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { sendLoopsEvent } from '../../lib/loops';
 import SEOHead from '../../components/SEOHead';
 
 type AuthMode = 'login' | 'signup' | 'reset' | 'new_password';
@@ -263,6 +264,11 @@ export default function AuthPage() {
           trial_ends_at: trialEnds.toISOString(), is_trial: true,
         });
         if (profileError && profileError.code !== '23505') console.error('Profile creation error:', profileError);
+        sendLoopsEvent(email, 'user_signup', {
+          firstName: fullName?.split(' ')[0] || 'there',
+          plan: 'free',
+          signupDate: new Date().toISOString().split('T')[0],
+        });
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (invitation?.token && data.session) {
           await acceptInvitation(invitation.token);

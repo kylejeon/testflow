@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { sendLoopsEvent, tierToPlanName } from '../../../lib/loops';
 
 interface UserRow {
   id: string;
@@ -78,6 +79,12 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
         .eq('id', user.id);
 
       if (updateError) throw updateError;
+
+      if (tier !== user.subscription_tier && tier > (user.subscription_tier || 1)) {
+        sendLoopsEvent(user.email, 'plan_upgraded', {
+          plan: tierToPlanName(tier),
+        });
+      }
 
       setSuccess(true);
       setTimeout(() => {
