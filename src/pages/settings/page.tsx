@@ -965,7 +965,7 @@ def pytest_sessionfinish(session, exitstatus):
                         </div>
 
                         {/* All Plans Comparison */}
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                           {Object.entries(TIER_INFO).map(([tier, info]) => {
                             const tierNum = parseInt(tier);
                             const isCurrentTier = tierNum === currentTier;
@@ -999,7 +999,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 <div className="mb-4 pb-4 border-b border-gray-200/70">
                                   <div className="flex items-end gap-1">
                                     <span className={`text-2xl font-bold ${
-                                      tierNum === 1 ? 'text-gray-700' : tierNum === 2 ? 'text-yellow-700' : 'text-teal-700'
+                                      tierNum === 1 ? 'text-gray-700' : tierNum === 2 ? 'text-yellow-700' : tierNum === 3 ? 'text-teal-700' : 'text-amber-700'
                                     }`}>
                                       {formatPrice(info.monthlyPrice, isAnnual)}
                                     </span>
@@ -1019,7 +1019,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   {info.features.map((feature, index) => (
                                     <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
                                       <i className={`ri-check-line mt-0.5 ${
-                                        tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : 'text-teal-500'
+                                        tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-teal-500' : 'text-amber-500'
                                       }`}></i>
                                       {tierNum === 1 && feature === 'Jira Integration (Link)' ? (
                                         <span className="flex items-center gap-1">
@@ -1047,8 +1047,12 @@ def pytest_sessionfinish(session, exitstatus):
                                   ))}
                                 </ul>
                                 {!isCurrentTier && tierNum > currentTier && (
-                                  <button className="w-full mt-4 px-4 py-2 bg-teal-500 text-white rounded-lg text-sm font-semibold hover:bg-teal-600 transition-all cursor-pointer whitespace-nowrap">
-                                    Contact Us to Upgrade
+                                  <button className={`w-full mt-4 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                                    tierNum === 4
+                                      ? 'border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
+                                      : 'bg-teal-500 text-white hover:bg-teal-600'
+                                  }`}>
+                                    {tierNum === 4 ? 'Contact Sales' : 'Contact Us to Upgrade'}
                                   </button>
                                 )}
                               </div>
