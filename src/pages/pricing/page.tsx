@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import SEOHead from '../../components/SEOHead';
 
 const plans = [
@@ -330,6 +330,29 @@ export default function PricingPage() {
                     </div>
                   )}
                 </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Compare Section */}
+        <section className="py-16 bg-gray-50 border-t border-gray-200">
+          <div className="max-w-3xl mx-auto px-6 text-center">
+            <p className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-3">See How We Compare</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-8">Switching from another tool?</h2>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {[
+                { label: 'Testably vs TestRail', path: '/compare/testrail' },
+                { label: 'Testably vs Zephyr Scale', path: '/compare/zephyr' },
+                { label: 'Testably vs Qase', path: '/compare/qase' },
+              ].map(({ label, path }) => (
+                <Link
+                  key={path}
+                  to={path}
+                  className="flex-1 border border-gray-300 hover:border-teal-400 hover:bg-teal-50 text-gray-700 hover:text-teal-700 font-medium text-sm px-5 py-3 rounded-lg transition-colors"
+                >
+                  {label}
+                </Link>
               ))}
             </div>
           </div>

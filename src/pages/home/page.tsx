@@ -262,6 +262,8 @@ const content = {
       privacy: 'Privacy Policy',
       terms: 'Terms of Service',
       about: 'About',
+      compare: 'Compare',
+      compareLinks: ['Testably vs TestRail', 'Testably vs Zephyr', 'Testably vs Qase'],
       copyright: `© ${new Date().getFullYear()} Testably. All rights reserved.`,
     },
     scrollIndicator: 'Scroll',
@@ -524,6 +526,8 @@ const content = {
       privacy: '개인정보처리방침',
       terms: '이용약관',
       about: '소개',
+      compare: '비교',
+      compareLinks: ['Testably vs TestRail', 'Testably vs Zephyr', 'Testably vs Qase'],
       copyright: `© ${new Date().getFullYear()} Testably. All rights reserved.`,
     },
     scrollIndicator: '스크롤',
@@ -1190,7 +1194,7 @@ export default function HomePage() {
         {/* Footer */}
         <footer className="bg-gray-100 py-12">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-7 h-7 bg-teal-500 rounded-lg flex items-center justify-center">
@@ -1222,6 +1226,16 @@ export default function HomePage() {
                   <li>
                     <button onClick={() => navigate('/terms')} className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer">{t.footer.terms}</button>
                   </li>
+                </ul>
+              </nav>
+              <nav>
+                <h4 className="text-sm font-bold text-gray-900 mb-4">{t.footer.compare}</h4>
+                <ul className="space-y-2">
+                  {t.footer.compareLinks.map((item, i) => (
+                    <li key={item}>
+                      <Link to={['/compare/testrail', '/compare/zephyr', '/compare/qase'][i]} className="text-gray-500 text-sm hover:text-gray-900 transition-colors">{item}</Link>
+                    </li>
+                  ))}
                 </ul>
               </nav>
             </div>
