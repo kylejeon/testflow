@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { SEOHead } from '../../components/SEOHead';
+import SEOHead from '../../components/SEOHead';
 import { testrailData } from '../../data/competitors/testrail';
 import { zephyrData } from '../../data/competitors/zephyr';
 import { qaseData } from '../../data/competitors/qase';
