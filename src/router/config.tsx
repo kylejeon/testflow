@@ -27,6 +27,7 @@ const ChangelogPage = lazy(() => import('../pages/changelog/page'));
 const RoadmapPage = lazy(() => import('../pages/roadmap/page'));
 const AboutPage = lazy(() => import('../pages/about/page'));
 const ComparePage = lazy(() => import('../pages/compare/page'));
+const CompareIndexPage = lazy(() => import('../pages/compare/index'));
 
 const routes: RouteObject[] = [
   {
@@ -124,6 +125,10 @@ const routes: RouteObject[] = [
   {
     path: '/about',
     element: <AboutPage />,
+  },
+  {
+    path: '/compare',
+    element: <CompareIndexPage />,
   },
   {
     path: '/compare/:competitor',

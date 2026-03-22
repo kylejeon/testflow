@@ -234,7 +234,7 @@ export default function ComparePage() {
               Get started free
             </a>
             <Link
-              to="/compare/testrail"
+              to="/compare"
               className="border border-gray-600 hover:border-gray-400 text-gray-300 hover:text-white font-semibold px-8 py-3 rounded-lg transition-colors"
             >
               See all comparisons
