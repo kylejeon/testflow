@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import SEOHead from '../../components/SEOHead';
 import { useLanguage } from '../../hooks/useLanguage';
 
@@ -1014,7 +1014,7 @@ export default function HomePage() {
 
         {/* Pricing Section */}
         <section id="pricing" className="py-24 bg-gray-50">
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
                 <i className="ri-price-tag-3-line text-teal-600 text-sm"></i>
@@ -1024,13 +1024,13 @@ export default function HomePage() {
               <p className="text-gray-500 text-lg">{t.pricingSection.description}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-start">
               {t.pricingPlans.map((plan) => (
                 <article
                   key={plan.name}
-                  className={`rounded-2xl p-7 border flex flex-col transition-all ${
+                  className={`rounded-2xl p-6 border flex flex-col transition-all ${
                     plan.highlighted
-                      ? 'bg-teal-500 border-teal-500 shadow-xl shadow-teal-200 scale-[1.03]'
+                      ? 'bg-teal-500 border-teal-500 shadow-xl shadow-teal-200 scale-[1.02]'
                       : 'bg-white border-gray-200 hover:border-teal-200 hover:shadow-md'
                   }`}
                 >
@@ -1203,9 +1203,9 @@ export default function HomePage() {
               <nav>
                 <h4 className="text-sm font-bold text-gray-900 mb-4">{t.footer.product}</h4>
                 <ul className="space-y-2">
-                  {t.footer.productLinks.map((item) => (
+                  {t.footer.productLinks.map((item, i) => (
                     <li key={item}>
-                      <a href="#" className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer" rel="nofollow">{item}</a>
+                      <Link to={['/features', '/pricing', '/changelog', '/roadmap'][i]} className="text-gray-500 text-sm hover:text-gray-900 transition-colors">{item}</Link>
                     </li>
                   ))}
                 </ul>
@@ -1214,7 +1214,7 @@ export default function HomePage() {
                 <h4 className="text-sm font-bold text-gray-900 mb-4">{t.footer.company}</h4>
                 <ul className="space-y-2">
                   <li>
-                    <a href="#" className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer" rel="nofollow">{t.footer.about}</a>
+                    <Link to="/about" className="text-gray-500 text-sm hover:text-gray-900 transition-colors">{t.footer.about}</Link>
                   </li>
                   <li>
                     <button onClick={() => navigate('/privacy')} className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer">{t.footer.privacy}</button>

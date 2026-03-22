@@ -21,6 +21,11 @@ const PrivacyPage = lazy(() => import('../pages/privacy/page'));
 const TermsPage = lazy(() => import('../pages/terms/page'));
 const AdminPage = lazy(() => import('../pages/admin/page'));
 const ProjectIntegrations = lazy(() => import('../pages/project-integrations/page'));
+const FeaturesPage = lazy(() => import('../pages/features/page'));
+const PricingPage = lazy(() => import('../pages/pricing/page'));
+const ChangelogPage = lazy(() => import('../pages/changelog/page'));
+const RoadmapPage = lazy(() => import('../pages/roadmap/page'));
+const AboutPage = lazy(() => import('../pages/about/page'));
 
 const routes: RouteObject[] = [
   {
@@ -98,6 +103,26 @@ const routes: RouteObject[] = [
   {
     path: '/admin',
     element: <AdminPage />,
+  },
+  {
+    path: '/features',
+    element: <FeaturesPage />,
+  },
+  {
+    path: '/pricing',
+    element: <PricingPage />,
+  },
+  {
+    path: '/changelog',
+    element: <ChangelogPage />,
+  },
+  {
+    path: '/roadmap',
+    element: <RoadmapPage />,
+  },
+  {
+    path: '/about',
+    element: <AboutPage />,
   },
   {
     path: '*',

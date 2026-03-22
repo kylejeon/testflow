@@ -1,0 +1,237 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import SEOHead from '../../components/SEOHead';
+
+const entries = [
+  {
+    date: 'Q2 2026',
+    title: 'AI Test Case Generation',
+    category: 'Coming Soon',
+    categoryColor: 'bg-purple-100 text-purple-700',
+    description: 'Generate test cases from text, Jira issues, or exploratory session logs using AI. Unique Session-to-TestCase mode. Included in all plans.',
+    bullets: [
+      '4 generation modes: Text, Jira, Session Log, Edge Cases',
+      '2-step review-before-save workflow',
+      'Free 5/mo · Starter 30/mo · Professional 150/mo · Enterprise unlimited',
+    ],
+  },
+  {
+    date: 'March 2026',
+    title: 'New Pricing Plans + Enterprise Tier',
+    category: 'New Feature',
+    categoryColor: 'bg-teal-100 text-teal-700',
+    description: 'Introducing updated pricing and a new Enterprise plan with unlimited members, unlimited AI, and dedicated support.',
+    bullets: [
+      'Free $0 (3 members), Starter $49 (5 members), Professional $99 (20 members)',
+      'New Enterprise plan: $249/month with unlimited everything',
+      'All plans include AI test case generation',
+      '14-day free trial on all paid plans',
+    ],
+  },
+  {
+    date: 'March 2026',
+    title: 'Slack & Microsoft Teams Integration',
+    category: 'New Feature',
+    categoryColor: 'bg-teal-100 text-teal-700',
+    description: 'Real-time notifications in Slack channels or Microsoft Teams. Configure per-project, per-channel.',
+    bullets: [
+      'Slack via Incoming Webhooks with Block Kit formatting',
+      'Microsoft Teams via Workflow Webhooks',
+      'Events: Run Created/Completed, Milestone Started/Completed/Past Due',
+      'Per-project webhook routing',
+    ],
+  },
+  {
+    date: 'January 2026',
+    title: 'CI/CD Pipeline Integration',
+    category: 'New Feature',
+    categoryColor: 'bg-teal-100 text-teal-700',
+    description: 'Upload automated test results from CI/CD pipelines via REST API.',
+    bullets: [
+      'REST API with project-specific tokens',
+      'GitHub Actions and GitLab CI support',
+      'Unified manual + automated results view',
+    ],
+  },
+  {
+    date: 'November 2025',
+    title: 'Jira Integration',
+    category: 'New Feature',
+    categoryColor: 'bg-teal-100 text-teal-700',
+    description: 'Connect to Jira Cloud and Data Center. Auto-create issues on test failure.',
+    bullets: [
+      'Auto issue creation with full context',
+      'Bidirectional status sync',
+      'Custom field mapping',
+    ],
+  },
+  {
+    date: 'September 2025',
+    title: 'Exploratory Sessions',
+    category: 'New Feature',
+    categoryColor: 'bg-teal-100 text-teal-700',
+    description: 'Mission-driven exploratory testing with rich-text notes, screenshots, and structured entries.',
+    bullets: [
+      'Rich-text editor with inline images',
+      'Passed / Failed / Note entries',
+      'Activity heatmap',
+    ],
+  },
+  {
+    date: 'July 2025',
+    title: 'Testably Launch',
+    category: 'New Feature',
+    categoryColor: 'bg-teal-100 text-teal-700',
+    description: 'Testably launches with core test management: test cases, runs, milestones, documentation, notifications.',
+    bullets: [
+      'Test case management with folders and priorities',
+      'Test runs with 5 result statuses',
+      'Milestone tracking with hierarchical structure',
+      'Role-based collaboration (Admin, Member, Viewer)',
+    ],
+  },
+];
+
+export default function ChangelogPage() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    try {
+      const body = new URLSearchParams();
+      body.append('email', email);
+      await fetch('https://readdy.ai/api/form/d6nnujlv117fnkj2hmc0', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString(),
+      });
+    } catch {
+      // silent
+    }
+    setSubscribed(true);
+    setEmail('');
+  };
+
+  return (
+    <>
+      <SEOHead
+        title="Changelog | Testably — Product Updates"
+        description="See what's new in Testably. Product updates, new features, and release notes for the QA test management platform."
+        keywords="testably changelog, product updates, release notes, new features"
+      />
+      <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
+        {/* Navbar */}
+        <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <button onClick={() => navigate('/')} className="flex items-center gap-2.5 cursor-pointer">
+              <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
+                <i className="ri-test-tube-line text-white text-base"></i>
+              </div>
+              <span className="text-lg font-bold text-gray-900" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={() => navigate('/roadmap')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Roadmap</button>
+              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all cursor-pointer">Log in</button>
+              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all cursor-pointer">Get Started</button>
+            </div>
+          </div>
+        </nav>
+
+        {/* Hero */}
+        <header className="py-20 bg-gray-950 text-center relative overflow-hidden">
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-teal-500/10 blur-[120px]"></div>
+          <div className="relative z-10 max-w-2xl mx-auto px-6">
+            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
+              <i className="ri-history-line text-teal-300 text-sm"></i>
+              <span className="text-teal-200 text-sm font-medium">Changelog</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">Product Updates</h1>
+            <p className="text-white/50 text-lg">New features, improvements, and what's coming next.</p>
+          </div>
+        </header>
+
+        {/* Timeline */}
+        <section className="py-20 bg-white">
+          <div className="max-w-3xl mx-auto px-6">
+            <div className="relative">
+              {/* Vertical line */}
+              <div className="absolute left-5 top-0 bottom-0 w-px bg-gray-100"></div>
+
+              <div className="space-y-10">
+                {entries.map((entry, i) => (
+                  <article key={i} className="relative pl-16">
+                    {/* Dot */}
+                    <div className={`absolute left-3 top-1 w-5 h-5 rounded-full border-4 border-white shadow-sm ${entry.category === 'Coming Soon' ? 'bg-purple-400' : 'bg-teal-500'}`}></div>
+
+                    <div className="bg-white border border-gray-100 rounded-2xl p-6 hover:border-teal-200 hover:shadow-md transition-all">
+                      <div className="flex flex-wrap items-center gap-3 mb-3">
+                        <span className="text-xs font-medium text-gray-400">{entry.date}</span>
+                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${entry.categoryColor}`}>{entry.category}</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">{entry.title}</h3>
+                      <p className="text-gray-500 text-sm leading-relaxed mb-4">{entry.description}</p>
+                      <ul className="space-y-1.5">
+                        {entry.bullets.map((b) => (
+                          <li key={b} className="flex items-start gap-2">
+                            <div className="w-4 h-4 flex items-center justify-center rounded-full bg-teal-100 flex-shrink-0 mt-0.5">
+                              <i className="ri-check-line text-xs text-teal-600"></i>
+                            </div>
+                            <span className="text-xs text-gray-600 leading-relaxed">{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Subscribe */}
+        <section className="py-16 bg-teal-600 text-center">
+          <div className="max-w-lg mx-auto px-6">
+            <h3 className="text-2xl font-bold text-white mb-2">Stay in the loop</h3>
+            <p className="text-teal-100 text-sm mb-6">Get product updates and new features in your inbox</p>
+            {subscribed ? (
+              <div className="flex items-center justify-center gap-2 text-white">
+                <i className="ri-check-circle-line text-xl"></i>
+                <span className="font-semibold">Thanks for subscribing!</span>
+              </div>
+            ) : (
+              <form onSubmit={handleSubscribe} className="flex gap-3 max-w-sm mx-auto">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm bg-white/20 border border-white/30 text-white placeholder-teal-200 focus:outline-none focus:bg-white/30"
+                  required
+                />
+                <button type="submit" className="px-5 py-3 bg-white text-teal-600 rounded-xl font-semibold text-sm hover:bg-teal-50 transition-all cursor-pointer whitespace-nowrap">
+                  Subscribe
+                </button>
+              </form>
+            )}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="bg-gray-100 py-8">
+          <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-teal-500 rounded-md flex items-center justify-center">
+                <i className="ri-test-tube-line text-white text-xs"></i>
+              </div>
+              <span className="text-sm font-bold text-gray-900" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+            </div>
+            <p className="text-gray-400 text-xs">© {new Date().getFullYear()} Testably. All rights reserved.</p>
+          </div>
+        </footer>
+      </div>
+    </>
+  );
+}
