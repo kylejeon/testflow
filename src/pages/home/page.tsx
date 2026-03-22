@@ -25,9 +25,9 @@ const content = {
     },
     stats: [
       { value: '10x', label: 'Faster test execution' },
-      { value: '500+', label: 'Teams worldwide' },
-      { value: '99.9%', label: 'Uptime SLA' },
-      { value: '5★', label: 'Average rating' },
+      { value: '<5min', label: 'Setup to first test run' },
+      { value: 'Jira', label: 'Two-way sync built-in' },
+      { value: 'Free', label: 'Up to 3 projects forever' },
     ],
     featuresSection: {
       badge: 'Core Features',
@@ -276,9 +276,9 @@ const content = {
     },
     stats: [
       { value: '10x', label: '빠른 테스트 실행' },
-      { value: '500+', label: '전 세계 팀' },
-      { value: '99.9%', label: '서비스 가용성' },
-      { value: '5★', label: '평균 평점' },
+      { value: '<5min', label: '첫 테스트까지 설정 시간' },
+      { value: 'Jira', label: '양방향 동기화 기본 내장' },
+      { value: 'Free', label: '프로젝트 3개 영구 무료' },
     ],
     featuresSection: {
       badge: '핵심 기능',
@@ -695,55 +695,133 @@ export default function HomePage() {
         </nav>
 
         {/* Hero Section */}
-        <header className="relative min-h-screen flex items-center justify-center overflow-hidden">
-          <div className="absolute inset-0">
-            <img
-              src="/hero-project-overview.png"
-              alt="Testably QA test management platform"
-              className="w-full h-full object-cover object-top"
-            />
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-900/85 via-teal-950/70 to-gray-900/80"></div>
+        <header className="relative min-h-[100dvh] flex items-center overflow-hidden bg-gray-950">
+
+          {/* Background: Mesh Gradient */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-teal-500/10 blur-[120px]"></div>
+            <div className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-teal-600/[0.08] blur-[100px]"></div>
+            <div className="absolute top-1/2 left-1/3 w-[400px] h-[400px] rounded-full bg-teal-400/5 blur-[80px]"></div>
+            {/* Noise texture */}
+            <div
+              className="absolute inset-0 opacity-[0.03] pointer-events-none z-10"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'repeat',
+                backgroundSize: '128px 128px',
+              }}
+            ></div>
           </div>
 
-          <div className="relative z-10 w-full max-w-5xl mx-auto px-6 text-center">
-            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
-              <i className="ri-sparkling-line text-teal-300 text-sm"></i>
-              <span className="text-teal-200 text-sm font-medium">{t.hero.badge}</span>
+          {/* Content */}
+          <div className="relative z-20 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-32 lg:py-0">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+
+              {/* LEFT: Text (7 columns) */}
+              <div className="lg:col-span-7 text-center lg:text-left">
+
+                {/* Badge */}
+                <div className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/[0.08] rounded-full px-4 py-1.5 mb-8 backdrop-blur-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
+                  <span className="text-teal-300/90 text-sm font-medium">Built for QA teams who ship fast</span>
+                </div>
+
+                {/* Heading */}
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.08] tracking-tight mb-6">
+                  Test management
+                  <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-teal-500">
+                    that just works.
+                  </span>
+                </h1>
+
+                {/* Subheading */}
+                <p className="text-lg md:text-xl text-white/50 leading-relaxed max-w-xl mb-10 mx-auto lg:mx-0">
+                  From test cases to runs, milestones to sessions — organize your entire QA workflow in one place. Free to start, ready in minutes.
+                </p>
+
+                {/* CTA Buttons */}
+                <div className="flex flex-col sm:flex-row items-center lg:items-start gap-4 mb-8">
+                  <button
+                    onClick={() => navigate('/auth')}
+                    className="group flex items-center gap-3 px-8 py-4 bg-teal-500 text-white rounded-full font-bold text-base hover:bg-teal-400 active:scale-[0.98] shadow-[0_0_30px_rgba(20,184,166,0.2)] hover:shadow-[0_0_40px_rgba(20,184,166,0.35)] cursor-pointer"
+                    style={{ transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
+                  >
+                    Get Started Free
+                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-white/20 group-hover:translate-x-0.5 transition-transform duration-300">
+                      <i className="ri-arrow-right-line text-sm"></i>
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => navigate('/auth')}
+                    className="flex items-center gap-2 px-8 py-4 bg-white/[0.06] text-white/80 border border-white/[0.1] rounded-full font-semibold text-base hover:bg-white/[0.1] hover:text-white hover:border-white/20 active:scale-[0.98] backdrop-blur-sm cursor-pointer"
+                    style={{ transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
+                  >
+                    <i className="ri-play-circle-line text-lg text-teal-400"></i>
+                    Watch Demo
+                  </button>
+                </div>
+
+                {/* Trust line */}
+                <p className="text-white/30 text-sm">
+                  No credit card required &nbsp;&middot;&nbsp; Free plan available &nbsp;&middot;&nbsp; Set up in under 5 minutes
+                </p>
+              </div>
+
+              {/* RIGHT: Product Screenshot (5 columns) */}
+              <div className="lg:col-span-5 relative">
+                {/* Glow behind */}
+                <div className="absolute -inset-8 bg-teal-500/10 rounded-3xl blur-3xl"></div>
+
+                {/* Double-Bezel Card */}
+                <div className="relative bg-white/[0.04] ring-1 ring-white/[0.08] p-1.5 rounded-[1.5rem] shadow-2xl">
+                  <div className="rounded-[calc(1.5rem-0.375rem)] overflow-hidden bg-gray-900 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
+                    {/* Browser chrome */}
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-900/80 border-b border-white/[0.06]">
+                      <div className="flex gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-white/10"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-white/10"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-white/10"></div>
+                      </div>
+                      <div className="flex-1 mx-4">
+                        <div className="bg-white/[0.06] rounded-md px-3 py-1 text-[11px] text-white/30 text-center truncate">
+                          testably.app/projects
+                        </div>
+                      </div>
+                    </div>
+                    {/* Screenshot */}
+                    <img
+                      src="/hero-project-overview.png"
+                      alt="Testably project dashboard showing test cases, runs, and milestones"
+                      className="w-full h-auto"
+                      loading="eager"
+                    />
+                  </div>
+                </div>
+
+                {/* Floating stat card */}
+                <div
+                  className="absolute -bottom-4 -left-6 bg-white/[0.06] backdrop-blur-xl border border-white/[0.1] rounded-2xl px-5 py-4 shadow-xl hidden sm:block"
+                  style={{ animation: 'float 6s ease-in-out infinite' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
+                      <i className="ri-check-double-line text-teal-400 text-lg"></i>
+                    </div>
+                    <div>
+                      <div className="text-white font-bold text-sm">248 tests passed</div>
+                      <div className="text-white/40 text-xs">Sprint 4.2 — 100% pass rate</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-
-            <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-              {t.hero.title1}
-              <br />
-              <strong className="text-teal-400">{t.hero.title2}</strong>
-            </h2>
-
-            <p className="text-lg md:text-xl text-white/70 mb-10 max-w-2xl mx-auto leading-relaxed">
-              {t.hero.description}
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={() => navigate('/auth')}
-                className="px-8 py-4 bg-teal-500 text-white rounded-xl font-bold text-base hover:bg-teal-400 transition-all cursor-pointer whitespace-nowrap shadow-lg shadow-teal-500/30 flex items-center gap-2"
-              >
-                <i className="ri-rocket-line"></i>
-                {t.hero.cta}
-              </button>
-              <button
-                onClick={() => navigate('/auth')}
-                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white border border-white/30 rounded-xl font-semibold text-base hover:bg-white/20 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
-              >
-                <i className="ri-play-circle-line"></i>
-                {t.hero.demo}
-              </button>
-            </div>
-
-            <p className="text-white/40 text-sm mt-6">{t.hero.sub}</p>
           </div>
 
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
-            <span className="text-white/40 text-xs">{t.scrollIndicator}</span>
-            <i className="ri-arrow-down-line text-white/40"></i>
+          {/* Scroll indicator */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-white/20 text-xs">
+            <span>Scroll</span>
+            <div className="w-px h-8 bg-gradient-to-b from-white/20 to-transparent"></div>
           </div>
         </header>
 
@@ -806,10 +884,10 @@ export default function HomePage() {
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
                 <i className="ri-flow-chart text-teal-600 text-sm"></i>
-                <span className="text-teal-700 text-sm font-medium">{t.integrationSection.badge}</span>
+                <span className="text-teal-700 text-sm font-medium">{t.workflowSection.badge}</span>
               </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.integrationSection.title}</h2>
-              <p className="text-gray-500 text-lg max-w-2xl mx-auto">{t.integrationSection.description}</p>
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.workflowSection.title}</h2>
+              <p className="text-gray-500 text-lg max-w-2xl mx-auto">{t.workflowSection.description}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -1018,13 +1096,13 @@ export default function HomePage() {
               <p className="text-gray-500 text-sm mb-4">
                 {lang === 'en' ? 'Still have questions?' : '아직 궁금한 점이 있으신가요?'}
               </p>
-              <button
-                onClick={() => navigate('/auth')}
+              <a
+                href="mailto:hello@testably.app"
                 className="inline-flex items-center gap-2 px-6 py-3 border border-teal-200 text-teal-600 rounded-xl font-semibold text-sm hover:bg-teal-50 transition-all cursor-pointer whitespace-nowrap"
               >
-                <i className="ri-chat-1-line"></i>
+                <i className="ri-mail-line"></i>
                 {lang === 'en' ? 'Contact our team' : '팀에 문의하기'}
-              </button>
+              </a>
             </div>
           </div>
         </section>
@@ -1128,8 +1206,12 @@ export default function HomePage() {
             <div className="border-t border-gray-200 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
               <p className="text-gray-400 text-xs">{t.footer.copyright}</p>
               <div className="flex items-center gap-4">
-                {['ri-twitter-x-line', 'ri-github-line', 'ri-linkedin-box-line'].map((icon) => (
-                  <a key={icon} href="#" className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors cursor-pointer" rel="nofollow">
+                {[
+                  { icon: 'ri-twitter-x-line', href: 'https://x.com/testably' },
+                  { icon: 'ri-github-line', href: 'https://github.com/testably' },
+                  { icon: 'ri-linkedin-box-line', href: 'https://linkedin.com/company/testably' },
+                ].map(({ icon, href }) => (
+                  <a key={icon} href={href} target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors cursor-pointer">
                     <i className={`${icon} text-base`}></i>
                   </a>
                 ))}
