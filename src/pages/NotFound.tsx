@@ -4,8 +4,8 @@ export default function NotFound() {
     return (
       <>
         <SEOHead
-          title="페이지를 찾을 수 없습니다 | Testably"
-          description="요청하신 페이지를 찾을 수 없습니다. Testably 홈페이지로 돌아가세요."
+          title="Page not found | Testably"
+          description="The page you requested could not be found. Return to the Testably homepage."
           noindex={true}
         />
         <div className="flex flex-col items-center justify-center h-screen text-center px-4">

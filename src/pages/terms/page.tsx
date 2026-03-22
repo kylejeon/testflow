@@ -7,9 +7,9 @@ export default function TermsPage() {
   return (
     <>
       <SEOHead
-        title="이용약관 | Testably"
-        description="Testably 서비스 이용약관입니다. 서비스 이용 조건, 회원가입, 계정 관리, 유료 서비스 및 결제, 환불 정책, 이용자 의무 등에 대한 안내를 확인하세요."
-        keywords="이용약관, 서비스 약관, 회원가입, 환불 정책, 이용자 권리"
+        title="Terms of Service | Testably"
+        description="Read Testably's Terms of Service. Learn about account usage, subscriptions, payments, refund policy, and user responsibilities."
+        keywords="terms of service, user agreement, subscription, refund policy"
         noindex={true}
       />
       <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>

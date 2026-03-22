@@ -18,9 +18,9 @@ interface SEOHeadProps {
 }
 
 export default function SEOHead({
-  title = 'Testably - QA 테스트 관리 플랫폼 | 스마트한 테스트 관리',
-  description = 'Testably는 QA 팀을 위한 올인원 테스트 관리 플랫폼입니다. 테스트 케이스 관리, Test Run 실행, 마일스톤 추적, Jira 연동까지 QA 워크플로우 전체를 하나에서 관리하세요.',
-  keywords = '테스트 관리, QA 플랫폼, 테스트 케이스, Test Run, 마일스톤, Jira 연동',
+  title = 'Testably - QA Test Management Platform | Start for Free',
+  description = 'Testably is an all-in-one test management platform for QA teams. Manage test cases, run tests, track milestones, and integrate with Jira — all in one place.',
+  keywords = 'test management, QA platform, test cases, test runs, milestones, Jira integration',
   ogTitle,
   ogDescription,
   ogImage = 'https://readdy.ai/api/search-image?query=modern%20professional%20QA%20testing%20management%20platform%20dashboard%20interface%20with%20clean%20design%2C%20test%20case%20management%20system%2C%20quality%20assurance%20software%2C%20professional%20tech%20workspace%2C%20minimalist%20UI%20design%2C%20teal%20and%20navy%20blue%20color%20scheme%2C%20organized%20workflow%20visualization%2C%20digital%20testing%20tools&width=1200&height=630&seq=testably-og-default&orientation=landscape',
@@ -97,7 +97,7 @@ export default function SEOHead({
     // Cleanup function
     return () => {
       // Reset to default title on unmount
-      document.title = 'Testably - QA 테스트 관리 플랫폼 | 스마트한 테스트 관리';
+      document.title = 'Testably - QA Test Management Platform | Start for Free';
     };
   }, [
     title,

@@ -9,7 +9,7 @@ const content = {
       features: 'Features',
       workflow: 'How It Works',
       pricing: 'Pricing',
-      testimonials: 'Testimonials',
+      testimonials: 'Why Testably',
       faq: 'FAQ',
       login: 'Log in',
       getStarted: 'Get Started',
@@ -130,30 +130,27 @@ const content = {
       ciDescription: 'Push automated test results from any CI/CD system via our REST API. Use project-specific tokens to keep your pipelines secure.',
       ciTags: ['GitHub Actions', 'Jenkins', 'GitLab CI', 'REST API'],
     },
-    testimonials: [
+    whyCards: [
       {
-        name: 'Sarah Kim',
-        role: 'QA Lead @ TechCorp',
-        avatar: 'https://readdy.ai/api/search-image?query=professional%20asian%20woman%20smiling%20portrait%20headshot%20clean%20white%20background%20corporate%20style&width=80&height=80&seq=t1&orientation=squarish',
-        content: 'Testably cut our test cycle time by 3x. Real-time visibility across the whole team has been a game changer — we spend way less time in status meetings.',
+        icon: 'ri-timer-line',
+        title: '5-Minute Setup',
+        content: 'Sign up, create a project, write your first test case. No configuration wizards, no onboarding calls.',
       },
       {
-        name: 'Marcus Park',
-        role: 'Software Engineer @ StartupXYZ',
-        avatar: 'https://readdy.ai/api/search-image?query=professional%20asian%20man%20smiling%20portrait%20headshot%20clean%20white%20background%20corporate%20style&width=80&height=80&seq=t2&orientation=squarish',
-        content: 'The Jira integration is incredibly smooth. Failed tests automatically become Jira issues, so developers get context immediately without waiting for QA to file reports.',
+        icon: 'ri-puzzle-line',
+        title: 'Jira + CI/CD Built-in',
+        content: 'Failed test becomes a Jira issue automatically. GitHub Actions and GitLab CI report results back.',
       },
       {
-        name: 'Lisa Chen',
-        role: 'Product Manager @ FinTech Co.',
-        avatar: 'https://readdy.ai/api/search-image?query=professional%20asian%20woman%20smiling%20portrait%20headshot%20clean%20white%20background%20corporate%20style&width=80&height=80&seq=t3&orientation=squarish',
-        content: 'Milestone tracking has made our release planning so much more accurate. I can show leadership real data on test coverage instead of gut-feeling estimates.',
+        icon: 'ri-hand-coin-line',
+        title: 'Free Forever Plan',
+        content: 'Unlimited test cases, 3 projects, 2 team members. No credit card, no trial expiration.',
       },
     ],
-    testimonialsSection: {
-      badge: 'Testimonials',
-      title: 'Loved by QA teams worldwide',
-      description: 'See why growing teams choose Testably to build better software',
+    whySection: {
+      badge: 'Why Testably',
+      title: 'Why Teams Choose Testably',
+      description: 'Everything your QA team needs, none of the complexity you don\'t.',
     },
     pricingSection: {
       badge: 'Pricing',
@@ -254,7 +251,7 @@ const content = {
       privacy: 'Privacy Policy',
       terms: 'Terms of Service',
       about: 'About',
-      copyright: '© 2025 Testably. All rights reserved.',
+      copyright: `© ${new Date().getFullYear()} Testably. All rights reserved.`,
     },
     scrollIndicator: 'Scroll',
   },
@@ -263,7 +260,7 @@ const content = {
       features: '기능',
       workflow: '워크플로우',
       pricing: '요금제',
-      testimonials: '고객 사례',
+      testimonials: 'Why Testably',
       faq: 'FAQ',
       login: '로그인',
       getStarted: '무료 시작',
@@ -384,30 +381,27 @@ const content = {
       ciDescription: 'REST API를 통해 모든 CI/CD 시스템에서 자동 테스트 결과를 업로드하세요. 프로젝트별 토큰으로 파이프라인을 안전하게 유지하세요.',
       ciTags: ['GitHub Actions', 'Jenkins', 'GitLab CI', 'REST API'],
     },
-    testimonials: [
+    whyCards: [
       {
-        name: '김지수',
-        role: 'QA Lead @ TechCorp',
-        avatar: 'https://readdy.ai/api/search-image?query=professional%20asian%20woman%20smiling%20portrait%20headshot%20clean%20white%20background%20corporate%20style&width=80&height=80&seq=t1&orientation=squarish',
-        content: 'Testably 도입 후 테스트 사이클이 3배 빨라졌습니다. 팀 전체가 실시간으로 진행 상황을 공유할 수 있어서 커뮤니케이션 비용이 크게 줄었어요.',
+        icon: 'ri-timer-line',
+        title: '5분 설정',
+        content: '가입하고, 프로젝트를 만들고, 첫 번째 테스트 케이스를 작성하세요. 복잡한 설정 마법사나 온보딩 콜 없이 바로 시작할 수 있습니다.',
       },
       {
-        name: '박민준',
-        role: 'Software Engineer @ StartupXYZ',
-        avatar: 'https://readdy.ai/api/search-image?query=professional%20asian%20man%20smiling%20portrait%20headshot%20clean%20white%20background%20corporate%20style&width=80&height=80&seq=t2&orientation=squarish',
-        content: 'Jira 연동 기능이 정말 편리합니다. 테스트 실패 시 자동으로 이슈가 생성되어 개발팀이 즉시 컨텍스트를 파악할 수 있어요.',
+        icon: 'ri-puzzle-line',
+        title: 'Jira + CI/CD 기본 내장',
+        content: '테스트 실패 시 자동으로 Jira 이슈가 생성됩니다. GitHub Actions와 GitLab CI가 결과를 자동으로 보고합니다.',
       },
       {
-        name: '이서연',
-        role: 'Product Manager @ FinTech Co.',
-        avatar: 'https://readdy.ai/api/search-image?query=professional%20korean%20woman%20smiling%20portrait%20headshot%20clean%20white%20background%20corporate%20style&width=80&height=80&seq=t3&orientation=squarish',
-        content: '마일스톤 추적 기능 덕분에 릴리즈 일정을 훨씬 정확하게 예측할 수 있게 되었습니다. 경영진에게 감 대신 실제 데이터를 제시할 수 있어요.',
+        icon: 'ri-hand-coin-line',
+        title: '영구 무료 플랜',
+        content: '무제한 테스트 케이스, 프로젝트 3개, 팀 멤버 2명. 신용카드 없이, 체험 기간 만료 없이 사용하세요.',
       },
     ],
-    testimonialsSection: {
-      badge: '고객 사례',
-      title: '팀들이 Testably를 선택한 이유',
-      description: '성장하는 팀들이 더 나은 소프트웨어를 만들기 위해 Testably를 선택하는 이유를 확인하세요',
+    whySection: {
+      badge: 'Why Testably',
+      title: '팀들이 Testably를 선택하는 이유',
+      description: 'QA 팀에 필요한 모든 것, 불필요한 복잡함은 없습니다.',
     },
     pricingSection: {
       badge: '요금제',
@@ -508,7 +502,7 @@ const content = {
       privacy: '개인정보처리방침',
       terms: '이용약관',
       about: '소개',
-      copyright: '© 2025 Testably. All rights reserved.',
+      copyright: `© ${new Date().getFullYear()} Testably. All rights reserved.`,
     },
     scrollIndicator: '스크롤',
   },
@@ -599,7 +593,7 @@ export default function HomePage() {
     { label: t.nav.features, href: '#features' },
     { label: t.nav.workflow, href: '#workflow' },
     { label: t.nav.pricing, href: '#pricing' },
-    { label: t.nav.testimonials, href: '#testimonials' },
+    { label: t.nav.testimonials, href: '#why-testably' },
     { label: t.nav.faq, href: '#faq' },
   ];
 
@@ -892,36 +886,26 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Testimonials */}
-        <section id="testimonials" className="py-24 bg-white">
+        {/* Why Teams Choose Testably */}
+        <section id="why-testably" className="py-24 bg-white">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-chat-quote-line text-teal-600 text-sm"></i>
-                <span className="text-teal-700 text-sm font-medium">{t.testimonialsSection.badge}</span>
+                <i className="ri-award-line text-teal-600 text-sm"></i>
+                <span className="text-teal-700 text-sm font-medium">{t.whySection.badge}</span>
               </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.testimonialsSection.title}</h2>
-              <p className="text-gray-500 text-lg">{t.testimonialsSection.description}</p>
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.whySection.title}</h2>
+              <p className="text-gray-500 text-lg">{t.whySection.description}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {t.testimonials.map((item) => (
-                <article key={item.name} className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all">
-                  <div className="flex items-center gap-1 mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <i key={i} className="ri-star-fill text-amber-400 text-sm"></i>
-                    ))}
+              {t.whyCards.map((card) => (
+                <article key={card.title} className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all">
+                  <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center mb-5">
+                    <i className={`${card.icon} text-teal-600 text-2xl`}></i>
                   </div>
-                  <p className="text-gray-700 text-sm leading-relaxed mb-6">"{item.content}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                      <img src={item.avatar} alt={item.name} className="w-full h-full object-cover object-top" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-gray-900">{item.name}</div>
-                      <div className="text-xs text-gray-500">{item.role}</div>
-                    </div>
-                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">{card.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{card.content}</p>
                 </article>
               ))}
             </div>

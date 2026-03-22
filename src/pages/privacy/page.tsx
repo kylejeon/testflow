@@ -7,9 +7,9 @@ export default function PrivacyPage() {
   return (
     <>
       <SEOHead
-        title="개인정보처리방침 | Testably"
-        description="Testably의 개인정보처리방침입니다. 개인정보 수집 항목, 처리 목적, 보유 기간, 제3자 제공, 이용자 권리 등에 대한 안내를 확인하세요."
-        keywords="개인정보처리방침, 개인정보 보호, 데이터 보안, 이용자 권리"
+        title="Privacy Policy | Testably"
+        description="Read Testably's Privacy Policy. Learn how we collect, use, and protect your personal data."
+        keywords="privacy policy, data protection, user rights, data security"
         noindex={true}
       />
       <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>

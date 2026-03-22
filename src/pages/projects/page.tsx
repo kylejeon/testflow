@@ -99,8 +99,8 @@ export default function ProjectsPage() {
   return (
     <>
       <SEOHead
-        title="내 프로젝트 | Testably"
-        description="Testably에서 QA 테스트 프로젝트를 관리하세요. 테스트 케이스, 실행 결과, 세션을 한 곳에서 관리할 수 있습니다."
+        title="My Projects | Testably"
+        description="Manage your QA test projects in Testably. Test cases, runs, and sessions — all in one place."
         noindex={true}
       />
       <div className="flex h-screen bg-white">

@@ -493,7 +493,7 @@ export default function ProjectDetail() {
   if (loading) {
     return (
       <>
-        <SEOHead title="프로젝트 로딩 중... | Testably" description="Testably 프로젝트를 불러오는 중입니다." noindex />
+        <SEOHead title="Loading project... | Testably" description="Loading your Testably project." noindex />
         <div className="flex h-screen bg-white">
           <div className="flex-1 flex flex-col overflow-hidden">
             <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -528,7 +528,7 @@ export default function ProjectDetail() {
   if (!project) {
     return (
       <>
-        <SEOHead title="프로젝트를 찾을 수 없습니다 | Testably" description="요청하신 프로젝트를 찾을 수 없습니다." noindex />
+        <SEOHead title="Project not found | Testably" description="The project you requested could not be found." noindex />
         <div className="flex h-screen bg-white">
           <div className="flex-1 flex flex-col overflow-hidden">
             <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -621,7 +621,7 @@ export default function ProjectDetail() {
   // ── Main render ──
   return (
     <>
-      <SEOHead title={`${project.name} | Testably`} description={`${project.name} 프로젝트의 개요, 마일스톤, 테스트 실행 결과 및 세션을 확인하세요.`} noindex />
+      <SEOHead title={`${project.name} | Testably`} description={`View overview, milestones, test runs, and sessions for ${project.name}.`} noindex />
       <div className="flex h-screen bg-white">
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
