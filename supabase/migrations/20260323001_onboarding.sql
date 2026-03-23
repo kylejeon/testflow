@@ -35,9 +35,17 @@ CREATE POLICY "Users manage own onboarding"
   WITH CHECK (auth.uid() = user_id);
 
 -- Auto-update updated_at
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE TRIGGER set_user_onboarding_updated_at
   BEFORE UPDATE ON public.user_onboarding
-  FOR EACH ROW EXECUTE FUNCTION moddatetime(updated_at);
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================
 -- 2. Auto-create onboarding record on new user signup

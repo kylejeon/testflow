@@ -28,18 +28,30 @@ CREATE TABLE IF NOT EXISTS ai_generation_logs (
 );
 
 -- 인덱스
-CREATE INDEX idx_ai_generation_logs_user_id ON ai_generation_logs(user_id);
-CREATE INDEX idx_ai_generation_logs_project_id ON ai_generation_logs(project_id);
-CREATE INDEX idx_ai_generation_logs_created_at ON ai_generation_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_generation_logs_user_id ON ai_generation_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_generation_logs_project_id ON ai_generation_logs(project_id);
+CREATE INDEX IF NOT EXISTS idx_ai_generation_logs_created_at ON ai_generation_logs(created_at DESC);
 
 -- RLS 활성화
 ALTER TABLE ai_generation_logs ENABLE ROW LEVEL SECURITY;
 
 -- 본인 로그만 조회/삽입 가능
-CREATE POLICY "Users can view own ai generation logs"
-  ON ai_generation_logs FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'ai_generation_logs' AND policyname = 'Users can view own ai generation logs'
+  ) THEN
+    CREATE POLICY "Users can view own ai generation logs"
+      ON ai_generation_logs FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Users can insert own ai generation logs"
-  ON ai_generation_logs FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'ai_generation_logs' AND policyname = 'Users can insert own ai generation logs'
+  ) THEN
+    CREATE POLICY "Users can insert own ai generation logs"
+      ON ai_generation_logs FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
