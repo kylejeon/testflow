@@ -41,7 +41,7 @@ export default function TestCases() {
               <Link to="/projects" className="flex items-center cursor-pointer">
                 <LogoMark />
               </Link>
-              <div className="w-px h-5 bg-gray-200" />
+              <div className="w-px h-5 bg-gray-300" />
               <span className="text-sm text-gray-500">Test Cases</span>
               
               <div className="relative ml-8">

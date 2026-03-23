@@ -636,12 +636,12 @@ export default function ProjectDetail() {
           <header className="bg-white border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
               {/* Left: Logo / Project Name */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                 <Link to="/projects" className="flex items-center cursor-pointer">
                   <LogoMark />
                 </Link>
 
-                <div className="w-px h-5 bg-gray-200" />
+                <div className="w-px h-5 bg-gray-300" />
 
                 <span className="text-sm text-gray-500">{project.name}</span>
               </div>
