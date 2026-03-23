@@ -616,10 +616,10 @@ export default function ProjectSessions() {
                   Runs & Results
                 </Link>
                 <Link 
-                  to={`/projects/${projectId}/sessions`}
+                  to={`/projects/${projectId}/discovery-logs`}
                   className="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg cursor-pointer"
                 >
-                  Sessions
+                  Discovery Logs
                 </Link>
               </nav>
               
@@ -680,7 +680,7 @@ export default function ProjectSessions() {
             {/* Header */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Sessions</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Discovery Logs</h1>
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={() => {
@@ -697,7 +697,7 @@ export default function ProjectSessions() {
                     className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center gap-2 text-sm font-medium cursor-pointer whitespace-nowrap"
                   >
                     <i className="ri-add-line"></i>
-                    Session
+                    New Log
                   </button>
                 </div>
               </div>
@@ -708,7 +708,7 @@ export default function ProjectSessions() {
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <div className="text-sm text-gray-500 mb-1">ACTIVE SESSIONS</div>
+                      <div className="text-sm text-gray-500 mb-1">ACTIVE LOGS</div>
                       <div className="text-3xl font-bold text-gray-900">{stats.activeSessions}</div>
                       <div className="text-sm text-gray-500 mt-1">{stats.unstarted} unstarted</div>
                     </div>
@@ -953,12 +953,12 @@ export default function ProjectSessions() {
               <div className="text-center py-12">
                 <i className="ri-calendar-line text-6xl text-gray-300 mb-4"></i>
                 <p className="text-gray-500 text-lg">
-                  {searchQuery || activeFilterCount > 0 ? 'No sessions found' : 'No sessions yet'}
+                  {searchQuery || activeFilterCount > 0 ? 'No discovery logs found' : 'No discovery logs yet'}
                 </p>
                 <p className="text-gray-400 text-sm mt-2">
-                  {searchQuery || activeFilterCount > 0 
-                    ? 'Try adjusting your search or filters' 
-                    : 'Create your first session to get started'}
+                  {searchQuery || activeFilterCount > 0
+                    ? 'Try adjusting your search or filters'
+                    : 'Create your first discovery log to get started'}
                 </p>
               </div>
             ) : (
@@ -997,7 +997,7 @@ export default function ProjectSessions() {
                                   <th className="px-4 py-3 text-left">
                                     <input type="checkbox" className="w-4 h-4 text-indigo-600 cursor-pointer" />
                                   </th>
-                                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Session</th>
+                                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Discovery Log</th>
                                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">State</th>
                                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tags</th>
                                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Contributors</th>
@@ -1021,7 +1021,7 @@ export default function ProjectSessions() {
                                             'ri-check-line text-purple-500'
                                           }`}></i>
                                           <Link 
-                                            to={`/projects/${projectId}/sessions/${session.id}`}
+                                            to={`/projects/${projectId}/discovery-logs/${session.id}`}
                                             className="font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
                                           >
                                             {session.name}
@@ -1158,7 +1158,7 @@ export default function ProjectSessions() {
                                       'ri-check-line text-purple-500'
                                     }`}></i>
                                     <Link 
-                                      to={`/projects/${projectId}/sessions/${session.id}`}
+                                      to={`/projects/${projectId}/discovery-logs/${session.id}`}
                                       className="font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
                                     >
                                       {session.name}
@@ -1325,7 +1325,7 @@ export default function ProjectSessions() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">{editingSessionId ? 'Edit session' : 'Add session'}</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{editingSessionId ? 'Edit Discovery Log' : 'New Discovery Log'}</h2>
               <button 
                 onClick={() => {
                   setShowAddSessionModal(false);
@@ -1350,7 +1350,7 @@ export default function ProjectSessions() {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      placeholder="Session name"
+                      placeholder="Log name"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                   </div>

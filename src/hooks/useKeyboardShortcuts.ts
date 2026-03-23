@@ -95,7 +95,7 @@ export function useKeyboardShortcuts(options: ShortcutOptions = {}) {
             break;
           case 'd':
             e.preventDefault();
-            navigate(`/projects/${projectId}/sessions`);
+            navigate(`/projects/${projectId}/discovery-logs`);
             break;
           case 'm':
             e.preventDefault();

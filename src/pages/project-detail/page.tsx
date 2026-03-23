@@ -680,10 +680,10 @@ export default function ProjectDetail() {
                     Runs &amp; Results
                   </Link>
                   <Link
-                    to={`/projects/${id}/sessions`}
+                    to={`/projects/${id}/discovery-logs`}
                     className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
                   >
-                    Sessions
+                    Discovery Logs
                   </Link>
                 </nav>
 
@@ -860,9 +860,9 @@ export default function ProjectDetail() {
                       </div>
                     </div>
 
-                    {/* Sessions */}
+                    {/* Discovery Logs */}
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-600 uppercase mb-4">SESSIONS (active)</h3>
+                      <h3 className="text-sm font-semibold text-gray-600 uppercase mb-4">DISCOVERY LOGS (active)</h3>
                       <div className="flex items-start gap-8">
                         {/* Active sessions donut */}
                         <div className="flex-shrink-0">
@@ -884,7 +884,7 @@ export default function ProjectDetail() {
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                               <div className="text-sm font-medium text-gray-500 uppercase">ACTIVE</div>
                               <div className="text-3xl font-bold text-gray-900">{sessions.filter(s => s.status === 'active').length}</div>
-                              <div className="text-sm text-gray-500">Sessions</div>
+                              <div className="text-sm text-gray-500">Logs</div>
                             </div>
                           </div>
                         </div>
@@ -892,12 +892,12 @@ export default function ProjectDetail() {
                         {/* Session list */}
                         <div className="flex-1 space-y-3">
                           {sessions.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">No sessions yet</div>
+                            <div className="text-center py-8 text-gray-500">No discovery logs yet</div>
                           ) : (
                             sessions.map(session => (
                               <Link
                                 key={session.id}
-                                to={`/projects/${id}/sessions/${session.id}`}
+                                to={`/projects/${id}/discovery-logs/${session.id}`}
                                 className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg transition-all cursor-pointer group"
                               >
                                 <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">

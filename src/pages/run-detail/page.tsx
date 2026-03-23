@@ -4,6 +4,7 @@ import { LogoMark } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { FocusMode, type FocusTestCase, type TestStatus } from '../../components/FocusMode';
+import { StatusBadge } from '../../components/StatusBadge';
 
 interface TestCase {
   id: string;
@@ -1989,10 +1990,7 @@ export default function RunDetail() {
                           })()}
                         </div>
                         <div className="col-span-3 flex items-center">
-                          <span className={`inline-flex items-center gap-1 text-xs font-medium ${getStatusColor(testCase.runStatus)}`}>
-                            <i className={`${getStatusIcon(testCase.runStatus)}`}></i>
-                            {getStatusText(testCase.runStatus)}
-                          </span>
+                          <StatusBadge status={testCase.runStatus as TestStatus} size="sm" />
                         </div>
                       </div>
                     ))
@@ -3292,22 +3290,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, onClose }: ResultDeta
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
-              result.status === 'passed' ? 'bg-green-100 text-green-700' :
-              result.status === 'failed' ? 'bg-red-100 text-red-700' :
-              result.status === 'blocked' ? 'bg-gray-100 text-gray-700' :
-              result.status === 'retest' ? 'bg-yellow-100 text-yellow-700' :
-              'bg-gray-100 text-gray-500'
-            }`}>
-              <i className={`text-lg ${
-                result.status === 'passed' ? 'ri-checkbox-circle-line text-green-600' :
-                result.status === 'failed' ? 'ri-close-circle-line text-red-600' :
-                result.status === 'blocked' ? 'ri-forbid-line text-orange-600' :
-                result.status === 'retest' ? 'ri-refresh-line text-yellow-600' :
-                'ri-question-line text-gray-500'
-              }`}></i>
-              {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
-            </div>
+            <StatusBadge status={result.status as TestStatus} />
           </div>
 
           {result.elapsed && (

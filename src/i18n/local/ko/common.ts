@@ -5,7 +5,7 @@ export const common = {
   documentation: '문서',
   testCases: '테스트 케이스',
   runsAndResults: '실행 및 결과',
-  sessions: '세션',
+  sessions: '디스커버리 로그',
   settings: '설정',
   projects: '프로젝트',
   

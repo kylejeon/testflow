@@ -98,7 +98,7 @@ export function CommandPalette({ open, onClose, projectId, onAIGenerate }: Comma
               title: 'Discovery Logs',
               subtitle: 'Current project',
               icon: 'ri-compass-discover-line',
-              action: () => navigateTo(`/projects/${projectId}/sessions`, { id: 'page-discovery', title: 'Discovery Logs', icon: 'ri-compass-discover-line', path: `/projects/${projectId}/sessions` }),
+              action: () => navigateTo(`/projects/${projectId}/discovery-logs`, { id: 'page-discovery', title: 'Discovery Logs', icon: 'ri-compass-discover-line', path: `/projects/${projectId}/discovery-logs` }),
             },
             {
               id: 'page-milestones',
@@ -135,7 +135,7 @@ export function CommandPalette({ open, onClose, projectId, onAIGenerate }: Comma
             id: 'action-new-discovery',
             title: 'New Discovery Log',
             icon: 'ri-compass-discover-line',
-            action: () => { navigateTo(`/projects/${projectId}/sessions`, { id: 'action-new-discovery', title: 'New Discovery Log', icon: 'ri-compass-discover-line', path: `/projects/${projectId}/sessions` }); },
+            action: () => { navigateTo(`/projects/${projectId}/discovery-logs`, { id: 'action-new-discovery', title: 'New Discovery Log', icon: 'ri-compass-discover-line', path: `/projects/${projectId}/discovery-logs` }); },
           },
           {
             id: 'action-new-milestone',

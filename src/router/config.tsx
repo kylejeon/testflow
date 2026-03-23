@@ -1,5 +1,17 @@
 import { lazy } from 'react';
-import { RouteObject } from 'react-router-dom';
+import { RouteObject, Navigate, useParams } from 'react-router-dom';
+
+// Redirect /projects/:id/sessions → /projects/:id/discovery-logs
+function SessionsRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/projects/${id}/discovery-logs`} replace />;
+}
+
+// Redirect /projects/:projectId/sessions/:sessionId → /projects/:projectId/discovery-logs/:sessionId
+function SessionDetailRedirect() {
+  const { projectId, sessionId } = useParams<{ projectId: string; sessionId: string }>();
+  return <Navigate to={`/projects/${projectId}/discovery-logs/${sessionId}`} replace />;
+}
 
 const HomePage = lazy(() => import('../pages/home/page'));
 const AuthPage = lazy(() => import('../pages/auth/page'));
@@ -67,12 +79,21 @@ const routes: RouteObject[] = [
     element: <ProjectRuns />,
   },
   {
-    path: '/projects/:id/sessions',
+    path: '/projects/:id/discovery-logs',
     element: <ProjectSessions />,
   },
   {
-    path: '/projects/:projectId/sessions/:sessionId',
+    path: '/projects/:projectId/discovery-logs/:sessionId',
     element: <SessionDetail />,
+  },
+  // Legacy redirects — keep old /sessions URLs working
+  {
+    path: '/projects/:id/sessions',
+    element: <SessionsRedirect />,
+  },
+  {
+    path: '/projects/:projectId/sessions/:sessionId',
+    element: <SessionDetailRedirect />,
   },
   {
     path: '/projects/:projectId/runs/:runId',

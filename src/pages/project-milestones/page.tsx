@@ -485,7 +485,7 @@ export default function ProjectMilestones() {
                 <Link to={`/projects/${id}/documentation`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Documentation</Link>
                 <Link to={`/projects/${id}/testcases`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Test Cases</Link>
                 <Link to={`/projects/${id}/runs`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Runs &amp; Results</Link>
-                <Link to={`/projects/${id}/sessions`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Sessions</Link>
+                <Link to={`/projects/${id}/discovery-logs`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Discovery Logs</Link>
               </nav>
               <div className="flex items-center gap-4">
                 <NotificationBell />

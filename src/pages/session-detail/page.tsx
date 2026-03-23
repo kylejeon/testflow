@@ -687,7 +687,7 @@ export default function SessionDetail() {
       if (error) throw error;
 
       setShowCloseConfirmModal(false);
-      navigate(`/projects/${projectId}/sessions`);
+      navigate(`/projects/${projectId}/discovery-logs`);
     } catch (error) {
       console.error('세션 종료 오류:', error);
     }
@@ -861,7 +861,7 @@ export default function SessionDetail() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => navigate(`/projects/${projectId}/sessions`)}
+                  onClick={() => navigate(`/projects/${projectId}/discovery-logs`)}
                   className="text-gray-600 hover:text-gray-900 cursor-pointer"
                 >
                   <i className="ri-arrow-left-line text-xl"></i>

@@ -5,7 +5,7 @@ export const common = {
   documentation: 'Documentation',
   testCases: 'Test Cases',
   runsAndResults: 'Runs & Results',
-  sessions: 'Sessions',
+  sessions: 'Discovery Logs',
   settings: 'Settings',
   projects: 'Projects',
   

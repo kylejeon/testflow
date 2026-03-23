@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { supabase } from '../../../lib/supabase';
-import TipTapEditor from '../../session-detail/components/QuillEditor';
 import ExportImportModal from './ExportImportModal';
 import { BulkActionBar } from '../../../components/BulkActionBar';
+import { StepEditor, type Step } from '../../../components/StepEditor';
 
 interface TestCase {
   id: string;
@@ -2829,59 +2829,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         Add step
                       </button>
                     </div>
-                    <div className="space-y-3">
-                      {testSteps.map((step, index) => (
-                        <div key={step.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-semibold text-sm flex-shrink-0 mt-1">
-                              {index + 1}
-                            </div>
-                            <div className="flex-1 space-y-3">
-                              <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                  Step
-                                </label>
-                                <TipTapEditor
-                                  value={step.step}
-                                  onChange={(val) => handleStepChange(step.id, 'step', val)}
-                                  placeholder="Click Add new slides from the main toolbar"
-                                  projectId={projectId}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                  Expected Result
-                                </label>
-                                <TipTapEditor
-                                  value={step.expectedResult}
-                                  onChange={(val) => handleStepChange(step.id, 'expectedResult', val)}
-                                  placeholder="Popup with slide types should be displayed"
-                                  projectId={projectId}
-                                />
-                              </div>
-                            </div>
-                            {testSteps.length > 1 && (
-                              <button
-                                onClick={() => handleDeleteStep(step.id)}
-                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer flex-shrink-0 mt-1"
-                              >
-                                <i className="ri-delete-bin-line text-lg"></i>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {/* 하단 Add step 버튼 */}
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        onClick={handleAddStep}
-                        className="flex items-center gap-1 px-3 py-1 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                      >
-                        <i className="ri-add-line text-lg w-4 h-4 flex items-center justify-center"></i>
-                        Add step
-                      </button>
-                    </div>
+                    <StepEditor
+                      steps={testSteps as Step[]}
+                      onChange={(steps) => setTestSteps(steps as TestStep[])}
+                    />
                   </div>
 
                   <div>
