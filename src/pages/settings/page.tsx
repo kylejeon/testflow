@@ -1184,13 +1184,16 @@ def pytest_sessionfinish(session, exitstatus):
                                   ))}
                                 </ul>
                                 {!isCurrentTier && tierNum > currentTier && (
-                                  <button className={`w-full mt-4 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                                    tierNum === 4
-                                      ? 'border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
-                                      : 'bg-teal-500 text-white hover:bg-teal-600'
-                                  }`}>
+                                  <a
+                                    href={tierNum === 4 ? 'mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry' : 'mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry'}
+                                    className={`w-full mt-4 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap block text-center ${
+                                      tierNum === 4
+                                        ? 'border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
+                                        : 'bg-teal-500 text-white hover:bg-teal-600'
+                                    }`}
+                                  >
                                     {tierNum === 4 ? 'Contact Sales' : 'Contact Us to Upgrade'}
-                                  </button>
+                                  </a>
                                 )}
                               </div>
                             );
@@ -1254,10 +1257,10 @@ def pytest_sessionfinish(session, exitstatus):
                                 <p className="text-sm text-gray-600 mb-3">
                                   Create Jira issues directly from test results and enhance team collaboration.
                                 </p>
-                                <button className="px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all cursor-pointer whitespace-nowrap">
+                                <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-block px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all cursor-pointer whitespace-nowrap">
                                   <i className="ri-arrow-up-circle-line mr-2"></i>
                                   Contact Us to Upgrade
-                                </button>
+                                </a>
                               </div>
                             </div>
                           </div>
@@ -1435,9 +1438,9 @@ def pytest_sessionfinish(session, exitstatus):
                               <div className="flex-1">
                                 <h3 className="font-semibold text-gray-900 mb-1">Slack &amp; Teams Integration is available on Starter and above</h3>
                                 <p className="text-sm text-gray-600 mb-3">Get real-time notifications in Slack or Microsoft Teams when test runs complete, milestones change, and more.</p>
-                                <button className="px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all cursor-pointer whitespace-nowrap">
+                                <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-block px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all cursor-pointer whitespace-nowrap">
                                   <i className="ri-arrow-up-circle-line mr-2"></i>Contact Us to Upgrade
-                                </button>
+                                </a>
                               </div>
                             </div>
                           </div>
@@ -1611,10 +1614,10 @@ def pytest_sessionfinish(session, exitstatus):
                                 <p className="text-sm text-gray-600 mb-3">
                                   Upload results directly from your automated test pipelines and enhance team collaboration.
                                 </p>
-                                <button className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap">
+                                <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-block px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap">
                                   <i className="ri-arrow-up-circle-line mr-2"></i>
                                   Contact Us to Upgrade
-                                </button>
+                                </a>
                               </div>
                             </div>
                           </div>

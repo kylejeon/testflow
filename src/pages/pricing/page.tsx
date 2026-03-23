@@ -227,14 +227,25 @@ export default function PricingPage() {
                     ))}
                   </ul>
 
-                  <button
-                    onClick={() => navigate('/auth')}
-                    className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
-                      plan.highlighted ? 'bg-white text-teal-600 hover:bg-gray-50' : 'bg-teal-500 text-white hover:bg-teal-600'
-                    }`}
-                  >
-                    {plan.cta}
-                  </button>
+                  {plan.cta === 'Contact Sales' ? (
+                    <a
+                      href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
+                      className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center ${
+                        plan.highlighted ? 'bg-white text-teal-600 hover:bg-gray-50' : 'bg-teal-500 text-white hover:bg-teal-600'
+                      }`}
+                    >
+                      {plan.cta}
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => navigate('/auth')}
+                      className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
+                        plan.highlighted ? 'bg-white text-teal-600 hover:bg-gray-50' : 'bg-teal-500 text-white hover:bg-teal-600'
+                      }`}
+                    >
+                      {plan.cta}
+                    </button>
+                  )}
                 </article>
               ))}
             </div>

@@ -25,7 +25,7 @@ interface AIGenerateModalProps {
   onClose: () => void;
 }
 
-// 플랜 정보
+// Plan info
 const PLAN_INFO: Record<number, { name: string; monthlyLimit: number; sessionMode: boolean }> = {
   1: { name: 'Free', monthlyLimit: 5, sessionMode: false },
   2: { name: 'Starter', monthlyLimit: 30, sessionMode: false },
@@ -62,7 +62,7 @@ export default function AIGenerateModal({
 
   const planInfo = PLAN_INFO[subscriptionTier] || PLAN_INFO[1];
 
-  // 당월 사용량 조회
+  // Fetch monthly usage
   useEffect(() => {
     fetchMonthlyUsage();
   }, []);
@@ -91,7 +91,7 @@ export default function AIGenerateModal({
     }
   };
 
-  // 세션 목록 조회 (Session 모드 선택 시)
+  // Fetch sessions when Session mode is selected
   useEffect(() => {
     if (mode === 'session') fetchSessions();
   }, [mode]);
@@ -129,16 +129,16 @@ export default function AIGenerateModal({
 
     const data = await response.json();
     if (!response.ok) {
-      // Anthropic 크레딧 부족 (402)
+      // Anthropic credit exhausted (402)
       if (response.status === 402 || data.type === 'invalid_request_error') {
-        throw new Error('AI 크레딧이 부족합니다. Anthropic 계정의 잔액을 충전해주세요.');
+        throw new Error('Insufficient AI credits. Please top up your Anthropic account balance.');
       }
       throw new Error(data.message || data.error || `HTTP ${response.status}`);
     }
     return data;
   };
 
-  // Step 1: 제목 생성
+  // Step 1: Generate titles
   const handleGenerateTitles = async () => {
     setError('');
     setLoading(true);
@@ -149,21 +149,21 @@ export default function AIGenerateModal({
 
       const data = await callEdgeFunction(body);
       setTitles(data.titles || []);
-      setSelectedTitles(new Set(data.titles || [])); // 기본 전체 선택
+      setSelectedTitles(new Set(data.titles || [])); // Select all by default
       setCurrentStep('titles');
       setMonthlyUsage(prev => prev + 1);
     } catch (err: any) {
       if (err.message?.includes('limit')) {
-        setError(`이번 달 AI 생성 한도(${planInfo.monthlyLimit}회)에 도달했습니다. 플랜을 업그레이드하세요.`);
+        setError(`You have reached the monthly AI generation limit (${planInfo.monthlyLimit}). Please upgrade your plan.`);
       } else {
-        setError(err.message || '생성 중 오류가 발생했습니다.');
+        setError(err.message || 'An error occurred during generation.');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // Step 2: 상세 케이스 생성
+  // Step 2: Generate detailed cases
   const handleGenerateDetails = async () => {
     setError('');
     setLoading(true);
@@ -177,16 +177,16 @@ export default function AIGenerateModal({
       });
       const cases: GeneratedCase[] = data.cases || [];
       setGeneratedCases(cases);
-      setSelectedCaseIndices(new Set(cases.map((_, i) => i))); // 기본 전체 선택
+      setSelectedCaseIndices(new Set(cases.map((_, i) => i))); // Select all by default
       setCurrentStep('details');
     } catch (err: any) {
-      setError(err.message || '상세 케이스 생성 중 오류가 발생했습니다.');
+      setError(err.message || 'An error occurred while generating detailed cases.');
     } finally {
       setLoading(false);
     }
   };
 
-  // 선택한 케이스 저장
+  // Save selected cases
   const handleSave = async () => {
     setCurrentStep('saving');
     const casesToSave = generatedCases.filter((_, i) => selectedCaseIndices.has(i));
@@ -194,7 +194,7 @@ export default function AIGenerateModal({
       await onSave(casesToSave);
       onClose();
     } catch (err: any) {
-      setError(err.message || '저장 중 오류가 발생했습니다.');
+      setError(err.message || 'An error occurred while saving.');
       setCurrentStep('details');
     }
   };
@@ -236,12 +236,12 @@ export default function AIGenerateModal({
               <i className="ri-sparkling-2-fill text-white text-sm"></i>
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900">AI 테스트 케이스 생성</h2>
+              <h2 className="text-base font-bold text-gray-900">AI Test Case Generation</h2>
               <p className="text-xs text-gray-500">
                 {usageLoaded && (
                   planInfo.monthlyLimit === -1
-                    ? `${planInfo.name} · 무제한`
-                    : `${planInfo.name} · 이번 달 ${monthlyUsage} / ${planInfo.monthlyLimit}회`
+                    ? `${planInfo.name} · Unlimited`
+                    : `${planInfo.name} · This month: ${monthlyUsage} / ${planInfo.monthlyLimit}`
                 )}
               </p>
             </div>
@@ -254,12 +254,12 @@ export default function AIGenerateModal({
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
 
-          {/* ── STEP: mode 선택 ── */}
+          {/* ── STEP: Select mode ── */}
           {currentStep === 'mode' && (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">테스트 케이스를 생성할 방식을 선택하세요.</p>
+              <p className="text-sm text-gray-600">Select how you want to generate test cases.</p>
               <div className="grid grid-cols-2 gap-3">
-                {/* Text 모드 */}
+                {/* Text mode */}
                 <button
                   onClick={() => { setMode('text'); setCurrentStep('input'); }}
                   className="flex flex-col items-start p-4 border-2 border-gray-200 rounded-xl hover:border-teal-400 hover:bg-teal-50 transition-all cursor-pointer text-left group"
@@ -268,12 +268,12 @@ export default function AIGenerateModal({
                   <div className="w-9 h-9 bg-teal-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-teal-200">
                     <i className="ri-text-snippet text-teal-600 text-lg"></i>
                   </div>
-                  <p className="font-semibold text-gray-900 text-sm">텍스트 입력</p>
-                  <p className="text-xs text-gray-500 mt-1">기능 설명을 입력하면 AI가 테스트 케이스를 생성합니다.</p>
-                  <span className="mt-2 text-xs text-teal-600 font-medium">모든 플랜 사용 가능</span>
+                  <p className="font-semibold text-gray-900 text-sm">Text Input</p>
+                  <p className="text-xs text-gray-500 mt-1">Enter a feature description and AI will generate test cases.</p>
+                  <span className="mt-2 text-xs text-teal-600 font-medium">Available on all plans</span>
                 </button>
 
-                {/* Session 모드 */}
+                {/* Session mode */}
                 <button
                   onClick={() => {
                     if (!planInfo.sessionMode) return;
@@ -290,13 +290,13 @@ export default function AIGenerateModal({
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${planInfo.sessionMode ? 'bg-violet-100 group-hover:bg-violet-200' : 'bg-gray-100'}`}>
                     <i className={`ri-play-circle-line text-lg ${planInfo.sessionMode ? 'text-violet-600' : 'text-gray-400'}`}></i>
                   </div>
-                  <p className="font-semibold text-gray-900 text-sm">세션 기반 생성</p>
-                  <p className="text-xs text-gray-500 mt-1">탐색 테스트 세션 기록을 분석해 자동으로 생성합니다.</p>
+                  <p className="font-semibold text-gray-900 text-sm">Session-Based</p>
+                  <p className="text-xs text-gray-500 mt-1">Analyze exploratory test session logs to auto-generate cases.</p>
                   {planInfo.sessionMode ? (
-                    <span className="mt-2 text-xs text-violet-600 font-medium">Professional+ 전용</span>
+                    <span className="mt-2 text-xs text-violet-600 font-medium">Professional+ only</span>
                   ) : (
                     <span className="mt-2 text-xs text-gray-400 font-medium flex items-center gap-1">
-                      <i className="ri-lock-line"></i> Professional 이상 필요
+                      <i className="ri-lock-line"></i> Requires Professional or above
                     </span>
                   )}
                 </button>
@@ -305,7 +305,7 @@ export default function AIGenerateModal({
               {limitReached && (
                 <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
                   <i className="ri-error-warning-line"></i>
-                  이번 달 AI 생성 한도에 도달했습니다. 다음 달에 다시 시도하거나 플랜을 업그레이드하세요.
+                  You have reached the monthly AI generation limit. Try again next month or upgrade your plan.
                 </div>
               )}
             </div>
@@ -318,36 +318,36 @@ export default function AIGenerateModal({
                 onClick={() => setCurrentStep('mode')}
                 className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 cursor-pointer"
               >
-                <i className="ri-arrow-left-line"></i> 모드 선택으로
+                <i className="ri-arrow-left-line"></i> Back to mode selection
               </button>
 
               {mode === 'text' ? (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    기능 설명 <span className="text-red-500">*</span>
+                    Feature Description <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={inputText}
                     onChange={e => setInputText(e.target.value)}
-                    placeholder="예: 사용자가 이메일과 비밀번호로 로그인하는 기능. 소셜 로그인(Google)도 지원하며, 비밀번호 찾기 기능이 있습니다..."
+                    placeholder="e.g. Users can log in with email and password. Social login (Google) is also supported, along with a forgot password flow..."
                     rows={6}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
                   />
-                  <p className="text-xs text-gray-400 mt-1">더 상세하게 설명할수록 더 정확한 테스트 케이스가 생성됩니다.</p>
+                  <p className="text-xs text-gray-400 mt-1">The more detailed your description, the more accurate the generated test cases will be.</p>
                 </div>
               ) : (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    세션 선택 <span className="text-red-500">*</span>
+                    Select Session <span className="text-red-500">*</span>
                   </label>
                   {loadingSessions ? (
                     <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
                       <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-                      세션 불러오는 중...
+                      Loading sessions...
                     </div>
                   ) : sessions.length === 0 ? (
                     <div className="py-6 text-center text-sm text-gray-400 border border-gray-200 rounded-lg">
-                      이 프로젝트에 세션이 없습니다.
+                      No sessions found for this project.
                     </div>
                   ) : (
                     <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-2">
@@ -391,12 +391,12 @@ export default function AIGenerateModal({
             </div>
           )}
 
-          {/* ── STEP: titles 선택 ── */}
+          {/* ── STEP: Select titles ── */}
           {currentStep === 'titles' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-600">
-                  AI가 생성한 테스트 케이스 제목입니다. 상세 생성할 항목을 선택하세요.
+                  These are the AI-generated test case titles. Select the ones you want to expand into full cases.
                 </p>
                 <button
                   onClick={() => {
@@ -408,7 +408,7 @@ export default function AIGenerateModal({
                   }}
                   className="text-xs text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap"
                 >
-                  {selectedTitles.size === titles.length ? '전체 해제' : '전체 선택'}
+                  {selectedTitles.size === titles.length ? 'Deselect All' : 'Select All'}
                 </button>
               </div>
               <div className="space-y-2">
@@ -431,7 +431,7 @@ export default function AIGenerateModal({
                   </label>
                 ))}
               </div>
-              <p className="text-xs text-gray-400">{selectedTitles.size}개 선택됨</p>
+              <p className="text-xs text-gray-400">{selectedTitles.size} selected</p>
 
               {error && (
                 <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -446,7 +446,7 @@ export default function AIGenerateModal({
           {currentStep === 'details' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">저장할 테스트 케이스를 선택하세요.</p>
+                <p className="text-sm text-gray-600">Select the test cases you want to save.</p>
                 <button
                   onClick={() => {
                     if (selectedCaseIndices.size === generatedCases.length) {
@@ -457,7 +457,7 @@ export default function AIGenerateModal({
                   }}
                   className="text-xs text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap"
                 >
-                  {selectedCaseIndices.size === generatedCases.length ? '전체 해제' : '전체 선택'}
+                  {selectedCaseIndices.size === generatedCases.length ? 'Deselect All' : 'Select All'}
                 </button>
               </div>
 
@@ -501,7 +501,7 @@ export default function AIGenerateModal({
                                 </li>
                               ))}
                               {tc.steps.length > 3 && (
-                                <li className="text-xs text-gray-400">+{tc.steps.length - 3}개 더...</li>
+                                <li className="text-xs text-gray-400">+{tc.steps.length - 3} more...</li>
                               )}
                             </ol>
                           </div>
@@ -518,7 +518,7 @@ export default function AIGenerateModal({
                 ))}
               </div>
 
-              <p className="text-xs text-gray-400">{selectedCaseIndices.size}개 선택됨 · 저장 시 테스트 케이스 목록에 추가됩니다.</p>
+              <p className="text-xs text-gray-400">{selectedCaseIndices.size} selected · Will be added to your test cases on save.</p>
 
               {error && (
                 <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -533,7 +533,7 @@ export default function AIGenerateModal({
           {currentStep === 'saving' && (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
               <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-sm text-gray-600">테스트 케이스를 저장하는 중...</p>
+              <p className="text-sm text-gray-600">Saving test cases...</p>
             </div>
           )}
         </div>
@@ -544,11 +544,11 @@ export default function AIGenerateModal({
             onClick={onClose}
             className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
           >
-            취소
+            Cancel
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Step 1: 제목 생성 버튼 */}
+            {/* Step 1: Generate titles button */}
             {currentStep === 'input' && (
               <button
                 onClick={handleGenerateTitles}
@@ -561,18 +561,18 @@ export default function AIGenerateModal({
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    생성 중...
+                    Generating...
                   </>
                 ) : (
                   <>
                     <i className="ri-sparkling-2-fill"></i>
-                    제목 목록 생성
+                    Generate Titles
                   </>
                 )}
               </button>
             )}
 
-            {/* Step 2: 상세 생성 버튼 */}
+            {/* Step 2: Generate details button */}
             {currentStep === 'titles' && (
               <button
                 onClick={handleGenerateDetails}
@@ -582,18 +582,18 @@ export default function AIGenerateModal({
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    생성 중...
+                    Generating...
                   </>
                 ) : (
                   <>
                     <i className="ri-sparkling-2-fill"></i>
-                    {selectedTitles.size}개 상세 생성
+                    Generate {selectedTitles.size} Cases
                   </>
                 )}
               </button>
             )}
 
-            {/* Step 3: 저장 버튼 */}
+            {/* Step 3: Save button */}
             {currentStep === 'details' && (
               <button
                 onClick={handleSave}
@@ -601,7 +601,7 @@ export default function AIGenerateModal({
                 className="flex items-center gap-2 px-5 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <i className="ri-save-line"></i>
-                {selectedCaseIndices.size}개 저장
+                Save {selectedCaseIndices.size} Cases
               </button>
             )}
           </div>
