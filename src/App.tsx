@@ -51,6 +51,7 @@ function AppContent() {
   const [userName, setUserName] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [firstProjectId, setFirstProjectId] = useState<string | null>(null);
+  const [welcomeForceHidden, setWelcomeForceHidden] = useState(false);
 
   // Fetch authenticated user info
   useEffect(() => {
@@ -111,13 +112,20 @@ function AppContent() {
   );
 
   const handleWelcomeSkip = useCallback(async () => {
-    await completeWelcome('other', '1');
+    // Close modal immediately regardless of DB result
+    setWelcomeForceHidden(true);
+    try {
+      await completeWelcome('other', '1');
+    } catch {
+      // DB write failed (e.g. table missing) — modal already closed via local state
+    }
   }, [completeWelcome]);
 
   const showWelcome =
     isAuthenticated &&
     !state.isLoading &&
-    !state.welcomeCompleted;
+    !state.welcomeCompleted &&
+    !welcomeForceHidden;
 
   const showChecklist =
     isAuthenticated &&

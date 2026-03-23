@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Rocket, Package, Loader2, X } from 'lucide-react';
-import Logo from '../Logo';
+import { LogoMark } from '../Logo';
 
 interface WelcomeScreenProps {
   onComplete: (role: string, teamSize: string, useSample: boolean) => Promise<void>;
@@ -57,8 +57,8 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, onSkip }) => 
         </button>
 
         {/* Logo */}
-        <div className="flex items-center justify-center mb-6">
-          <Logo className="h-10" />
+        <div className="w-full flex items-center justify-center mb-6">
+          <LogoMark />
         </div>
 
         {/* Greeting */}
