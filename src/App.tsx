@@ -111,15 +111,11 @@ function AppContent() {
     [completeWelcome, createSampleProject, setSampleProjectCreated, markStep, navigate],
   );
 
-  const handleWelcomeSkip = useCallback(async () => {
-    // Close modal immediately regardless of DB result
+  const handleWelcomeSkip = useCallback(() => {
+    // Temporarily hide modal — does NOT persist to DB.
+    // Refresh will show the modal again.
     setWelcomeForceHidden(true);
-    try {
-      await completeWelcome('other', '1');
-    } catch {
-      // DB write failed (e.g. table missing) — modal already closed via local state
-    }
-  }, [completeWelcome]);
+  }, []);
 
   const showWelcome =
     isAuthenticated &&
