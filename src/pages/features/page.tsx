@@ -6,7 +6,7 @@ const features = [
   {
     icon: 'ri-file-list-3-line',
     tag: 'Core',
-    tagColor: 'bg-teal-50 text-teal-700',
+    tagColor: 'bg-indigo-50 text-indigo-700',
     title: 'Test Case Management',
     headline: 'Build and organize your test library',
     description: 'Create detailed test cases with structured steps, expected results, and preconditions. Organize in folder hierarchies, filter by priority and tags.',
@@ -18,14 +18,14 @@ const features = [
       'Comments, result history, linked issues',
       'Import/Export for migration',
     ],
-    color: 'bg-teal-50',
-    iconBg: 'bg-teal-100',
-    iconColor: 'text-teal-600',
+    color: 'bg-indigo-50',
+    iconBg: 'bg-indigo-100',
+    iconColor: 'text-indigo-600',
   },
   {
     icon: 'ri-play-circle-line',
     tag: 'Core',
-    tagColor: 'bg-teal-50 text-teal-700',
+    tagColor: 'bg-indigo-50 text-indigo-700',
     title: 'Test Runs & Results',
     headline: 'Execute tests and track results in real time',
     description: 'Create test runs tied to milestones, assign to team members, and track execution live.',
@@ -37,9 +37,9 @@ const features = [
       'Link runs to milestones',
       'Export results for reporting',
     ],
-    color: 'bg-emerald-50',
-    iconBg: 'bg-emerald-100',
-    iconColor: 'text-emerald-600',
+    color: 'bg-violet-50',
+    iconBg: 'bg-violet-100',
+    iconColor: 'text-violet-600',
   },
   {
     icon: 'ri-video-line',
@@ -194,18 +194,18 @@ export default function FeaturesPage() {
             <div className="flex items-center gap-3">
               <button onClick={() => navigate('/pricing')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Pricing</button>
               <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all cursor-pointer">Log in</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all cursor-pointer">Get Started</button>
+              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all cursor-pointer">Get Started</button>
             </div>
           </div>
         </nav>
 
         {/* Hero */}
         <header className="py-24 bg-gray-950 text-center relative overflow-hidden">
-          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-teal-500/10 blur-[120px]"></div>
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-indigo-500/10 blur-[120px]"></div>
           <div className="relative z-10 max-w-3xl mx-auto px-6">
             <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
-              <i className="ri-settings-3-line text-teal-300 text-sm"></i>
-              <span className="text-teal-200 text-sm font-medium">Features</span>
+              <i className="ri-settings-3-line text-indigo-300 text-sm"></i>
+              <span className="text-indigo-200 text-sm font-medium">Features</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
               Everything your QA team needs
@@ -215,7 +215,7 @@ export default function FeaturesPage() {
             </p>
             <button
               onClick={() => navigate('/auth')}
-              className="px-8 py-3.5 bg-teal-500 text-white rounded-xl font-bold hover:bg-teal-400 transition-all cursor-pointer"
+              className="px-8 py-3.5 bg-indigo-500 text-white rounded-xl font-bold hover:bg-indigo-400 transition-all cursor-pointer"
             >
               Start for Free
             </button>
@@ -227,7 +227,7 @@ export default function FeaturesPage() {
           <div className="max-w-7xl mx-auto px-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {features.map((f) => (
-                <article key={f.title} className={`rounded-2xl p-7 border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all ${f.color}`}>
+                <article key={f.title} className={`rounded-2xl p-7 border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all ${f.color}`}>
                   <div className="flex items-start justify-between mb-5">
                     <div className={`w-12 h-12 flex items-center justify-center rounded-xl ${f.iconBg}`}>
                       <i className={`${f.icon} text-2xl ${f.iconColor}`}></i>
@@ -235,7 +235,7 @@ export default function FeaturesPage() {
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${f.tagColor}`}>{f.tag}</span>
                   </div>
                   <h3 className="text-base font-bold text-gray-900 mb-1">{f.title}</h3>
-                  <p className="text-sm font-medium text-teal-700 mb-3">{f.headline}</p>
+                  <p className="text-sm font-medium text-indigo-700 mb-3">{f.headline}</p>
                   <p className="text-gray-600 text-sm leading-relaxed mb-4">{f.description}</p>
                   <ul className="space-y-1.5">
                     {f.bullets.map((b) => (
@@ -254,20 +254,20 @@ export default function FeaturesPage() {
         </section>
 
         {/* Bottom CTA */}
-        <section className="py-20 bg-teal-500 text-center">
+        <section className="py-20 bg-indigo-500 text-center">
           <div className="max-w-2xl mx-auto px-6">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to get started?</h2>
-            <p className="text-teal-100 mb-8">Free plan available. No credit card required. Set up in under 5 minutes.</p>
+            <p className="text-indigo-100 mb-8">Free plan available. No credit card required. Set up in under 5 minutes.</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={() => navigate('/auth')}
-                className="px-8 py-3.5 bg-white text-teal-600 rounded-xl font-bold hover:bg-gray-50 transition-all cursor-pointer"
+                className="px-8 py-3.5 bg-white text-indigo-600 rounded-xl font-bold hover:bg-gray-50 transition-all cursor-pointer"
               >
                 Start for Free
               </button>
               <button
                 onClick={() => navigate('/pricing')}
-                className="px-8 py-3.5 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all cursor-pointer"
+                className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all cursor-pointer"
               >
                 View Pricing
               </button>

@@ -117,11 +117,11 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
               />
               <label
                 htmlFor="file-upload"
-                className="flex items-center justify-center gap-2 w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-teal-500 hover:bg-teal-50/50 transition-all cursor-pointer"
+                className="flex items-center justify-center gap-2 w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50/50 transition-all cursor-pointer"
               >
                 {file ? (
                   <div className="text-center">
-                    <i className="ri-file-line text-3xl text-teal-600 mb-2"></i>
+                    <i className="ri-file-line text-3xl text-indigo-600 mb-2"></i>
                     <p className="text-sm font-medium text-gray-900">{file.name}</p>
                     <p className="text-xs text-gray-500 mt-1">{formatFileSize(file.size)}</p>
                   </div>
@@ -145,7 +145,7 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('fileTitlePlaceholder')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
               required
             />
           </div>
@@ -159,7 +159,7 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t('fileDescriptionPlaceholder')}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm resize-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none"
             />
           </div>
 
@@ -167,11 +167,11 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">{t('uploadingProgress')}</span>
-                <span className="font-semibold text-teal-600">{uploadProgress}%</span>
+                <span className="font-semibold text-indigo-600">{uploadProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                 <div 
-                  className="h-full bg-teal-500 rounded-full transition-all duration-300"
+                  className="h-full bg-indigo-500 rounded-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 ></div>
               </div>
@@ -190,7 +190,7 @@ export default function UploadFileModal({ projectId, onClose, onSuccess }: Uploa
             <button
               type="submit"
               disabled={loading || !file}
-              className="px-4 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? t('uploading') : t('uploadFile')}
             </button>

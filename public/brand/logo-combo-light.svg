@@ -1,7 +1,8 @@
-<svg width="500" height="100" viewBox="0 0 500 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Squircle icon -->
-  <rect x="8" y="14" width="72" height="72" rx="16" fill="#14b8a6"/>
-  <text x="44" y="63" text-anchor="middle" font-family="Pacifico, cursive" font-size="42" fill="#ffffff">T</text>
-  <!-- Wordmark -->
-  <text x="100" y="70" font-family="Pacifico, cursive" font-size="56" fill="#0a0a0a">Testably</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" width="220" height="48">
+  <rect x="0" y="0" width="48" height="48" rx="10.5" ry="10.5" fill="#6366F1"/>
+  <text x="24" y="24" text-anchor="middle" dominant-baseline="central"
+    font-family="Pacifico, cursive" font-size="25" fill="white"
+    dy="-1" dx="0.5">T</text>
+  <text x="60" y="30" font-family="Pacifico, cursive" font-size="26"
+    fill="#1E1B4B" letter-spacing="0.5">Testably</text>
 </svg>

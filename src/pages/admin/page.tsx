@@ -191,7 +191,7 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center animate-pulse">
+          <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center animate-pulse">
             <i className="ri-shield-star-line text-xl text-white"></i>
           </div>
           <p className="text-sm text-gray-500">권한 확인 중...</p>
@@ -217,9 +217,9 @@ export default function AdminPage() {
             <span className="h-5 w-px bg-slate-700"></span>
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 flex items-center justify-center">
-                <i className="ri-shield-star-fill text-teal-400 text-lg"></i>
+                <i className="ri-shield-star-fill text-indigo-400 text-lg"></i>
               </div>
-              <span className="text-sm font-bold text-teal-400 tracking-wide">SUPER ADMIN</span>
+              <span className="text-sm font-bold text-indigo-400 tracking-wide">SUPER ADMIN</span>
             </div>
           </div>
 
@@ -239,7 +239,7 @@ export default function AdminPage() {
               새로고침
             </button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
                 {currentUser?.name?.charAt(0) || currentUser?.email?.charAt(0) || 'A'}
               </div>
               <div className="hidden sm:block">
@@ -249,7 +249,7 @@ export default function AdminPage() {
             </div>
             <Link
               to="/projects"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 rounded-lg text-xs font-semibold text-white transition-all cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-xs font-semibold text-white transition-all cursor-pointer whitespace-nowrap"
             >
               <i className="ri-arrow-left-line text-sm"></i>
               앱으로
@@ -323,8 +323,8 @@ export default function AdminPage() {
         {/* Secondary Stats Row */}
         <div className="grid grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4">
-            <div className="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center flex-shrink-0">
-              <i className="ri-vip-crown-2-line text-teal-600 text-xl"></i>
+            <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+              <i className="ri-vip-crown-2-line text-indigo-600 text-xl"></i>
             </div>
             <div>
               <p className="text-xs text-gray-400 font-semibold">무료 체험 중</p>
@@ -333,8 +333,8 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4">
-            <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
-              <i className="ri-exchange-dollar-line text-emerald-600 text-xl"></i>
+            <div className="w-10 h-10 bg-violet-50 rounded-lg flex items-center justify-center flex-shrink-0">
+              <i className="ri-exchange-dollar-line text-violet-600 text-xl"></i>
             </div>
             <div>
               <p className="text-xs text-gray-400 font-semibold">유료 전환율</p>

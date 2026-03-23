@@ -195,7 +195,7 @@ export default function ProjectMembersPanel({
       case 'admin':
         return { label: 'Admin', className: 'bg-orange-100 text-orange-700' };
       case 'member':
-        return { label: 'Member', className: 'bg-teal-100 text-teal-700' };
+        return { label: 'Member', className: 'bg-indigo-100 text-indigo-700' };
       case 'viewer':
         return { label: 'Viewer', className: 'bg-gray-100 text-gray-700' };
       default:
@@ -208,7 +208,7 @@ export default function ProjectMembersPanel({
   /** Simple deterministic color picker for avatars */
   const getAvatarColor = (index: number) => {
     const colors = [
-      'from-teal-400 to-teal-600',
+      'from-indigo-400 to-indigo-600',
       'from-blue-400 to-blue-600',
       'from-purple-400 to-purple-600',
       'from-pink-400 to-pink-600',
@@ -225,7 +225,7 @@ export default function ProjectMembersPanel({
           <h2 className="text-lg font-bold text-gray-900">Team Members</h2>
         </div>
         <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
         </div>
       </div>
     );
@@ -237,7 +237,7 @@ export default function ProjectMembersPanel({
         <h2 className="text-lg font-bold text-gray-900">Team Members</h2>
         <button
           onClick={onInviteClick}
-          className="px-3 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all text-sm font-semibold cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+          className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm font-semibold cursor-pointer whitespace-nowrap flex items-center gap-1.5"
         >
           <i className="ri-user-add-line"></i>
           Invite
@@ -252,7 +252,7 @@ export default function ProjectMembersPanel({
           <p className="text-sm text-gray-500 mb-3">아직 팀원이 없습니다</p>
           <button
             onClick={onInviteClick}
-            className="text-teal-600 hover:text-teal-700 text-sm font-semibold cursor-pointer"
+            className="text-indigo-600 hover:text-indigo-700 text-sm font-semibold cursor-pointer"
           >
             첫 번째 멤버 초대하기 →
           </button>
@@ -297,7 +297,7 @@ export default function ProjectMembersPanel({
                       onChange={(e) =>
                         handleRoleChange(member.id, e.target.value)
                       }
-                      className={`min-w-[80px] px-2 py-1 rounded-full text-xs font-semibold ${badge.className} border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500`}
+                      className={`min-w-[80px] px-2 py-1 rounded-full text-xs font-semibold ${badge.className} border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500`}
                     >
                       <option value="admin">Admin</option>
                       <option value="member">Member</option>

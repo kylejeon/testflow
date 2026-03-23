@@ -37,8 +37,8 @@ const NOTIFICATION_GROUPS: NotificationGroup[] = [
   {
     label: 'Team Activity',
     icon: 'ri-team-line',
-    color: 'text-teal-600',
-    bg: 'bg-teal-50',
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50',
     items: [
       {
         key: 'invitation_sent',
@@ -112,7 +112,7 @@ function ToggleSwitch({
       onClick={() => !disabled && onChange(!checked)}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none cursor-pointer flex-shrink-0 ${
         disabled ? 'opacity-50 cursor-not-allowed' : ''
-      } ${checked ? 'bg-teal-500' : 'bg-gray-200'}`}
+      } ${checked ? 'bg-indigo-500' : 'bg-gray-200'}`}
     >
       <span
         className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
@@ -253,7 +253,7 @@ export default function NotificationSettingsPanel() {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
@@ -266,7 +266,7 @@ export default function NotificationSettingsPanel() {
           <h2 className="text-xl font-bold text-gray-900 mb-1">Notification Settings</h2>
           <p className="text-gray-500 text-sm">
             Choose which in-app notifications you want to receive.{' '}
-            <span className="font-semibold text-teal-600">{enabledCount}/{totalCount}</span> notifications enabled.
+            <span className="font-semibold text-indigo-600">{enabledCount}/{totalCount}</span> notifications enabled.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -280,7 +280,7 @@ export default function NotificationSettingsPanel() {
           <button
             onClick={handleEnableAll}
             disabled={allEnabled}
-            className="px-3 py-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition-all cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-all cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Enable All
           </button>
@@ -290,7 +290,7 @@ export default function NotificationSettingsPanel() {
       {/* Progress Bar */}
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div
-          className="h-full bg-teal-500 rounded-full transition-all duration-500"
+          className="h-full bg-indigo-500 rounded-full transition-all duration-500"
           style={{ width: `${(enabledCount / totalCount) * 100}%` }}
         />
       </div>
@@ -325,8 +325,8 @@ export default function NotificationSettingsPanel() {
                     groupAllOn
                       ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       : groupSomeOn
-                      ? 'bg-teal-50 text-teal-600 hover:bg-teal-100'
-                      : 'bg-teal-50 text-teal-600 hover:bg-teal-100'
+                      ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                      : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
                   }`}
                 >
                   {groupAllOn ? 'Disable group' : 'Enable group'}
@@ -348,7 +348,7 @@ export default function NotificationSettingsPanel() {
                           {item.label}
                         </p>
                         {prefs[item.key] && (
-                          <span className="px-1.5 py-0.5 bg-teal-100 text-teal-700 text-[10px] font-bold rounded-full leading-none">
+                          <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded-full leading-none">
                             ON
                           </span>
                         )}
@@ -387,7 +387,7 @@ export default function NotificationSettingsPanel() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-5 py-2.5 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {saving ? (
             <>
@@ -402,7 +402,7 @@ export default function NotificationSettingsPanel() {
           )}
         </button>
         {saved && (
-          <div className="flex items-center gap-1.5 text-sm text-teal-600 font-medium animate-pulse">
+          <div className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium animate-pulse">
             <i className="ri-checkbox-circle-fill text-base"></i>
             Saved successfully
           </div>

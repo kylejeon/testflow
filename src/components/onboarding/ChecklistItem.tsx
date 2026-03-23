@@ -41,7 +41,7 @@ const ChecklistItem: React.FC<ChecklistItemProps> = ({
         <Circle className="w-5 h-5 text-gray-300 shrink-0" />
       )}
       <Icon
-        className={`w-4 h-4 shrink-0 ${completed ? 'text-gray-400' : 'text-[#2D6A7A]'}`}
+        className={`w-4 h-4 shrink-0 ${completed ? 'text-gray-400' : 'text-[#4338CA]'}`}
       />
       <span
         className={`text-sm flex-1 ${

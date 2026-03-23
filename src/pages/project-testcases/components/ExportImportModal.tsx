@@ -233,8 +233,8 @@ export default function ExportImportModal({
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-teal-50 rounded-lg flex items-center justify-center">
-              <i className="ri-file-transfer-line text-teal-600 text-xl"></i>
+            <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
+              <i className="ri-file-transfer-line text-indigo-600 text-xl"></i>
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">Export / Import</h2>
@@ -255,7 +255,7 @@ export default function ExportImportModal({
             onClick={() => setActiveTab('export')}
             className={`px-5 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap border-b-2 -mb-px ${
               activeTab === 'export'
-                ? 'text-teal-600 border-teal-600'
+                ? 'text-indigo-600 border-indigo-600'
                 : 'text-gray-500 border-transparent hover:text-gray-700'
             }`}
           >
@@ -266,7 +266,7 @@ export default function ExportImportModal({
             onClick={() => { setActiveTab('import'); setImportDone(false); }}
             className={`px-5 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap border-b-2 -mb-px ${
               activeTab === 'import'
-                ? 'text-teal-600 border-teal-600'
+                ? 'text-indigo-600 border-indigo-600'
                 : 'text-gray-500 border-transparent hover:text-gray-700'
             }`}
           >
@@ -281,11 +281,11 @@ export default function ExportImportModal({
           {activeTab === 'export' && (
             <div className="space-y-6">
               {/* Info Banner */}
-              <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex items-start gap-3">
-                <i className="ri-information-line text-teal-600 text-lg mt-0.5 flex-shrink-0"></i>
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 flex items-start gap-3">
+                <i className="ri-information-line text-indigo-600 text-lg mt-0.5 flex-shrink-0"></i>
                 <div>
-                  <p className="text-sm font-semibold text-teal-800 mb-1">Export as CSV</p>
-                  <p className="text-sm text-teal-700">
+                  <p className="text-sm font-semibold text-indigo-800 mb-1">Export as CSV</p>
+                  <p className="text-sm text-indigo-700">
                     The exported CSV file can be used directly with the <strong>Import Cases</strong> feature.
                     Select the columns you want to include below.
                   </p>
@@ -296,31 +296,31 @@ export default function ExportImportModal({
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">Export Scope</label>
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-teal-300 hover:bg-teal-50/30"
-                    style={{ borderColor: exportScope === 'all' ? '#14b8a6' : '#e5e7eb', background: exportScope === 'all' ? '#f0fdfa' : '' }}>
+                  <label className="flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-indigo-300 hover:bg-indigo-50/30"
+                    style={{ borderColor: exportScope === 'all' ? '#6366F1' : '#e5e7eb', background: exportScope === 'all' ? '#f0fdfa' : '' }}>
                     <input
                       type="radio"
                       name="exportScope"
                       value="all"
                       checked={exportScope === 'all'}
                       onChange={() => setExportScope('all')}
-                      className="w-4 h-4 text-teal-600 cursor-pointer"
+                      className="w-4 h-4 text-indigo-600 cursor-pointer"
                     />
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-gray-900">All Test Cases</p>
                       <p className="text-xs text-gray-500 mt-0.5">All test cases in the current project ({testCases.length} cases)</p>
                     </div>
-                    <span className="text-sm font-bold text-teal-600">{testCases.length} cases</span>
+                    <span className="text-sm font-bold text-indigo-600">{testCases.length} cases</span>
                   </label>
 
                   <label
                     className={`flex items-center gap-3 p-4 border-2 rounded-lg transition-all ${
                       selectedTestCaseIds.size === 0
                         ? 'opacity-40 cursor-not-allowed border-gray-200'
-                        : 'cursor-pointer hover:border-teal-300 hover:bg-teal-50/30'
+                        : 'cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30'
                     }`}
                     style={{
-                      borderColor: exportScope === 'selected' && selectedTestCaseIds.size > 0 ? '#14b8a6' : '#e5e7eb',
+                      borderColor: exportScope === 'selected' && selectedTestCaseIds.size > 0 ? '#6366F1' : '#e5e7eb',
                       background: exportScope === 'selected' && selectedTestCaseIds.size > 0 ? '#f0fdfa' : '',
                     }}
                   >
@@ -331,7 +331,7 @@ export default function ExportImportModal({
                       checked={exportScope === 'selected'}
                       onChange={() => setExportScope('selected')}
                       disabled={selectedTestCaseIds.size === 0}
-                      className="w-4 h-4 text-teal-600 cursor-pointer"
+                      className="w-4 h-4 text-indigo-600 cursor-pointer"
                     />
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-gray-900">Selected Test Cases Only</p>
@@ -342,7 +342,7 @@ export default function ExportImportModal({
                       </p>
                     </div>
                     {selectedTestCaseIds.size > 0 && (
-                      <span className="text-sm font-bold text-teal-600">{selectedTestCaseIds.size} cases</span>
+                      <span className="text-sm font-bold text-indigo-600">{selectedTestCaseIds.size} cases</span>
                     )}
                   </label>
                 </div>
@@ -359,7 +359,7 @@ export default function ExportImportModal({
                   </label>
                   <button
                     onClick={toggleAllColumns}
-                    className="text-xs font-semibold text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap transition-colors"
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap transition-colors"
                   >
                     {allNonRequiredChecked ? 'Deselect All' : 'Select All'}
                   </button>
@@ -373,22 +373,22 @@ export default function ExportImportModal({
                         onClick={() => !col.required && toggleColumn(col.key)}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all select-none ${
                           col.required
-                            ? 'cursor-not-allowed border-teal-200 bg-teal-50/60'
+                            ? 'cursor-not-allowed border-indigo-200 bg-indigo-50/60'
                             : checked
-                            ? 'cursor-pointer border-teal-300 bg-teal-50/40 hover:bg-teal-50'
+                            ? 'cursor-pointer border-indigo-300 bg-indigo-50/40 hover:bg-indigo-50'
                             : 'cursor-pointer border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                         }`}
                       >
                         <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
                           {col.required ? (
-                            <div className="w-4 h-4 rounded bg-teal-500 flex items-center justify-center">
+                            <div className="w-4 h-4 rounded bg-indigo-500 flex items-center justify-center">
                               <i className="ri-check-line text-white text-xs"></i>
                             </div>
                           ) : (
                             <div
                               className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
                                 checked
-                                  ? 'bg-teal-500 border-teal-500'
+                                  ? 'bg-indigo-500 border-indigo-500'
                                   : 'bg-white border-gray-300'
                               }`}
                             >
@@ -400,7 +400,7 @@ export default function ExportImportModal({
                           {col.label}
                         </span>
                         {col.required && (
-                          <span className="text-xs text-teal-500 font-semibold whitespace-nowrap">Required</span>
+                          <span className="text-xs text-indigo-500 font-semibold whitespace-nowrap">Required</span>
                         )}
                       </label>
                     );
@@ -414,9 +414,9 @@ export default function ExportImportModal({
                   <div>
                     <p className="text-sm font-semibold text-gray-900">Export Summary</p>
                     <p className="text-sm text-gray-500 mt-1">
-                      <strong className="text-teal-600">{exportTargetCases.length} test cases</strong>
+                      <strong className="text-indigo-600">{exportTargetCases.length} test cases</strong>
                       {' · '}
-                      <strong className="text-teal-600">{selectedColumns.size} columns</strong>
+                      <strong className="text-indigo-600">{selectedColumns.size} columns</strong>
                       {' '}will be saved as a CSV file.
                     </p>
                   </div>
@@ -431,16 +431,16 @@ export default function ExportImportModal({
             <div className="space-y-6">
               {importDone ? (
                 <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i className="ri-checkbox-circle-fill text-teal-500 text-4xl"></i>
+                  <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i className="ri-checkbox-circle-fill text-indigo-500 text-4xl"></i>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Import Complete!</h3>
                   <p className="text-gray-600">
-                    Successfully imported <strong className="text-teal-600">{importedCount} test cases</strong>.
+                    Successfully imported <strong className="text-indigo-600">{importedCount} test cases</strong>.
                   </p>
                   <button
                     onClick={onClose}
-                    className="mt-6 px-8 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                    className="mt-6 px-8 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
                   >
                     Close
                   </button>
@@ -466,8 +466,8 @@ export default function ExportImportModal({
                       onClick={() => fileInputRef.current?.click()}
                       className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
                         dragOver
-                          ? 'border-teal-500 bg-teal-50'
-                          : 'border-gray-300 hover:border-teal-400 hover:bg-gray-50'
+                          ? 'border-indigo-500 bg-indigo-50'
+                          : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
                       }`}
                     >
                       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -536,7 +536,7 @@ export default function ExportImportModal({
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-sm font-semibold text-gray-700">
-                          Preview — <span className="text-teal-600">{importPreview.length} test cases</span>
+                          Preview — <span className="text-indigo-600">{importPreview.length} test cases</span>
                         </p>
                         <span className="text-xs text-gray-500">Showing up to 5</span>
                       </div>
@@ -594,7 +594,7 @@ export default function ExportImportModal({
               <button
                 onClick={handleExport}
                 disabled={selectedColumns.size === 0}
-                className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <i className="ri-download-line"></i>
                 Download CSV ({exportTargetCases.length} cases)
@@ -603,7 +603,7 @@ export default function ExportImportModal({
               <button
                 onClick={handleImportConfirm}
                 disabled={!importPreview || importPreview.length === 0 || importing}
-                className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {importing ? (
                   <>

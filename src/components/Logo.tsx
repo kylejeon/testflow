@@ -5,14 +5,14 @@ interface LogoProps {
 
 /**
  * LogoMark — HTML div version for product app headers.
- * Uses bg-emerald-500 squircle + Pacifico "Testably" text.
+ * Uses bg-indigo-500 squircle + Pacifico "Testably" text.
  * Renders as inline HTML so layout/gap control is precise.
  */
 export function LogoMark() {
   return (
     <div className="flex items-center gap-2">
       <div
-        className="w-8 h-8 bg-emerald-500 flex items-center justify-center flex-shrink-0"
+        className="w-8 h-8 bg-indigo-500 flex items-center justify-center flex-shrink-0"
         style={{ borderRadius: '22%' }}
       >
         <span
@@ -55,7 +55,7 @@ export default function Logo({ variant = 'light', className = 'h-9' }: LogoProps
       role="img"
     >
       {/* Squircle icon */}
-      <rect x="8" y="14" width="72" height="72" rx="16" fill="#14b8a6" />
+      <rect x="8" y="14" width="72" height="72" rx="16" fill="#6366F1" />
       <text
         x="45"
         y="62"

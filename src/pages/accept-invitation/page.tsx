@@ -153,11 +153,11 @@ export default function AcceptInvitationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
         {status === 'loading' && (
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">초대 확인 중</h2>
             <p className="text-gray-600">{message}</p>
           </div>
@@ -165,8 +165,8 @@ export default function AcceptInvitationPage() {
 
         {status === 'ready' && invitationInfo && (
           <div>
-            <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <i className="ri-mail-open-fill text-4xl text-teal-600"></i>
+            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <i className="ri-mail-open-fill text-4xl text-indigo-600"></i>
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">프로젝트 초대</h2>
             
@@ -193,7 +193,7 @@ export default function AcceptInvitationPage() {
                 <p className="text-gray-600 mb-6 text-center">{message}</p>
                 <button
                   onClick={acceptInvitation}
-                  className="w-full px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                  className="w-full px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
                 >
                   초대 수락하기
                 </button>
@@ -203,7 +203,7 @@ export default function AcceptInvitationPage() {
                 <p className="text-gray-600 mb-6 text-center">{message}</p>
                 <button
                   onClick={handleLogin}
-                  className="w-full px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                  className="w-full px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
                 >
                   로그인하기
                 </button>
@@ -214,7 +214,7 @@ export default function AcceptInvitationPage() {
 
         {status === 'accepting' && (
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">처리 중</h2>
             <p className="text-gray-600">{message}</p>
           </div>
@@ -240,7 +240,7 @@ export default function AcceptInvitationPage() {
             <p className="text-gray-600 mb-6">{message}</p>
             <button
               onClick={() => navigate('/projects')}
-              className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+              className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
             >
               프로젝트 목록으로 이동
             </button>

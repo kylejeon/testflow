@@ -22,7 +22,7 @@ interface DocumentItem {
 
 const TIER_INFO = {
   1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
-  2: { name: 'Starter', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  2: { name: 'Starter', color: 'bg-indigo-50 text-indigo-700 border-indigo-300', icon: 'ri-vip-crown-line' },
   3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
   4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
 };
@@ -167,7 +167,7 @@ export default function ProjectDocumentation() {
                 </Link>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
+                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
                   {userProfile?.avatar_emoji ? (
                     <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
                   ) : (
@@ -179,7 +179,7 @@ export default function ProjectDocumentation() {
           </header>
           <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
             <div className="text-center">
-              <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-600">{t('loading')}</p>
             </div>
           </main>
@@ -219,7 +219,7 @@ export default function ProjectDocumentation() {
                 </Link>
                 <Link 
                   to={`/projects/${id}/documentation`}
-                  className="px-3 py-2 text-sm font-medium text-teal-600 bg-teal-50 rounded-lg cursor-pointer"
+                  className="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg cursor-pointer"
                 >
                   Documentation
                 </Link>
@@ -248,7 +248,7 @@ export default function ProjectDocumentation() {
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="flex items-center gap-2 cursor-pointer"
                 >
-                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                  <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
                     {userProfile?.avatar_emoji ? (
                       <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
                     ) : (
@@ -317,7 +317,7 @@ export default function ProjectDocumentation() {
                 </button>
                 <button 
                   onClick={() => setShowUploadModal(true)}
-                  className="px-4 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
+                  className="px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
                 >
                   <i className="ri-upload-2-line text-lg w-5 h-5 flex items-center justify-center"></i>
                   {t('uploadFile')}
@@ -332,7 +332,7 @@ export default function ProjectDocumentation() {
                     onClick={() => setFilterType('all')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                       filterType === 'all'
-                        ? 'bg-teal-500 text-white'
+                        ? 'bg-indigo-500 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -342,7 +342,7 @@ export default function ProjectDocumentation() {
                     onClick={() => setFilterType('link')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                       filterType === 'link'
-                        ? 'bg-teal-500 text-white'
+                        ? 'bg-indigo-500 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -352,7 +352,7 @@ export default function ProjectDocumentation() {
                     onClick={() => setFilterType('file')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                       filterType === 'file'
-                        ? 'bg-teal-500 text-white'
+                        ? 'bg-indigo-500 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -378,7 +378,7 @@ export default function ProjectDocumentation() {
                       </button>
                       <button 
                         onClick={() => setShowUploadModal(true)}
-                        className="px-4 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                        className="px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
                       >
                         {t('uploadFile')}
                       </button>
@@ -389,7 +389,7 @@ export default function ProjectDocumentation() {
                     {filteredDocuments.map((doc) => (
                       <div 
                         key={doc.id}
-                        className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-teal-500 hover:bg-gray-50/50 transition-all group"
+                        className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-gray-50/50 transition-all group"
                       >
                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                           doc.type === 'link' ? 'bg-blue-100' : 'bg-purple-100'
@@ -418,7 +418,7 @@ export default function ProjectDocumentation() {
                               href={doc.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-3 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap text-sm font-medium"
+                              className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap text-sm font-medium"
                             >
                               {t('open')}
                             </a>
@@ -427,7 +427,7 @@ export default function ProjectDocumentation() {
                             <a
                               href={doc.file_url}
                               download={doc.file_name}
-                              className="px-3 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap text-sm font-medium"
+                              className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap text-sm font-medium"
                             >
                               {t('download')}
                             </a>

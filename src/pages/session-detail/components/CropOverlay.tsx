@@ -139,7 +139,7 @@ export default function CropOverlay({ imageDataUrl, onCrop, onCancel }: CropOver
           <button
             onClick={handleCrop}
             disabled={!hasValidSelection}
-            className="px-4 py-1.5 text-sm font-medium bg-teal-500 hover:bg-teal-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-all cursor-pointer whitespace-nowrap"
+            className="px-4 py-1.5 text-sm font-medium bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-all cursor-pointer whitespace-nowrap"
           >
             <i className="ri-check-line mr-1"></i>
             캡처

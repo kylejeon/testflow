@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { supabase } from '../../../lib/supabase';
 import TipTapEditor from '../../session-detail/components/QuillEditor';
 import ExportImportModal from './ExportImportModal';
@@ -685,6 +686,18 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   // 전체 선택 여부 확인
   const isAllSelected = filteredTestCases.length > 0 && filteredTestCases.every(tc => selectedTestCaseIds.has(tc.id));
   const isSomeSelected = filteredTestCases.some(tc => selectedTestCaseIds.has(tc.id)) && !isAllSelected;
+
+  // Virtual scrolling
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: filteredTestCases.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 64,
+    overscan: 10,
+  });
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const paddingTop = virtualItems.length > 0 ? virtualItems[0].start : 0;
+  const paddingBottom = virtualItems.length > 0 ? rowVirtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end : 0;
 
   // 전체 선택/해제 핸들러
   const handleSelectAll = () => {
@@ -1842,7 +1855,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     onClick={() => setSelectedFolder(folder.id)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                       selectedFolder === folder.id
-                        ? 'bg-teal-50 text-teal-700'
+                        ? 'bg-indigo-50 text-indigo-700'
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -1875,7 +1888,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           <div className="pt-6 border-t border-gray-200">
             <button
               onClick={() => setShowNewFolderModal(true)}
-              className="w-full px-4 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              className="w-full px-4 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
               New Folder
@@ -1923,7 +1936,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
                     setShowNewCaseModal(true);
                   }}
-                  className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                  className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
                 >
                   <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
                   New Test Case
@@ -1942,19 +1955,19 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
         {/* Bulk Action Bar */}
         {selectedTestCaseIds.size > 0 && (
-          <div className="mb-4 bg-teal-50 border border-teal-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+              <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                 {selectedTestCaseIds.size}
               </div>
-              <span className="text-sm font-medium text-teal-800">
+              <span className="text-sm font-medium text-indigo-800">
                 {selectedTestCaseIds.size} test case{selectedTestCaseIds.size > 1 ? 's' : ''} selected
               </span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowBulkFolderModal(true)}
-                className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-folder-add-line"></i>
                 Add to Folder
@@ -2031,19 +2044,23 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
                   setShowNewCaseModal(true);
                 }}
-                className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
               >
                 Create Test Case
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div
+              ref={tableContainerRef}
+              className="overflow-x-auto overflow-y-auto"
+              style={{ maxHeight: 'calc(100vh - 280px)' }}
+            >
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                   <tr>
                     <th className="px-6 py-4 text-left">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="w-4 h-4 rounded border-gray-300 cursor-pointer"
                         checked={isAllSelected}
                         ref={(el) => {
@@ -2069,11 +2086,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredTestCases.map((testCase) => (
+                  {paddingTop > 0 && (
+                    <tr><td colSpan={5} style={{ height: paddingTop }} /></tr>
+                  )}
+                  {virtualItems.map((vItem) => {
+                    const testCase = filteredTestCases[vItem.index];
+                    return (
                     <tr 
                       key={testCase.id} 
                       className={`hover:bg-gray-50 transition-all cursor-pointer ${
-                        selectedTestCase?.id === testCase.id ? 'bg-teal-50' : ''
+                        selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : ''
                       }`}
                       onClick={() => { setSelectedTestCase(testCase); window.scrollTo(0, 0); }}
                     >
@@ -2124,7 +2146,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         </span>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
+                  {paddingBottom > 0 && (
+                    <tr><td colSpan={5} style={{ height: paddingBottom }} /></tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -2162,7 +2188,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   {selectedTestCase.is_automated && (
-                    <div className="w-6 h-6 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                    <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                       {selectedTestCase.assignee.substring(0, 2).toUpperCase()}
                     </div>
                   )}
@@ -2199,7 +2225,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       {selectedTestCase.tags.split(',').map((tag, index) => (
                         <span
                           key={index}
-                          className="inline-flex items-center px-2 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-medium"
+                          className="inline-flex items-center px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium"
                         >
                           {tag.trim()}
                         </span>
@@ -2212,7 +2238,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-2">Assignee</label>
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                         {selectedTestCase.assignee.substring(0, 2).toUpperCase()}
                       </div>
                       <span className="text-sm text-gray-900">{selectedTestCase.assignee}</span>
@@ -2250,7 +2276,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       const isHtml = /<[^>]+>/.test(content);
                       return (
                         <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
-                          <div className="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-xs flex-shrink-0 mt-0.5">
+                          <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-semibold text-xs flex-shrink-0 mt-0.5">
                             {index + 1}
                           </div>
                           {isHtml ? (
@@ -2268,7 +2294,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     <div className="mt-3 flex justify-end">
                       <button
                         onClick={handleAddStep}
-                        className="flex items-center gap-1 px-3 py-1 text-sm text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                        className="flex items-center gap-1 px-3 py-1 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
                       >
                         <i className="ri-add-line text-lg w-4 h-4 flex items-center justify-center"></i>
                         Add step
@@ -2329,7 +2355,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               <div className="pt-6 border-t border-gray-200 flex gap-3">
                 <button
                   onClick={() => handleEdit(selectedTestCase)}
-                  className="flex-1 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                  className="flex-1 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
                 >
                   Edit
                 </button>
@@ -2355,7 +2381,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 onClick={() => setActiveTab('comments')}
                 className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'comments'
-                    ? 'text-teal-600 border-b-2 border-teal-600'
+                    ? 'text-indigo-600 border-b-2 border-indigo-600'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -2365,7 +2391,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 onClick={() => setActiveTab('results')}
                 className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'results'
-                    ? 'text-teal-600 border-b-2 border-teal-600'
+                    ? 'text-indigo-600 border-b-2 border-indigo-600'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -2375,7 +2401,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 onClick={() => setActiveTab('issues')}
                 className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'issues'
-                    ? 'text-teal-600 border-b-2 border-teal-600'
+                    ? 'text-indigo-600 border-b-2 border-indigo-600'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -2385,7 +2411,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 onClick={() => setActiveTab('history')}
                 className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'history'
-                    ? 'text-teal-600 border-b-2 border-teal-600'
+                    ? 'text-indigo-600 border-b-2 border-indigo-600'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -2404,11 +2430,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="Add a comment..."
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                   ></textarea>
                   <button 
                     onClick={handlePostComment}
-                    className="mt-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
+                    className="mt-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
                   >
                     Post Comment
                   </button>
@@ -2423,7 +2449,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     comments.map((comment) => (
                       <div key={comment.id} className="bg-gray-50 rounded-lg p-4 group relative">
                         <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                          <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                             {comment.author.substring(0, 2).toUpperCase()}
                           </div>
                           <div className="flex-1">
@@ -2619,7 +2645,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     
                     // 액션 타입에 따른 메시지 생성
                     let actionMessage = '';
-                    let actionColor = 'bg-teal-100';
+                    let actionColor = 'bg-indigo-100';
                     
                     if (history.action_type === 'created') {
                       actionMessage = 'created this test case';
@@ -2662,7 +2688,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           {history.action_type === 'updated' && history.old_value && history.new_value && (
                             <button
                               onClick={() => handleHistoryClick(history)}
-                              className="text-sm text-teal-600 hover:text-teal-700 mt-1 flex items-center gap-1 cursor-pointer"
+                              className="text-sm text-indigo-600 hover:text-indigo-700 mt-1 flex items-center gap-1 cursor-pointer"
                             >
                               <i className="ri-eye-line"></i>
                               Click to view changes
@@ -2727,7 +2753,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   value={newFolder.name}
                   onChange={(e) => setNewFolder({ ...newFolder, name: e.target.value })}
                   placeholder="e.g., Performance Tests"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
               <div>
@@ -2741,7 +2767,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       onClick={() => setNewFolder({ ...newFolder, icon })}
                       className={`w-full h-12 flex items-center justify-center rounded-lg border-2 transition-all cursor-pointer ${
                         newFolder.icon === icon
-                          ? 'border-teal-500 bg-teal-50'
+                          ? 'border-indigo-500 bg-indigo-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -2780,7 +2806,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               </button>
               <button
                 onClick={handleAddFolder}
-                className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
               >
                 Create
               </button>
@@ -2823,7 +2849,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       value={newTestCase.title}
                       onChange={(e) => setNewTestCase({ ...newTestCase, title: e.target.value })}
                       placeholder="e.g., User login functionality test"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                   </div>
                   <div>
@@ -2834,7 +2860,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       placeholder="Enter detailed description of the test case"
                       rows={3}
                       maxLength={500}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                     ></textarea>
                   </div>
                   <div>
@@ -2845,7 +2871,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       placeholder="Enter preconditions required before executing this test case"
                       rows={3}
                       maxLength={500}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                     ></textarea>
                   </div>
                   
@@ -2855,7 +2881,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       <label className="block text-sm font-semibold text-gray-700">Steps</label>
                       <button
                         onClick={handleAddStep}
-                        className="flex items-center gap-1 px-3 py-1 text-sm text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                        className="flex items-center gap-1 px-3 py-1 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
                       >
                         <i className="ri-add-line text-lg w-4 h-4 flex items-center justify-center"></i>
                         Add step
@@ -2865,7 +2891,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       {testSteps.map((step, index) => (
                         <div key={step.id} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold text-sm flex-shrink-0 mt-1">
+                            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-semibold text-sm flex-shrink-0 mt-1">
                               {index + 1}
                             </div>
                             <div className="flex-1 space-y-3">
@@ -2908,7 +2934,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     <div className="mt-3 flex justify-end">
                       <button
                         onClick={handleAddStep}
-                        className="flex items-center gap-1 px-3 py-1 text-sm text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                        className="flex items-center gap-1 px-3 py-1 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
                       >
                         <i className="ri-add-line text-lg w-4 h-4 flex items-center justify-center"></i>
                         Add step
@@ -2921,7 +2947,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     <select
                       value={newTestCase.assignee}
                       onChange={(e) => setNewTestCase({ ...newTestCase, assignee: e.target.value })}
-                      className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                      className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                     >
                       <option value="">Unassigned</option>
                       {loadingMembers ? (
@@ -2957,7 +2983,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     <select
                       value={newTestCase.folder}
                       onChange={(e) => setNewTestCase({ ...newTestCase, folder: e.target.value })}
-                      className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                      className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                     >
                       <option value="">No folder</option>
                       {folders.map((folder) => (
@@ -2972,7 +2998,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     <select
                       value={newTestCase.priority}
                       onChange={(e) => setNewTestCase({ ...newTestCase, priority: e.target.value })}
-                      className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                      className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                     >
                       <option value="critical">Critical</option>
                       <option value="high">High</option>
@@ -2990,7 +3016,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       onCompositionStart={handleCompositionStart}
                       onCompositionEnd={handleCompositionEnd}
                       placeholder="태그 입력 후 Enter"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                     <p className="text-xs text-gray-500 mt-1">Enter를 눌러 태그 추가</p>
                     {getTagsArray().length > 0 && (
@@ -2998,13 +3024,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         {getTagsArray().map((tag, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-medium"
+                            className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium"
                           >
                             {tag}
                             <button
                               type="button"
                               onClick={() => handleRemoveTag(tag)}
-                              className="w-4 h-4 flex items-center justify-center text-teal-600 hover:text-teal-800 hover:bg-teal-200 rounded-full transition-all cursor-pointer"
+                              className="w-4 h-4 flex items-center justify-center text-indigo-600 hover:text-indigo-800 hover:bg-indigo-200 rounded-full transition-all cursor-pointer"
                             >
                               <i className="ri-close-line text-xs"></i>
                             </button>
@@ -3025,13 +3051,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     />
                     <label
                       htmlFor="file-upload-input"
-                      className={`block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-teal-500 transition-all cursor-pointer ${
+                      className={`block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-all cursor-pointer ${
                         uploadingFile ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
                       {uploadingFile ? (
                         <>
-                          <i className="ri-loader-4-line animate-spin text-3xl text-teal-500 mb-2"></i>
+                          <i className="ri-loader-4-line animate-spin text-3xl text-indigo-500 mb-2"></i>
                           <p className="text-sm text-gray-600">업로드 중...</p>
                         </>
                       ) : (
@@ -3082,7 +3108,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
               >
                 {editingTestCase ? 'Update' : 'Create'}
               </button>
@@ -3499,7 +3525,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             <div className="p-4 max-h-80 overflow-y-auto">
               {loadingProjects ? (
                 <div className="text-center py-10">
-                  <i className="ri-loader-4-line animate-spin text-2xl text-teal-500 mb-2"></i>
+                  <i className="ri-loader-4-line animate-spin text-2xl text-indigo-500 mb-2"></i>
                   <p className="text-sm text-gray-500">Loading projects...</p>
                 </div>
               ) : availableProjects.length === 0 ? (
@@ -3535,7 +3561,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                             project.status === 'active' ? 'bg-green-100 text-green-700' :
                             project.status === 'archived' ? 'bg-gray-100 text-gray-600' :
-                            project.status === 'completed' ? 'bg-teal-100 text-teal-700' :
+                            project.status === 'completed' ? 'bg-indigo-100 text-indigo-700' :
                             'bg-gray-100 text-gray-600'
                           }`}>
                             {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
@@ -3551,7 +3577,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
             <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
               <div className="flex items-start gap-2 mb-3">
-                <i className="ri-information-line text-teal-500 mt-0.5 flex-shrink-0"></i>
+                <i className="ri-information-line text-indigo-500 mt-0.5 flex-shrink-0"></i>
                 <p className="text-xs text-gray-500">
                   Copied test cases will have <strong>Untested</strong> status and no assignee. Folder structure and tags will be preserved.
                 </p>
@@ -3640,7 +3666,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
           <div className={`flex items-center gap-3 px-5 py-4 rounded-lg shadow-lg ${
             toastType === 'success' 
-              ? 'bg-teal-500 text-white' 
+              ? 'bg-indigo-500 text-white' 
               : 'bg-red-500 text-white'
           }`}>
             <div className="w-6 h-6 flex items-center justify-center">

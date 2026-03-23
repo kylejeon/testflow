@@ -59,7 +59,7 @@ export default function AdminUserGrowthChart({ data, loading = false }: AdminUse
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-teal-500"></div>
+            <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
             <span className="text-xs text-gray-500">신규 가입</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -82,8 +82,8 @@ export default function AdminUserGrowthChart({ data, loading = false }: AdminUse
           <AreaChart data={formattedData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorNewUsers" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
+                <stop offset="5%" stopColor="#6366F1" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="colorPaidUsers" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.2} />
@@ -107,10 +107,10 @@ export default function AdminUserGrowthChart({ data, loading = false }: AdminUse
             <Area
               type="monotone"
               dataKey="new_users"
-              stroke="#14b8a6"
+              stroke="#6366F1"
               strokeWidth={2.5}
               fill="url(#colorNewUsers)"
-              dot={{ r: 3, fill: '#14b8a6', strokeWidth: 0 }}
+              dot={{ r: 3, fill: '#6366F1', strokeWidth: 0 }}
               activeDot={{ r: 5 }}
             />
             <Area

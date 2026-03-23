@@ -20,14 +20,14 @@ const TIER_PRICES: Record<number, number> = {
 const TIER_COLORS: Record<number, string> = {
   1: '#94a3b8',
   2: '#fbbf24',
-  3: '#14b8a6',
+  3: '#6366F1',
   4: '#f59e0b',
 };
 
 const TIER_BG: Record<number, string> = {
   1: 'bg-slate-100 text-slate-600 border-slate-200',
   2: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-  3: 'bg-teal-50 text-teal-700 border-teal-200',
+  3: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   4: 'bg-amber-50 text-amber-700 border-amber-200',
 };
 
@@ -82,9 +82,9 @@ export default function AdminMRRCard({ data, loading = false }: AdminMRRCardProp
           <h3 className="text-lg font-bold text-gray-900">MRR 예상치</h3>
           <p className="text-sm text-gray-500 mt-0.5">구독 플랜 기준 월 반복 매출</p>
         </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-teal-50 rounded-full border border-teal-100">
-          <i className="ri-information-line text-teal-500 text-xs"></i>
-          <span className="text-xs font-semibold text-teal-600">예상 추정치</span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 rounded-full border border-indigo-100">
+          <i className="ri-information-line text-indigo-500 text-xs"></i>
+          <span className="text-xs font-semibold text-indigo-600">예상 추정치</span>
         </div>
       </div>
 
@@ -96,20 +96,20 @@ export default function AdminMRRCard({ data, loading = false }: AdminMRRCardProp
       ) : (
         <>
           {/* Total MRR Banner */}
-          <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl p-5 mb-5 relative overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl p-5 mb-5 relative overflow-hidden">
             <div className="absolute right-4 top-3 opacity-10">
               <i className="ri-line-chart-fill text-7xl text-white"></i>
             </div>
-            <p className="text-xs font-bold text-teal-100 uppercase tracking-wider mb-1">Total MRR</p>
+            <p className="text-xs font-bold text-indigo-100 uppercase tracking-wider mb-1">Total MRR</p>
             <p className="text-4xl font-bold text-white tabular-nums">
               ${totalMRR.toLocaleString()}
             </p>
             <div className="flex items-center gap-4 mt-2">
-              <p className="text-sm text-teal-100">
+              <p className="text-sm text-indigo-100">
                 연간 예상 ARR: <span className="font-bold text-white">{formatCurrency(annualizedMRR)}</span>
               </p>
               {totalMRR > 0 && (
-                <p className="text-sm text-teal-100">
+                <p className="text-sm text-indigo-100">
                   유료 기여: <span className="font-bold text-white">${paidMRR.toLocaleString()}</span>
                 </p>
               )}

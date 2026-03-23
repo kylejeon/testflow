@@ -34,8 +34,8 @@ const competitors = [
     slug: 'qase',
     name: 'Qase',
     icon: 'ri-questionnaire-line',
-    iconBg: 'bg-emerald-100',
-    iconColor: 'text-emerald-600',
+    iconBg: 'bg-violet-100',
+    iconColor: 'text-violet-600',
     tagline: 'Better collaboration and reporting tools',
     highlights: [
       'Advanced milestone & sprint tracking',
@@ -85,14 +85,14 @@ export default function CompareIndexPage() {
         {/* Hero */}
         <section className="relative bg-gray-950 pt-32 pb-20 overflow-hidden">
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-teal-500/10 blur-[120px]"></div>
-            <div className="absolute -bottom-1/4 -left-1/4 w-[400px] h-[400px] rounded-full bg-teal-600/[0.07] blur-[100px]"></div>
+            <div className="absolute -top-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-indigo-500/10 blur-[120px]"></div>
+            <div className="absolute -bottom-1/4 -left-1/4 w-[400px] h-[400px] rounded-full bg-indigo-600/[0.07] blur-[100px]"></div>
           </div>
 
           <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
             <div className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/[0.08] rounded-full px-4 py-1.5 mb-8 backdrop-blur-sm">
-              <i className="ri-arrow-left-right-line text-teal-400 text-sm"></i>
-              <span className="text-teal-300/90 text-sm font-medium">Alternatives</span>
+              <i className="ri-arrow-left-right-line text-indigo-400 text-sm"></i>
+              <span className="text-indigo-300/90 text-sm font-medium">Alternatives</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight tracking-tight mb-6">
@@ -106,7 +106,7 @@ export default function CompareIndexPage() {
 
             <a
               href="https://app.testably.io/signup"
-              className="inline-flex items-center gap-3 px-8 py-4 bg-teal-500 text-white rounded-full font-bold text-base hover:bg-teal-400 active:scale-[0.98] shadow-[0_0_30px_rgba(20,184,166,0.2)] hover:shadow-[0_0_40px_rgba(20,184,166,0.35)] cursor-pointer"
+              className="inline-flex items-center gap-3 px-8 py-4 bg-indigo-500 text-white rounded-full font-bold text-base hover:bg-indigo-400 active:scale-[0.98] shadow-[0_0_30px_rgba(20,184,166,0.2)] hover:shadow-[0_0_40px_rgba(20,184,166,0.35)] cursor-pointer"
               style={{ transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
             >
               Get Started Free
@@ -121,7 +121,7 @@ export default function CompareIndexPage() {
         <section className="py-24 bg-white">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <span className="inline-block bg-teal-50 text-teal-700 text-sm font-medium px-3 py-1 rounded-full mb-4">
+              <span className="inline-block bg-indigo-50 text-indigo-700 text-sm font-medium px-3 py-1 rounded-full mb-4">
                 Comparisons
               </span>
               <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -137,7 +137,7 @@ export default function CompareIndexPage() {
                 <Link
                   key={comp.slug}
                   to={`/compare/${comp.slug}`}
-                  className="group block rounded-2xl border border-gray-200 bg-white p-7 hover:border-teal-200 hover:shadow-lg hover:shadow-teal-500/5 hover:-translate-y-1"
+                  className="group block rounded-2xl border border-gray-200 bg-white p-7 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-1"
                   style={{ transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
                 >
                   <div className="flex items-center gap-3 mb-4">
@@ -154,13 +154,13 @@ export default function CompareIndexPage() {
                   <ul className="space-y-2 mb-6">
                     {comp.highlights.map((h, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                        <i className="ri-check-line text-teal-500 mt-0.5 flex-shrink-0"></i>
+                        <i className="ri-check-line text-indigo-500 mt-0.5 flex-shrink-0"></i>
                         <span>{h}</span>
                       </li>
                     ))}
                   </ul>
 
-                  <div className="flex items-center gap-1.5 text-teal-600 text-sm font-semibold group-hover:gap-2.5 transition-all">
+                  <div className="flex items-center gap-1.5 text-indigo-600 text-sm font-semibold group-hover:gap-2.5 transition-all">
                     See full comparison
                     <i className="ri-arrow-right-s-line text-base"></i>
                   </div>
@@ -174,7 +174,7 @@ export default function CompareIndexPage() {
         <section className="py-24 bg-gray-50">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <span className="inline-block bg-teal-50 text-teal-700 text-sm font-medium px-3 py-1 rounded-full mb-4">
+              <span className="inline-block bg-indigo-50 text-indigo-700 text-sm font-medium px-3 py-1 rounded-full mb-4">
                 Feature Matrix
               </span>
               <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -190,9 +190,9 @@ export default function CompareIndexPage() {
                 <thead>
                   <tr className="border-b border-gray-100">
                     <th className="text-left py-4 px-5 font-semibold text-gray-500 w-1/5">Feature</th>
-                    <th className="text-center py-4 px-4 font-bold text-teal-700 bg-teal-50/50 w-1/5">
+                    <th className="text-center py-4 px-4 font-bold text-indigo-700 bg-indigo-50/50 w-1/5">
                       <div className="flex items-center justify-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-teal-500 flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-lg bg-indigo-500 flex items-center justify-center">
                           <i className="ri-check-line text-white text-xs"></i>
                         </div>
                         Testably
@@ -210,14 +210,14 @@ export default function CompareIndexPage() {
                       {toolKeys.map((tool) => (
                         <td
                           key={tool}
-                          className={`text-center py-3.5 px-4 ${tool === 'testably' ? 'bg-teal-50/30' : ''}`}
+                          className={`text-center py-3.5 px-4 ${tool === 'testably' ? 'bg-indigo-50/30' : ''}`}
                         >
                           {row[tool] === true ? (
-                            <i className={`ri-check-line text-base ${tool === 'testably' ? 'text-teal-500' : 'text-gray-400'}`}></i>
+                            <i className={`ri-check-line text-base ${tool === 'testably' ? 'text-indigo-500' : 'text-gray-400'}`}></i>
                           ) : row[tool] === false ? (
                             <i className="ri-close-line text-base text-gray-300"></i>
                           ) : (
-                            <span className={`text-xs font-medium ${tool === 'testably' ? 'text-teal-600' : 'text-gray-400'}`}>
+                            <span className={`text-xs font-medium ${tool === 'testably' ? 'text-indigo-600' : 'text-gray-400'}`}>
                               {row[tool]}
                             </span>
                           )}
@@ -237,7 +237,7 @@ export default function CompareIndexPage() {
 
         {/* Bottom CTA */}
         <section className="py-24 bg-gray-950 relative overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-teal-500/10 blur-[100px]"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-indigo-500/10 blur-[100px]"></div>
 
           <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
@@ -250,7 +250,7 @@ export default function CompareIndexPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
                 href="https://app.testably.io/signup"
-                className="inline-flex items-center gap-3 px-8 py-4 bg-teal-500 text-white rounded-full font-bold text-base hover:bg-teal-400 active:scale-[0.98] shadow-[0_0_30px_rgba(20,184,166,0.2)] cursor-pointer"
+                className="inline-flex items-center gap-3 px-8 py-4 bg-indigo-500 text-white rounded-full font-bold text-base hover:bg-indigo-400 active:scale-[0.98] shadow-[0_0_30px_rgba(20,184,166,0.2)] cursor-pointer"
                 style={{ transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
               >
                 Get Started Free

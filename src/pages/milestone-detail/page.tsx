@@ -70,7 +70,7 @@ interface UserProfile {
 
 const TIER_INFO = {
   1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
-  2: { name: 'Starter', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  2: { name: 'Starter', color: 'bg-indigo-50 text-indigo-700 border-indigo-300', icon: 'ri-vip-crown-line' },
   3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
   4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
 };
@@ -400,7 +400,7 @@ export default function MilestoneDetail() {
               activityData[index] = '#f59e0b';
               break;
             default:
-              activityData[index] = '#14b8a6';
+              activityData[index] = '#6366F1';
           }
         });
 
@@ -600,7 +600,7 @@ export default function MilestoneDetail() {
 
   const getContributorColor = (index: number) => {
     const colors = [
-      'from-teal-400 to-teal-600',
+      'from-indigo-400 to-indigo-600',
       'from-orange-400 to-orange-600',
       'from-green-400 to-green-600',
       'from-pink-400 to-pink-600',
@@ -633,7 +633,7 @@ export default function MilestoneDetail() {
                 </Link>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
+                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
                   {userProfile?.avatar_emoji ? (
                     <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
                   ) : (
@@ -645,7 +645,7 @@ export default function MilestoneDetail() {
           </header>
           <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
             <div className="text-center">
-              <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-600">마일스톤을 불러오는 중...</p>
             </div>
           </main>
@@ -666,7 +666,7 @@ export default function MilestoneDetail() {
                 </Link>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
+                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
                   {userProfile?.avatar_emoji ? (
                     <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
                   ) : (
@@ -682,7 +682,7 @@ export default function MilestoneDetail() {
                 <i className="ri-error-warning-line text-3xl text-gray-400"></i>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">마일스톤을 찾을 수 없습니다</h3>
-              <Link to={`/projects/${projectId}/milestones`} className="text-teal-600 hover:text-teal-700 font-medium cursor-pointer">
+              <Link to={`/projects/${projectId}/milestones`} className="text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer">
                 마일스톤 목록으로 돌아가기
               </Link>
             </div>
@@ -707,7 +707,7 @@ export default function MilestoneDetail() {
 
               <div className="w-px h-5 bg-gray-300" />
 
-              <Link to={`/projects/${projectId}`} className="text-sm text-gray-500 hover:text-teal-600 cursor-pointer">
+              <Link to={`/projects/${projectId}`} className="text-sm text-gray-500 hover:text-indigo-600 cursor-pointer">
                 {project?.name}
               </Link>
 
@@ -721,7 +721,7 @@ export default function MilestoneDetail() {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center gap-2 cursor-pointer"
               >
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
+                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
                   {userProfile?.avatar_emoji ? (
                     <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
                   ) : (
@@ -802,7 +802,7 @@ export default function MilestoneDetail() {
                   >
                     Edit
                   </button>
-                  <button className="px-4 py-2 text-white bg-teal-500 hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">
+                  <button className="px-4 py-2 text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">
                     Complete
                   </button>
                 </div>
@@ -833,52 +833,52 @@ export default function MilestoneDetail() {
                   onClick={() => setActiveTab('results')}
                   className={`px-4 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${
                     activeTab === 'results'
-                      ? 'text-teal-600'
+                      ? 'text-indigo-600'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   RESULTS
                   {activeTab === 'results' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600"></div>
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
                   )}
                 </button>
                 <button
                   onClick={() => setActiveTab('status')}
                   className={`px-4 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${
                     activeTab === 'status'
-                      ? 'text-teal-600'
+                      ? 'text-indigo-600'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   STATUS
                   {activeTab === 'status' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600"></div>
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
                   )}
                 </button>
                 <button
                   onClick={() => setActiveTab('activity')}
                   className={`px-4 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${
                     activeTab === 'activity'
-                      ? 'text-teal-600'
+                      ? 'text-indigo-600'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   ACTIVITY
                   {activeTab === 'activity' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600"></div>
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
                   )}
                 </button>
                 <button
                   onClick={() => setActiveTab('issues')}
                   className={`px-4 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${
                     activeTab === 'issues'
-                      ? 'text-teal-600'
+                      ? 'text-indigo-600'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   ISSUES
                   {activeTab === 'issues' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600"></div>
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
                   )}
                 </button>
               </div>
@@ -908,7 +908,7 @@ export default function MilestoneDetail() {
                                 cx="64"
                                 cy="64"
                                 r="56"
-                                stroke="#14b8a6"
+                                stroke="#6366F1"
                                 strokeWidth="16"
                                 fill="none"
                                 strokeDasharray={`${2 * Math.PI * 56}`}
@@ -924,7 +924,7 @@ export default function MilestoneDetail() {
                           <div className="flex-1 space-y-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-teal-500 rounded-full"></div>
+                                <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
                                 <span className="text-sm text-gray-700">Runs</span>
                               </div>
                               <span className="text-sm font-semibold text-gray-900">{runs.length}</span>
@@ -948,7 +948,7 @@ export default function MilestoneDetail() {
                             <span className="text-sm text-gray-700 font-medium">Runs</span>
                             <div className="flex items-center gap-3">
                               <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div className="bg-teal-500 h-2 rounded-full" style={{ width: runs.length > 0 ? '100%' : '0%' }}></div>
+                                <div className="bg-indigo-500 h-2 rounded-full" style={{ width: runs.length > 0 ? '100%' : '0%' }}></div>
                               </div>
                               <span className="text-sm font-semibold text-gray-900 min-w-[30px] text-right">{runs.length}</span>
                             </div>
@@ -957,7 +957,7 @@ export default function MilestoneDetail() {
                             <span className="text-sm text-gray-700 font-medium">Sessions</span>
                             <div className="flex items-center gap-3">
                               <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div className="bg-teal-500 h-2 rounded-full" style={{ width: sessions.length > 0 ? '100%' : '0%' }}></div>
+                                <div className="bg-indigo-500 h-2 rounded-full" style={{ width: sessions.length > 0 ? '100%' : '0%' }}></div>
                               </div>
                               <span className="text-sm font-semibold text-gray-900 min-w-[30px] text-right">{sessions.length}</span>
                             </div>
@@ -986,7 +986,7 @@ export default function MilestoneDetail() {
                               <Link
                                 key={sub.id}
                                 to={`/projects/${projectId}/milestones/${sub.id}`}
-                                className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-teal-500 transition-all cursor-pointer"
+                                className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-indigo-500 transition-all cursor-pointer"
                               >
                                 <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
                                   <i className="ri-run-line text-gray-600"></i>
@@ -1022,14 +1022,14 @@ export default function MilestoneDetail() {
                               <Link
                                 key={run.id}
                                 to={`/projects/${projectId}/runs/${run.id}`}
-                                className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-teal-500 transition-all cursor-pointer group"
+                                className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-indigo-500 transition-all cursor-pointer group"
                               >
                                 <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
                                   <i className="ri-play-circle-line text-lg text-gray-600"></i>
                                 </div>
                                 
                                 <div className="flex-1">
-                                  <div className="font-medium text-gray-900 mb-2 group-hover:text-teal-600 transition-colors">
+                                  <div className="font-medium text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
                                     {run.name}
                                   </div>
                                   
@@ -1075,14 +1075,14 @@ export default function MilestoneDetail() {
                             <Link
                               key={session.id}
                               to={`/projects/${projectId}/sessions/${session.id}`}
-                              className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-teal-500 transition-all cursor-pointer group"
+                              className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-indigo-500 transition-all cursor-pointer group"
                             >
                               <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
                                 <i className="ri-refresh-line text-lg text-gray-600"></i>
                               </div>
                               
                               <div className="flex-1">
-                                <div className="font-medium text-gray-900 mb-2 group-hover:text-teal-600 transition-colors">
+                                <div className="font-medium text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
                                   {session.name}
                                 </div>
                                 
@@ -1290,7 +1290,7 @@ export default function MilestoneDetail() {
                               setActivityStatusFilter(e.target.value);
                               setActivityPage(1);
                             }}
-                            className="appearance-none pl-3 pr-8 py-1.5 text-sm border border-gray-300 rounded-lg bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500"
+                            className="appearance-none pl-3 pr-8 py-1.5 text-sm border border-gray-300 rounded-lg bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           >
                             <option value="all">Statuses</option>
                             <option value="passed">Passed</option>
@@ -1364,7 +1364,7 @@ export default function MilestoneDetail() {
                               {Object.entries(paginatedGrouped).map(([date, logs]) => (
                                 <div key={date}>
                                   <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
                                     <span className="text-sm font-semibold text-gray-700">{date}</span>
                                   </div>
                                   
@@ -1385,7 +1385,7 @@ export default function MilestoneDetail() {
                                           <i className="ri-file-text-line text-gray-500 text-sm"></i>
                                         </div>
                                         
-                                        <span className="text-sm text-teal-600 hover:text-teal-700 cursor-pointer truncate max-w-[300px]">
+                                        <span className="text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer truncate max-w-[300px]">
                                           {log.testCaseName}
                                         </span>
                                         
@@ -1393,7 +1393,7 @@ export default function MilestoneDetail() {
                                           {log.timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                                         </span>
                                         
-                                        <div className="w-7 h-7 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                        <div className="w-7 h-7 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                                           {log.author.substring(0, 2).toUpperCase()}
                                         </div>
                                       </div>
@@ -1413,8 +1413,8 @@ export default function MilestoneDetail() {
                                     <i className="ri-arrow-left-s-line"></i>
                                   </button>
                                   
-                                  <div className="flex items-center gap-1 px-3 py-1.5 bg-teal-50 border border-teal-200 rounded-lg">
-                                    <span className="text-sm font-semibold text-teal-700">{activityPage}/{totalPages}</span>
+                                  <div className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg">
+                                    <span className="text-sm font-semibold text-indigo-700">{activityPage}/{totalPages}</span>
                                   </div>
                                   
                                   <button
@@ -1461,7 +1461,7 @@ export default function MilestoneDetail() {
                                 href={issue.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-start gap-4 p-4 border border-gray-200 rounded-lg transition-all bg-white hover:border-teal-500 hover:shadow-md cursor-pointer block"
+                                className="flex items-start gap-4 p-4 border border-gray-200 rounded-lg transition-all bg-white hover:border-indigo-500 hover:shadow-md cursor-pointer block"
                               >
                                 <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                   <i className="ri-bug-line text-red-600 text-lg"></i>
@@ -1638,7 +1638,7 @@ export default function MilestoneDetail() {
                     value={editFormData.name}
                     onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
@@ -1648,7 +1648,7 @@ export default function MilestoneDetail() {
                     value={editFormData.start_date}
                     onChange={(e) => setEditFormData({ ...editFormData, start_date: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
@@ -1658,7 +1658,7 @@ export default function MilestoneDetail() {
                     value={editFormData.end_date}
                     onChange={(e) => setEditFormData({ ...editFormData, end_date: e.target.value })}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>
@@ -1672,7 +1672,7 @@ export default function MilestoneDetail() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 text-white bg-teal-500 hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                  className="flex-1 px-4 py-2 text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
                 >
                   Save
                 </button>

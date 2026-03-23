@@ -122,7 +122,7 @@ export default function ProfileSettingsPanel({
           {/* Avatar Column */}
           <div className="flex flex-col items-center gap-3 flex-shrink-0">
             <div
-              className="w-20 h-20 rounded-2xl bg-gray-50 border-2 border-gray-200 flex items-center justify-center text-4xl cursor-pointer hover:border-teal-400 hover:bg-teal-50 transition-all select-none"
+              className="w-20 h-20 rounded-2xl bg-gray-50 border-2 border-gray-200 flex items-center justify-center text-4xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all select-none"
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               title="Click to change avatar"
             >
@@ -130,7 +130,7 @@ export default function ProfileSettingsPanel({
             </div>
             <button
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="text-xs font-semibold text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap"
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap"
             >
               {showEmojiPicker ? 'Close picker' : 'Change avatar'}
             </button>
@@ -147,7 +147,7 @@ export default function ProfileSettingsPanel({
                 value={name}
                 onChange={(e) => { setName(e.target.value); setProfileError(''); }}
                 placeholder="Enter your name"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
               />
             </div>
             <div>
@@ -169,9 +169,9 @@ export default function ProfileSettingsPanel({
                 <button
                   key={emoji}
                   onClick={() => { setSelectedEmoji(emoji); setShowEmojiPicker(false); }}
-                  className={`w-10 h-10 rounded-xl text-2xl flex items-center justify-center transition-all cursor-pointer hover:bg-teal-50 hover:scale-110 ${
+                  className={`w-10 h-10 rounded-xl text-2xl flex items-center justify-center transition-all cursor-pointer hover:bg-indigo-50 hover:scale-110 ${
                     selectedEmoji === emoji
-                      ? 'bg-teal-100 ring-2 ring-teal-400 scale-110'
+                      ? 'bg-indigo-100 ring-2 ring-indigo-400 scale-110'
                       : 'bg-gray-50'
                   }`}
                   title={emoji}
@@ -193,7 +193,7 @@ export default function ProfileSettingsPanel({
           <button
             onClick={handleSaveProfile}
             disabled={savingProfile || !profileChanged}
-            className="px-5 py-2.5 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {savingProfile ? (
               <><i className="ri-loader-4-line animate-spin"></i>Saving...</>
@@ -202,7 +202,7 @@ export default function ProfileSettingsPanel({
             )}
           </button>
           {profileSaved && (
-            <span className="flex items-center gap-1.5 text-sm text-teal-600 font-medium">
+            <span className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium">
               <i className="ri-checkbox-circle-fill"></i>Profile updated!
             </span>
           )}
@@ -232,7 +232,7 @@ export default function ProfileSettingsPanel({
                   href="https://myaccount.google.com/security"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-teal-600 hover:underline font-medium"
+                  className="text-indigo-600 hover:underline font-medium"
                 >
                   myaccount.google.com
                 </a>
@@ -252,7 +252,7 @@ export default function ProfileSettingsPanel({
                   value={newPassword}
                   onChange={(e) => { setNewPassword(e.target.value); setPasswordError(''); }}
                   placeholder="At least 8 characters"
-                  className="w-full px-3 py-2.5 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  className="w-full px-3 py-2.5 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
                 <button
                   type="button"
@@ -270,7 +270,7 @@ export default function ProfileSettingsPanel({
                         newPassword.length >= i * 3
                           ? newPassword.length < 6 ? 'bg-red-400'
                           : newPassword.length < 10 ? 'bg-amber-400'
-                          : 'bg-teal-500'
+                          : 'bg-indigo-500'
                           : 'bg-gray-200'
                       }`} />
                     ))}
@@ -278,7 +278,7 @@ export default function ProfileSettingsPanel({
                   <span className={`text-xs font-semibold ${
                     newPassword.length < 6 ? 'text-red-500'
                     : newPassword.length < 10 ? 'text-amber-500'
-                    : 'text-teal-600'
+                    : 'text-indigo-600'
                   }`}>
                     {newPassword.length < 6 ? 'Weak' : newPassword.length < 10 ? 'Fair' : 'Strong'}
                   </span>
@@ -296,7 +296,7 @@ export default function ProfileSettingsPanel({
                   value={confirmPassword}
                   onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError(''); }}
                   placeholder="Re-enter new password"
-                  className="w-full px-3 py-2.5 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  className="w-full px-3 py-2.5 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
                 <button
                   type="button"
@@ -312,7 +312,7 @@ export default function ProfileSettingsPanel({
                 </p>
               )}
               {confirmPassword && newPassword === confirmPassword && (
-                <p className="mt-1 text-xs text-teal-600 flex items-center gap-1">
+                <p className="mt-1 text-xs text-indigo-600 flex items-center gap-1">
                   <i className="ri-checkbox-circle-line"></i>Passwords match
                 </p>
               )}
@@ -328,7 +328,7 @@ export default function ProfileSettingsPanel({
               <button
                 onClick={handleSavePassword}
                 disabled={savingPassword || !newPassword || !confirmPassword}
-                className="px-5 py-2.5 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {savingPassword ? (
                   <><i className="ri-loader-4-line animate-spin"></i>Updating...</>
@@ -337,7 +337,7 @@ export default function ProfileSettingsPanel({
                 )}
               </button>
               {passwordSaved && (
-                <span className="flex items-center gap-1.5 text-sm text-teal-600 font-medium">
+                <span className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium">
                   <i className="ri-checkbox-circle-fill"></i>Password updated!
                 </span>
               )}

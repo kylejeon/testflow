@@ -28,7 +28,7 @@ interface MilestoneWithProgress extends Milestone {
 
 const TIER_INFO = {
   1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
-  2: { name: 'Starter', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  2: { name: 'Starter', color: 'bg-indigo-50 text-indigo-700 border-indigo-300', icon: 'ri-vip-crown-line' },
   3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
   4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
 };
@@ -340,7 +340,7 @@ export default function ProjectMilestones() {
 
     return (
       <div key={milestone.id}>
-        <div className="block bg-white rounded-lg border border-gray-200 p-6 hover:border-teal-500 transition-all">
+        <div className="block bg-white rounded-lg border border-gray-200 p-6 hover:border-indigo-500 transition-all">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3 flex-1">
               {hasSubMilestones && (
@@ -351,7 +351,7 @@ export default function ProjectMilestones() {
               <div className={`w-8 h-8 ${isSubMilestone ? 'bg-gray-50' : 'bg-gray-100'} rounded flex items-center justify-center`}>
                 <i className={`${isSubMilestone ? 'ri-run-line' : 'ri-flag-line'} text-gray-600`}></i>
               </div>
-              <Link to={`/projects/${id}/milestones/${milestone.id}`} className="font-semibold text-teal-600 hover:text-teal-700 transition-colors cursor-pointer">
+              <Link to={`/projects/${id}/milestones/${milestone.id}`} className="font-semibold text-indigo-600 hover:text-indigo-700 transition-colors cursor-pointer">
                 {milestone.name}
               </Link>
             </div>
@@ -406,7 +406,7 @@ export default function ProjectMilestones() {
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
 
   const ProfileAvatar = () => (
-    <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden cursor-pointer" onClick={() => setShowProfileMenu(!showProfileMenu)}>
+    <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden cursor-pointer" onClick={() => setShowProfileMenu(!showProfileMenu)}>
       {userProfile?.avatar_emoji ? (
         <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
       ) : (
@@ -457,7 +457,7 @@ export default function ProjectMilestones() {
           </header>
           <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
             <div className="text-center">
-              <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-600">마일스톤을 불러오는 중...</p>
             </div>
           </main>
@@ -481,7 +481,7 @@ export default function ProjectMilestones() {
             <div className="flex items-center gap-4">
               <nav className="flex items-center gap-1">
                 <Link to={`/projects/${id}`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Overview</Link>
-                <Link to={`/projects/${id}/milestones`} className="px-3 py-2 text-sm font-medium text-teal-600 bg-teal-50 rounded-lg cursor-pointer">Milestones</Link>
+                <Link to={`/projects/${id}/milestones`} className="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg cursor-pointer">Milestones</Link>
                 <Link to={`/projects/${id}/documentation`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Documentation</Link>
                 <Link to={`/projects/${id}/testcases`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Test Cases</Link>
                 <Link to={`/projects/${id}/runs`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Runs &amp; Results</Link>
@@ -509,13 +509,13 @@ export default function ProjectMilestones() {
 
             <div className="mb-6">
               <div className="flex items-center gap-4 border-b border-gray-200">
-                <button onClick={() => setActiveTab('active')} className={`px-1 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'active' ? 'text-teal-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                <button onClick={() => setActiveTab('active')} className={`px-1 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'active' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
                   ACTIVE ({milestones.filter(m => m.status !== 'completed').length})
-                  {activeTab === 'active' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600"></div>}
+                  {activeTab === 'active' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>}
                 </button>
-                <button onClick={() => setActiveTab('completed')} className={`px-1 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'completed' ? 'text-teal-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                <button onClick={() => setActiveTab('completed')} className={`px-1 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'completed' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
                   COMPLETED ({milestones.filter(m => m.status === 'completed').length})
-                  {activeTab === 'completed' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600"></div>}
+                  {activeTab === 'completed' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>}
                 </button>
               </div>
             </div>
@@ -569,20 +569,20 @@ export default function ProjectMilestones() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <input type="text" name="name" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                  <input type="text" name="name" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <input type="date" name="start_date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                  <input type="date" name="start_date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <input type="date" name="end_date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                  <input type="date" name="end_date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-6">
                 <button type="button" onClick={() => { setShowCreateModal(false); setParentMilestoneId(null); }} className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap">Cancel</button>
-                <button type="submit" className="flex-1 px-4 py-2 text-white bg-teal-500 hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">Create</button>
+                <button type="submit" className="flex-1 px-4 py-2 text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">Create</button>
               </div>
             </form>
           </div>
@@ -597,11 +597,11 @@ export default function ProjectMilestones() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <input type="text" name="name" defaultValue={editFormData.name} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                  <input type="text" name="name" defaultValue={editFormData.name} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select name="status" defaultValue={editFormData.status} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-sm">
+                  <select name="status" defaultValue={editFormData.status} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm">
                     <option value="upcoming">Upcoming</option>
                     <option value="started">In Progress</option>
                     <option value="past_due">Past Due</option>
@@ -610,18 +610,18 @@ export default function ProjectMilestones() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <input type="date" name="start_date" defaultValue={editFormData.start_date} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                  <input type="date" name="start_date" defaultValue={editFormData.start_date} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <input type="date" name="end_date" defaultValue={editFormData.end_date} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                  <input type="date" name="end_date" defaultValue={editFormData.end_date} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-6">
                 <button type="button" onClick={() => handleDeleteMilestone(editingMilestone.id)} className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all cursor-pointer whitespace-nowrap">Delete</button>
                 <div className="flex-1"></div>
                 <button type="button" onClick={() => setEditingMilestone(null)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap">Cancel</button>
-                <button type="submit" className="px-4 py-2 text-white bg-teal-500 hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">Save</button>
+                <button type="submit" className="px-4 py-2 text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">Save</button>
               </div>
             </form>
           </div>

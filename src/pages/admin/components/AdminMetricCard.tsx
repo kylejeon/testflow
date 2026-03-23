@@ -11,14 +11,14 @@ interface AdminMetricCardProps {
 
 const colorMap = {
   teal: {
-    iconBg: 'bg-teal-100',
-    iconColor: 'text-teal-600',
-    border: 'border-l-teal-500',
+    iconBg: 'bg-indigo-100',
+    iconColor: 'text-indigo-600',
+    border: 'border-l-indigo-500',
   },
   emerald: {
-    iconBg: 'bg-emerald-100',
-    iconColor: 'text-emerald-600',
-    border: 'border-l-emerald-500',
+    iconBg: 'bg-violet-100',
+    iconColor: 'text-violet-600',
+    border: 'border-l-violet-500',
   },
   amber: {
     iconBg: 'bg-amber-100',
@@ -56,7 +56,7 @@ export default function AdminMetricCard({
 
   const badgeStyle =
     badgeType === 'up'
-      ? 'bg-emerald-50 text-emerald-700'
+      ? 'bg-violet-50 text-violet-700'
       : badgeType === 'down'
       ? 'bg-rose-50 text-rose-700'
       : 'bg-gray-100 text-gray-600';

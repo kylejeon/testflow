@@ -55,7 +55,7 @@ export default function ProjectTestCases() {
   const getTierInfo = (tier: number) => {
     switch (tier) {
       case 2:
-        return { name: 'Starter', icon: 'ri-vip-crown-line', color: 'bg-teal-50 text-teal-700 border-teal-300' };
+        return { name: 'Starter', icon: 'ri-vip-crown-line', color: 'bg-indigo-50 text-indigo-700 border-indigo-300' };
       case 3:
         return { name: 'Professional', icon: 'ri-vip-diamond-line', color: 'bg-violet-50 text-violet-700 border-violet-300' };
       case 4:
@@ -335,7 +335,7 @@ export default function ProjectTestCases() {
                 </Link>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
+                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
                   {userProfile?.avatar_emoji ? (
                     <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
                   ) : (
@@ -347,7 +347,7 @@ export default function ProjectTestCases() {
           </header>
           <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
             <div className="text-center">
-              <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-600">로딩 중...</p>
             </div>
           </main>
@@ -393,7 +393,7 @@ export default function ProjectTestCases() {
                 </Link>
                 <Link 
                   to={`/projects/${id}/testcases`}
-                  className="px-3 py-2 text-sm font-medium text-teal-600 bg-teal-50 rounded-lg cursor-pointer"
+                  className="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg cursor-pointer"
                 >
                   Test Cases
                 </Link>
@@ -416,7 +416,7 @@ export default function ProjectTestCases() {
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="flex items-center gap-2 cursor-pointer"
                 >
-                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                  <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
                     {userProfile?.avatar_emoji ? (
                       <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
                     ) : (
@@ -484,7 +484,7 @@ export default function ProjectTestCases() {
                 )}
                 <button
                   onClick={() => setShowAIModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-violet-500 to-teal-500 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                  className="px-4 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
                 >
                   <i className="ri-sparkling-2-fill"></i>
                   Generate with AI
@@ -502,14 +502,14 @@ export default function ProjectTestCases() {
                       placeholder="Search test cases..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                     />
                   </div>
 
                   <select
                     value={priorityFilter}
                     onChange={(e) => setPriorityFilter(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm cursor-pointer"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm cursor-pointer"
                   >
                     <option value="all">All Priority</option>
                     <option value="high">High</option>

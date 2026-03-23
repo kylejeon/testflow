@@ -16,7 +16,7 @@ interface UserProfile {
 
 const TIER_INFO = {
   1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
-  2: { name: 'Starter', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  2: { name: 'Starter', color: 'bg-indigo-50 text-indigo-700 border-indigo-300', icon: 'ri-vip-crown-line' },
   3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
   4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
 };
@@ -272,7 +272,7 @@ export default function ProjectDetail() {
               activity[i] = '#f59e0b';
               break;
             default:
-              activity[i] = '#14b8a6';
+              activity[i] = '#6366F1';
           }
         });
         return activity;
@@ -515,7 +515,7 @@ export default function ProjectDetail() {
                 <Link to="/projects" className="flex items-center cursor-pointer">
                   <LogoMark />
                 </Link>
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
                   {userProfile?.avatar_emoji ? (
                     <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
                   ) : (
@@ -526,7 +526,7 @@ export default function ProjectDetail() {
             </header>
             <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
               <div className="text-center">
-                <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                 <p className="text-gray-600">프로젝트를 불러오는 중...</p>
               </div>
             </main>
@@ -547,7 +547,7 @@ export default function ProjectDetail() {
                 <Link to="/projects" className="flex items-center cursor-pointer">
                   <LogoMark />
                 </Link>
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
                   {userProfile?.avatar_emoji ? (
                     <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
                   ) : (
@@ -562,7 +562,7 @@ export default function ProjectDetail() {
                   <i className="ri-error-warning-line text-3xl text-gray-400"></i>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">프로젝트를 찾을 수 없습니다</h3>
-                <Link to="/projects" className="text-teal-600 hover:text-teal-700 font-medium">프로젝트 목록으로 돌아가기</Link>
+                <Link to="/projects" className="text-indigo-600 hover:text-indigo-700 font-medium">프로젝트 목록으로 돌아가기</Link>
               </div>
             </main>
           </div>
@@ -587,7 +587,7 @@ export default function ProjectDetail() {
 
     return (
       <div key={milestone.id}>
-        <div className={`border border-gray-200 rounded-lg p-4 hover:border-teal-500 transition-all ${isSub ? 'ml-8 bg-gray-50/50' : ''}`}>
+        <div className={`border border-gray-200 rounded-lg p-4 hover:border-indigo-500 transition-all ${isSub ? 'ml-8 bg-gray-50/50' : ''}`}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               {hasSubs && !isSub && (
@@ -651,7 +651,7 @@ export default function ProjectDetail() {
                 <nav className="flex items-center gap-1">
                   <Link
                     to={`/projects/${id}`}
-                    className="px-3 py-2 text-sm font-medium text-teal-600 bg-teal-50 rounded-lg cursor-pointer whitespace-nowrap"
+                    className="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg cursor-pointer whitespace-nowrap"
                   >
                     Overview
                   </Link>
@@ -693,7 +693,7 @@ export default function ProjectDetail() {
                   <div className="relative" ref={profileMenuRef}>
                     <div
                       onClick={() => setShowProfileMenu(!showProfileMenu)}
-                      className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden"
+                      className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden"
                     >
                       {userProfile?.avatar_emoji ? (
                         <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
@@ -752,7 +752,7 @@ export default function ProjectDetail() {
                   <div className="bg-white rounded-lg border border-gray-200 p-6">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-lg font-bold text-gray-900">CURRENT MILESTONES</h2>
-                      <Link to={`/projects/${id}/milestones`} className="text-sm text-teal-600 hover:text-teal-700 font-medium whitespace-nowrap">
+                      <Link to={`/projects/${id}/milestones`} className="text-sm text-indigo-600 hover:text-indigo-700 font-medium whitespace-nowrap">
                         See all {activeMilestones.length} active milestones →
                       </Link>
                     </div>
@@ -780,7 +780,7 @@ export default function ProjectDetail() {
                                 cx="64"
                                 cy="64"
                                 r="56"
-                                stroke="#14b8a6"
+                                stroke="#6366F1"
                                 strokeWidth="16"
                                 fill="none"
                                 strokeDasharray={`${2 * Math.PI * 56}`}
@@ -815,9 +815,9 @@ export default function ProjectDetail() {
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                      <span className="font-medium text-gray-900 group-hover:text-teal-600 transition-colors truncate">{run.name}</span>
+                                      <span className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors truncate">{run.name}</span>
                                       {run.milestoneName && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 whitespace-nowrap flex-shrink-0">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 whitespace-nowrap flex-shrink-0">
                                           <i className="ri-flag-line text-xs"></i>{run.milestoneName}
                                         </span>
                                       )}
@@ -851,7 +851,7 @@ export default function ProjectDetail() {
                                       <span className="text-sm font-semibold text-gray-700 min-w-[45px] text-right">{completion}%</span>
                                     </div>
                                   </div>
-                                  <i className="ri-arrow-right-s-line text-xl text-gray-400 group-hover:text-teal-600 transition-colors"></i>
+                                  <i className="ri-arrow-right-s-line text-xl text-gray-400 group-hover:text-indigo-600 transition-colors"></i>
                                 </Link>
                               );
                             })
@@ -873,7 +873,7 @@ export default function ProjectDetail() {
                                 cx="64"
                                 cy="64"
                                 r="56"
-                                stroke="#14b8a6"
+                                stroke="#6366F1"
                                 strokeWidth="16"
                                 fill="none"
                                 strokeDasharray={`${2 * Math.PI * 56}`}
@@ -904,7 +904,7 @@ export default function ProjectDetail() {
                                   <i className="ri-refresh-line text-lg text-gray-600"></i>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-gray-900 mb-2 group-hover:text-teal-600 transition-colors">{session.name}</div>
+                                  <div className="font-medium text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">{session.name}</div>
                                   <div className="flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-2">
                                       <i className={`${
@@ -927,7 +927,7 @@ export default function ProjectDetail() {
                                     </div>
                                   </div>
                                 </div>
-                                <i className="ri-arrow-right-s-line text-xl text-gray-400 group-hover:text-teal-600 transition-colors"></i>
+                                <i className="ri-arrow-right-s-line text-xl text-gray-400 group-hover:text-indigo-600 transition-colors"></i>
                               </Link>
                             ))
                           )}
@@ -969,7 +969,7 @@ export default function ProjectDetail() {
                       <h2 className="text-lg font-bold text-gray-900">INTEGRATIONS</h2>
                       <Link
                         to="/settings?tab=integrations"
-                        className="text-sm text-teal-600 hover:text-teal-700 font-medium whitespace-nowrap"
+                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium whitespace-nowrap"
                       >
                         Manage →
                       </Link>
@@ -977,7 +977,7 @@ export default function ProjectDetail() {
                     {projectIntegrations.length === 0 && !jiraConfigured ? (
                       <div className="text-center py-4">
                         <p className="text-sm text-gray-500 mb-3">No integrations configured.</p>
-                        <Link to="/settings?tab=integrations" className="text-sm text-teal-600 hover:text-teal-700 font-medium">
+                        <Link to="/settings?tab=integrations" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
                           Set up in Settings →
                         </Link>
                       </div>
@@ -1034,7 +1034,7 @@ export default function ProjectDetail() {
                         }, []).map((group, gi) => (
                           <div key={gi} className="flex items-start gap-3">
                             <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-1">
-                              <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                              <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
                               {gi < recentActivity.length && <div className="w-px flex-1 bg-gray-200 min-h-[8px]"></div>}
                             </div>
                             <div className="flex-1 pb-3">
@@ -1042,13 +1042,13 @@ export default function ProjectDetail() {
                               <div className="space-y-2">
                                 {group.events.map((event: any, ei: number) => {
                                   const iconMap: Record<string, { icon: string; bg: string; color: string }> = {
-                                    'milestone-created': { icon: 'ri-flag-line', bg: 'bg-teal-100', color: 'text-teal-600' },
+                                    'milestone-created': { icon: 'ri-flag-line', bg: 'bg-indigo-100', color: 'text-indigo-600' },
                                     'milestone-completed': { icon: 'ri-flag-fill', bg: 'bg-green-100', color: 'text-green-600' },
                                     'run-created': { icon: 'ri-play-circle-line', bg: 'bg-orange-100', color: 'text-orange-600' },
                                     'run-completed': { icon: 'ri-checkbox-circle-line', bg: 'bg-green-100', color: 'text-green-600' },
                                     'session-created': { icon: 'ri-refresh-line', bg: 'bg-amber-100', color: 'text-amber-600' },
                                     'session-completed': { icon: 'ri-check-double-line', bg: 'bg-green-100', color: 'text-green-600' },
-                                    'test_activity-tested': { icon: 'ri-test-tube-line', bg: 'bg-teal-50', color: 'text-teal-600' },
+                                    'test_activity-tested': { icon: 'ri-test-tube-line', bg: 'bg-indigo-50', color: 'text-indigo-600' },
                                   };
                                   const key = `${event.type}-${event.action}`;
                                   const info = iconMap[key] || { icon: 'ri-information-line', bg: 'bg-gray-100', color: 'text-gray-600' };

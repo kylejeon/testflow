@@ -152,7 +152,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
 
         {loading ? (
           <div className="p-12 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
           </div>
         ) : !canCreate ? (
           <div className="p-6">
@@ -178,7 +178,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                 </button>
                 <a
                   href="/settings"
-                  className="px-5 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-2"
+                  className="px-5 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 font-medium transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-2"
                 >
                   <i className="ri-vip-crown-line"></i>
                   요금제 확인
@@ -215,7 +215,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="예: 모바일 앱 테스트"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   required
                 />
               </div>
@@ -230,10 +230,10 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                   onChange={(e) => setFormData({ ...formData, prefix: e.target.value.toUpperCase() })}
                   placeholder="예: TC, LOGIN (영문 대문자 권장, 최대 10자)"
                   maxLength={10}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-mono"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono"
                 />
                 <p className="mt-2 text-xs text-gray-500">
-                  테스트 케이스 ID 형식: <span className="font-mono font-semibold text-teal-600">{formData.prefix || 'PREFIX'}-001</span>
+                  테스트 케이스 ID 형식: <span className="font-mono font-semibold text-indigo-600">{formData.prefix || 'PREFIX'}-001</span>
                   {!formData.prefix && formData.name && (
                     <span className="ml-2 text-gray-400">
                       (비워두면 "<span className="font-mono font-semibold">{generatePrefix(formData.name)}</span>" 사용)
@@ -251,7 +251,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="프로젝트에 대한 간단한 설명을 입력하세요"
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                 />
               </div>
 
@@ -265,7 +265,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                   onChange={(e) => setFormData({ ...formData, jiraProjectKey: e.target.value.toUpperCase() })}
                   placeholder="예: PROJ, SUI (Jira 프로젝트 키)"
                   maxLength={20}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-mono uppercase"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono uppercase"
                 />
                 <p className="mt-1 text-xs text-gray-500">이 프로젝트와 연결할 Jira 프로젝트 키를 입력하세요 (선택사항)</p>
               </div>
@@ -277,7 +277,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                 >
                   <option value="active">활성</option>
                   <option value="archived">보관됨</option>
@@ -295,7 +295,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium transition-all cursor-pointer whitespace-nowrap"
+                className="px-5 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 font-medium transition-all cursor-pointer whitespace-nowrap"
               >
                 프로젝트 생성
               </button>

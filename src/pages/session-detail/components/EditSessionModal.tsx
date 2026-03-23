@@ -92,7 +92,7 @@ export default function EditSessionModal({
   };
 
   const avatarColors = [
-    'from-teal-400 to-teal-600',
+    'from-indigo-400 to-indigo-600',
     'from-orange-400 to-orange-600',
     'from-violet-400 to-violet-600',
     'from-pink-400 to-pink-600',
@@ -127,7 +127,7 @@ export default function EditSessionModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                   placeholder="Enter session name"
                 />
               </div>
@@ -141,7 +141,7 @@ export default function EditSessionModal({
                   value={mission}
                   onChange={(e) => setMission(e.target.value)}
                   rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm resize-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none"
                   placeholder="Describe the mission or charter for this session"
                 />
               </div>
@@ -154,7 +154,7 @@ export default function EditSessionModal({
                 <select
                   value={milestoneId}
                   onChange={(e) => setMilestoneId(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm cursor-pointer"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm cursor-pointer"
                 >
                   <option value="">No milestone</option>
                   {milestones.map((milestone) => (
@@ -182,16 +182,16 @@ export default function EditSessionModal({
                       return (
                         <div
                           key={userId}
-                          className="flex items-center gap-1.5 pl-1 pr-2 py-1 bg-teal-50 border border-teal-200 rounded-full"
+                          className="flex items-center gap-1.5 pl-1 pr-2 py-1 bg-indigo-50 border border-indigo-200 rounded-full"
                         >
                           <div className={`w-5 h-5 bg-gradient-to-br ${colorClass} rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
                             {member.full_name.charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-xs font-medium text-teal-700">{member.full_name}</span>
+                          <span className="text-xs font-medium text-indigo-700">{member.full_name}</span>
                           <button
                             type="button"
                             onClick={() => handleAssigneeToggle(userId)}
-                            className="w-4 h-4 flex items-center justify-center text-teal-400 hover:text-teal-700 cursor-pointer ml-0.5"
+                            className="w-4 h-4 flex items-center justify-center text-indigo-400 hover:text-indigo-700 cursor-pointer ml-0.5"
                           >
                             <i className="ri-close-line text-xs"></i>
                           </button>
@@ -209,7 +209,7 @@ export default function EditSessionModal({
                       setShowAssigneeDropdown(prev => !prev);
                       setAssigneeSearch('');
                     }}
-                    className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-500 hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer bg-white"
+                    className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-500 hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer bg-white"
                   >
                     <span>
                       {assignees.length > 0 ? `${assignees.length}명 선택됨` : '멤버 선택...'}
@@ -228,7 +228,7 @@ export default function EditSessionModal({
                             value={assigneeSearch}
                             onChange={e => setAssigneeSearch(e.target.value)}
                             placeholder="멤버 검색..."
-                            className="w-full pl-7 pr-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500"
+                            className="w-full pl-7 pr-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             autoFocus
                           />
                         </div>
@@ -253,7 +253,7 @@ export default function EditSessionModal({
                                   key={member.user_id}
                                   onClick={() => handleAssigneeToggle(member.user_id)}
                                   className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
-                                    isSelected ? 'bg-teal-50' : 'hover:bg-gray-50'
+                                    isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'
                                   }`}
                                 >
                                   <div className={`w-7 h-7 bg-gradient-to-br ${colorClass} rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
@@ -264,7 +264,7 @@ export default function EditSessionModal({
                                     <p className="text-xs text-gray-400 truncate">{member.email}</p>
                                   </div>
                                   {isSelected && (
-                                    <i className="ri-check-line text-teal-500 text-sm flex-shrink-0"></i>
+                                    <i className="ri-check-line text-indigo-500 text-sm flex-shrink-0"></i>
                                   )}
                                 </div>
                               );
@@ -285,7 +285,7 @@ export default function EditSessionModal({
                   type="text"
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                   placeholder="Enter tags separated by commas"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -303,7 +303,7 @@ export default function EditSessionModal({
                   value={estimatedDuration}
                   onChange={(e) => setEstimatedDuration(parseInt(e.target.value) || 0)}
                   min="0"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                   placeholder="60"
                 />
               </div>
@@ -320,7 +320,7 @@ export default function EditSessionModal({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap"
             >
               Save Changes
             </button>

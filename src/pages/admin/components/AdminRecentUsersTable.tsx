@@ -23,7 +23,7 @@ interface AdminRecentUsersTableProps {
 const TIER_BADGE: Record<number, { label: string; style: string }> = {
   1: { label: 'Free', style: 'bg-slate-100 text-slate-600' },
   2: { label: 'Starter', style: 'bg-yellow-100 text-yellow-700' },
-  3: { label: 'Pro', style: 'bg-teal-100 text-teal-700' },
+  3: { label: 'Pro', style: 'bg-indigo-100 text-indigo-700' },
 };
 
 const formatDate = (dateStr: string) =>
@@ -66,9 +66,9 @@ export default function AdminRecentUsersTable({
             <h3 className="text-lg font-bold text-gray-900">최근 가입 사용자</h3>
             <p className="text-sm text-gray-500 mt-0.5">최근 50명의 신규 사용자 — 플랜 및 만료일 직접 변경 가능</p>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-teal-50 rounded-lg border border-teal-100">
-            <i className="ri-edit-2-line text-teal-600 text-sm"></i>
-            <span className="text-xs font-semibold text-teal-700">행 우측 편집 버튼으로 수정</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100">
+            <i className="ri-edit-2-line text-indigo-600 text-sm"></i>
+            <span className="text-xs font-semibold text-indigo-700">행 우측 편집 버튼으로 수정</span>
           </div>
         </div>
         {loading ? (
@@ -115,7 +115,7 @@ export default function AdminRecentUsersTable({
                     <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group">
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                             {initials}
                           </div>
                           <div className="min-w-0">
@@ -132,7 +132,7 @@ export default function AdminRecentUsersTable({
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-1.5">
                           {user.is_trial ? (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-600 border border-teal-200">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-200">
                               Trial
                             </span>
                           ) : (
@@ -169,7 +169,7 @@ export default function AdminRecentUsersTable({
                       <td className="py-3 text-right">
                         <button
                           onClick={() => setEditingUser(user)}
-                          className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-teal-600 text-white text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                          className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap"
                         >
                           <i className="ri-edit-2-line text-xs"></i>
                           편집

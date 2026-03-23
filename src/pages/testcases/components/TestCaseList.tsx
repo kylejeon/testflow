@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { supabase, type TestCase } from '../../../lib/supabase';
 
 export default function TestCaseList() {
@@ -6,6 +7,17 @@ export default function TestCaseList() {
   const [showNewCaseModal, setShowNewCaseModal] = useState(false);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: testCases.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 64,
+    overscan: 10,
+  });
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const paddingTop = virtualItems.length > 0 ? virtualItems[0].start : 0;
+  const paddingBottom = virtualItems.length > 0 ? rowVirtualizer.getTotalSize() - virtualItems[virtualItems.length - 1].end : 0;
 
   useEffect(() => {
     fetchTestCases();
@@ -94,7 +106,7 @@ export default function TestCaseList() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">테스트 케이스를 불러오는 중...</p>
         </div>
       </div>
@@ -113,7 +125,7 @@ export default function TestCaseList() {
                 onClick={() => setSelectedFolder(folder.id)}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   selectedFolder === folder.id
-                    ? 'bg-teal-50 text-teal-700'
+                    ? 'bg-indigo-50 text-indigo-700'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
@@ -128,7 +140,7 @@ export default function TestCaseList() {
         </div>
 
         <div className="pt-6 border-t border-gray-200">
-          <button className="w-full px-4 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
+          <button className="w-full px-4 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
             <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
             새 폴더
           </button>
@@ -144,7 +156,7 @@ export default function TestCaseList() {
             </div>
             <button
               onClick={() => setShowNewCaseModal(true)}
-              className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
               새 테스트 케이스
@@ -156,17 +168,17 @@ export default function TestCaseList() {
               <input
                 type="text"
                 placeholder="테스트 케이스 검색..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
               />
               <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
             </div>
-            <select className="px-4 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer">
+            <select className="px-4 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
               <option>모든 상태</option>
               <option>통과</option>
               <option>실패</option>
               <option>대기</option>
             </select>
-            <select className="px-4 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer">
+            <select className="px-4 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
               <option>모든 우선순위</option>
               <option>Critical</option>
               <option>High</option>
@@ -190,15 +202,19 @@ export default function TestCaseList() {
               <p className="text-gray-600 mb-6">첫 번째 테스트 케이스를 생성해보세요</p>
               <button
                 onClick={() => setShowNewCaseModal(true)}
-                className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
               >
                 새 테스트 케이스 만들기
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div
+              ref={tableContainerRef}
+              className="overflow-x-auto overflow-y-auto"
+              style={{ maxHeight: 'calc(100vh - 280px)' }}
+            >
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                   <tr>
                     <th className="px-6 py-4 text-left">
                       <input type="checkbox" className="w-4 h-4 rounded border-gray-300 cursor-pointer" />
@@ -227,7 +243,10 @@ export default function TestCaseList() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {testCases.map((testCase) => (
+                  {paddingTop > 0 && <tr><td colSpan={7} style={{ height: paddingTop }} /></tr>}
+                  {virtualItems.map((vItem) => {
+                    const testCase = testCases[vItem.index];
+                    return (
                     <tr key={testCase.id} className="hover:bg-gray-50 transition-all">
                       <td className="px-6 py-4">
                         <input type="checkbox" className="w-4 h-4 rounded border-gray-300 cursor-pointer" />
@@ -273,7 +292,7 @@ export default function TestCaseList() {
                       </td>
                       <td className="px-6 py-4">
                         {testCase.assignee ? (
-                          <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold cursor-pointer">
+                          <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold cursor-pointer">
                             {testCase.assignee.substring(0, 2).toUpperCase()}
                           </div>
                         ) : (
@@ -299,7 +318,9 @@ export default function TestCaseList() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
+                  {paddingBottom > 0 && <tr><td colSpan={7} style={{ height: paddingBottom }} /></tr>}
                 </tbody>
               </table>
             </div>
@@ -329,7 +350,7 @@ export default function TestCaseList() {
                 <input
                   type="text"
                   placeholder="예: 사용자 로그인 기능 테스트"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
               <div>
@@ -338,13 +359,13 @@ export default function TestCaseList() {
                   placeholder="테스트 케이스에 대한 상세 설명을 입력하세요"
                   rows={3}
                   maxLength={500}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                 ></textarea>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">폴더</label>
-                  <select className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer">
+                  <select className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer">
                     <option>UI 테스트</option>
                     <option>API 테스트</option>
                     <option>통합 테스트</option>
@@ -353,7 +374,7 @@ export default function TestCaseList() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">우선순위</label>
-                  <select className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer">
+                  <select className="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer">
                     <option>Critical</option>
                     <option>High</option>
                     <option>Medium</option>
@@ -366,7 +387,7 @@ export default function TestCaseList() {
                 <input
                   type="text"
                   placeholder="담당자 이름"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -385,7 +406,7 @@ export default function TestCaseList() {
               </button>
               <button
                 onClick={() => setShowNewCaseModal(false)}
-                className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
               >
                 생성
               </button>

@@ -24,13 +24,13 @@ interface AdminSubscriptionChartProps {
 const TIER_COLORS: Record<number, string> = {
   1: '#94a3b8',
   2: '#fbbf24',
-  3: '#14b8a6',
+  3: '#6366F1',
 };
 
 const TIER_BG: Record<number, string> = {
   1: 'bg-slate-100 text-slate-600',
   2: 'bg-yellow-100 text-yellow-700',
-  3: 'bg-teal-100 text-teal-700',
+  3: 'bg-indigo-100 text-indigo-700',
 };
 
 const CustomTooltip = ({ active, payload }: any) => {

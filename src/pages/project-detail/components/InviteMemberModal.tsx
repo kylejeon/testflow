@@ -234,8 +234,8 @@ export default function InviteMemberModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-              <i className="ri-user-add-line text-teal-600 text-xl"></i>
+            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <i className="ri-user-add-line text-indigo-600 text-xl"></i>
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900">Invite Member</h2>
@@ -256,7 +256,7 @@ export default function InviteMemberModal({
         {/* Content */}
         {checkingLimit ? (
           <div className="p-12 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
           </div>
         ) : !canInvite ? (
           <div className="p-6">
@@ -283,7 +283,7 @@ export default function InviteMemberModal({
                 </button>
                 <a
                   href="/settings"
-                  className="px-5 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-2"
+                  className="px-5 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 font-medium transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-2"
                 >
                   <i className="ri-vip-crown-line"></i>
                   View Plans
@@ -326,18 +326,18 @@ export default function InviteMemberModal({
             )}
             
             {success && inviteLink && (
-              <div className="mb-4 p-4 bg-teal-50 border border-teal-200 rounded-lg">
+              <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
                 <div className="flex items-start gap-3 mb-3">
-                  <i className="ri-checkbox-circle-fill text-teal-600 text-xl"></i>
+                  <i className="ri-checkbox-circle-fill text-indigo-600 text-xl"></i>
                   <div className="flex-1">
-                    <p className="text-sm text-teal-800 font-semibold mb-2">{success}</p>
-                    <p className="text-xs text-teal-700 mb-3">
+                    <p className="text-sm text-indigo-800 font-semibold mb-2">{success}</p>
+                    <p className="text-xs text-indigo-700 mb-3">
                       <i className="ri-information-line mr-1"></i>
                       Auto email sending is disabled. Please copy the link below and share it directly.
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 p-3 bg-white border border-teal-200 rounded-lg">
+                <div className="flex items-center gap-2 p-3 bg-white border border-indigo-200 rounded-lg">
                   <input
                     type="text"
                     value={inviteLink}
@@ -346,7 +346,7 @@ export default function InviteMemberModal({
                   />
                   <button
                     onClick={copyInviteLink}
-                    className="px-3 py-1.5 text-sm text-white bg-teal-600 hover:bg-teal-700 rounded transition-colors whitespace-nowrap flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 text-sm text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors whitespace-nowrap flex items-center gap-1 cursor-pointer"
                   >
                     <i className="ri-file-copy-line"></i>
                     Copy
@@ -359,7 +359,7 @@ export default function InviteMemberModal({
                       onInvited();
                       onClose();
                     }}
-                    className="px-4 py-2 text-sm text-teal-600 hover:bg-teal-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+                    className="px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
                   >
                     Done
                   </button>
@@ -385,7 +385,7 @@ export default function InviteMemberModal({
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Jane Doe"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     <i className="ri-information-line mr-1"></i>
@@ -402,7 +402,7 @@ export default function InviteMemberModal({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="teammate@email.com"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                     required
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -423,7 +423,7 @@ export default function InviteMemberModal({
                         value="admin"
                         checked={role === 'admin'}
                         onChange={() => setRole('admin')}
-                        className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
                       />
                       <div className="flex-1">
                         <div className="font-semibold text-gray-900 text-sm">Admin</div>
@@ -441,7 +441,7 @@ export default function InviteMemberModal({
                         value="member"
                         checked={role === 'member'}
                         onChange={() => setRole('member')}
-                        className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
                       />
                       <div className="flex-1">
                         <div className="font-semibold text-gray-900 text-sm">Member</div>
@@ -449,7 +449,7 @@ export default function InviteMemberModal({
                           Create and edit test cases and sessions
                         </div>
                       </div>
-                      <i className="ri-user-line text-teal-500"></i>
+                      <i className="ri-user-line text-indigo-500"></i>
                     </label>
 
                     <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
@@ -459,7 +459,7 @@ export default function InviteMemberModal({
                         value="viewer"
                         checked={role === 'viewer'}
                         onChange={() => setRole('viewer')}
-                        className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
                       />
                       <div className="flex-1">
                         <div className="font-semibold text-gray-900 text-sm">Viewer</div>
@@ -484,7 +484,7 @@ export default function InviteMemberModal({
                   <button
                     type="submit"
                     disabled={loading || !email}
-                    className="flex-1 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <>

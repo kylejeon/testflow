@@ -48,7 +48,7 @@ export default function TestCases() {
                 <input
                   type="text"
                   placeholder="프로젝트, 테스트 케이스 검색..."
-                  className="w-96 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-96 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                 />
                 <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
               </div>
@@ -68,7 +68,7 @@ export default function TestCases() {
                 <div className="relative" ref={profileMenuRef}>
                   <div 
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
+                    className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
                   >
                     JK
                   </div>

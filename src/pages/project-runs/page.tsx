@@ -334,7 +334,7 @@ export default function ProjectRunsPage() {
               const statusInfo = stepStatusLabel(stepStatus);
               return `
                 <div style="display:flex;gap:8px;margin-bottom:8px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:5px;">
-                  <div style="min-width:22px;height:22px;background:#ccfbf1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#0f766e;flex-shrink:0;">${idx + 1}</div>
+                  <div style="min-width:22px;height:22px;background:#ccfbf1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#4F46E5;flex-shrink:0;">${idx + 1}</div>
                   <div style="flex:1;">
                     <div style="font-size:11px;color:#111;white-space:pre-wrap;">${stepContent}</div>
                     ${expectedContent ? `
@@ -373,7 +373,7 @@ export default function ProjectRunsPage() {
           <div style="margin-bottom:24px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
             <div style="background:#f3f4f6;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;">
               <div style="display:flex;align-items:center;gap:10px;">
-                <span style="color:#14b8a6;font-size:14px;">▶</span>
+                <span style="color:#6366F1;font-size:14px;">▶</span>
                 <span style="font-weight:700;font-size:13px;color:#111;">${run.name}</span>
                 <span class="status-badge ${runStatusBadge}">${runStatusLabel}</span>
               </div>
@@ -383,7 +383,7 @@ export default function ProjectRunsPage() {
                 <span>🚫 ${run.blocked} Blocked</span>
                 <span>🔄 ${run.retest} Retest</span>
                 <span>⬜ ${run.untested} Untested</span>
-                <span style="font-weight:600;color:#14b8a6;">${run.progress}%</span>
+                <span style="font-weight:600;color:#6366F1;">${run.progress}%</span>
               </div>
             </div>
             <div style="padding:12px 16px;">
@@ -401,8 +401,8 @@ export default function ProjectRunsPage() {
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
     body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica','Arial',sans-serif; padding:40px; color:#333; background:#fff; font-size:12px; line-height:1.5; }
-    .header { border-bottom:3px solid #14b8a6; padding-bottom:20px; margin-bottom:30px; }
-    .header h1 { font-size:24px; color:#14b8a6; margin-bottom:8px; font-weight:600; }
+    .header { border-bottom:3px solid #6366F1; padding-bottom:20px; margin-bottom:30px; }
+    .header h1 { font-size:24px; color:#6366F1; margin-bottom:8px; font-weight:600; }
     .header .subtitle { color:#666; font-size:13px; }
     .section { margin-bottom:30px; }
     .section-title { font-size:14px; font-weight:600; color:#333; margin-bottom:15px; padding-bottom:8px; border-bottom:2px solid #e5e7eb; text-transform:uppercase; letter-spacing:0.5px; }
@@ -413,7 +413,7 @@ export default function ProjectRunsPage() {
     .summary-container { display:flex; gap:20px; margin-bottom:30px; }
     .summary-left { flex:0 0 200px; }
     .summary-right { flex:1; }
-    .pass-rate-circle { width:180px; height:180px; border-radius:50%; background:linear-gradient(135deg,#14b8a6,#0d9488); display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; margin:0 auto; }
+    .pass-rate-circle { width:180px; height:180px; border-radius:50%; background:linear-gradient(135deg,#6366F1,#4F46E5); display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; margin:0 auto; }
     .pass-rate-number { font-size:48px; font-weight:700; line-height:1; color:white; }
     .pass-rate-label { font-size:12px; opacity:0.9; margin-top:5px; color:white; }
     .stats-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
@@ -596,7 +596,7 @@ export default function ProjectRunsPage() {
   const getTierInfo = (tier: number) => {
     switch (tier) {
       case 2:
-        return { name: 'Starter', icon: 'ri-vip-crown-line', color: 'bg-teal-50 text-teal-700 border-teal-300' };
+        return { name: 'Starter', icon: 'ri-vip-crown-line', color: 'bg-indigo-50 text-indigo-700 border-indigo-300' };
       case 3:
         return { name: 'Professional', icon: 'ri-vip-diamond-line', color: 'bg-violet-50 text-violet-700 border-violet-300' };
       case 4:
@@ -682,7 +682,7 @@ export default function ProjectRunsPage() {
           'from-pink-400 to-pink-600',
           'from-green-400 to-green-600',
           'from-orange-400 to-orange-600',
-          'from-teal-400 to-teal-600',
+          'from-indigo-400 to-indigo-600',
           'from-red-400 to-red-600',
           'from-indigo-400 to-indigo-600',
         ];
@@ -952,7 +952,7 @@ export default function ProjectRunsPage() {
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { label: string; className: string }> = {
       new: { label: 'New', className: 'bg-yellow-100 text-yellow-700' },
-      in_progress: { label: 'In progress', className: 'bg-teal-100 text-teal-700' },
+      in_progress: { label: 'In progress', className: 'bg-indigo-100 text-indigo-700' },
       paused: { label: 'Paused', className: 'bg-amber-100 text-amber-700' },
       under_review: { label: 'Under review', className: 'bg-purple-100 text-purple-700' },
       completed: { label: 'Completed', className: 'bg-green-100 text-green-700' },
@@ -1287,7 +1287,7 @@ export default function ProjectRunsPage() {
                 </Link>
                 <Link 
                   to={`/projects/${id}/runs`}
-                  className="px-3 py-2 text-sm font-medium text-teal-600 bg-teal-50 rounded-lg cursor-pointer"
+                  className="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg cursor-pointer"
                 >
                   Runs & Results
                 </Link>
@@ -1305,7 +1305,7 @@ export default function ProjectRunsPage() {
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="flex items-center gap-2 cursor-pointer"
                 >
-                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                  <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
                     {userProfile?.avatar_emoji ? (
                       <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
                     ) : (
@@ -1374,7 +1374,7 @@ export default function ProjectRunsPage() {
                       setSelectedTestCases([]);
                       setShowAddRunModal(true);
                     }}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center gap-2 text-sm font-medium cursor-pointer whitespace-nowrap"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium cursor-pointer whitespace-nowrap"
                   >
                     <i className="ri-add-line"></i>
                     Run
@@ -1389,8 +1389,8 @@ export default function ProjectRunsPage() {
                       <div className="text-sm text-gray-500 mb-1">Active Runs</div>
                       <div className="text-3xl font-bold text-gray-900">{stats.activeRuns}</div>
                     </div>
-                    <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
-                      <i className="ri-play-circle-line text-teal-600 text-xl"></i>
+                    <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                      <i className="ri-play-circle-line text-indigo-600 text-xl"></i>
                     </div>
                   </div>
                   <div className="space-y-2 text-sm">
@@ -1474,7 +1474,7 @@ export default function ProjectRunsPage() {
                   onClick={() => setActiveTab('active')}
                   className={`pb-4 px-1 border-b-2 font-medium text-sm cursor-pointer whitespace-nowrap ${
                     activeTab === 'active'
-                      ? 'border-teal-500 text-teal-600'
+                      ? 'border-indigo-500 text-indigo-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -1484,7 +1484,7 @@ export default function ProjectRunsPage() {
                   onClick={() => setActiveTab('closed')}
                   className={`pb-4 px-1 border-b-2 font-medium text-sm cursor-pointer whitespace-nowrap ${
                     activeTab === 'closed'
-                      ? 'border-teal-500 text-teal-600'
+                      ? 'border-indigo-500 text-indigo-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -1499,7 +1499,7 @@ export default function ProjectRunsPage() {
                 <input
                   type="text"
                   placeholder="Search runs..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
               <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 cursor-pointer whitespace-nowrap">
@@ -1511,7 +1511,7 @@ export default function ProjectRunsPage() {
 
             {loading ? (
               <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
               </div>
             ) : (
               <div className="space-y-6">
@@ -1541,7 +1541,7 @@ export default function ProjectRunsPage() {
                                 <button
                                   onClick={(e) => handleExportPdfClick(e, milestone, milestoneRuns)}
                                   disabled={generatingPdf === milestone.id}
-                                  className="flex items-center gap-2 px-3 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                  className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                   {generatingPdf === milestone.id ? (
                                     <>
@@ -1571,16 +1571,16 @@ export default function ProjectRunsPage() {
                               >
                                 <div className="flex items-start gap-4">
                                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                                    run.is_automated ? 'bg-purple-100' : 'bg-teal-100'
+                                    run.is_automated ? 'bg-purple-100' : 'bg-indigo-100'
                                   }`}>
                                     <i className={`${
-                                      run.is_automated ? 'ri-robot-line text-purple-600' : 'ri-play-circle-line text-teal-600'
+                                      run.is_automated ? 'ri-robot-line text-purple-600' : 'ri-play-circle-line text-indigo-600'
                                     }`}></i>
                                   </div>
                                   
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-2">
-                                      <h3 className="font-semibold text-gray-900 hover:text-teal-600 transition-colors">{run.name}</h3>
+                                      <h3 className="font-semibold text-gray-900 hover:text-indigo-600 transition-colors">{run.name}</h3>
                                       <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusBadge(run.status).className}`}>
                                         {getStatusBadge(run.status).label}
                                       </span>
@@ -1623,7 +1623,7 @@ export default function ProjectRunsPage() {
                                     <div className="flex items-center gap-3">
                                       <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
                                         <div 
-                                          className="h-full bg-teal-500 rounded-full transition-all"
+                                          className="h-full bg-indigo-500 rounded-full transition-all"
                                           style={{ width: `${run.progress}%` }}
                                         ></div>
                                       </div>
@@ -1890,7 +1890,7 @@ export default function ProjectRunsPage() {
             <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
               <div className="p-6">
                 <div className="flex gap-8 border-b border-gray-200 mb-6">
-                  <button className="pb-3 px-1 border-b-2 border-teal-500 text-teal-600 font-medium text-sm cursor-pointer whitespace-nowrap">
+                  <button className="pb-3 px-1 border-b-2 border-indigo-500 text-indigo-600 font-medium text-sm cursor-pointer whitespace-nowrap">
                     RUN
                   </button>
                   <button className="pb-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm cursor-pointer whitespace-nowrap">
@@ -1909,20 +1909,20 @@ export default function ProjectRunsPage() {
                       value={formData.name}
                       onChange={handleInputChange}
                       placeholder="Run name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-sm font-medium text-gray-700">Configuration</label>
-                      <button className="text-xs text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap">Apply to cases</button>
+                      <button className="text-xs text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap">Apply to cases</button>
                     </div>
                     <select 
                       name="configuration"
                       value={formData.configuration}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm text-gray-500 cursor-pointer"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-gray-500 cursor-pointer"
                     >
                       <option value="">Select configuration</option>
                     </select>
@@ -1932,7 +1932,7 @@ export default function ProjectRunsPage() {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-sm font-medium text-gray-700">Milestone</label>
-                      <button className="text-teal-600 hover:text-teal-700 cursor-pointer">
+                      <button className="text-indigo-600 hover:text-indigo-700 cursor-pointer">
                         <i className="ri-add-line"></i>
                       </button>
                     </div>
@@ -1942,7 +1942,7 @@ export default function ProjectRunsPage() {
                       onChange={(e) => {
                         setFormData(prev => ({ ...prev, milestone_id: e.target.value }));
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                     >
                       <option value="">Select milestone</option>
                       {milestones.map((milestone) => (
@@ -1962,7 +1962,7 @@ export default function ProjectRunsPage() {
                           name="include_all_cases"
                           checked={formData.include_all_cases}
                           onChange={() => setFormData(prev => ({ ...prev, include_all_cases: true }))}
-                          className="w-4 h-4 text-teal-600 cursor-pointer"
+                          className="w-4 h-4 text-indigo-600 cursor-pointer"
                         />
                         <span className="text-sm font-medium text-gray-700">Include all test cases</span>
                         <i className="ri-information-line text-gray-400"></i>
@@ -1973,7 +1973,7 @@ export default function ProjectRunsPage() {
                           name="include_all_cases"
                           checked={!formData.include_all_cases}
                           onChange={() => setFormData(prev => ({ ...prev, include_all_cases: false }))}
-                          className="w-4 h-4 text-teal-600 cursor-pointer"
+                          className="w-4 h-4 text-indigo-600 cursor-pointer"
                         />
                         <span className="text-sm font-medium text-gray-700">Select cases to include:</span>
                       </label>
@@ -2012,7 +2012,7 @@ export default function ProjectRunsPage() {
                       name="status"
                       value={formData.status}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                     >
                       <option value="new">🌟 New</option>
                       <option value="in_progress">In Progress</option>
@@ -2024,13 +2024,13 @@ export default function ProjectRunsPage() {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-sm font-medium text-gray-700">Issues</label>
-                      <button className="text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap">+ Add</button>
+                      <button className="text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap">+ Add</button>
                     </div>
                     <select 
                       name="issues"
                       value={formData.issues}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm text-gray-500 cursor-pointer"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-gray-500 cursor-pointer"
                     >
                       <option value="">Select issues</option>
                     </select>
@@ -2044,7 +2044,7 @@ export default function ProjectRunsPage() {
                       value={formData.tags}
                       onChange={handleInputChange}
                       placeholder="Enter tags separated by commas"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                     <p className="text-xs text-gray-500 mt-1">You can add tags to filter runs.</p>
                   </div>
@@ -2087,7 +2087,7 @@ export default function ProjectRunsPage() {
               <button
                 onClick={handleAddRun}
                 disabled={submitting}
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (editingRunId ? 'Updating...' : 'Adding...') : (editingRunId ? 'Update run' : 'Add run')}
               </button>
@@ -2124,7 +2124,7 @@ export default function ProjectRunsPage() {
                       onClick={() => setSelectedFolder(null)}
                       className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${
                         selectedFolder === null 
-                          ? 'bg-teal-100 text-teal-700' 
+                          ? 'bg-indigo-100 text-indigo-700' 
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
@@ -2132,7 +2132,7 @@ export default function ProjectRunsPage() {
                       <span className="font-medium">All Cases</span>
                       <span className={`ml-auto text-xs px-2 py-1 rounded ${
                         selectedFolder === null 
-                            ? 'bg-teal-200 text-teal-700' 
+                            ? 'bg-indigo-200 text-indigo-700' 
                             : 'text-gray-500'
                       }`}>
                         {selectedTestCases.length}/{testCases.length}
@@ -2144,7 +2144,7 @@ export default function ProjectRunsPage() {
                         onClick={() => setSelectedFolder(folder.name)}
                         className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${
                           selectedFolder === folder.name 
-                            ? 'bg-teal-100 text-teal-700' 
+                            ? 'bg-indigo-100 text-indigo-700' 
                             : 'text-gray-700 hover:bg-gray-100'
                         }`}
                       >
@@ -2152,7 +2152,7 @@ export default function ProjectRunsPage() {
                         <span>{folder.name}</span>
                         <span className={`ml-auto text-xs px-2 py-1 rounded ${
                           selectedFolder === folder.name 
-                            ? 'bg-teal-200 text-teal-700' 
+                            ? 'bg-indigo-200 text-indigo-700' 
                             : 'text-gray-500'
                       }`}>
                           {getTestCasesByFolder(folder.name).filter(tc => selectedTestCases.includes(tc.id)).length}/{folder.count}
@@ -2177,7 +2177,7 @@ export default function ProjectRunsPage() {
                           placeholder="Search cases..."
                           value={caseSearchQuery}
                           onChange={(e) => setCaseSearchQuery(e.target.value)}
-                          className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                          className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                         />
                       </div>
                     </div>
@@ -2210,7 +2210,7 @@ export default function ProjectRunsPage() {
                                 }
                               }}
                               checked={filteredTestCases.length > 0 && filteredTestCases.every(tc => selectedTestCases.includes(tc.id))}
-                              className="w-4 h-4 text-teal-600 cursor-pointer"
+                              className="w-4 h-4 text-indigo-600 cursor-pointer"
                             />
                           </th>
                           <th className="text-left px-4 py-3 text-sm font-medium text-gray-700">Case</th>
@@ -2225,13 +2225,13 @@ export default function ProjectRunsPage() {
                                 type="checkbox"
                                 checked={selectedTestCases.includes(testCase.id)}
                                 onChange={() => toggleTestCase(testCase.id)}
-                                className="w-4 h-4 text-teal-600 cursor-pointer"
+                                className="w-4 h-4 text-indigo-600 cursor-pointer"
                               />
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 <i className="ri-file-list-3-line text-gray-400"></i>
-                                <span className="text-sm text-teal-600 hover:underline cursor-pointer">
+                                <span className="text-sm text-indigo-600 hover:underline cursor-pointer">
                                   {testCase.title}
                                 </span>
                               </div>
@@ -2277,7 +2277,7 @@ export default function ProjectRunsPage() {
                           setSelectedFolder(null);
                           setCaseSearchQuery('');
                         }}
-                        className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap"
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap"
                       >
                         Select cases
                       </button>
@@ -2292,7 +2292,7 @@ export default function ProjectRunsPage() {
                     <h3 className="text-sm font-semibold text-gray-700">Filters</h3>
                     <button 
                       onClick={clearAllFilters}
-                      className="text-sm text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap"
+                      className="text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap"
                     >
                       Clear all
                     </button>
@@ -2305,7 +2305,7 @@ export default function ProjectRunsPage() {
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input 
                             type="checkbox" 
-                            className="w-4 h-4 text-teal-600 cursor-pointer"
+                            className="w-4 h-4 text-indigo-600 cursor-pointer"
                             checked={priorityFilters.includes('high')}
                             onChange={() => handlePriorityFilterChange('high')}
                           />
@@ -2314,7 +2314,7 @@ export default function ProjectRunsPage() {
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input 
                             type="checkbox" 
-                            className="w-4 h-4 text-teal-600 cursor-pointer"
+                            className="w-4 h-4 text-indigo-600 cursor-pointer"
                             checked={priorityFilters.includes('medium')}
                             onChange={() => handlePriorityFilterChange('medium')}
                           />
@@ -2323,7 +2323,7 @@ export default function ProjectRunsPage() {
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input 
                             type="checkbox" 
-                            className="w-4 h-4 text-teal-600 cursor-pointer"
+                            className="w-4 h-4 text-indigo-600 cursor-pointer"
                             checked={priorityFilters.includes('low')}
                             onChange={() => handlePriorityFilterChange('low')}
                           />
@@ -2354,12 +2354,12 @@ export default function ProjectRunsPage() {
                                       handleTagFilterToggle(tag);
                                     }}
                                     className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 flex items-center justify-between ${
-                                      tagFilters.includes(tag) ? 'bg-teal-50 text-teal-700' : 'text-gray-700'
+                                      tagFilters.includes(tag) ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
                                     }`}
                                   >
                                     <span>{tag}</span>
                                     {tagFilters.includes(tag) && (
-                                      <i className="ri-check-line text-teal-600"></i>
+                                      <i className="ri-check-line text-indigo-600"></i>
                                     )}
                                   </div>
                                 ))}
@@ -2372,12 +2372,12 @@ export default function ProjectRunsPage() {
                               {tagFilters.map((tag) => (
                                 <div
                                   key={tag}
-                                  className="inline-flex items-center gap-1 px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs"
+                                  className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs"
                                 >
                                   <span>{tag}</span>
                                   <button
                                     onClick={() => removeTagFilter(tag)}
-                                    className="hover:bg-teal-200 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer"
+                                    className="hover:bg-indigo-200 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer"
                                   >
                                     <i className="ri-close-line text-xs"></i>
                                   </button>
@@ -2398,7 +2398,7 @@ export default function ProjectRunsPage() {
                     <div className="pt-2">
                       <button 
                         onClick={toggleAllTestCases}
-                        className="w-full px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap"
+                        className="w-full px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap"
                       >
                         {selectedTestCases.length === testCases.length ? 'Deselect All' : 'Select All'}
                       </button>

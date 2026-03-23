@@ -234,7 +234,7 @@ export default function AIGenerateModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-teal-500 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-indigo-500 rounded-lg flex items-center justify-center">
               <i className="ri-sparkling-2-fill text-white text-sm"></i>
             </div>
             <div>
@@ -264,15 +264,15 @@ export default function AIGenerateModal({
                 {/* Text mode */}
                 <button
                   onClick={() => { setMode('text'); setCurrentStep('input'); }}
-                  className="flex flex-col items-start p-4 border-2 border-gray-200 rounded-xl hover:border-teal-400 hover:bg-teal-50 transition-all cursor-pointer text-left group"
+                  className="flex flex-col items-start p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 transition-all cursor-pointer text-left group"
                   disabled={limitReached}
                 >
-                  <div className="w-9 h-9 bg-teal-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-teal-200">
-                    <i className="ri-text-snippet text-teal-600 text-lg"></i>
+                  <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-indigo-200">
+                    <i className="ri-text-snippet text-indigo-600 text-lg"></i>
                   </div>
                   <p className="font-semibold text-gray-900 text-sm">Text Input</p>
                   <p className="text-xs text-gray-500 mt-1">Enter a feature description and AI will generate test cases.</p>
-                  <span className="mt-2 text-xs text-teal-600 font-medium">Available on all plans</span>
+                  <span className="mt-2 text-xs text-indigo-600 font-medium">Available on all plans</span>
                 </button>
 
                 {/* Session mode */}
@@ -333,7 +333,7 @@ export default function AIGenerateModal({
                     onChange={e => setInputText(e.target.value)}
                     placeholder="e.g. Users can log in with email and password. Social login (Google) is also supported, along with a forgot password flow..."
                     rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                   />
                   <p className="text-xs text-gray-400 mt-1">The more detailed your description, the more accurate the generated test cases will be.</p>
                 </div>
@@ -344,7 +344,7 @@ export default function AIGenerateModal({
                   </label>
                   {loadingSessions ? (
                     <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
-                      <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                       Loading sessions...
                     </div>
                   ) : sessions.length === 0 ? (
@@ -408,7 +408,7 @@ export default function AIGenerateModal({
                       setSelectedTitles(new Set(titles));
                     }
                   }}
-                  className="text-xs text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap"
+                  className="text-xs text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap"
                 >
                   {selectedTitles.size === titles.length ? 'Deselect All' : 'Select All'}
                 </button>
@@ -419,7 +419,7 @@ export default function AIGenerateModal({
                     key={i}
                     className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
                       selectedTitles.has(title)
-                        ? 'border-teal-300 bg-teal-50'
+                        ? 'border-indigo-300 bg-indigo-50'
                         : 'border-gray-200 hover:bg-gray-50'
                     }`}
                   >
@@ -427,7 +427,7 @@ export default function AIGenerateModal({
                       type="checkbox"
                       checked={selectedTitles.has(title)}
                       onChange={() => toggleTitle(title)}
-                      className="accent-teal-600"
+                      className="accent-indigo-600"
                     />
                     <span className="text-sm text-gray-800">{title}</span>
                   </label>
@@ -457,7 +457,7 @@ export default function AIGenerateModal({
                       setSelectedCaseIndices(new Set(generatedCases.map((_, i) => i)));
                     }
                   }}
-                  className="text-xs text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap"
+                  className="text-xs text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap"
                 >
                   {selectedCaseIndices.size === generatedCases.length ? 'Deselect All' : 'Select All'}
                 </button>
@@ -470,7 +470,7 @@ export default function AIGenerateModal({
                     onClick={() => toggleCase(i)}
                     className={`border rounded-lg p-4 cursor-pointer transition-colors ${
                       selectedCaseIndices.has(i)
-                        ? 'border-teal-300 bg-teal-50'
+                        ? 'border-indigo-300 bg-indigo-50'
                         : 'border-gray-200 hover:bg-gray-50'
                     }`}
                   >
@@ -480,7 +480,7 @@ export default function AIGenerateModal({
                         checked={selectedCaseIndices.has(i)}
                         onChange={() => toggleCase(i)}
                         onClick={e => e.stopPropagation()}
-                        className="accent-teal-600 mt-0.5"
+                        className="accent-indigo-600 mt-0.5"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -534,7 +534,7 @@ export default function AIGenerateModal({
           {/* ── STEP: saving ── */}
           {currentStep === 'saving' && (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
               <p className="text-sm text-gray-600">Saving test cases...</p>
             </div>
           )}
@@ -558,7 +558,7 @@ export default function AIGenerateModal({
                   loading ||
                   (mode === 'text' ? !inputText.trim() : !selectedSessionId)
                 }
-                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-violet-500 to-teal-500 text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -579,7 +579,7 @@ export default function AIGenerateModal({
               <button
                 onClick={handleGenerateDetails}
                 disabled={loading || selectedTitles.size === 0}
-                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-violet-500 to-teal-500 text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -600,7 +600,7 @@ export default function AIGenerateModal({
               <button
                 onClick={handleSave}
                 disabled={selectedCaseIndices.size === 0}
-                className="flex items-center gap-2 px-5 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <i className="ri-save-line"></i>
                 Save {selectedCaseIndices.size} Cases

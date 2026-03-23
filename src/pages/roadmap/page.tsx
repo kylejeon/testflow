@@ -7,42 +7,42 @@ const columns = [
     id: 'completed',
     label: 'Completed',
     icon: 'ri-checkbox-circle-fill',
-    color: 'text-teal-500',
-    headerBg: 'bg-teal-50 border-teal-200',
-    cardBorder: 'border-teal-100',
-    dotColor: 'bg-teal-500',
+    color: 'text-indigo-500',
+    headerBg: 'bg-indigo-50 border-indigo-200',
+    cardBorder: 'border-indigo-100',
+    dotColor: 'bg-indigo-500',
     items: [
       {
         title: 'Slack & Teams Integration',
         date: 'Q1 2026',
         desc: 'Real-time notifications in Slack and Microsoft Teams with per-project webhook routing.',
         icon: 'ri-notification-3-line',
-        iconBg: 'bg-teal-50',
-        iconColor: 'text-teal-600',
+        iconBg: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
       },
       {
         title: 'CI/CD Pipeline Integration',
         date: 'Q1 2026',
         desc: 'Upload automated test results from any CI/CD system via REST API.',
         icon: 'ri-terminal-box-line',
-        iconBg: 'bg-teal-50',
-        iconColor: 'text-teal-600',
+        iconBg: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
       },
       {
         title: 'Jira Integration',
         date: 'Q4 2025',
         desc: 'Connect to Jira Cloud and Data Center. Auto-create issues on test failure.',
         icon: 'ri-links-line',
-        iconBg: 'bg-teal-50',
-        iconColor: 'text-teal-600',
+        iconBg: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
       },
       {
         title: 'Exploratory Sessions',
         date: 'Q3 2025',
         desc: 'Mission-driven exploratory testing with rich-text notes and screenshots.',
         icon: 'ri-video-line',
-        iconBg: 'bg-teal-50',
-        iconColor: 'text-teal-600',
+        iconBg: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
       },
     ],
   },
@@ -157,18 +157,18 @@ export default function RoadmapPage() {
             <div className="flex items-center gap-3">
               <button onClick={() => navigate('/changelog')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Changelog</button>
               <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all cursor-pointer">Log in</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all cursor-pointer">Get Started</button>
+              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all cursor-pointer">Get Started</button>
             </div>
           </div>
         </nav>
 
         {/* Hero */}
         <header className="py-20 bg-gray-950 text-center relative overflow-hidden">
-          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-teal-500/10 blur-[120px]"></div>
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-indigo-500/10 blur-[120px]"></div>
           <div className="relative z-10 max-w-2xl mx-auto px-6">
             <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
-              <i className="ri-map-2-line text-teal-300 text-sm"></i>
-              <span className="text-teal-200 text-sm font-medium">Roadmap</span>
+              <i className="ri-map-2-line text-indigo-300 text-sm"></i>
+              <span className="text-indigo-200 text-sm font-medium">Roadmap</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">What we're building</h1>
             <p className="text-white/50 text-lg">Our roadmap is public. Your feedback shapes every release.</p>
@@ -221,14 +221,14 @@ export default function RoadmapPage() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <a
                 href="mailto:hello@testably.app"
-                className="px-8 py-3.5 bg-teal-500 text-white rounded-xl font-bold hover:bg-teal-600 transition-all cursor-pointer inline-flex items-center gap-2 justify-center"
+                className="px-8 py-3.5 bg-indigo-500 text-white rounded-xl font-bold hover:bg-indigo-600 transition-all cursor-pointer inline-flex items-center gap-2 justify-center"
               >
                 <i className="ri-mail-line"></i>
                 Send us feedback
               </a>
               <button
                 onClick={() => navigate('/auth')}
-                className="px-8 py-3.5 border border-gray-200 text-gray-700 rounded-xl font-bold hover:border-teal-300 hover:text-teal-600 transition-all cursor-pointer"
+                className="px-8 py-3.5 border border-gray-200 text-gray-700 rounded-xl font-bold hover:border-indigo-300 hover:text-indigo-600 transition-all cursor-pointer"
               >
                 Get Started Free
               </button>

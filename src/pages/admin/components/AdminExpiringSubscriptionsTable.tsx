@@ -18,7 +18,7 @@ interface AdminExpiringSubscriptionsTableProps {
 const TIER_LABELS: Record<number, { label: string; color: string }> = {
   1: { label: 'Free', color: 'bg-gray-100 text-gray-600' },
   2: { label: 'Starter', color: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
-  3: { label: 'Professional', color: 'bg-teal-50 text-teal-700 border border-teal-200' },
+  3: { label: 'Professional', color: 'bg-indigo-50 text-indigo-700 border border-indigo-200' },
 };
 
 function getDaysLeft(dateStr: string | null): number | null {
@@ -118,7 +118,7 @@ export default function AdminExpiringSubscriptionsTable({ users, loading }: Admi
 
       {loading ? (
         <div className="py-16 flex flex-col items-center justify-center gap-3">
-          <div className="w-8 h-8 border-2 border-teal-200 border-t-teal-500 rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin"></div>
           <p className="text-sm text-gray-400">Loading...</p>
         </div>
       ) : expiringUsers.length === 0 ? (
@@ -168,7 +168,7 @@ export default function AdminExpiringSubscriptionsTable({ users, loading }: Admi
                     </td>
                     <td className="px-4 py-4">
                       {user.isTrial ? (
-                        <span className="px-2.5 py-1 bg-teal-50 text-teal-700 border border-teal-200 rounded-full text-xs font-semibold">
+                        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-xs font-semibold">
                           <i className="ri-time-line mr-1"></i>Trial
                         </span>
                       ) : (

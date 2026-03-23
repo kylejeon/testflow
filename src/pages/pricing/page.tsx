@@ -141,7 +141,7 @@ const faqs = [
 ];
 
 function CheckIcon({ checked }: { checked: boolean }) {
-  if (checked) return <i className="ri-check-line text-teal-500 text-base"></i>;
+  if (checked) return <i className="ri-check-line text-indigo-500 text-base"></i>;
   return <i className="ri-subtract-line text-gray-300 text-base"></i>;
 }
 
@@ -166,18 +166,18 @@ export default function PricingPage() {
             <div className="flex items-center gap-3">
               <button onClick={() => navigate('/features')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Features</button>
               <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all cursor-pointer">Log in</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all cursor-pointer">Get Started</button>
+              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all cursor-pointer">Get Started</button>
             </div>
           </div>
         </nav>
 
         {/* Hero */}
         <header className="py-20 bg-gray-950 text-center relative overflow-hidden">
-          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-teal-500/10 blur-[120px]"></div>
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-indigo-500/10 blur-[120px]"></div>
           <div className="relative z-10 max-w-2xl mx-auto px-6">
             <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
-              <i className="ri-price-tag-3-line text-teal-300 text-sm"></i>
-              <span className="text-teal-200 text-sm font-medium">Pricing</span>
+              <i className="ri-price-tag-3-line text-indigo-300 text-sm"></i>
+              <span className="text-indigo-200 text-sm font-medium">Pricing</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">Plans that scale with your team</h1>
             <p className="text-white/50 text-lg">Flat-rate pricing. No per-seat charges. All paid plans include a 14-day free trial.</p>
@@ -193,13 +193,13 @@ export default function PricingPage() {
                   key={plan.name}
                   className={`rounded-2xl p-6 border flex flex-col transition-all ${
                     plan.highlighted
-                      ? 'bg-teal-500 border-teal-500 shadow-xl shadow-teal-200 scale-[1.02]'
-                      : 'bg-white border-gray-200 hover:border-teal-200 hover:shadow-md'
+                      ? 'bg-indigo-500 border-indigo-500 shadow-xl shadow-indigo-200 scale-[1.02]'
+                      : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
                   }`}
                 >
                   <div className="mb-5">
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-white/20' : 'bg-teal-50'}`}>
-                      <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-teal-600'}`}></i>
+                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-white/20' : 'bg-indigo-50'}`}>
+                      <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
                     </div>
                     {plan.popular && (
                       <div className="inline-flex items-center gap-1 bg-white/25 rounded-full px-3 py-1 mb-2">
@@ -219,8 +219,8 @@ export default function PricingPage() {
                   <ul className="space-y-2.5 mb-6 flex-1">
                     {plan.features.map((f) => (
                       <li key={f} className="flex items-start gap-2">
-                        <div className={`w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${plan.highlighted ? 'bg-white/25' : 'bg-teal-100'}`}>
-                          <i className={`ri-check-line text-xs ${plan.highlighted ? 'text-white' : 'text-teal-600'}`}></i>
+                        <div className={`w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${plan.highlighted ? 'bg-white/25' : 'bg-indigo-100'}`}>
+                          <i className={`ri-check-line text-xs ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
                         </div>
                         <span className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/90' : 'text-gray-700'}`}>{f}</span>
                       </li>
@@ -231,7 +231,7 @@ export default function PricingPage() {
                     <a
                       href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
                       className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center ${
-                        plan.highlighted ? 'bg-white text-teal-600 hover:bg-gray-50' : 'bg-teal-500 text-white hover:bg-teal-600'
+                        plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
                       }`}
                     >
                       {plan.cta}
@@ -240,7 +240,7 @@ export default function PricingPage() {
                     <button
                       onClick={() => navigate('/auth')}
                       className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
-                        plan.highlighted ? 'bg-white text-teal-600 hover:bg-gray-50' : 'bg-teal-500 text-white hover:bg-teal-600'
+                        plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
                       }`}
                     >
                       {plan.cta}
@@ -266,8 +266,8 @@ export default function PricingPage() {
                 { icon: 'ri-heart-line', title: 'Built for collaboration', desc: 'More people reviewing test results means better software. We price accordingly.' },
               ].map((c) => (
                 <div key={c.title} className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-                  <div className="w-11 h-11 bg-teal-100 rounded-xl flex items-center justify-center mb-4 mx-auto">
-                    <i className={`${c.icon} text-teal-600 text-xl`}></i>
+                  <div className="w-11 h-11 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 mx-auto">
+                    <i className={`${c.icon} text-indigo-600 text-xl`}></i>
                   </div>
                   <h3 className="font-bold text-gray-900 mb-2">{c.title}</h3>
                   <p className="text-gray-500 text-sm">{c.desc}</p>
@@ -288,7 +288,7 @@ export default function PricingPage() {
                     <th className="text-left px-6 py-4 font-semibold text-gray-700 w-1/3">Feature</th>
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">Free</th>
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">Starter</th>
-                    <th className="text-center px-4 py-4 font-semibold text-teal-600">Professional</th>
+                    <th className="text-center px-4 py-4 font-semibold text-indigo-600">Professional</th>
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">Enterprise</th>
                   </tr>
                 </thead>
@@ -299,7 +299,7 @@ export default function PricingPage() {
                       {(['free', 'starter', 'pro', 'enterprise'] as const).map((col) => {
                         const val = row[col];
                         return (
-                          <td key={col} className={`text-center px-4 py-3.5 ${col === 'pro' ? 'bg-teal-50/50' : ''}`}>
+                          <td key={col} className={`text-center px-4 py-3.5 ${col === 'pro' ? 'bg-indigo-50/50' : ''}`}>
                             {typeof val === 'boolean' ? (
                               <div className="flex justify-center"><CheckIcon checked={val} /></div>
                             ) : (
@@ -322,19 +322,19 @@ export default function PricingPage() {
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-10">Frequently asked questions</h2>
             <div className="space-y-3">
               {faqs.map((faq, i) => (
-                <article key={i} className={`rounded-2xl border transition-all duration-200 overflow-hidden ${openFaq === i ? 'border-teal-200 bg-teal-50/40' : 'border-gray-100 bg-white hover:border-teal-100'}`}>
+                <article key={i} className={`rounded-2xl border transition-all duration-200 overflow-hidden ${openFaq === i ? 'border-indigo-200 bg-indigo-50/40' : 'border-gray-100 bg-white hover:border-indigo-100'}`}>
                   <button
                     className="w-full flex items-center justify-between px-6 py-5 text-left cursor-pointer group"
                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   >
-                    <span className={`text-sm font-semibold pr-4 transition-colors ${openFaq === i ? 'text-teal-700' : 'text-gray-900 group-hover:text-teal-700'}`}>{faq.q}</span>
-                    <div className={`w-7 h-7 flex items-center justify-center rounded-full flex-shrink-0 transition-all ${openFaq === i ? 'bg-teal-500 rotate-45' : 'bg-gray-100 group-hover:bg-teal-100'}`}>
-                      <i className={`ri-add-line text-sm ${openFaq === i ? 'text-white' : 'text-gray-500 group-hover:text-teal-600'}`}></i>
+                    <span className={`text-sm font-semibold pr-4 transition-colors ${openFaq === i ? 'text-indigo-700' : 'text-gray-900 group-hover:text-indigo-700'}`}>{faq.q}</span>
+                    <div className={`w-7 h-7 flex items-center justify-center rounded-full flex-shrink-0 transition-all ${openFaq === i ? 'bg-indigo-500 rotate-45' : 'bg-gray-100 group-hover:bg-indigo-100'}`}>
+                      <i className={`ri-add-line text-sm ${openFaq === i ? 'text-white' : 'text-gray-500 group-hover:text-indigo-600'}`}></i>
                     </div>
                   </button>
                   {openFaq === i && (
                     <div className="px-6 pb-5">
-                      <div className="h-px bg-teal-100 mb-4"></div>
+                      <div className="h-px bg-indigo-100 mb-4"></div>
                       <p className="text-gray-600 text-sm leading-relaxed">{faq.a}</p>
                     </div>
                   )}
@@ -358,7 +358,7 @@ export default function PricingPage() {
                 <Link
                   key={path}
                   to={path}
-                  className="flex-1 border border-gray-300 hover:border-teal-400 hover:bg-teal-50 text-gray-700 hover:text-teal-700 font-medium text-sm px-5 py-3 rounded-lg transition-colors"
+                  className="flex-1 border border-gray-300 hover:border-indigo-400 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 font-medium text-sm px-5 py-3 rounded-lg transition-colors"
                 >
                   {label}
                 </Link>
@@ -369,13 +369,13 @@ export default function PricingPage() {
 
         {/* Bottom CTA */}
         <section className="py-20 bg-gray-950 text-center relative overflow-hidden">
-          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-teal-500/10 blur-[120px]"></div>
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-indigo-500/10 blur-[120px]"></div>
           <div className="relative z-10 max-w-2xl mx-auto px-6">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Start for free today</h2>
             <p className="text-white/50 mb-8">No credit card required. Set up in under 5 minutes. Cancel anytime.</p>
             <button
               onClick={() => navigate('/auth')}
-              className="px-10 py-4 bg-teal-500 text-white rounded-xl font-bold text-lg hover:bg-teal-400 transition-all cursor-pointer shadow-lg shadow-teal-500/30"
+              className="px-10 py-4 bg-indigo-500 text-white rounded-xl font-bold text-lg hover:bg-indigo-400 transition-all cursor-pointer shadow-lg shadow-indigo-500/30"
             >
               Get Started Free
             </button>

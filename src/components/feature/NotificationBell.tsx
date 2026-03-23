@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useNotifications, Notification } from '../../hooks/useNotifications';
 
 const TYPE_CONFIG: Record<string, { icon: string; bg: string; color: string }> = {
-  invitation_sent: { icon: 'ri-mail-send-line', bg: 'bg-teal-100', color: 'text-teal-600' },
+  invitation_sent: { icon: 'ri-mail-send-line', bg: 'bg-indigo-100', color: 'text-indigo-600' },
   member_joined: { icon: 'ri-user-add-line', bg: 'bg-green-100', color: 'text-green-600' },
   run_completed: { icon: 'ri-checkbox-circle-line', bg: 'bg-violet-100', color: 'text-violet-600' },
   run_created: { icon: 'ri-play-circle-line', bg: 'bg-orange-100', color: 'text-orange-600' },
   milestone_completed: { icon: 'ri-flag-fill', bg: 'bg-green-100', color: 'text-green-600' },
   milestone_past_due: { icon: 'ri-alarm-warning-line', bg: 'bg-red-100', color: 'text-red-600' },
-  milestone_started: { icon: 'ri-flag-line', bg: 'bg-teal-100', color: 'text-teal-600' },
+  milestone_started: { icon: 'ri-flag-line', bg: 'bg-indigo-100', color: 'text-indigo-600' },
   default: { icon: 'ri-notification-3-line', bg: 'bg-gray-100', color: 'text-gray-600' },
 };
 
@@ -92,7 +92,7 @@ export default function NotificationBell() {
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="text-xs text-teal-600 hover:text-teal-700 font-medium cursor-pointer whitespace-nowrap transition-colors"
+                  className="text-xs text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer whitespace-nowrap transition-colors"
                 >
                   Mark all as read
                 </button>
@@ -153,7 +153,7 @@ export default function NotificationBell() {
                     <li
                       key={notification.id}
                       className={`group flex items-start gap-3 px-5 py-3.5 cursor-pointer transition-colors hover:bg-gray-50 border-b border-gray-50 ${
-                        !notification.is_read ? 'bg-teal-50/40' : ''
+                        !notification.is_read ? 'bg-indigo-50/40' : ''
                       }`}
                       onClick={() => handleNotificationClick(notification)}
                     >
@@ -169,7 +169,7 @@ export default function NotificationBell() {
                             {notification.title}
                           </p>
                           {!notification.is_read && (
-                            <span className="w-2 h-2 bg-teal-500 rounded-full flex-shrink-0 mt-1.5"></span>
+                            <span className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0 mt-1.5"></span>
                           )}
                         </div>
                         <p className="text-xs text-gray-500 mt-0.5 leading-relaxed line-clamp-2">{notification.message}</p>

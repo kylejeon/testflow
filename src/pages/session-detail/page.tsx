@@ -739,12 +739,12 @@ export default function SessionDetail() {
 
   const getAvatarColor = (id: string) => {
     const colors = [
-      'from-emerald-400 to-emerald-600',
-      'from-teal-400 to-teal-600',
+      'from-violet-400 to-violet-600',
+      'from-indigo-400 to-indigo-600',
       'from-green-400 to-green-600',
-      'from-emerald-500 to-teal-600',
-      'from-teal-400 to-emerald-600',
-      'from-green-400 to-teal-600',
+      'from-violet-500 to-indigo-600',
+      'from-indigo-400 to-violet-600',
+      'from-green-400 to-indigo-600',
     ];
     return colors[id.charCodeAt(0) % colors.length];
   };
@@ -886,7 +886,7 @@ export default function SessionDetail() {
                   /* Start 버튼: 세션 시작 전 */
                   <button
                     onClick={handleStartSession}
-                    className="px-4 py-2 text-sm font-medium text-white bg-teal-500 border border-teal-500 rounded-lg hover:bg-teal-600 cursor-pointer whitespace-nowrap flex items-center gap-2"
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-500 border border-indigo-500 rounded-lg hover:bg-indigo-600 cursor-pointer whitespace-nowrap flex items-center gap-2"
                   >
                     <i className="ri-play-fill"></i>
                     Start
@@ -905,7 +905,7 @@ export default function SessionDetail() {
                   <>
                     <button
                       onClick={handleResumeSession}
-                      className="px-4 py-2 text-sm font-medium text-white bg-teal-500 border border-teal-500 rounded-lg hover:bg-teal-600 cursor-pointer whitespace-nowrap flex items-center gap-2"
+                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-500 border border-indigo-500 rounded-lg hover:bg-indigo-600 cursor-pointer whitespace-nowrap flex items-center gap-2"
                     >
                       <i className="ri-play-fill"></i>
                       Resume
@@ -1164,7 +1164,7 @@ export default function SessionDetail() {
                     <button
                       onClick={handleAddLog}
                       disabled={!logContent.trim()}
-                      className="px-6 py-2 bg-teal-500 text-white text-sm font-medium rounded hover:bg-teal-600 disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
+                      className="px-6 py-2 bg-indigo-500 text-white text-sm font-medium rounded hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
                     >
                       Add
                     </button>
@@ -1418,7 +1418,7 @@ export default function SessionDetail() {
                               bgColor = 'bg-orange-500';
                               break;
                             default:
-                              bgColor = 'bg-teal-500';
+                              bgColor = 'bg-indigo-500';
                           }
                         }
                         
@@ -1485,7 +1485,7 @@ export default function SessionDetail() {
                     onChange={(e) => setIssueInput(e.target.value)}
                     onKeyDown={handleIssueKeyDown}
                     placeholder="Enter issue key (e.g., PROJ-123)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     autoFocus
                   />
                   <p className="text-xs text-gray-500 mt-1">Press Enter or comma to add</p>
@@ -1558,7 +1558,7 @@ export default function SessionDetail() {
                       value={issueFormData.summary}
                       onChange={(e) => setIssueFormData({ ...issueFormData, summary: e.target.value })}
                       placeholder="Brief description of the issue"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                   </div>
 
@@ -1570,7 +1570,7 @@ export default function SessionDetail() {
                       onChange={(e) => setIssueFormData({ ...issueFormData, description: e.target.value })}
                       placeholder="Detailed description of the issue"
                       rows={6}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                     ></textarea>
                   </div>
 
@@ -1581,7 +1581,7 @@ export default function SessionDetail() {
                       <select
                         value={issueFormData.issueType}
                         onChange={(e) => setIssueFormData({ ...issueFormData, issueType: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                       >
                         <option value="Bug">Bug</option>
                         <option value="Task">Task</option>
@@ -1595,7 +1595,7 @@ export default function SessionDetail() {
                       <select
                         value={issueFormData.priority}
                         onChange={(e) => setIssueFormData({ ...issueFormData, priority: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                       >
                         <option value="Highest">Highest</option>
                         <option value="High">High</option>
@@ -1614,7 +1614,7 @@ export default function SessionDetail() {
                       value={issueFormData.labels}
                       onChange={(e) => setIssueFormData({ ...issueFormData, labels: e.target.value })}
                       placeholder="Enter labels separated by commas (e.g., bug, ui, critical)"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                     <p className="text-xs text-gray-500 mt-1">쉼표로 구분하여 여러 라벨을 입력하세요</p>
                   </div>
@@ -1627,7 +1627,7 @@ export default function SessionDetail() {
                       value={issueFormData.assignee}
                       onChange={(e) => setIssueFormData({ ...issueFormData, assignee: e.target.value })}
                       placeholder="Jira 계정 ID 또는 이메일 (예: user@example.com)"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                     <p className="text-xs text-gray-500 mt-1">비워두면 자동 할당됩니다</p>
                   </div>
@@ -1640,7 +1640,7 @@ export default function SessionDetail() {
                       value={issueFormData.components}
                       onChange={(e) => setIssueFormData({ ...issueFormData, components: e.target.value })}
                       placeholder="컴포넌트 이름을 쉼표로 구분 (예: Frontend, API, Database)"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                     <p className="text-xs text-gray-500 mt-1">Jira 프로젝트에 등록된 컴포넌트 이름을 입력하세요</p>
                   </div>
@@ -1658,7 +1658,7 @@ export default function SessionDetail() {
                 <button
                   onClick={handleCreateJiraIssue}
                   disabled={creatingIssue || !issueFormData.summary.trim()}
-                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {creatingIssue ? (
                     <>
@@ -1755,7 +1755,7 @@ export default function SessionDetail() {
                 <button
                   onClick={handleSaveEditLog}
                   disabled={savingLog || !editLogContent.trim()}
-                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {savingLog ? (
                     <>

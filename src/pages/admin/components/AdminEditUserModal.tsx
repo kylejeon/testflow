@@ -22,7 +22,7 @@ interface AdminEditUserModalProps {
 const TIER_OPTIONS = [
   { value: 1, label: 'Free', description: '무료 플랜', color: 'border-gray-300 bg-gray-50', activeColor: 'border-gray-500 bg-gray-100', dot: 'bg-gray-400' },
   { value: 2, label: 'Starter', description: '$49/월', color: 'border-yellow-200 bg-yellow-50', activeColor: 'border-yellow-500 bg-yellow-50', dot: 'bg-yellow-400' },
-  { value: 3, label: 'Professional', description: '$99/월', color: 'border-teal-200 bg-teal-50', activeColor: 'border-teal-500 bg-teal-50', dot: 'bg-teal-500' },
+  { value: 3, label: 'Professional', description: '$99/월', color: 'border-indigo-200 bg-indigo-50', activeColor: 'border-indigo-500 bg-indigo-50', dot: 'bg-indigo-500' },
   { value: 4, label: 'Enterprise', description: '$249/월', color: 'border-amber-200 bg-amber-50', activeColor: 'border-amber-500 bg-amber-50', dot: 'bg-amber-500' },
 ];
 
@@ -114,7 +114,7 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
         {/* Header */}
         <div className="bg-slate-900 px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-base flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-base flex-shrink-0">
               {initials}
             </div>
             <div>
@@ -155,7 +155,7 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
                     <span className="text-xs text-gray-400">{option.description}</span>
                     {isActive && (
                       <div className="w-4 h-4 flex items-center justify-center">
-                        <i className="ri-check-line text-teal-600 text-sm"></i>
+                        <i className="ri-check-line text-indigo-600 text-sm"></i>
                       </div>
                     )}
                   </button>
@@ -167,8 +167,8 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
           {/* Trial Toggle */}
           <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                <i className="ri-time-line text-teal-600"></i>
+              <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i className="ri-time-line text-indigo-600"></i>
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-700">무료 체험 (Trial)</p>
@@ -179,7 +179,7 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
               type="button"
               onClick={() => setIsTrial(!isTrial)}
               className={`relative inline-flex w-12 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0 ml-4 focus:outline-none ${
-                isTrial ? 'bg-teal-500' : 'bg-gray-300'
+                isTrial ? 'bg-indigo-500' : 'bg-gray-300'
               }`}
             >
               <span
@@ -202,7 +202,7 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
                 type="date"
                 value={trialEndsAt}
                 onChange={(e) => setTrialEndsAt(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent bg-white cursor-pointer"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white cursor-pointer"
               />
               {trialEndsAt && (
                 <button
@@ -228,7 +228,7 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
                 value={subscriptionEndsAt}
                 onChange={(e) => setSubscriptionEndsAt(e.target.value)}
                 disabled={tier === 1 && !isTrial}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent bg-white cursor-pointer disabled:bg-gray-50"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white cursor-pointer disabled:bg-gray-50"
               />
               {subscriptionEndsAt && tier > 1 && (
                 <button
@@ -247,7 +247,7 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
             <p className="text-xs text-slate-600">
               저장 후 플랜이&nbsp;
               <span className="font-bold text-slate-900">{selectedTierOption.label}</span>
-              {isTrial && <span className="text-teal-600 font-semibold"> (Trial 활성)</span>}
+              {isTrial && <span className="text-indigo-600 font-semibold"> (Trial 활성)</span>}
               &nbsp;으로 즉시 변경됩니다.
             </p>
           </div>
@@ -271,7 +271,7 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
             <button
               onClick={handleSave}
               disabled={saving || success}
-              className="flex-1 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-sm font-bold text-white transition-colors cursor-pointer whitespace-nowrap disabled:opacity-70 flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-sm font-bold text-white transition-colors cursor-pointer whitespace-nowrap disabled:opacity-70 flex items-center justify-center gap-2"
             >
               {success ? (
                 <>

@@ -35,7 +35,7 @@ export default function LanguageSwitcher() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-9 h-9 bg-white border border-gray-200 rounded-full flex items-center justify-center text-xl hover:border-teal-500 transition-all cursor-pointer"
+        className="w-9 h-9 bg-white border border-gray-200 rounded-full flex items-center justify-center text-xl hover:border-indigo-500 transition-all cursor-pointer"
         title="Change Language"
       >
         {getCurrentFlag()}
@@ -46,7 +46,7 @@ export default function LanguageSwitcher() {
           <button
             onClick={() => handleLanguageChange('ko')}
             className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors ${
-              currentLanguage === 'ko' ? 'bg-teal-50 text-teal-700' : 'text-gray-700'
+              currentLanguage === 'ko' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
             }`}
           >
             <div className="flex items-center gap-3">
@@ -54,13 +54,13 @@ export default function LanguageSwitcher() {
               <span className="font-medium">한국어</span>
             </div>
             {currentLanguage === 'ko' && (
-              <i className="ri-check-line text-teal-600 text-lg"></i>
+              <i className="ri-check-line text-indigo-600 text-lg"></i>
             )}
           </button>
           <button
             onClick={() => handleLanguageChange('en')}
             className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors ${
-              currentLanguage === 'en' ? 'bg-teal-50 text-teal-700' : 'text-gray-700'
+              currentLanguage === 'en' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
             }`}
           >
             <div className="flex items-center gap-3">
@@ -68,7 +68,7 @@ export default function LanguageSwitcher() {
               <span className="font-medium">English</span>
             </div>
             {currentLanguage === 'en' && (
-              <i className="ri-check-line text-teal-600 text-lg"></i>
+              <i className="ri-check-line text-indigo-600 text-lg"></i>
             )}
           </button>
         </div>

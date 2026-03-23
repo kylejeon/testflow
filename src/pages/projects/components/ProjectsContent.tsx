@@ -242,8 +242,8 @@ export default function ProjectsContent() {
       label: t('projects:allProjects'),
       value: projects.length.toString(),
       icon: 'ri-folder-line',
-      color: 'text-teal-600',
-      bg: 'bg-teal-50',
+      color: 'text-indigo-600',
+      bg: 'bg-indigo-50',
     },
     {
       label: t('common:active'),
@@ -274,8 +274,8 @@ export default function ProjectsContent() {
 
   const getProjectColor = (index: number) => {
     const colors = [
-      'bg-teal-500',
-      'bg-emerald-500',
+      'bg-indigo-500',
+      'bg-violet-500',
       'bg-cyan-500',
       'bg-sky-500',
       'bg-indigo-500',
@@ -290,7 +290,7 @@ export default function ProjectsContent() {
     return (
       <div className="p-8 flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">{t('common:loading')}</p>
         </div>
       </div>
@@ -308,7 +308,7 @@ export default function ProjectsContent() {
             </div>
             <button 
               onClick={() => setShowCreateModal(true)}
-              className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
               {t('projects:createProject')}
@@ -356,7 +356,7 @@ export default function ProjectsContent() {
                 <select 
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-4 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                  className="px-4 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                 >
                   <option value="all">{t('projects:allStatus')}</option>
                   <option value="active">{t('common:active')}</option>
@@ -372,7 +372,7 @@ export default function ProjectsContent() {
                 placeholder={t('projects:searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>
@@ -392,7 +392,7 @@ export default function ProjectsContent() {
                 {!searchQuery && filterStatus === 'all' && (
                   <button 
                     onClick={() => setShowCreateModal(true)}
-                    className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                    className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
                   >
                     {t('projects:createProject')}
                   </button>
@@ -403,7 +403,7 @@ export default function ProjectsContent() {
                 {filteredProjects.map((project, index) => (
                   <div
                     key={project.id}
-                    className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-teal-500 transition-all"
+                    className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-indigo-500 transition-all"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <Link
@@ -414,7 +414,7 @@ export default function ProjectsContent() {
                           {project.name.substring(0, 2).toUpperCase()}
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 mb-1 hover:text-teal-600 transition-colors">{project.name}</h3>
+                          <h3 className="text-lg font-bold text-gray-900 mb-1 hover:text-indigo-600 transition-colors">{project.name}</h3>
                           <p className="text-sm text-gray-600 line-clamp-1">{project.description || t('projects:noDescription')}</p>
                         </div>
                       </Link>
@@ -486,7 +486,7 @@ export default function ProjectsContent() {
                       </span>
                       <Link
                         to={`/projects/${project.id}`}
-                        className="text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 cursor-pointer whitespace-nowrap"
                       >
                         {t('projects:viewDetails')}
                         <i className="ri-arrow-right-line w-4 h-4 flex items-center justify-center"></i>

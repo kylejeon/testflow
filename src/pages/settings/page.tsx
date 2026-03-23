@@ -53,7 +53,7 @@ const TIER_INFO = {
   },
   3: {
     name: 'Professional',
-    color: 'bg-teal-50 text-teal-700 border-teal-300',
+    color: 'bg-indigo-50 text-indigo-700 border-indigo-300',
     icon: 'ri-vip-crown-line',
     monthlyPrice: 99,
     priceDesc: '/ mo',
@@ -819,7 +819,7 @@ def pytest_sessionfinish(session, exitstatus):
                 <div className="relative" ref={profileMenuRef}>
                   <div 
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden"
+                    className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden"
                   >
                     {headerAvatar ? (
                       <span className="text-xl leading-none">{headerAvatar}</span>
@@ -872,7 +872,7 @@ def pytest_sessionfinish(session, exitstatus):
                     onClick={() => setActiveTab('profile')}
                     className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       activeTab === 'profile'
-                        ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50'
+                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
@@ -883,7 +883,7 @@ def pytest_sessionfinish(session, exitstatus):
                     onClick={() => setActiveTab('general')}
                     className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       activeTab === 'general'
-                        ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50'
+                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
@@ -894,7 +894,7 @@ def pytest_sessionfinish(session, exitstatus):
                     onClick={() => setActiveTab('integrations')}
                     className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       activeTab === 'integrations'
-                        ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50'
+                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
@@ -905,7 +905,7 @@ def pytest_sessionfinish(session, exitstatus):
                     onClick={() => setActiveTab('cicd')}
                     className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       activeTab === 'cicd'
-                        ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50'
+                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
@@ -916,7 +916,7 @@ def pytest_sessionfinish(session, exitstatus):
                     onClick={() => setActiveTab('notifications')}
                     className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       activeTab === 'notifications'
-                        ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50'
+                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
@@ -946,19 +946,19 @@ def pytest_sessionfinish(session, exitstatus):
                             ? 'bg-red-50 border-red-200'
                             : trialDaysLeft <= 7
                             ? 'bg-amber-50 border-amber-200'
-                            : 'bg-teal-50 border-teal-200'
+                            : 'bg-indigo-50 border-indigo-200'
                         }`}>
                           <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                          trialDaysLeft <= 3 ? 'bg-red-100' : trialDaysLeft <= 7 ? 'bg-amber-100' : 'bg-teal-100'
+                          trialDaysLeft <= 3 ? 'bg-red-100' : trialDaysLeft <= 7 ? 'bg-amber-100' : 'bg-indigo-100'
                         }`}>
                             <i className={`ri-time-line text-xl ${
-                          trialDaysLeft <= 3 ? 'text-red-600' : trialDaysLeft <= 7 ? 'text-amber-600' : 'text-teal-600'
+                          trialDaysLeft <= 3 ? 'text-red-600' : trialDaysLeft <= 7 ? 'text-amber-600' : 'text-indigo-600'
                         }`}></i>
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <h3 className={`font-bold text-base ${
-                          trialDaysLeft <= 3 ? 'text-red-800' : trialDaysLeft <= 7 ? 'text-amber-800' : 'text-teal-800'
+                          trialDaysLeft <= 3 ? 'text-red-800' : trialDaysLeft <= 7 ? 'text-amber-800' : 'text-indigo-800'
                         }`}>
                                 14-Day Free Trial Active
                               </h3>
@@ -967,13 +967,13 @@ def pytest_sessionfinish(session, exitstatus):
                             ? 'bg-red-200 text-red-800'
                             : trialDaysLeft <= 7
                             ? 'bg-amber-200 text-amber-800'
-                            : 'bg-teal-200 text-teal-800'
+                            : 'bg-indigo-200 text-indigo-800'
                         }`}>
                                 {trialDaysLeft} days left
                               </span>
                             </div>
                             <p className={`text-sm mb-3 ${
-                          trialDaysLeft <= 3 ? 'text-red-700' : trialDaysLeft <= 7 ? 'text-amber-700' : 'text-teal-700'
+                          trialDaysLeft <= 3 ? 'text-red-700' : trialDaysLeft <= 7 ? 'text-amber-700' : 'text-indigo-700'
                         }`}>
                               {trialDaysLeft <= 3
                                 ? `Your trial ends in ${trialDaysLeft} day${trialDaysLeft !== 1 ? 's' : ''}. Upgrade now to keep your access.`
@@ -981,7 +981,7 @@ def pytest_sessionfinish(session, exitstatus):
                             </p>
                             {userProfile.trial_ends_at && (
                               <p className={`text-xs ${
-                          trialDaysLeft <= 3 ? 'text-red-500' : trialDaysLeft <= 7 ? 'text-amber-500' : 'text-teal-500'
+                          trialDaysLeft <= 3 ? 'text-red-500' : trialDaysLeft <= 7 ? 'text-amber-500' : 'text-indigo-500'
                         }`}>
                                 <i className="ri-calendar-line mr-1"></i>
                                 Trial ends: {new Date(userProfile.trial_ends_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -993,7 +993,7 @@ def pytest_sessionfinish(session, exitstatus):
                             ? 'bg-red-600 text-white hover:bg-red-700'
                             : trialDaysLeft <= 7
                             ? 'bg-amber-600 text-white hover:bg-amber-700'
-                            : 'bg-teal-600 text-white hover:bg-teal-700'
+                            : 'bg-indigo-600 text-white hover:bg-indigo-700'
                         }`}>
                             Upgrade Now
                           </button>
@@ -1010,10 +1010,10 @@ def pytest_sessionfinish(session, exitstatus):
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
                               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                currentTier === 1 ? 'bg-gray-200' : currentTier === 2 ? 'bg-yellow-100' : currentTier === 3 ? 'bg-teal-100' : 'bg-amber-100'
+                                currentTier === 1 ? 'bg-gray-200' : currentTier === 2 ? 'bg-yellow-100' : currentTier === 3 ? 'bg-indigo-100' : 'bg-amber-100'
                               }`}>
                                 <i className={`${tierInfo.icon} text-2xl ${
-                                  currentTier === 1 ? 'text-gray-600' : currentTier === 2 ? 'text-yellow-600' : currentTier === 3 ? 'text-teal-600' : 'text-amber-600'
+                                  currentTier === 1 ? 'text-gray-600' : currentTier === 2 ? 'text-yellow-600' : currentTier === 3 ? 'text-indigo-600' : 'text-amber-600'
                                 }`}></i>
                               </div>
                               <div>
@@ -1025,7 +1025,7 @@ def pytest_sessionfinish(session, exitstatus):
                             </div>
                             <div className="flex flex-col items-end gap-1.5">
                               <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                                currentTier === 1 ? 'bg-gray-200 text-gray-700' : currentTier === 2 ? 'bg-yellow-200 text-yellow-800' : currentTier === 3 ? 'bg-teal-200 text-teal-800' : 'bg-amber-200 text-amber-800'
+                                currentTier === 1 ? 'bg-gray-200 text-gray-700' : currentTier === 2 ? 'bg-yellow-200 text-yellow-800' : currentTier === 3 ? 'bg-indigo-200 text-indigo-800' : 'bg-amber-200 text-amber-800'
                               }`}>
                                 Active
                               </span>
@@ -1096,7 +1096,7 @@ def pytest_sessionfinish(session, exitstatus):
                               }`}
                             >
                               Annual
-                              <span className="px-1.5 py-0.5 bg-teal-500 text-white text-xs rounded-full">20% off</span>
+                              <span className="px-1.5 py-0.5 bg-indigo-500 text-white text-xs rounded-full">20% off</span>
                             </button>
                           </div>
                         </div>
@@ -1118,15 +1118,15 @@ def pytest_sessionfinish(session, exitstatus):
                               >
                                 <div className="flex items-center gap-2 mb-3">
                                   <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                    tierNum === 1 ? 'bg-gray-200' : tierNum === 2 ? 'bg-yellow-100' : tierNum === 3 ? 'bg-teal-100' : 'bg-amber-100'
+                                    tierNum === 1 ? 'bg-gray-200' : tierNum === 2 ? 'bg-yellow-100' : tierNum === 3 ? 'bg-indigo-100' : 'bg-amber-100'
                                   }`}>
                                     <i className={`${info.icon} text-xl ${
-                                      tierNum === 1 ? 'text-gray-500' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-teal-500' : 'text-amber-500'
+                                      tierNum === 1 ? 'text-gray-500' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : 'text-amber-500'
                                     }`}></i>
                                   </div>
                                   <h4 className="font-bold text-gray-900">{info.name}</h4>
                                   {isCurrentTier && (
-                                    <span className="ml-auto px-2 py-0.5 bg-teal-500 text-white text-xs rounded-full">
+                                    <span className="ml-auto px-2 py-0.5 bg-indigo-500 text-white text-xs rounded-full">
                                       Current
                                     </span>
                                   )}
@@ -1136,7 +1136,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 <div className="mb-4 pb-4 border-b border-gray-200/70">
                                   <div className="flex items-end gap-1">
                                     <span className={`text-2xl font-bold ${
-                                      tierNum === 1 ? 'text-gray-700' : tierNum === 2 ? 'text-yellow-700' : tierNum === 3 ? 'text-teal-700' : 'text-amber-700'
+                                      tierNum === 1 ? 'text-gray-700' : tierNum === 2 ? 'text-yellow-700' : tierNum === 3 ? 'text-indigo-700' : 'text-amber-700'
                                     }`}>
                                       {formatPrice(info.monthlyPrice, isAnnual)}
                                     </span>
@@ -1145,7 +1145,7 @@ def pytest_sessionfinish(session, exitstatus):
                                     )}
                                   </div>
                                   {isAnnual && info.monthlyPrice > 0 && (
-                                    <p className="text-xs text-teal-600 mt-1">
+                                    <p className="text-xs text-indigo-600 mt-1">
                                       <i className="ri-price-tag-3-line mr-1"></i>
                                       Save 20% vs {formatPrice(info.monthlyPrice, false)}/mo
                                     </p>
@@ -1156,7 +1156,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   {info.features.map((feature, index) => (
                                     <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
                                       <i className={`ri-check-line mt-0.5 ${
-                                        tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-teal-500' : 'text-amber-500'
+                                        tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : 'text-amber-500'
                                       }`}></i>
                                       {tierNum === 1 && feature === 'Jira Integration (Link)' ? (
                                         <span className="flex items-center gap-1">
@@ -1189,7 +1189,7 @@ def pytest_sessionfinish(session, exitstatus):
                                     className={`w-full mt-4 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap block text-center ${
                                       tierNum === 4
                                         ? 'border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
-                                        : 'bg-teal-500 text-white hover:bg-teal-600'
+                                        : 'bg-indigo-500 text-white hover:bg-indigo-600'
                                     }`}
                                   >
                                     {tierNum === 4 ? 'Contact Sales' : 'Contact Us to Upgrade'}
@@ -1222,7 +1222,7 @@ def pytest_sessionfinish(session, exitstatus):
                         </div>
                         <button
                           onClick={() => setActiveTab('profile')}
-                          className="mt-4 px-4 py-2 text-sm font-semibold text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
+                          className="mt-4 px-4 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
                         >
                           <i className="ri-edit-line"></i>
                           Edit Profile &amp; Password
@@ -1268,7 +1268,7 @@ def pytest_sessionfinish(session, exitstatus):
 
                         {loading ? (
                           <div className="flex justify-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
                           </div>
                         ) : (
                           <div className={`space-y-6 ${!isStarterOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -1284,7 +1284,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   value={jiraSettings.domain}
                                   onChange={(e) => setJiraSettings({ ...jiraSettings, domain: e.target.value })}
                                   placeholder="your-domain.atlassian.net"
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                                   disabled={!isStarterOrHigher}
                                 />
                               </div>
@@ -1301,7 +1301,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 value={jiraSettings.email}
                                 onChange={(e) => setJiraSettings({ ...jiraSettings, email: e.target.value })}
                                 placeholder="your-email@example.com"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                                 disabled={!isStarterOrHigher}
                               />
                               <p className="text-xs text-gray-500 mt-1">Your Jira account email address</p>
@@ -1318,7 +1318,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   value={jiraSettings.apiToken}
                                   onChange={(e) => setJiraSettings({ ...jiraSettings, apiToken: e.target.value })}
                                   placeholder="Enter your Jira API token"
-                                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                                   disabled={!isStarterOrHigher}
                                 />
                                 <button
@@ -1335,7 +1335,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   href="https://id.atlassian.com/manage-profile/security/api-tokens" 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="text-teal-600 hover:underline"
+                                  className="text-indigo-600 hover:underline"
                                 >
                                   Generate API token here
                                 </a>
@@ -1350,7 +1350,7 @@ def pytest_sessionfinish(session, exitstatus):
                               <select
                                 value={jiraSettings.issueType}
                                 onChange={(e) => setJiraSettings({ ...jiraSettings, issueType: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                                 disabled={!isStarterOrHigher}
                               >
                                 <option value="Bug">Bug</option>
@@ -1397,7 +1397,7 @@ def pytest_sessionfinish(session, exitstatus):
                               <button
                                 onClick={handleSaveJiraSettings}
                                 disabled={saving || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher}
-                                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {saving ? (
                                   <>
@@ -1452,7 +1452,7 @@ def pytest_sessionfinish(session, exitstatus):
                               <span className="text-sm text-gray-600">{webhooks.length} webhook{webhooks.length !== 1 ? 's' : ''} configured across all projects</span>
                               <button
                                 onClick={openAddWebhookModal}
-                                className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold text-sm cursor-pointer whitespace-nowrap"
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm cursor-pointer whitespace-nowrap"
                               >
                                 <i className="ri-add-line"></i>Add Integration
                               </button>
@@ -1460,7 +1460,7 @@ def pytest_sessionfinish(session, exitstatus):
 
                             {loadingWebhooks ? (
                               <div className="flex justify-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
                               </div>
                             ) : webhooks.length === 0 ? (
                               <div className="bg-gray-50 rounded-xl border border-gray-200 p-10 text-center">
@@ -1469,7 +1469,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 </div>
                                 <h3 className="text-base font-semibold text-gray-900 mb-1">No webhooks yet</h3>
                                 <p className="text-sm text-gray-500 mb-4">Connect Slack or Microsoft Teams to receive real-time alerts about test runs and milestones.</p>
-                                <button onClick={openAddWebhookModal} className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold text-sm cursor-pointer">
+                                <button onClick={openAddWebhookModal} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm cursor-pointer">
                                   <i className="ri-add-line"></i>Add your first integration
                                 </button>
                               </div>
@@ -1506,7 +1506,7 @@ def pytest_sessionfinish(session, exitstatus):
                                               {(wh.events as string[]).map((ev: string) => {
                                                 const evMeta = WEBHOOK_EVENTS.find(e => e.type === ev);
                                                 return (
-                                                  <span key={ev} className="px-1.5 py-0.5 text-xs bg-teal-50 text-teal-700 rounded-full border border-teal-100">
+                                                  <span key={ev} className="px-1.5 py-0.5 text-xs bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
                                                     {evMeta?.label ?? ev}
                                                   </span>
                                                 );
@@ -1595,7 +1595,7 @@ def pytest_sessionfinish(session, exitstatus):
                         <div className="flex items-center justify-between mb-2">
                           <h2 className="text-xl font-bold text-gray-900">CI/CD Integration</h2>
                           {!isProfessionalOrHigher && (
-                            <span className="px-3 py-1 bg-teal-50 text-teal-700 border border-teal-300 rounded-full text-xs font-semibold flex items-center gap-1">
+                            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-300 rounded-full text-xs font-semibold flex items-center gap-1">
                               <i className="ri-vip-crown-line"></i>
                               Requires Professional or above
                             </span>
@@ -1604,17 +1604,17 @@ def pytest_sessionfinish(session, exitstatus):
                         <p className="text-gray-600 mb-6">Automatically upload test results from GitHub Actions, GitLab CI, and other CI/CD pipelines</p>
 
                         {!isProfessionalOrHigher && (
-                          <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-xl">
+                          <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 rounded-xl">
                             <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <i className="ri-lock-line text-teal-600 text-xl"></i>
+                              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i className="ri-lock-line text-indigo-600 text-xl"></i>
                               </div>
                               <div className="flex-1">
                                 <h3 className="font-semibold text-gray-900 mb-1">CI/CD Integration is available on Professional and above</h3>
                                 <p className="text-sm text-gray-600 mb-3">
                                   Upload results directly from your automated test pipelines and enhance team collaboration.
                                 </p>
-                                <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-block px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap">
+                                <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap">
                                   <i className="ri-arrow-up-circle-line mr-2"></i>
                                   Contact Us to Upgrade
                                 </a>
@@ -1634,7 +1634,7 @@ def pytest_sessionfinish(session, exitstatus):
                               <button
                                 onClick={() => setShowNewTokenModal(true)}
                                 disabled={!isProfessionalOrHigher}
-                                className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
+                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
                               >
                                 <i className="ri-add-line"></i>
                                 New Token
@@ -1643,7 +1643,7 @@ def pytest_sessionfinish(session, exitstatus):
 
                             {loadingTokens ? (
                               <div className="flex justify-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
                               </div>
                             ) : ciTokens.length === 0 ? (
                               <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
@@ -1654,7 +1654,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 <p className="text-sm text-gray-600 mb-4">Create an API token to start integrating with your CI/CD pipeline</p>
                                 <button
                                   onClick={() => setShowNewTokenModal(true)}
-                                  className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap"
+                                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap"
                                 >
                                   <i className="ri-add-line mr-2"></i>
                                   Create First Token
@@ -1666,8 +1666,8 @@ def pytest_sessionfinish(session, exitstatus):
                                   <div key={token.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                                     <div className="flex items-center justify-between mb-3">
                                       <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                                          <i className="ri-key-2-line text-teal-600 text-lg"></i>
+                                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                          <i className="ri-key-2-line text-indigo-600 text-lg"></i>
                                         </div>
                                         <div>
                                           <h4 className="font-semibold text-gray-900">{token.name}</h4>
@@ -1741,7 +1741,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   onClick={() => setSelectedPlatform('python')}
                                   className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                                     selectedPlatform === 'python'
-                                      ? 'bg-teal-600 text-white'
+                                      ? 'bg-indigo-600 text-white'
                                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                   }`}
                                 >
@@ -1751,10 +1751,10 @@ def pytest_sessionfinish(session, exitstatus):
                               </div>
 
                               {/* Environment Variables Guide */}
-                              <div className="mb-4 p-4 bg-teal-50 border border-teal-200 rounded-xl">
+                              <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <i className="ri-settings-4-line text-teal-600 text-lg"></i>
-                                  <p className="text-sm font-bold text-teal-800">
+                                  <i className="ri-settings-4-line text-indigo-600 text-lg"></i>
+                                  <p className="text-sm font-bold text-indigo-800">
                                     Register the following values in your{' '}
                                     {selectedPlatform === 'github'
                                       ? 'GitHub Secrets'
@@ -1764,14 +1764,14 @@ def pytest_sessionfinish(session, exitstatus):
                                   </p>
                                 </div>
                                 <div className="space-y-2">
-                                  <div className="flex items-center gap-2 bg-white rounded-lg border border-teal-200 px-3 py-2">
-                                    <span className="text-xs font-bold font-mono text-teal-700 w-36 flex-shrink-0">TESTABLY_URL</span>
+                                  <div className="flex items-center gap-2 bg-white rounded-lg border border-indigo-200 px-3 py-2">
+                                    <span className="text-xs font-bold font-mono text-indigo-700 w-36 flex-shrink-0">TESTABLY_URL</span>
                                     <span className="text-xs text-gray-400 font-mono flex-1 truncate">
                                       {`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results`}
                                     </span>
                                     <button
                                       onClick={() => handleCopyToken(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results`)}
-                                      className="flex-shrink-0 px-2 py-1 bg-teal-100 hover:bg-teal-200 text-teal-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
+                                      className="flex-shrink-0 px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
                                     >
                                       {copiedToken === `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results` ? (
                                         <><i className="ri-check-line mr-1"></i>Copied</>
@@ -1780,12 +1780,12 @@ def pytest_sessionfinish(session, exitstatus):
                                       )}
                                     </button>
                                   </div>
-                                  <div className="flex items-center gap-2 bg-white rounded-lg border border-teal-200 px-3 py-2">
-                                    <span className="text-xs font-bold font-mono text-teal-700 w-36 flex-shrink-0">TESTABLY_TOKEN</span>
+                                  <div className="flex items-center gap-2 bg-white rounded-lg border border-indigo-200 px-3 py-2">
+                                    <span className="text-xs font-bold font-mono text-indigo-700 w-36 flex-shrink-0">TESTABLY_TOKEN</span>
                                     <span className="text-xs text-gray-400 font-mono flex-1 truncate">{ciTokens[0].token}</span>
                                     <button
                                       onClick={() => handleCopyToken(ciTokens[0].token)}
-                                      className="flex-shrink-0 px-2 py-1 bg-teal-100 hover:bg-teal-200 text-teal-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
+                                      className="flex-shrink-0 px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
                                     >
                                       {copiedToken === ciTokens[0].token ? (
                                         <><i className="ri-check-line mr-1"></i>Copied</>
@@ -1795,7 +1795,7 @@ def pytest_sessionfinish(session, exitstatus):
                                     </button>
                                   </div>
                                 </div>
-                                <p className="text-xs text-teal-700 mt-2">
+                                <p className="text-xs text-indigo-700 mt-2">
                                   <i className="ri-information-line mr-1"></i>
                                   Registering both values as environment variables keeps them secure without modifying your code.
                                 </p>
@@ -1806,7 +1806,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 <div className="space-y-6">
                                   <div>
                                     <div className="flex items-center gap-2 mb-3">
-                                      <span className="w-6 h-6 bg-teal-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+                                      <span className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
                                       <h4 className="font-bold text-gray-900">Function-based approach <span className="text-sm font-normal text-gray-500 ml-1">— suitable for simple scripts</span></h4>
                                     </div>
                                     <p className="text-sm text-gray-600 mb-3 ml-8">
@@ -1831,7 +1831,7 @@ def pytest_sessionfinish(session, exitstatus):
 
                                   <div>
                                     <div className="flex items-center gap-2 mb-3">
-                                      <span className="w-6 h-6 bg-teal-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+                                      <span className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
                                       <h4 className="font-bold text-gray-900">conftest.py approach <span className="text-sm font-normal text-gray-500 ml-1">— suitable for pytest projects</span></h4>
                                     </div>
                                     <p className="text-sm text-gray-600 mb-3 ml-8">
@@ -1939,8 +1939,8 @@ def pytest_sessionfinish(session, exitstatus):
 
                             <div className="p-5 bg-white border border-gray-200 rounded-xl">
                               <div className="flex items-center gap-2 mb-4">
-                                <div className="w-8 h-8 flex items-center justify-center bg-teal-50 rounded-lg">
-                                  <i className="ri-shield-keyhole-line text-teal-600 text-lg"></i>
+                                <div className="w-8 h-8 flex items-center justify-center bg-indigo-50 rounded-lg">
+                                  <i className="ri-shield-keyhole-line text-indigo-600 text-lg"></i>
                                 </div>
                                 <h4 className="font-bold text-gray-900 text-sm">API Token Scope Configuration Guide</h4>
                               </div>
@@ -1959,7 +1959,7 @@ def pytest_sessionfinish(session, exitstatus):
                                         { scope: 'read:org', desc: 'Read organization info (for org repositories)', required: false },
                                       ].map((item) => (
                                         <div key={item.scope} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                                          <span className={`mt-0.5 px-2 py-0.5 rounded text-xs font-bold font-mono whitespace-nowrap ${item.required ? 'bg-teal-100 text-teal-700' : 'bg-gray-200 text-gray-600'}`}>
+                                          <span className={`mt-0.5 px-2 py-0.5 rounded text-xs font-bold font-mono whitespace-nowrap ${item.required ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-600'}`}>
                                             {item.scope}
                                           </span>
                                           <div className="flex-1">
@@ -1969,7 +1969,7 @@ def pytest_sessionfinish(session, exitstatus):
                                             )}
                                           </div>
                                           {item.required && (
-                                            <span className="text-xs font-semibold text-teal-600 whitespace-nowrap">Required</span>
+                                            <span className="text-xs font-semibold text-indigo-600 whitespace-nowrap">Required</span>
                                           )}
                                         </div>
                                       ))}
@@ -1985,7 +1985,7 @@ def pytest_sessionfinish(session, exitstatus):
                                     href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-xs text-teal-600 hover:underline"
+                                    className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
                                   >
                                     <i className="ri-external-link-line"></i>
                                     GitHub Token Official Documentation
@@ -2031,7 +2031,7 @@ def pytest_sessionfinish(session, exitstatus):
                                     href="https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-xs text-teal-600 hover:underline"
+                                    className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
                                   >
                                     <i className="ri-external-link-line"></i>
                                     GitLab Token Official Documentation
@@ -2072,7 +2072,7 @@ def pytest_sessionfinish(session, exitstatus):
                 value={newTokenName}
                 onChange={(e) => setNewTokenName(e.target.value)}
                 placeholder="e.g. GitHub Actions Token"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 autoFocus
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -2093,7 +2093,7 @@ def pytest_sessionfinish(session, exitstatus):
               <button
                 onClick={handleCreateToken}
                 disabled={creatingToken || !newTokenName.trim()}
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creatingToken ? (
                   <>
@@ -2118,8 +2118,8 @@ def pytest_sessionfinish(session, exitstatus):
           <div className="bg-white rounded-xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                  <i className="ri-plug-line text-teal-600 text-xl"></i>
+                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <i className="ri-plug-line text-indigo-600 text-xl"></i>
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">{editingWebhookId ? 'Edit Integration' : 'Add Integration'}</h2>
@@ -2138,7 +2138,7 @@ def pytest_sessionfinish(session, exitstatus):
                 <select
                   value={webhookForm.project_id}
                   onChange={e => setWebhookForm(prev => ({ ...prev, project_id: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                 >
                   <option value="">Select a project...</option>
                   {webhookProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -2152,8 +2152,8 @@ def pytest_sessionfinish(session, exitstatus):
                   {(['slack', 'teams'] as const).map(t => {
                     const m = WEBHOOK_TYPE_META[t];
                     return (
-                      <label key={t} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${webhookForm.type === t ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                        <input type="radio" name="wh-type" value={t} checked={webhookForm.type === t} onChange={() => setWebhookForm(prev => ({ ...prev, type: t }))} className="w-4 h-4 text-teal-600" />
+                      <label key={t} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${webhookForm.type === t ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                        <input type="radio" name="wh-type" value={t} checked={webhookForm.type === t} onChange={() => setWebhookForm(prev => ({ ...prev, type: t }))} className="w-4 h-4 text-indigo-600" />
                         <div className={`w-7 h-7 rounded flex items-center justify-center ${m.color}`}><i className={`${m.icon} text-base`}></i></div>
                         <span className="font-semibold text-sm text-gray-900">{m.label}</span>
                       </label>
@@ -2165,13 +2165,13 @@ def pytest_sessionfinish(session, exitstatus):
               {/* Webhook URL */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Webhook URL <span className="text-red-500">*</span></label>
-                <input type="url" value={webhookForm.webhook_url} onChange={e => setWebhookForm(prev => ({ ...prev, webhook_url: e.target.value }))} placeholder={WEBHOOK_TYPE_META[webhookForm.type].placeholder} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm" />
+                <input type="url" value={webhookForm.webhook_url} onChange={e => setWebhookForm(prev => ({ ...prev, webhook_url: e.target.value }))} placeholder={WEBHOOK_TYPE_META[webhookForm.type].placeholder} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
               </div>
 
               {/* Channel name */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Channel Name <span className="text-gray-400 font-normal">(optional)</span></label>
-                <input type="text" value={webhookForm.channel_name} onChange={e => setWebhookForm(prev => ({ ...prev, channel_name: e.target.value }))} placeholder={webhookForm.type === 'slack' ? 'e.g. qa-alerts' : 'e.g. QA Notifications'} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm" />
+                <input type="text" value={webhookForm.channel_name} onChange={e => setWebhookForm(prev => ({ ...prev, channel_name: e.target.value }))} placeholder={webhookForm.type === 'slack' ? 'e.g. qa-alerts' : 'e.g. QA Notifications'} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
                 <p className="text-xs text-gray-500 mt-1">Display label only — does not affect delivery.</p>
               </div>
 
@@ -2181,7 +2181,7 @@ def pytest_sessionfinish(session, exitstatus):
                 <div className="space-y-2">
                   {WEBHOOK_EVENTS.map(ev => (
                     <label key={ev.type} className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                      <input type="checkbox" checked={webhookForm.events.includes(ev.type)} onChange={() => toggleWebhookEvent(ev.type)} className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                      <input type="checkbox" checked={webhookForm.events.includes(ev.type)} onChange={() => toggleWebhookEvent(ev.type)} className="w-4 h-4 text-indigo-600 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-semibold text-gray-900">{ev.label}</p>
                         <p className="text-xs text-gray-500">{ev.description}</p>
@@ -2199,7 +2199,7 @@ def pytest_sessionfinish(session, exitstatus):
 
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowWebhookModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer">Cancel</button>
-                <button onClick={handleSaveWebhook} disabled={savingWebhook} className="flex-1 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2">
+                <button onClick={handleSaveWebhook} disabled={savingWebhook} className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2">
                   {savingWebhook ? <><i className="ri-loader-4-line animate-spin"></i> Saving…</> : <><i className="ri-save-line"></i> {editingWebhookId ? 'Save Changes' : 'Add Integration'}</>}
                 </button>
               </div>

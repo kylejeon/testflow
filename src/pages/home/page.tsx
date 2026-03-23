@@ -40,16 +40,16 @@ const content = {
         icon: 'ri-file-list-3-line',
         title: 'Test Case Management',
         description: 'Organize thousands of test cases with a structured folder hierarchy. Filter by priority, tags, type, and status to find what you need instantly.',
-        color: 'bg-teal-50',
-        iconColor: 'text-teal-600',
+        color: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
         tag: 'Core',
       },
       {
         icon: 'ri-play-circle-line',
         title: 'Test Run Execution',
         description: 'Plan test runs, assign cases to team members, and track results in real-time. Passed, Failed, Blocked, Retest, and Untested — all at a glance.',
-        color: 'bg-emerald-50',
-        iconColor: 'text-emerald-600',
+        color: 'bg-violet-50',
+        iconColor: 'text-violet-600',
         tag: 'Core',
       },
       {
@@ -64,16 +64,16 @@ const content = {
         icon: 'ri-video-line',
         title: 'Exploratory Sessions',
         description: 'Record exploratory testing sessions with rich text notes, inline screenshots, and real-time log capture. Generate detailed bug reports automatically.',
-        color: 'bg-teal-50',
-        iconColor: 'text-teal-600',
+        color: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
         tag: 'Testing',
       },
       {
         icon: 'ri-team-line',
         title: 'Team Collaboration',
         description: 'Invite team members and set role-based permissions — Admin, Member, or Viewer. Assign specific test cases to individuals for clear ownership.',
-        color: 'bg-emerald-50',
-        iconColor: 'text-emerald-600',
+        color: 'bg-violet-50',
+        iconColor: 'text-violet-600',
         tag: 'Team',
       },
       {
@@ -88,16 +88,16 @@ const content = {
         icon: 'ri-terminal-box-line',
         title: 'CI/CD Integration',
         description: 'Upload automated test results directly from your CI pipeline via API tokens. Seamlessly connect Testably to GitHub Actions, Jenkins, and more.',
-        color: 'bg-teal-50',
-        iconColor: 'text-teal-600',
+        color: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
         tag: 'Automation',
       },
       {
         icon: 'ri-notification-3-line',
         title: 'Smart Notifications',
         description: 'Get notified on team invitations, run completions, and milestone updates. Stay informed without the noise — configure exactly what you receive.',
-        color: 'bg-emerald-50',
-        iconColor: 'text-emerald-600',
+        color: 'bg-violet-50',
+        iconColor: 'text-violet-600',
         tag: 'Productivity',
       },
       {
@@ -304,16 +304,16 @@ const content = {
         icon: 'ri-file-list-3-line',
         title: '테스트 케이스 관리',
         description: '체계적인 폴더 구조로 수천 개의 테스트 케이스를 관리하세요. 우선순위, 태그, 유형, 상태별 필터링을 지원합니다.',
-        color: 'bg-teal-50',
-        iconColor: 'text-teal-600',
+        color: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
         tag: '핵심',
       },
       {
         icon: 'ri-play-circle-line',
         title: 'Test Run 실행',
         description: '테스트 실행을 계획하고 팀원에게 할당하여 실시간으로 결과를 추적하세요. Passed, Failed, Blocked, Retest, Untested 상태를 한눈에 확인합니다.',
-        color: 'bg-emerald-50',
-        iconColor: 'text-emerald-600',
+        color: 'bg-violet-50',
+        iconColor: 'text-violet-600',
         tag: '핵심',
       },
       {
@@ -328,16 +328,16 @@ const content = {
         icon: 'ri-video-line',
         title: '탐색적 세션',
         description: '리치 텍스트 메모, 인라인 스크린샷, 실시간 로그 캡처로 탐색적 테스트 세션을 기록하세요. 상세한 버그 리포트를 자동 생성합니다.',
-        color: 'bg-teal-50',
-        iconColor: 'text-teal-600',
+        color: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
         tag: '테스팅',
       },
       {
         icon: 'ri-team-line',
         title: '팀 협업',
         description: '팀원을 초대하고 역할별 권한을 설정하세요. Admin, Member, Viewer 권한과 테스트 케이스별 담당자 지정으로 명확한 책임을 부여합니다.',
-        color: 'bg-emerald-50',
-        iconColor: 'text-emerald-600',
+        color: 'bg-violet-50',
+        iconColor: 'text-violet-600',
         tag: '팀',
       },
       {
@@ -352,16 +352,16 @@ const content = {
         icon: 'ri-terminal-box-line',
         title: 'CI/CD 연동',
         description: 'REST API를 통해 모든 CI/CD 시스템에서 자동 테스트 결과를 업로드하세요. 프로젝트별 토큰으로 파이프라인을 안전하게 유지하세요.',
-        color: 'bg-teal-50',
-        iconColor: 'text-teal-600',
+        color: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
         tag: '자동화',
       },
       {
         icon: 'ri-notification-3-line',
         title: '스마트 알림',
         description: '팀 초대, 테스트 실행 완료, 마일스톤 업데이트 알림을 받으세요. 수신할 알림을 세밀하게 설정하여 중요한 것만 받을 수 있습니다.',
-        color: 'bg-emerald-50',
-        iconColor: 'text-emerald-600',
+        color: 'bg-violet-50',
+        iconColor: 'text-violet-600',
         tag: '생산성',
       },
       {
@@ -669,7 +669,7 @@ export default function HomePage() {
               <div className="relative" ref={langMenuRef}>
                 <button
                   onClick={() => setLangMenuOpen(!langMenuOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer border ${scrolled ? 'border-gray-200 text-gray-600 hover:border-teal-300 hover:text-teal-600 bg-white' : 'border-white/30 text-white/80 hover:text-white hover:border-white/60 bg-white/10'}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer border ${scrolled ? 'border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 bg-white' : 'border-white/30 text-white/80 hover:text-white hover:border-white/60 bg-white/10'}`}
                 >
                   <i className="ri-translate-2 text-base"></i>
                   <span>{lang === 'en' ? 'EN' : 'KO'}</span>
@@ -679,23 +679,23 @@ export default function HomePage() {
                   <div className="absolute right-0 top-10 w-40 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
                     <button
                       onClick={() => { changeLanguage('en'); setLangMenuOpen(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between cursor-pointer transition-colors hover:bg-gray-50 ${lang === 'en' ? 'text-teal-600 bg-teal-50 font-semibold' : 'text-gray-700'}`}
+                      className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between cursor-pointer transition-colors hover:bg-gray-50 ${lang === 'en' ? 'text-indigo-600 bg-indigo-50 font-semibold' : 'text-gray-700'}`}
                     >
                       <div className="flex items-center gap-2">
                         <span>🇬🇧</span>
                         <span>English</span>
                       </div>
-                      {lang === 'en' && <i className="ri-check-line text-teal-600"></i>}
+                      {lang === 'en' && <i className="ri-check-line text-indigo-600"></i>}
                     </button>
                     <button
                       onClick={() => { changeLanguage('ko'); setLangMenuOpen(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between cursor-pointer transition-colors hover:bg-gray-50 ${lang === 'ko' ? 'text-teal-600 bg-teal-50 font-semibold' : 'text-gray-700'}`}
+                      className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between cursor-pointer transition-colors hover:bg-gray-50 ${lang === 'ko' ? 'text-indigo-600 bg-indigo-50 font-semibold' : 'text-gray-700'}`}
                     >
                       <div className="flex items-center gap-2">
                         <span>🇰🇷</span>
                         <span>한국어</span>
                       </div>
-                      {lang === 'ko' && <i className="ri-check-line text-teal-600"></i>}
+                      {lang === 'ko' && <i className="ri-check-line text-indigo-600"></i>}
                     </button>
                   </div>
                 )}
@@ -708,7 +708,7 @@ export default function HomePage() {
               </button>
               <button
                 onClick={() => navigate('/auth')}
-                className="text-sm font-semibold px-5 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all cursor-pointer whitespace-nowrap"
+                className="text-sm font-semibold px-5 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all cursor-pointer whitespace-nowrap"
               >
                 {t.nav.getStarted}
               </button>
@@ -721,9 +721,9 @@ export default function HomePage() {
 
           {/* Background: Mesh Gradient */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-teal-500/10 blur-[120px]"></div>
-            <div className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-teal-600/[0.08] blur-[100px]"></div>
-            <div className="absolute top-1/2 left-1/3 w-[400px] h-[400px] rounded-full bg-teal-400/5 blur-[80px]"></div>
+            <div className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-indigo-500/10 blur-[120px]"></div>
+            <div className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-indigo-600/[0.08] blur-[100px]"></div>
+            <div className="absolute top-1/2 left-1/3 w-[400px] h-[400px] rounded-full bg-indigo-400/5 blur-[80px]"></div>
             {/* Noise texture */}
             <div
               className="absolute inset-0 opacity-[0.03] pointer-events-none z-10"
@@ -744,15 +744,15 @@ export default function HomePage() {
 
                 {/* Badge */}
                 <div className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/[0.08] rounded-full px-4 py-1.5 mb-8 backdrop-blur-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
-                  <span className="text-teal-300/90 text-sm font-medium">Built for QA teams who ship fast</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+                  <span className="text-indigo-300/90 text-sm font-medium">Built for QA teams who ship fast</span>
                 </div>
 
                 {/* Heading */}
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.08] tracking-tight mb-6">
                   Test management
                   <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-teal-500">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-indigo-500">
                     that just works.
                   </span>
                 </h1>
@@ -766,7 +766,7 @@ export default function HomePage() {
                 <div className="flex flex-col sm:flex-row items-center lg:items-start gap-4 mb-8">
                   <button
                     onClick={() => navigate('/auth')}
-                    className="group flex items-center gap-3 px-8 py-4 bg-teal-500 text-white rounded-full font-bold text-base hover:bg-teal-400 active:scale-[0.98] shadow-[0_0_30px_rgba(20,184,166,0.2)] hover:shadow-[0_0_40px_rgba(20,184,166,0.35)] cursor-pointer"
+                    className="group flex items-center gap-3 px-8 py-4 bg-indigo-500 text-white rounded-full font-bold text-base hover:bg-indigo-400 active:scale-[0.98] shadow-[0_0_30px_rgba(20,184,166,0.2)] hover:shadow-[0_0_40px_rgba(20,184,166,0.35)] cursor-pointer"
                     style={{ transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
                   >
                     Get Started Free
@@ -779,7 +779,7 @@ export default function HomePage() {
                     className="flex items-center gap-2 px-8 py-4 bg-white/[0.06] text-white/80 border border-white/[0.1] rounded-full font-semibold text-base hover:bg-white/[0.1] hover:text-white hover:border-white/20 active:scale-[0.98] backdrop-blur-sm cursor-pointer"
                     style={{ transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
                   >
-                    <i className="ri-play-circle-line text-lg text-teal-400"></i>
+                    <i className="ri-play-circle-line text-lg text-indigo-400"></i>
                     Watch Demo
                   </button>
                 </div>
@@ -793,7 +793,7 @@ export default function HomePage() {
               {/* RIGHT: Product Screenshot (5 columns) */}
               <div className="lg:col-span-5 relative">
                 {/* Glow behind */}
-                <div className="absolute -inset-8 bg-teal-500/10 rounded-3xl blur-3xl"></div>
+                <div className="absolute -inset-8 bg-indigo-500/10 rounded-3xl blur-3xl"></div>
 
                 {/* Double-Bezel Card */}
                 <div className="relative bg-white/[0.04] ring-1 ring-white/[0.08] p-1.5 rounded-[1.5rem] shadow-2xl">
@@ -827,8 +827,8 @@ export default function HomePage() {
                   style={{ animation: 'float 6s ease-in-out infinite' }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center">
-                      <i className="ri-check-double-line text-teal-400 text-lg"></i>
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                      <i className="ri-check-double-line text-indigo-400 text-lg"></i>
                     </div>
                     <div>
                       <div className="text-white font-bold text-sm">248 tests passed</div>
@@ -853,7 +853,7 @@ export default function HomePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               {t.stats.map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <div className="text-3xl font-black text-teal-400 mb-1">{stat.value}</div>
+                  <div className="text-3xl font-black text-indigo-400 mb-1">{stat.value}</div>
                   <div className="text-sm text-gray-400">{stat.label}</div>
                 </div>
               ))}
@@ -865,9 +865,9 @@ export default function HomePage() {
         <section id="features" className="py-24 bg-white">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-settings-3-line text-teal-600 text-sm"></i>
-                <span className="text-teal-700 text-sm font-medium">{t.featuresSection.badge}</span>
+              <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-settings-3-line text-indigo-600 text-sm"></i>
+                <span className="text-indigo-700 text-sm font-medium">{t.featuresSection.badge}</span>
               </div>
               <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.featuresSection.title}</h2>
               <p className="text-gray-500 text-lg max-w-2xl mx-auto">{t.featuresSection.description}</p>
@@ -879,8 +879,8 @@ export default function HomePage() {
                   key={feature.title}
                   className={`p-6 rounded-2xl border transition-all duration-300 cursor-pointer group ${
                     activeFeature === index
-                      ? 'border-teal-200 scale-[1.02] shadow-md shadow-teal-50'
-                      : 'border-gray-100 hover:border-teal-100 hover:shadow-sm'
+                      ? 'border-indigo-200 scale-[1.02] shadow-md shadow-indigo-50'
+                      : 'border-gray-100 hover:border-indigo-100 hover:shadow-sm'
                   } ${feature.color}`}
                   onMouseEnter={() => setActiveFeature(index)}
                 >
@@ -904,9 +904,9 @@ export default function HomePage() {
         <section id="workflow" className="py-24 bg-gray-50">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-flow-chart text-teal-600 text-sm"></i>
-                <span className="text-teal-700 text-sm font-medium">{t.workflowSection.badge}</span>
+              <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-flow-chart text-indigo-600 text-sm"></i>
+                <span className="text-indigo-700 text-sm font-medium">{t.workflowSection.badge}</span>
               </div>
               <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.workflowSection.title}</h2>
               <p className="text-gray-500 text-lg max-w-2xl mx-auto">{t.workflowSection.description}</p>
@@ -914,13 +914,13 @@ export default function HomePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {t.workflowSteps.map((step, index) => (
-                <article key={step.step} className="relative bg-white rounded-2xl p-6 border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all">
+                <article key={step.step} className="relative bg-white rounded-2xl p-6 border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
                   {index < t.workflowSteps.length - 1 && (
-                    <div className="hidden lg:block absolute top-12 -right-3 w-6 h-px bg-teal-200 z-10"></div>
+                    <div className="hidden lg:block absolute top-12 -right-3 w-6 h-px bg-indigo-200 z-10"></div>
                   )}
                   <div className="flex items-center gap-3 mb-4">
-                    <span className="text-3xl font-black text-teal-100">{step.step}</span>
-                    <div className="w-10 h-10 flex items-center justify-center bg-teal-500 rounded-xl">
+                    <span className="text-3xl font-black text-indigo-100">{step.step}</span>
+                    <div className="w-10 h-10 flex items-center justify-center bg-indigo-500 rounded-xl">
                       <i className={`${step.icon} text-white text-lg`}></i>
                     </div>
                   </div>
@@ -937,8 +937,8 @@ export default function HomePage() {
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-plug-line text-teal-300 text-sm"></i>
-                <span className="text-teal-200 text-sm font-medium">{t.integrationSection.badge}</span>
+                <i className="ri-plug-line text-indigo-300 text-sm"></i>
+                <span className="text-indigo-200 text-sm font-medium">{t.integrationSection.badge}</span>
               </div>
               <h2 className="text-4xl font-bold text-white mb-4">{t.integrationSection.title}</h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">{t.integrationSection.description}</p>
@@ -946,10 +946,10 @@ export default function HomePage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Jira */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-teal-500/30 transition-all">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-indigo-500/30 transition-all">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-12 h-12 flex items-center justify-center bg-teal-500/20 rounded-xl">
-                    <i className="ri-links-line text-teal-400 text-2xl"></i>
+                  <div className="w-12 h-12 flex items-center justify-center bg-indigo-500/20 rounded-xl">
+                    <i className="ri-links-line text-indigo-400 text-2xl"></i>
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-white">{t.integrationSection.jiraTitle}</h3>
@@ -959,16 +959,16 @@ export default function HomePage() {
                 <p className="text-gray-400 text-sm leading-relaxed mb-6">{t.integrationSection.jiraDescription}</p>
                 <div className="flex flex-wrap gap-2">
                   {t.integrationSection.jiraTags.map((tag) => (
-                    <span key={tag} className="px-3 py-1 bg-teal-500/10 border border-teal-500/20 rounded-full text-teal-300 text-xs font-medium">{tag}</span>
+                    <span key={tag} className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-300 text-xs font-medium">{tag}</span>
                   ))}
                 </div>
               </div>
 
               {/* CI/CD */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-teal-500/30 transition-all">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-indigo-500/30 transition-all">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-12 h-12 flex items-center justify-center bg-emerald-500/20 rounded-xl">
-                    <i className="ri-terminal-box-line text-emerald-400 text-2xl"></i>
+                  <div className="w-12 h-12 flex items-center justify-center bg-violet-500/20 rounded-xl">
+                    <i className="ri-terminal-box-line text-violet-400 text-2xl"></i>
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-white">{t.integrationSection.ciTitle}</h3>
@@ -978,7 +978,7 @@ export default function HomePage() {
                 <p className="text-gray-400 text-sm leading-relaxed mb-6">{t.integrationSection.ciDescription}</p>
                 <div className="flex flex-wrap gap-2">
                   {t.integrationSection.ciTags.map((tag) => (
-                    <span key={tag} className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-300 text-xs font-medium">{tag}</span>
+                    <span key={tag} className="px-3 py-1 bg-violet-500/10 border border-violet-500/20 rounded-full text-violet-300 text-xs font-medium">{tag}</span>
                   ))}
                 </div>
               </div>
@@ -990,9 +990,9 @@ export default function HomePage() {
         <section id="why-testably" className="py-24 bg-white">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-award-line text-teal-600 text-sm"></i>
-                <span className="text-teal-700 text-sm font-medium">{t.whySection.badge}</span>
+              <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-award-line text-indigo-600 text-sm"></i>
+                <span className="text-indigo-700 text-sm font-medium">{t.whySection.badge}</span>
               </div>
               <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.whySection.title}</h2>
               <p className="text-gray-500 text-lg">{t.whySection.description}</p>
@@ -1000,9 +1000,9 @@ export default function HomePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {t.whyCards.map((card) => (
-                <article key={card.title} className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:border-teal-200 hover:shadow-md transition-all">
-                  <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center mb-5">
-                    <i className={`${card.icon} text-teal-600 text-2xl`}></i>
+                <article key={card.title} className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center mb-5">
+                    <i className={`${card.icon} text-indigo-600 text-2xl`}></i>
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-3">{card.title}</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">{card.content}</p>
@@ -1016,9 +1016,9 @@ export default function HomePage() {
         <section id="pricing" className="py-24 bg-gray-50">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-price-tag-3-line text-teal-600 text-sm"></i>
-                <span className="text-teal-700 text-sm font-medium">{t.pricingSection.badge}</span>
+              <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-price-tag-3-line text-indigo-600 text-sm"></i>
+                <span className="text-indigo-700 text-sm font-medium">{t.pricingSection.badge}</span>
               </div>
               <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.pricingSection.title}</h2>
               <p className="text-gray-500 text-lg">{t.pricingSection.description}</p>
@@ -1030,13 +1030,13 @@ export default function HomePage() {
                   key={plan.name}
                   className={`rounded-2xl p-6 border flex flex-col transition-all ${
                     plan.highlighted
-                      ? 'bg-teal-500 border-teal-500 shadow-xl shadow-teal-200 scale-[1.02]'
-                      : 'bg-white border-gray-200 hover:border-teal-200 hover:shadow-md'
+                      ? 'bg-indigo-500 border-indigo-500 shadow-xl shadow-indigo-200 scale-[1.02]'
+                      : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
                   }`}
                 >
                   <div className="mb-5">
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-white/20' : 'bg-teal-50'}`}>
-                      <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-teal-600'}`}></i>
+                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-white/20' : 'bg-indigo-50'}`}>
+                      <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
                     </div>
                     {plan.popular && (
                       <div className="inline-flex items-center gap-1 bg-white/25 rounded-full px-3 py-1 mb-2">
@@ -1056,8 +1056,8 @@ export default function HomePage() {
                   <ul className="space-y-2.5 mb-7 flex-1">
                     {plan.features.map((f) => (
                       <li key={f} className="flex items-start gap-2">
-                        <div className={`w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${plan.highlighted ? 'bg-white/25' : 'bg-teal-100'}`}>
-                          <i className={`ri-check-line text-xs ${plan.highlighted ? 'text-white' : 'text-teal-600'}`}></i>
+                        <div className={`w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${plan.highlighted ? 'bg-white/25' : 'bg-indigo-100'}`}>
+                          <i className={`ri-check-line text-xs ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
                         </div>
                         <span className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/90' : 'text-gray-700'}`}>{f}</span>
                       </li>
@@ -1068,7 +1068,7 @@ export default function HomePage() {
                     <a
                       href="mailto:hello@testably.app"
                       className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center ${
-                        plan.highlighted ? 'bg-white text-teal-600 hover:bg-gray-50' : 'bg-teal-500 text-white hover:bg-teal-600'
+                        plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
                       }`}
                     >
                       {plan.cta}
@@ -1077,7 +1077,7 @@ export default function HomePage() {
                     <button
                       onClick={() => navigate('/auth')}
                       className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
-                        plan.highlighted ? 'bg-white text-teal-600 hover:bg-gray-50' : 'bg-teal-500 text-white hover:bg-teal-600'
+                        plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
                       }`}
                     >
                       {plan.cta}
@@ -1093,9 +1093,9 @@ export default function HomePage() {
         <section id="faq" className="py-24 bg-white">
           <div className="max-w-3xl mx-auto px-6">
             <div className="text-center mb-14">
-              <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-question-answer-line text-teal-600 text-sm"></i>
-                <span className="text-teal-700 text-sm font-medium">{t.faqSection.badge}</span>
+              <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-question-answer-line text-indigo-600 text-sm"></i>
+                <span className="text-indigo-700 text-sm font-medium">{t.faqSection.badge}</span>
               </div>
               <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.faqSection.title}</h2>
               <p className="text-gray-500 text-lg">{t.faqSection.description}</p>
@@ -1103,21 +1103,21 @@ export default function HomePage() {
 
             <div className="space-y-3">
               {t.faqs.map((faq, index) => (
-                <article key={index} className={`rounded-2xl border transition-all duration-200 overflow-hidden ${openFaq === index ? 'border-teal-200 bg-teal-50/40' : 'border-gray-100 bg-white hover:border-teal-100'}`}>
+                <article key={index} className={`rounded-2xl border transition-all duration-200 overflow-hidden ${openFaq === index ? 'border-indigo-200 bg-indigo-50/40' : 'border-gray-100 bg-white hover:border-indigo-100'}`}>
                   <button
                     className="w-full flex items-center justify-between px-6 py-5 text-left cursor-pointer group"
                     onClick={() => setOpenFaq(openFaq === index ? null : index)}
                   >
-                    <h4 className={`text-sm font-semibold leading-snug pr-4 transition-colors ${openFaq === index ? 'text-teal-700' : 'text-gray-900 group-hover:text-teal-700'}`}>
+                    <h4 className={`text-sm font-semibold leading-snug pr-4 transition-colors ${openFaq === index ? 'text-indigo-700' : 'text-gray-900 group-hover:text-indigo-700'}`}>
                       <a id={`faq-${index}`}>{faq.question}</a>
                     </h4>
-                    <div className={`w-7 h-7 flex items-center justify-center rounded-full flex-shrink-0 transition-all duration-200 ${openFaq === index ? 'bg-teal-500 rotate-45' : 'bg-gray-100 group-hover:bg-teal-100'}`}>
-                      <i className={`ri-add-line text-sm ${openFaq === index ? 'text-white' : 'text-gray-500 group-hover:text-teal-600'}`}></i>
+                    <div className={`w-7 h-7 flex items-center justify-center rounded-full flex-shrink-0 transition-all duration-200 ${openFaq === index ? 'bg-indigo-500 rotate-45' : 'bg-gray-100 group-hover:bg-indigo-100'}`}>
+                      <i className={`ri-add-line text-sm ${openFaq === index ? 'text-white' : 'text-gray-500 group-hover:text-indigo-600'}`}></i>
                     </div>
                   </button>
                   {openFaq === index && (
                     <div className="px-6 pb-5">
-                      <div className="h-px bg-teal-100 mb-4"></div>
+                      <div className="h-px bg-indigo-100 mb-4"></div>
                       <p className="text-gray-600 text-sm leading-relaxed">{faq.answer}</p>
                     </div>
                   )}
@@ -1131,7 +1131,7 @@ export default function HomePage() {
               </p>
               <a
                 href="mailto:hello@testably.app"
-                className="inline-flex items-center gap-2 px-6 py-3 border border-teal-200 text-teal-600 rounded-xl font-semibold text-sm hover:bg-teal-50 transition-all cursor-pointer whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-6 py-3 border border-indigo-200 text-indigo-600 rounded-xl font-semibold text-sm hover:bg-indigo-50 transition-all cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-mail-line"></i>
                 {lang === 'en' ? 'Contact our team' : '팀에 문의하기'}
@@ -1151,14 +1151,14 @@ export default function HomePage() {
           </div>
           <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
             <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
-              <i className="ri-rocket-line text-teal-300 text-sm"></i>
-              <span className="text-teal-200 text-sm font-medium">Testably</span>
+              <i className="ri-rocket-line text-indigo-300 text-sm"></i>
+              <span className="text-indigo-200 text-sm font-medium">Testably</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">{t.cta.title}</h2>
             <p className="text-white/55 text-lg mb-10">{t.cta.description}</p>
             <button
               onClick={() => navigate('/auth')}
-              className="px-10 py-4 bg-teal-500 text-white rounded-xl font-bold text-lg hover:bg-teal-400 transition-all cursor-pointer whitespace-nowrap shadow-lg shadow-teal-500/30 inline-flex items-center gap-3"
+              className="px-10 py-4 bg-indigo-500 text-white rounded-xl font-bold text-lg hover:bg-indigo-400 transition-all cursor-pointer whitespace-nowrap shadow-lg shadow-indigo-500/30 inline-flex items-center gap-3"
             >
               <i className="ri-rocket-line"></i>
               {t.cta.button}
@@ -1167,10 +1167,10 @@ export default function HomePage() {
         </section>
 
         {/* Newsletter */}
-        <section className="py-16 bg-teal-600">
+        <section className="py-16 bg-indigo-600">
           <div className="max-w-2xl mx-auto px-6 text-center">
             <h3 className="text-2xl font-bold text-white mb-2">{t.newsletter.title}</h3>
-            <p className="text-teal-100 text-sm mb-6">{t.newsletter.description}</p>
+            <p className="text-indigo-100 text-sm mb-6">{t.newsletter.description}</p>
             {subscribed ? (
               <div className="flex items-center justify-center gap-2 text-white">
                 <i className="ri-check-circle-line text-xl"></i>
@@ -1184,12 +1184,12 @@ export default function HomePage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t.newsletter.placeholder}
-                  className="flex-1 px-4 py-3 rounded-xl text-sm bg-white/20 border border-white/30 text-white placeholder-teal-200 focus:outline-none focus:bg-white/30"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm bg-white/20 border border-white/30 text-white placeholder-indigo-200 focus:outline-none focus:bg-white/30"
                   required
                 />
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-white text-teal-600 rounded-xl font-semibold text-sm hover:bg-teal-50 transition-all cursor-pointer whitespace-nowrap"
+                  className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-semibold text-sm hover:bg-indigo-50 transition-all cursor-pointer whitespace-nowrap"
                 >
                   {t.newsletter.button}
                 </button>

@@ -376,9 +376,9 @@ export default function AuthPage() {
 
   if (checkingInvitation) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <i className="ri-loader-4-line animate-spin text-4xl text-teal-600 mb-4"></i>
+          <i className="ri-loader-4-line animate-spin text-4xl text-indigo-600 mb-4"></i>
           <p className="text-gray-600">Checking invitation...</p>
         </div>
       </div>
@@ -392,14 +392,14 @@ export default function AuthPage() {
         description="Log in or create a new Testably account. Start managing your QA tests today."
         noindex={true}
       />
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-10">
             <div className="flex flex-col items-center gap-3 mb-3">
               {/* Squircle icon — brand squircle shape (22% radius) */}
               <div
-                className="w-14 h-14 bg-teal-500 flex items-center justify-center"
+                className="w-14 h-14 bg-indigo-500 flex items-center justify-center"
                 style={{ borderRadius: '22%' }}
               >
                 <span
@@ -434,16 +434,16 @@ export default function AuthPage() {
 
           {/* Invitation Banner */}
           {invitation && (
-            <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 mb-6">
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                  <i className="ri-mail-open-line text-teal-600 text-xl"></i>
+                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <i className="ri-mail-open-line text-indigo-600 text-xl"></i>
                 </div>
                 <div>
-                  <p className="font-semibold text-teal-900">Project Invitation</p>
-                  <p className="text-sm text-teal-700">
+                  <p className="font-semibold text-indigo-900">Project Invitation</p>
+                  <p className="text-sm text-indigo-700">
                     You have been invited to <span className="font-medium">{invitation.projectName}</span> as
-                    <span className="ml-1 px-1.5 py-0.5 bg-teal-200 rounded text-xs font-medium">
+                    <span className="ml-1 px-1.5 py-0.5 bg-indigo-200 rounded text-xs font-medium">
                       {invitation.role === 'admin' ? 'Admin' : invitation.role === 'member' ? 'Member' : 'Viewer'}
                     </span>
                   </p>
@@ -466,8 +466,8 @@ export default function AuthPage() {
                   Back to log in
                 </button>
                 <div className="mb-6">
-                  <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center mb-4">
-                    <i className="ri-lock-password-line text-teal-600 text-2xl"></i>
+                  <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mb-4">
+                    <i className="ri-lock-password-line text-indigo-600 text-2xl"></i>
                   </div>
                   <h2 className="text-xl font-bold text-gray-900 mb-1">Reset your password</h2>
                   <p className="text-sm text-gray-500">Enter the email you used to sign up and we'll send you a reset link.</p>
@@ -478,8 +478,8 @@ export default function AuthPage() {
                   </div>
                 )}
                 {success ? (
-                  <div className="p-4 bg-teal-50 border border-teal-200 rounded-xl">
-                    <div className="flex items-start gap-3 text-teal-700">
+                  <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                    <div className="flex items-start gap-3 text-indigo-700">
                       <i className="ri-mail-check-line text-2xl flex-shrink-0"></i>
                       <div>
                         <p className="font-semibold mb-1">Check your inbox</p>
@@ -496,14 +496,14 @@ export default function AuthPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                         required
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading
                         ? <span className="flex items-center justify-center gap-2"><i className="ri-loader-4-line animate-spin"></i>Sending...</span>
@@ -518,8 +518,8 @@ export default function AuthPage() {
             {mode === 'new_password' && (
               <div>
                 <div className="mb-6">
-                  <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center mb-4">
-                    <i className="ri-shield-keyhole-line text-teal-600 text-2xl"></i>
+                  <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mb-4">
+                    <i className="ri-shield-keyhole-line text-indigo-600 text-2xl"></i>
                   </div>
                   <h2 className="text-xl font-bold text-gray-900 mb-1">Set new password</h2>
                   <p className="text-sm text-gray-500">Choose a new password for your account.</p>
@@ -530,8 +530,8 @@ export default function AuthPage() {
                   </div>
                 )}
                 {success ? (
-                  <div className="p-4 bg-teal-50 border border-teal-200 rounded-xl">
-                    <div className="flex items-start gap-3 text-teal-700">
+                  <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                    <div className="flex items-start gap-3 text-indigo-700">
                       <i className="ri-checkbox-circle-line text-2xl flex-shrink-0"></i>
                       <p className="text-sm">{success}</p>
                     </div>
@@ -545,7 +545,7 @@ export default function AuthPage() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                         required
                         minLength={6}
                       />
@@ -558,7 +558,7 @@ export default function AuthPage() {
                         value={newPasswordConfirm}
                         onChange={(e) => setNewPasswordConfirm(e.target.value)}
                         placeholder="••••••••"
-                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm ${
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm ${
                           newPasswordConfirm && newPassword !== newPasswordConfirm ? 'border-red-300 bg-red-50' : 'border-gray-300'
                         }`}
                         required
@@ -570,7 +570,7 @@ export default function AuthPage() {
                         </p>
                       )}
                       {newPasswordConfirm && newPassword === newPasswordConfirm && (
-                        <p className="text-xs text-teal-600 mt-1 flex items-center gap-1">
+                        <p className="text-xs text-indigo-600 mt-1 flex items-center gap-1">
                           <i className="ri-check-line"></i>Passwords match
                         </p>
                       )}
@@ -578,7 +578,7 @@ export default function AuthPage() {
                     <button
                       type="submit"
                       disabled={loading || (!!newPasswordConfirm && newPassword !== newPasswordConfirm)}
-                      className="w-full py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading
                         ? <span className="flex items-center justify-center gap-2"><i className="ri-loader-4-line animate-spin"></i>Updating...</span>
@@ -644,7 +644,7 @@ export default function AuthPage() {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Jane Smith"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                         required
                       />
                     </div>
@@ -658,7 +658,7 @@ export default function AuthPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                       required
                       readOnly={!!invitation}
                     />
@@ -675,7 +675,7 @@ export default function AuthPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                       required
                       minLength={6}
                     />
@@ -688,7 +688,7 @@ export default function AuthPage() {
                       <button
                         type="button"
                         onClick={() => { setMode('reset'); setError(''); setSuccess(''); }}
-                        className="text-xs text-teal-600 hover:text-teal-700 hover:underline cursor-pointer transition-colors"
+                        className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer transition-colors"
                       >
                         Forgot password?
                       </button>
@@ -704,7 +704,7 @@ export default function AuthPage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm ${
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm ${
                           confirmPassword && password !== confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
                         }`}
                         required
@@ -726,7 +726,7 @@ export default function AuthPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading
                       ? <span className="flex items-center justify-center gap-2"><i className="ri-loader-4-line animate-spin"></i>Processing...</span>

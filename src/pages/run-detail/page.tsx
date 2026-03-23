@@ -72,7 +72,7 @@ interface Folder {
 
 const TIER_INFO = {
   1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
-  2: { name: 'Starter', color: 'bg-teal-50 text-teal-700 border-teal-300', icon: 'ri-vip-crown-line' },
+  2: { name: 'Starter', color: 'bg-indigo-50 text-indigo-700 border-indigo-300', icon: 'ri-vip-crown-line' },
   3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
   4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
 };
@@ -1352,7 +1352,7 @@ export default function RunDetail() {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center gap-2 cursor-pointer"
               >
-                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
                   {userProfile?.avatar_emoji ? (
                     <span className="text-base leading-none">{userProfile.avatar_emoji}</span>
                   ) : (
@@ -1419,19 +1419,19 @@ export default function RunDetail() {
                 onClick={() => { setSelectedFolder(null); setSelectedTestCase(null); }}
                 className={`w-full flex items-center gap-2.5 py-2.5 text-sm font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-4' : 'px-0 justify-center'} ${
                   selectedFolder === null
-                    ? 'bg-teal-50 text-teal-700 border-r-2 border-teal-500'
+                    ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
                 title={!isFolderSidebarOpen ? 'All Cases' : undefined}
               >
-                <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center text-teal-700 font-semibold text-sm flex-shrink-0">
+                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-semibold text-sm flex-shrink-0">
                   <i className="ri-stack-line text-base"></i>
                 </div>
                 {isFolderSidebarOpen && (
                   <>
                     <span className="truncate">All Cases</span>
                     <span className={`ml-auto text-xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                      selectedFolder === null ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-500'
+                      selectedFolder === null ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'
                     }`}>
                       {testCases.length}
                     </span>
@@ -1451,7 +1451,7 @@ export default function RunDetail() {
                         onClick={() => { setSelectedFolder(folder.name); setSelectedTestCase(null); }}
                         className={`w-full flex items-center gap-2.5 py-2.5 text-sm font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-4' : 'px-0 justify-center'} ${
                           isSelected
-                            ? 'bg-teal-50 text-teal-700 border-r-2 border-teal-500'
+                            ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500'
                             : 'text-gray-700 hover:bg-gray-50'
                         }`}
                         title={!isFolderSidebarOpen ? folder.name : undefined}
@@ -1465,7 +1465,7 @@ export default function RunDetail() {
                           <>
                             <span className="truncate">{folder.name}</span>
                             <span className={`ml-auto text-xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                              isSelected ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-500'
+                              isSelected ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'
                             }`}>
                               {count}
                             </span>
@@ -1513,12 +1513,12 @@ export default function RunDetail() {
                       <button
                         onClick={handleCopyRunId}
                         title="Run ID 복사"
-                        className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-all cursor-pointer whitespace-nowrap border border-gray-200 hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700 text-gray-500 bg-white"
+                        className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-all cursor-pointer whitespace-nowrap border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 text-gray-500 bg-white"
                       >
                         {copiedRunId ? (
                           <>
-                            <i className="ri-check-line text-teal-600"></i>
-                            <span className="text-teal-600">Copied!</span>
+                            <i className="ri-check-line text-indigo-600"></i>
+                            <span className="text-indigo-600">Copied!</span>
                           </>
                         ) : (
                           <>
@@ -1735,14 +1735,14 @@ export default function RunDetail() {
                         placeholder="Search test cases..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
                     </div>
                     
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                     >
                       <option value="all">All Status</option>
                       <option value="passed">Passed</option>
@@ -1753,7 +1753,7 @@ export default function RunDetail() {
                     <select
                       value={priorityFilter}
                       onChange={(e) => setPriorityFilter(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                     >
                       <option value="all">All Priority</option>
                       <option value="critical">Critical</option>
@@ -1767,19 +1767,19 @@ export default function RunDetail() {
                 <div>
                   {/* Bulk Action Toolbar */}
                   {selectedIds.size > 0 && (
-                    <div className="px-6 py-3 bg-teal-50 border-b border-teal-200 flex items-center gap-3">
+                    <div className="px-6 py-3 bg-indigo-50 border-b border-indigo-200 flex items-center gap-3">
                       <div className="w-5 h-5 flex items-center justify-center">
-                        <i className="ri-checkbox-multiple-line text-teal-600"></i>
+                        <i className="ri-checkbox-multiple-line text-indigo-600"></i>
                       </div>
-                      <span className="text-sm font-semibold text-teal-700">
+                      <span className="text-sm font-semibold text-indigo-700">
                         {selectedIds.size} item{selectedIds.size > 1 ? 's' : ''} selected
                       </span>
-                      <div className="w-px h-4 bg-teal-300 mx-1"></div>
+                      <div className="w-px h-4 bg-indigo-300 mx-1"></div>
                       <span className="text-sm text-gray-600 whitespace-nowrap">Assign to:</span>
                       <select
                         value={bulkAssignee}
                         onChange={(e) => setBulkAssignee(e.target.value)}
-                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                       >
                         <option value="">Unassigned</option>
                         {projectMembers.map((member) => (
@@ -1790,7 +1790,7 @@ export default function RunDetail() {
                       </select>
                       <button
                         onClick={() => handleBulkAssigneeChange(bulkAssignee)}
-                        className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap"
+                        className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap"
                       >
                         Apply
                       </button>
@@ -1807,7 +1807,7 @@ export default function RunDetail() {
                     <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
-                        className="w-4 h-4 text-teal-600 cursor-pointer"
+                        className="w-4 h-4 text-indigo-600 cursor-pointer"
                         checked={filteredTestCases.length > 0 && selectedIds.size === filteredTestCases.length}
                         onChange={(e) => handleSelectAll(e.target.checked)}
                       />
@@ -1842,14 +1842,14 @@ export default function RunDetail() {
                       <div 
                         key={testCase.id} 
                         className={`grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-all cursor-pointer ${
-                          selectedTestCase?.id === testCase.id ? 'bg-teal-50' : ''
+                          selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : ''
                         }`}
                         onClick={() => setSelectedTestCase(testCase)}
                       >
                         <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
-                            className="w-4 h-4 text-teal-600 cursor-pointer"
+                            className="w-4 h-4 text-indigo-600 cursor-pointer"
                             checked={selectedIds.has(testCase.id)}
                             onChange={(e) => handleSelectOne(testCase.id, e.target.checked)}
                           />
@@ -1860,7 +1860,7 @@ export default function RunDetail() {
                           </span>
                         </div>
                         <div className="col-span-3">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-1 hover:text-teal-600">
+                          <h3 className="text-sm font-semibold text-gray-900 mb-1 hover:text-indigo-600">
                             {testCase.title}
                           </h3>
                           {testCase.description && (
@@ -1899,7 +1899,7 @@ export default function RunDetail() {
                                         {assignedMember?.avatar_emoji ? (
                                           <span className="text-base leading-none">{assignedMember.avatar_emoji}</span>
                                         ) : (
-                                          <div className="w-6 h-6 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                          <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                                             {assigneeName.substring(0, 2).toUpperCase()}
                                           </div>
                                         )}
@@ -1934,7 +1934,7 @@ export default function RunDetail() {
                                             {member.avatar_emoji ? (
                                               <span className="text-base leading-none">{member.avatar_emoji}</span>
                                             ) : (
-                                              <div className="w-6 h-6 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                              <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                                                 {name.substring(0, 2).toUpperCase()}
                                               </div>
                                             )}
@@ -1974,7 +1974,7 @@ export default function RunDetail() {
                       <select
                         value={selectedTestCase.runStatus}
                         onChange={(e) => handleStatusChange(selectedTestCase.id, e.target.value)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${getStatusColor(selectedTestCase.runStatus)}`}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${getStatusColor(selectedTestCase.runStatus)}`}
                       >
                         <option value="untested">Untested</option>
                         <option value="passed">Passed</option>
@@ -2087,7 +2087,7 @@ export default function RunDetail() {
                                       {assignedMember?.avatar_emoji ? (
                                         <span className="text-base leading-none">{assignedMember.avatar_emoji}</span>
                                       ) : (
-                                        <div className="w-6 h-6 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                        <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                                           {assigneeName.substring(0, 2).toUpperCase()}
                                         </div>
                                       )}
@@ -2141,8 +2141,8 @@ export default function RunDetail() {
                             const expectedIsHtml = /<[^>]+>/.test(expectedContent);
                             return (
                               <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
-                                <div className="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                  <span className="text-teal-700 text-xs font-bold">{index + 1}</span>
+                                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <span className="text-indigo-700 text-xs font-bold">{index + 1}</span>
                                 </div>
                                 {isHtml ? (
                                   <div
@@ -2252,7 +2252,7 @@ export default function RunDetail() {
                         
                         {uploadingFile && (
                           <div className="mt-3 text-center">
-                            <i className="ri-loader-4-line animate-spin text-teal-500 text-xl"></i>
+                            <i className="ri-loader-4-line animate-spin text-indigo-500 text-xl"></i>
                             <p className="text-sm text-gray-600 mt-1">업로드 중...</p>
                           </div>
                         )}
@@ -2292,7 +2292,7 @@ export default function RunDetail() {
                       onClick={() => setActiveTab('comments')}
                       className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                         activeTab === 'comments'
-                          ? 'text-teal-600 border-b-2 border-teal-600'
+                          ? 'text-indigo-600 border-b-2 border-indigo-600'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
@@ -2302,7 +2302,7 @@ export default function RunDetail() {
                       onClick={() => setActiveTab('results')}
                       className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                         activeTab === 'results'
-                          ? 'text-teal-600 border-b-2 border-teal-600'
+                          ? 'text-indigo-600 border-b-2 border-indigo-600'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
@@ -2312,7 +2312,7 @@ export default function RunDetail() {
                       onClick={() => setActiveTab('issues')}
                       className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                         activeTab === 'issues'
-                          ? 'text-teal-600 border-b-2 border-teal-600'
+                          ? 'text-indigo-600 border-b-2 border-indigo-600'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
@@ -2331,12 +2331,12 @@ export default function RunDetail() {
                           onChange={(e) => setCommentText(e.target.value)}
                           placeholder="Add a comment..."
                           rows={3}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                         ></textarea>
                         <button 
                           onClick={handlePostComment}
                           disabled={!commentText.trim() || !currentUser}
-                          className="mt-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="mt-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Post Comment
                         </button>
@@ -2357,7 +2357,7 @@ export default function RunDetail() {
                             <div key={comment.id} className="bg-white border border-gray-200 rounded-lg p-4 group relative">
                               <div className="flex items-start gap-3">
                                 <div className="flex-shrink-0">
-                                  <span className="inline-flex items-center px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-semibold">
+                                  <span className="inline-flex items-center px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-semibold">
                                     전용
                                   </span>
                                 </div>
@@ -2420,7 +2420,7 @@ export default function RunDetail() {
                                     <i className="ri-robot-line text-purple-600 text-xl"></i>
                                   </div>
                                 ) : (
-                                  <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                                     {result.author ? result.author.substring(0, 2).toUpperCase() : 'NA'}
                                   </div>
                                 )}
@@ -2474,7 +2474,7 @@ export default function RunDetail() {
                             }
                             setShowAddIssueModal(true);
                           }}
-                          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200"
+                          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
                         >
                           <i className="ri-add-line"></i>
                           Add Issue
@@ -2482,17 +2482,17 @@ export default function RunDetail() {
                       </div>
 
                       {!isProfessionalOrHigher && (
-                        <div className="mb-4 p-4 bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-xl">
+                        <div className="mb-4 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-xl">
                           <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                              <i className="ri-lock-line text-teal-600 text-xl"></i>
+                            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                              <i className="ri-lock-line text-indigo-600 text-xl"></i>
                             </div>
                             <div className="flex-1">
                               <h4 className="font-semibold text-gray-900 mb-1">Jira 이슈 생성은 Professional 이상 요금제에서 사용 가능합니다</h4>
                               <p className="text-sm text-gray-600 mb-3">
                                 테스트 결과에서 바로 Jira 이슈를 생성하고 관리하세요.
                               </p>
-                              <button className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-all cursor-pointer whitespace-nowrap">
+                              <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap">
                                 <i className="ri-arrow-up-circle-line mr-2"></i>
                                 업그레이드 문의
                               </button>
@@ -2563,7 +2563,7 @@ export default function RunDetail() {
                                 href={issueUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block bg-white border border-gray-200 rounded-lg p-4 transition-all hover:border-teal-500 hover:shadow-md cursor-pointer"
+                                className="block bg-white border border-gray-200 rounded-lg p-4 transition-all hover:border-indigo-500 hover:shadow-md cursor-pointer"
                               >
                                 {CardContent}
                               </a>
@@ -2746,8 +2746,8 @@ export default function RunDetail() {
                             return (
                               <div key={index} className="border border-gray-200 rounded-lg p-3">
                                 <div className="flex items-start gap-3 mb-2">
-                                  <div className="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <span className="text-teal-700 text-xs font-bold">{index + 1}</span>
+                                  <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <span className="text-indigo-700 text-xs font-bold">{index + 1}</span>
                                   </div>
                                   {isHtml ? (
                                     <div
@@ -2774,7 +2774,7 @@ export default function RunDetail() {
                                 <select
                                   value={stepStatuses[index] || 'untested'}
                                   onChange={(e) => handleStepStatusChange(index, e.target.value)}
-                                  className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 >
                                   <option value="untested">Untested</option>
                                   <option value="passed">Passed</option>
@@ -2796,7 +2796,7 @@ export default function RunDetail() {
                         <select
                           value={resultFormData.assignTo}
                           onChange={(e) => setResultFormData({ ...resultFormData, assignTo: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                         >
                           <option value="">Select assignee</option>
                           {projectMembers.map((member) => (
@@ -2820,7 +2820,7 @@ export default function RunDetail() {
                             value={resultFormData.elapsed}
                             onChange={(e) => setResultFormData({ ...resultFormData, elapsed: e.target.value })}
                             placeholder="00:00"
-                            className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                            className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                             readOnly={isTimerRunning}
                           />
                           <button 
@@ -2852,7 +2852,7 @@ export default function RunDetail() {
                             }
                             setShowAddIssueModal(true);
                           }}
-                          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200"
+                          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
                         >
                           <i className="ri-add-line"></i>
                           Add Issue
@@ -2864,7 +2864,7 @@ export default function RunDetail() {
                         onChange={(e) => setResultFormData({ ...resultFormData, issues: e.target.value })}
                         onKeyDown={handleIssueKeyDown}
                         placeholder="Enter issue keys (e.g., PROJ-123, PROJ-124)"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
                       <p className="text-xs text-gray-500 mt-1">Jira 이슈 키를 입력하고 Enter를 누르세요 (예: PROJ-123)</p>
                       
@@ -2931,7 +2931,7 @@ export default function RunDetail() {
                       
                       {uploadingFile && (
                         <div className="mt-3 text-center">
-                          <i className="ri-loader-4-line animate-spin text-teal-500 text-xl"></i>
+                          <i className="ri-loader-4-line animate-spin text-indigo-500 text-xl"></i>
                           <p className="text-sm text-gray-600 mt-1">업로드 중...</p>
                         </div>
                       )}
@@ -2977,7 +2977,7 @@ export default function RunDetail() {
                   </button>
                   <button
                     onClick={handleSubmitResult}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap"
                   >
                     Add result
                   </button>
@@ -3012,7 +3012,7 @@ export default function RunDetail() {
                         value={issueFormData.summary}
                         onChange={(e) => setIssueFormData({ ...issueFormData, summary: e.target.value })}
                         placeholder="Brief description of the issue"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
                     </div>
 
@@ -3024,7 +3024,7 @@ export default function RunDetail() {
                         onChange={(e) => setIssueFormData({ ...issueFormData, description: e.target.value })}
                         placeholder="Detailed description of the issue"
                         rows={6}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                       ></textarea>
                     </div>
 
@@ -3035,7 +3035,7 @@ export default function RunDetail() {
                         <select
                           value={issueFormData.issueType}
                           onChange={(e) => setIssueFormData({ ...issueFormData, issueType: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                         >
                           <option value="Bug">Bug</option>
                           <option value="Task">Task</option>
@@ -3049,7 +3049,7 @@ export default function RunDetail() {
                         <select
                           value={issueFormData.priority}
                           onChange={(e) => setIssueFormData({ ...issueFormData, priority: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                         >
                           <option value="Highest">Highest</option>
                           <option value="High">High</option>
@@ -3068,7 +3068,7 @@ export default function RunDetail() {
                         value={issueFormData.labels}
                         onChange={(e) => setIssueFormData({ ...issueFormData, labels: e.target.value })}
                         placeholder="Enter labels separated by commas (e.g., bug, ui, critical)"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
                       <p className="text-xs text-gray-500 mt-1">쉼표로 구분하여 여러 라벨을 입력하세요</p>
                     </div>
@@ -3081,7 +3081,7 @@ export default function RunDetail() {
                         value={issueFormData.assignee}
                         onChange={(e) => setIssueFormData({ ...issueFormData, assignee: e.target.value })}
                         placeholder="Jira 계정 ID 또는 이메일 (예: user@example.com)"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
                       <p className="text-xs text-gray-500 mt-1">비워두면 자동 할당됩니다</p>
                     </div>
@@ -3094,7 +3094,7 @@ export default function RunDetail() {
                         value={issueFormData.components}
                         onChange={(e) => setIssueFormData({ ...issueFormData, components: e.target.value })}
                         placeholder="컴포넌트 이름을 쉼표로 구분 (예: Frontend, API, Database)"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
                       <p className="text-xs text-gray-500 mt-1">Jira 프로젝트에 등록된 컴포넌트 이름을 입력하세요</p>
                     </div>
@@ -3125,7 +3125,7 @@ export default function RunDetail() {
                   <button
                     onClick={() => handleCreateJiraIssue(activeTab === 'issues')}
                     disabled={creatingIssue || !issueFormData.summary.trim()}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {creatingIssue ? (
                       <>
@@ -3232,7 +3232,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, onClose }: ResultDeta
                 <i className="ri-robot-line text-purple-600 text-xl"></i>
               </div>
             ) : (
-              <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                 {result.author ? result.author.substring(0, 2).toUpperCase() : 'NA'}
               </div>
             )}
@@ -3301,7 +3301,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, onClose }: ResultDeta
                     
                     return (
                       <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center text-teal-700 font-semibold text-xs flex-shrink-0">
+                        <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-semibold text-xs flex-shrink-0">
                           {index + 1}
                         </div>
                         <div className="flex-1">
@@ -3365,7 +3365,7 @@ function ResultDetailModal({ result, testCase, jiraDomain, onClose }: ResultDeta
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+            className="px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
           >
             Close
           </button>

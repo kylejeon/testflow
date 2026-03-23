@@ -28,8 +28,8 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
       <div className="bg-white rounded-xl w-full max-w-lg shadow-2xl">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-              <i className="ri-edit-line text-teal-600 text-xl"></i>
+            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <i className="ri-edit-line text-indigo-600 text-xl"></i>
             </div>
             <h2 className="text-xl font-bold text-gray-900">Edit Project</h2>
           </div>
@@ -54,7 +54,7 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g., Mobile App Testing"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 required
               />
             </div>
@@ -69,10 +69,10 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
                 onChange={(e) => setFormData({ ...formData, prefix: e.target.value.toUpperCase() })}
                 placeholder="e.g., TC, LOGIN (uppercase recommended, max 10 chars)"
                 maxLength={10}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-mono"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono"
               />
               <p className="mt-2 text-xs text-gray-500">
-                Test case ID format: <span className="font-mono font-semibold text-teal-600">{formData.prefix || 'PREFIX'}-001</span>
+                Test case ID format: <span className="font-mono font-semibold text-indigo-600">{formData.prefix || 'PREFIX'}-001</span>
               </p>
             </div>
 
@@ -85,7 +85,7 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Enter a brief description of the project"
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
               />
             </div>
 
@@ -99,7 +99,7 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
                 onChange={(e) => setFormData({ ...formData, jiraProjectKey: e.target.value.toUpperCase() })}
                 placeholder="e.g., PROJ, SUI"
                 maxLength={20}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-mono uppercase"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono uppercase"
               />
               <p className="mt-1 text-xs text-gray-500">이 프로젝트와 연결할 Jira 프로젝트 키 (선택사항)</p>
             </div>
@@ -111,7 +111,7 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
               >
                 <option value="active">Active</option>
                 <option value="archived">Archived</option>
@@ -129,7 +129,7 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
             >
               <i className="ri-save-line"></i>
               Save Changes

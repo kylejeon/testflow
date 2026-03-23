@@ -81,7 +81,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, onSkip }) => 
                 onClick={() => setRole(r)}
                 className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-all ${
                   role === r
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -101,7 +101,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, onSkip }) => 
                 onClick={() => setTeamSize(s)}
                 className={`py-2 px-4 rounded-full border text-sm font-medium transition-all ${
                   teamSize === s
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -119,14 +119,14 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, onSkip }) => 
               onClick={() => setWorkspace('fresh')}
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                 workspace === 'fresh'
-                  ? 'border-teal-500 bg-teal-50'
+                  ? 'border-indigo-500 bg-indigo-50'
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
             >
               <Rocket
-                className={`w-8 h-8 ${workspace === 'fresh' ? 'text-teal-600' : 'text-gray-400'}`}
+                className={`w-8 h-8 ${workspace === 'fresh' ? 'text-indigo-600' : 'text-gray-400'}`}
               />
-              <span className={`text-sm font-semibold ${workspace === 'fresh' ? 'text-teal-700' : 'text-gray-700'}`}>
+              <span className={`text-sm font-semibold ${workspace === 'fresh' ? 'text-indigo-700' : 'text-gray-700'}`}>
                 {t('welcome.startFresh.label')}
               </span>
               <span className="text-xs text-gray-400 text-center leading-tight">
@@ -138,14 +138,14 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, onSkip }) => 
               onClick={() => setWorkspace('sample')}
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                 workspace === 'sample'
-                  ? 'border-teal-500 bg-teal-50'
+                  ? 'border-indigo-500 bg-indigo-50'
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
             >
               <Package
-                className={`w-8 h-8 ${workspace === 'sample' ? 'text-teal-600' : 'text-gray-400'}`}
+                className={`w-8 h-8 ${workspace === 'sample' ? 'text-indigo-600' : 'text-gray-400'}`}
               />
-              <span className={`text-sm font-semibold ${workspace === 'sample' ? 'text-teal-700' : 'text-gray-700'}`}>
+              <span className={`text-sm font-semibold ${workspace === 'sample' ? 'text-indigo-700' : 'text-gray-700'}`}>
                 {t('welcome.trySample.label')}
               </span>
               <span className="text-xs text-gray-400 text-center leading-tight">
@@ -166,7 +166,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, onSkip }) => 
           disabled={!isValid || loading}
           className={`w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
             isValid && !loading
-              ? 'bg-teal-500 hover:bg-teal-600 text-white cursor-pointer'
+              ? 'bg-indigo-500 hover:bg-indigo-600 text-white cursor-pointer'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
         >

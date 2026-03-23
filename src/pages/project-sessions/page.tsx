@@ -289,7 +289,7 @@ export default function ProjectSessions() {
   const getTierInfo = (tier: number) => {
     switch (tier) {
       case 2:
-        return { name: 'Starter', icon: 'ri-vip-crown-line', color: 'bg-teal-50 text-teal-700 border-teal-300' };
+        return { name: 'Starter', icon: 'ri-vip-crown-line', color: 'bg-indigo-50 text-indigo-700 border-indigo-300' };
       case 3:
         return { name: 'Professional', icon: 'ri-vip-diamond-line', color: 'bg-violet-50 text-violet-700 border-violet-300' };
       case 4:
@@ -617,7 +617,7 @@ export default function ProjectSessions() {
                 </Link>
                 <Link 
                   to={`/projects/${projectId}/sessions`}
-                  className="px-3 py-2 text-sm font-medium text-teal-600 bg-teal-50 rounded-lg cursor-pointer"
+                  className="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg cursor-pointer"
                 >
                   Sessions
                 </Link>
@@ -628,7 +628,7 @@ export default function ProjectSessions() {
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="flex items-center gap-2 cursor-pointer"
                 >
-                  <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                  <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
                     {userProfile?.avatar_emoji ? (
                       <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
                     ) : (
@@ -694,7 +694,7 @@ export default function ProjectSessions() {
                       });
                       setShowAddSessionModal(true);
                     }}
-                    className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 flex items-center gap-2 text-sm font-medium cursor-pointer whitespace-nowrap"
+                    className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center gap-2 text-sm font-medium cursor-pointer whitespace-nowrap"
                   >
                     <i className="ri-add-line"></i>
                     Session
@@ -712,8 +712,8 @@ export default function ProjectSessions() {
                       <div className="text-3xl font-bold text-gray-900">{stats.activeSessions}</div>
                       <div className="text-sm text-gray-500 mt-1">{stats.unstarted} unstarted</div>
                     </div>
-                    <div className="w-16 h-16 bg-teal-500 rounded-full flex items-center justify-center relative">
-                      <div className="absolute inset-0 bg-teal-500 rounded-full opacity-20 animate-ping"></div>
+                    <div className="w-16 h-16 bg-indigo-500 rounded-full flex items-center justify-center relative">
+                      <div className="absolute inset-0 bg-indigo-500 rounded-full opacity-20 animate-ping"></div>
                       <span className="text-2xl font-bold text-white relative z-10">{stats.activeSessions}</span>
                     </div>
                   </div>
@@ -761,7 +761,7 @@ export default function ProjectSessions() {
                         <polyline
                           points="0,40 20,35 40,38 60,25 80,15"
                           fill="none"
-                          stroke="#14b8a6"
+                          stroke="#6366F1"
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -773,14 +773,14 @@ export default function ProjectSessions() {
                         />
                         <defs>
                           <linearGradient id="gradient2" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="#14b8a6" />
-                            <stop offset="100%" stopColor="#14b8a6" stopOpacity="0" />
+                            <stop offset="0%" stopColor="#6366F1" />
+                            <stop offset="100%" stopColor="#6366F1" stopOpacity="0" />
                           </linearGradient>
                         </defs>
                       </svg>
                     </div>
                   </div>
-                  <div className="text-sm text-teal-600 font-semibold">
+                  <div className="text-sm text-indigo-600 font-semibold">
                     +28 this month
                   </div>
                 </div>
@@ -792,7 +792,7 @@ export default function ProjectSessions() {
                   onClick={() => setActiveTab('active')}
                   className={`pb-4 px-1 border-b-2 font-medium text-sm cursor-pointer whitespace-nowrap ${
                     activeTab === 'active'
-                      ? 'border-teal-500 text-teal-600'
+                      ? 'border-indigo-500 text-indigo-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -802,7 +802,7 @@ export default function ProjectSessions() {
                   onClick={() => setActiveTab('closed')}
                   className={`pb-4 px-1 border-b-2 font-medium text-sm cursor-pointer whitespace-nowrap ${
                     activeTab === 'closed'
-                      ? 'border-teal-500 text-teal-600'
+                      ? 'border-indigo-500 text-indigo-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -820,7 +820,7 @@ export default function ProjectSessions() {
                   placeholder="Search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
               
@@ -856,7 +856,7 @@ export default function ProjectSessions() {
                         {selectedTags.length > 0 && (
                           <button 
                             onClick={() => setSelectedTags([])}
-                            className="text-sm text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap"
+                            className="text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap"
                           >
                             Clear
                           </button>
@@ -870,12 +870,12 @@ export default function ProjectSessions() {
                               key={tag}
                               onClick={() => handleTagFilterToggle(tag)}
                               className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 rounded-lg flex items-center justify-between ${
-                                selectedTags.includes(tag) ? 'bg-teal-50 text-teal-700' : 'text-gray-700'
+                                selectedTags.includes(tag) ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
                               }`}
                             >
                               <span>{tag}</span>
                               {selectedTags.includes(tag) && (
-                                <i className="ri-check-line text-teal-600"></i>
+                                <i className="ri-check-line text-indigo-600"></i>
                               )}
                             </div>
                           ))}
@@ -909,7 +909,7 @@ export default function ProjectSessions() {
                         {selectedTags.length > 0 && (
                           <button 
                             onClick={() => setSelectedTags([])}
-                            className="text-sm text-teal-600 hover:text-teal-700 cursor-pointer whitespace-nowrap"
+                            className="text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap"
                           >
                             Clear
                           </button>
@@ -923,12 +923,12 @@ export default function ProjectSessions() {
                               key={tag}
                               onClick={() => handleTagFilterToggle(tag)}
                               className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 rounded-lg flex items-center justify-between ${
-                                selectedTags.includes(tag) ? 'bg-teal-50 text-teal-700' : 'text-gray-700'
+                                selectedTags.includes(tag) ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
                               }`}
                             >
                               <span>{tag}</span>
                               {selectedTags.includes(tag) && (
-                                <i className="ri-check-line text-teal-600"></i>
+                                <i className="ri-check-line text-indigo-600"></i>
                               )}
                             </div>
                           ))}
@@ -947,7 +947,7 @@ export default function ProjectSessions() {
             {/* Sessions List */}
             {loading ? (
               <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
               </div>
             ) : filteredSessions.length === 0 ? (
               <div className="text-center py-12">
@@ -995,7 +995,7 @@ export default function ProjectSessions() {
                               <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
                                   <th className="px-4 py-3 text-left">
-                                    <input type="checkbox" className="w-4 h-4 text-teal-600 cursor-pointer" />
+                                    <input type="checkbox" className="w-4 h-4 text-indigo-600 cursor-pointer" />
                                   </th>
                                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Session</th>
                                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">State</th>
@@ -1010,7 +1010,7 @@ export default function ProjectSessions() {
                                   return (
                                     <tr key={session.id} className="hover:bg-gray-50">
                                       <td className="px-4 py-4">
-                                        <input type="checkbox" className="w-4 h-4 text-teal-600 cursor-pointer" />
+                                        <input type="checkbox" className="w-4 h-4 text-indigo-600 cursor-pointer" />
                                       </td>
                                       <td className="px-4 py-4">
                                         <div className="flex items-center gap-3">
@@ -1022,7 +1022,7 @@ export default function ProjectSessions() {
                                           }`}></i>
                                           <Link 
                                             to={`/projects/${projectId}/sessions/${session.id}`}
-                                            className="font-medium text-teal-600 hover:text-teal-700 cursor-pointer"
+                                            className="font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
                                           >
                                             {session.name}
                                           </Link>
@@ -1059,7 +1059,7 @@ export default function ProjectSessions() {
                                             {session.assignees.slice(0, 4).map((userId, idx) => {
                                               const member = projectMembers.find(m => m.user_id === userId);
                                               const colors = [
-                                                'from-teal-400 to-teal-600',
+                                                'from-indigo-400 to-indigo-600',
                                                 'from-orange-400 to-orange-600',
                                                 'from-violet-400 to-violet-600',
                                                 'from-pink-400 to-pink-600',
@@ -1159,7 +1159,7 @@ export default function ProjectSessions() {
                                     }`}></i>
                                     <Link 
                                       to={`/projects/${projectId}/sessions/${session.id}`}
-                                      className="font-medium text-teal-600 hover:text-teal-700 cursor-pointer"
+                                      className="font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
                                     >
                                       {session.name}
                                     </Link>
@@ -1196,7 +1196,7 @@ export default function ProjectSessions() {
                                       {session.assignees.slice(0, 4).map((userId, idx) => {
                                         const member = projectMembers.find(m => m.user_id === userId);
                                         const colors = [
-                                          'from-teal-400 to-teal-600',
+                                          'from-indigo-400 to-indigo-600',
                                           'from-orange-400 to-orange-600',
                                           'from-violet-400 to-violet-600',
                                           'from-pink-400 to-pink-600',
@@ -1351,7 +1351,7 @@ export default function ProjectSessions() {
                       value={formData.name}
                       onChange={handleInputChange}
                       placeholder="Session name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                   </div>
 
@@ -1361,7 +1361,7 @@ export default function ProjectSessions() {
                       <label className="block text-sm font-medium text-gray-700">
                         Milestone
                       </label>
-                      <button className="text-teal-600 hover:text-teal-700 cursor-pointer">
+                      <button className="text-indigo-600 hover:text-indigo-700 cursor-pointer">
                         <i className="ri-add-line"></i>
                       </button>
                     </div>
@@ -1369,7 +1369,7 @@ export default function ProjectSessions() {
                       name="milestone_id"
                       value={formData.milestone_id}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                     >
                       <option value="">Select milestone</option>
                       {milestones.map((milestone) => (
@@ -1393,7 +1393,7 @@ export default function ProjectSessions() {
                           const member = projectMembers.find(m => m.user_id === userId);
                           if (!member) return null;
                           const colors = [
-                            'from-teal-400 to-teal-600',
+                            'from-indigo-400 to-indigo-600',
                             'from-orange-400 to-orange-600',
                             'from-violet-400 to-violet-600',
                             'from-pink-400 to-pink-600',
@@ -1404,7 +1404,7 @@ export default function ProjectSessions() {
                           return (
                             <div
                               key={userId}
-                              className="flex items-center gap-1.5 pl-1 pr-2 py-1 bg-teal-50 border border-teal-200 rounded-full text-sm text-teal-700"
+                              className="flex items-center gap-1.5 pl-1 pr-2 py-1 bg-indigo-50 border border-indigo-200 rounded-full text-sm text-indigo-700"
                             >
                               <div className={`w-5 h-5 bg-gradient-to-br ${colorClass} rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
                                 {member.full_name.charAt(0).toUpperCase()}
@@ -1413,7 +1413,7 @@ export default function ProjectSessions() {
                               <button
                                 type="button"
                                 onClick={() => handleAssigneeToggle(userId)}
-                                className="w-4 h-4 flex items-center justify-center text-teal-400 hover:text-teal-700 cursor-pointer ml-0.5"
+                                className="w-4 h-4 flex items-center justify-center text-indigo-400 hover:text-indigo-700 cursor-pointer ml-0.5"
                               >
                                 <i className="ri-close-line text-xs"></i>
                               </button>
@@ -1431,7 +1431,7 @@ export default function ProjectSessions() {
                           setShowAssigneeDropdown(prev => !prev);
                           setAssigneeSearch('');
                         }}
-                        className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-500 hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer bg-white"
+                        className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-500 hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer bg-white"
                       >
                         <span>{formData.assignees.length > 0 ? `${formData.assignees.length}명 선택됨` : '멤버 선택...'}</span>
                         <i className={`ri-arrow-${showAssigneeDropdown ? 'up' : 'down'}-s-line text-gray-400`}></i>
@@ -1448,7 +1448,7 @@ export default function ProjectSessions() {
                                 value={assigneeSearch}
                                 onChange={e => setAssigneeSearch(e.target.value)}
                                 placeholder="멤버 검색..."
-                                className="w-full pl-7 pr-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                className="w-full pl-7 pr-3 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                 autoFocus
                               />
                             </div>
@@ -1467,7 +1467,7 @@ export default function ProjectSessions() {
                                 .map((member, idx) => {
                                   const isSelected = formData.assignees.includes(member.user_id);
                                   const colors = [
-                                    'from-teal-400 to-teal-600',
+                                    'from-indigo-400 to-indigo-600',
                                     'from-orange-400 to-orange-600',
                                     'from-violet-400 to-violet-600',
                                     'from-pink-400 to-pink-600',
@@ -1479,7 +1479,7 @@ export default function ProjectSessions() {
                                       key={member.user_id}
                                       onClick={() => handleAssigneeToggle(member.user_id)}
                                       className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
-                                        isSelected ? 'bg-teal-50' : 'hover:bg-gray-50'
+                                        isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'
                                       }`}
                                     >
                                       <div className={`w-7 h-7 bg-gradient-to-br ${colorClass} rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
@@ -1490,7 +1490,7 @@ export default function ProjectSessions() {
                                         <p className="text-xs text-gray-400 truncate">{member.email}</p>
                                       </div>
                                       {isSelected && (
-                                        <i className="ri-check-line text-teal-500 text-sm flex-shrink-0"></i>
+                                        <i className="ri-check-line text-indigo-500 text-sm flex-shrink-0"></i>
                                       )}
                                     </div>
                                   );
@@ -1513,7 +1513,7 @@ export default function ProjectSessions() {
                       onChange={handleInputChange}
                       placeholder="Describe the testing mission and objectives..."
                       rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                     />
                   </div>
 
@@ -1528,7 +1528,7 @@ export default function ProjectSessions() {
                       value={formData.tags}
                       onChange={handleInputChange}
                       placeholder="Enter tags separated by commas"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                     />
                   </div>
                 </div>
@@ -1549,7 +1549,7 @@ export default function ProjectSessions() {
               <button
                 onClick={handleAddSession}
                 disabled={submitting}
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (editingSessionId ? 'Updating...' : 'Adding...') : (editingSessionId ? 'Update session' : 'Add session')}
               </button>

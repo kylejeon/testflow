@@ -229,7 +229,7 @@ export default function TermsPage() {
               <div className="relative" ref={langMenuRef}>
                 <button
                   onClick={() => setLangMenuOpen(!langMenuOpen)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:border-teal-300 hover:text-teal-600 bg-white transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 bg-white transition-all cursor-pointer"
                 >
                   <i className="ri-translate-2 text-base"></i>
                   <span>{lang === 'en' ? 'EN' : 'KO'}</span>
@@ -241,13 +241,13 @@ export default function TermsPage() {
                       <button
                         key={l}
                         onClick={() => { changeLanguage(l); setLangMenuOpen(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between cursor-pointer transition-colors hover:bg-gray-50 ${lang === l ? 'text-teal-600 bg-teal-50 font-semibold' : 'text-gray-700'}`}
+                        className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between cursor-pointer transition-colors hover:bg-gray-50 ${lang === l ? 'text-indigo-600 bg-indigo-50 font-semibold' : 'text-gray-700'}`}
                       >
                         <div className="flex items-center gap-2">
                           <span>{l === 'en' ? '🇬🇧' : '🇰🇷'}</span>
                           <span>{l === 'en' ? 'English' : '한국어'}</span>
                         </div>
-                        {lang === l && <i className="ri-check-line text-teal-600"></i>}
+                        {lang === l && <i className="ri-check-line text-indigo-600"></i>}
                       </button>
                     ))}
                   </div>
@@ -267,9 +267,9 @@ export default function TermsPage() {
         {/* Content */}
         <main className="max-w-3xl mx-auto px-6 py-16">
           <header className="mb-10">
-            <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-1.5 mb-4">
-              <i className="ri-file-text-line text-teal-600 text-sm"></i>
-              <span className="text-teal-700 text-sm font-medium">{t.badge}</span>
+            <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-4">
+              <i className="ri-file-text-line text-indigo-600 text-sm"></i>
+              <span className="text-indigo-700 text-sm font-medium">{t.badge}</span>
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-3">{t.title}</h1>
             <p className="text-gray-500 text-sm">{t.updated}</p>
@@ -279,7 +279,7 @@ export default function TermsPage() {
             {t.sections.map((section, i) => (
               <section key={i}>
                 <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-teal-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">{i + 1}</span>
+                  <span className="w-6 h-6 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">{i + 1}</span>
                   {section.heading}
                 </h2>
                 {'body' in section && section.body && <p className="mb-3">{section.body}</p>}
@@ -297,7 +297,7 @@ export default function TermsPage() {
                   <ul className="space-y-2">
                     {section.list.map((item) => (
                       <li key={item} className="flex items-start gap-2">
-                        <i className="ri-check-line text-teal-500 mt-0.5 flex-shrink-0"></i>
+                        <i className="ri-check-line text-indigo-500 mt-0.5 flex-shrink-0"></i>
                         <span>{item}</span>
                       </li>
                     ))}
@@ -309,7 +309,7 @@ export default function TermsPage() {
                     <ul className="space-y-1.5">
                       {section.refundList.map((item) => (
                         <li key={item} className="flex items-start gap-2 text-gray-600">
-                          <i className="ri-information-line text-teal-500 mt-0.5 flex-shrink-0"></i>
+                          <i className="ri-information-line text-indigo-500 mt-0.5 flex-shrink-0"></i>
                           <span>{item}</span>
                         </li>
                       ))}
@@ -338,7 +338,7 @@ export default function TermsPage() {
                   </ul>
                 )}
                 {'contactEmail' in section && section.contactEmail && (
-                  <div className="bg-teal-50 rounded-xl p-5 border border-teal-100">
+                  <div className="bg-indigo-50 rounded-xl p-5 border border-indigo-100">
                     <p className="text-gray-700 mb-3">{section.contactLabel}</p>
                     <div className="text-sm">
                       <p><span className="font-semibold text-gray-800">{lang === 'ko' ? '이메일' : 'Email'}:</span> <span className="text-gray-600">{section.contactEmail}</span></p>
@@ -357,7 +357,7 @@ export default function TermsPage() {
             <nav className="flex items-center gap-4 text-xs text-gray-500">
               <button onClick={() => navigate('/privacy')} className="hover:text-gray-900 transition-colors cursor-pointer">{t.privacy}</button>
               <span className="text-gray-300">|</span>
-              <button onClick={() => navigate('/terms')} className="hover:text-gray-900 transition-colors cursor-pointer font-semibold text-teal-600">{t.terms}</button>
+              <button onClick={() => navigate('/terms')} className="hover:text-gray-900 transition-colors cursor-pointer font-semibold text-indigo-600">{t.terms}</button>
             </nav>
           </div>
         </footer>

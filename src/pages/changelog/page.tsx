@@ -20,7 +20,7 @@ const entries = [
     date: 'March 2026',
     title: 'New Pricing Plans + Enterprise Tier',
     category: 'New Feature',
-    categoryColor: 'bg-teal-100 text-teal-700',
+    categoryColor: 'bg-indigo-100 text-indigo-700',
     description: 'Introducing updated pricing and a new Enterprise plan with unlimited members, unlimited AI, and dedicated support.',
     bullets: [
       'Free $0 (3 members), Starter $49 (5 members), Professional $99 (20 members)',
@@ -33,7 +33,7 @@ const entries = [
     date: 'March 2026',
     title: 'Slack & Microsoft Teams Integration',
     category: 'New Feature',
-    categoryColor: 'bg-teal-100 text-teal-700',
+    categoryColor: 'bg-indigo-100 text-indigo-700',
     description: 'Real-time notifications in Slack channels or Microsoft Teams. Configure per-project, per-channel.',
     bullets: [
       'Slack via Incoming Webhooks with Block Kit formatting',
@@ -46,7 +46,7 @@ const entries = [
     date: 'January 2026',
     title: 'CI/CD Pipeline Integration',
     category: 'New Feature',
-    categoryColor: 'bg-teal-100 text-teal-700',
+    categoryColor: 'bg-indigo-100 text-indigo-700',
     description: 'Upload automated test results from CI/CD pipelines via REST API.',
     bullets: [
       'REST API with project-specific tokens',
@@ -58,7 +58,7 @@ const entries = [
     date: 'November 2025',
     title: 'Jira Integration',
     category: 'New Feature',
-    categoryColor: 'bg-teal-100 text-teal-700',
+    categoryColor: 'bg-indigo-100 text-indigo-700',
     description: 'Connect to Jira Cloud and Data Center. Auto-create issues on test failure.',
     bullets: [
       'Auto issue creation with full context',
@@ -70,7 +70,7 @@ const entries = [
     date: 'September 2025',
     title: 'Exploratory Sessions',
     category: 'New Feature',
-    categoryColor: 'bg-teal-100 text-teal-700',
+    categoryColor: 'bg-indigo-100 text-indigo-700',
     description: 'Mission-driven exploratory testing with rich-text notes, screenshots, and structured entries.',
     bullets: [
       'Rich-text editor with inline images',
@@ -82,7 +82,7 @@ const entries = [
     date: 'July 2025',
     title: 'Testably Launch',
     category: 'New Feature',
-    categoryColor: 'bg-teal-100 text-teal-700',
+    categoryColor: 'bg-indigo-100 text-indigo-700',
     description: 'Testably launches with core test management: test cases, runs, milestones, documentation, notifications.',
     bullets: [
       'Test case management with folders and priorities',
@@ -133,18 +133,18 @@ export default function ChangelogPage() {
             <div className="flex items-center gap-3">
               <button onClick={() => navigate('/roadmap')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Roadmap</button>
               <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all cursor-pointer">Log in</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all cursor-pointer">Get Started</button>
+              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all cursor-pointer">Get Started</button>
             </div>
           </div>
         </nav>
 
         {/* Hero */}
         <header className="py-20 bg-gray-950 text-center relative overflow-hidden">
-          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-teal-500/10 blur-[120px]"></div>
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-indigo-500/10 blur-[120px]"></div>
           <div className="relative z-10 max-w-2xl mx-auto px-6">
             <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
-              <i className="ri-history-line text-teal-300 text-sm"></i>
-              <span className="text-teal-200 text-sm font-medium">Changelog</span>
+              <i className="ri-history-line text-indigo-300 text-sm"></i>
+              <span className="text-indigo-200 text-sm font-medium">Changelog</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">Product Updates</h1>
             <p className="text-white/50 text-lg">New features, improvements, and what's coming next.</p>
@@ -162,9 +162,9 @@ export default function ChangelogPage() {
                 {entries.map((entry, i) => (
                   <article key={i} className="relative pl-16">
                     {/* Dot */}
-                    <div className={`absolute left-3 top-1 w-5 h-5 rounded-full border-4 border-white shadow-sm ${entry.category === 'Coming Soon' ? 'bg-purple-400' : 'bg-teal-500'}`}></div>
+                    <div className={`absolute left-3 top-1 w-5 h-5 rounded-full border-4 border-white shadow-sm ${entry.category === 'Coming Soon' ? 'bg-purple-400' : 'bg-indigo-500'}`}></div>
 
-                    <div className="bg-white border border-gray-100 rounded-2xl p-6 hover:border-teal-200 hover:shadow-md transition-all">
+                    <div className="bg-white border border-gray-100 rounded-2xl p-6 hover:border-indigo-200 hover:shadow-md transition-all">
                       <div className="flex flex-wrap items-center gap-3 mb-3">
                         <span className="text-xs font-medium text-gray-400">{entry.date}</span>
                         <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${entry.categoryColor}`}>{entry.category}</span>
@@ -174,8 +174,8 @@ export default function ChangelogPage() {
                       <ul className="space-y-1.5">
                         {entry.bullets.map((b) => (
                           <li key={b} className="flex items-start gap-2">
-                            <div className="w-4 h-4 flex items-center justify-center rounded-full bg-teal-100 flex-shrink-0 mt-0.5">
-                              <i className="ri-check-line text-xs text-teal-600"></i>
+                            <div className="w-4 h-4 flex items-center justify-center rounded-full bg-indigo-100 flex-shrink-0 mt-0.5">
+                              <i className="ri-check-line text-xs text-indigo-600"></i>
                             </div>
                             <span className="text-xs text-gray-600 leading-relaxed">{b}</span>
                           </li>
@@ -190,10 +190,10 @@ export default function ChangelogPage() {
         </section>
 
         {/* Subscribe */}
-        <section className="py-16 bg-teal-600 text-center">
+        <section className="py-16 bg-indigo-600 text-center">
           <div className="max-w-lg mx-auto px-6">
             <h3 className="text-2xl font-bold text-white mb-2">Stay in the loop</h3>
-            <p className="text-teal-100 text-sm mb-6">Get product updates and new features in your inbox</p>
+            <p className="text-indigo-100 text-sm mb-6">Get product updates and new features in your inbox</p>
             {subscribed ? (
               <div className="flex items-center justify-center gap-2 text-white">
                 <i className="ri-check-circle-line text-xl"></i>
@@ -206,10 +206,10 @@ export default function ChangelogPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className="flex-1 px-4 py-3 rounded-xl text-sm bg-white/20 border border-white/30 text-white placeholder-teal-200 focus:outline-none focus:bg-white/30"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm bg-white/20 border border-white/30 text-white placeholder-indigo-200 focus:outline-none focus:bg-white/30"
                   required
                 />
-                <button type="submit" className="px-5 py-3 bg-white text-teal-600 rounded-xl font-semibold text-sm hover:bg-teal-50 transition-all cursor-pointer whitespace-nowrap">
+                <button type="submit" className="px-5 py-3 bg-white text-indigo-600 rounded-xl font-semibold text-sm hover:bg-indigo-50 transition-all cursor-pointer whitespace-nowrap">
                   Subscribe
                 </button>
               </form>

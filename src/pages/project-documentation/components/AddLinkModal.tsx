@@ -71,7 +71,7 @@ export default function AddLinkModal({ projectId, onClose, onSuccess }: AddLinkM
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('linkTitlePlaceholder')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
               required
             />
           </div>
@@ -85,7 +85,7 @@ export default function AddLinkModal({ projectId, onClose, onSuccess }: AddLinkM
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://example.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
               required
             />
           </div>
@@ -99,7 +99,7 @@ export default function AddLinkModal({ projectId, onClose, onSuccess }: AddLinkM
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t('linkDescriptionPlaceholder')}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm resize-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none"
             />
           </div>
 
@@ -114,7 +114,7 @@ export default function AddLinkModal({ projectId, onClose, onSuccess }: AddLinkM
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-teal-500 text-white hover:bg-teal-600 rounded-lg transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? t('uploading') : t('addLink')}
             </button>
