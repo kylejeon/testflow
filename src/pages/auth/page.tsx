@@ -403,8 +403,14 @@ export default function AuthPage() {
                 style={{ borderRadius: '22%' }}
               >
                 <span
-                  className="text-3xl text-white"
-                  style={{ fontFamily: 'Pacifico, cursive', transform: 'translateY(-1px) translateX(0.5px)', lineHeight: 1 }}
+                  className="text-white"
+                  style={{
+                    fontFamily: 'Pacifico, cursive',
+                    fontSize: '30px',
+                    lineHeight: 1,
+                    display: 'block',
+                    transform: 'translateY(-1.5px) translateX(0.5px)',
+                  }}
                 >
                   T
                 </span>
