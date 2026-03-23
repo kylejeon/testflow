@@ -214,23 +214,21 @@ Deno.serve(async (req) => {
     const jwt = authHeader.replace('Bearer ', '');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // 유저 확인 (anon key + JWT)
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: `Bearer ${jwt}` } },
+    // Service role client — RLS bypass 및 JWT 검증에 사용
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
+
+    // JWT를 직접 전달해서 검증 (supabase-js@2.39.3에서 global.headers는 GoTrue에 전달되지 않음)
+    const { data: { user }, error: authError } = await adminClient.auth.getUser(jwt);
     if (authError || !user) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized', details: authError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
-
-    // Service role client (RLS bypass 필요 작업용)
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const body: GenerateRequest = await req.json();
     const { project_id, mode, step, input_text, session_id, selected_titles } = body;
