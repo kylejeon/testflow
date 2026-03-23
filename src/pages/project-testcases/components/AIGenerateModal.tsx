@@ -129,7 +129,11 @@ export default function AIGenerateModal({
 
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || `HTTP ${response.status}`);
+      // Anthropic 크레딧 부족 (402)
+      if (response.status === 402 || data.type === 'invalid_request_error') {
+        throw new Error('AI 크레딧이 부족합니다. Anthropic 계정의 잔액을 충전해주세요.');
+      }
+      throw new Error(data.message || data.error || `HTTP ${response.status}`);
     }
     return data;
   };

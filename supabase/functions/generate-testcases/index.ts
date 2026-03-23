@@ -68,12 +68,21 @@ async function getMonthlyUsage(
   return count || 0;
 }
 
+/** Anthropic 에러 타입 */
+interface AnthropicError {
+  status: number;
+  type: string;
+  message: string;
+}
+
 /** Anthropic Claude API 호출 */
 async function callClaude(prompt: string): Promise<{ content: string; tokens: number }> {
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
+  if (!apiKey) {
+    const err: AnthropicError = { status: 500, type: 'config_error', message: 'ANTHROPIC_API_KEY is not configured in Edge Function secrets.' };
+    throw err;
+  }
 
-  const start = Date.now();
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -89,8 +98,18 @@ async function callClaude(prompt: string): Promise<{ content: string; tokens: nu
   });
 
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Claude API error ${response.status}: ${err}`);
+    let errorBody: any = {};
+    try { errorBody = await response.json(); } catch { errorBody = { error: { message: await response.text() } }; }
+
+    const anthropicMessage = errorBody?.error?.message || 'Unknown Anthropic API error';
+    const anthropicType = errorBody?.error?.type || 'api_error';
+
+    const err: AnthropicError = {
+      status: response.status,
+      type: anthropicType,
+      message: anthropicMessage,
+    };
+    throw err;
   }
 
   const data = await response.json();
@@ -383,10 +402,24 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('generate-testcases error:', error);
+
+    // Anthropic API 에러는 구체적인 메시지와 상태코드를 그대로 반환
+    if (error?.type && error?.message && error?.status) {
+      const httpStatus = error.status === 400 ? 402 : error.status >= 500 ? 502 : error.status;
+      return new Response(
+        JSON.stringify({
+          error: 'AI API error',
+          type: error.type,
+          message: error.message,
+        }),
+        { status: httpStatus, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ error: 'Internal server error', details: error?.message || String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
