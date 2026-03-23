@@ -6,6 +6,7 @@ import { sessions as enSessions } from './en/sessions';
 import { milestones as enMilestones } from './en/milestones';
 import { documentation as enDocumentation } from './en/documentation';
 import { settings as enSettings } from './en/settings';
+import { onboarding as enOnboarding } from './en/onboarding';
 
 import { common as koCommon } from './ko/common';
 import { projects as koProjects } from './ko/projects';
@@ -15,6 +16,7 @@ import { sessions as koSessions } from './ko/sessions';
 import { milestones as koMilestones } from './ko/milestones';
 import { documentation as koDocumentation } from './ko/documentation';
 import { settings as koSettings } from './ko/settings';
+import { onboarding as koOnboarding } from './ko/onboarding';
 
 const resources = {
   en: {
@@ -26,6 +28,7 @@ const resources = {
     milestones: enMilestones,
     documentation: enDocumentation,
     settings: enSettings,
+    onboarding: enOnboarding,
   },
   ko: {
     common: koCommon,
@@ -36,6 +39,7 @@ const resources = {
     milestones: koMilestones,
     documentation: koDocumentation,
     settings: koSettings,
+    onboarding: koOnboarding,
   },
 };
 
