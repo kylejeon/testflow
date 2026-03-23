@@ -98,15 +98,17 @@ export default function AIGenerateModal({
 
   const fetchSessions = async () => {
     setLoadingSessions(true);
+    setError('');
     try {
-      const { data } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('sessions')
         .select('id, name, mission, status, created_at')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
+      if (fetchError) throw fetchError;
       setSessions(data || []);
-    } catch {
-      // silent
+    } catch (err: any) {
+      setError(err.message || 'Failed to load sessions.');
     } finally {
       setLoadingSessions(false);
     }
