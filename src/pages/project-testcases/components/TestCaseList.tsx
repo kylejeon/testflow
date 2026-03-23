@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import TipTapEditor from '../../session-detail/components/QuillEditor';
 import ExportImportModal from './ExportImportModal';
@@ -192,6 +192,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [selectedTestCaseIds, setSelectedTestCaseIds] = useState<Set<string>>(new Set());
   const [showBulkFolderModal, setShowBulkFolderModal] = useState(false);
   
+  const detailPanelRef = useRef<HTMLDivElement>(null);
+
   // Toast 상태 추가
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -2073,7 +2075,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       className={`hover:bg-gray-50 transition-all cursor-pointer ${
                         selectedTestCase?.id === testCase.id ? 'bg-teal-50' : ''
                       }`}
-                      onClick={() => setSelectedTestCase(testCase)}
+                      onClick={() => { setSelectedTestCase(testCase); window.scrollTo(0, 0); }}
                     >
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         <input 
@@ -2132,7 +2134,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       {/* 우측 상세 패널 */}
       {selectedTestCase && (
-        <div className="w-2/5 bg-white border-l border-gray-200 flex flex-col">
+        <div ref={detailPanelRef} className="w-2/5 bg-white border-l border-gray-200 flex flex-col">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">

@@ -487,7 +487,7 @@ export default function ProjectTestCases() {
                   className="px-4 py-2 bg-gradient-to-r from-violet-500 to-teal-500 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
                 >
                   <i className="ri-sparkling-2-fill"></i>
-                  AI 생성
+                  Generate with AI
                 </button>
               </div>
             </div>
