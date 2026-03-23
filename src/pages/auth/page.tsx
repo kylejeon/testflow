@@ -404,7 +404,7 @@ export default function AuthPage() {
               >
                 <span
                   className="text-3xl text-white"
-                  style={{ fontFamily: 'Pacifico, cursive', marginTop: '-2px' }}
+                  style={{ fontFamily: 'Pacifico, cursive', transform: 'translateY(-1px) translateX(0.5px)', lineHeight: 1 }}
                 >
                   T
                 </span>
