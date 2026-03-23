@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import TestCaseList from './components/TestCaseList';
+import AIGenerateModal from './components/AIGenerateModal';
 
 export default function ProjectTestCases() {
   const { id } = useParams();
@@ -12,6 +13,7 @@ export default function ProjectTestCases() {
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number; avatar_emoji: string } | null>(null);
   const navigate = useNavigate();
@@ -287,6 +289,27 @@ export default function ProjectTestCases() {
     await fetchData();
   };
 
+  // AI 생성 케이스 일괄 저장
+  const handleSaveAIGeneratedCases = async (cases: any[]) => {
+    for (const tc of cases) {
+      const stepsStr = Array.isArray(tc.steps) ? tc.steps.join('\n') : (tc.steps || '');
+      await handleAddTestCase({
+        title: tc.title,
+        description: tc.description || '',
+        precondition: tc.precondition || '',
+        steps: stepsStr,
+        expected_result: tc.expected_result || '',
+        priority: tc.priority || 'medium',
+        status: 'pending',
+        is_automated: false,
+        folder: '',
+        assignee: '',
+        tags: '',
+      });
+    }
+    await fetchData();
+  };
+
   const handleRestoreToBefore = async () => {
     // This function is no longer needed as restoration is handled in TestCaseList component
     // Keeping it here for backward compatibility but it won't be called
@@ -449,15 +472,24 @@ export default function ProjectTestCases() {
                   {project?.name} • {filteredTestCases.length} test cases
                 </p>
               </div>
-              {testCases.some(tc => !tc.custom_id) && project?.prefix && (
+              <div className="flex items-center gap-2">
+                {testCases.some(tc => !tc.custom_id) && project?.prefix && (
+                  <button
+                    onClick={handleAssignMissingIds}
+                    className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all font-semibold text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                  >
+                    <i className="ri-price-tag-3-line"></i>
+                    ID 없는 케이스에 ID 부여
+                  </button>
+                )}
                 <button
-                  onClick={handleAssignMissingIds}
-                  className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all font-semibold text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                  onClick={() => setShowAIModal(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-violet-500 to-teal-500 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <i className="ri-price-tag-3-line"></i>
-                  ID 없는 케이스에 ID 부여
+                  <i className="ri-sparkling-2-fill"></i>
+                  AI 생성
                 </button>
-              )}
+              </div>
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200">
@@ -516,6 +548,15 @@ export default function ProjectTestCases() {
           animation: fade-in 0.3s ease-out;
         }
       `}</style>
+
+      {showAIModal && (
+        <AIGenerateModal
+          projectId={id!}
+          subscriptionTier={userProfile?.subscription_tier || 1}
+          onSave={handleSaveAIGeneratedCases}
+          onClose={() => setShowAIModal(false)}
+        />
+      )}
     </div>
   );
 }
