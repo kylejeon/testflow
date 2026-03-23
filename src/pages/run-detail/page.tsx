@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
+import { FocusMode, type FocusTestCase, type TestStatus } from '../../components/FocusMode';
 
 interface TestCase {
   id: string;
@@ -134,6 +135,7 @@ export default function RunDetail() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null); // null = All
   const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState(true);
   const [copiedRunId, setCopiedRunId] = useState(false);
+  const [focusModeOpen, setFocusModeOpen] = useState(false);
   const [bulkAssignee, setBulkAssignee] = useState('');
   const [runAssignees, setRunAssignees] = useState<Map<string, string>>(new Map());
   const [openAssigneeDropdown, setOpenAssigneeDropdown] = useState<string | null>(null);
@@ -1332,7 +1334,33 @@ export default function RunDetail() {
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
   const isProfessionalOrHigher = currentTier >= 2;
 
+  // Focus Mode handler
+  const handleFocusStatusChange = useCallback(
+    async (testId: string, status: TestStatus, _note?: string) => {
+      await handleStatusChange(testId, status);
+    },
+    [handleStatusChange]
+  );
+
+  const focusTests: FocusTestCase[] = testCases.map((tc) => ({
+    id: tc.id,
+    title: tc.title,
+    description: tc.description,
+    steps: tc.steps,
+    expected_result: tc.expected_result,
+    runStatus: tc.runStatus,
+  }));
+
   return (
+    <>
+    {focusModeOpen && (
+      <FocusMode
+        tests={focusTests}
+        runName={run?.name || 'Test Run'}
+        onStatusChange={handleFocusStatusChange}
+        onExit={() => setFocusModeOpen(false)}
+      />
+    )}
     <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -1531,6 +1559,17 @@ export default function RunDetail() {
                     <p className="text-gray-600">{run?.description}</p>
                   </div>
                   <div className="flex items-center gap-3">
+                    {/* Focus Mode button */}
+                    {testCases.length > 0 && (
+                      <button
+                        onClick={() => setFocusModeOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-semibold transition-colors"
+                        title="Cmd+Shift+F"
+                      >
+                        <i className="ri-focus-3-line" />
+                        Focus Mode
+                      </button>
+                    )}
                     <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold ${
                       run?.status === 'completed' ? 'bg-green-100 text-green-700' :
                       run?.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
@@ -3179,6 +3218,7 @@ export default function RunDetail() {
         </main>
       </div>
     </div>
+    </>
   );
 }
 

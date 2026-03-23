@@ -3,6 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { supabase } from '../../../lib/supabase';
 import TipTapEditor from '../../session-detail/components/QuillEditor';
 import ExportImportModal from './ExportImportModal';
+import { BulkActionBar } from '../../../components/BulkActionBar';
 
 interface TestCase {
   id: string;
@@ -1842,6 +1843,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   };
 
   return (
+    <>
     <div className="flex h-full">
       {/* 폴더 사이드바 */}
       <div className={`${isFolderPanelOpen ? 'w-80' : 'w-0'} bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden`}>
@@ -1952,66 +1954,6 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             </div>
           </div>
         </div>
-
-        {/* Bulk Action Bar */}
-        {selectedTestCaseIds.size > 0 && (
-          <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                {selectedTestCaseIds.size}
-              </div>
-              <span className="text-sm font-medium text-indigo-800">
-                {selectedTestCaseIds.size} test case{selectedTestCaseIds.size > 1 ? 's' : ''} selected
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowBulkFolderModal(true)}
-                className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
-              >
-                <i className="ri-folder-add-line"></i>
-                Add to Folder
-              </button>
-              <button
-                onClick={handleBulkRemoveFromFolder}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
-              >
-                <i className="ri-folder-reduce-line"></i>
-                Remove from Folder
-              </button>
-              <button
-                onClick={() => {
-                  fetchAvailableProjects();
-                  setShowCopyToProjectModal(true);
-                }}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
-              >
-                <i className="ri-file-copy-line"></i>
-                Copy to Project
-              </button>
-              <button
-                onClick={() => setShowExportImportModal(true)}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
-              >
-                <i className="ri-download-line"></i>
-                Export
-              </button>
-              <button
-                onClick={() => setShowBulkDeleteModal(true)}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all font-medium text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
-              >
-                <i className="ri-delete-bin-line"></i>
-                Delete
-              </button>
-              <button
-                onClick={() => setSelectedTestCaseIds(new Set())}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-all font-medium text-sm cursor-pointer whitespace-nowrap"
-              >
-                Deselect
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className="bg-white rounded-xl border border-gray-200">
           {filteredTestCases.length === 0 ? (
@@ -3687,5 +3629,12 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         </div>
       )}
     </div>
+    <BulkActionBar
+      selectedIds={selectedTestCaseIds}
+      onClear={() => setSelectedTestCaseIds(new Set())}
+      onMove={() => setShowBulkFolderModal(true)}
+      onDelete={() => setShowBulkDeleteModal(true)}
+    />
+    </>
   );
 }

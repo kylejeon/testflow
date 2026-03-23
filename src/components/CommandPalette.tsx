@@ -20,6 +20,7 @@ interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
   projectId?: string;
+  onAIGenerate?: () => void;
 }
 
 const RECENT_KEY = 'cmdpalette_recent';
@@ -41,7 +42,7 @@ function getRecent(): { id: string; title: string; icon: string; path: string }[
   }
 }
 
-export function CommandPalette({ open, onClose, projectId }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, projectId, onAIGenerate }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [groups, setGroups] = useState<CommandGroup[]>([]);
@@ -148,6 +149,27 @@ export function CommandPalette({ open, onClose, projectId }: CommandPaletteProps
     return [
       { label: 'Pages', items: pages },
       ...(actions.length > 0 ? [{ label: 'Actions', items: actions }] : []),
+      // AI actions always shown if projectId is present
+      ...(projectId && onAIGenerate
+        ? [
+            {
+              label: 'AI',
+              items: [
+                {
+                  id: 'action-ai-generate',
+                  title: 'Generate Test Cases with AI',
+                  subtitle: 'Describe a feature, AI writes the tests',
+                  icon: 'ri-sparkling-2-line',
+                  shortcut: '⌘⇧A',
+                  action: () => {
+                    onAIGenerate?.();
+                    onClose();
+                  },
+                },
+              ],
+            },
+          ]
+        : []),
     ];
   }, [projectId, navigateTo]);
 
