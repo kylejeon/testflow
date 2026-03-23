@@ -647,13 +647,12 @@ export default function HomePage() {
         {/* Navbar */}
         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100' : 'bg-transparent'}`}>
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <a href="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
-                <i className="ri-test-tube-line text-white text-base"></i>
-              </div>
-              <h1 className={`text-lg font-bold transition-colors ${scrolled ? 'text-gray-900' : 'text-white'}`} style={{ fontFamily: '"Pacifico", serif' }}>
-                Testably
-              </h1>
+            <a href="/">
+              <img
+                src={scrolled ? '/brand/logo-combo-light.svg' : '/brand/logo-combo-dark.svg'}
+                alt="Testably"
+                className="h-9 transition-opacity duration-300"
+              />
             </a>
 
             <div className="hidden md:flex items-center gap-8">
@@ -1196,11 +1195,8 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
               <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-7 h-7 bg-teal-500 rounded-lg flex items-center justify-center">
-                    <i className="ri-test-tube-line text-white text-sm"></i>
-                  </div>
-                  <span className="text-base font-bold text-gray-900" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+                <div className="mb-4">
+                  <img src="/brand/logo-combo-light.svg" alt="Testably" className="h-8" />
                 </div>
                 <p className="text-gray-500 text-sm leading-relaxed">{t.footer.tagline}</p>
               </div>

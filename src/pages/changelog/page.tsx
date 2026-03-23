@@ -126,11 +126,8 @@ export default function ChangelogPage() {
         {/* Navbar */}
         <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <button onClick={() => navigate('/')} className="flex items-center gap-2.5 cursor-pointer">
-              <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
-                <i className="ri-test-tube-line text-white text-base"></i>
-              </div>
-              <span className="text-lg font-bold text-gray-900" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+            <button onClick={() => navigate('/')} className="cursor-pointer">
+              <img src="/brand/logo-combo-light.svg" alt="Testably" className="h-9" />
             </button>
             <div className="flex items-center gap-3">
               <button onClick={() => navigate('/roadmap')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Roadmap</button>
@@ -222,12 +219,7 @@ export default function ChangelogPage() {
         {/* Footer */}
         <footer className="bg-gray-100 py-8">
           <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-teal-500 rounded-md flex items-center justify-center">
-                <i className="ri-test-tube-line text-white text-xs"></i>
-              </div>
-              <span className="text-sm font-bold text-gray-900" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
-            </div>
+            <img src="/brand/logo-combo-light.svg" alt="Testably" className="h-7" />
             <p className="text-gray-400 text-xs">© {new Date().getFullYear()} Testably. All rights reserved.</p>
           </div>
         </footer>

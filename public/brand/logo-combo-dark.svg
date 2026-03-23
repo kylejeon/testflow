@@ -1,0 +1,7 @@
+<svg width="500" height="100" viewBox="0 0 500 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Squircle icon -->
+  <rect x="8" y="14" width="72" height="72" rx="16" fill="#14b8a6"/>
+  <text x="44" y="63" text-anchor="middle" font-family="Pacifico, cursive" font-size="42" fill="#ffffff">T</text>
+  <!-- Wordmark -->
+  <text x="100" y="70" font-family="Pacifico, cursive" font-size="56" fill="#ffffff">Testably</text>
+</svg>

@@ -220,11 +220,8 @@ export default function TermsPage() {
         {/* Navbar */}
         <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <button onClick={() => navigate('/')} className="flex items-center gap-2.5 cursor-pointer">
-              <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
-                <i className="ri-test-tube-line text-white text-base"></i>
-              </div>
-              <span className="text-lg font-bold text-gray-900" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+            <button onClick={() => navigate('/')} className="cursor-pointer">
+              <img src="/brand/logo-combo-light.svg" alt="Testably" className="h-9" />
             </button>
             <div className="flex items-center gap-3">
               {/* Language Switcher */}
