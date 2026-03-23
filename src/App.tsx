@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { BrowserRouter, useNavigate } from "react-router-dom";
+import { BrowserRouter, useNavigate, useLocation } from "react-router-dom";
 import { AppRoutes } from "./router";
 import { I18nextProvider } from "react-i18next";
 import i18n from "./i18n";
@@ -8,6 +8,9 @@ import { useOnboarding } from "./hooks/useOnboarding";
 import { useSampleProject } from "./hooks/useSampleProject";
 import WelcomeScreen from "./components/onboarding/WelcomeScreen";
 import OnboardingChecklist from "./components/onboarding/OnboardingChecklist";
+import { CommandPalette } from "./components/CommandPalette";
+import { KeyboardShortcutsHelp } from "./components/KeyboardShortcutsHelp";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 
 /**
  * Supabase 인증 콜백(비밀번호 재설정, OAuth 등)이 루트 URL로 오는 경우를
@@ -45,6 +48,7 @@ function RecoveryHandler() {
  */
 function AppContent() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { state, completeWelcome, markStep, dismissChecklist, setSampleProjectCreated } = useOnboarding();
   const { createSampleProject } = useSampleProject();
 
@@ -52,6 +56,8 @@ function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [firstProjectId, setFirstProjectId] = useState<string | null>(null);
   const [welcomeForceHidden, setWelcomeForceHidden] = useState(false);
+  const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
 
   // Fetch authenticated user info
   useEffect(() => {
@@ -81,6 +87,13 @@ function AppContent() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Global keyboard shortcuts
+  useKeyboardShortcuts({
+    onOpenCommandPalette: () => setCmdPaletteOpen((p) => !p),
+    onShowShortcutsHelp: () => setShortcutsHelpOpen(true),
+    enabled: !cmdPaletteOpen && !shortcutsHelpOpen,
+  });
 
   // Fetch first project id for checklist deep links
   useEffect(() => {
@@ -148,6 +161,19 @@ function AppContent() {
           firstProjectId={firstProjectId}
         />
       )}
+
+      {/* Global Command Palette — Cmd+K */}
+      <CommandPalette
+        open={cmdPaletteOpen}
+        onClose={() => setCmdPaletteOpen(false)}
+        projectId={location.pathname.match(/\/projects\/([^/]+)/)?.[1]}
+      />
+
+      {/* Keyboard Shortcuts Help — ? */}
+      <KeyboardShortcutsHelp
+        open={shortcutsHelpOpen}
+        onClose={() => setShortcutsHelpOpen(false)}
+      />
     </>
   );
 }
