@@ -1,4 +1,4 @@
-import Logo from '../../components/Logo';
+import { LogoMark } from '../../components/Logo';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -627,9 +627,9 @@ export default function MilestoneDetail() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <header className="bg-white border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
-                  <Logo variant="light" className="h-10" />
+              <div className="flex items-center gap-2">
+                <Link to="/projects" className="flex items-center cursor-pointer">
+                  <LogoMark />
                 </Link>
               </div>
               <div className="flex items-center gap-3">
@@ -660,9 +660,9 @@ export default function MilestoneDetail() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <header className="bg-white border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
-                  <Logo variant="light" className="h-10" />
+              <div className="flex items-center gap-2">
+                <Link to="/projects" className="flex items-center cursor-pointer">
+                  <LogoMark />
                 </Link>
               </div>
               <div className="flex items-center gap-3">
@@ -701,27 +701,19 @@ export default function MilestoneDetail() {
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
-                <Logo variant="light" className="h-10" />
+              <Link to="/projects" className="flex items-center cursor-pointer">
+                <LogoMark />
               </Link>
 
               <div className="w-px h-5 bg-gray-200" />
 
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                  <i className="ri-folder-line text-white text-sm"></i>
-                </div>
-                <Link to={`/projects/${projectId}`} className="text-lg font-semibold text-gray-900 hover:text-teal-600 cursor-pointer">
-                  {project?.name}
-                </Link>
-              </div>
+              <Link to={`/projects/${projectId}`} className="text-sm text-gray-500 hover:text-teal-600 cursor-pointer">
+                {project?.name}
+              </Link>
 
               <div className="w-px h-5 bg-gray-200" />
 
-              <div className="flex items-center gap-2">
-                <i className="ri-flag-line text-gray-600"></i>
-                <span className="text-lg font-semibold text-gray-900">{milestone.name}</span>
-              </div>
+              <span className="text-sm text-gray-500">{milestone.name}</span>
             </div>
             
             <div className="flex items-center gap-3 relative">

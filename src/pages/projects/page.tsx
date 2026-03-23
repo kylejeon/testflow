@@ -1,4 +1,4 @@
-import Logo from '../../components/Logo';
+import { LogoMark } from '../../components/Logo';
 import { useState, useEffect } from 'react';
 import ProjectsContent from './components/ProjectsContent';
 import { Link } from 'react-router-dom';
@@ -108,8 +108,12 @@ export default function ProjectsPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <header className="bg-white border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 cursor-pointer">
-                <Logo variant="light" className="h-10" />
+              <div className="flex items-center gap-2">
+                <Link to="/projects" className="flex items-center cursor-pointer">
+                  <LogoMark />
+                </Link>
+                <div className="w-px h-5 bg-gray-200" />
+                <span className="text-sm text-gray-500">Projects</span>
               </div>
               <div className="flex items-center gap-3 relative">
                 <NotificationBell />

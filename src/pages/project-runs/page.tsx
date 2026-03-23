@@ -1,4 +1,4 @@
-import Logo from '../../components/Logo';
+import { LogoMark } from '../../components/Logo';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -1250,18 +1250,13 @@ export default function ProjectRunsPage() {
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
-                <Logo variant="light" className="h-10" />
+              <Link to="/projects" className="flex items-center cursor-pointer">
+                <LogoMark />
               </Link>
 
               <div className="w-px h-5 bg-gray-200" />
 
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                  <i className="ri-folder-line text-white text-sm"></i>
-                </div>
-                <span className="text-lg font-semibold text-gray-900">{project?.name}</span>
-              </div>
+              <span className="text-sm text-gray-500">{project?.name}</span>
             </div>
             
             <div className="flex items-center gap-4">

@@ -4,6 +4,35 @@ interface LogoProps {
 }
 
 /**
+ * LogoMark — HTML div version for product app headers.
+ * Uses bg-emerald-500 squircle + Pacifico "Testably" text.
+ * Renders as inline HTML so layout/gap control is precise.
+ */
+export function LogoMark() {
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className="w-8 h-8 bg-emerald-500 flex items-center justify-center flex-shrink-0"
+        style={{ borderRadius: '22%' }}
+      >
+        <span
+          className="text-white font-normal text-lg"
+          style={{ fontFamily: 'Pacifico, cursive', transform: 'translateY(-1px) translateX(0.5px)', lineHeight: 1 }}
+        >
+          T
+        </span>
+      </div>
+      <span
+        className="font-normal text-gray-900 text-xl leading-none"
+        style={{ fontFamily: 'Pacifico, cursive' }}
+      >
+        Testably
+      </span>
+    </div>
+  );
+}
+
+/**
  * Testably logo — inline SVG so Pacifico font (loaded via Google Fonts) renders correctly.
  * Using <img src=".svg"> isolates the SVG from page fonts and causes fallback rendering.
  *
