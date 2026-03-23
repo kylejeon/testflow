@@ -110,6 +110,10 @@ function AppContent() {
     [completeWelcome, createSampleProject, setSampleProjectCreated, markStep, navigate],
   );
 
+  const handleWelcomeSkip = useCallback(async () => {
+    await completeWelcome('other', '1');
+  }, [completeWelcome]);
+
   const showWelcome =
     isAuthenticated &&
     !state.isLoading &&
@@ -128,8 +132,8 @@ function AppContent() {
 
       {showWelcome && (
         <WelcomeScreen
-          userName={userName}
           onComplete={handleWelcomeComplete}
+          onSkip={handleWelcomeSkip}
         />
       )}
 

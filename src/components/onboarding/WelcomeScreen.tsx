@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Rocket, Package, Loader2 } from 'lucide-react';
+import { Rocket, Package, Loader2, X } from 'lucide-react';
 import Logo from '../Logo';
 
 interface WelcomeScreenProps {
-  userName: string;
   onComplete: (role: string, teamSize: string, useSample: boolean) => Promise<void>;
+  onSkip: () => Promise<void>;
 }
 
 type Role = 'qa_engineer' | 'developer' | 'product_manager' | 'other';
 type TeamSize = '1' | '2-5' | '6-10' | '10+';
 type WorkspaceChoice = 'fresh' | 'sample';
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ userName, onComplete }) => {
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, onSkip }) => {
   const { t } = useTranslation('onboarding');
 
   const [role, setRole] = useState<Role | null>(null);
@@ -38,25 +38,32 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ userName, onComplete }) =
     }
   };
 
-  const firstName = userName.split(' ')[0] || userName;
-
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.6)' }}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full mx-4 overflow-y-auto max-h-[90vh]"
+        className="relative bg-white rounded-2xl shadow-2xl w-full mx-4 overflow-y-auto max-h-[90vh]"
         style={{ maxWidth: 520, padding: '48px' }}
       >
+        {/* Close button */}
+        <button
+          onClick={onSkip}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          aria-label="Skip onboarding"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
         {/* Logo */}
-        <div className="flex justify-center mb-6">
+        <div className="flex items-center justify-center mb-6">
           <Logo className="h-10" />
         </div>
 
         {/* Greeting */}
         <h1 className="text-2xl font-bold text-center mb-1" style={{ color: '#1A3A4A' }}>
-          {t('welcome.greeting', { name: firstName })}
+          {t('welcome.greeting')}
         </h1>
         <p className="text-sm text-center text-gray-500 mb-6">
           {t('welcome.subtitle')}

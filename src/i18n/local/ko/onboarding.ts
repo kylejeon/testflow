@@ -1,7 +1,7 @@
 export const onboarding = {
   // 환영 화면
   welcome: {
-    greeting: '{{name}}님, Testably에 오신 것을 환영합니다!',
+    greeting: 'Testably에 오신 것을 환영합니다!',
     subtitle: '2분 안에 워크스페이스를 설정해 보세요.',
     roleLabel: '직무',
     teamSizeLabel: '팀 규모',

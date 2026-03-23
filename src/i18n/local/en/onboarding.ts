@@ -1,7 +1,7 @@
 export const onboarding = {
   // Welcome Screen
   welcome: {
-    greeting: 'Welcome to Testably, {{name}}!',
+    greeting: 'Welcome to Testably!',
     subtitle: "Let's set up your workspace in under 2 minutes.",
     roleLabel: 'Your Role',
     teamSizeLabel: 'Team Size',
