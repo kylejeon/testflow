@@ -1,7 +1,8 @@
 import Logo from '../../components/Logo';
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { WEBHOOK_EVENTS, WebhookEventType } from '../../hooks/useWebhooks';
 import SEOHead from '../../components/SEOHead';
 import NotificationSettingsPanel from './components/NotificationSettingsPanel';
 import ProfileSettingsPanel from './components/ProfileSettingsPanel';
@@ -96,14 +97,38 @@ export default function SettingsPage() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<'github' | 'gitlab' | 'python'>('github');
 
+  // Slack / Teams webhook management
+  const [webhooks, setWebhooks] = useState<any[]>([]);
+  const [webhookProjects, setWebhookProjects] = useState<any[]>([]);
+  const [loadingWebhooks, setLoadingWebhooks] = useState(false);
+  const [showWebhookModal, setShowWebhookModal] = useState(false);
+  const [editingWebhookId, setEditingWebhookId] = useState<string | null>(null);
+  const [webhookForm, setWebhookForm] = useState({ project_id: '', type: 'slack' as 'slack' | 'teams', webhook_url: '', channel_name: '', events: ['run_created', 'run_completed', 'milestone_started', 'milestone_completed'] as WebhookEventType[] });
+  const [savingWebhook, setSavingWebhook] = useState(false);
+  const [webhookFormError, setWebhookFormError] = useState('');
+  const [testingWebhookId, setTestingWebhookId] = useState<string | null>(null);
+  const [webhookTestResult, setWebhookTestResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null);
+  const [webhookLogsId, setWebhookLogsId] = useState<string | null>(null);
+  const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
+  const [webhookLogsLoading, setWebhookLogsLoading] = useState(false);
+
+  const [searchParams] = useSearchParams();
+
   useEffect(() => {
     fetchUserProfile();
     fetchJiraSettings();
+    const tab = searchParams.get('tab');
+    if (tab === 'integrations' || tab === 'cicd' || tab === 'notifications' || tab === 'general' || tab === 'profile') {
+      setActiveTab(tab as typeof activeTab);
+    }
   }, []);
 
   useEffect(() => {
     if (activeTab === 'cicd') {
       fetchCITokens();
+    }
+    if (activeTab === 'integrations') {
+      fetchWebhooks();
     }
   }, [activeTab]);
 
@@ -304,6 +329,120 @@ export default function SettingsPage() {
       setSaving(false);
     }
   };
+
+  // ── Webhook helpers ───────────────────────────────────────────────────────
+
+  const WEBHOOK_TYPE_META = {
+    slack: { label: 'Slack', icon: 'ri-slack-line', color: 'bg-purple-100 text-purple-700', placeholder: 'https://hooks.slack.com/services/...' },
+    teams: { label: 'Microsoft Teams', icon: 'ri-microsoft-line', color: 'bg-blue-100 text-blue-700', placeholder: 'https://prod-xx.westus.logic.azure.com/workflows/...' },
+  };
+
+  const fetchWebhooks = async () => {
+    setLoadingWebhooks(true);
+    try {
+      const { data: projects } = await supabase.from('projects').select('id, name').order('name');
+      setWebhookProjects(projects ?? []);
+      if (projects && projects.length > 0) {
+        const { data: integrations } = await supabase
+          .from('integrations')
+          .select('*')
+          .in('project_id', projects.map(p => p.id))
+          .order('created_at', { ascending: false });
+        setWebhooks(integrations ?? []);
+      } else {
+        setWebhooks([]);
+      }
+    } catch (err) {
+      console.error('Webhook fetch error:', err);
+    } finally {
+      setLoadingWebhooks(false);
+    }
+  };
+
+  const openAddWebhookModal = () => {
+    setEditingWebhookId(null);
+    setWebhookForm({ project_id: webhookProjects[0]?.id ?? '', type: 'slack', webhook_url: '', channel_name: '', events: ['run_created', 'run_completed', 'milestone_started', 'milestone_completed'] });
+    setWebhookFormError('');
+    setShowWebhookModal(true);
+  };
+
+  const openEditWebhookModal = (wh: any) => {
+    setEditingWebhookId(wh.id);
+    setWebhookForm({ project_id: wh.project_id, type: wh.type, webhook_url: wh.webhook_url, channel_name: wh.channel_name ?? '', events: wh.events });
+    setWebhookFormError('');
+    setShowWebhookModal(true);
+  };
+
+  const handleSaveWebhook = async () => {
+    setWebhookFormError('');
+    if (!webhookForm.project_id) { setWebhookFormError('Please select a project.'); return; }
+    if (!webhookForm.webhook_url.trim()) { setWebhookFormError('Webhook URL is required.'); return; }
+    if (!webhookForm.webhook_url.startsWith('https://')) { setWebhookFormError('Webhook URL must start with https://.'); return; }
+    if (webhookForm.events.length === 0) { setWebhookFormError('Select at least one event.'); return; }
+
+    setSavingWebhook(true);
+    try {
+      const payload = { project_id: webhookForm.project_id, type: webhookForm.type, webhook_url: webhookForm.webhook_url.trim(), channel_name: webhookForm.channel_name.trim() || null, events: webhookForm.events };
+      if (editingWebhookId) {
+        const { error } = await supabase.from('integrations').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editingWebhookId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('integrations').insert(payload);
+        if (error) throw error;
+      }
+      setShowWebhookModal(false);
+      fetchWebhooks();
+    } catch (err: any) {
+      setWebhookFormError(err.message || 'Failed to save integration.');
+    } finally {
+      setSavingWebhook(false);
+    }
+  };
+
+  const handleToggleWebhookActive = async (wh: any) => {
+    const { error } = await supabase.from('integrations').update({ is_active: !wh.is_active, updated_at: new Date().toISOString() }).eq('id', wh.id);
+    if (!error) setWebhooks(prev => prev.map(w => w.id === wh.id ? { ...w, is_active: !w.is_active } : w));
+  };
+
+  const handleDeleteWebhook = async (whId: string) => {
+    if (!confirm('Delete this integration? Webhook delivery will stop immediately.')) return;
+    const { error } = await supabase.from('integrations').delete().eq('id', whId);
+    if (!error) setWebhooks(prev => prev.filter(w => w.id !== whId));
+  };
+
+  const handleTestWebhook = async (wh: any) => {
+    setTestingWebhookId(wh.id);
+    setWebhookTestResult(null);
+    try {
+      const project = webhookProjects.find(p => p.id === wh.project_id);
+      const projectLink = `https://www.testably.app/projects/${wh.project_id}`;
+      const testPayload = wh.type === 'slack'
+        ? { blocks: [{ type: 'header', text: { type: 'plain_text', text: '🧪 Testably Test Message', emoji: true } }, { type: 'section', text: { type: 'mrkdwn', text: `Webhook connection verified for *${project?.name ?? 'your project'}*.` } }] }
+        : { type: 'message', attachments: [{ contentType: 'application/vnd.microsoft.card.adaptive', contentUrl: null, content: { $schema: 'http://adaptivecards.io/schemas/adaptive-card.json', type: 'AdaptiveCard', version: '1.4', body: [{ type: 'TextBlock', size: 'Medium', weight: 'Bolder', text: '🧪 Testably Test Message' }, { type: 'TextBlock', text: `Webhook connection verified for ${project?.name ?? 'your project'}.`, wrap: true }], actions: [{ type: 'Action.OpenUrl', title: 'View in Testably', url: projectLink }] } }] };
+      const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/send-webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: wh.webhook_url, payload: testPayload }) });
+      const json = await res.json();
+      const ok = res.ok && json.status >= 200 && json.status < 300;
+      setWebhookTestResult({ id: wh.id, ok, msg: ok ? 'Test message sent successfully!' : `Delivery failed (HTTP ${json.status ?? '?'})` });
+    } catch (err: any) {
+      setWebhookTestResult({ id: wh.id, ok: false, msg: err.message ?? 'Network error' });
+    } finally {
+      setTestingWebhookId(null);
+    }
+  };
+
+  const openWebhookLogs = async (whId: string) => {
+    setWebhookLogsId(whId);
+    setWebhookLogsLoading(true);
+    const { data } = await supabase.from('integration_logs').select('id, event_type, status, response_code, error_message, created_at').eq('integration_id', whId).order('created_at', { ascending: false }).limit(50);
+    setWebhookLogs(data ?? []);
+    setWebhookLogsLoading(false);
+  };
+
+  const toggleWebhookEvent = (eventType: WebhookEventType) => {
+    setWebhookForm(prev => ({ ...prev, events: prev.events.includes(eventType) ? prev.events.filter(e => e !== eventType) : [...prev.events, eventType] }));
+  };
+
+  // ── CI/CD helpers ─────────────────────────────────────────────────────────
 
   const fetchCITokens = async () => {
     try {
@@ -1089,6 +1228,7 @@ def pytest_sessionfinish(session, exitstatus):
 
                   {activeTab === 'integrations' && (
                     <div className="space-y-8">
+                      {/* ── Jira Integration ── */}
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <h2 className="text-xl font-bold text-gray-900">Jira Integration</h2>
@@ -1267,6 +1407,177 @@ def pytest_sessionfinish(session, exitstatus):
                                 )}
                               </button>
                             </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Slack & Teams Webhooks ── */}
+                      <div className="pt-4 border-t border-gray-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <h2 className="text-xl font-bold text-gray-900">Slack &amp; Teams Webhooks</h2>
+                          {!isStarterOrHigher && (
+                            <span className="px-3 py-1 bg-yellow-50 text-yellow-700 border border-yellow-300 rounded-full text-xs font-semibold flex items-center gap-1">
+                              <i className="ri-star-line"></i>
+                              Requires Starter or above
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-gray-600 mb-6">Send real-time notifications to Slack or Microsoft Teams when events occur in your projects.</p>
+
+                        {!isStarterOrHigher && (
+                          <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i className="ri-lock-line text-yellow-600 text-xl"></i>
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-gray-900 mb-1">Slack &amp; Teams Integration is available on Starter and above</h3>
+                                <p className="text-sm text-gray-600 mb-3">Get real-time notifications in Slack or Microsoft Teams when test runs complete, milestones change, and more.</p>
+                                <button className="px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all cursor-pointer whitespace-nowrap">
+                                  <i className="ri-arrow-up-circle-line mr-2"></i>Contact Us to Upgrade
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {isStarterOrHigher && (
+                          <div className={loadingWebhooks ? 'opacity-50 pointer-events-none' : ''}>
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="text-sm text-gray-600">{webhooks.length} webhook{webhooks.length !== 1 ? 's' : ''} configured across all projects</span>
+                              <button
+                                onClick={openAddWebhookModal}
+                                className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold text-sm cursor-pointer whitespace-nowrap"
+                              >
+                                <i className="ri-add-line"></i>Add Integration
+                              </button>
+                            </div>
+
+                            {loadingWebhooks ? (
+                              <div className="flex justify-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                              </div>
+                            ) : webhooks.length === 0 ? (
+                              <div className="bg-gray-50 rounded-xl border border-gray-200 p-10 text-center">
+                                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                  <i className="ri-plug-line text-2xl text-gray-400"></i>
+                                </div>
+                                <h3 className="text-base font-semibold text-gray-900 mb-1">No webhooks yet</h3>
+                                <p className="text-sm text-gray-500 mb-4">Connect Slack or Microsoft Teams to receive real-time alerts about test runs and milestones.</p>
+                                <button onClick={openAddWebhookModal} className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold text-sm cursor-pointer">
+                                  <i className="ri-add-line"></i>Add your first integration
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                {webhooks.map(wh => {
+                                  const meta = WEBHOOK_TYPE_META[wh.type as 'slack' | 'teams'];
+                                  const project = webhookProjects.find(p => p.id === wh.project_id);
+                                  const isTestingThis = testingWebhookId === wh.id;
+                                  const thisTestResult = webhookTestResult?.id === wh.id ? webhookTestResult : null;
+                                  const showingLogs = webhookLogsId === wh.id;
+                                  return (
+                                    <div key={wh.id} className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                                      <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${meta.color}`}>
+                                            <i className={`${meta.icon} text-lg`}></i>
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <span className="font-semibold text-gray-900 text-sm">{meta.label}</span>
+                                              {wh.channel_name && <span className="text-sm text-gray-500">#{wh.channel_name}</span>}
+                                              <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${wh.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                {wh.is_active ? 'Active' : 'Paused'}
+                                              </span>
+                                              {project && (
+                                                <span className="px-2 py-0.5 text-xs font-semibold bg-orange-50 text-orange-700 rounded-full border border-orange-100 truncate max-w-[160px]">
+                                                  <i className="ri-folder-line mr-1"></i>{project.name}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <p className="text-xs text-gray-400 mt-0.5 truncate">{wh.webhook_url}</p>
+                                            <div className="flex flex-wrap gap-1 mt-1.5">
+                                              {(wh.events as string[]).map((ev: string) => {
+                                                const evMeta = WEBHOOK_EVENTS.find(e => e.type === ev);
+                                                return (
+                                                  <span key={ev} className="px-1.5 py-0.5 text-xs bg-teal-50 text-teal-700 rounded-full border border-teal-100">
+                                                    {evMeta?.label ?? ev}
+                                                  </span>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                                          <button onClick={() => handleTestWebhook(wh)} disabled={isTestingThis} className="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1 whitespace-nowrap">
+                                            {isTestingThis ? <><i className="ri-loader-4-line animate-spin"></i> Sending…</> : <><i className="ri-send-plane-line"></i> Test</>}
+                                          </button>
+                                          <button onClick={() => showingLogs ? setWebhookLogsId(null) : openWebhookLogs(wh.id)} className="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap">
+                                            <i className="ri-history-line"></i> Logs
+                                          </button>
+                                          <button onClick={() => handleToggleWebhookActive(wh)} className="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap">
+                                            <i className={wh.is_active ? 'ri-pause-line' : 'ri-play-line'}></i>
+                                            {wh.is_active ? 'Pause' : 'Resume'}
+                                          </button>
+                                          <button onClick={() => openEditWebhookModal(wh)} className="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-colors cursor-pointer">
+                                            <i className="ri-edit-line text-sm"></i>
+                                          </button>
+                                          <button onClick={() => handleDeleteWebhook(wh.id)} className="w-7 h-7 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-lg transition-colors cursor-pointer">
+                                            <i className="ri-delete-bin-line text-sm"></i>
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      {thisTestResult && (
+                                        <div className={`mt-3 px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${thisTestResult.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                          <i className={thisTestResult.ok ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill'}></i>
+                                          {thisTestResult.msg}
+                                        </div>
+                                      )}
+
+                                      {showingLogs && (
+                                        <div className="mt-3 border-t border-gray-200 pt-3">
+                                          <h4 className="text-sm font-semibold text-gray-700 mb-2">Delivery Logs (last 50)</h4>
+                                          {webhookLogsLoading ? (
+                                            <div className="flex items-center gap-2 text-sm text-gray-500"><i className="ri-loader-4-line animate-spin"></i> Loading…</div>
+                                          ) : webhookLogs.length === 0 ? (
+                                            <p className="text-sm text-gray-400">No deliveries yet.</p>
+                                          ) : (
+                                            <div className="overflow-x-auto">
+                                              <table className="w-full text-sm">
+                                                <thead>
+                                                  <tr className="text-xs text-gray-500 border-b border-gray-100">
+                                                    <th className="text-left py-1.5 pr-4 font-semibold">Event</th>
+                                                    <th className="text-left py-1.5 pr-4 font-semibold">Status</th>
+                                                    <th className="text-left py-1.5 pr-4 font-semibold">Code</th>
+                                                    <th className="text-left py-1.5 font-semibold">Time</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {webhookLogs.map(log => (
+                                                    <tr key={log.id} className="border-b border-gray-50">
+                                                      <td className="py-1.5 pr-4 font-mono text-xs text-gray-600">{log.event_type}</td>
+                                                      <td className="py-1.5 pr-4">
+                                                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${log.status === 'success' ? 'bg-green-100 text-green-700' : log.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                          {log.status}
+                                                        </span>
+                                                      </td>
+                                                      <td className="py-1.5 pr-4 text-gray-500">{log.response_code ?? '—'}</td>
+                                                      <td className="py-1.5 text-gray-400 text-xs whitespace-nowrap">{new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                                                    </tr>
+                                                  ))}
+                                                </tbody>
+                                              </table>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1791,6 +2102,102 @@ def pytest_sessionfinish(session, exitstatus):
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Webhook Add/Edit Modal ── */}
+      {showWebhookModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                  <i className="ri-plug-line text-teal-600 text-xl"></i>
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">{editingWebhookId ? 'Edit Integration' : 'Add Integration'}</h2>
+                  <p className="text-sm text-gray-500">Configure a Slack or Teams webhook</p>
+                </div>
+              </div>
+              <button onClick={() => setShowWebhookModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                <i className="ri-close-line text-xl text-gray-500"></i>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Project selector */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Project <span className="text-red-500">*</span></label>
+                <select
+                  value={webhookForm.project_id}
+                  onChange={e => setWebhookForm(prev => ({ ...prev, project_id: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm cursor-pointer"
+                >
+                  <option value="">Select a project...</option>
+                  {webhookProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+
+              {/* Platform */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Platform</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {(['slack', 'teams'] as const).map(t => {
+                    const m = WEBHOOK_TYPE_META[t];
+                    return (
+                      <label key={t} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${webhookForm.type === t ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                        <input type="radio" name="wh-type" value={t} checked={webhookForm.type === t} onChange={() => setWebhookForm(prev => ({ ...prev, type: t }))} className="w-4 h-4 text-teal-600" />
+                        <div className={`w-7 h-7 rounded flex items-center justify-center ${m.color}`}><i className={`${m.icon} text-base`}></i></div>
+                        <span className="font-semibold text-sm text-gray-900">{m.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Webhook URL */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Webhook URL <span className="text-red-500">*</span></label>
+                <input type="url" value={webhookForm.webhook_url} onChange={e => setWebhookForm(prev => ({ ...prev, webhook_url: e.target.value }))} placeholder={WEBHOOK_TYPE_META[webhookForm.type].placeholder} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm" />
+              </div>
+
+              {/* Channel name */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Channel Name <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input type="text" value={webhookForm.channel_name} onChange={e => setWebhookForm(prev => ({ ...prev, channel_name: e.target.value }))} placeholder={webhookForm.type === 'slack' ? 'e.g. qa-alerts' : 'e.g. QA Notifications'} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm" />
+                <p className="text-xs text-gray-500 mt-1">Display label only — does not affect delivery.</p>
+              </div>
+
+              {/* Events */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Notify on <span className="text-red-500">*</span></label>
+                <div className="space-y-2">
+                  {WEBHOOK_EVENTS.map(ev => (
+                    <label key={ev.type} className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                      <input type="checkbox" checked={webhookForm.events.includes(ev.type)} onChange={() => toggleWebhookEvent(ev.type)} className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{ev.label}</p>
+                        <p className="text-xs text-gray-500">{ev.description}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {webhookFormError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
+                  <i className="ri-error-warning-line"></i>{webhookFormError}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowWebhookModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer">Cancel</button>
+                <button onClick={handleSaveWebhook} disabled={savingWebhook} className="flex-1 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-semibold text-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2">
+                  {savingWebhook ? <><i className="ri-loader-4-line animate-spin"></i> Saving…</> : <><i className="ri-save-line"></i> {editingWebhookId ? 'Save Changes' : 'Add Integration'}</>}
+                </button>
+              </div>
             </div>
           </div>
         </div>

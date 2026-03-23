@@ -34,12 +34,15 @@ export default function ProjectDetail() {
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [memberRefreshTrigger, setMemberRefreshTrigger] = useState(0);
+  const [projectIntegrations, setProjectIntegrations] = useState<any[]>([]);
+  const [jiraConfigured, setJiraConfigured] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (id) {
       fetchData();
+      fetchIntegrationStatus();
     }
     fetchUserProfile();
   }, [id]);
@@ -68,6 +71,16 @@ export default function ProjectDetail() {
     } catch (error) {
       console.error('프로필 로딩 오류:', error);
     }
+  };
+
+  const fetchIntegrationStatus = async () => {
+    if (!id) return;
+    const [intRes, jiraRes] = await Promise.all([
+      supabase.from('integrations').select('id, type, channel_name, is_active').eq('project_id', id),
+      supabase.from('jira_settings').select('id, domain').maybeSingle(),
+    ]);
+    setProjectIntegrations(intRes.data ?? []);
+    setJiraConfigured(!!(jiraRes.data?.domain));
   };
 
   const fetchData = async () => {
@@ -677,12 +690,6 @@ export default function ProjectDetail() {
                   >
                     Sessions
                   </Link>
-                  <Link
-                    to={`/projects/${id}/integrations`}
-                    className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
-                  >
-                    Integrations
-                  </Link>
                 </nav>
 
                 {/* Profile */}
@@ -960,6 +967,56 @@ export default function ProjectDetail() {
                     onInviteClick={() => setShowInviteModal(true)}
                     refreshTrigger={memberRefreshTrigger}
                   />
+
+                  {/* Integrations */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-bold text-gray-900">INTEGRATIONS</h2>
+                      <Link
+                        to="/settings?tab=integrations"
+                        className="text-sm text-teal-600 hover:text-teal-700 font-medium whitespace-nowrap"
+                      >
+                        Manage →
+                      </Link>
+                    </div>
+                    {projectIntegrations.length === 0 && !jiraConfigured ? (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-gray-500 mb-3">No integrations configured.</p>
+                        <Link to="/settings?tab=integrations" className="text-sm text-teal-600 hover:text-teal-700 font-medium">
+                          Set up in Settings →
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {jiraConfigured && (
+                          <div className="flex items-center justify-between py-2 px-3 bg-blue-50 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <i className="ri-jira-line text-blue-600 text-base"></i>
+                              <span className="text-sm font-medium text-gray-900">Jira</span>
+                              <span className="px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-700 rounded-full">Connected</span>
+                            </div>
+                          </div>
+                        )}
+                        {projectIntegrations.map(integration => {
+                          const isSlack = integration.type === 'slack';
+                          return (
+                            <div key={integration.id} className={`flex items-center justify-between py-2 px-3 ${isSlack ? 'bg-purple-50' : 'bg-blue-50'} rounded-lg`}>
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <i className={`${isSlack ? 'ri-slack-line text-purple-600' : 'ri-microsoft-line text-blue-600'} text-base flex-shrink-0`}></i>
+                                <span className="text-sm font-medium text-gray-900 flex-shrink-0">{isSlack ? 'Slack' : 'Teams'}</span>
+                                {integration.channel_name && (
+                                  <span className="text-xs text-gray-500 truncate">#{integration.channel_name}</span>
+                                )}
+                                <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${integration.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                  {integration.is_active ? 'Active' : 'Paused'}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Timeline */}
                   <div className="bg-white rounded-lg border border-gray-200 p-6">
