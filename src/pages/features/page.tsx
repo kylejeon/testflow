@@ -278,12 +278,7 @@ export default function FeaturesPage() {
         {/* Footer */}
         <footer className="bg-gray-100 py-8">
           <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-teal-500 rounded-md flex items-center justify-center">
-                <i className="ri-test-tube-line text-white text-xs"></i>
-              </div>
-              <span className="text-sm font-bold text-gray-900" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
-            </div>
+            <Logo variant="light" className="h-7" />
             <p className="text-gray-400 text-xs">© {new Date().getFullYear()} Testably. All rights reserved.</p>
           </div>
         </footer>

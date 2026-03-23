@@ -31,9 +31,9 @@ export default function Logo({ variant = 'light', className = 'h-9' }: LogoProps
         x="44"
         y="63"
         textAnchor="middle"
-        fontFamily="Pacifico, cursive"
         fontSize="42"
         fill="#ffffff"
+        style={{ fontFamily: 'Pacifico, cursive' }}
       >
         T
       </text>
@@ -41,9 +41,9 @@ export default function Logo({ variant = 'light', className = 'h-9' }: LogoProps
       <text
         x="100"
         y="70"
-        fontFamily="Pacifico, cursive"
         fontSize="56"
         fill={textColor}
+        style={{ fontFamily: 'Pacifico, cursive' }}
       >
         Testably
       </text>
