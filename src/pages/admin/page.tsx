@@ -1,3 +1,4 @@
+import Logo from '../../components/Logo';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -210,11 +211,8 @@ export default function AdminPage() {
       <header className="bg-slate-900 text-white px-6 py-4 sticky top-0 z-40">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
-              <div className="w-9 h-9 bg-teal-500 rounded-lg flex items-center justify-center">
-                <i className="ri-test-tube-line text-lg text-white"></i>
-              </div>
-              <span className="text-lg font-bold" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+            <Link to="/projects" className="cursor-pointer">
+              <Logo variant="light" className="h-9" />
             </Link>
             <span className="h-5 w-px bg-slate-700"></span>
             <div className="flex items-center gap-2">

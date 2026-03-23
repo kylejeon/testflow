@@ -1,3 +1,4 @@
+import Logo from '../../components/Logo';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -628,12 +629,7 @@ export default function MilestoneDetail() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
-                  <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                    <i className="ri-test-tube-line text-xl text-white"></i>
-                  </div>
-                  <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                    TestFlow
-                  </span>
+                  <Logo variant="light" className="h-10" />
                 </Link>
               </div>
               <div className="flex items-center gap-3">
@@ -666,12 +662,7 @@ export default function MilestoneDetail() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
-                  <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                    <i className="ri-test-tube-line text-xl text-white"></i>
-                  </div>
-                  <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                    TestFlow
-                  </span>
+                  <Logo variant="light" className="h-10" />
                 </Link>
               </div>
               <div className="flex items-center gap-3">
@@ -711,12 +702,7 @@ export default function MilestoneDetail() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
-                <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                  <i className="ri-test-tube-line text-xl text-white"></i>
-                </div>
-                <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>
-                  TestFlow
-                </span>
+                <Logo variant="light" className="h-10" />
               </Link>
               
               <div className="text-gray-300 text-xl mx-2">/</div>

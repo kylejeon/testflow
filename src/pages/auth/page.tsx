@@ -1,3 +1,4 @@
+import Logo from '../../components/Logo';
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -395,11 +396,8 @@ export default function AuthPage() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-teal-500 rounded-xl flex items-center justify-center">
-                <i className="ri-test-tube-line text-2xl text-white"></i>
-              </div>
-              <span className="text-2xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+            <div className="flex justify-center mb-4">
+              <Logo variant="light" className="h-12" />
             </div>
             <p className="text-gray-600">
               {mode === 'reset' ? 'Reset your password'

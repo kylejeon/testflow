@@ -1,3 +1,4 @@
+import Logo from '../../components/Logo';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -499,10 +500,7 @@ export default function ProjectDetail() {
             <header className="bg-white border-b border-gray-200 px-6 py-4">
               <div className="flex items-center justify-between">
                 <Link to="/projects" className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                    <i className="ri-test-tube-line text-xl text-white"></i>
-                  </div>
-                  <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+                  <Logo variant="light" className="h-10" />
                 </Link>
                 <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
                   {userProfile?.avatar_emoji ? (
@@ -534,10 +532,7 @@ export default function ProjectDetail() {
             <header className="bg-white border-b border-gray-200 px-6 py-4">
               <div className="flex items-center justify-between">
                 <Link to="/projects" className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                    <i className="ri-test-tube-line text-xl text-white"></i>
-                  </div>
-                  <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+                  <Logo variant="light" className="h-10" />
                 </Link>
                 <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
                   {userProfile?.avatar_emoji ? (
@@ -630,10 +625,7 @@ export default function ProjectDetail() {
               {/* Left: Logo / Project Name */}
               <div className="flex items-center gap-4">
                 <Link to="/projects" className="flex items-center gap-3 cursor-pointer">
-                  <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
-                    <i className="ri-test-tube-line text-xl text-white"></i>
-                  </div>
-                  <span className="text-xl font-bold" style={{ fontFamily: '"Pacifico", serif' }}>Testably</span>
+                  <Logo variant="light" className="h-10" />
                 </Link>
 
                 <div className="text-gray-300 text-xl mx-2">/</div>
