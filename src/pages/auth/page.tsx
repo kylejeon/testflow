@@ -395,11 +395,29 @@ export default function AuthPage() {
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <Logo variant="light" className="h-12" />
+          <div className="text-center mb-10">
+            <div className="flex flex-col items-center gap-3 mb-3">
+              {/* Squircle icon — brand squircle shape (22% radius) */}
+              <div
+                className="w-14 h-14 bg-teal-500 flex items-center justify-center"
+                style={{ borderRadius: '22%' }}
+              >
+                <span
+                  className="text-3xl text-white"
+                  style={{ fontFamily: 'Pacifico, cursive', marginTop: '-2px' }}
+                >
+                  T
+                </span>
+              </div>
+              {/* Wordmark: font-normal only — Pacifico has no 700 weight */}
+              <span
+                className="text-3xl text-gray-900"
+                style={{ fontFamily: 'Pacifico, cursive', letterSpacing: '0.5px' }}
+              >
+                Testably
+              </span>
             </div>
-            <p className="text-gray-600">
+            <p className="text-gray-500 text-base">
               {mode === 'reset' ? 'Reset your password'
                 : mode === 'new_password' ? 'Set a new password'
                 : invitation ? 'Sign up to accept your project invitation'
