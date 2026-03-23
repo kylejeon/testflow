@@ -1,0 +1,52 @@
+interface LogoProps {
+  variant?: 'light' | 'dark';
+  className?: string;
+}
+
+/**
+ * Testably logo — inline SVG so Pacifico font (loaded via Google Fonts) renders correctly.
+ * Using <img src=".svg"> isolates the SVG from page fonts and causes fallback rendering.
+ *
+ * variant="light"  → dark wordmark, for white/light backgrounds
+ * variant="dark"   → white wordmark, for dark/navy backgrounds
+ */
+export default function Logo({ variant = 'light', className = 'h-9' }: LogoProps) {
+  const textColor = variant === 'dark' ? '#ffffff' : '#0a0a0a';
+
+  return (
+    <svg
+      width="500"
+      height="100"
+      viewBox="0 0 500 100"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      style={{ width: 'auto' }}
+      aria-label="Testably"
+      role="img"
+    >
+      {/* Squircle icon */}
+      <rect x="8" y="14" width="72" height="72" rx="16" fill="#14b8a6" />
+      <text
+        x="44"
+        y="63"
+        textAnchor="middle"
+        fontFamily="Pacifico, cursive"
+        fontSize="42"
+        fill="#ffffff"
+      >
+        T
+      </text>
+      {/* Wordmark */}
+      <text
+        x="100"
+        y="70"
+        fontFamily="Pacifico, cursive"
+        fontSize="56"
+        fill={textColor}
+      >
+        Testably
+      </text>
+    </svg>
+  );
+}

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import Logo from '../../components/Logo';
 import SEOHead from '../../components/SEOHead';
 
 const features = [
@@ -188,7 +189,7 @@ export default function FeaturesPage() {
         <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
             <button onClick={() => navigate('/')} className="cursor-pointer">
-              <img src="/brand/logo-combo-light.svg" alt="Testably" className="h-9" />
+              <Logo variant="light" className="h-9" />
             </button>
             <div className="flex items-center gap-3">
               <button onClick={() => navigate('/pricing')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Pricing</button>

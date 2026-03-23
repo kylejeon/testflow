@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEOHead from '../../components/SEOHead';
+import Logo from '../../components/Logo';
 import { useLanguage } from '../../hooks/useLanguage';
 
 const content = {
@@ -221,7 +222,7 @@ export default function TermsPage() {
         <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
             <button onClick={() => navigate('/')} className="cursor-pointer">
-              <img src="/brand/logo-combo-light.svg" alt="Testably" className="h-9" />
+              <Logo variant="light" className="h-9" />
             </button>
             <div className="flex items-center gap-3">
               {/* Language Switcher */}
