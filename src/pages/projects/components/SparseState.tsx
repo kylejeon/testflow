@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Project } from '../../../lib/supabase';
+import { Avatar } from '../../../components/Avatar';
 
 interface SparseStateProps {
   projects: Project[];
   testCaseCounts: Record<string, number>;
   testRunCounts: Record<string, number>;
   projectPassRates?: Record<string, number | null>;
-  projectMembers?: Record<string, Array<{ initials: string; color: string }>>;
+  projectMembers?: Record<string, Array<{ initials: string; color: string; userId?: string; name?: string }>>;
   onCreateProject: () => void;
   onTrySample: () => void;
   isSampleLoading?: boolean;
@@ -129,7 +130,7 @@ function ProjectCard({
   testCaseCount: number;
   testRunCount: number;
   passRate?: number | null;
-  members?: Array<{ initials: string; color: string }>;
+  members?: Array<{ initials: string; color: string; userId?: string; name?: string }>;
   animDelay: number;
 }) {
   const navigate = useNavigate();
@@ -188,14 +189,14 @@ function ProjectCard({
         {visibleMembers.length > 0 && (
           <div className="flex items-center">
             {visibleMembers.map((m, i) => (
-              <span
+              <Avatar
                 key={i}
-                className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-white font-bold"
-                style={{ background: m.color, fontSize: '0.4375rem', marginLeft: i === 0 ? 0 : '-6px' }}
+                userId={m.userId}
+                name={m.name}
+                size="xs"
+                style={{ marginLeft: i === 0 ? 0 : '-6px', border: '2px solid #fff' }}
                 title={m.initials}
-              >
-                {m.initials}
-              </span>
+              />
             ))}
             {extraMembers > 0 && (
               <span className="text-[0.6875rem] text-slate-400 ml-1">+{extraMembers}</span>
@@ -345,7 +346,7 @@ export default function SparseState({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))',
           gap: '1rem',
         }}
       >

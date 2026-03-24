@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { Avatar, getInitials, getAvatarColor } from '../../../components/Avatar';
 
 interface ProfileSettingsPanelProps {
   fullName: string;
@@ -8,13 +9,6 @@ interface ProfileSettingsPanelProps {
   onProfileUpdated: (name: string, emoji: string) => void;
 }
 
-const ANIMAL_EMOJIS = [
-  '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯',
-  '🦁','🐮','🐷','🐸','🐵','🐧','🐤','🦆','🦉','🦇',
-  '🐺','🐴','🦄','🐝','🦋','🐌','🐢','🦎','🐙','🦈',
-  '🐳','🐬','🦭','🦓','🦒','🐘','🦛','🦘','🦔','🐿️',
-];
-
 export default function ProfileSettingsPanel({
   fullName,
   email,
@@ -22,8 +16,11 @@ export default function ProfileSettingsPanel({
   onProfileUpdated,
 }: ProfileSettingsPanelProps) {
   const [name, setName] = useState(fullName);
-  const [selectedEmoji, setSelectedEmoji] = useState(avatarEmoji || '🐶');
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -40,14 +37,22 @@ export default function ProfileSettingsPanel({
   const [authProvider, setAuthProvider] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProvider = async () => {
+    const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const provider = user.app_metadata?.provider ?? 'email';
         setAuthProvider(provider);
+        setUserId(user.id);
+        // Try to load existing avatar_url from profile
+        const { data } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (data?.avatar_url) setPhotoUrl(data.avatar_url);
       }
     };
-    fetchProvider();
+    fetchUser();
   }, []);
 
   const handleSaveProfile = async () => {
@@ -63,18 +68,59 @@ export default function ProfileSettingsPanel({
 
       const { error } = await supabase
         .from('profiles')
-        .update({ full_name: name.trim(), avatar_emoji: selectedEmoji })
+        .update({ full_name: name.trim() })
         .eq('id', user.id);
 
       if (error) throw error;
 
-      onProfileUpdated(name.trim(), selectedEmoji);
+      onProfileUpdated(name.trim(), avatarEmoji);
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 3000);
     } catch (err: any) {
       setProfileError(err.message || 'Failed to update profile.');
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setPhotoError('Only JPG, PNG, or WebP images are accepted.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setPhotoError('Image must be under 2 MB.');
+      return;
+    }
+    try {
+      setUploadingPhoto(true);
+      setPhotoError('');
+      const path = `${userId}.webp`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+      // Try to update avatar_url (column may not exist yet — handled gracefully)
+      await supabase.from('profiles').update({ avatar_url: publicUrl } as Record<string, string>).eq('id', userId);
+      setPhotoUrl(publicUrl + '?t=' + Date.now());
+    } catch (err: any) {
+      setPhotoError('Upload failed. Please try a smaller image.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!userId) return;
+    try {
+      await supabase.storage.from('avatars').remove([`${userId}.webp`]);
+      await supabase.from('profiles').update({ avatar_url: null } as Record<string, unknown>).eq('id', userId);
+      setPhotoUrl(null);
+    } catch {
+      // silently fail
     }
   };
 
@@ -108,7 +154,7 @@ export default function ProfileSettingsPanel({
     }
   };
 
-  const profileChanged = name.trim() !== fullName || selectedEmoji !== (avatarEmoji || '🐶');
+  const profileChanged = name.trim() !== fullName;
 
   return (
     <div className="space-y-10">
@@ -116,28 +162,70 @@ export default function ProfileSettingsPanel({
       {/* ── Avatar + Name ─────────────────────────── */}
       <div>
         <h2 className="text-xl font-bold text-gray-900 mb-1">Profile Information</h2>
-        <p className="text-gray-500 text-sm mb-6">Update your display name and choose an avatar</p>
+        <p className="text-gray-500 text-sm mb-6">Update your display name and profile photo</p>
 
-        <div className="flex items-start gap-8">
-          {/* Avatar Column */}
-          <div className="flex flex-col items-center gap-3 flex-shrink-0">
+        {/* Photo Upload Card */}
+        <div className="flex items-center gap-6 bg-white border border-gray-200 rounded-xl p-5 mb-6" style={{ maxWidth: '480px' }}>
+          {/* Avatar with camera overlay */}
+          <div className="relative flex-shrink-0 group" style={{ width: '4rem', height: '4rem' }}>
+            <Avatar
+              userId={userId || undefined}
+              name={name || fullName}
+              email={email}
+              photoUrl={photoUrl || undefined}
+              size="xl"
+            />
             <div
-              className="w-20 h-20 rounded-2xl bg-gray-50 border-2 border-gray-200 flex items-center justify-center text-4xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all select-none"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              title="Click to change avatar"
+              className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              style={{ background: 'rgba(0,0,0,0.4)' }}
+              onClick={() => fileInputRef.current?.click()}
             >
-              {selectedEmoji}
+              {uploadingPhoto
+                ? <i className="ri-loader-4-line text-white text-xl animate-spin" />
+                : <i className="ri-camera-line text-white text-xl" />
+              }
             </div>
-            <button
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap"
-            >
-              {showEmojiPicker ? 'Close picker' : 'Change avatar'}
-            </button>
           </div>
 
-          {/* Name + Email */}
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-gray-700 mb-0.5">Profile Photo</div>
+            <div className="text-xs text-gray-400 mb-2.5">JPG, PNG, or WebP · Max 2 MB</div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-indigo-200 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <i className="ri-upload-2-line" />
+                {uploadingPhoto ? 'Uploading...' : 'Upload Photo'}
+              </button>
+              {photoUrl && (
+                <button
+                  onClick={handleRemovePhoto}
+                  className="text-xs font-medium text-red-500 hover:text-red-600 cursor-pointer"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            {photoError && (
+              <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                <i className="ri-error-warning-line" />{photoError}
+              </p>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handlePhotoUpload}
+          />
+        </div>
+
+        {/* Name + Email row */}
+        <div className="flex items-start gap-8">
+          <div className="flex-1 space-y-4" style={{ maxWidth: '480px' }}>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                 Display Name <span className="text-red-500">*</span>
@@ -149,6 +237,9 @@ export default function ProfileSettingsPanel({
                 placeholder="Enter your name"
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
               />
+              <p className="text-xs text-gray-400 mt-1">
+                Your initials and a unique color are auto-generated from your name.
+              </p>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-500 mb-1.5">Email</label>
@@ -159,29 +250,6 @@ export default function ProfileSettingsPanel({
             </div>
           </div>
         </div>
-
-        {/* Emoji Picker */}
-        {showEmojiPicker && (
-          <div className="mt-4 p-4 bg-white border border-gray-200 rounded-xl">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Choose your avatar</p>
-            <div className="grid grid-cols-10 gap-1.5">
-              {ANIMAL_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => { setSelectedEmoji(emoji); setShowEmojiPicker(false); }}
-                  className={`w-10 h-10 rounded-xl text-2xl flex items-center justify-center transition-all cursor-pointer hover:bg-indigo-50 hover:scale-110 ${
-                    selectedEmoji === emoji
-                      ? 'bg-indigo-100 ring-2 ring-indigo-400 scale-110'
-                      : 'bg-gray-50'
-                  }`}
-                  title={emoji}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {profileError && (
           <p className="mt-3 text-sm text-red-600 flex items-center gap-1.5">

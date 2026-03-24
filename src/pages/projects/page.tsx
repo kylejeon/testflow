@@ -7,12 +7,15 @@ import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import SEOHead from '../../components/SEOHead';
 import NotificationBell from '../../components/feature/NotificationBell';
+import { Avatar } from '../../components/Avatar';
 
 interface UserProfile {
   email: string;
   full_name: string;
   subscription_tier: number;
   avatar_emoji: string;
+  avatar_url?: string;
+  user_id?: string;
 }
 
 const TIER_INFO = {
@@ -77,6 +80,7 @@ export default function ProjectsPage() {
           full_name: data.full_name || '',
           subscription_tier: data.subscription_tier || 1,
           avatar_emoji: data.avatar_emoji || '',
+          user_id: user.id,
         });
       }
     } catch (error) {
@@ -117,17 +121,17 @@ export default function ProjectsPage() {
               </div>
               <div className="flex items-center gap-3 relative">
                 <NotificationBell />
-                <div 
+                <div
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="flex items-center gap-2 cursor-pointer"
                 >
-                  <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
-                    {userProfile?.avatar_emoji ? (
-                      <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
-                    ) : (
-                      <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
-                    )}
-                  </div>
+                  <Avatar
+                    userId={userProfile?.user_id}
+                    name={userProfile?.full_name}
+                    email={userProfile?.email}
+                    photoUrl={userProfile?.avatar_url}
+                    size="lg"
+                  />
                 </div>
                 
                 {showProfileMenu && (
