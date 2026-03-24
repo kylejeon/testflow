@@ -7,6 +7,9 @@ import InviteMemberModal from './components/InviteMemberModal';
 import SEOHead from '../../components/SEOHead';
 import NotificationBell from '../../components/feature/NotificationBell';
 import ProjectHeader from '../../components/ProjectHeader';
+import QuickCreateTCModal from './components/QuickCreateTCModal';
+import ContinueRunPanel from './components/ContinueRunPanel';
+import AIAssistModal from './components/AIAssistModal';
 
 interface UserProfile {
   email: string;
@@ -38,8 +41,39 @@ export default function ProjectDetail() {
   const [projectIntegrations, setProjectIntegrations] = useState<any[]>([]);
   const [jiraConfigured, setJiraConfigured] = useState(false);
   const [testCaseCount, setTestCaseCount] = useState(0);
+  const [showQuickCreateTC, setShowQuickCreateTC] = useState(false);
+  const [showContinueRun, setShowContinueRun] = useState(false);
+  const [showAIAssist, setShowAIAssist] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Dashboard-specific keyboard shortcuts (N → New TC, R → Continue Run)
+  useEffect(() => {
+    const handleDashboardShortcuts = (e: KeyboardEvent) => {
+      // Skip if modifier keys are held (except Shift)
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // Skip if focus is in an input / textarea / select / contenteditable
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+      ) return;
+      // Skip if any modal is open
+      if (showQuickCreateTC || showContinueRun || showAIAssist) return;
+
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        setShowQuickCreateTC(true);
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        setShowContinueRun(true);
+      }
+    };
+    window.addEventListener('keydown', handleDashboardShortcuts);
+    return () => window.removeEventListener('keydown', handleDashboardShortcuts);
+  }, [showQuickCreateTC, showContinueRun, showAIAssist]);
 
   useEffect(() => {
     if (id) {
@@ -644,37 +678,29 @@ export default function ProjectDetail() {
                   </span>
                 )}
               </div>
-              <Link
-                to={`/projects/${id}/testcases`}
+              <button
+                onClick={() => setShowQuickCreateTC(true)}
                 className="flex items-center gap-1.5 px-3 py-[7px] text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all"
               >
                 <i className="ri-file-add-line"></i>
                 <span>New Test Case</span>
-                <kbd className="text-[9px] font-semibold px-1 py-0.5 rounded bg-black/5">⌘⇧T</kbd>
-              </Link>
-              <Link
-                to={`/projects/${id}/runs`}
+                <kbd className="text-[9px] font-semibold px-1 py-0.5 rounded bg-black/5">N</kbd>
+              </button>
+              <button
+                onClick={() => setShowContinueRun(true)}
                 className="flex items-center gap-1.5 px-3 py-[7px] text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all"
               >
-                <i className="ri-play-line"></i>
-                <span>Start Run</span>
-                <kbd className="text-[9px] font-semibold px-1 py-0.5 rounded bg-black/5">⌘⇧R</kbd>
-              </Link>
-              <Link
-                to={`/projects/${id}/testcases`}
+                <i className="ri-play-circle-line"></i>
+                <span>Continue Run</span>
+                <kbd className="text-[9px] font-semibold px-1 py-0.5 rounded bg-black/5">R</kbd>
+              </button>
+              <button
+                onClick={() => setShowAIAssist(true)}
                 className="flex items-center gap-1.5 px-3 py-[7px] text-xs font-medium text-white bg-violet-500 border border-violet-500 rounded-full hover:bg-violet-600 transition-all"
               >
                 <i className="ri-sparkling-line"></i>
-                <span>AI Generate</span>
-                <kbd className="text-[9px] font-semibold px-1 py-0.5 rounded bg-white/20">⌘⇧A</kbd>
-              </Link>
-              <Link
-                to={`/projects/${id}/discovery-logs`}
-                className="flex items-center gap-1.5 px-3 py-[7px] text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all"
-              >
-                <i className="ri-search-eye-line"></i>
-                <span>New Discovery</span>
-              </Link>
+                <span>AI Assist</span>
+              </button>
             </div>
 
             {/* Dashboard Grid */}
@@ -992,6 +1018,24 @@ export default function ProjectDetail() {
         onClose={() => setShowInviteModal(false)}
         projectId={id!}
         onInvited={() => setMemberRefreshTrigger(prev => prev + 1)}
+      />
+
+      <QuickCreateTCModal
+        isOpen={showQuickCreateTC}
+        onClose={() => setShowQuickCreateTC(false)}
+        projectId={id!}
+      />
+
+      <ContinueRunPanel
+        isOpen={showContinueRun}
+        onClose={() => setShowContinueRun(false)}
+        projectId={id!}
+      />
+
+      <AIAssistModal
+        isOpen={showAIAssist}
+        onClose={() => setShowAIAssist(false)}
+        projectId={id!}
       />
     </>
   );
