@@ -879,8 +879,8 @@ export default function HomePage() {
           <div className="relative z-20 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-32 lg:py-0">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
 
-              {/* LEFT: Text (7 columns) */}
-              <div className="lg:col-span-7 text-center lg:text-left">
+              {/* LEFT: Text (6 columns) */}
+              <div className="lg:col-span-6 text-center lg:text-left">
 
                 {/* Badge */}
                 <div className="inline-flex items-center gap-2 mb-6">
@@ -940,8 +940,8 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* RIGHT: Product Screenshot (5 columns) */}
-              <div className="lg:col-span-5 relative">
+              {/* RIGHT: Product Screenshot (6 columns) */}
+              <div className="lg:col-span-6 relative">
                 {/* Glow behind */}
                 <div className="absolute -inset-8 bg-indigo-500/10 rounded-3xl blur-3xl"></div>
 
@@ -1077,7 +1077,7 @@ export default function HomePage() {
                       </span>
                     </div>
                     <h3 className="text-sm font-bold text-white mb-2">{feature.title}</h3>
-                    <p className="text-xs leading-relaxed" style={{ color: '#94A3B8' }}>{feature.description}</p>
+                    <p className="leading-relaxed" style={{ color: '#94A3B8', fontSize: '0.8125rem' }}>{feature.description}</p>
                   </article>
                 );
               })}
@@ -1392,9 +1392,11 @@ export default function HomePage() {
               ))}
             </div>
 
-            <p className="text-center mt-8 text-sm" style={{ color: '#64748B' }}>
+            <p className="text-center mt-8 text-sm leading-relaxed" style={{ color: '#64748B' }}>
               <i className="ri-shield-check-line text-indigo-400 mr-1.5"></i>
-              {t.pricingSection.note}
+              {lang === 'en' ? (
+                <>Free forever for up to 3 members · 14-day free trial on all paid plans<br />No per-seat charges</>
+              ) : t.pricingSection.note}
             </p>
           </div>
         </section>
