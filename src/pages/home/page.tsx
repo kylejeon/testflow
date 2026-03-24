@@ -883,9 +883,9 @@ export default function HomePage() {
               <div className="lg:col-span-7 text-center lg:text-left">
 
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/[0.08] rounded-full px-4 py-1.5 mb-8 backdrop-blur-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
-                  <span className="text-indigo-300/90 text-sm font-medium">{t.hero.badge}</span>
+                <div className="inline-flex items-center gap-2 mb-6">
+                  <div style={{ width: '2rem', height: '1px', background: '#6366F1', flexShrink: 0 }}></div>
+                  <span style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#818CF8' }}>{t.hero.badge}</span>
                 </div>
 
                 {/* Heading */}
@@ -1019,7 +1019,7 @@ export default function HomePage() {
                 <span className="text-indigo-400 text-xs font-semibold uppercase tracking-widest">{t.featuresSection.badge}</span>
               </div>
               <h2 className="text-4xl font-bold text-white mb-4">{t.featuresSection.title}</h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">{t.featuresSection.description}</p>
+              <p className="text-gray-400 text-lg mx-auto">{t.featuresSection.description}</p>
             </div>
 
             {/* Differentiator highlight cards */}
@@ -1032,15 +1032,15 @@ export default function HomePage() {
                 >
                   {/* Top accent line */}
                   <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500"></div>
-                  <div className="inline-flex items-center gap-1.5 text-fuchsia-400 bg-violet-500/10 border border-violet-500/20 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider mb-4">
-                    <i className={`${diff.badgeIcon} text-xs`}></i>
+                  <div className="inline-flex items-center gap-1.5 rounded-full mb-4" style={{ fontSize: '0.5625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#C084FC', background: 'rgba(139,92,246,0.12)', padding: '0.25rem 0.625rem' }}>
+                    <i className={`${diff.badgeIcon}`} style={{ fontSize: '0.625rem' }}></i>
                     {diff.badge}
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2.5">{diff.title}</h3>
                   <p className="text-gray-400 text-sm leading-relaxed mb-4">{diff.description}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {diff.pills.map((pill) => (
-                      <span key={pill} className="text-xs font-medium text-indigo-300 bg-indigo-500/8 border border-indigo-500/12 px-2.5 py-0.5 rounded-full">{pill}</span>
+                      <span key={pill} className="rounded-full" style={{ fontSize: '0.625rem', fontWeight: 500, color: '#818CF8', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.12)', padding: '0.2rem 0.625rem' }}>{pill}</span>
                     ))}
                   </div>
                 </div>
@@ -1126,11 +1126,13 @@ export default function HomePage() {
         <section id="workflow" className="py-24 bg-[#0F172A] relative overflow-hidden">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-flow-chart text-indigo-400 text-sm"></i>
-                <span className="text-indigo-300 text-sm font-medium">{t.workflowSection.badge}</span>
+              <div className="inline-flex items-center justify-center gap-2 mb-3" style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#818CF8' }}>
+                <i className="ri-route-line text-sm"></i>
+                <span>{t.workflowSection.badge}</span>
               </div>
-              <h2 className="text-4xl font-bold text-white mb-4">{t.workflowSection.title}</h2>
+              <h2 className="text-4xl font-bold text-white mb-4">
+                {lang === 'en' ? <>Your QA process in <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #818CF8, #C084FC)' }}>4 simple steps</span></> : t.workflowSection.title}
+              </h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">{t.workflowSection.description}</p>
             </div>
 
@@ -1156,14 +1158,14 @@ export default function HomePage() {
         <section className="py-24 bg-[#0F172A]">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-plug-line text-indigo-300 text-sm"></i>
-                <span className="text-indigo-200 text-sm font-medium">{t.integrationSection.badge}</span>
+              <div className="inline-flex items-center justify-center gap-2 mb-3" style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#818CF8' }}>
+                <i className="ri-plug-line text-sm"></i>
+                <span>{t.integrationSection.badge}</span>
               </div>
               <h2 className="text-4xl font-bold text-white mb-4">
                 {lang === 'en' ? <>Works with your <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #818CF8, #C084FC)' }}>existing tools</span></> : t.integrationSection.title}
               </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">{t.integrationSection.description}</p>
+              <p className="text-gray-400 text-lg mx-auto">{t.integrationSection.description}</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1202,9 +1204,9 @@ export default function HomePage() {
         <section id="why-testably" className="py-24 bg-[#0F172A] relative overflow-hidden">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-award-line text-indigo-400 text-sm"></i>
-                <span className="text-indigo-300 text-sm font-medium">{t.whySection.badge}</span>
+              <div className="inline-flex items-center justify-center gap-2 mb-3" style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#818CF8' }}>
+                <i className="ri-heart-3-line text-sm"></i>
+                <span>{t.whySection.badge}</span>
               </div>
               <h2 className="text-4xl font-bold text-white mb-4">
                 {lang === 'en' ? <>Why teams choose <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #818CF8, #C084FC)' }}>Testably</span></> : t.whySection.title}
@@ -1243,13 +1245,16 @@ export default function HomePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {t.testimonials.map((testi) => (
-                <article key={testi.name} className="bg-white/3 rounded-2xl p-7 border border-white/6 hover:border-indigo-500/25 transition-all">
-                  <div className="flex gap-0.5 mb-5">
+                <article key={testi.name} className="rounded-2xl transition-all" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', padding: '1.75rem' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.15)'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
+                >
+                  <div className="flex gap-0.5 mb-4" style={{ letterSpacing: '0.125rem' }}>
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <i key={i} className="ri-star-fill text-amber-400 text-sm"></i>
+                      <i key={i} className="ri-star-fill" style={{ color: '#F59E0B', fontSize: '0.8125rem' }}></i>
                     ))}
                   </div>
-                  <p className="text-gray-300 text-sm leading-relaxed mb-6">"{testi.quote}"</p>
+                  <p style={{ fontSize: '0.9375rem', color: '#E2E8F0', lineHeight: 1.65, fontStyle: 'italic', marginBottom: '1.25rem' }}>"{testi.quote}"</p>
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: testi.color }}>
                       {testi.initials}
@@ -1272,9 +1277,9 @@ export default function HomePage() {
           <div className="absolute bottom-1/4 -left-16 w-[400px] h-[400px] rounded-full bg-violet-500/6 blur-[80px] pointer-events-none"></div>
           <div className="max-w-7xl mx-auto px-6 relative z-10">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-price-tag-3-line text-indigo-400 text-sm"></i>
-                <span className="text-indigo-300 text-sm font-medium">{t.pricingSection.badge}</span>
+              <div className="inline-flex items-center justify-center gap-2 mb-3" style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#818CF8' }}>
+                <i className="ri-price-tag-3-line text-sm"></i>
+                <span>{t.pricingSection.badge}</span>
               </div>
               <h2 className="text-4xl font-bold text-white mb-4">{t.pricingSection.title}</h2>
               <p className="text-gray-400 text-lg">{t.pricingSection.description}</p>
@@ -1409,27 +1414,24 @@ export default function HomePage() {
               <p className="text-gray-400 text-lg">{t.faqSection.description}</p>
             </div>
 
-            <div className="space-y-2">
+            <div style={{ maxWidth: '48rem', marginLeft: 'auto', marginRight: 'auto' }}>
               {t.faqs.map((faq, index) => (
-                <article key={index} className={`rounded-2xl border transition-all duration-200 overflow-hidden ${openFaq === index ? 'border-indigo-500/40 bg-indigo-500/5' : 'border-white/8 bg-white/2 hover:border-indigo-500/20'}`}>
+                <div key={index} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <button
-                    className="w-full flex items-center justify-between px-6 py-5 text-left cursor-pointer group"
+                    className="w-full flex items-center justify-between gap-4 text-left cursor-pointer transition-colors"
+                    style={{ background: 'none', border: 'none', color: '#fff', fontSize: '0.9375rem', fontWeight: 600, padding: '1.25rem 0', fontFamily: 'inherit' }}
                     onClick={() => setOpenFaq(openFaq === index ? null : index)}
                   >
-                    <h4 className={`text-sm font-semibold leading-snug pr-4 transition-colors ${openFaq === index ? 'text-indigo-300' : 'text-white group-hover:text-indigo-300'}`}>
-                      <a id={`faq-${index}`}>{faq.question}</a>
-                    </h4>
-                    <div className={`w-7 h-7 flex items-center justify-center rounded-full flex-shrink-0 transition-all duration-200 ${openFaq === index ? 'bg-indigo-500 rotate-45' : 'bg-white/8 group-hover:bg-indigo-500/15'}`}>
-                      <i className={`ri-add-line text-sm ${openFaq === index ? 'text-white' : 'text-gray-400 group-hover:text-indigo-300'}`}></i>
-                    </div>
+                    <span id={`faq-${index}`}>{faq.question}</span>
+                    <i
+                      className={`ri-add-line flex-shrink-0 transition-transform duration-300 ${openFaq === index ? 'rotate-45' : ''}`}
+                      style={{ fontSize: '1.125rem', color: '#6366F1' }}
+                    ></i>
                   </button>
                   {openFaq === index && (
-                    <div className="px-6 pb-5">
-                      <div className="h-px bg-indigo-500/20 mb-4"></div>
-                      <p className="text-gray-400 text-sm leading-relaxed">{faq.answer}</p>
-                    </div>
+                    <p style={{ fontSize: '0.875rem', color: '#94A3B8', lineHeight: 1.7, paddingBottom: '1.25rem' }}>{faq.answer}</p>
                   )}
-                </article>
+                </div>
               ))}
             </div>
 
@@ -1494,9 +1496,9 @@ export default function HomePage() {
 
         {/* Newsletter */}
         <section className="py-16 bg-[#0F172A] border-t border-white/5">
-          <div className="max-w-md mx-auto px-6 text-center">
+          <div className="max-w-[30rem] mx-auto px-6 text-center">
             <h3 className="text-xl font-bold text-white mb-2">{t.newsletter.title}</h3>
-            <p className="text-gray-400 text-sm mb-6">{t.newsletter.description}</p>
+            <p className="text-sm mb-5 whitespace-nowrap" style={{ color: '#94A3B8' }}>{t.newsletter.description}</p>
             {subscribed ? (
               <div className="flex items-center justify-center gap-2 text-indigo-400">
                 <i className="ri-check-circle-line text-xl"></i>
