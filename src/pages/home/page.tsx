@@ -173,7 +173,7 @@ const content = {
     ],
     whySection: {
       badge: 'Why Testably',
-      title: 'Why Teams Choose Testably',
+      title: 'Why teams choose Testably',
       description: 'Everything your QA team needs, none of the complexity you don\'t.',
     },
     pricingSection: {
@@ -234,7 +234,7 @@ const content = {
     ],
     faqSection: {
       badge: 'FAQ',
-      title: 'Frequently Asked Questions',
+      title: 'Frequently asked questions',
       description: 'Everything you need to know about Testably. Can\'t find the answer? Reach out to our team.',
     },
     faqs: [
@@ -770,7 +770,7 @@ export default function HomePage() {
         }}
       />
 
-      <div className="min-h-screen bg-gray-950" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
+      <div className="min-h-screen bg-[#0F172A]" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
         <style>{`
           @keyframes blobFloat { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(15px,-20px) scale(1.03)} 66%{transform:translate(-10px,15px) scale(0.97)} }
           @keyframes hf { 0%,100%{transform:translateY(0) perspective(1000px) rotateY(-4deg)} 50%{transform:translateY(-12px) perspective(1000px) rotateY(-4deg)} }
@@ -779,7 +779,7 @@ export default function HomePage() {
 
         {/* Navbar */}
         <nav
-          className={`fixed top-0 left-0 right-0 z-[100] flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-gray-950/90 backdrop-blur-xl border-b border-white/6' : 'bg-transparent'}`}
+          className={`fixed top-0 left-0 right-0 z-[100] flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-[#0F172A]/90 backdrop-blur-xl' : 'bg-transparent'}`}
           style={{ padding: '0.875rem 2rem' }}
         >
           {/* Logo */}
@@ -857,7 +857,7 @@ export default function HomePage() {
         </nav>
 
         {/* Hero Section */}
-        <header className="relative min-h-[100dvh] flex items-center overflow-hidden bg-gray-950">
+        <header className="relative min-h-[100dvh] flex items-center overflow-hidden bg-[#0F172A]">
 
           {/* Background: Mesh Gradient */}
           <div className="absolute inset-0 overflow-hidden">
@@ -1007,7 +1007,7 @@ export default function HomePage() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="py-28 bg-gray-950 relative overflow-hidden">
+        <section id="features" className="py-28 bg-[#0F172A] relative overflow-hidden">
           {/* Background blobs */}
           <div className="absolute top-1/4 -right-20 w-[500px] h-[500px] rounded-full bg-indigo-500/8 blur-[100px] pointer-events-none"></div>
           <div className="absolute bottom-1/4 -left-16 w-[400px] h-[400px] rounded-full bg-violet-500/6 blur-[80px] pointer-events-none"></div>
@@ -1050,7 +1050,7 @@ export default function HomePage() {
             {/* Divider */}
             <div className="relative text-center mb-10">
               <div className="absolute top-1/2 left-0 right-0 h-px bg-white/6"></div>
-              <span className="relative bg-gray-950 px-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Plus everything else you need</span>
+              <span className="relative bg-[#0F172A] px-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Plus everything else you need</span>
             </div>
 
             {/* 9 feature cards */}
@@ -1123,7 +1123,7 @@ export default function HomePage() {
         </section>
 
         {/* Workflow Section */}
-        <section id="workflow" className="py-24 bg-gray-900/50 relative overflow-hidden">
+        <section id="workflow" className="py-24 bg-[#0F172A] relative overflow-hidden">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-4">
@@ -1153,14 +1153,16 @@ export default function HomePage() {
         </section>
 
         {/* Integration Section */}
-        <section className="py-24 bg-gray-950">
+        <section className="py-24 bg-[#0F172A]">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-4">
                 <i className="ri-plug-line text-indigo-300 text-sm"></i>
                 <span className="text-indigo-200 text-sm font-medium">{t.integrationSection.badge}</span>
               </div>
-              <h2 className="text-4xl font-bold text-white mb-4">{t.integrationSection.title}</h2>
+              <h2 className="text-4xl font-bold text-white mb-4">
+                {lang === 'en' ? <>Works with your <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #818CF8, #C084FC)' }}>existing tools</span></> : t.integrationSection.title}
+              </h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">{t.integrationSection.description}</p>
             </div>
 
@@ -1197,14 +1199,16 @@ export default function HomePage() {
         </section>
 
         {/* Why Teams Choose Testably */}
-        <section id="why-testably" className="py-24 bg-gray-950 relative overflow-hidden">
+        <section id="why-testably" className="py-24 bg-[#0F172A] relative overflow-hidden">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-4">
                 <i className="ri-award-line text-indigo-400 text-sm"></i>
                 <span className="text-indigo-300 text-sm font-medium">{t.whySection.badge}</span>
               </div>
-              <h2 className="text-4xl font-bold text-white mb-4">{t.whySection.title}</h2>
+              <h2 className="text-4xl font-bold text-white mb-4">
+                {lang === 'en' ? <>Why teams choose <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #818CF8, #C084FC)' }}>Testably</span></> : t.whySection.title}
+              </h2>
               <p className="text-gray-400 text-lg">{t.whySection.description}</p>
             </div>
 
@@ -1223,7 +1227,7 @@ export default function HomePage() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="py-24 bg-gray-900/50 relative overflow-hidden">
+        <section className="py-24 bg-[#0F172A] relative overflow-hidden">
           <div className="absolute top-1/3 -left-16 w-[400px] h-[400px] rounded-full bg-indigo-500/5 blur-[100px] pointer-events-none"></div>
           <div className="max-w-6xl mx-auto px-6 relative z-10">
             <div className="text-center mb-14">
@@ -1262,7 +1266,7 @@ export default function HomePage() {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="py-28 bg-gray-950 relative overflow-hidden">
+        <section id="pricing" className="py-28 bg-[#0F172A] relative overflow-hidden">
           {/* Background blobs */}
           <div className="absolute top-1/4 -right-20 w-[500px] h-[500px] rounded-full bg-indigo-500/8 blur-[100px] pointer-events-none"></div>
           <div className="absolute bottom-1/4 -left-16 w-[400px] h-[400px] rounded-full bg-violet-500/6 blur-[80px] pointer-events-none"></div>
@@ -1391,7 +1395,7 @@ export default function HomePage() {
         </section>
 
         {/* FAQ Section */}
-        <section id="faq" className="py-24 bg-gray-950 relative overflow-hidden">
+        <section id="faq" className="py-24 bg-[#0F172A] relative overflow-hidden">
           <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full bg-indigo-500/5 blur-[100px] pointer-events-none"></div>
           <div className="max-w-3xl mx-auto px-6 relative z-10">
             <div className="text-center mb-14">
@@ -1399,7 +1403,9 @@ export default function HomePage() {
                 <i className="ri-question-line text-indigo-400 text-sm"></i>
                 <span className="text-indigo-400 text-xs font-semibold uppercase tracking-widest">{t.faqSection.badge}</span>
               </div>
-              <h2 className="text-4xl font-bold text-white mb-4">{t.faqSection.title}</h2>
+              <h2 className="text-4xl font-bold text-white mb-4">
+                {lang === 'en' ? <>Frequently asked <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #818CF8, #C084FC)' }}>questions</span></> : t.faqSection.title}
+              </h2>
               <p className="text-gray-400 text-lg">{t.faqSection.description}</p>
             </div>
 
@@ -1443,39 +1449,51 @@ export default function HomePage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-24 bg-gray-950 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-15">
-            <img
-              src="https://readdy.ai/api/search-image?query=abstract%20technology%20network%20dark%20background%20glowing%20teal%20emerald%20nodes%20connections%20digital%20mesh%20futuristic%20minimal&width=1440&height=500&seq=cta-v2&orientation=landscape"
-              alt=""
-              className="w-full h-full object-cover object-top"
-            />
-          </div>
-          <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
-            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
-              <i className="ri-rocket-line text-indigo-300 text-sm"></i>
-              <span className="text-indigo-200 text-sm font-medium">Testably</span>
+        <section className="py-20 bg-[#0F172A] px-8">
+          <div
+            className="max-w-6xl mx-auto text-center relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))',
+              border: '1px solid rgba(99,102,241,0.2)',
+              borderRadius: '1.5rem',
+              padding: '4rem 3rem',
+            }}
+          >
+            {/* Blobs */}
+            <div className="absolute pointer-events-none" style={{ width: 500, height: 500, background: 'rgba(99,102,241,0.12)', borderRadius: '50%', filter: 'blur(80px)', top: '-40%', right: '-10%' }}></div>
+            <div className="absolute pointer-events-none" style={{ width: 350, height: 350, background: 'rgba(139,92,246,0.08)', borderRadius: '50%', filter: 'blur(60px)', bottom: '-30%', left: '-5%' }}></div>
+            <div className="relative z-10">
+              <h2 className="font-extrabold text-white mb-4" style={{ fontSize: '2.5rem', lineHeight: 1.15, letterSpacing: '-0.025em' }}>
+                {lang === 'en' ? (
+                  <>Ready to level up<br />your <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #818CF8, #C084FC)' }}>QA workflow</span>?</>
+                ) : (
+                  <><span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #818CF8, #C084FC)' }}>QA 워크플로우</span>를<br />한 단계 업그레이드할 준비가 되셨나요?</>
+                )}
+              </h2>
+              <p className="mb-8" style={{ fontSize: '1.0625rem', color: '#94A3B8', maxWidth: '32rem', margin: '1rem auto 2rem', lineHeight: 1.6 }}>{t.cta.description}</p>
+              <button
+                onClick={() => navigate('/auth')}
+                className="inline-flex items-center gap-2 text-white font-semibold cursor-pointer transition-all hover:bg-indigo-600"
+                style={{ padding: '1rem 2.25rem', background: '#6366F1', borderRadius: 9999, fontSize: '1rem', border: 'none', boxShadow: '0 4px 20px rgba(99,102,241,0.3)' }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = '#4F46E5';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 30px rgba(99,102,241,0.45)';
+                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = '#6366F1';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(99,102,241,0.3)';
+                  (e.currentTarget as HTMLButtonElement).style.transform = '';
+                }}
+              >
+                {t.cta.button} <i className="ri-arrow-right-line"></i>
+              </button>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
-              {lang === 'en' ? (
-                <>Ready to level up your<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400">QA workflow</span>?</>
-              ) : (
-                <><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400">QA 워크플로우</span>를<br />한 단계 업그레이드할 준비가 되셨나요?</>
-              )}
-            </h2>
-            <p className="text-white/55 text-lg mb-10">{t.cta.description}</p>
-            <button
-              onClick={() => navigate('/auth')}
-              className="px-10 py-4 bg-indigo-500 text-white rounded-xl font-bold text-lg hover:bg-indigo-400 transition-all cursor-pointer whitespace-nowrap shadow-lg shadow-indigo-500/30 inline-flex items-center gap-3"
-            >
-              <i className="ri-rocket-line"></i>
-              {t.cta.button}
-            </button>
           </div>
         </section>
 
         {/* Newsletter */}
-        <section className="py-16 bg-gray-950 border-t border-white/5">
+        <section className="py-16 bg-[#0F172A] border-t border-white/5">
           <div className="max-w-md mx-auto px-6 text-center">
             <h3 className="text-xl font-bold text-white mb-2">{t.newsletter.title}</h3>
             <p className="text-gray-400 text-sm mb-6">{t.newsletter.description}</p>
@@ -1507,7 +1525,7 @@ export default function HomePage() {
         </section>
 
         {/* Footer */}
-        <footer className="bg-gray-950 border-t border-white/5 py-14">
+        <footer className="bg-[#0F172A] border-t border-white/5 py-14">
           <div className="max-w-7xl mx-auto px-6">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-10">
               <div className="md:col-span-1">
