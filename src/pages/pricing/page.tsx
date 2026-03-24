@@ -139,17 +139,19 @@ const enterpriseTiers = [
 ];
 
 const comparisonRows = [
-  { feature: 'Projects', free: '3', starter: '10', pro: 'Unlimited', enterprise: 'Unlimited' },
-  { feature: 'Team members', free: '3', starter: '5', pro: '20', enterprise: '21–100+' },
-  { feature: 'AI generations / month', free: '5', starter: '30', pro: '150', enterprise: 'Unlimited' },
-  { feature: 'Test case management', free: true, starter: true, pro: true, enterprise: true },
-  { feature: 'Test runs & milestones', free: true, starter: true, pro: true, enterprise: true },
-  { feature: 'Jira integration', free: true, starter: true, pro: true, enterprise: true },
-  { feature: 'Slack & Teams', free: false, starter: true, pro: true, enterprise: true },
-  { feature: 'CI/CD integration', free: false, starter: false, pro: true, enterprise: true },
-  { feature: 'Advanced reporting', free: false, starter: false, pro: true, enterprise: true },
-  { feature: 'Dedicated support', free: false, starter: false, pro: false, enterprise: true },
-  { feature: 'SLA guarantee', free: false, starter: false, pro: false, enterprise: true },
+  { feature: 'Projects', free: '3', starter: '10', pro: 'Unlimited', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
+  { feature: 'Team members', free: '3', starter: '5', pro: '20', entS: '21–50', entM: '51–100', entL: '100+' },
+  { feature: 'AI generations / month', free: '5', starter: '30', pro: '150', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
+  { feature: 'Test case management', free: true, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Test runs & milestones', free: true, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Jira integration', free: true, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Slack & Teams', free: false, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'CI/CD integration', free: false, starter: false, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Advanced reporting', free: false, starter: false, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Dedicated support', free: false, starter: false, pro: false, entS: true, entM: true, entL: true },
+  { feature: 'SLA guarantee', free: false, starter: false, pro: false, entS: true, entM: true, entL: true },
+  { feature: 'Custom contract & SLA', free: false, starter: false, pro: false, entS: false, entM: false, entL: true },
+  { feature: 'Dedicated infrastructure', free: false, starter: false, pro: false, entS: false, entM: false, entL: true },
 ];
 
 const faqs = [
@@ -374,7 +376,7 @@ export default function PricingPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left px-6 py-4 font-semibold text-gray-700 w-1/3">Feature</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700 w-1/4">Feature</th>
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">Free</th>
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">
                       <div>Starter</div>
@@ -384,9 +386,17 @@ export default function PricingPage() {
                       <div>Professional</div>
                       <div className="text-xs font-normal text-indigo-400">$99/mo · $1,010/yr</div>
                     </th>
-                    <th className="text-center px-4 py-4 font-semibold text-gray-700">
-                      <div>Enterprise</div>
-                      <div className="text-xs font-normal text-gray-400">from $249/mo · $2,540/yr</div>
+                    <th className="text-center px-4 py-4 font-semibold text-orange-500">
+                      <div>Enterprise S</div>
+                      <div className="text-xs font-normal text-orange-300">$249/mo · $2,540/yr</div>
+                    </th>
+                    <th className="text-center px-4 py-4 font-semibold text-red-400">
+                      <div>Enterprise M</div>
+                      <div className="text-xs font-normal text-red-300">$499/mo · $5,090/yr</div>
+                    </th>
+                    <th className="text-center px-4 py-4 font-semibold text-gray-500">
+                      <div>Enterprise L</div>
+                      <div className="text-xs font-normal text-gray-400">Custom · 100+ users</div>
                     </th>
                   </tr>
                 </thead>
@@ -394,7 +404,7 @@ export default function PricingPage() {
                   {comparisonRows.map((row, i) => (
                     <tr key={row.feature} className={`border-b border-gray-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                       <td className="px-6 py-3.5 text-gray-700 font-medium">{row.feature}</td>
-                      {(['free', 'starter', 'pro', 'enterprise'] as const).map((col) => {
+                      {(['free', 'starter', 'pro', 'entS', 'entM', 'entL'] as const).map((col) => {
                         const val = row[col];
                         return (
                           <td key={col} className={`text-center px-4 py-3.5 ${col === 'pro' ? 'bg-indigo-50/50' : ''}`}>

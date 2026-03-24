@@ -1334,11 +1334,12 @@ export default function HomePage() {
                     {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{plan.period}</span>}
                   </div>
                   {plan.price !== '$0' && plan.annualTotal && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.25rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)', borderRadius: '0.5rem' }}>
+                      <span style={{ fontSize: '1.125rem', fontWeight: 800, color: '#A5B4FC', letterSpacing: '-0.01em' }}>
                         {lang === 'en' ? `$${plan.annualTotal.toLocaleString()}/yr` : `연 $${plan.annualTotal.toLocaleString()}`}
                       </span>
-                      <span style={{ fontSize: '0.625rem', fontWeight: 700, padding: '0.125rem 0.375rem', borderRadius: 9999, background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.2)' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8125rem', fontWeight: 800, color: '#34D399', background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.08))', border: '1px solid rgba(16,185,129,0.35)', padding: '0.3rem 0.875rem', borderRadius: 9999, letterSpacing: '0.02em', boxShadow: '0 0 20px rgba(16,185,129,0.15), inset 0 1px 0 rgba(255,255,255,0.08)' }}>
+                        <i className="ri-discount-percent-line" style={{ fontSize: '0.625rem' }}></i>
                         {lang === 'en' ? 'Save 15%' : '15% 할인'}
                       </span>
                     </div>
@@ -1398,11 +1399,12 @@ export default function HomePage() {
                     {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{plan.period}</span>}
                   </div>
                   {plan.annualTotal && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.25rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)', borderRadius: '0.5rem' }}>
+                      <span style={{ fontSize: '1.125rem', fontWeight: 800, color: '#A5B4FC', letterSpacing: '-0.01em' }}>
                         {lang === 'en' ? `$${plan.annualTotal.toLocaleString()}/yr` : `연 $${plan.annualTotal.toLocaleString()}`}
                       </span>
-                      <span style={{ fontSize: '0.625rem', fontWeight: 700, padding: '0.125rem 0.375rem', borderRadius: 9999, background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.2)' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8125rem', fontWeight: 800, color: '#34D399', background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.08))', border: '1px solid rgba(16,185,129,0.35)', padding: '0.3rem 0.875rem', borderRadius: 9999, letterSpacing: '0.02em', boxShadow: '0 0 20px rgba(16,185,129,0.15), inset 0 1px 0 rgba(255,255,255,0.08)' }}>
+                        <i className="ri-discount-percent-line" style={{ fontSize: '0.625rem' }}></i>
                         {lang === 'en' ? 'Save 15%' : '15% 할인'}
                       </span>
                     </div>
