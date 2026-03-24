@@ -345,7 +345,7 @@ export default function SparseState({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
           gap: '1rem',
         }}
       >
