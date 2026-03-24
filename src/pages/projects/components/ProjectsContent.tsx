@@ -7,15 +7,18 @@ import DeleteConfirmModal from './DeleteConfirmModal';
 import EmptyState from './EmptyState';
 import SparseState from './SparseState';
 import { useTranslation } from 'react-i18next';
+import { useSampleProject } from '../../../hooks/useSampleProject';
 
 export default function ProjectsContent() {
   const { t } = useTranslation(['projects', 'common']);
   const navigate = useNavigate();
+  const { createSampleProject } = useSampleProject();
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [projects, setProjects] = useState<Project[]>([]);
   const [testCaseCounts, setTestCaseCounts] = useState<Record<string, number>>({});
   const [testRunCounts, setTestRunCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [sampleLoading, setSampleLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
@@ -127,6 +130,20 @@ export default function ProjectsContent() {
       setError('프로젝트를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTrySample = async () => {
+    if (sampleLoading) return;
+    try {
+      setSampleLoading(true);
+      const projectId = await createSampleProject();
+      navigate(`/projects/${projectId}`);
+    } catch (err) {
+      console.error('Sample project creation failed:', err);
+      alert('샘플 프로젝트 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setSampleLoading(false);
     }
   };
 
@@ -307,7 +324,11 @@ export default function ProjectsContent() {
   if (!isSearchActive && projects.length === 0) {
     return (
       <>
-        <EmptyState onCreateProject={() => setShowCreateModal(true)} />
+        <EmptyState
+          onCreateProject={() => setShowCreateModal(true)}
+          onTrySample={handleTrySample}
+          isSampleLoading={sampleLoading}
+        />
         {showCreateModal && (
           <CreateProjectModal
             onClose={() => setShowCreateModal(false)}
@@ -343,6 +364,8 @@ export default function ProjectsContent() {
             testCaseCounts={testCaseCounts}
             testRunCounts={testRunCounts}
             onCreateProject={() => setShowCreateModal(true)}
+            onTrySample={handleTrySample}
+            isSampleLoading={sampleLoading}
           />
         </div>
 

@@ -1,5 +1,7 @@
 interface EmptyStateProps {
   onCreateProject: () => void;
+  onTrySample: () => void;
+  isSampleLoading?: boolean;
 }
 
 const steps = [
@@ -20,7 +22,7 @@ const steps = [
   },
 ];
 
-export default function EmptyState({ onCreateProject }: EmptyStateProps) {
+export default function EmptyState({ onCreateProject, onTrySample, isSampleLoading }: EmptyStateProps) {
   return (
     <div
       className="flex flex-col items-center justify-center py-16 px-8 text-center"
@@ -51,11 +53,16 @@ export default function EmptyState({ onCreateProject }: EmptyStateProps) {
           Create First Project
         </button>
         <button
-          onClick={onCreateProject}
-          className="flex items-center gap-2 px-5 py-2.5 bg-violet-500 text-white rounded-full text-sm font-semibold hover:bg-violet-600 transition-all cursor-pointer whitespace-nowrap"
+          onClick={onTrySample}
+          disabled={isSampleLoading}
+          className="flex items-center gap-2 px-5 py-2.5 bg-violet-500 text-white rounded-full text-sm font-semibold hover:bg-violet-600 transition-all cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <i className="ri-sparkling-line text-base"></i>
-          Try Sample Project
+          {isSampleLoading ? (
+            <i className="ri-loader-4-line text-base animate-spin"></i>
+          ) : (
+            <i className="ri-sparkling-line text-base"></i>
+          )}
+          {isSampleLoading ? 'Creating...' : 'Try Sample Project'}
         </button>
         <button
           className="flex items-center gap-2 px-5 py-2.5 bg-white text-indigo-600 border border-indigo-200 rounded-full text-sm font-semibold hover:bg-indigo-50 transition-all cursor-pointer whitespace-nowrap"

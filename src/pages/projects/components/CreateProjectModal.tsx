@@ -13,7 +13,47 @@ const TIER_LIMITS = {
   4: { maxProjects: Infinity, maxMembers: Infinity },
 };
 
+const TEMPLATES = [
+  {
+    id: 'qa-testing',
+    label: 'QA Testing',
+    icon: 'ri-test-tube-line',
+    iconBg: 'bg-indigo-50',
+    iconColor: 'text-indigo-600',
+    name: 'QA Testing Project',
+    description: 'Standard QA testing project for web or mobile applications. Includes test case management, test runs, and milestone tracking.',
+  },
+  {
+    id: 'api-testing',
+    label: 'API Testing',
+    icon: 'ri-code-s-slash-line',
+    iconBg: 'bg-blue-50',
+    iconColor: 'text-blue-600',
+    name: 'API Testing Project',
+    description: 'API endpoint testing with request/response validation, edge cases, and integration test coverage.',
+  },
+  {
+    id: 'sprint-qa',
+    label: 'Sprint QA',
+    icon: 'ri-flag-line',
+    iconBg: 'bg-violet-50',
+    iconColor: 'text-violet-600',
+    name: 'Sprint QA Project',
+    description: 'Sprint-based QA with milestone-driven test execution. Ideal for agile teams running 2-week sprints.',
+  },
+  {
+    id: 'mobile',
+    label: 'Mobile Testing',
+    icon: 'ri-smartphone-line',
+    iconBg: 'bg-green-50',
+    iconColor: 'text-green-600',
+    name: 'Mobile Testing Project',
+    description: 'iOS and Android mobile app testing. Covers UI flows, gestures, push notifications, and device compatibility.',
+  },
+];
+
 export default function CreateProjectModal({ onClose, onCreate }: CreateProjectModalProps) {
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -110,6 +150,18 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
     });
   };
 
+  const applyTemplate = (templateId: string) => {
+    const tmpl = TEMPLATES.find(t => t.id === templateId);
+    if (!tmpl) return;
+    setSelectedTemplate(templateId);
+    setFormData(prev => ({
+      ...prev,
+      name: tmpl.name,
+      description: tmpl.description,
+      prefix: generatePrefix(tmpl.name),
+    }));
+  };
+
   // prefix 자동 생성 함수
   const generatePrefix = (projectName: string): string => {
     if (!projectName.trim()) return '';
@@ -189,6 +241,32 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="p-6 space-y-5">
+              {/* Template picker */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Start from a template <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {TEMPLATES.map(tmpl => (
+                    <button
+                      key={tmpl.id}
+                      type="button"
+                      onClick={() => applyTemplate(tmpl.id)}
+                      className={`flex items-center gap-2 p-3 rounded-lg border text-left transition-all cursor-pointer ${
+                        selectedTemplate === tmpl.id
+                          ? 'border-indigo-400 bg-indigo-50'
+                          : 'border-gray-200 hover:border-indigo-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${tmpl.iconBg}`}>
+                        <i className={`${tmpl.icon} text-base ${tmpl.iconColor}`}></i>
+                      </div>
+                      <span className="text-sm font-medium text-gray-800">{tmpl.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {subscriptionTier === 1 && (
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
                   <i className="ri-information-line text-gray-500"></i>

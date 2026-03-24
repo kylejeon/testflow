@@ -7,6 +7,8 @@ interface SparseStateProps {
   testCaseCounts: Record<string, number>;
   testRunCounts: Record<string, number>;
   onCreateProject: () => void;
+  onTrySample: () => void;
+  isSampleLoading?: boolean;
 }
 
 function timeAgo(dateString: string): string {
@@ -56,6 +58,7 @@ interface ActionCard {
 function buildActionCards(
   count: number,
   onCreateProject: () => void,
+  onTrySample: () => void,
   navigate: ReturnType<typeof useNavigate>,
 ): ActionCard[] {
   const all: ActionCard[] = [
@@ -77,7 +80,7 @@ function buildActionCards(
       iconBg: 'bg-violet-50',
       iconColor: 'text-violet-500',
       showWhen: (c) => c < 2,
-      onClick: onCreateProject,
+      onClick: onTrySample,
     },
     {
       key: 'invite',
@@ -87,7 +90,7 @@ function buildActionCards(
       iconBg: 'bg-emerald-50',
       iconColor: 'text-emerald-500',
       showWhen: () => true,
-      onClick: () => navigate('/settings'),
+      onClick: () => navigate('/settings?tab=members'),
     },
     {
       key: 'import',
@@ -188,10 +191,13 @@ function ProjectCard({
 function ActionCard({
   card,
   animDelay,
+  isSampleLoading,
 }: {
   card: ActionCard;
   animDelay: number;
+  isSampleLoading?: boolean;
 }) {
+  const isLoading = card.key === 'sample' && isSampleLoading;
   return (
     <div
       className="bg-white rounded-xl p-5 cursor-pointer transition-all flex flex-col items-center justify-center text-center"
@@ -199,9 +205,11 @@ function ActionCard({
         border: '1.5px dashed #C7D2FE',
         minHeight: '190px',
         animation: `fadeInUp 0.4s ease-out ${animDelay}ms backwards`,
+        opacity: isLoading ? 0.7 : 1,
       }}
-      onClick={card.onClick}
+      onClick={isLoading ? undefined : card.onClick}
       onMouseEnter={(e) => {
+        if (isLoading) return;
         const el = e.currentTarget as HTMLDivElement;
         el.style.borderColor = '#6366F1';
         el.style.backgroundColor = '#FAFAFF';
@@ -217,9 +225,11 @@ function ActionCard({
       }}
     >
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${card.iconBg}`}>
-        <i className={`${card.icon} text-xl ${card.iconColor}`}></i>
+        <i className={`${isLoading ? 'ri-loader-4-line animate-spin' : card.icon} text-xl ${card.iconColor}`}></i>
       </div>
-      <div className="text-sm font-semibold text-slate-800 mb-1">{card.title}</div>
+      <div className="text-sm font-semibold text-slate-800 mb-1">
+        {isLoading ? 'Creating...' : card.title}
+      </div>
       <div className="text-[0.6875rem] text-slate-400 leading-snug max-w-[200px]">{card.desc}</div>
     </div>
   );
@@ -276,12 +286,22 @@ export default function SparseState({
   testCaseCounts,
   testRunCounts,
   onCreateProject,
+  onTrySample,
+  isSampleLoading,
 }: SparseStateProps) {
   const navigate = useNavigate();
-  const [tipsDismissed, setTipsDismissed] = useState(false);
-
   const count = projects.length as 1 | 2;
-  const actionCards = buildActionCards(count, onCreateProject, navigate);
+  const storageKey = `testably_tips_dismissed_${count}`;
+  const [tipsDismissed, setTipsDismissed] = useState(
+    () => typeof window !== 'undefined' && !!localStorage.getItem(storageKey)
+  );
+
+  const handleDismiss = () => {
+    localStorage.setItem(storageKey, '1');
+    setTipsDismissed(true);
+  };
+
+  const actionCards = buildActionCards(count, onCreateProject, onTrySample, navigate);
 
   // All cards in one grid: project cards first, then action cards
   const totalProjectCards = projects.length;
@@ -290,7 +310,7 @@ export default function SparseState({
     <div>
       {/* Tips banner */}
       {!tipsDismissed && (
-        <TipsBanner count={count} onDismiss={() => setTipsDismissed(true)} />
+        <TipsBanner count={count} onDismiss={handleDismiss} />
       )}
 
       {/* Unified grid: projects + action cards */}
@@ -318,6 +338,7 @@ export default function SparseState({
             key={card.key}
             card={card}
             animDelay={(totalProjectCards + i) * 50}
+            isSampleLoading={isSampleLoading}
           />
         ))}
       </div>
