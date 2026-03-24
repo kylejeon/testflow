@@ -293,7 +293,7 @@ export default function AIGenerateModal({
                     <i className={`ri-play-circle-line text-lg ${planInfo.sessionMode ? 'text-violet-600' : 'text-gray-400'}`}></i>
                   </div>
                   <p className="font-semibold text-gray-900 text-sm">Session-Based</p>
-                  <p className="text-xs text-gray-500 mt-1">Analyze exploratory test session logs to auto-generate cases.</p>
+                  <p className="text-xs text-gray-500 mt-1">Analyze discovery log sessions to auto-generate cases.</p>
                   {planInfo.sessionMode ? (
                     <span className="mt-2 text-xs text-violet-600 font-medium">Professional+ only</span>
                   ) : (

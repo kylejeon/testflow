@@ -62,8 +62,8 @@ const content = {
       },
       {
         icon: 'ri-video-line',
-        title: 'Exploratory Sessions',
-        description: 'Record exploratory testing sessions with rich text notes, inline screenshots, and real-time log capture. Generate detailed bug reports automatically.',
+        title: 'Discovery Logs',
+        description: 'Record discovery logs with rich text notes, inline screenshots, and real-time log capture. Generate detailed bug reports automatically.',
         color: 'bg-indigo-50',
         iconColor: 'text-indigo-600',
         tag: 'Testing',
@@ -253,8 +253,8 @@ const content = {
         answer: 'Testably supports five result statuses: Passed, Failed, Blocked, Retest, and Untested. Each status is color-coded and reflected in real-time progress charts. You can also add comments and screenshots when marking a result.',
       },
       {
-        question: 'How do exploratory test sessions work?',
-        answer: 'Start a session by setting a goal and time box. During the session, you can log bugs, observations, and notes with inline screenshots directly in the rich text editor. When you end the session, a structured session report is generated automatically that can be shared with the team.',
+        question: 'How do Discovery Logs work?',
+        answer: 'Start a discovery log by setting a goal and time box. During the session, you can log bugs, observations, and notes with inline screenshots directly in the rich text editor. When you end the session, a structured report is generated automatically that can be shared with the team.',
       },
       {
         question: 'Can I export test results and reports?',

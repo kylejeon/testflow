@@ -870,7 +870,7 @@ export default function SessionDetail() {
                   <h1 className="text-2xl font-semibold text-gray-900">{session.name}</h1>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-sm text-gray-500">
-                      Exploratory session
+                      Discovery Log
                     </span>
                     {milestone && (
                       <>

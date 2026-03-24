@@ -45,7 +45,7 @@ export const testcases = {
   aiModeText: 'Text Input',
   aiModeTextDesc: 'Describe the feature and AI will generate test cases.',
   aiModeSession: 'Session Based',
-  aiModeSessionDesc: 'Analyze exploratory test session logs to auto-generate cases.',
+  aiModeSessionDesc: 'Analyze discovery log sessions to auto-generate cases.',
   aiModeTextAvailable: 'Available on all plans',
   aiModeSessionLocked: 'Requires Professional plan',
   aiInputLabel: 'Feature Description',

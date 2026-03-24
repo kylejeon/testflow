@@ -1259,7 +1259,7 @@ export default function ProjectSessions() {
                   <div className="text-center py-12">
                     <i className="ri-chat-3-line text-6xl text-gray-300 mb-4"></i>
                     <p className="text-gray-500 text-lg">No {activeTab} sessions</p>
-                    <p className="text-gray-400 text-sm mt-2">Create exploratory testing sessions to track your findings</p>
+                    <p className="text-gray-400 text-sm mt-2">Create discovery logs to track your findings</p>
                   </div>
                 )}
               </div>

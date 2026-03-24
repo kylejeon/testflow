@@ -45,9 +45,9 @@ const features = [
     icon: 'ri-video-line',
     tag: 'Testing',
     tagColor: 'bg-purple-50 text-purple-700',
-    title: 'Exploratory Sessions',
+    title: 'Discovery Logs',
     headline: 'Capture what scripted tests miss',
-    description: 'Run free-form exploratory testing with missions, rich-text notes, inline screenshots, and structured entries.',
+    description: 'Run free-form discovery testing with missions, rich-text notes, inline screenshots, and structured entries.',
     bullets: [
       'Mission-driven sessions with goals',
       'Rich-text editor with inline images',
@@ -66,7 +66,7 @@ const features = [
     tagColor: 'bg-amber-50 text-amber-700',
     title: 'AI Test Case Generation',
     headline: 'Let AI write your test cases',
-    description: 'Generate comprehensive test cases from text descriptions, Jira issues, or exploratory session logs. Review and edit before saving.',
+    description: 'Generate comprehensive test cases from text descriptions, Jira issues, or discovery log sessions. Review and edit before saving.',
     bullets: [
       'Generate from text descriptions',
       'Generate from Jira issues',
@@ -181,8 +181,8 @@ export default function FeaturesPage() {
     <>
       <SEOHead
         title="Features | Testably — QA Test Management Platform"
-        description="Explore all Testably features: test case management, test runs, exploratory sessions, AI generation, Jira integration, CI/CD, Slack & Teams notifications, and more."
-        keywords="test case management features, QA tools, Jira integration, CI/CD testing, exploratory testing, AI test generation"
+        description="Explore all Testably features: test case management, test runs, discovery logs, AI generation, Jira integration, CI/CD, Slack & Teams notifications, and more."
+        keywords="test case management features, QA tools, Jira integration, CI/CD testing, discovery logs, AI test generation"
       />
       <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
         {/* Navbar */}

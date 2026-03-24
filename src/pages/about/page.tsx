@@ -22,7 +22,7 @@ const differentiators = [
     iconBg: 'bg-violet-100',
     iconColor: 'text-violet-600',
     title: 'Built for Modern QA',
-    desc: 'From exploratory sessions to CI/CD pipelines, Testably covers manual and automated workflows with integrations you already use.',
+    desc: 'From discovery logs to CI/CD pipelines, Testably covers manual and automated workflows with integrations you already use.',
   },
   {
     icon: 'ri-map-2-line',

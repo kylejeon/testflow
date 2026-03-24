@@ -9,7 +9,7 @@ const entries = [
     title: 'AI Test Case Generation',
     category: 'Coming Soon',
     categoryColor: 'bg-purple-100 text-purple-700',
-    description: 'Generate test cases from text, Jira issues, or exploratory session logs using AI. Unique Session-to-TestCase mode. Included in all plans.',
+    description: 'Generate test cases from text, Jira issues, or discovery log sessions using AI. Unique Log-to-TestCase mode. Included in all plans.',
     bullets: [
       '4 generation modes: Text, Jira, Session Log, Edge Cases',
       '2-step review-before-save workflow',
@@ -68,10 +68,10 @@ const entries = [
   },
   {
     date: 'September 2025',
-    title: 'Exploratory Sessions',
+    title: 'Discovery Logs',
     category: 'New Feature',
     categoryColor: 'bg-indigo-100 text-indigo-700',
-    description: 'Mission-driven exploratory testing with rich-text notes, screenshots, and structured entries.',
+    description: 'Mission-driven discovery testing with rich-text notes, screenshots, and structured entries.',
     bullets: [
       'Rich-text editor with inline images',
       'Passed / Failed / Note entries',

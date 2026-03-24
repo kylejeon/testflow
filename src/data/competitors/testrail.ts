@@ -27,7 +27,7 @@ export const testrailData: CompetitorData = {
     { feature: 'CI/CD integration', testably: 'All plans', competitor: 'Enterprise only' },
     { feature: 'AI test case generation', testably: true, competitor: false },
     { feature: 'Slack & Teams notifications', testably: true, competitor: false },
-    { feature: 'Exploratory sessions', testably: true, competitor: false },
+    { feature: 'Discovery Logs', testably: true, competitor: false },
     { feature: 'Flat-rate pricing', testably: true, competitor: false },
     { feature: 'Setup time', testably: '< 5 minutes', competitor: '30+ minutes' },
   ],

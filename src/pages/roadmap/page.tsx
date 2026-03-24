@@ -37,9 +37,9 @@ const columns = [
         iconColor: 'text-indigo-600',
       },
       {
-        title: 'Exploratory Sessions',
+        title: 'Discovery Logs',
         date: 'Q3 2025',
-        desc: 'Mission-driven exploratory testing with rich-text notes and screenshots.',
+        desc: 'Mission-driven discovery testing with rich-text notes and screenshots.',
         icon: 'ri-video-line',
         iconBg: 'bg-indigo-50',
         iconColor: 'text-indigo-600',

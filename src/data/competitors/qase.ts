@@ -27,7 +27,7 @@ export const qaseData: CompetitorData = {
     { feature: 'CI/CD integration', testably: 'All plans', competitor: 'Business plan only' },
     { feature: 'AI test case generation', testably: true, competitor: 'Add-on cost' },
     { feature: 'Flat-rate pricing', testably: true, competitor: false },
-    { feature: 'Exploratory sessions', testably: true, competitor: true },
+    { feature: 'Discovery Logs', testably: true, competitor: true },
     { feature: 'Slack & Teams notifications', testably: true, competitor: 'Business plan only' },
     { feature: 'Setup time', testably: '< 5 minutes', competitor: '15–30 minutes' },
   ],
@@ -38,7 +38,7 @@ export const qaseData: CompetitorData = {
     },
     {
       title: 'AI Test Case Generation',
-      body: 'Testably ships AI test case generation as a core feature on all paid plans — generate test cases from plain-text descriptions, Jira issues, or exploratory session logs. Qase offers AI generation only as a paid add-on, increasing your total cost beyond the base subscription.',
+      body: 'Testably ships AI test case generation as a core feature on all paid plans — generate test cases from plain-text descriptions, Jira issues, or discovery log sessions. Qase offers AI generation only as a paid add-on, increasing your total cost beyond the base subscription.',
     },
     {
       title: 'Jira & CI/CD on All Plans',
@@ -95,7 +95,7 @@ export const qaseData: CompetitorData = {
     {
       question: 'Does Testably have AI features like Qase?',
       answer:
-        'Yes — and Testably includes AI test case generation on all paid plans at no extra cost. In Qase, AI generation is an add-on. With Testably, you get AI-powered generation from text descriptions, Jira issues, and exploratory session logs as part of your base plan.',
+        'Yes — and Testably includes AI test case generation on all paid plans at no extra cost. In Qase, AI generation is an add-on. With Testably, you get AI-powered generation from text descriptions, Jira issues, and discovery log sessions as part of your base plan.',
     },
     {
       question: 'Why is Testably cheaper for larger teams?',
@@ -103,9 +103,9 @@ export const qaseData: CompetitorData = {
         "Testably uses flat-rate team pricing instead of per-user billing. Once you're on a plan, adding team members doesn't increase your bill. Qase charges per seat, so your cost grows linearly with team size.",
     },
     {
-      question: 'Does Testably support exploratory testing like Qase?',
+      question: 'Does Testably support discovery testing like Qase?',
       answer:
-        'Yes. Testably includes exploratory testing sessions where testers can log findings in real time, attach screenshots, and auto-generate test cases from session logs.',
+        'Yes. Testably includes Discovery Logs where testers can log findings in real time, attach screenshots, and auto-generate test cases from log sessions.',
     },
     {
       question: 'What if I need Jira integration?',

@@ -28,7 +28,7 @@ export const zephyrData: CompetitorData = {
     { feature: 'Charges per QA user only', testably: true, competitor: false },
     { feature: 'CI/CD integration', testably: 'All plans', competitor: 'Limited' },
     { feature: 'AI test case generation', testably: true, competitor: false },
-    { feature: 'Exploratory sessions', testably: true, competitor: false },
+    { feature: 'Discovery Logs', testably: true, competitor: false },
     { feature: 'Setup time', testably: '< 5 minutes', competitor: 'Jira setup required' },
   ],
   keyDifferences: [
@@ -46,7 +46,7 @@ export const zephyrData: CompetitorData = {
     },
     {
       title: 'AI & Modern Features',
-      body: 'Testably ships with AI test case generation built in — generate from text descriptions, Jira issues, or exploratory session logs. Zephyr Scale does not offer AI-assisted test case creation.',
+      body: 'Testably ships with AI test case generation built in — generate from text descriptions, Jira issues, or discovery log sessions. Zephyr Scale does not offer AI-assisted test case creation.',
     },
   ],
   pricingRows: [
