@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import NotificationBell from '../../components/feature/NotificationBell';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
+import ProjectHeader from '../../components/ProjectHeader';
 
 interface Milestone {
   id: string;
@@ -444,17 +445,7 @@ export default function ProjectMilestones() {
     return (
       <div className="flex h-screen bg-white">
         <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <Link to="/projects" className="flex items-center cursor-pointer">
-                <LogoMark />
-              </Link>
-              <div className="relative">
-                <ProfileAvatar />
-                <ProfileMenu />
-              </div>
-            </div>
-          </header>
+          <ProjectHeader projectId={id || ''} projectName="" />
           <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -469,34 +460,7 @@ export default function ProjectMilestones() {
   return (
     <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Link to="/projects" className="flex items-center cursor-pointer">
-                <LogoMark />
-              </Link>
-              <div className="w-px h-5 bg-gray-300" />
-              <span className="text-sm text-gray-500">{project?.name}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <nav className="flex items-center gap-1">
-                <Link to={`/projects/${id}`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Overview</Link>
-                <Link to={`/projects/${id}/milestones`} className="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg cursor-pointer">Milestones</Link>
-                <Link to={`/projects/${id}/documentation`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Documentation</Link>
-                <Link to={`/projects/${id}/testcases`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Test Cases</Link>
-                <Link to={`/projects/${id}/runs`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Runs &amp; Results</Link>
-                <Link to={`/projects/${id}/discovery-logs`} className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer">Discovery Logs</Link>
-              </nav>
-              <div className="flex items-center gap-4">
-                <NotificationBell />
-                <div className="relative">
-                  <ProfileAvatar />
-                  <ProfileMenu />
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+        <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
         <main className="flex-1 overflow-y-auto bg-gray-50/30">
           <div className="p-8">

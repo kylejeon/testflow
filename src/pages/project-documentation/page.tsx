@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import AddLinkModal from './components/AddLinkModal';
 import UploadFileModal from './components/UploadFileModal';
+import ProjectHeader from '../../components/ProjectHeader';
 
 interface DocumentItem {
   id: string;
@@ -159,24 +160,7 @@ export default function ProjectDocumentation() {
     return (
       <div className="flex h-screen bg-white">
         <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link to="/projects" className="flex items-center cursor-pointer">
-                  <LogoMark />
-                </Link>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
-                  {userProfile?.avatar_emoji ? (
-                    <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
-                  ) : (
-                    <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </header>
+          <ProjectHeader projectId={id || ''} projectName="" />
           <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -191,109 +175,7 @@ export default function ProjectDocumentation() {
   return (
     <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Link to="/projects" className="flex items-center cursor-pointer">
-                <LogoMark />
-              </Link>
-
-              <div className="w-px h-5 bg-gray-300" />
-
-              <span className="text-sm text-gray-500">{project?.name}</span>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <nav className="flex items-center gap-1">
-                <Link 
-                  to={`/projects/${id}`}
-                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
-                >
-                  Overview
-                </Link>
-                <Link 
-                  to={`/projects/${id}/milestones`}
-                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
-                >
-                  Milestones
-                </Link>
-                <Link 
-                  to={`/projects/${id}/documentation`}
-                  className="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg cursor-pointer"
-                >
-                  Documentation
-                </Link>
-                <Link 
-                  to={`/projects/${id}/testcases`}
-                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
-                >
-                  Test Cases
-                </Link>
-                <Link 
-                  to={`/projects/${id}/runs`}
-                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
-                >
-                  Runs &amp; Results
-                </Link>
-                <Link 
-                  to={`/projects/${id}/discovery-logs`}
-                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
-                >
-                  Sessions
-                </Link>
-              </nav>
-              
-              <div className="flex items-center gap-3 relative">
-                <div 
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
-                    {userProfile?.avatar_emoji ? (
-                      <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
-                    ) : (
-                      <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
-                    )}
-                  </div>
-                </div>
-                
-                {showProfileMenu && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-10" 
-                      onClick={() => setShowProfileMenu(false)}
-                    ></div>
-                    <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
-                        <p className="text-xs text-gray-500">{userProfile?.email}</p>
-                        <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
-                          <i className={`${tierInfo.icon} text-sm`}></i>
-                          {tierInfo.name}
-                        </div>
-                      </div>
-                      <Link
-                        to="/settings"
-                        onClick={() => setShowProfileMenu(false)}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
-                      >
-                        <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                        <span>{t('settings')}</span>
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
-                      >
-                        <i className="ri-logout-box-line text-lg"></i>
-                        <span>{t('logout')}</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
+        <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
         <main className="flex-1 overflow-y-auto bg-gray-50/30">
           <div className="p-8">
