@@ -35,6 +35,29 @@ const content = {
       title: 'Everything your QA team needs',
       description: 'From writing test cases to analyzing results — Testably covers the full testing lifecycle',
     },
+    differentiators: [
+      {
+        badge: 'AI-Native',
+        badgeIcon: 'ri-sparkling-line',
+        title: 'AI Test Generation',
+        description: 'Describe what you want to test in plain language. Testably generates structured test cases, steps, and expected results. Convert Discovery Logs to test cases with one click.',
+        pills: ['Plain text → test cases', 'Jira issue → test cases', 'Discovery → test cases', 'Edge case suggestions'],
+      },
+      {
+        badge: 'Unique',
+        badgeIcon: 'ri-focus-3-line',
+        title: 'Focus Mode',
+        description: 'Execute test runs in a distraction-free fullscreen. See only the current step, mark results with a single keystroke, and auto-advance. No context switching, no clutter.',
+        pills: ['P / F / B / S keystroke', 'Auto-advance 300ms', 'Progress bar', 'Inline notes'],
+      },
+      {
+        badge: 'Power User',
+        badgeIcon: 'ri-keyboard-line',
+        title: 'Cmd+K Command Palette',
+        description: 'Navigate anywhere, create anything, execute any action — all from your keyboard. Vim-inspired G-chord shortcuts let you fly through your QA workflow at terminal speed.',
+        pills: ['Cmd+K palette', 'G-chord navigation', 'Cmd+Shift+F Focus Mode', '? shortcut help'],
+      },
+    ],
     features: [
       {
         icon: 'ri-file-list-3-line',
@@ -61,11 +84,11 @@ const content = {
         tag: 'Planning',
       },
       {
-        icon: 'ri-video-line',
+        icon: 'ri-search-eye-line',
         title: 'Discovery Logs',
-        description: 'Record discovery logs with rich text notes, inline screenshots, and real-time log capture. Generate detailed bug reports automatically.',
-        color: 'bg-indigo-50',
-        iconColor: 'text-indigo-600',
+        description: 'Capture exploratory testing insights as you go. Log observations with rich text notes, inline screenshots, and real-time log capture. Auto-convert discoveries into formal test cases.',
+        color: 'bg-violet-900/20',
+        iconColor: 'text-violet-400',
         tag: 'Testing',
       },
       {
@@ -156,7 +179,8 @@ const content = {
     pricingSection: {
       badge: 'Pricing',
       title: 'Plans that scale with your team',
-      description: 'All paid plans include a 14-day free trial',
+      description: 'Flat-rate pricing — no per-seat charges. Free forever for up to 3 members. 14-day free trial on all paid plans.',
+      note: 'Free forever for up to 3 members · 14-day free trial on all paid plans · No per-seat charges',
     },
     pricingPlans: [
       {
@@ -198,7 +222,7 @@ const content = {
         period: '/ month',
         description: 'For teams scaling beyond 20 members',
         features: ['Unlimited projects', '21–50 team members', 'Unlimited AI generations', 'Jira integration', 'Slack & Teams integration', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
-        cta: 'Contact Sales',
+        cta: 'Start Free Trial',
         highlighted: false,
         icon: 'ri-building-2-line',
         popular: '',
@@ -209,7 +233,7 @@ const content = {
         period: '/ month',
         description: 'For mid-size organizations',
         features: ['Unlimited projects', '51–100 team members', 'Unlimited AI generations', 'Jira integration', 'Slack & Teams integration', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
-        cta: 'Contact Sales',
+        cta: 'Start Free Trial',
         highlighted: false,
         icon: 'ri-building-4-line',
         popular: '',
@@ -220,7 +244,7 @@ const content = {
         period: '',
         description: 'For large enterprises with 100+ members',
         features: ['Unlimited projects', '100+ team members', 'Unlimited AI generations', 'Jira integration', 'Slack & Teams integration', 'CI/CD Integration', 'Dedicated support', 'Custom contract & SLA'],
-        cta: 'Contact Sales',
+        cta: 'Talk to Us',
         highlighted: false,
         icon: 'ri-government-line',
         popular: '',
@@ -321,6 +345,29 @@ const content = {
       title: 'QA 팀에 필요한 모든 것',
       description: '테스트 케이스 작성부터 결과 분석까지 — 전체 테스팅 라이프사이클을 지원합니다',
     },
+    differentiators: [
+      {
+        badge: 'AI 네이티브',
+        badgeIcon: 'ri-sparkling-line',
+        title: 'AI 테스트 생성',
+        description: '테스트하고 싶은 것을 일반 언어로 설명하세요. Testably가 구조화된 테스트 케이스, 단계, 예상 결과를 생성합니다. Discovery Logs를 한 번의 클릭으로 테스트 케이스로 변환하세요.',
+        pills: ['텍스트 → 테스트 케이스', 'Jira 이슈 → 테스트 케이스', 'Discovery → 테스트 케이스', '엣지 케이스 제안'],
+      },
+      {
+        badge: '독창적 기능',
+        badgeIcon: 'ri-focus-3-line',
+        title: 'Focus Mode',
+        description: '방해 없는 전체화면에서 테스트를 실행하세요. 현재 단계만 보고, 단일 키 입력으로 결과를 표시하고, 자동으로 다음 단계로 이동합니다.',
+        pills: ['P / F / B / S 키 입력', '300ms 자동 진행', '진행률 바', '인라인 메모'],
+      },
+      {
+        badge: '파워 유저',
+        badgeIcon: 'ri-keyboard-line',
+        title: 'Cmd+K 커맨드 팔레트',
+        description: '키보드만으로 어디든 이동하고, 무엇이든 만들고, 모든 작업을 실행하세요. Vim에서 영감받은 G-chord 단축키로 QA 워크플로우를 빠르게 진행하세요.',
+        pills: ['Cmd+K 팔레트', 'G-chord 내비게이션', 'Cmd+Shift+F Focus Mode', '? 단축키 도움말'],
+      },
+    ],
     features: [
       {
         icon: 'ri-file-list-3-line',
@@ -347,11 +394,11 @@ const content = {
         tag: '계획',
       },
       {
-        icon: 'ri-video-line',
-        title: '탐색적 세션',
-        description: '리치 텍스트 메모, 인라인 스크린샷, 실시간 로그 캡처로 탐색적 테스트 세션을 기록하세요. 상세한 버그 리포트를 자동 생성합니다.',
-        color: 'bg-indigo-50',
-        iconColor: 'text-indigo-600',
+        icon: 'ri-search-eye-line',
+        title: 'Discovery Logs',
+        description: '탐색적 테스트 인사이트를 즉시 기록하세요. 리치 텍스트 메모, 인라인 스크린샷, 실시간 로그 캡처로 관찰 사항을 기록하세요. 발견한 내용을 공식 테스트 케이스로 자동 변환합니다.',
+        color: 'bg-violet-900/20',
+        iconColor: 'text-violet-400',
         tag: '테스팅',
       },
       {
@@ -442,7 +489,8 @@ const content = {
     pricingSection: {
       badge: '요금제',
       title: '팀 규모에 맞는 요금제',
-      description: '모든 유료 요금제에 14일 무료 체험이 포함됩니다',
+      description: '좌석당 요금 없음 · 멤버 3명까지 영구 무료 · 모든 유료 요금제 14일 무료 체험',
+      note: '멤버 3명까지 영구 무료 · 모든 유료 요금제 14일 무료 체험 · 좌석당 요금 없음',
     },
     pricingPlans: [
       {
@@ -484,7 +532,7 @@ const content = {
         period: '/ 월',
         description: '20명 초과 팀을 위한 플랜',
         features: ['프로젝트 무제한', '팀 멤버 21-50명', 'AI 생성 무제한', 'Jira 연동', 'Slack & Teams 연동', 'CI/CD 연동', '전담 지원', 'SLA 보장'],
-        cta: '문의하기',
+        cta: '14일 무료 체험',
         highlighted: false,
         icon: 'ri-building-2-line',
         popular: '',
@@ -495,7 +543,7 @@ const content = {
         period: '/ 월',
         description: '중대형 조직을 위한 플랜',
         features: ['프로젝트 무제한', '팀 멤버 51-100명', 'AI 생성 무제한', 'Jira 연동', 'Slack & Teams 연동', 'CI/CD 연동', '전담 지원', 'SLA 보장'],
-        cta: '문의하기',
+        cta: '14일 무료 체험',
         highlighted: false,
         icon: 'ri-building-4-line',
         popular: '',
@@ -539,8 +587,8 @@ const content = {
         answer: 'Testably는 Passed, Failed, Blocked, Retest, Untested 5가지 결과 상태를 지원합니다. 각 상태는 색상으로 구분되며 실시간 진행률 차트에 반영됩니다. 결과를 표시할 때 댓글과 스크린샷을 추가할 수도 있습니다.',
       },
       {
-        question: '탐색적 테스트 세션은 어떻게 작동하나요?',
-        answer: '목표와 시간 박스를 설정하여 세션을 시작하세요. 세션 중에 리치 텍스트 에디터에서 인라인 스크린샷과 함께 버그, 관찰 사항, 메모를 직접 기록할 수 있습니다. 세션이 종료되면 팀과 공유할 수 있는 구조화된 세션 리포트가 자동으로 생성됩니다.',
+        question: 'Discovery Logs는 어떻게 작동하나요?',
+        answer: '목표와 시간 박스를 설정하여 Discovery Log를 시작하세요. 세션 중에 리치 텍스트 에디터에서 인라인 스크린샷과 함께 버그, 관찰 사항, 메모를 직접 기록할 수 있습니다. 세션이 종료되면 팀과 공유할 수 있는 구조화된 리포트가 자동으로 생성됩니다. 모든 발견 사항은 한 번의 클릭으로 공식 테스트 케이스로 변환할 수 있습니다.',
       },
       {
         question: '테스트 결과와 리포트를 내보낼 수 있나요?',
@@ -687,13 +735,13 @@ export default function HomePage() {
         }}
       />
 
-      <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
+      <div className="min-h-screen bg-gray-950" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
 
         {/* Navbar */}
-        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100' : 'bg-transparent'}`}>
+        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-gray-950/90 backdrop-blur-xl border-b border-white/6' : 'bg-transparent'}`}>
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
             <a href="/">
-              <Logo variant={scrolled ? 'light' : 'dark'} className="h-9" />
+              <Logo variant="dark" className="h-9" />
             </a>
 
             <div className="hidden md:flex items-center gap-8">
@@ -701,7 +749,7 @@ export default function HomePage() {
                 <a
                   key={item.href}
                   href={item.href}
-                  className={`text-sm font-medium transition-colors cursor-pointer ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'}`}
+                  className="text-sm font-medium transition-colors cursor-pointer text-white/60 hover:text-white"
                 >
                   {item.label}
                 </a>
@@ -713,7 +761,7 @@ export default function HomePage() {
               <div className="relative" ref={langMenuRef}>
                 <button
                   onClick={() => setLangMenuOpen(!langMenuOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer border ${scrolled ? 'border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 bg-white' : 'border-white/30 text-white/80 hover:text-white hover:border-white/60 bg-white/10'}`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer border border-white/15 text-white/60 hover:text-white hover:border-white/30 bg-white/5"
                 >
                   <i className="ri-translate-2 text-base"></i>
                   <span>{lang === 'en' ? 'EN' : 'KO'}</span>
@@ -746,7 +794,7 @@ export default function HomePage() {
               </div>
               <button
                 onClick={() => navigate('/auth')}
-                className={`text-sm font-semibold px-4 py-2 rounded-lg transition-all cursor-pointer whitespace-nowrap ${scrolled ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-100' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
+                className="text-sm font-semibold px-4 py-2 rounded-lg transition-all cursor-pointer whitespace-nowrap text-white/70 hover:text-white hover:bg-white/8"
               >
                 {t.nav.login}
               </button>
@@ -857,7 +905,7 @@ export default function HomePage() {
                     </div>
                     {/* Screenshot */}
                     <img
-                      src="/hero-project-overview.png"
+                      src="/hero-screenshot.png"
                       alt="Testably project dashboard showing test cases, runs, and milestones"
                       className="w-full h-auto"
                       loading="eager"
@@ -865,20 +913,20 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Floating stat card */}
+                {/* Floating chips */}
                 <div
-                  className="absolute -bottom-4 -left-6 bg-white/[0.06] backdrop-blur-xl border border-white/[0.1] rounded-2xl px-5 py-4 shadow-xl hidden sm:block"
-                  style={{ animation: 'float 6s ease-in-out infinite' }}
+                  className="absolute -bottom-4 -left-6 hidden sm:flex items-center gap-2 px-3.5 py-2.5 rounded-xl shadow-xl"
+                  style={{ background: 'rgba(15,23,42,0.88)', backdropFilter: 'blur(16px)', border: '1px solid rgba(99,102,241,0.25)', animation: 'float 6s ease-in-out infinite' }}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-                      <i className="ri-check-double-line text-indigo-400 text-lg"></i>
-                    </div>
-                    <div>
-                      <div className="text-white font-bold text-sm">248 tests passed</div>
-                      <div className="text-white/40 text-xs">Sprint 4.2 — 100% pass rate</div>
-                    </div>
-                  </div>
+                  <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                  <span className="text-white font-semibold text-sm">87% Pass Rate</span>
+                </div>
+                <div
+                  className="absolute -top-4 -right-4 hidden sm:flex items-center gap-2 px-3.5 py-2.5 rounded-xl shadow-xl"
+                  style={{ background: 'rgba(15,23,42,0.88)', backdropFilter: 'blur(16px)', border: '1px solid rgba(99,102,241,0.25)', animation: 'float 6s ease-in-out infinite 3.5s' }}
+                >
+                  <i className="ri-sparkling-line text-violet-400 text-sm"></i>
+                  <span className="text-white font-semibold text-sm">AI-Powered</span>
                 </div>
               </div>
             </div>
@@ -906,70 +954,144 @@ export default function HomePage() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="py-24 bg-white">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-settings-3-line text-indigo-600 text-sm"></i>
-                <span className="text-indigo-700 text-sm font-medium">{t.featuresSection.badge}</span>
+        <section id="features" className="py-28 bg-gray-950 relative overflow-hidden">
+          {/* Background blobs */}
+          <div className="absolute top-1/4 -right-20 w-[500px] h-[500px] rounded-full bg-indigo-500/8 blur-[100px] pointer-events-none"></div>
+          <div className="absolute bottom-1/4 -left-16 w-[400px] h-[400px] rounded-full bg-violet-500/6 blur-[80px] pointer-events-none"></div>
+
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
+            <div className="text-center mb-14">
+              <div className="inline-flex items-center gap-2 mb-3">
+                <i className="ri-sparkling-2-line text-indigo-400 text-sm"></i>
+                <span className="text-indigo-400 text-xs font-semibold uppercase tracking-widest">{t.featuresSection.badge}</span>
               </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.featuresSection.title}</h2>
-              <p className="text-gray-500 text-lg max-w-2xl mx-auto">{t.featuresSection.description}</p>
+              <h2 className="text-4xl font-bold text-white mb-4">{t.featuresSection.title}</h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto">{t.featuresSection.description}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* Differentiator highlight cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
+              {t.differentiators.map((diff) => (
+                <div
+                  key={diff.title}
+                  className="relative rounded-2xl p-8 overflow-hidden transition-all hover:-translate-y-1"
+                  style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05))', border: '1px solid rgba(99,102,241,0.15)' }}
+                >
+                  {/* Top accent line */}
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500"></div>
+                  <div className="inline-flex items-center gap-1.5 text-fuchsia-400 bg-violet-500/10 border border-violet-500/20 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider mb-4">
+                    <i className={`${diff.badgeIcon} text-xs`}></i>
+                    {diff.badge}
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2.5">{diff.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed mb-4">{diff.description}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {diff.pills.map((pill) => (
+                      <span key={pill} className="text-xs font-medium text-indigo-300 bg-indigo-500/8 border border-indigo-500/12 px-2.5 py-0.5 rounded-full">{pill}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="relative text-center mb-10">
+              <div className="absolute top-1/2 left-0 right-0 h-px bg-white/6"></div>
+              <span className="relative bg-gray-950 px-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Plus everything else you need</span>
+            </div>
+
+            {/* 9 feature cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {t.features.map((feature, index) => (
                 <article
                   key={feature.title}
                   className={`p-6 rounded-2xl border transition-all duration-300 cursor-pointer group ${
                     activeFeature === index
-                      ? 'border-indigo-200 scale-[1.02] shadow-md shadow-indigo-50'
-                      : 'border-gray-100 hover:border-indigo-100 hover:shadow-sm'
-                  } ${feature.color}`}
+                      ? 'border-indigo-500/40 scale-[1.02] shadow-lg shadow-indigo-500/10'
+                      : 'border-white/6 hover:border-indigo-500/20 hover:shadow-sm hover:shadow-indigo-500/10'
+                  }`}
+                  style={{ background: activeFeature === index ? 'rgba(99,102,241,0.06)' : 'rgba(255,255,255,0.02)' }}
                   onMouseEnter={() => setActiveFeature(index)}
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <div className="w-11 h-11 flex items-center justify-center rounded-xl bg-white shadow-sm">
+                    <div className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5">
                       <i className={`${feature.icon} text-xl ${feature.iconColor}`}></i>
                     </div>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/70 text-gray-500">
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/5 text-gray-500">
                       {feature.tag}
                     </span>
                   </div>
-                  <h3 className="text-base font-bold text-gray-900 mb-2">{feature.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
+                  <h3 className="text-sm font-bold text-white mb-2">{feature.title}</h3>
+                  <p className="text-gray-500 text-xs leading-relaxed">{feature.description}</p>
                 </article>
               ))}
+            </div>
+
+            {/* Keyboard Showcase */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mt-20">
+              <div>
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <i className="ri-keyboard-line text-indigo-400 text-sm"></i>
+                  <span className="text-indigo-400 text-xs font-semibold uppercase tracking-widest">Keyboard-First</span>
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-4">Built for speed.<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400">Zero mouse required.</span></h2>
+                <p className="text-gray-400 text-sm leading-relaxed max-w-sm mb-6">Every action in Testably has a keyboard shortcut. Navigate between projects, create test cases, execute runs — all without leaving your keyboard.</p>
+                <button onClick={() => {}} className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-500 text-white text-sm font-semibold rounded-full hover:bg-indigo-400 transition-all cursor-pointer">View All Shortcuts <i className="ri-arrow-right-line"></i></button>
+              </div>
+              <div className="rounded-2xl p-5 space-y-1" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                {[
+                  { keys: ['Ctrl', 'K'], label: 'Command palette' },
+                  { keys: ['N'], label: 'New test case' },
+                  { keys: ['R'], label: 'Start test run' },
+                  { keys: ['F'], label: 'Enter Focus Mode', highlight: true },
+                  { keys: ['P', 'F', 'B', 'S'], label: 'Pass / Fail / Block / Skip' },
+                  { keys: ['Ctrl', 'Shift', 'J'], label: 'Create Jira issue' },
+                  { keys: ['?'], label: 'Show all shortcuts' },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${row.highlight ? 'bg-indigo-500/8' : 'bg-white/[0.015] hover:bg-indigo-500/5'}`}
+                  >
+                    <div className="flex items-center gap-1">
+                      {row.keys.map((k) => (
+                        <kbd key={k} className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${row.highlight ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300' : 'bg-white/8 border-white/12 text-gray-300'}`} style={{ border: '1px solid' }}>{k}</kbd>
+                      ))}
+                    </div>
+                    <span className={`text-sm flex-1 ${row.highlight ? 'text-violet-300' : 'text-gray-400'}`}>{row.label}</span>
+                    {row.highlight && <i className="ri-sparkling-line text-violet-400 text-xs"></i>}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
         {/* Workflow Section */}
-        <section id="workflow" className="py-24 bg-gray-50">
+        <section id="workflow" className="py-24 bg-gray-900/50 relative overflow-hidden">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-flow-chart text-indigo-600 text-sm"></i>
-                <span className="text-indigo-700 text-sm font-medium">{t.workflowSection.badge}</span>
+              <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-flow-chart text-indigo-400 text-sm"></i>
+                <span className="text-indigo-300 text-sm font-medium">{t.workflowSection.badge}</span>
               </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.workflowSection.title}</h2>
-              <p className="text-gray-500 text-lg max-w-2xl mx-auto">{t.workflowSection.description}</p>
+              <h2 className="text-4xl font-bold text-white mb-4">{t.workflowSection.title}</h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto">{t.workflowSection.description}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {t.workflowSteps.map((step, index) => (
-                <article key={step.step} className="relative bg-white rounded-2xl p-6 border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
+                <article key={step.step} className="relative bg-white/5 rounded-2xl p-6 border border-white/6 hover:border-indigo-500/30 hover:shadow-md transition-all">
                   {index < t.workflowSteps.length - 1 && (
                     <div className="hidden lg:block absolute top-12 -right-3 w-6 h-px bg-indigo-200 z-10"></div>
                   )}
                   <div className="flex items-center gap-3 mb-4">
-                    <span className="text-3xl font-black text-indigo-100">{step.step}</span>
+                    <span className="text-3xl font-black text-indigo-500/20">{step.step}</span>
                     <div className="w-10 h-10 flex items-center justify-center bg-indigo-500 rounded-xl">
                       <i className={`${step.icon} text-white text-lg`}></i>
                     </div>
                   </div>
-                  <h3 className="text-base font-bold text-gray-900 mb-2">{step.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{step.description}</p>
+                  <h3 className="text-base font-bold text-white mb-2">{step.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{step.description}</p>
                 </article>
               ))}
             </div>
@@ -1031,25 +1153,25 @@ export default function HomePage() {
         </section>
 
         {/* Why Teams Choose Testably */}
-        <section id="why-testably" className="py-24 bg-white">
+        <section id="why-testably" className="py-24 bg-gray-950 relative overflow-hidden">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-award-line text-indigo-600 text-sm"></i>
-                <span className="text-indigo-700 text-sm font-medium">{t.whySection.badge}</span>
+              <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-award-line text-indigo-400 text-sm"></i>
+                <span className="text-indigo-300 text-sm font-medium">{t.whySection.badge}</span>
               </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.whySection.title}</h2>
-              <p className="text-gray-500 text-lg">{t.whySection.description}</p>
+              <h2 className="text-4xl font-bold text-white mb-4">{t.whySection.title}</h2>
+              <p className="text-gray-400 text-lg">{t.whySection.description}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {t.whyCards.map((card) => (
-                <article key={card.title} className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center mb-5">
-                    <i className={`${card.icon} text-indigo-600 text-2xl`}></i>
+                <article key={card.title} className="bg-white/3 rounded-2xl p-8 border border-white/6 hover:border-indigo-500/25 hover:shadow-md transition-all">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-500/15 flex items-center justify-center mb-5">
+                    <i className={`${card.icon} text-indigo-400 text-2xl`}></i>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">{card.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{card.content}</p>
+                  <h3 className="text-lg font-bold text-white mb-3">{card.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{card.content}</p>
                 </article>
               ))}
             </div>
@@ -1057,15 +1179,18 @@ export default function HomePage() {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="py-24 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-6">
+        <section id="pricing" className="py-28 bg-gray-950 relative overflow-hidden">
+          {/* Background blobs */}
+          <div className="absolute top-1/4 -right-20 w-[500px] h-[500px] rounded-full bg-indigo-500/8 blur-[100px] pointer-events-none"></div>
+          <div className="absolute bottom-1/4 -left-16 w-[400px] h-[400px] rounded-full bg-violet-500/6 blur-[80px] pointer-events-none"></div>
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-price-tag-3-line text-indigo-600 text-sm"></i>
-                <span className="text-indigo-700 text-sm font-medium">{t.pricingSection.badge}</span>
+              <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-4">
+                <i className="ri-price-tag-3-line text-indigo-400 text-sm"></i>
+                <span className="text-indigo-300 text-sm font-medium">{t.pricingSection.badge}</span>
               </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.pricingSection.title}</h2>
-              <p className="text-gray-500 text-lg">{t.pricingSection.description}</p>
+              <h2 className="text-4xl font-bold text-white mb-4">{t.pricingSection.title}</h2>
+              <p className="text-gray-400 text-lg">{t.pricingSection.description}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 items-start">
@@ -1075,12 +1200,12 @@ export default function HomePage() {
                   className={`rounded-2xl p-6 border flex flex-col transition-all ${
                     plan.highlighted
                       ? 'bg-indigo-500 border-indigo-500 shadow-xl shadow-indigo-200 scale-[1.02]'
-                      : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-md'
+                      : 'bg-white/3 border-white/8 hover:border-indigo-500/25 hover:shadow-md'
                   }`}
                 >
                   <div className="mb-5">
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-white/20' : 'bg-indigo-50'}`}>
-                      <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
+                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-white/20' : 'bg-indigo-500/15'}`}>
+                      <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-indigo-400'}`}></i>
                     </div>
                     {plan.popular && (
                       <div className="inline-flex items-center gap-1 bg-white/25 rounded-full px-3 py-1 mb-2">
@@ -1088,31 +1213,35 @@ export default function HomePage() {
                         <span className="text-white text-xs font-semibold">{plan.popular}</span>
                       </div>
                     )}
-                    <h3 className={`text-lg font-bold mb-1 ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
-                    <p className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>{plan.description}</p>
+                    <h3 className={`text-lg font-bold mb-1 ${plan.highlighted ? 'text-white' : 'text-white'}`}>{plan.name}</h3>
+                    <p className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/70' : 'text-gray-400'}`}>{plan.description}</p>
                   </div>
 
-                  <div className={`mb-5 pb-5 border-b ${plan.highlighted ? 'border-white/20' : 'border-gray-100'}`}>
-                    <span className={`text-3xl font-black ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>{plan.price}</span>
-                    <span className={`text-xs ml-1.5 ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>{plan.period}</span>
+                  <div className={`mb-5 pb-5 border-b ${plan.highlighted ? 'border-white/20' : 'border-white/8'}`}>
+                    <span className={`text-3xl font-black ${plan.highlighted ? 'text-white' : 'text-white'}`}>{plan.price}</span>
+                    <span className={`text-xs ml-1.5 ${plan.highlighted ? 'text-white/70' : 'text-gray-400'}`}>{plan.period}</span>
                   </div>
 
                   <ul className="space-y-2.5 mb-7 flex-1">
                     {plan.features.map((f) => (
                       <li key={f} className="flex items-start gap-2">
-                        <div className={`w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${plan.highlighted ? 'bg-white/25' : 'bg-indigo-100'}`}>
-                          <i className={`ri-check-line text-xs ${plan.highlighted ? 'text-white' : 'text-indigo-600'}`}></i>
+                        <div className={`w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${plan.highlighted ? 'bg-white/25' : 'bg-indigo-500/15'}`}>
+                          <i className={`ri-check-line text-xs ${plan.highlighted ? 'text-white' : 'text-indigo-400'}`}></i>
                         </div>
-                        <span className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/90' : 'text-gray-700'}`}>{f}</span>
+                        <span className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/90' : 'text-gray-300'}`}>{f}</span>
                       </li>
                     ))}
                   </ul>
 
-                  {['Contact Us', '문의하기', 'Contact Sales'].includes(plan.cta) ? (
+                  {['Contact Us', '문의하기', 'Contact Sales', 'Talk to Us'].includes(plan.cta) ? (
                     <a
                       href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
                       className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center ${
-                        plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
+                        plan.highlighted
+                          ? 'bg-white text-indigo-600 hover:bg-gray-50'
+                          : plan.cta === 'Talk to Us' || plan.cta === '문의하기'
+                          ? 'bg-indigo-900 text-violet-300 border border-violet-500/25 hover:bg-violet-500/15'
+                          : 'bg-indigo-500 text-white hover:bg-indigo-600'
                       }`}
                     >
                       {plan.cta}
@@ -1130,39 +1259,44 @@ export default function HomePage() {
                 </article>
               ))}
             </div>
+            <p className="text-center mt-8 text-sm text-gray-500">
+              <i className="ri-shield-check-line text-indigo-400 mr-1.5"></i>
+              {t.pricingSection.note}
+            </p>
           </div>
         </section>
 
         {/* FAQ Section */}
-        <section id="faq" className="py-24 bg-white">
-          <div className="max-w-3xl mx-auto px-6">
+        <section id="faq" className="py-24 bg-gray-950 relative overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full bg-indigo-500/5 blur-[100px] pointer-events-none"></div>
+          <div className="max-w-3xl mx-auto px-6 relative z-10">
             <div className="text-center mb-14">
-              <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-4">
-                <i className="ri-question-answer-line text-indigo-600 text-sm"></i>
-                <span className="text-indigo-700 text-sm font-medium">{t.faqSection.badge}</span>
+              <div className="inline-flex items-center gap-2 mb-3">
+                <i className="ri-question-line text-indigo-400 text-sm"></i>
+                <span className="text-indigo-400 text-xs font-semibold uppercase tracking-widest">{t.faqSection.badge}</span>
               </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.faqSection.title}</h2>
-              <p className="text-gray-500 text-lg">{t.faqSection.description}</p>
+              <h2 className="text-4xl font-bold text-white mb-4">{t.faqSection.title}</h2>
+              <p className="text-gray-400 text-lg">{t.faqSection.description}</p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {t.faqs.map((faq, index) => (
-                <article key={index} className={`rounded-2xl border transition-all duration-200 overflow-hidden ${openFaq === index ? 'border-indigo-200 bg-indigo-50/40' : 'border-gray-100 bg-white hover:border-indigo-100'}`}>
+                <article key={index} className={`rounded-2xl border transition-all duration-200 overflow-hidden ${openFaq === index ? 'border-indigo-500/40 bg-indigo-500/5' : 'border-white/8 bg-white/2 hover:border-indigo-500/20'}`}>
                   <button
                     className="w-full flex items-center justify-between px-6 py-5 text-left cursor-pointer group"
                     onClick={() => setOpenFaq(openFaq === index ? null : index)}
                   >
-                    <h4 className={`text-sm font-semibold leading-snug pr-4 transition-colors ${openFaq === index ? 'text-indigo-700' : 'text-gray-900 group-hover:text-indigo-700'}`}>
+                    <h4 className={`text-sm font-semibold leading-snug pr-4 transition-colors ${openFaq === index ? 'text-indigo-300' : 'text-white group-hover:text-indigo-300'}`}>
                       <a id={`faq-${index}`}>{faq.question}</a>
                     </h4>
-                    <div className={`w-7 h-7 flex items-center justify-center rounded-full flex-shrink-0 transition-all duration-200 ${openFaq === index ? 'bg-indigo-500 rotate-45' : 'bg-gray-100 group-hover:bg-indigo-100'}`}>
-                      <i className={`ri-add-line text-sm ${openFaq === index ? 'text-white' : 'text-gray-500 group-hover:text-indigo-600'}`}></i>
+                    <div className={`w-7 h-7 flex items-center justify-center rounded-full flex-shrink-0 transition-all duration-200 ${openFaq === index ? 'bg-indigo-500 rotate-45' : 'bg-white/8 group-hover:bg-indigo-500/15'}`}>
+                      <i className={`ri-add-line text-sm ${openFaq === index ? 'text-white' : 'text-gray-400 group-hover:text-indigo-300'}`}></i>
                     </div>
                   </button>
                   {openFaq === index && (
                     <div className="px-6 pb-5">
-                      <div className="h-px bg-indigo-100 mb-4"></div>
-                      <p className="text-gray-600 text-sm leading-relaxed">{faq.answer}</p>
+                      <div className="h-px bg-indigo-500/20 mb-4"></div>
+                      <p className="text-gray-400 text-sm leading-relaxed">{faq.answer}</p>
                     </div>
                   )}
                 </article>
@@ -1175,7 +1309,7 @@ export default function HomePage() {
               </p>
               <a
                 href="mailto:hello@testably.app"
-                className="inline-flex items-center gap-2 px-6 py-3 border border-indigo-200 text-indigo-600 rounded-xl font-semibold text-sm hover:bg-indigo-50 transition-all cursor-pointer whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-6 py-3 border border-indigo-500/30 text-indigo-400 rounded-xl font-semibold text-sm hover:bg-indigo-500/8 transition-all cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-mail-line"></i>
                 {lang === 'en' ? 'Contact our team' : '팀에 문의하기'}
@@ -1211,29 +1345,29 @@ export default function HomePage() {
         </section>
 
         {/* Newsletter */}
-        <section className="py-16 bg-indigo-600">
-          <div className="max-w-2xl mx-auto px-6 text-center">
-            <h3 className="text-2xl font-bold text-white mb-2">{t.newsletter.title}</h3>
-            <p className="text-indigo-100 text-sm mb-6">{t.newsletter.description}</p>
+        <section className="py-16 bg-gray-950 border-t border-white/5">
+          <div className="max-w-md mx-auto px-6 text-center">
+            <h3 className="text-xl font-bold text-white mb-2">{t.newsletter.title}</h3>
+            <p className="text-gray-400 text-sm mb-6">{t.newsletter.description}</p>
             {subscribed ? (
-              <div className="flex items-center justify-center gap-2 text-white">
+              <div className="flex items-center justify-center gap-2 text-indigo-400">
                 <i className="ri-check-circle-line text-xl"></i>
                 <span className="font-semibold">{t.newsletter.success}</span>
               </div>
             ) : (
-              <form data-readdy-form onSubmit={handleSubscribe} className="flex gap-3 max-w-md mx-auto">
+              <form data-readdy-form onSubmit={handleSubscribe} className="flex gap-2">
                 <input
                   type="email"
                   name="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t.newsletter.placeholder}
-                  className="flex-1 px-4 py-3 rounded-xl text-sm bg-white/20 border border-white/30 text-white placeholder-indigo-200 focus:outline-none focus:bg-white/30"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
                   required
                 />
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-semibold text-sm hover:bg-indigo-50 transition-all cursor-pointer whitespace-nowrap"
+                  className="px-5 py-3 bg-indigo-500 text-white rounded-xl font-semibold text-sm hover:bg-indigo-400 transition-all cursor-pointer whitespace-nowrap"
                 >
                   {t.newsletter.button}
                 </button>
@@ -1243,63 +1377,70 @@ export default function HomePage() {
         </section>
 
         {/* Footer */}
-        <footer className="bg-gray-100 py-12">
+        <footer className="bg-gray-950 border-t border-white/5 py-14">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-10">
+              <div className="md:col-span-1">
                 <div className="mb-4">
-                  <Logo variant="light" className="h-8" />
+                  <Logo variant="dark" className="h-8" />
                 </div>
                 <p className="text-gray-500 text-sm leading-relaxed">{t.footer.tagline}</p>
+                <div className="flex gap-2 mt-4">
+                  {[
+                    { icon: 'ri-twitter-x-line', href: 'https://x.com/testably' },
+                    { icon: 'ri-github-line', href: 'https://github.com/testably' },
+                    { icon: 'ri-linkedin-box-line', href: 'https://linkedin.com/company/testably' },
+                  ].map(({ icon, href }) => (
+                    <a key={icon} href={href} target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 text-gray-500 hover:bg-indigo-500/15 hover:text-indigo-400 transition-all cursor-pointer">
+                      <i className={`${icon} text-sm`}></i>
+                    </a>
+                  ))}
+                </div>
               </div>
               <nav>
-                <h4 className="text-sm font-bold text-gray-900 mb-4">{t.footer.product}</h4>
-                <ul className="space-y-2">
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">{t.footer.product}</h4>
+                <ul className="space-y-2.5">
                   {t.footer.productLinks.map((item, i) => (
                     <li key={item}>
-                      <Link to={['/features', '/pricing', '/changelog', '/roadmap'][i]} className="text-gray-500 text-sm hover:text-gray-900 transition-colors">{item}</Link>
+                      <Link to={['/features', '/pricing', '/changelog', '/roadmap'][i]} className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{item}</Link>
                     </li>
                   ))}
                 </ul>
               </nav>
               <nav>
-                <h4 className="text-sm font-bold text-gray-900 mb-4">{t.footer.company}</h4>
-                <ul className="space-y-2">
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Resources</h4>
+                <ul className="space-y-2.5">
+                  <li><a href="#" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">Documentation</a></li>
+                  <li><a href="#" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">API Reference</a></li>
+                </ul>
+              </nav>
+              <nav>
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">{t.footer.company}</h4>
+                <ul className="space-y-2.5">
                   <li>
-                    <Link to="/about" className="text-gray-500 text-sm hover:text-gray-900 transition-colors">{t.footer.about}</Link>
+                    <Link to="/about" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.about}</Link>
                   </li>
                   <li>
-                    <button onClick={() => navigate('/privacy')} className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer">{t.footer.privacy}</button>
+                    <button onClick={() => navigate('/privacy')} className="text-gray-500 text-sm hover:text-gray-300 transition-colors cursor-pointer">{t.footer.privacy}</button>
                   </li>
                   <li>
-                    <button onClick={() => navigate('/terms')} className="text-gray-500 text-sm hover:text-gray-900 transition-colors cursor-pointer">{t.footer.terms}</button>
+                    <button onClick={() => navigate('/terms')} className="text-gray-500 text-sm hover:text-gray-300 transition-colors cursor-pointer">{t.footer.terms}</button>
                   </li>
                 </ul>
               </nav>
               <nav>
-                <h4 className="text-sm font-bold text-gray-900 mb-4">{t.footer.compare}</h4>
-                <ul className="space-y-2">
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">{t.footer.compare}</h4>
+                <ul className="space-y-2.5">
                   {t.footer.compareLinks.map((item, i) => (
                     <li key={item}>
-                      <Link to={['/compare/testrail', '/compare/zephyr', '/compare/qase'][i]} className="text-gray-500 text-sm hover:text-gray-900 transition-colors">{item}</Link>
+                      <Link to={['/compare/testrail', '/compare/zephyr', '/compare/qase'][i]} className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{item}</Link>
                     </li>
                   ))}
                 </ul>
               </nav>
             </div>
-            <div className="border-t border-gray-200 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-              <p className="text-gray-400 text-xs">{t.footer.copyright}</p>
-              <div className="flex items-center gap-4">
-                {[
-                  { icon: 'ri-twitter-x-line', href: 'https://x.com/testably' },
-                  { icon: 'ri-github-line', href: 'https://github.com/testably' },
-                  { icon: 'ri-linkedin-box-line', href: 'https://linkedin.com/company/testably' },
-                ].map(({ icon, href }) => (
-                  <a key={icon} href={href} target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors cursor-pointer">
-                    <i className={`${icon} text-base`}></i>
-                  </a>
-                ))}
-              </div>
+            <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+              <p className="text-gray-600 text-xs">{t.footer.copyright}</p>
             </div>
           </div>
         </footer>
