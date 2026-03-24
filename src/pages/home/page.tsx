@@ -194,6 +194,7 @@ const content = {
       },
       {
         name: 'Starter', planColor: '#818CF8', price: '$49', period: '/ month',
+        annualMonthly: 41.58, annualTotal: 499,
         users: 'Up to 5 users',
         description: 'For growing teams that need more power',
         features: ['Up to 10 projects', 'Jira integration', 'Slack & Teams integration', 'Basic reporting', '30 AI generations / month', 'Email support'],
@@ -202,6 +203,7 @@ const content = {
       },
       {
         name: 'Professional', planColor: '#C084FC', price: '$99', period: '/ month',
+        annualMonthly: 84.17, annualTotal: 1010,
         users: 'Up to 20 users',
         description: 'Full-featured for professional QA teams',
         features: ['Unlimited projects', 'Jira integration', 'Slack & Teams integration', 'Advanced reporting', 'CI/CD Integration', '150 AI generations / month', 'Priority support'],
@@ -210,6 +212,7 @@ const content = {
       },
       {
         name: 'Enterprise S', planColor: '#FB923C', price: '$249', period: '/ month',
+        annualMonthly: 211.67, annualTotal: 2540,
         users: '21–50 users',
         description: 'For teams scaling beyond 20 members',
         features: ['Everything in Professional', 'Dedicated support', 'SLA guarantee', 'Unlimited AI generations'],
@@ -218,6 +221,7 @@ const content = {
       },
       {
         name: 'Enterprise M', planColor: '#F87171', price: '$499', period: '/ month',
+        annualMonthly: 424.17, annualTotal: 5090,
         users: '51–100 users',
         description: 'For mid-size organizations',
         features: ['Everything in Enterprise S', 'Dedicated support', 'SLA guarantee', 'Unlimited AI generations'],
@@ -515,6 +519,7 @@ const content = {
       },
       {
         name: 'Starter', planColor: '#818CF8', price: '$49', period: '/ 월',
+        annualMonthly: 41.58, annualTotal: 499,
         users: '최대 5명',
         description: '성장하는 팀을 위한 핵심 기능',
         features: ['프로젝트 10개까지', 'Jira 연동', 'Slack & Teams 연동', '기본 리포팅', 'AI 생성 30회/월', '이메일 지원'],
@@ -523,6 +528,7 @@ const content = {
       },
       {
         name: 'Professional', planColor: '#C084FC', price: '$99', period: '/ 월',
+        annualMonthly: 84.17, annualTotal: 1010,
         users: '최대 20명',
         description: '전문 QA 팀을 위한 완전한 기능',
         features: ['프로젝트 무제한', 'Jira 연동', 'Slack & Teams 연동', '고급 리포팅', 'CI/CD 연동', 'AI 생성 150회/월', '우선 지원'],
@@ -531,6 +537,7 @@ const content = {
       },
       {
         name: 'Enterprise S', planColor: '#FB923C', price: '$249', period: '/ 월',
+        annualMonthly: 211.67, annualTotal: 2540,
         users: '21–50명',
         description: '20명 초과 팀을 위한 플랜',
         features: ['Professional 플랜 모든 기능', '전담 지원', 'SLA 보장', 'AI 생성 무제한'],
@@ -539,6 +546,7 @@ const content = {
       },
       {
         name: 'Enterprise M', planColor: '#F87171', price: '$499', period: '/ 월',
+        annualMonthly: 424.17, annualTotal: 5090,
         users: '51–100명',
         description: '중대형 조직을 위한 플랜',
         features: ['Enterprise S 모든 기능', '전담 지원', 'SLA 보장', 'AI 생성 무제한'],
@@ -1348,15 +1356,15 @@ export default function HomePage() {
                     <span style={{ fontSize: ['Custom', '문의'].includes(plan.price) ? '2rem' : '2.75rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>
                       {['Custom', '문의'].includes(plan.price)
                         ? plan.price
-                        : billingPeriod === 'annual' && plan.price !== '$0'
-                          ? Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 100) / 100
+                        : billingPeriod === 'annual' && plan.price !== '$0' && plan.annualMonthly
+                          ? plan.annualMonthly
                           : plan.price.replace('$', '')}
                     </span>
                     {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{billingPeriod === 'annual' && plan.price !== '$0' && !['Custom', '문의'].includes(plan.price) ? (lang === 'en' ? '/ mo' : '/ 월') : plan.period}</span>}
                   </div>
-                  {billingPeriod === 'annual' && plan.price !== '$0' && !['Custom', '문의'].includes(plan.price) && (
+                  {billingPeriod === 'annual' && plan.price !== '$0' && plan.annualTotal && (
                     <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '0.125rem' }}>
-                      {lang === 'en' ? `$${Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 12 * 100) / 100} / year` : `연 $${Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 12 * 100) / 100}`}
+                      {lang === 'en' ? `$${plan.annualTotal} / year` : `연 $${plan.annualTotal}`}
                     </div>
                   )}
                   <div style={{ fontSize: '0.8125rem', color: '#94A3B8', marginTop: '0.25rem' }}>{plan.users}</div>
@@ -1409,15 +1417,15 @@ export default function HomePage() {
                     <span style={{ fontSize: ['Custom', '문의'].includes(plan.price) ? '2rem' : '2.75rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>
                       {['Custom', '문의'].includes(plan.price)
                         ? plan.price
-                        : billingPeriod === 'annual'
-                          ? Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 100) / 100
+                        : billingPeriod === 'annual' && plan.annualMonthly
+                          ? plan.annualMonthly
                           : plan.price.replace('$', '')}
                     </span>
                     {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{billingPeriod === 'annual' && !['Custom', '문의'].includes(plan.price) ? (lang === 'en' ? '/ mo' : '/ 월') : plan.period}</span>}
                   </div>
-                  {billingPeriod === 'annual' && !['Custom', '문의'].includes(plan.price) && (
+                  {billingPeriod === 'annual' && plan.annualTotal && (
                     <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '0.125rem' }}>
-                      {lang === 'en' ? `$${Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 12 * 100) / 100} / year` : `연 $${Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 12 * 100) / 100}`}
+                      {lang === 'en' ? `$${plan.annualTotal} / year` : `연 $${plan.annualTotal}`}
                     </div>
                   )}
                   <div style={{ fontSize: '0.8125rem', color: '#94A3B8', marginTop: '0.25rem' }}>{plan.users}</div>
