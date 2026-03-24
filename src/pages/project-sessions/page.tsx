@@ -573,7 +573,7 @@ export default function ProjectSessions() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
               <Link to="/projects" className="flex items-center cursor-pointer">
                 <LogoMark />
               </Link>

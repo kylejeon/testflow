@@ -63,6 +63,7 @@ export default function Logo({ variant = 'light', className = 'h-9' }: LogoProps
         fontSize="42"
         fill="#ffffff"
         style={{ fontFamily: 'Pacifico, cursive' }}
+        transform="translate(0.5, -1)"
       >
         T
       </text>
