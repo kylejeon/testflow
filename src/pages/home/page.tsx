@@ -184,70 +184,52 @@ const content = {
     },
     pricingPlans: [
       {
-        name: 'Free',
-        price: '$0',
-        period: 'forever',
+        name: 'Free', planColor: '#10B981', price: '$0', period: 'forever',
+        users: 'Up to 3 users · forever free',
         description: 'Perfect for small teams getting started',
-        features: ['Up to 3 projects', 'Up to 3 members', 'Test case management', 'Jira integration', '5 AI generations / month', 'Community support'],
-        cta: 'Get Started Free',
-        highlighted: false,
-        icon: 'ri-user-line',
-        popular: '',
+        features: ['Up to 3 projects', 'Test case management', 'Test runs & execution', 'Jira integration', '5 AI generations / month', 'Community support'],
+        cta: 'Get Started Free', ctaVariant: 'outline', aiFeatureIdx: 4,
+        highlighted: false, icon: 'ri-user-line', popular: '',
       },
       {
-        name: 'Starter',
-        price: '$49',
-        period: '/ month',
+        name: 'Starter', planColor: '#818CF8', price: '$49', period: '/ month',
+        users: 'Up to 5 users',
         description: 'For growing teams that need more power',
-        features: ['Up to 10 projects', 'Up to 5 members', 'Jira integration', 'Slack & Teams integration', '30 AI generations / month', 'Basic reporting', 'Email support'],
-        cta: 'Start Free Trial',
-        highlighted: false,
-        icon: 'ri-star-line',
-        popular: '',
+        features: ['Up to 10 projects', 'Jira integration', 'Slack & Teams integration', 'Basic reporting', '30 AI generations / month', 'Email support'],
+        cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 4,
+        highlighted: false, icon: 'ri-star-line', popular: '',
       },
       {
-        name: 'Professional',
-        price: '$99',
-        period: '/ month',
+        name: 'Professional', planColor: '#C084FC', price: '$99', period: '/ month',
+        users: 'Up to 20 users',
         description: 'Full-featured for professional QA teams',
-        features: ['Unlimited projects', 'Up to 20 members', 'Jira integration', 'Slack & Teams integration', '150 AI generations / month', 'Advanced reporting', 'CI/CD Integration', 'Priority support'],
-        cta: 'Start Free Trial',
-        highlighted: true,
-        icon: 'ri-vip-crown-line',
-        popular: 'Most popular',
+        features: ['Unlimited projects', 'Jira integration', 'Slack & Teams integration', 'Advanced reporting', 'CI/CD Integration', '150 AI generations / month', 'Priority support'],
+        cta: 'Start Free Trial', ctaVariant: 'filled', aiFeatureIdx: 5,
+        highlighted: true, icon: 'ri-vip-crown-line', popular: 'Most Popular',
       },
       {
-        name: 'Enterprise S',
-        price: '$249',
-        period: '/ month',
+        name: 'Enterprise S', planColor: '#FB923C', price: '$249', period: '/ month',
+        users: '21–50 users',
         description: 'For teams scaling beyond 20 members',
-        features: ['Unlimited projects', '21–50 team members', 'Unlimited AI generations', 'Jira integration', 'Slack & Teams integration', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
-        cta: 'Start Free Trial',
-        highlighted: false,
-        icon: 'ri-building-2-line',
-        popular: '',
+        features: ['Everything in Professional', 'Dedicated support', 'SLA guarantee', 'Unlimited AI generations'],
+        cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 3,
+        highlighted: false, icon: 'ri-building-2-line', popular: '',
       },
       {
-        name: 'Enterprise M',
-        price: '$499',
-        period: '/ month',
+        name: 'Enterprise M', planColor: '#F87171', price: '$499', period: '/ month',
+        users: '51–100 users',
         description: 'For mid-size organizations',
-        features: ['Unlimited projects', '51–100 team members', 'Unlimited AI generations', 'Jira integration', 'Slack & Teams integration', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
-        cta: 'Start Free Trial',
-        highlighted: false,
-        icon: 'ri-building-4-line',
-        popular: '',
+        features: ['Everything in Enterprise S', 'Dedicated support', 'SLA guarantee', 'Unlimited AI generations'],
+        cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 3,
+        highlighted: false, icon: 'ri-building-4-line', popular: '',
       },
       {
-        name: 'Enterprise L',
-        price: 'Custom',
-        period: '',
-        description: 'For large enterprises with 100+ members',
-        features: ['Unlimited projects', '100+ team members', 'Unlimited AI generations', 'Jira integration', 'Slack & Teams integration', 'CI/CD Integration', 'Dedicated support', 'Custom contract & SLA'],
-        cta: 'Talk to Us',
-        highlighted: false,
-        icon: 'ri-government-line',
-        popular: '',
+        name: 'Enterprise L', planColor: '#94A3B8', price: 'Custom', period: '',
+        users: '100+ users · tailored plan',
+        description: 'For large enterprises with custom needs',
+        features: ['Everything in Enterprise M', 'Custom contract & SLA', 'Dedicated infrastructure', 'Unlimited AI generations'],
+        cta: 'Talk to Us', ctaVariant: 'dark', aiFeatureIdx: 3,
+        highlighted: false, icon: 'ri-government-line', popular: '', darkCard: true,
       },
     ],
     faqSection: {
@@ -523,70 +505,52 @@ const content = {
     },
     pricingPlans: [
       {
-        name: 'Free',
-        price: '$0',
-        period: '영구 무료',
+        name: 'Free', planColor: '#10B981', price: '$0', period: '영구 무료',
+        users: '최대 3명 · 영구 무료',
         description: '소규모 팀을 위한 기본 기능',
-        features: ['프로젝트 3개까지', '팀 멤버 3명까지', '기본 테스트 관리', 'Jira 연동', 'AI 생성 5회/월', '커뮤니티 지원'],
-        cta: '무료로 시작하기',
-        highlighted: false,
-        icon: 'ri-user-line',
-        popular: '',
+        features: ['프로젝트 3개까지', '기본 테스트 관리', '테스트 실행', 'Jira 연동', 'AI 생성 5회/월', '커뮤니티 지원'],
+        cta: '무료로 시작하기', ctaVariant: 'outline', aiFeatureIdx: 4,
+        highlighted: false, icon: 'ri-user-line', popular: '',
       },
       {
-        name: 'Starter',
-        price: '$49',
-        period: '/ 월',
+        name: 'Starter', planColor: '#818CF8', price: '$49', period: '/ 월',
+        users: '최대 5명',
         description: '성장하는 팀을 위한 핵심 기능',
-        features: ['프로젝트 10개까지', '팀 멤버 5명까지', 'Jira 연동', 'Slack & Teams 연동', 'AI 생성 30회/월', '기본 리포팅', '이메일 지원'],
-        cta: '14일 무료 체험',
-        highlighted: false,
-        icon: 'ri-star-line',
-        popular: '',
+        features: ['프로젝트 10개까지', 'Jira 연동', 'Slack & Teams 연동', '기본 리포팅', 'AI 생성 30회/월', '이메일 지원'],
+        cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: 4,
+        highlighted: false, icon: 'ri-star-line', popular: '',
       },
       {
-        name: 'Professional',
-        price: '$99',
-        period: '/ 월',
+        name: 'Professional', planColor: '#C084FC', price: '$99', period: '/ 월',
+        users: '최대 20명',
         description: '전문 QA 팀을 위한 완전한 기능',
-        features: ['프로젝트 무제한', '팀 멤버 20명까지', 'Jira 연동', 'Slack & Teams 연동', 'AI 생성 150회/월', '고급 리포팅', 'CI/CD 연동', '우선 지원'],
-        cta: '14일 무료 체험',
-        highlighted: true,
-        icon: 'ri-vip-crown-line',
-        popular: '가장 인기',
+        features: ['프로젝트 무제한', 'Jira 연동', 'Slack & Teams 연동', '고급 리포팅', 'CI/CD 연동', 'AI 생성 150회/월', '우선 지원'],
+        cta: '14일 무료 체험', ctaVariant: 'filled', aiFeatureIdx: 5,
+        highlighted: true, icon: 'ri-vip-crown-line', popular: '가장 인기',
       },
       {
-        name: 'Enterprise S',
-        price: '$249',
-        period: '/ 월',
+        name: 'Enterprise S', planColor: '#FB923C', price: '$249', period: '/ 월',
+        users: '21–50명',
         description: '20명 초과 팀을 위한 플랜',
-        features: ['프로젝트 무제한', '팀 멤버 21-50명', 'AI 생성 무제한', 'Jira 연동', 'Slack & Teams 연동', 'CI/CD 연동', '전담 지원', 'SLA 보장'],
-        cta: '14일 무료 체험',
-        highlighted: false,
-        icon: 'ri-building-2-line',
-        popular: '',
+        features: ['Professional 플랜 모든 기능', '전담 지원', 'SLA 보장', 'AI 생성 무제한'],
+        cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: 3,
+        highlighted: false, icon: 'ri-building-2-line', popular: '',
       },
       {
-        name: 'Enterprise M',
-        price: '$499',
-        period: '/ 월',
+        name: 'Enterprise M', planColor: '#F87171', price: '$499', period: '/ 월',
+        users: '51–100명',
         description: '중대형 조직을 위한 플랜',
-        features: ['프로젝트 무제한', '팀 멤버 51-100명', 'AI 생성 무제한', 'Jira 연동', 'Slack & Teams 연동', 'CI/CD 연동', '전담 지원', 'SLA 보장'],
-        cta: '14일 무료 체험',
-        highlighted: false,
-        icon: 'ri-building-4-line',
-        popular: '',
+        features: ['Enterprise S 모든 기능', '전담 지원', 'SLA 보장', 'AI 생성 무제한'],
+        cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: 3,
+        highlighted: false, icon: 'ri-building-4-line', popular: '',
       },
       {
-        name: 'Enterprise L',
-        price: '문의',
-        period: '',
+        name: 'Enterprise L', planColor: '#94A3B8', price: '문의', period: '',
+        users: '100명+ · 맞춤 플랜',
         description: '100명 이상 대규모 기업을 위한 플랜',
-        features: ['프로젝트 무제한', '팀 멤버 100명+', 'AI 생성 무제한', 'Jira 연동', 'Slack & Teams 연동', 'CI/CD 연동', '전담 지원', '맞춤 계약 & SLA'],
-        cta: '문의하기',
-        highlighted: false,
-        icon: 'ri-government-line',
-        popular: '',
+        features: ['Enterprise M 모든 기능', '맞춤 계약 & SLA', '전용 인프라', 'AI 생성 무제한'],
+        cta: '문의하기', ctaVariant: 'dark', aiFeatureIdx: 3,
+        highlighted: false, icon: 'ri-government-line', popular: '', darkCard: true,
       },
     ],
     faqSection: {
@@ -684,6 +648,18 @@ const content = {
     scrollIndicator: '스크롤',
   },
 };
+
+const FEATURE_ICON_STYLES = [
+  { bg: 'rgba(99,102,241,0.12)', color: '#818CF8' },
+  { bg: 'rgba(16,185,129,0.12)', color: '#34D399' },
+  { bg: 'rgba(245,158,11,0.12)', color: '#FBBF24' },
+  { bg: 'rgba(139,92,246,0.12)', color: '#C084FC' },
+  { bg: 'rgba(236,72,153,0.12)', color: '#F472B6' },
+  { bg: 'rgba(59,130,246,0.12)', color: '#60A5FA' },
+  { bg: 'rgba(6,182,212,0.12)', color: '#22D3EE' },
+  { bg: 'rgba(251,146,60,0.12)', color: '#FB923C' },
+  { bg: 'rgba(148,163,184,0.12)', color: '#94A3B8' },
+];
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -807,21 +783,8 @@ export default function HomePage() {
           style={{ padding: '0.875rem 2rem' }}
         >
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2 no-underline flex-shrink-0">
-            <div
-              className="flex items-center justify-center flex-shrink-0"
-              style={{ width: 34, height: 34, background: '#6366F1', borderRadius: 9 }}
-            >
-              <span
-                className="text-white select-none"
-                style={{ fontFamily: 'Pacifico, cursive', fontSize: '1.125rem', lineHeight: 1 }}
-              >
-                T
-              </span>
-            </div>
-            <span className="text-white" style={{ fontWeight: 700, fontSize: '1.0625rem' }}>
-              Testably
-            </span>
+          <a href="/" className="flex items-center no-underline flex-shrink-0">
+            <Logo variant="dark" className="h-8" />
           </a>
 
           {/* Nav links + actions */}
@@ -1092,29 +1055,32 @@ export default function HomePage() {
 
             {/* 9 feature cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {t.features.map((feature, index) => (
-                <article
-                  key={feature.title}
-                  className={`p-6 rounded-2xl border transition-all duration-300 cursor-pointer group ${
-                    activeFeature === index
-                      ? 'border-indigo-500/40 scale-[1.02] shadow-lg shadow-indigo-500/10'
-                      : 'border-white/6 hover:border-indigo-500/20 hover:shadow-sm hover:shadow-indigo-500/10'
-                  }`}
-                  style={{ background: 'rgba(255,255,255,0.03)' }}
-                  onMouseEnter={() => setActiveFeature(index)}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5">
-                      <i className={`${feature.icon} text-xl ${feature.iconColor}`}></i>
+              {t.features.map((feature, index) => {
+                const fi = FEATURE_ICON_STYLES[index] ?? FEATURE_ICON_STYLES[0];
+                return (
+                  <article
+                    key={feature.title}
+                    className={`rounded-2xl border transition-all duration-300 cursor-pointer group ${
+                      activeFeature === index
+                        ? 'border-indigo-500/40 scale-[1.02] shadow-lg shadow-indigo-500/10'
+                        : 'hover:border-indigo-500/20 hover:shadow-sm hover:shadow-indigo-500/10'
+                    }`}
+                    style={{ background: 'rgba(255,255,255,0.03)', border: activeFeature === index ? undefined : '1px solid rgba(255,255,255,0.06)', padding: '1.75rem' }}
+                    onMouseEnter={() => setActiveFeature(index)}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-11 h-11 flex items-center justify-center rounded-xl" style={{ background: fi.bg }}>
+                        <i className={`${feature.icon} text-xl`} style={{ color: fi.color }}></i>
+                      </div>
+                      <span className="text-[0.625rem] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: fi.bg.replace('0.12', '0.1'), color: fi.color }}>
+                        {feature.tag}
+                      </span>
                     </div>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/5 text-gray-500">
-                      {feature.tag}
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-bold text-white mb-2">{feature.title}</h3>
-                  <p className="text-gray-500 text-xs leading-relaxed">{feature.description}</p>
-                </article>
-              ))}
+                    <h3 className="text-sm font-bold text-white mb-2">{feature.title}</h3>
+                    <p className="text-xs leading-relaxed" style={{ color: '#94A3B8' }}>{feature.description}</p>
+                  </article>
+                );
+              })}
             </div>
 
             {/* Keyboard Showcase */}
@@ -1170,19 +1136,17 @@ export default function HomePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {t.workflowSteps.map((step, index) => (
-                <article key={step.step} className="relative bg-white/5 rounded-2xl p-6 border border-white/6 hover:border-indigo-500/30 hover:shadow-md transition-all">
+                <div key={step.step} className="relative text-center px-5 py-8">
                   {index < t.workflowSteps.length - 1 && (
-                    <div className="hidden lg:block absolute top-12 -right-3 w-6 h-px bg-indigo-200 z-10"></div>
+                    <div className="hidden lg:block absolute top-[4.25rem] -right-3 w-6 h-0.5 z-10" style={{ background: 'linear-gradient(90deg, rgba(99,102,241,0.3), rgba(99,102,241,0.05))' }}></div>
                   )}
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-3xl font-black text-indigo-500/20">{step.step}</span>
-                    <div className="w-10 h-10 flex items-center justify-center bg-indigo-500 rounded-xl">
-                      <i className={`${step.icon} text-white text-lg`}></i>
-                    </div>
+                  <div className="text-[3.5rem] font-black leading-none mb-3" style={{ color: 'rgba(99,102,241,0.12)' }}>{step.step}</div>
+                  <div className="w-14 h-14 flex items-center justify-center rounded-2xl mx-auto mb-4" style={{ background: 'rgba(99,102,241,0.1)' }}>
+                    <i className={`${step.icon} text-2xl`} style={{ color: '#818CF8' }}></i>
                   </div>
                   <h3 className="text-base font-bold text-white mb-2">{step.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">{step.description}</p>
-                </article>
+                  <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>{step.description}</p>
+                </div>
               ))}
             </div>
           </div>
@@ -1202,39 +1166,29 @@ export default function HomePage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Jira */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-indigo-500/30 transition-all">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-12 h-12 flex items-center justify-center bg-indigo-500/20 rounded-xl">
-                    <i className="ri-bug-line text-indigo-400 text-2xl"></i>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">{t.integrationSection.jiraTitle}</h3>
-                    <p className="text-gray-500 text-xs">Jira Cloud &amp; Data Center</p>
-                  </div>
+              <div className="rounded-2xl p-8 hover:border-indigo-500/15 transition-all" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="w-12 h-12 flex items-center justify-center rounded-xl mb-5" style={{ background: 'rgba(99,102,241,0.12)' }}>
+                  <i className="ri-bug-line text-2xl" style={{ color: '#818CF8' }}></i>
                 </div>
-                <p className="text-gray-400 text-sm leading-relaxed mb-6">{t.integrationSection.jiraDescription}</p>
+                <h3 className="text-lg font-bold text-white mb-2">{t.integrationSection.jiraTitle}</h3>
+                <p className="text-sm leading-relaxed mb-5" style={{ color: '#94A3B8' }}>{t.integrationSection.jiraDescription}</p>
                 <div className="flex flex-wrap gap-2">
                   {t.integrationSection.jiraTags.map((tag) => (
-                    <span key={tag} className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-300 text-xs font-medium">{tag}</span>
+                    <span key={tag} className="px-3 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)', color: '#818CF8' }}>{tag}</span>
                   ))}
                 </div>
               </div>
 
               {/* CI/CD */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-indigo-500/30 transition-all">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-12 h-12 flex items-center justify-center bg-violet-500/20 rounded-xl">
-                    <i className="ri-git-branch-line text-violet-400 text-2xl"></i>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">{t.integrationSection.ciTitle}</h3>
-                    <p className="text-gray-500 text-xs">REST API · Secure Tokens</p>
-                  </div>
+              <div className="rounded-2xl p-8 hover:border-indigo-500/15 transition-all" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="w-12 h-12 flex items-center justify-center rounded-xl mb-5" style={{ background: 'rgba(6,182,212,0.12)' }}>
+                  <i className="ri-git-branch-line text-2xl" style={{ color: '#22D3EE' }}></i>
                 </div>
-                <p className="text-gray-400 text-sm leading-relaxed mb-6">{t.integrationSection.ciDescription}</p>
+                <h3 className="text-lg font-bold text-white mb-2">{t.integrationSection.ciTitle}</h3>
+                <p className="text-sm leading-relaxed mb-5" style={{ color: '#94A3B8' }}>{t.integrationSection.ciDescription}</p>
                 <div className="flex flex-wrap gap-2">
                   {t.integrationSection.ciTags.map((tag) => (
-                    <span key={tag} className="px-3 py-1 bg-violet-500/10 border border-violet-500/20 rounded-full text-violet-300 text-xs font-medium">{tag}</span>
+                    <span key={tag} className="px-3 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)', color: '#818CF8' }}>{tag}</span>
                   ))}
                 </div>
               </div>
@@ -1256,12 +1210,12 @@ export default function HomePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {t.whyCards.map((card) => (
-                <article key={card.title} className="bg-white/3 rounded-2xl p-8 border border-white/6 hover:border-indigo-500/25 hover:shadow-md transition-all">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-500/15 flex items-center justify-center mb-5">
-                    <i className={`${card.icon} text-indigo-400 text-2xl`}></i>
+                <article key={card.title} className="rounded-2xl p-8 transition-all hover:-translate-y-1" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.04))', border: '1px solid rgba(99,102,241,0.12)' }}>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: 'rgba(99,102,241,0.12)' }}>
+                    <i className={`${card.icon} text-2xl`} style={{ color: '#818CF8' }}></i>
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-3">{card.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">{card.content}</p>
+                  <h3 className="text-lg font-bold text-white mb-2">{card.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>{card.content}</p>
                 </article>
               ))}
             </div>
@@ -1322,76 +1276,114 @@ export default function HomePage() {
               <p className="text-gray-400 text-lg">{t.pricingSection.description}</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 items-start">
-              {t.pricingPlans.map((plan) => (
+            {/* Row 1: Free / Starter / Professional */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              {t.pricingPlans.slice(0, 3).map((plan) => (
                 <article
                   key={plan.name}
-                  className={`rounded-2xl p-6 border flex flex-col transition-all relative ${
-                    plan.highlighted
-                      ? 'scale-[1.02]'
-                      : 'bg-white/3 border-white/8 hover:border-indigo-500/25 hover:shadow-md'
-                  }`}
+                  className="rounded-2xl flex flex-col relative transition-all hover:-translate-y-1"
                   style={plan.highlighted ? {
                     background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))',
                     border: '1px solid rgba(99,102,241,0.3)',
-                    boxShadow: '0 8px 32px rgba(99,102,241,0.12)',
-                  } : {}}
+                    padding: '1.75rem',
+                  } : {
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    padding: '1.75rem',
+                  }}
                 >
                   {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <div className="inline-flex items-center gap-1 bg-indigo-500 rounded-full px-3 py-1">
-                        <i className="ri-star-fill text-white text-xs"></i>
-                        <span className="text-white text-xs font-semibold whitespace-nowrap">{plan.popular}</span>
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2" style={{ zIndex: 1 }}>
+                      <div style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0.25rem 0.875rem', borderRadius: 9999, whiteSpace: 'nowrap' }}>
+                        {plan.popular}
                       </div>
                     </div>
                   )}
-                  <div className="mb-5">
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-indigo-500/20' : 'bg-indigo-500/15'}`}>
-                      <i className={`${plan.icon} text-xl text-indigo-400`}></i>
-                    </div>
-                    <h3 className="text-lg font-bold mb-1 text-white">{plan.name}</h3>
-                    <p className="text-xs leading-relaxed text-gray-400">{plan.description}</p>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: plan.planColor, marginBottom: '0.375rem' }}>{plan.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
+                    {!['Custom', '문의'].includes(plan.price) && <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>$</span>}
+                    <span style={{ fontSize: ['Custom', '문의'].includes(plan.price) ? '2rem' : '2.75rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>
+                      {plan.price.replace('$', '')}
+                    </span>
+                    {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{plan.period}</span>}
                   </div>
-
-                  <div className="mb-5 pb-5 border-b border-white/8">
-                    <span className="text-3xl font-black text-white">{plan.price}</span>
-                    <span className="text-xs ml-1.5 text-gray-400">{plan.period}</span>
-                  </div>
-
-                  <ul className="space-y-2.5 mb-7 flex-1">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2">
-                        <div className="w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 bg-indigo-500/15">
-                          <i className="ri-check-line text-xs text-indigo-400"></i>
-                        </div>
-                        <span className="text-xs leading-relaxed text-gray-300">{f}</span>
+                  <div style={{ fontSize: '0.8125rem', color: '#94A3B8', marginTop: '0.25rem' }}>{plan.users}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.125rem' }}>{plan.description}</div>
+                  <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '1.25rem 0' }}></div>
+                  <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                    {plan.features.map((f, fi) => (
+                      <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                        <i className={fi === plan.aiFeatureIdx ? 'ri-sparkling-line' : 'ri-check-line'} style={{ fontSize: '0.875rem', marginTop: '0.125rem', flexShrink: 0, color: fi === plan.aiFeatureIdx ? '#C084FC' : '#6366F1' }}></i>
+                        <span style={{ fontSize: '0.8125rem', lineHeight: 1.6, color: fi === plan.aiFeatureIdx ? '#C084FC' : '#94A3B8' }}>{f}</span>
                       </li>
                     ))}
                   </ul>
-
-                  {['Contact Us', '문의하기', 'Contact Sales', 'Talk to Us'].includes(plan.cta) ? (
-                    <a
-                      href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
-                      className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center ${
-                        plan.cta === 'Talk to Us' || plan.cta === '문의하기'
-                          ? 'bg-indigo-900 text-violet-300 border border-violet-500/25 hover:bg-violet-500/15'
-                          : 'bg-indigo-500 text-white hover:bg-indigo-600'
-                      }`}
-                    >
+                  {plan.ctaVariant === 'dark' ? (
+                    <a href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry" style={{ marginTop: '1.5rem', display: 'block', textAlign: 'center', padding: '0.75rem', borderRadius: '0.625rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', background: '#1E1B4B', color: '#C084FC', border: '1px solid rgba(139,92,246,0.25)' }}>
                       {plan.cta}
                     </a>
+                  ) : plan.ctaVariant === 'filled' ? (
+                    <button onClick={() => navigate('/auth')} style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem', borderRadius: '0.625rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', background: '#6366F1', color: '#fff', border: 'none' }}>
+                      {plan.cta}
+                    </button>
                   ) : (
-                    <button
-                      onClick={() => navigate('/auth')}
-                      className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap bg-indigo-500 text-white hover:bg-indigo-600"
-                    >
+                    <button onClick={() => navigate('/auth')} style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem', borderRadius: '0.625rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
                       {plan.cta}
                     </button>
                   )}
                 </article>
               ))}
             </div>
-            <p className="text-center mt-8 text-sm text-gray-500">
+
+            {/* Row 2: Enterprise S / M / L */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {t.pricingPlans.slice(3).map((plan) => (
+                <article
+                  key={plan.name}
+                  className="rounded-2xl flex flex-col relative transition-all hover:-translate-y-1"
+                  style={plan.darkCard ? {
+                    background: 'linear-gradient(135deg, rgba(15,23,42,0.8), rgba(30,27,75,0.4))',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    padding: '1.75rem',
+                  } : {
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    padding: '1.75rem',
+                  }}
+                >
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: plan.planColor, marginBottom: '0.375rem' }}>{plan.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
+                    {!['Custom', '문의'].includes(plan.price) && <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>$</span>}
+                    <span style={{ fontSize: ['Custom', '문의'].includes(plan.price) ? '2rem' : '2.75rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>
+                      {plan.price.replace('$', '')}
+                    </span>
+                    {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{plan.period}</span>}
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: '#94A3B8', marginTop: '0.25rem' }}>{plan.users}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.125rem' }}>{plan.description}</div>
+                  <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '1.25rem 0' }}></div>
+                  <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                    {plan.features.map((f, fi) => (
+                      <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                        <i className={fi === plan.aiFeatureIdx ? 'ri-sparkling-line' : 'ri-check-line'} style={{ fontSize: '0.875rem', marginTop: '0.125rem', flexShrink: 0, color: fi === plan.aiFeatureIdx ? '#C084FC' : '#6366F1' }}></i>
+                        <span style={{ fontSize: '0.8125rem', lineHeight: 1.6, color: fi === plan.aiFeatureIdx ? '#C084FC' : '#94A3B8' }}>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {plan.ctaVariant === 'dark' ? (
+                    <a href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry" style={{ marginTop: '1.5rem', display: 'block', textAlign: 'center', padding: '0.75rem', borderRadius: '0.625rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', background: '#1E1B4B', color: '#C084FC', border: '1px solid rgba(139,92,246,0.25)' }}>
+                      {plan.cta}
+                    </a>
+                  ) : (
+                    <button onClick={() => navigate('/auth')} style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem', borderRadius: '0.625rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
+                      {plan.cta}
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+
+            <p className="text-center mt-8 text-sm" style={{ color: '#64748B' }}>
               <i className="ri-shield-check-line text-indigo-400 mr-1.5"></i>
               {t.pricingSection.note}
             </p>
