@@ -60,12 +60,28 @@ const TIER_INFO = {
     features: ['Unlimited projects', 'Up to 20 team members', 'Jira Integration', 'Slack & Teams Integration', '150 AI generations / month', 'Advanced reporting', 'Testcase Export/Import', 'Export PDF Report', 'CI/CD Integration', 'Priority support'],
   },
   4: {
-    name: 'Enterprise',
+    name: 'Enterprise S',
     color: 'bg-amber-50 text-amber-700 border-amber-300',
     icon: 'ri-building-2-line',
     monthlyPrice: 249,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', 'Unlimited team members', 'Unlimited AI generations', 'Jira Integration', 'Slack & Teams Integration', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
+    features: ['Unlimited projects', '21–50 team members', 'Jira Integration', 'Slack & Teams Integration', 'Unlimited AI generations', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
+  },
+  5: {
+    name: 'Enterprise M',
+    color: 'bg-orange-50 text-orange-700 border-orange-300',
+    icon: 'ri-building-4-line',
+    monthlyPrice: 499,
+    priceDesc: '/ mo',
+    features: ['Unlimited projects', '51–100 team members', 'Jira Integration', 'Slack & Teams Integration', 'Unlimited AI generations', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
+  },
+  6: {
+    name: 'Enterprise L',
+    color: 'bg-rose-50 text-rose-700 border-rose-300',
+    icon: 'ri-government-line',
+    monthlyPrice: -1,
+    priceDesc: 'Contact Sales',
+    features: ['Unlimited projects', '100+ team members', 'Jira Integration', 'Slack & Teams Integration', 'Unlimited AI generations', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee', 'Custom contract & SLA'],
   },
 };
 
@@ -786,6 +802,7 @@ def pytest_sessionfinish(session, exitstatus):
 
   const formatPrice = (monthlyPrice: number, isAnnual: boolean) => {
     if (monthlyPrice === 0) return '$0';
+    if (monthlyPrice < 0) return 'Custom';
     const price = isAnnual ? (monthlyPrice * 0.8).toFixed(0) : monthlyPrice;
     return `$${Number(price).toLocaleString()}`;
   };
@@ -1010,10 +1027,10 @@ def pytest_sessionfinish(session, exitstatus):
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
                               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                currentTier === 1 ? 'bg-gray-200' : currentTier === 2 ? 'bg-yellow-100' : currentTier === 3 ? 'bg-indigo-100' : 'bg-amber-100'
+                                currentTier === 1 ? 'bg-gray-200' : currentTier === 2 ? 'bg-yellow-100' : currentTier === 3 ? 'bg-indigo-100' : currentTier === 4 ? 'bg-amber-100' : currentTier === 5 ? 'bg-orange-100' : 'bg-rose-100'
                               }`}>
                                 <i className={`${tierInfo.icon} text-2xl ${
-                                  currentTier === 1 ? 'text-gray-600' : currentTier === 2 ? 'text-yellow-600' : currentTier === 3 ? 'text-indigo-600' : 'text-amber-600'
+                                  currentTier === 1 ? 'text-gray-600' : currentTier === 2 ? 'text-yellow-600' : currentTier === 3 ? 'text-indigo-600' : currentTier === 4 ? 'text-amber-600' : currentTier === 5 ? 'text-orange-600' : 'text-rose-600'
                                 }`}></i>
                               </div>
                               <div>
@@ -1025,7 +1042,7 @@ def pytest_sessionfinish(session, exitstatus):
                             </div>
                             <div className="flex flex-col items-end gap-1.5">
                               <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                                currentTier === 1 ? 'bg-gray-200 text-gray-700' : currentTier === 2 ? 'bg-yellow-200 text-yellow-800' : currentTier === 3 ? 'bg-indigo-200 text-indigo-800' : 'bg-amber-200 text-amber-800'
+                                currentTier === 1 ? 'bg-gray-200 text-gray-700' : currentTier === 2 ? 'bg-yellow-200 text-yellow-800' : currentTier === 3 ? 'bg-indigo-200 text-indigo-800' : currentTier === 4 ? 'bg-amber-200 text-amber-800' : currentTier === 5 ? 'bg-orange-200 text-orange-800' : 'bg-rose-200 text-rose-800'
                               }`}>
                                 Active
                               </span>
@@ -1102,7 +1119,7 @@ def pytest_sessionfinish(session, exitstatus):
                         </div>
 
                         {/* All Plans Comparison */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {Object.entries(TIER_INFO).map(([tier, info]) => {
                             const tierNum = parseInt(tier);
                             const isCurrentTier = tierNum === currentTier;
@@ -1118,10 +1135,10 @@ def pytest_sessionfinish(session, exitstatus):
                               >
                                 <div className="flex items-center gap-2 mb-3">
                                   <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                    tierNum === 1 ? 'bg-gray-200' : tierNum === 2 ? 'bg-yellow-100' : tierNum === 3 ? 'bg-indigo-100' : 'bg-amber-100'
+                                    tierNum === 1 ? 'bg-gray-200' : tierNum === 2 ? 'bg-yellow-100' : tierNum === 3 ? 'bg-indigo-100' : tierNum === 4 ? 'bg-amber-100' : tierNum === 5 ? 'bg-orange-100' : 'bg-rose-100'
                                   }`}>
                                     <i className={`${info.icon} text-xl ${
-                                      tierNum === 1 ? 'text-gray-500' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : 'text-amber-500'
+                                      tierNum === 1 ? 'text-gray-500' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : tierNum === 4 ? 'text-amber-500' : tierNum === 5 ? 'text-orange-500' : 'text-rose-500'
                                     }`}></i>
                                   </div>
                                   <h4 className="font-bold text-gray-900">{info.name}</h4>
@@ -1144,7 +1161,7 @@ def pytest_sessionfinish(session, exitstatus):
                                       <span className="text-sm text-gray-500 mb-0.5">{info.priceDesc}</span>
                                     )}
                                   </div>
-                                  {isAnnual && info.monthlyPrice > 0 && (
+                                  {isAnnual && info.monthlyPrice > 0 && info.monthlyPrice !== -1 && (
                                     <p className="text-xs text-indigo-600 mt-1">
                                       <i className="ri-price-tag-3-line mr-1"></i>
                                       Save 20% vs {formatPrice(info.monthlyPrice, false)}/mo
@@ -1156,7 +1173,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   {info.features.map((feature, index) => (
                                     <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
                                       <i className={`ri-check-line mt-0.5 ${
-                                        tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : 'text-amber-500'
+                                        tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : tierNum === 4 ? 'text-amber-500' : tierNum === 5 ? 'text-orange-500' : 'text-rose-500'
                                       }`}></i>
                                       {tierNum === 1 && feature === 'Jira Integration (Link)' ? (
                                         <span className="flex items-center gap-1">
@@ -1185,14 +1202,14 @@ def pytest_sessionfinish(session, exitstatus):
                                 </ul>
                                 {!isCurrentTier && tierNum > currentTier && (
                                   <a
-                                    href={tierNum === 4 ? 'mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry' : 'mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry'}
+                                    href={tierNum >= 4 ? 'mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry' : 'mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry'}
                                     className={`w-full mt-4 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap block text-center ${
-                                      tierNum === 4
+                                      tierNum >= 4
                                         ? 'border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
                                         : 'bg-indigo-500 text-white hover:bg-indigo-600'
                                     }`}
                                   >
-                                    {tierNum === 4 ? 'Contact Sales' : 'Contact Us to Upgrade'}
+                                    {tierNum >= 4 ? 'Contact Sales' : 'Contact Us to Upgrade'}
                                   </a>
                                 )}
                               </div>

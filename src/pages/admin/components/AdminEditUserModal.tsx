@@ -23,7 +23,9 @@ const TIER_OPTIONS = [
   { value: 1, label: 'Free', description: '무료 플랜', color: 'border-gray-300 bg-gray-50', activeColor: 'border-gray-500 bg-gray-100', dot: 'bg-gray-400' },
   { value: 2, label: 'Starter', description: '$49/월', color: 'border-yellow-200 bg-yellow-50', activeColor: 'border-yellow-500 bg-yellow-50', dot: 'bg-yellow-400' },
   { value: 3, label: 'Professional', description: '$99/월', color: 'border-indigo-200 bg-indigo-50', activeColor: 'border-indigo-500 bg-indigo-50', dot: 'bg-indigo-500' },
-  { value: 4, label: 'Enterprise', description: '$249/월', color: 'border-amber-200 bg-amber-50', activeColor: 'border-amber-500 bg-amber-50', dot: 'bg-amber-500' },
+  { value: 4, label: 'Enterprise S', description: '$249/월 · 21-50명', color: 'border-amber-200 bg-amber-50', activeColor: 'border-amber-500 bg-amber-50', dot: 'bg-amber-500' },
+  { value: 5, label: 'Enterprise M', description: '$499/월 · 51-100명', color: 'border-orange-200 bg-orange-50', activeColor: 'border-orange-500 bg-orange-50', dot: 'bg-orange-500' },
+  { value: 6, label: 'Enterprise L', description: 'Contact Sales · 100명+', color: 'border-rose-200 bg-rose-50', activeColor: 'border-rose-500 bg-rose-50', dot: 'bg-rose-500' },
 ];
 
 function toDateInputValue(dateStr: string | null): string {

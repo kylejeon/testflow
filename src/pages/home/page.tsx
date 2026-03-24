@@ -193,14 +193,36 @@ const content = {
         popular: 'Most popular',
       },
       {
-        name: 'Enterprise',
+        name: 'Enterprise S',
         price: '$249',
         period: '/ month',
-        description: 'For large organizations with advanced needs',
-        features: ['Unlimited projects', 'Unlimited members', 'Unlimited AI generations', 'Jira integration', 'Slack & Teams integration', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
-        cta: 'Contact Us',
+        description: 'For teams scaling beyond 20 members',
+        features: ['Unlimited projects', '21–50 team members', 'Unlimited AI generations', 'Jira integration', 'Slack & Teams integration', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
+        cta: 'Contact Sales',
         highlighted: false,
         icon: 'ri-building-2-line',
+        popular: '',
+      },
+      {
+        name: 'Enterprise M',
+        price: '$499',
+        period: '/ month',
+        description: 'For mid-size organizations',
+        features: ['Unlimited projects', '51–100 team members', 'Unlimited AI generations', 'Jira integration', 'Slack & Teams integration', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
+        cta: 'Contact Sales',
+        highlighted: false,
+        icon: 'ri-building-4-line',
+        popular: '',
+      },
+      {
+        name: 'Enterprise L',
+        price: 'Custom',
+        period: '',
+        description: 'For large enterprises with 100+ members',
+        features: ['Unlimited projects', '100+ team members', 'Unlimited AI generations', 'Jira integration', 'Slack & Teams integration', 'CI/CD Integration', 'Dedicated support', 'Custom contract & SLA'],
+        cta: 'Contact Sales',
+        highlighted: false,
+        icon: 'ri-government-line',
         popular: '',
       },
     ],
@@ -457,14 +479,36 @@ const content = {
         popular: '가장 인기',
       },
       {
-        name: 'Enterprise',
+        name: 'Enterprise S',
         price: '$249',
         period: '/ 월',
-        description: '대규모 조직을 위한 고급 기능',
-        features: ['프로젝트 무제한', '팀 멤버 무제한', 'AI 생성 무제한', 'Jira 연동', 'Slack & Teams 연동', 'CI/CD 연동', '전담 지원', 'SLA 보장'],
+        description: '20명 초과 팀을 위한 플랜',
+        features: ['프로젝트 무제한', '팀 멤버 21-50명', 'AI 생성 무제한', 'Jira 연동', 'Slack & Teams 연동', 'CI/CD 연동', '전담 지원', 'SLA 보장'],
         cta: '문의하기',
         highlighted: false,
         icon: 'ri-building-2-line',
+        popular: '',
+      },
+      {
+        name: 'Enterprise M',
+        price: '$499',
+        period: '/ 월',
+        description: '중대형 조직을 위한 플랜',
+        features: ['프로젝트 무제한', '팀 멤버 51-100명', 'AI 생성 무제한', 'Jira 연동', 'Slack & Teams 연동', 'CI/CD 연동', '전담 지원', 'SLA 보장'],
+        cta: '문의하기',
+        highlighted: false,
+        icon: 'ri-building-4-line',
+        popular: '',
+      },
+      {
+        name: 'Enterprise L',
+        price: '문의',
+        period: '',
+        description: '100명 이상 대규모 기업을 위한 플랜',
+        features: ['프로젝트 무제한', '팀 멤버 100명+', 'AI 생성 무제한', 'Jira 연동', 'Slack & Teams 연동', 'CI/CD 연동', '전담 지원', '맞춤 계약 & SLA'],
+        cta: '문의하기',
+        highlighted: false,
+        icon: 'ri-government-line',
         popular: '',
       },
     ],
@@ -1024,7 +1068,7 @@ export default function HomePage() {
               <p className="text-gray-500 text-lg">{t.pricingSection.description}</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 items-start">
               {t.pricingPlans.map((plan) => (
                 <article
                   key={plan.name}
@@ -1064,9 +1108,9 @@ export default function HomePage() {
                     ))}
                   </ul>
 
-                  {plan.cta === 'Contact Us' ? (
+                  {['Contact Us', '문의하기', 'Contact Sales'].includes(plan.cta) ? (
                     <a
-                      href="mailto:hello@testably.app"
+                      href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
                       className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center ${
                         plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
                       }`}

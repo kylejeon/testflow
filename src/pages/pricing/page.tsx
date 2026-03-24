@@ -72,18 +72,18 @@ const plans = [
     icon: 'ri-vip-crown-line',
     popular: 'Most popular',
   },
+];
+
+const enterpriseTiers = [
   {
-    name: 'Enterprise',
+    name: 'Enterprise S',
     price: '$249',
     period: '/ month',
-    description: 'For large organizations with advanced needs',
-    members: 'Unlimited members',
-    ai: 'Unlimited AI',
+    description: 'For teams scaling beyond 20 members',
+    members: '21–50 members',
     features: [
       'Unlimited projects',
-      'Unlimited members',
-      'Test case management',
-      'Test runs & milestones',
+      '21–50 team members',
       'Jira integration',
       'Slack & Teams integration',
       'Unlimited AI generations',
@@ -93,15 +93,54 @@ const plans = [
       'SLA guarantee',
     ],
     cta: 'Contact Sales',
-    highlighted: false,
     icon: 'ri-building-2-line',
-    popular: '',
+  },
+  {
+    name: 'Enterprise M',
+    price: '$499',
+    period: '/ month',
+    description: 'For mid-size organizations with larger teams',
+    members: '51–100 members',
+    features: [
+      'Unlimited projects',
+      '51–100 team members',
+      'Jira integration',
+      'Slack & Teams integration',
+      'Unlimited AI generations',
+      'Advanced reporting',
+      'CI/CD Integration',
+      'Dedicated support',
+      'SLA guarantee',
+    ],
+    cta: 'Contact Sales',
+    icon: 'ri-building-4-line',
+  },
+  {
+    name: 'Enterprise L',
+    price: 'Custom',
+    period: '',
+    description: 'For large enterprises with 100+ members',
+    members: '100+ members',
+    features: [
+      'Unlimited projects',
+      '100+ team members',
+      'Jira integration',
+      'Slack & Teams integration',
+      'Unlimited AI generations',
+      'Advanced reporting',
+      'CI/CD Integration',
+      'Dedicated support',
+      'SLA guarantee',
+      'Custom contract & SLA',
+    ],
+    cta: 'Contact Sales',
+    icon: 'ri-government-line',
   },
 ];
 
 const comparisonRows = [
   { feature: 'Projects', free: '3', starter: '10', pro: 'Unlimited', enterprise: 'Unlimited' },
-  { feature: 'Team members', free: '3', starter: '5', pro: '20', enterprise: 'Unlimited' },
+  { feature: 'Team members', free: '3', starter: '5', pro: '20', enterprise: '21–100+' },
   { feature: 'AI generations / month', free: '5', starter: '30', pro: '150', enterprise: 'Unlimited' },
   { feature: 'Test case management', free: true, starter: true, pro: true, enterprise: true },
   { feature: 'Test runs & milestones', free: true, starter: true, pro: true, enterprise: true },
@@ -153,7 +192,7 @@ export default function PricingPage() {
     <>
       <SEOHead
         title="Pricing | Testably — Flat-Rate QA Test Management"
-        description="Testably pricing: Free $0, Starter $49, Professional $99, Enterprise $249. Flat-rate plans — no per-seat charges. 14-day free trial on all paid plans."
+        description="Testably pricing: Free $0, Starter $49, Professional $99, Enterprise from $249. Flat-rate plans — no per-seat charges. 14-day free trial on all paid plans."
         keywords="testably pricing, QA tool pricing, test management cost, flat rate QA software"
       />
       <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
@@ -186,8 +225,9 @@ export default function PricingPage() {
 
         {/* Plan Cards */}
         <section className="py-16 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-start">
+          <div className="max-w-5xl mx-auto px-6">
+            {/* Free / Starter / Professional */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-5 items-start mb-6">
               {plans.map((plan) => (
                 <article
                   key={plan.name}
@@ -227,27 +267,67 @@ export default function PricingPage() {
                     ))}
                   </ul>
 
-                  {plan.cta === 'Contact Sales' ? (
-                    <a
-                      href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
-                      className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center ${
-                        plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
-                      }`}
-                    >
-                      {plan.cta}
-                    </a>
-                  ) : (
-                    <button
-                      onClick={() => navigate('/auth')}
-                      className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
-                        plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
-                      }`}
-                    >
-                      {plan.cta}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => navigate('/auth')}
+                    className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
+                      plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
+                    }`}
+                  >
+                    {plan.cta}
+                  </button>
                 </article>
               ))}
+            </div>
+
+            {/* Enterprise Tiers */}
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <i className="ri-building-2-line text-amber-700 text-base"></i>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Enterprise Plans</h3>
+                  <p className="text-xs text-gray-500">For teams of 21 and above — dedicated support, SLA, and unlimited AI</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {enterpriseTiers.map((tier) => (
+                  <div key={tier.name} className="bg-white rounded-xl border border-amber-200 p-5 flex flex-col hover:border-amber-400 hover:shadow-sm transition-all">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i className={`${tier.icon} text-amber-700 text-sm`}></i>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-sm">{tier.name}</h4>
+                        <p className="text-xs text-gray-500">{tier.members}</p>
+                      </div>
+                    </div>
+
+                    <div className="mb-4 pb-4 border-b border-gray-100">
+                      <span className="text-2xl font-black text-gray-900">{tier.price}</span>
+                      {tier.period && <span className="text-xs ml-1.5 text-gray-500">{tier.period}</span>}
+                    </div>
+
+                    <ul className="space-y-2 mb-5 flex-1">
+                      {tier.features.map((f) => (
+                        <li key={f} className="flex items-start gap-2">
+                          <div className="w-3.5 h-3.5 bg-amber-100 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5">
+                            <i className="ri-check-line text-amber-700" style={{ fontSize: '9px' }}></i>
+                          </div>
+                          <span className="text-xs text-gray-700">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <a
+                      href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
+                      className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
+                    >
+                      {tier.cta}
+                    </a>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -289,7 +369,10 @@ export default function PricingPage() {
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">Free</th>
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">Starter</th>
                     <th className="text-center px-4 py-4 font-semibold text-indigo-600">Professional</th>
-                    <th className="text-center px-4 py-4 font-semibold text-gray-700">Enterprise</th>
+                    <th className="text-center px-4 py-4 font-semibold text-gray-700">
+                      <div>Enterprise</div>
+                      <div className="text-xs font-normal text-gray-400">from $249/mo</div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

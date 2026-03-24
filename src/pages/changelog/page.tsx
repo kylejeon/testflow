@@ -13,7 +13,7 @@ const entries = [
     bullets: [
       '4 generation modes: Text, Jira, Session Log, Edge Cases',
       '2-step review-before-save workflow',
-      'Free 5/mo · Starter 30/mo · Professional 150/mo · Enterprise unlimited',
+      'Free 5/mo · Starter 30/mo · Professional 150/mo · Enterprise S/M/L unlimited',
     ],
   },
   {
@@ -21,10 +21,10 @@ const entries = [
     title: 'New Pricing Plans + Enterprise Tier',
     category: 'New Feature',
     categoryColor: 'bg-indigo-100 text-indigo-700',
-    description: 'Introducing updated pricing and a new Enterprise plan with unlimited members, unlimited AI, and dedicated support.',
+    description: 'Introducing updated pricing with three Enterprise tiers (S/M/L) covering teams of 21 to 100+ members, plus unlimited AI and dedicated support.',
     bullets: [
       'Free $0 (3 members), Starter $49 (5 members), Professional $99 (20 members)',
-      'New Enterprise plan: $249/month with unlimited everything',
+      'Enterprise S $249 (21–50 members), Enterprise M $499 (51–100 members), Enterprise L (100+ · Contact Sales)',
       'All plans include AI test case generation',
       '14-day free trial on all paid plans',
     ],

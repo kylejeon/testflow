@@ -46,7 +46,7 @@ const content = {
       },
       {
         heading: 'Paid Services and Payment',
-        body: 'The Company offers paid plans including Starter ($49/month), Professional ($99/month), and Enterprise ($249/month). To use paid services, users must select a plan and complete payment.',
+        body: 'The Company offers paid plans including Starter ($49/month), Professional ($99/month), Enterprise S ($249/month), Enterprise M ($499/month), and Enterprise L (custom pricing). To use paid services, users must select a plan and complete payment.',
         refundTitle: 'Refund Policy',
         refundList: [
           'No charges are incurred if canceled during the 14-day free trial period.',

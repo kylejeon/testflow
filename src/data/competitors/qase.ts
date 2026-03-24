@@ -71,8 +71,18 @@ export const qaseData: CompetitorData = {
       competitor: { price: '~$460/mo', detail: '$23/user × 20 (Startup plan)' },
     },
     {
-      plan: 'Enterprise',
-      testably: { price: '$249/mo', detail: 'Unlimited members' },
+      plan: 'Enterprise (21–50)',
+      testably: { price: '$249/mo', detail: 'Enterprise S · 21–50 members' },
+      competitor: { price: 'Custom', detail: 'Contact sales required' },
+    },
+    {
+      plan: 'Enterprise (51–100)',
+      testably: { price: '$499/mo', detail: 'Enterprise M · 51–100 members' },
+      competitor: { price: 'Custom', detail: 'Contact sales required' },
+    },
+    {
+      plan: 'Enterprise (100+)',
+      testably: { price: 'Custom', detail: 'Enterprise L · Contact Sales' },
       competitor: { price: 'Custom', detail: 'Contact sales required' },
     },
   ],

@@ -4,7 +4,9 @@ const TIER_PLAN_NAMES: Record<number, string> = {
   1: 'free',
   2: 'starter',
   3: 'professional',
-  4: 'enterprise',
+  4: 'enterprise_s',
+  5: 'enterprise_m',
+  6: 'enterprise_l',
 };
 
 export function tierToPlanName(tier: number): string {

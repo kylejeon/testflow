@@ -71,8 +71,18 @@ export const testrailData: CompetitorData = {
       competitor: { price: '$760–1,380/mo', detail: '$38–69 × 20 users' },
     },
     {
-      plan: 'Enterprise',
-      testably: { price: '$249/mo', detail: 'Unlimited members' },
+      plan: 'Enterprise (21–50)',
+      testably: { price: '$249/mo', detail: 'Enterprise S · 21–50 members' },
+      competitor: { price: 'Custom', detail: 'Contact sales required' },
+    },
+    {
+      plan: 'Enterprise (51–100)',
+      testably: { price: '$499/mo', detail: 'Enterprise M · 51–100 members' },
+      competitor: { price: 'Custom', detail: 'Contact sales required' },
+    },
+    {
+      plan: 'Enterprise (100+)',
+      testably: { price: 'Custom', detail: 'Enterprise L · Contact Sales' },
       competitor: { price: 'Custom', detail: 'Contact sales required' },
     },
   ],
@@ -95,7 +105,7 @@ export const testrailData: CompetitorData = {
     {
       question: 'What if I need more than 20 team members?',
       answer:
-        'The Enterprise plan ($249/mo) includes unlimited team members, SSO, and priority support. This is still a fraction of what TestRail charges for the same team size.',
+        'Testably offers three Enterprise tiers: Enterprise S ($249/mo, 21–50 members), Enterprise M ($499/mo, 51–100 members), and Enterprise L (custom pricing for 100+). All Enterprise plans include dedicated support and SLA — still a fraction of what TestRail charges.',
     },
     {
       question: 'Is my data secure?',
