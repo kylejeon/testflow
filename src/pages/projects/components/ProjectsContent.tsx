@@ -454,6 +454,8 @@ export default function ProjectsContent() {
             projects={projects}
             testCaseCounts={testCaseCounts}
             testRunCounts={testRunCounts}
+            projectPassRates={projectPassRates}
+            projectMembers={projectMembers}
             onCreateProject={() => setShowCreateModal(true)}
             onTrySample={handleTrySample}
             isSampleLoading={sampleLoading}

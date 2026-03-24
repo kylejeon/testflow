@@ -6,9 +6,19 @@ interface SparseStateProps {
   projects: Project[];
   testCaseCounts: Record<string, number>;
   testRunCounts: Record<string, number>;
+  projectPassRates?: Record<string, number | null>;
+  projectMembers?: Record<string, Array<{ initials: string; color: string }>>;
   onCreateProject: () => void;
   onTrySample: () => void;
   isSampleLoading?: boolean;
+}
+
+// ── Health helpers ────────────────────────────────────────────────────────────
+function getHealth(passRate: number | null): { badge: string; dot: string; label: string } {
+  if (passRate === null || passRate === undefined) return { badge: 'bg-slate-100 text-slate-400', dot: 'bg-slate-400', label: '—' };
+  if (passRate >= 80) return { badge: 'bg-green-50 text-green-600', dot: 'bg-green-500', label: `${passRate}%` };
+  if (passRate >= 50) return { badge: 'bg-amber-50 text-amber-600', dot: 'bg-amber-500', label: `${passRate}%` };
+  return { badge: 'bg-red-50 text-red-600', dot: 'bg-red-500', label: `${passRate}%` };
 }
 
 function timeAgo(dateString: string): string {
@@ -30,7 +40,7 @@ const TIPS = {
   1: {
     icon: 'ri-lightbulb-line',
     title: 'Getting started? Try these next steps',
-    desc: 'Create your first test case, invite a teammate, or explore with a sample project.',
+    desc: 'Create your first test case, invite a teammate, or explore with a sample project to see Testably in action.',
     primary: 'Create Test Case',
     secondary: 'Explore Sample',
   },
@@ -111,23 +121,26 @@ function ProjectCard({
   project,
   testCaseCount,
   testRunCount,
+  passRate,
+  members,
   animDelay,
 }: {
   project: Project;
   testCaseCount: number;
   testRunCount: number;
+  passRate?: number | null;
+  members?: Array<{ initials: string; color: string }>;
   animDelay: number;
 }) {
   const navigate = useNavigate();
-  const isActive = project.status === 'active';
+  const health = getHealth(passRate ?? null);
+  const visibleMembers = (members ?? []).slice(0, 4);
+  const extraMembers = (members ?? []).length - visibleMembers.length;
 
   return (
     <div
       className="bg-white border border-slate-200 rounded-xl p-5 cursor-pointer transition-all hover:-translate-y-px"
-      style={{
-        animation: `fadeInUp 0.4s ease-out ${animDelay}ms backwards`,
-        // hover handled via Tailwind; shadow via style for rgb with alpha
-      }}
+      style={{ animation: `fadeInUp 0.4s ease-out ${animDelay}ms backwards` }}
       onClick={() => navigate(`/projects/${project.id}`)}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.borderColor = '#C7D2FE';
@@ -148,16 +161,10 @@ function ProjectCard({
             {project.name}
           </span>
         </div>
-        {/* Status / health badge */}
-        <span
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ml-2 ${
-            isActive ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-400'
-          }`}
-        >
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-slate-400'}`}
-          ></span>
-          {isActive ? 'Active' : 'Archived'}
+        {/* Health badge */}
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ml-2 ${health.badge}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${health.dot}`}></span>
+          {health.label}
         </span>
       </div>
 
@@ -167,18 +174,37 @@ function ProjectCard({
       </p>
 
       {/* Stats row */}
-      <div className="flex items-center gap-4 mb-3">
-        <span className="flex items-center gap-1.5 text-xs text-slate-500">
-          <i className="ri-file-list-3-line text-sm"></i>
-          {testCaseCount} test case{testCaseCount !== 1 ? 's' : ''}
-        </span>
-        <span className="flex items-center gap-1.5 text-xs text-slate-500">
+      <div className="flex items-center gap-3 mb-3">
+        <span className="flex items-center gap-1 text-xs text-slate-500">
           <i className="ri-play-circle-line text-sm"></i>
-          {testRunCount} run{testRunCount !== 1 ? 's' : ''}
+          {testRunCount} active run{testRunCount !== 1 ? 's' : ''}
         </span>
+        <span className="flex items-center gap-1 text-xs text-slate-500">
+          <i className="ri-file-list-3-line text-sm"></i>
+          {testCaseCount} case{testCaseCount !== 1 ? 's' : ''}
+        </span>
+        <span className="flex-1"></span>
+        {/* Member avatars */}
+        {visibleMembers.length > 0 && (
+          <div className="flex items-center">
+            {visibleMembers.map((m, i) => (
+              <span
+                key={i}
+                className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-white font-bold"
+                style={{ background: m.color, fontSize: '0.4375rem', marginLeft: i === 0 ? 0 : '-6px' }}
+                title={m.initials}
+              >
+                {m.initials}
+              </span>
+            ))}
+            {extraMembers > 0 && (
+              <span className="text-[0.6875rem] text-slate-400 ml-1">+{extraMembers}</span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Footer */}
+      {/* Activity footer */}
       <div className="flex items-center gap-1.5 text-xs text-slate-400 pt-3 border-t border-slate-100">
         <i className="ri-time-line text-sm"></i>
         <span>Updated {timeAgo(project.updated_at || project.created_at)}</span>
@@ -285,6 +311,8 @@ export default function SparseState({
   projects,
   testCaseCounts,
   testRunCounts,
+  projectPassRates,
+  projectMembers,
   onCreateProject,
   onTrySample,
   isSampleLoading,
@@ -328,6 +356,8 @@ export default function SparseState({
             project={project}
             testCaseCount={testCaseCounts[project.id] ?? 0}
             testRunCount={testRunCounts[project.id] ?? 0}
+            passRate={projectPassRates?.[project.id] ?? null}
+            members={projectMembers?.[project.id] ?? []}
             animDelay={i * 50}
           />
         ))}
