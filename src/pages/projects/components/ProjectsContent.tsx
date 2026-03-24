@@ -4,6 +4,8 @@ import { supabase, type Project } from '../../../lib/supabase';
 import CreateProjectModal from './CreateProjectModal';
 import EditProjectModal from './EditProjectModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
+import EmptyState from './EmptyState';
+import SparseState from './SparseState';
 import { useTranslation } from 'react-i18next';
 
 export default function ProjectsContent() {
@@ -237,6 +239,10 @@ export default function ProjectsContent() {
     return matchesStatus && matchesSearch;
   });
 
+  // Sparse-state logic: based on total project count (not filtered),
+  // so onboarding UI only appears when the user genuinely has 0–2 projects.
+  const isSearchActive = searchQuery !== '' || filterStatus !== 'all';
+
   const stats = [
     {
       label: t('projects:allProjects'),
@@ -297,6 +303,74 @@ export default function ProjectsContent() {
     );
   }
 
+  // ── State 0: Empty (no projects, no active search) ────────────────────────
+  if (!isSearchActive && projects.length === 0) {
+    return (
+      <>
+        <EmptyState onCreateProject={() => setShowCreateModal(true)} />
+        {showCreateModal && (
+          <CreateProjectModal
+            onClose={() => setShowCreateModal(false)}
+            onCreate={handleCreateProject}
+          />
+        )}
+      </>
+    );
+  }
+
+  // ── State 1–2: Sparse (1–2 total projects, no active search) ───────────────
+  if (!isSearchActive && projects.length <= 2) {
+    return (
+      <>
+        <div className="p-6">
+          {/* Minimal header */}
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">{t('projects:title')}</h1>
+              <p className="text-sm text-slate-500 mt-0.5">{t('projects:subtitle')}</p>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
+            >
+              <i className="ri-add-line text-lg"></i>
+              {t('projects:createProject')}
+            </button>
+          </div>
+
+          <SparseState
+            projects={projects}
+            testCaseCounts={testCaseCounts}
+            testRunCounts={testRunCounts}
+            onCreateProject={() => setShowCreateModal(true)}
+          />
+        </div>
+
+        {showCreateModal && (
+          <CreateProjectModal
+            onClose={() => setShowCreateModal(false)}
+            onCreate={handleCreateProject}
+          />
+        )}
+        {editingProject && (
+          <EditProjectModal
+            project={editingProject}
+            onClose={() => setEditingProject(null)}
+            onUpdate={handleUpdateProject}
+          />
+        )}
+        {deletingProject && (
+          <DeleteConfirmModal
+            project={deletingProject}
+            onClose={() => setDeletingProject(null)}
+            onDelete={handleDeleteProject}
+          />
+        )}
+      </>
+    );
+  }
+
+  // ── State 3+: Normal full layout ────────────────────────────────────────────
   return (
     <>
       <div className="p-8">
@@ -306,7 +380,7 @@ export default function ProjectsContent() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('projects:title')}</h1>
               <p className="text-gray-600">{t('projects:subtitle')}</p>
             </div>
-            <button 
+            <button
               onClick={() => setShowCreateModal(true)}
               className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
@@ -353,7 +427,7 @@ export default function ProjectsContent() {
                     <i className="ri-list-check text-lg"></i>
                   </button>
                 </div>
-                <select 
+                <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="px-4 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
@@ -364,7 +438,7 @@ export default function ProjectsContent() {
                 </select>
               </div>
             </div>
-            
+
             <div className="relative">
               <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
               <input
@@ -384,19 +458,9 @@ export default function ProjectsContent() {
                   <i className="ri-folder-line text-3xl text-gray-400"></i>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {searchQuery || filterStatus !== 'all' ? t('projects:noSearchResults') : t('projects:noProjects')}
+                  {t('projects:noSearchResults')}
                 </h3>
-                <p className="text-gray-600 mb-6">
-                  {searchQuery || filterStatus !== 'all' ? t('projects:tryDifferentSearch') : t('projects:createFirstProject')}
-                </p>
-                {!searchQuery && filterStatus === 'all' && (
-                  <button 
-                    onClick={() => setShowCreateModal(true)}
-                    className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
-                  >
-                    {t('projects:createProject')}
-                  </button>
-                )}
+                <p className="text-gray-600 mb-6">{t('projects:tryDifferentSearch')}</p>
               </div>
             ) : (
               <div className={view === 'grid' ? 'grid grid-cols-2 gap-6' : 'space-y-4'}>
@@ -419,7 +483,7 @@ export default function ProjectsContent() {
                         </div>
                       </Link>
                       <div className="relative" ref={openMenuId === project.id ? menuRef : null}>
-                        <button 
+                        <button
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
