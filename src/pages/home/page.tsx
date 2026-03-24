@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import SEOHead from '../../components/SEOHead';
 import Logo from '../../components/Logo';
@@ -687,12 +687,14 @@ const content = {
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { currentLanguage } = useLanguage();
+  const { currentLanguage, changeLanguage } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const langMenuRef = useRef<HTMLDivElement>(null);
 
   const lang = currentLanguage === 'ko' ? 'ko' : 'en';
   const t = content[lang];
@@ -702,6 +704,16 @@ export default function HomePage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
+        setLangMenuOpen(false);
+      }
+    };
+    if (langMenuOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [langMenuOpen]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -783,10 +795,15 @@ export default function HomePage() {
       />
 
       <div className="min-h-screen bg-gray-950" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
+        <style>{`
+          @keyframes blobFloat { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(15px,-20px) scale(1.03)} 66%{transform:translate(-10px,15px) scale(0.97)} }
+          @keyframes hf { 0%,100%{transform:translateY(0) perspective(1000px) rotateY(-4deg)} 50%{transform:translateY(-12px) perspective(1000px) rotateY(-4deg)} }
+          @keyframes fcf { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        `}</style>
 
         {/* Navbar */}
         <nav
-          className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-gray-950/90 backdrop-blur-xl border-b border-white/6' : 'bg-transparent'}`}
+          className={`fixed top-0 left-0 right-0 z-[100] flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-gray-950/90 backdrop-blur-xl border-b border-white/6' : 'bg-transparent'}`}
           style={{ padding: '0.875rem 2rem' }}
         >
           {/* Logo */}
@@ -802,10 +819,7 @@ export default function HomePage() {
                 T
               </span>
             </div>
-            <span
-              className="text-white"
-              style={{ fontWeight: 700, fontSize: '1.0625rem' }}
-            >
+            <span className="text-white" style={{ fontWeight: 700, fontSize: '1.0625rem' }}>
               Testably
             </span>
           </a>
@@ -822,6 +836,38 @@ export default function HomePage() {
                 {item.label}
               </a>
             ))}
+
+            {/* Language switcher */}
+            <div className="relative" ref={langMenuRef}>
+              <button
+                onClick={() => setLangMenuOpen(!langMenuOpen)}
+                className="flex items-center gap-1 cursor-pointer transition-colors hover:text-white"
+                style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.8125rem', fontWeight: 500, background: 'none', border: 'none', padding: 0 }}
+              >
+                <i className="ri-translate-2 text-sm"></i>
+                <span>{lang === 'en' ? 'EN' : 'KO'}</span>
+                <i className={`ri-arrow-down-s-line text-xs transition-transform ${langMenuOpen ? 'rotate-180' : ''}`}></i>
+              </button>
+              {langMenuOpen && (
+                <div className="absolute right-0 top-8 w-36 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
+                  <button
+                    onClick={() => { changeLanguage('en'); setLangMenuOpen(false); }}
+                    className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2 cursor-pointer transition-colors hover:bg-gray-50 ${lang === 'en' ? 'text-indigo-600 bg-indigo-50 font-semibold' : 'text-gray-700'}`}
+                  >
+                    <span>🇬🇧</span><span>English</span>
+                    {lang === 'en' && <i className="ri-check-line text-indigo-600 ml-auto"></i>}
+                  </button>
+                  <button
+                    onClick={() => { changeLanguage('ko'); setLangMenuOpen(false); }}
+                    className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2 cursor-pointer transition-colors hover:bg-gray-50 ${lang === 'ko' ? 'text-indigo-600 bg-indigo-50 font-semibold' : 'text-gray-700'}`}
+                  >
+                    <span>🇰🇷</span><span>한국어</span>
+                    {lang === 'ko' && <i className="ri-check-line text-indigo-600 ml-auto"></i>}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => navigate('/auth')}
               className="transition-colors cursor-pointer hover:text-white whitespace-nowrap bg-transparent border-none"
@@ -832,14 +878,7 @@ export default function HomePage() {
             <button
               onClick={() => navigate('/auth')}
               className="text-white cursor-pointer transition-all whitespace-nowrap"
-              style={{
-                padding: '0.5rem 1.25rem',
-                background: '#6366F1',
-                borderRadius: 9999,
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-                border: 'none',
-              }}
+              style={{ padding: '0.5rem 1.25rem', background: '#6366F1', borderRadius: 9999, fontSize: '0.8125rem', fontWeight: 600, border: 'none' }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.background = '#4F46E5';
                 (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px rgba(99,102,241,0.35)';
@@ -859,9 +898,9 @@ export default function HomePage() {
 
           {/* Background: Mesh Gradient */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-indigo-500/10 blur-[120px]"></div>
-            <div className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-indigo-600/[0.08] blur-[100px]"></div>
-            <div className="absolute top-1/2 left-1/3 w-[400px] h-[400px] rounded-full bg-indigo-400/5 blur-[80px]"></div>
+            <div className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-indigo-500/10 blur-[120px]" style={{ animation: 'blobFloat 8s ease-in-out infinite' }}></div>
+            <div className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-indigo-600/[0.08] blur-[100px]" style={{ animation: 'blobFloat 10s ease-in-out infinite 2s' }}></div>
+            <div className="absolute top-1/2 left-1/3 w-[400px] h-[400px] rounded-full bg-indigo-400/5 blur-[80px]" style={{ animation: 'blobFloat 7s ease-in-out infinite 1s' }}></div>
             {/* Noise texture */}
             <div
               className="absolute inset-0 opacity-[0.03] pointer-events-none z-10"
@@ -887,7 +926,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Heading */}
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.08] tracking-tight mb-6">
+                <h1 className="text-white mb-6" style={{ fontSize: '3.5rem', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-0.03em' }}>
                   {t.hero.title1}
                   <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-indigo-500">
@@ -896,7 +935,7 @@ export default function HomePage() {
                 </h1>
 
                 {/* Subheading */}
-                <p className="text-lg md:text-xl text-white/50 leading-relaxed max-w-xl mb-10 mx-auto lg:mx-0">
+                <p className="text-lg md:text-xl leading-relaxed max-w-xl mb-10 mx-auto lg:mx-0" style={{ color: '#94A3B8' }}>
                   {t.hero.description}
                 </p>
 
@@ -944,7 +983,7 @@ export default function HomePage() {
                 <div className="absolute -inset-8 bg-indigo-500/10 rounded-3xl blur-3xl"></div>
 
                 {/* Double-Bezel Card */}
-                <div className="relative bg-white/[0.04] ring-1 ring-white/[0.08] p-1.5 rounded-[1.5rem] shadow-2xl">
+                <div className="relative bg-white/[0.04] ring-1 ring-white/[0.08] p-1.5 rounded-[1.5rem]" style={{ animation: 'hf 6s ease-in-out infinite', boxShadow: '0 25px 60px rgba(0,0,0,0.4), 0 0 40px rgba(99,102,241,0.08)' }}>
                   <div className="rounded-[calc(1.5rem-0.375rem)] overflow-hidden bg-gray-900 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
                     {/* Browser chrome */}
                     <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-900/80 border-b border-white/[0.06]">
@@ -972,7 +1011,7 @@ export default function HomePage() {
                 {/* Floating chips */}
                 <div
                   className="absolute -bottom-4 -left-6 hidden sm:flex items-center gap-2 px-3.5 py-2.5 rounded-xl shadow-xl"
-                  style={{ background: 'rgba(15,23,42,0.88)', backdropFilter: 'blur(16px)', border: '1px solid rgba(99,102,241,0.25)', animation: 'float 6s ease-in-out infinite' }}
+                  style={{ background: 'rgba(15,23,42,0.88)', backdropFilter: 'blur(16px)', border: '1px solid rgba(99,102,241,0.25)', animation: 'fcf 6s ease-in-out infinite' }}
                 >
                   <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
                   <span className="text-white font-semibold text-sm">87% Pass Rate</span>
@@ -988,20 +1027,15 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Scroll indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-white/20 text-xs">
-            <span>Scroll</span>
-            <div className="w-px h-8 bg-gradient-to-b from-white/20 to-transparent"></div>
-          </div>
         </header>
 
         {/* Stats Bar */}
-        <section className="py-14 bg-gray-950">
-          <div className="max-w-5xl mx-auto px-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <section style={{ background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)', padding: '2.5rem 2rem' }}>
+          <div className="max-w-5xl mx-auto">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2rem' }}>
               {t.stats.map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <div className="text-3xl font-black text-indigo-400 mb-1">{stat.value}</div>
+                  <div className="text-3xl font-black mb-1" style={{ color: '#818CF8' }}>{stat.value}</div>
                   <div className="text-sm text-gray-400">{stat.label}</div>
                 </div>
               ))}
@@ -1066,7 +1100,7 @@ export default function HomePage() {
                       ? 'border-indigo-500/40 scale-[1.02] shadow-lg shadow-indigo-500/10'
                       : 'border-white/6 hover:border-indigo-500/20 hover:shadow-sm hover:shadow-indigo-500/10'
                   }`}
-                  style={{ background: activeFeature === index ? 'rgba(99,102,241,0.06)' : 'rgba(255,255,255,0.02)' }}
+                  style={{ background: 'rgba(255,255,255,0.03)' }}
                   onMouseEnter={() => setActiveFeature(index)}
                 >
                   <div className="flex items-start justify-between mb-4">
@@ -1292,38 +1326,45 @@ export default function HomePage() {
               {t.pricingPlans.map((plan) => (
                 <article
                   key={plan.name}
-                  className={`rounded-2xl p-6 border flex flex-col transition-all ${
+                  className={`rounded-2xl p-6 border flex flex-col transition-all relative ${
                     plan.highlighted
-                      ? 'bg-indigo-500 border-indigo-500 shadow-xl shadow-indigo-200 scale-[1.02]'
+                      ? 'scale-[1.02]'
                       : 'bg-white/3 border-white/8 hover:border-indigo-500/25 hover:shadow-md'
                   }`}
+                  style={plan.highlighted ? {
+                    background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))',
+                    border: '1px solid rgba(99,102,241,0.3)',
+                    boxShadow: '0 8px 32px rgba(99,102,241,0.12)',
+                  } : {}}
                 >
-                  <div className="mb-5">
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-white/20' : 'bg-indigo-500/15'}`}>
-                      <i className={`${plan.icon} text-xl ${plan.highlighted ? 'text-white' : 'text-indigo-400'}`}></i>
-                    </div>
-                    {plan.popular && (
-                      <div className="inline-flex items-center gap-1 bg-white/25 rounded-full px-3 py-1 mb-2">
+                  {plan.popular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <div className="inline-flex items-center gap-1 bg-indigo-500 rounded-full px-3 py-1">
                         <i className="ri-star-fill text-white text-xs"></i>
-                        <span className="text-white text-xs font-semibold">{plan.popular}</span>
+                        <span className="text-white text-xs font-semibold whitespace-nowrap">{plan.popular}</span>
                       </div>
-                    )}
-                    <h3 className={`text-lg font-bold mb-1 ${plan.highlighted ? 'text-white' : 'text-white'}`}>{plan.name}</h3>
-                    <p className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/70' : 'text-gray-400'}`}>{plan.description}</p>
+                    </div>
+                  )}
+                  <div className="mb-5">
+                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl mb-3 ${plan.highlighted ? 'bg-indigo-500/20' : 'bg-indigo-500/15'}`}>
+                      <i className={`${plan.icon} text-xl text-indigo-400`}></i>
+                    </div>
+                    <h3 className="text-lg font-bold mb-1 text-white">{plan.name}</h3>
+                    <p className="text-xs leading-relaxed text-gray-400">{plan.description}</p>
                   </div>
 
-                  <div className={`mb-5 pb-5 border-b ${plan.highlighted ? 'border-white/20' : 'border-white/8'}`}>
-                    <span className={`text-3xl font-black ${plan.highlighted ? 'text-white' : 'text-white'}`}>{plan.price}</span>
-                    <span className={`text-xs ml-1.5 ${plan.highlighted ? 'text-white/70' : 'text-gray-400'}`}>{plan.period}</span>
+                  <div className="mb-5 pb-5 border-b border-white/8">
+                    <span className="text-3xl font-black text-white">{plan.price}</span>
+                    <span className="text-xs ml-1.5 text-gray-400">{plan.period}</span>
                   </div>
 
                   <ul className="space-y-2.5 mb-7 flex-1">
                     {plan.features.map((f) => (
                       <li key={f} className="flex items-start gap-2">
-                        <div className={`w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${plan.highlighted ? 'bg-white/25' : 'bg-indigo-500/15'}`}>
-                          <i className={`ri-check-line text-xs ${plan.highlighted ? 'text-white' : 'text-indigo-400'}`}></i>
+                        <div className="w-4 h-4 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5 bg-indigo-500/15">
+                          <i className="ri-check-line text-xs text-indigo-400"></i>
                         </div>
-                        <span className={`text-xs leading-relaxed ${plan.highlighted ? 'text-white/90' : 'text-gray-300'}`}>{f}</span>
+                        <span className="text-xs leading-relaxed text-gray-300">{f}</span>
                       </li>
                     ))}
                   </ul>
@@ -1332,9 +1373,7 @@ export default function HomePage() {
                     <a
                       href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
                       className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center ${
-                        plan.highlighted
-                          ? 'bg-white text-indigo-600 hover:bg-gray-50'
-                          : plan.cta === 'Talk to Us' || plan.cta === '문의하기'
+                        plan.cta === 'Talk to Us' || plan.cta === '문의하기'
                           ? 'bg-indigo-900 text-violet-300 border border-violet-500/25 hover:bg-violet-500/15'
                           : 'bg-indigo-500 text-white hover:bg-indigo-600'
                       }`}
@@ -1344,9 +1383,7 @@ export default function HomePage() {
                   ) : (
                     <button
                       onClick={() => navigate('/auth')}
-                      className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
-                        plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
-                      }`}
+                      className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap bg-indigo-500 text-white hover:bg-indigo-600"
                     >
                       {plan.cta}
                     </button>
