@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import SEOHead from '../../components/SEOHead';
 import Logo from '../../components/Logo';
@@ -687,14 +687,12 @@ const content = {
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { currentLanguage, changeLanguage } = useLanguage();
+  const { currentLanguage } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
-  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const langMenuRef = useRef<HTMLDivElement>(null);
 
   const lang = currentLanguage === 'ko' ? 'ko' : 'en';
   const t = content[lang];
@@ -712,15 +710,6 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [t.features.length]);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
-        setLangMenuOpen(false);
-      }
-    };
-    if (langMenuOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [langMenuOpen]);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -796,73 +785,72 @@ export default function HomePage() {
       <div className="min-h-screen bg-gray-950" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
 
         {/* Navbar */}
-        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-gray-950/90 backdrop-blur-xl border-b border-white/6' : 'bg-transparent'}`}>
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <a href="/">
-              <Logo variant="dark" className="h-9" />
-            </a>
-
-            <div className="hidden md:flex items-center gap-8">
-              {navLinks.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="text-sm font-medium transition-colors cursor-pointer text-white/60 hover:text-white"
-                >
-                  {item.label}
-                </a>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Language Switcher */}
-              <div className="relative" ref={langMenuRef}>
-                <button
-                  onClick={() => setLangMenuOpen(!langMenuOpen)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer border border-white/15 text-white/60 hover:text-white hover:border-white/30 bg-white/5"
-                >
-                  <i className="ri-translate-2 text-base"></i>
-                  <span>{lang === 'en' ? 'EN' : 'KO'}</span>
-                  <i className={`ri-arrow-down-s-line text-sm transition-transform ${langMenuOpen ? 'rotate-180' : ''}`}></i>
-                </button>
-                {langMenuOpen && (
-                  <div className="absolute right-0 top-10 w-40 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
-                    <button
-                      onClick={() => { changeLanguage('en'); setLangMenuOpen(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between cursor-pointer transition-colors hover:bg-gray-50 ${lang === 'en' ? 'text-indigo-600 bg-indigo-50 font-semibold' : 'text-gray-700'}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>🇬🇧</span>
-                        <span>English</span>
-                      </div>
-                      {lang === 'en' && <i className="ri-check-line text-indigo-600"></i>}
-                    </button>
-                    <button
-                      onClick={() => { changeLanguage('ko'); setLangMenuOpen(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between cursor-pointer transition-colors hover:bg-gray-50 ${lang === 'ko' ? 'text-indigo-600 bg-indigo-50 font-semibold' : 'text-gray-700'}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>🇰🇷</span>
-                        <span>한국어</span>
-                      </div>
-                      {lang === 'ko' && <i className="ri-check-line text-indigo-600"></i>}
-                    </button>
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => navigate('/auth')}
-                className="text-sm font-semibold px-4 py-2 rounded-lg transition-all cursor-pointer whitespace-nowrap text-white/70 hover:text-white hover:bg-white/8"
+        <nav
+          className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-gray-950/90 backdrop-blur-xl border-b border-white/6' : 'bg-transparent'}`}
+          style={{ padding: '0.875rem 2rem' }}
+        >
+          {/* Logo */}
+          <a href="/" className="flex items-center gap-2 no-underline flex-shrink-0">
+            <div
+              className="flex items-center justify-center flex-shrink-0"
+              style={{ width: 34, height: 34, background: '#6366F1', borderRadius: 9 }}
+            >
+              <span
+                className="text-white select-none"
+                style={{ fontFamily: 'Pacifico, cursive', fontSize: '1.125rem', lineHeight: 1 }}
               >
-                {t.nav.login}
-              </button>
-              <button
-                onClick={() => navigate('/auth')}
-                className="text-sm font-semibold px-5 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all cursor-pointer whitespace-nowrap"
-              >
-                {t.nav.getStarted}
-              </button>
+                T
+              </span>
             </div>
+            <span
+              className="text-white"
+              style={{ fontWeight: 700, fontSize: '1.0625rem' }}
+            >
+              Testably
+            </span>
+          </a>
+
+          {/* Nav links + actions */}
+          <div className="hidden md:flex items-center" style={{ gap: '1.75rem' }}>
+            {navLinks.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="transition-colors cursor-pointer hover:text-white whitespace-nowrap"
+                style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.8125rem', fontWeight: 500 }}
+              >
+                {item.label}
+              </a>
+            ))}
+            <button
+              onClick={() => navigate('/auth')}
+              className="transition-colors cursor-pointer hover:text-white whitespace-nowrap bg-transparent border-none"
+              style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.8125rem', fontWeight: 500 }}
+            >
+              {t.nav.login}
+            </button>
+            <button
+              onClick={() => navigate('/auth')}
+              className="text-white cursor-pointer transition-all whitespace-nowrap"
+              style={{
+                padding: '0.5rem 1.25rem',
+                background: '#6366F1',
+                borderRadius: 9999,
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                border: 'none',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#4F46E5';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px rgba(99,102,241,0.35)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#6366F1';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '';
+              }}
+            >
+              {t.nav.getStarted}
+            </button>
           </div>
         </nav>
 
