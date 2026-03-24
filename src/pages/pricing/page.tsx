@@ -92,7 +92,7 @@ const enterpriseTiers = [
       'Dedicated support',
       'SLA guarantee',
     ],
-    cta: 'Contact Sales',
+    cta: 'Start Free Trial',
     icon: 'ri-building-2-line',
   },
   {
@@ -112,7 +112,7 @@ const enterpriseTiers = [
       'Dedicated support',
       'SLA guarantee',
     ],
-    cta: 'Contact Sales',
+    cta: 'Start Free Trial',
     icon: 'ri-building-4-line',
   },
   {
@@ -319,12 +319,21 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    <a
-                      href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
-                      className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
-                    >
-                      {tier.cta}
-                    </a>
+                    {tier.cta === 'Start Free Trial' ? (
+                      <button
+                        onClick={() => navigate('/auth')}
+                        className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
+                      >
+                        {tier.cta}
+                      </button>
+                    ) : (
+                      <a
+                        href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
+                        className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
+                      >
+                        {tier.cta}
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
@@ -367,11 +376,17 @@ export default function PricingPage() {
                   <tr className="border-b border-gray-100">
                     <th className="text-left px-6 py-4 font-semibold text-gray-700 w-1/3">Feature</th>
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">Free</th>
-                    <th className="text-center px-4 py-4 font-semibold text-gray-700">Starter</th>
-                    <th className="text-center px-4 py-4 font-semibold text-indigo-600">Professional</th>
+                    <th className="text-center px-4 py-4 font-semibold text-gray-700">
+                      <div>Starter</div>
+                      <div className="text-xs font-normal text-gray-400">$49/mo · $499/yr</div>
+                    </th>
+                    <th className="text-center px-4 py-4 font-semibold text-indigo-600">
+                      <div>Professional</div>
+                      <div className="text-xs font-normal text-indigo-400">$99/mo · $1,010/yr</div>
+                    </th>
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">
                       <div>Enterprise</div>
-                      <div className="text-xs font-normal text-gray-400">from $249/mo</div>
+                      <div className="text-xs font-normal text-gray-400">from $249/mo · $2,540/yr</div>
                     </th>
                   </tr>
                 </thead>

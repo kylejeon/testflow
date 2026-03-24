@@ -679,7 +679,6 @@ export default function HomePage() {
   const [activeFeature, setActiveFeature] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
   const langMenuRef = useRef<HTMLDivElement>(null);
 
   const lang = currentLanguage === 'ko' ? 'ko' : 'en';
@@ -687,7 +686,7 @@ export default function HomePage() {
 
   const handlePlanClick = async (planName: string) => {
     if (planName === 'Free') { navigate('/auth'); return; }
-    const opened = await openPaddleCheckout(planName, billingPeriod);
+    const opened = await openPaddleCheckout(planName, 'monthly');
     if (!opened) navigate('/auth');
   };
 
@@ -1300,30 +1299,6 @@ export default function HomePage() {
               <h2 className="text-4xl font-bold text-white mb-4">{t.pricingSection.title}</h2>
               <p className="text-gray-400 text-lg">{t.pricingSection.description}</p>
 
-              {/* Billing toggle */}
-              <div className="flex items-center justify-center gap-3 mt-8">
-                <span className="text-sm font-medium" style={{ color: billingPeriod === 'monthly' ? '#fff' : '#64748B' }}>
-                  {lang === 'en' ? 'Monthly' : '월간'}
-                </span>
-                <button
-                  onClick={() => setBillingPeriod(billingPeriod === 'monthly' ? 'annual' : 'monthly')}
-                  className="relative w-12 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
-                  style={{ background: billingPeriod === 'annual' ? '#6366F1' : 'rgba(255,255,255,0.12)', border: 'none' }}
-                >
-                  <span
-                    className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200"
-                    style={{ transform: billingPeriod === 'annual' ? 'translateX(1.5rem)' : 'translateX(0.125rem)' }}
-                  ></span>
-                </button>
-                <span className="text-sm font-medium" style={{ color: billingPeriod === 'annual' ? '#fff' : '#64748B' }}>
-                  {lang === 'en' ? 'Annual' : '연간'}
-                </span>
-                {billingPeriod === 'annual' && (
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.25)' }}>
-                    {lang === 'en' ? 'Save 15%' : '15% 할인'}
-                  </span>
-                )}
-              </div>
             </div>
 
             {/* Row 1: Free / Starter / Professional */}
@@ -1358,9 +1333,14 @@ export default function HomePage() {
                     </span>
                     {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{plan.period}</span>}
                   </div>
-                  {billingPeriod === 'annual' && plan.price !== '$0' && plan.annualTotal && (
-                    <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '0.125rem' }}>
-                      {lang === 'en' ? `$${plan.annualTotal.toLocaleString()} / year` : `연 $${plan.annualTotal.toLocaleString()}`}
+                  {plan.price !== '$0' && plan.annualTotal && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.25rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                        {lang === 'en' ? `$${plan.annualTotal.toLocaleString()}/yr` : `연 $${plan.annualTotal.toLocaleString()}`}
+                      </span>
+                      <span style={{ fontSize: '0.625rem', fontWeight: 700, padding: '0.125rem 0.375rem', borderRadius: 9999, background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.2)' }}>
+                        {lang === 'en' ? 'Save 15%' : '15% 할인'}
+                      </span>
                     </div>
                   )}
                   <div style={{ fontSize: '0.8125rem', color: '#94A3B8', marginTop: '0.25rem' }}>{plan.users}</div>
@@ -1417,9 +1397,14 @@ export default function HomePage() {
                     </span>
                     {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{plan.period}</span>}
                   </div>
-                  {billingPeriod === 'annual' && plan.annualTotal && (
-                    <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '0.125rem' }}>
-                      {lang === 'en' ? `$${plan.annualTotal.toLocaleString()} / year` : `연 $${plan.annualTotal.toLocaleString()}`}
+                  {plan.annualTotal && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.25rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                        {lang === 'en' ? `$${plan.annualTotal.toLocaleString()}/yr` : `연 $${plan.annualTotal.toLocaleString()}`}
+                      </span>
+                      <span style={{ fontSize: '0.625rem', fontWeight: 700, padding: '0.125rem 0.375rem', borderRadius: 9999, background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.2)' }}>
+                        {lang === 'en' ? 'Save 15%' : '15% 할인'}
+                      </span>
                     </div>
                   )}
                   <div style={{ fontSize: '0.8125rem', color: '#94A3B8', marginTop: '0.25rem' }}>{plan.users}</div>
