@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import SEOHead from '../../components/SEOHead';
 import Logo from '../../components/Logo';
 import { useLanguage } from '../../hooks/useLanguage';
+import { openPaddleCheckout } from '../../lib/paddle';
 
 const content = {
   en: {
@@ -675,6 +676,12 @@ export default function HomePage() {
 
   const lang = currentLanguage === 'ko' ? 'ko' : 'en';
   const t = content[lang];
+
+  const handlePlanClick = async (planName: string) => {
+    if (planName === 'Free') { navigate('/auth'); return; }
+    const opened = await openPaddleCheckout(planName, billingPeriod);
+    if (!opened) navigate('/auth');
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60);
@@ -1368,11 +1375,11 @@ export default function HomePage() {
                       {plan.cta}
                     </a>
                   ) : plan.ctaVariant === 'filled' ? (
-                    <button onClick={() => navigate('/auth')} style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem', borderRadius: '0.625rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', background: '#6366F1', color: '#fff', border: 'none' }}>
+                    <button onClick={() => handlePlanClick(plan.name)} style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem', borderRadius: '0.625rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', background: '#6366F1', color: '#fff', border: 'none' }}>
                       {plan.cta}
                     </button>
                   ) : (
-                    <button onClick={() => navigate('/auth')} style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem', borderRadius: '0.625rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
+                    <button onClick={() => handlePlanClick(plan.name)} style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem', borderRadius: '0.625rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
                       {plan.cta}
                     </button>
                   )}
@@ -1429,7 +1436,7 @@ export default function HomePage() {
                       {plan.cta}
                     </a>
                   ) : (
-                    <button onClick={() => navigate('/auth')} style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem', borderRadius: '0.625rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
+                    <button onClick={() => handlePlanClick(plan.name)} style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem', borderRadius: '0.625rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
                       {plan.cta}
                     </button>
                   )}

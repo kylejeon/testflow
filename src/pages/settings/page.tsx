@@ -803,7 +803,7 @@ def pytest_sessionfinish(session, exitstatus):
   const formatPrice = (monthlyPrice: number, isAnnual: boolean) => {
     if (monthlyPrice === 0) return '$0';
     if (monthlyPrice < 0) return 'Custom';
-    const price = isAnnual ? (monthlyPrice * 0.8).toFixed(0) : monthlyPrice;
+    const price = isAnnual ? (monthlyPrice * 0.85).toFixed(0) : monthlyPrice;
     return `$${Number(price).toLocaleString()}`;
   };
 
@@ -1164,7 +1164,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   {isAnnual && info.monthlyPrice > 0 && info.monthlyPrice !== -1 && (
                                     <p className="text-xs text-indigo-600 mt-1">
                                       <i className="ri-price-tag-3-line mr-1"></i>
-                                      Save 20% vs {formatPrice(info.monthlyPrice, false)}/mo
+                                      Save 15% vs {formatPrice(info.monthlyPrice, false)}/mo
                                     </p>
                                   )}
                                 </div>
