@@ -670,6 +670,7 @@ export default function HomePage() {
   const [activeFeature, setActiveFeature] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
   const langMenuRef = useRef<HTMLDivElement>(null);
 
   const lang = currentLanguage === 'ko' ? 'ko' : 'en';
@@ -1283,6 +1284,31 @@ export default function HomePage() {
               </div>
               <h2 className="text-4xl font-bold text-white mb-4">{t.pricingSection.title}</h2>
               <p className="text-gray-400 text-lg">{t.pricingSection.description}</p>
+
+              {/* Billing toggle */}
+              <div className="flex items-center justify-center gap-3 mt-8">
+                <span className="text-sm font-medium" style={{ color: billingPeriod === 'monthly' ? '#fff' : '#64748B' }}>
+                  {lang === 'en' ? 'Monthly' : '월간'}
+                </span>
+                <button
+                  onClick={() => setBillingPeriod(billingPeriod === 'monthly' ? 'annual' : 'monthly')}
+                  className="relative w-12 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
+                  style={{ background: billingPeriod === 'annual' ? '#6366F1' : 'rgba(255,255,255,0.12)', border: 'none' }}
+                >
+                  <span
+                    className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200"
+                    style={{ transform: billingPeriod === 'annual' ? 'translateX(1.5rem)' : 'translateX(0.125rem)' }}
+                  ></span>
+                </button>
+                <span className="text-sm font-medium" style={{ color: billingPeriod === 'annual' ? '#fff' : '#64748B' }}>
+                  {lang === 'en' ? 'Annual' : '연간'}
+                </span>
+                {billingPeriod === 'annual' && (
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.25)' }}>
+                    {lang === 'en' ? 'Save 15%' : '15% 할인'}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Row 1: Free / Starter / Professional */}
@@ -1310,12 +1336,22 @@ export default function HomePage() {
                   )}
                   <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: plan.planColor, marginBottom: '0.375rem' }}>{plan.name}</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-                    {!['Custom', '문의'].includes(plan.price) && <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>$</span>}
+                    {!['Custom', '문의', '$0'].includes(plan.price) && <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>$</span>}
+                    {plan.price === '$0' && <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>$</span>}
                     <span style={{ fontSize: ['Custom', '문의'].includes(plan.price) ? '2rem' : '2.75rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>
-                      {plan.price.replace('$', '')}
+                      {['Custom', '문의'].includes(plan.price)
+                        ? plan.price
+                        : billingPeriod === 'annual' && plan.price !== '$0'
+                          ? Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 100) / 100
+                          : plan.price.replace('$', '')}
                     </span>
-                    {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{plan.period}</span>}
+                    {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{billingPeriod === 'annual' && plan.price !== '$0' && !['Custom', '문의'].includes(plan.price) ? (lang === 'en' ? '/ mo' : '/ 월') : plan.period}</span>}
                   </div>
+                  {billingPeriod === 'annual' && plan.price !== '$0' && !['Custom', '문의'].includes(plan.price) && (
+                    <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '0.125rem' }}>
+                      {lang === 'en' ? `$${Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 12 * 100) / 100} / year` : `연 $${Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 12 * 100) / 100}`}
+                    </div>
+                  )}
                   <div style={{ fontSize: '0.8125rem', color: '#94A3B8', marginTop: '0.25rem' }}>{plan.users}</div>
                   <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.125rem' }}>{plan.description}</div>
                   <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '1.25rem 0' }}></div>
@@ -1364,10 +1400,19 @@ export default function HomePage() {
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
                     {!['Custom', '문의'].includes(plan.price) && <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>$</span>}
                     <span style={{ fontSize: ['Custom', '문의'].includes(plan.price) ? '2rem' : '2.75rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>
-                      {plan.price.replace('$', '')}
+                      {['Custom', '문의'].includes(plan.price)
+                        ? plan.price
+                        : billingPeriod === 'annual'
+                          ? Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 100) / 100
+                          : plan.price.replace('$', '')}
                     </span>
-                    {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{plan.period}</span>}
+                    {plan.period && <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>{billingPeriod === 'annual' && !['Custom', '문의'].includes(plan.price) ? (lang === 'en' ? '/ mo' : '/ 월') : plan.period}</span>}
                   </div>
+                  {billingPeriod === 'annual' && !['Custom', '문의'].includes(plan.price) && (
+                    <div style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '0.125rem' }}>
+                      {lang === 'en' ? `$${Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 12 * 100) / 100} / year` : `연 $${Math.round(parseFloat(plan.price.replace('$', '')) * 0.85 * 12 * 100) / 100}`}
+                    </div>
+                  )}
                   <div style={{ fontSize: '0.8125rem', color: '#94A3B8', marginTop: '0.25rem' }}>{plan.users}</div>
                   <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.125rem' }}>{plan.description}</div>
                   <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '1.25rem 0' }}></div>
