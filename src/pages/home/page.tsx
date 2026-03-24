@@ -60,7 +60,7 @@ const content = {
     ],
     features: [
       {
-        icon: 'ri-file-list-3-line',
+        icon: 'ri-folder-3-line',
         title: 'Test Case Management',
         description: 'Organize thousands of test cases with a structured folder hierarchy. Filter by priority, tags, type, and status to find what you need instantly.',
         color: 'bg-indigo-50',
@@ -76,7 +76,7 @@ const content = {
         tag: 'Core',
       },
       {
-        icon: 'ri-flag-2-line',
+        icon: 'ri-flag-line',
         title: 'Milestone Tracking',
         description: 'Set release goals and monitor progress visually. Keep the whole team aligned on timelines and ship with confidence.',
         color: 'bg-cyan-50',
@@ -100,7 +100,7 @@ const content = {
         tag: 'Team',
       },
       {
-        icon: 'ri-links-line',
+        icon: 'ri-link',
         title: 'Jira Integration',
         description: 'Automatically create Jira issues when tests fail. Map custom fields, sync status bidirectionally, and keep dev and QA in perfect sync.',
         color: 'bg-cyan-50',
@@ -108,7 +108,7 @@ const content = {
         tag: 'Integration',
       },
       {
-        icon: 'ri-terminal-box-line',
+        icon: 'ri-git-merge-line',
         title: 'CI/CD Integration',
         description: 'Upload automated test results directly from your CI pipeline via API tokens. Seamlessly connect Testably to GitHub Actions, Jenkins, and more.',
         color: 'bg-indigo-50',
@@ -124,7 +124,7 @@ const content = {
         tag: 'Productivity',
       },
       {
-        icon: 'ri-folder-open-line',
+        icon: 'ri-file-text-line',
         title: 'Project Documentation',
         description: 'Centralize your test plans, release notes, and QA documents alongside your test data. Upload files and add links — everything in one workspace.',
         color: 'bg-cyan-50',
@@ -138,10 +138,10 @@ const content = {
       description: 'Start in minutes — no complex setup required',
     },
     workflowSteps: [
-      { step: '01', title: 'Create a Project', description: 'Set up a project for the product or feature you are testing and invite your team members.', icon: 'ri-folder-add-line' },
-      { step: '02', title: 'Write Test Cases', description: 'Build a structured library of test cases with folders, priorities, tags, and preconditions.', icon: 'ri-file-list-3-line' },
-      { step: '03', title: 'Execute Test Runs', description: 'Create a test run tied to a milestone, assign cases to team members, and track results live.', icon: 'ri-play-circle-line' },
-      { step: '04', title: 'Analyze & Ship', description: 'Review real-time dashboards, export reports, and ship with confidence when all tests pass.', icon: 'ri-bar-chart-2-line' },
+      { step: '01', title: 'Create a Project', description: 'Set up a project for the product or feature you are testing and invite your team members.', icon: 'ri-add-circle-line' },
+      { step: '02', title: 'Write Test Cases', description: 'Build a structured library of test cases with folders, priorities, tags, and preconditions.', icon: 'ri-edit-2-line' },
+      { step: '03', title: 'Execute Test Runs', description: 'Create a test run tied to a milestone, assign cases to team members, and track results live.', icon: 'ri-play-line' },
+      { step: '04', title: 'Analyze & Ship', description: 'Review real-time dashboards, export reports, and ship with confidence when all tests pass.', icon: 'ri-bar-chart-box-line' },
     ],
     integrationSection: {
       badge: 'Integrations',
@@ -156,19 +156,19 @@ const content = {
     },
     whyCards: [
       {
-        icon: 'ri-timer-line',
+        icon: 'ri-timer-flash-line',
         title: '5-Minute Setup',
         content: 'Sign up, create a project, write your first test case. No configuration wizards, no onboarding calls.',
       },
       {
-        icon: 'ri-puzzle-line',
+        icon: 'ri-plug-line',
         title: 'Jira + CI/CD Built-in',
         content: 'Failed test becomes a Jira issue automatically. GitHub Actions and GitLab CI report results back.',
       },
       {
-        icon: 'ri-hand-coin-line',
+        icon: 'ri-gift-line',
         title: 'Free Forever Plan',
-        content: 'Unlimited test cases, 3 projects, 2 team members. No credit card, no trial expiration.',
+        content: 'Unlimited test cases, 3 projects, 3 team members. No credit card, no trial expiration.',
       },
     ],
     whySection: {
@@ -289,8 +289,36 @@ const content = {
         answer: 'Absolutely. You can upgrade, downgrade, or cancel your subscription at any time from your account settings. If you cancel, your account remains active until the end of your current billing period. No hidden fees or lock-in contracts.',
       },
     ],
+    testimonialsSection: {
+      badge: 'What Teams Say',
+      title1: 'Loved by QA teams',
+      title2: 'who ship fast',
+    },
+    testimonials: [
+      {
+        quote: 'We switched from TestRail and cut our test management time in half. The AI test generation alone saved us 10+ hours per sprint.',
+        name: 'Sarah M.',
+        role: 'QA Lead, Fintech Startup',
+        initials: 'SM',
+        color: '#6366F1',
+      },
+      {
+        quote: 'The keyboard shortcuts are a game-changer. I can execute an entire test run without touching my mouse. It\'s like Vim for QA.',
+        name: 'James K.',
+        role: 'Senior SDET, SaaS Platform',
+        initials: 'JK',
+        color: '#8B5CF6',
+      },
+      {
+        quote: 'Focus Mode is brilliant. My team stays in the zone during test execution instead of getting lost in cluttered UI. QA productivity went up 40%.',
+        name: 'Lisa W.',
+        role: 'Engineering Manager, E-commerce',
+        initials: 'LW',
+        color: '#EC4899',
+      },
+    ],
     cta: {
-      title: 'Ready to level up your QA?',
+      title: 'Ready to level up your QA workflow?',
       description: 'Start for free — no credit card needed. Get your entire QA workflow running in minutes.',
       button: 'Get Started Free',
     },
@@ -309,6 +337,7 @@ const content = {
       privacy: 'Privacy Policy',
       terms: 'Terms of Service',
       about: 'About',
+      contact: 'Contact',
       compare: 'Compare',
       compareLinks: ['Testably vs TestRail', 'Testably vs Zephyr', 'Testably vs Qase'],
       copyright: `© ${new Date().getFullYear()} Testably. All rights reserved.`,
@@ -370,7 +399,7 @@ const content = {
     ],
     features: [
       {
-        icon: 'ri-file-list-3-line',
+        icon: 'ri-folder-3-line',
         title: '테스트 케이스 관리',
         description: '체계적인 폴더 구조로 수천 개의 테스트 케이스를 관리하세요. 우선순위, 태그, 유형, 상태별 필터링을 지원합니다.',
         color: 'bg-indigo-50',
@@ -386,7 +415,7 @@ const content = {
         tag: '핵심',
       },
       {
-        icon: 'ri-flag-2-line',
+        icon: 'ri-flag-line',
         title: '마일스톤 추적',
         description: '릴리즈 목표를 설정하고 진행률을 시각적으로 모니터링하세요. 팀 전체가 일정을 공유하고 자신 있게 배포하세요.',
         color: 'bg-cyan-50',
@@ -410,7 +439,7 @@ const content = {
         tag: '팀',
       },
       {
-        icon: 'ri-links-line',
+        icon: 'ri-link',
         title: 'Jira 연동',
         description: '테스트가 실패하면 Testably가 자동으로 단계, 스크린샷, 환경 정보를 포함한 Jira 이슈를 생성합니다. 더 이상 도구 간 복사-붙여넣기가 필요 없습니다.',
         color: 'bg-cyan-50',
@@ -418,7 +447,7 @@ const content = {
         tag: '연동',
       },
       {
-        icon: 'ri-terminal-box-line',
+        icon: 'ri-git-merge-line',
         title: 'CI/CD 연동',
         description: 'REST API를 통해 모든 CI/CD 시스템에서 자동 테스트 결과를 업로드하세요. 프로젝트별 토큰으로 파이프라인을 안전하게 유지하세요.',
         color: 'bg-indigo-50',
@@ -434,7 +463,7 @@ const content = {
         tag: '생산성',
       },
       {
-        icon: 'ri-folder-open-line',
+        icon: 'ri-file-text-line',
         title: '프로젝트 문서',
         description: '테스트 플랜, 릴리즈 노트, QA 문서를 테스트 데이터 옆에 중앙화하세요. 파일 업로드와 링크 추가로 모든 것을 하나의 워크스페이스에서 관리합니다.',
         color: 'bg-cyan-50',
@@ -448,10 +477,10 @@ const content = {
       description: '복잡한 설정 없이 몇 분 만에 시작하세요',
     },
     workflowSteps: [
-      { step: '01', title: '프로젝트 생성', description: '테스트할 제품이나 기능에 맞는 프로젝트를 생성하고 팀원을 초대하세요.', icon: 'ri-folder-add-line' },
-      { step: '02', title: '테스트 케이스 작성', description: '폴더, 우선순위, 태그, 전제 조건을 활용해 체계적인 테스트 케이스 라이브러리를 구축하세요.', icon: 'ri-file-list-3-line' },
-      { step: '03', title: 'Test Run 실행', description: '마일스톤에 맞춰 테스트 실행을 생성하고 팀원에게 케이스를 할당해 실시간으로 결과를 추적하세요.', icon: 'ri-play-circle-line' },
-      { step: '04', title: '분석 & 배포', description: '실시간 대시보드를 검토하고 리포트를 내보내세요. 모든 테스트가 통과되면 자신 있게 배포하세요.', icon: 'ri-bar-chart-2-line' },
+      { step: '01', title: '프로젝트 생성', description: '테스트할 제품이나 기능에 맞는 프로젝트를 생성하고 팀원을 초대하세요.', icon: 'ri-add-circle-line' },
+      { step: '02', title: '테스트 케이스 작성', description: '폴더, 우선순위, 태그, 전제 조건을 활용해 체계적인 테스트 케이스 라이브러리를 구축하세요.', icon: 'ri-edit-2-line' },
+      { step: '03', title: 'Test Run 실행', description: '마일스톤에 맞춰 테스트 실행을 생성하고 팀원에게 케이스를 할당해 실시간으로 결과를 추적하세요.', icon: 'ri-play-line' },
+      { step: '04', title: '분석 & 배포', description: '실시간 대시보드를 검토하고 리포트를 내보내세요. 모든 테스트가 통과되면 자신 있게 배포하세요.', icon: 'ri-bar-chart-box-line' },
     ],
     integrationSection: {
       badge: '연동',
@@ -466,19 +495,19 @@ const content = {
     },
     whyCards: [
       {
-        icon: 'ri-timer-line',
+        icon: 'ri-timer-flash-line',
         title: '5분 설정',
         content: '가입하고, 프로젝트를 만들고, 첫 번째 테스트 케이스를 작성하세요. 복잡한 설정 마법사나 온보딩 콜 없이 바로 시작할 수 있습니다.',
       },
       {
-        icon: 'ri-puzzle-line',
+        icon: 'ri-plug-line',
         title: 'Jira + CI/CD 기본 내장',
         content: '테스트 실패 시 자동으로 Jira 이슈가 생성됩니다. GitHub Actions와 GitLab CI가 결과를 자동으로 보고합니다.',
       },
       {
-        icon: 'ri-hand-coin-line',
+        icon: 'ri-gift-line',
         title: '영구 무료 플랜',
-        content: '무제한 테스트 케이스, 프로젝트 3개, 팀 멤버 2명. 신용카드 없이, 체험 기간 만료 없이 사용하세요.',
+        content: '무제한 테스트 케이스, 프로젝트 3개, 팀 멤버 3명. 신용카드 없이, 체험 기간 만료 없이 사용하세요.',
       },
     ],
     whySection: {
@@ -599,8 +628,36 @@ const content = {
         answer: '물론입니다. 계정 설정에서 언제든지 구독을 업그레이드, 다운그레이드 또는 취소할 수 있습니다. 취소하면 현재 청구 기간이 끝날 때까지 계정이 활성 상태를 유지합니다. 숨겨진 수수료나 장기 계약은 없습니다.',
       },
     ],
+    testimonialsSection: {
+      badge: '팀들의 이야기',
+      title1: '빠르게 배포하는',
+      title2: 'QA 팀들의 선택',
+    },
+    testimonials: [
+      {
+        quote: 'TestRail에서 전환한 후 테스트 관리 시간이 절반으로 줄었습니다. AI 테스트 생성만으로도 스프린트당 10시간 이상 절약했어요.',
+        name: 'Sarah M.',
+        role: 'QA Lead, Fintech Startup',
+        initials: 'SM',
+        color: '#6366F1',
+      },
+      {
+        quote: '키보드 단축키가 게임 체인저입니다. 마우스 없이 전체 테스트 실행을 할 수 있어요. QA를 위한 Vim 같은 느낌입니다.',
+        name: 'James K.',
+        role: 'Senior SDET, SaaS Platform',
+        initials: 'JK',
+        color: '#8B5CF6',
+      },
+      {
+        quote: 'Focus Mode는 정말 탁월합니다. 팀이 테스트 실행 중 복잡한 UI에 빠지지 않고 집중할 수 있어요. QA 생산성이 40% 향상됐습니다.',
+        name: 'Lisa W.',
+        role: 'Engineering Manager, E-commerce',
+        initials: 'LW',
+        color: '#EC4899',
+      },
+    ],
     cta: {
-      title: 'QA 레벨업 준비되셨나요?',
+      title: 'QA 워크플로우를 한 단계 업그레이드할 준비가 되셨나요?',
       description: '신용카드 없이 무료로 시작하세요. 몇 분 만에 QA 워크플로우 전체를 운영하세요.',
       button: '무료로 시작하기',
     },
@@ -619,6 +676,7 @@ const content = {
       privacy: '개인정보처리방침',
       terms: '이용약관',
       about: '소개',
+      contact: '문의하기',
       compare: '비교',
       compareLinks: ['Testably vs TestRail', 'Testably vs Zephyr', 'Testably vs Qase'],
       copyright: `© ${new Date().getFullYear()} Testably. All rights reserved.`,
@@ -837,31 +895,31 @@ export default function HomePage() {
                 {/* Badge */}
                 <div className="inline-flex items-center gap-2 bg-white/[0.06] border border-white/[0.08] rounded-full px-4 py-1.5 mb-8 backdrop-blur-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
-                  <span className="text-indigo-300/90 text-sm font-medium">Built for QA teams who ship fast</span>
+                  <span className="text-indigo-300/90 text-sm font-medium">{t.hero.badge}</span>
                 </div>
 
                 {/* Heading */}
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.08] tracking-tight mb-6">
-                  Test management
+                  {t.hero.title1}
                   <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-indigo-500">
-                    that just works.
+                    {t.hero.title2}
                   </span>
                 </h1>
 
                 {/* Subheading */}
                 <p className="text-lg md:text-xl text-white/50 leading-relaxed max-w-xl mb-10 mx-auto lg:mx-0">
-                  From test cases to runs, milestones to sessions — organize your entire QA workflow in one place. Free to start, ready in minutes.
+                  {t.hero.description}
                 </p>
 
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row items-center lg:items-start gap-4 mb-8">
                   <button
                     onClick={() => navigate('/auth')}
-                    className="group flex items-center gap-3 px-8 py-4 bg-indigo-500 text-white rounded-full font-bold text-base hover:bg-indigo-400 active:scale-[0.98] shadow-[0_0_30px_rgba(20,184,166,0.2)] hover:shadow-[0_0_40px_rgba(20,184,166,0.35)] cursor-pointer"
+                    className="group flex items-center gap-3 px-8 py-4 bg-indigo-500 text-white rounded-full font-bold text-base hover:bg-indigo-400 active:scale-[0.98] shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_40px_rgba(99,102,241,0.45)] cursor-pointer"
                     style={{ transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
                   >
-                    Get Started Free
+                    {t.hero.cta}
                     <span className="flex items-center justify-center w-7 h-7 rounded-full bg-white/20 group-hover:translate-x-0.5 transition-transform duration-300">
                       <i className="ri-arrow-right-line text-sm"></i>
                     </span>
@@ -872,14 +930,24 @@ export default function HomePage() {
                     style={{ transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
                   >
                     <i className="ri-play-circle-line text-lg text-indigo-400"></i>
-                    Watch Demo
+                    {t.hero.demo}
                   </button>
                 </div>
 
                 {/* Trust line */}
-                <p className="text-white/30 text-sm">
-                  No credit card required &nbsp;&middot;&nbsp; Free plan available &nbsp;&middot;&nbsp; Set up in under 5 minutes
-                </p>
+                <p className="text-white/30 text-sm mb-6">{t.hero.sub}</p>
+
+                {/* Social proof */}
+                <div className="flex items-center gap-3">
+                  <div className="flex">
+                    {['#6366F1','#8B5CF6','#EC4899','#F59E0B','#10B981'].map((bg, i) => (
+                      <div key={i} className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-white text-[9px] font-bold" style={{ background: bg, borderColor: '#0F172A', marginLeft: i === 0 ? 0 : '-8px' }}>
+                        {['SJ','KM','LW','AP','TR'][i]}
+                      </div>
+                    ))}
+                  </div>
+                  <span className="text-sm text-white/40">Trusted by <strong className="text-white/60">50+ teams</strong> worldwide</span>
+                </div>
               </div>
 
               {/* RIGHT: Product Screenshot (5 columns) */}
@@ -1115,7 +1183,7 @@ export default function HomePage() {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-indigo-500/30 transition-all">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-12 h-12 flex items-center justify-center bg-indigo-500/20 rounded-xl">
-                    <i className="ri-links-line text-indigo-400 text-2xl"></i>
+                    <i className="ri-bug-line text-indigo-400 text-2xl"></i>
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-white">{t.integrationSection.jiraTitle}</h3>
@@ -1134,7 +1202,7 @@ export default function HomePage() {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-indigo-500/30 transition-all">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-12 h-12 flex items-center justify-center bg-violet-500/20 rounded-xl">
-                    <i className="ri-terminal-box-line text-violet-400 text-2xl"></i>
+                    <i className="ri-git-branch-line text-violet-400 text-2xl"></i>
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-white">{t.integrationSection.ciTitle}</h3>
@@ -1172,6 +1240,45 @@ export default function HomePage() {
                   </div>
                   <h3 className="text-lg font-bold text-white mb-3">{card.title}</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">{card.content}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="py-24 bg-gray-900/50 relative overflow-hidden">
+          <div className="absolute top-1/3 -left-16 w-[400px] h-[400px] rounded-full bg-indigo-500/5 blur-[100px] pointer-events-none"></div>
+          <div className="max-w-6xl mx-auto px-6 relative z-10">
+            <div className="text-center mb-14">
+              <div className="inline-flex items-center gap-2 mb-4">
+                <i className="ri-chat-quote-line text-indigo-400 text-sm"></i>
+                <span className="text-indigo-400 text-xs font-semibold uppercase tracking-widest">{t.testimonialsSection.badge}</span>
+              </div>
+              <h2 className="text-4xl font-bold text-white">
+                {t.testimonialsSection.title1}<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400">{t.testimonialsSection.title2}</span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {t.testimonials.map((testi) => (
+                <article key={testi.name} className="bg-white/3 rounded-2xl p-7 border border-white/6 hover:border-indigo-500/25 transition-all">
+                  <div className="flex gap-0.5 mb-5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <i key={i} className="ri-star-fill text-amber-400 text-sm"></i>
+                    ))}
+                  </div>
+                  <p className="text-gray-300 text-sm leading-relaxed mb-6">"{testi.quote}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: testi.color }}>
+                      {testi.initials}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">{testi.name}</div>
+                      <div className="text-xs text-gray-500">{testi.role}</div>
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
@@ -1332,7 +1439,13 @@ export default function HomePage() {
               <i className="ri-rocket-line text-indigo-300 text-sm"></i>
               <span className="text-indigo-200 text-sm font-medium">Testably</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">{t.cta.title}</h2>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+              {lang === 'en' ? (
+                <>Ready to level up your<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400">QA workflow</span>?</>
+              ) : (
+                <><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400">QA 워크플로우</span>를<br />한 단계 업그레이드할 준비가 되셨나요?</>
+              )}
+            </h2>
             <p className="text-white/55 text-lg mb-10">{t.cta.description}</p>
             <button
               onClick={() => navigate('/auth')}
@@ -1419,6 +1532,9 @@ export default function HomePage() {
                 <ul className="space-y-2.5">
                   <li>
                     <Link to="/about" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.about}</Link>
+                  </li>
+                  <li>
+                    <a href="mailto:hello@testably.app" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.contact}</a>
                   </li>
                   <li>
                     <button onClick={() => navigate('/privacy')} className="text-gray-500 text-sm hover:text-gray-300 transition-colors cursor-pointer">{t.footer.privacy}</button>
