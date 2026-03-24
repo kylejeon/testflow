@@ -10,23 +10,23 @@ export async function getPaddle(): Promise<Paddle | null> {
   return paddleInstance;
 }
 
-// Maps plan name + billing period → Paddle Price ID env var
-export const PADDLE_PRICE_IDS: Record<string, Record<'monthly' | 'annual', string | undefined>> = {
+// Maps plan name + billing period → Paddle Price ID
+export const PADDLE_PRICE_IDS: Record<string, Record<'monthly' | 'annual', string>> = {
   Starter: {
-    monthly: import.meta.env.VITE_PADDLE_PRICE_STARTER_MONTHLY,
-    annual: import.meta.env.VITE_PADDLE_PRICE_STARTER_ANNUAL,
+    monthly: 'pri_01kmfhvvyvrqzjhbzzmdy27szb',
+    annual: 'pri_01kmfhx9p3qb6m4v3m1zqde7td',
   },
   Professional: {
-    monthly: import.meta.env.VITE_PADDLE_PRICE_PROFESSIONAL_MONTHLY,
-    annual: import.meta.env.VITE_PADDLE_PRICE_PROFESSIONAL_ANNUAL,
+    monthly: 'pri_01kmfhrfcww99zkqdmwktgqf3y',
+    annual: 'pri_01kmfht5fwdmamdh375zwwtcca',
   },
   'Enterprise S': {
-    monthly: import.meta.env.VITE_PADDLE_PRICE_ENTERPRISE_S_MONTHLY,
-    annual: import.meta.env.VITE_PADDLE_PRICE_ENTERPRISE_S_ANNUAL,
+    monthly: 'pri_01kmfhpz212sdy3tvk7syebkr5',
+    annual: 'pri_01kmfhnynq27f86xsr42hhqmxh',
   },
   'Enterprise M': {
-    monthly: import.meta.env.VITE_PADDLE_PRICE_ENTERPRISE_M_MONTHLY,
-    annual: import.meta.env.VITE_PADDLE_PRICE_ENTERPRISE_M_ANNUAL,
+    monthly: 'pri_01kmfgx4n2vvcmbckw9d725hp8',
+    annual: 'pri_01kmfhmgzsje7wdw8thnddzc9k',
   },
 };
 
