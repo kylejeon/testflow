@@ -64,7 +64,7 @@ export function useActiveRuns() {
       const [{ data: runsData }, { data: projectsData }] = await Promise.all([
         supabase
           .from('test_runs')
-          .select('id, project_id, name, status, progress, test_case_ids, assignees, assigned_to, created_at, executed_at')
+          .select('id, project_id, name, status, progress, test_case_ids, assignees, created_at, executed_at')
           .in('project_id', projectIds)
           .in('status', ACTIVE_STATUSES)
           .order('created_at', { ascending: false }),
@@ -102,11 +102,10 @@ export function useActiveRuns() {
         }
       });
 
-      // Collect all unique assignee IDs (from assignees array + assigned_to field)
-      const assigneeIds = [...new Set([
-        ...runs.flatMap(r => (r.assignees as string[] | null) ?? []),
-        ...runs.map(r => r.assigned_to as string | null).filter(Boolean) as string[],
-      ].filter(id => id?.length > 0))];
+      // Collect all unique assignee IDs from assignees array
+      const assigneeIds = [...new Set(
+        runs.flatMap(r => (r.assignees as string[] | null) ?? []).filter(id => id?.length > 0)
+      )];
       const profileMap: Record<string, { full_name: string | null; email: string }> = {};
       if (assigneeIds.length > 0) {
         const { data: profiles } = await supabase
@@ -135,8 +134,8 @@ export function useActiveRuns() {
         const total = passed + failed + blocked + retest + untested;
         const progressPct = total > 0 ? Math.round(((passed + failed + blocked + retest) / total) * 100) : (r.progress ?? 0);
 
-        // Resolve assignee: assignees[] → assigned_to → test result author → Unassigned
-        const assigneeId = ((r.assignees as string[] | null) ?? [])[0] ?? (r.assigned_to as string | null) ?? null;
+        // Resolve assignee: assignees[] → test result author → Unassigned
+        const assigneeId = ((r.assignees as string[] | null) ?? [])[0] ?? null;
         const profile = assigneeId ? profileMap[assigneeId] : null;
         const displayName = profile?.full_name || profile?.email || (assigneeId && !assigneeId.includes('-') ? assigneeId : null) || counts?.firstAuthor || 'Unassigned';
 
