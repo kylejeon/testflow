@@ -19,6 +19,7 @@ export interface TCOverviewRecent {
   priority: 'critical' | 'high' | 'medium' | 'low';
   projectName: string;
   createdAt: string;
+  tcDisplayId: number;
 }
 
 export interface TCOverviewData {
@@ -122,13 +123,14 @@ export function useTestCasesOverview() {
         return { label: `W${i + 1}`, total };
       });
 
-      // Recent additions (top 6)
-      const recent: TCOverviewRecent[] = tcs.slice(0, 6).map(tc => ({
+      // Recent additions (top 8)
+      const recent: TCOverviewRecent[] = tcs.slice(0, 8).map((tc, i) => ({
         id: tc.id,
         title: tc.title,
         priority: (tc.priority as 'critical' | 'high' | 'medium' | 'low') ?? 'medium',
         projectName: projectNameMap[tc.project_id] ?? 'Unknown',
         createdAt: tc.created_at,
+        tcDisplayId: totalCount - i,
       }));
 
       setData({ totalCount, deltaThisWeek, byPriority, byStatus, projects, weeklyGrowth, recent });
@@ -150,4 +152,31 @@ function empty(): TCOverviewData {
     byStatus: { active: 0, draft: 0, deprecated: 0 },
     projects: [], weeklyGrowth: [], recent: [],
   };
+}
+
+export async function exportTestCasesCSV(projectIds: string[], projectNameMap: Record<string, string>) {
+  const { data: tcs } = await supabase
+    .from('test_cases')
+    .select('id, project_id, title, priority, status, created_at')
+    .in('project_id', projectIds)
+    .order('created_at', { ascending: false });
+
+  const rows = (tcs ?? []).map((tc, i) => [
+    `TC-${(tcs!.length - i).toString().padStart(3, '0')}`,
+    `"${(tc.title ?? '').replace(/"/g, '""')}"`,
+    projectNameMap[tc.project_id] ?? 'Unknown',
+    tc.priority ?? '',
+    tc.status ?? '',
+    tc.created_at ?? '',
+  ]);
+
+  const header = ['ID', 'Title', 'Project', 'Priority', 'Status', 'Created At'];
+  const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `testcases-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
