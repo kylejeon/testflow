@@ -33,6 +33,10 @@ const PrivacyPage = lazy(() => import('../pages/privacy/page'));
 const TermsPage = lazy(() => import('../pages/terms/page'));
 const AdminPage = lazy(() => import('../pages/admin/page'));
 const ProjectIntegrations = lazy(() => import('../pages/project-integrations/page'));
+const TestCasesOverviewPage = lazy(() => import('../pages/stats/TestCasesOverviewPage'));
+const ActiveRunsPage = lazy(() => import('../pages/stats/ActiveRunsPage'));
+const PassRateReportPage = lazy(() => import('../pages/stats/PassRateReportPage'));
+const TeamActivityPage = lazy(() => import('../pages/stats/TeamActivityPage'));
 const FeaturesPage = lazy(() => import('../pages/features/page'));
 const PricingPage = lazy(() => import('../pages/pricing/page'));
 const ChangelogPage = lazy(() => import('../pages/changelog/page'));
@@ -106,6 +110,22 @@ const routes: RouteObject[] = [
   {
     path: '/testcases',
     element: <TestCases />,
+  },
+  {
+    path: '/testcases-overview',
+    element: <TestCasesOverviewPage />,
+  },
+  {
+    path: '/active-runs',
+    element: <ActiveRunsPage />,
+  },
+  {
+    path: '/passrate-report',
+    element: <PassRateReportPage />,
+  },
+  {
+    path: '/team-activity',
+    element: <TeamActivityPage />,
   },
   {
     path: '/settings',

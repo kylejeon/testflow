@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AvatarStack, type AvatarStackMember } from '../../../components/Avatar';
 
 // ── CountUp hook ──────────────────────────────────────────────────────────────
@@ -219,6 +220,7 @@ export interface StatCardsData {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function StatCards({ data }: { data: StatCardsData }) {
+  const navigate = useNavigate();
   const tcVal = useCountUp(data.totalTestCases);
   const runsVal = useCountUp(data.activeRuns);
   const prVal = useCountUp(data.passRate ?? 0, 1);
@@ -249,7 +251,7 @@ export default function StatCards({ data }: { data: StatCardsData }) {
     className="stat-cards-grid"
     >
       {/* ── Card 1: Total Test Cases ── */}
-      <StatCard accent="#6366F1" delay={0}>
+      <StatCard accent="#6366F1" delay={0} onClick={() => navigate('/testcases-overview')}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div style={{ ...iconStyle.indigo, width: '2rem', height: '2rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <i className="ri-file-list-3-line" style={{ fontSize: '1rem' }} />
@@ -274,7 +276,7 @@ export default function StatCards({ data }: { data: StatCardsData }) {
       </StatCard>
 
       {/* ── Card 2: Active Runs ── */}
-      <StatCard accent="#10B981" delay={50}>
+      <StatCard accent="#10B981" delay={50} onClick={() => navigate('/active-runs')}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div style={{ ...iconStyle.emerald, width: '2rem', height: '2rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <i className="ri-play-circle-line" style={{ fontSize: '1rem' }} />
@@ -302,7 +304,7 @@ export default function StatCards({ data }: { data: StatCardsData }) {
       </StatCard>
 
       {/* ── Card 3: Pass Rate 7d ── */}
-      <StatCard accent={prCardAccent} delay={100}>
+      <StatCard accent={prCardAccent} delay={100} onClick={() => navigate('/passrate-report')}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div style={{ ...(pr >= 90 ? iconStyle.green : pr >= 70 ? iconStyle.amber : iconStyle.red), width: '2rem', height: '2rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <i className="ri-checkbox-circle-line" style={{ fontSize: '1rem' }} />
@@ -346,7 +348,7 @@ export default function StatCards({ data }: { data: StatCardsData }) {
       </StatCard>
 
       {/* ── Card 4: Team Activity ── */}
-      <StatCard accent="#8B5CF6" delay={150}>
+      <StatCard accent="#8B5CF6" delay={150} onClick={() => navigate('/team-activity')}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div style={{ ...iconStyle.violet, width: '2rem', height: '2rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <i className="ri-team-line" style={{ fontSize: '1rem' }} />
