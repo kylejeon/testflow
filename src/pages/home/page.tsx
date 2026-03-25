@@ -320,13 +320,12 @@ const content = {
       tagline: 'All-in-one test management platform. Build better software, ship with confidence.',
       product: 'Product',
       productLinks: ['Features', 'Pricing', 'Changelog', 'Roadmap'],
-      company: 'Company',
+      compare: 'Compare',
+      compareLinks: ['vs TestRail', 'vs Qase', 'vs Zephyr'],
+      resources: 'Resources',
+      legal: 'Legal',
       privacy: 'Privacy Policy',
       terms: 'Terms of Service',
-      about: 'About',
-      contact: 'Contact',
-      compare: 'Compare',
-      compareLinks: ['Testably vs TestRail', 'Testably vs Zephyr', 'Testably vs Qase'],
       copyright: `© ${new Date().getFullYear()} Testably. All rights reserved.`,
     },
     scrollIndicator: 'Scroll',
@@ -645,13 +644,12 @@ const content = {
       tagline: '올인원 테스트 관리 플랫폼. 더 나은 소프트웨어를 만들고 자신 있게 배포하세요.',
       product: '제품',
       productLinks: ['기능 소개', '요금제', '업데이트 노트', '로드맵'],
-      company: '회사',
+      compare: '비교',
+      compareLinks: ['vs TestRail', 'vs Qase', 'vs Zephyr'],
+      resources: '리소스',
+      legal: '법적 정보',
       privacy: '개인정보처리방침',
       terms: '이용약관',
-      about: '소개',
-      contact: '문의하기',
-      compare: '비교',
-      compareLinks: ['Testably vs TestRail', 'Testably vs Zephyr', 'Testably vs Qase'],
       copyright: `© ${new Date().getFullYear()} Testably. All rights reserved.`,
     },
     scrollIndicator: '스크롤',
@@ -1601,37 +1599,33 @@ export default function HomePage() {
                 </ul>
               </nav>
               <nav>
-                <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Resources</h4>
-                <ul className="space-y-2.5">
-                  <li><Link to="/docs" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">Documentation</Link></li>
-                  <li><Link to="/docs/api" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">API Reference</Link></li>
-                </ul>
-              </nav>
-              <nav>
-                <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">{t.footer.company}</h4>
-                <ul className="space-y-2.5">
-                  <li>
-                    <Link to="/about" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.about}</Link>
-                  </li>
-                  <li>
-                    <Link to="/contact" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.contact}</Link>
-                  </li>
-                  <li>
-                    <button onClick={() => navigate('/privacy')} className="text-gray-500 text-sm hover:text-gray-300 transition-colors cursor-pointer">{t.footer.privacy}</button>
-                  </li>
-                  <li>
-                    <button onClick={() => navigate('/terms')} className="text-gray-500 text-sm hover:text-gray-300 transition-colors cursor-pointer">{t.footer.terms}</button>
-                  </li>
-                </ul>
-              </nav>
-              <nav>
                 <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">{t.footer.compare}</h4>
                 <ul className="space-y-2.5">
                   {t.footer.compareLinks.map((item, i) => (
                     <li key={item}>
-                      <Link to={['/compare/testrail', '/compare/zephyr', '/compare/qase'][i]} className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{item}</Link>
+                      <Link to={['/compare/testrail', '/compare/qase', '/compare/zephyr'][i]} className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{item}</Link>
                     </li>
                   ))}
+                </ul>
+              </nav>
+              <nav>
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">{t.footer.resources}</h4>
+                <ul className="space-y-2.5">
+                  <li><Link to="/docs" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">Documentation</Link></li>
+                  <li><Link to="/docs/api" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">API Reference</Link></li>
+                  <li><Link to="/contact" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">Contact</Link></li>
+                  <li><Link to="/about" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">About</Link></li>
+                </ul>
+              </nav>
+              <nav>
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">{t.footer.legal}</h4>
+                <ul className="space-y-2.5">
+                  <li>
+                    <Link to="/privacy" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.privacy}</Link>
+                  </li>
+                  <li>
+                    <Link to="/terms" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.terms}</Link>
+                  </li>
                 </ul>
               </nav>
             </div>
