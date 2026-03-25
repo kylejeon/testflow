@@ -237,28 +237,6 @@ export default function FeaturesPage() {
           </div>
         </section>
 
-        {/* Bottom CTA */}
-        <section className="py-20 bg-indigo-500 text-center">
-          <div className="max-w-2xl mx-auto px-6">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to get started?</h2>
-            <p className="text-indigo-100 mb-8">Free plan available. No credit card required. Set up in under 5 minutes.</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                onClick={() => navigate('/auth')}
-                className="px-8 py-3.5 bg-white text-indigo-600 rounded-xl font-bold hover:bg-gray-50 transition-all cursor-pointer"
-              >
-                Start for Free
-              </button>
-              <button
-                onClick={() => navigate('/pricing')}
-                className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all cursor-pointer"
-              >
-                View Pricing
-              </button>
-            </div>
-          </div>
-        </section>
-
     </MarketingLayout>
   );
 }

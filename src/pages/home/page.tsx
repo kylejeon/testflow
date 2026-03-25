@@ -1603,8 +1603,8 @@ export default function HomePage() {
               <nav>
                 <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Resources</h4>
                 <ul className="space-y-2.5">
-                  <li><a href="#" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">Documentation</a></li>
-                  <li><a href="#" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">API Reference</a></li>
+                  <li><Link to="/docs" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">Documentation</Link></li>
+                  <li><Link to="/docs/api" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">API Reference</Link></li>
                 </ul>
               </nav>
               <nav>
@@ -1614,7 +1614,7 @@ export default function HomePage() {
                     <Link to="/about" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.about}</Link>
                   </li>
                   <li>
-                    <a href="mailto:hello@testably.app" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.contact}</a>
+                    <Link to="/contact" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.contact}</Link>
                   </li>
                   <li>
                     <button onClick={() => navigate('/privacy')} className="text-gray-500 text-sm hover:text-gray-300 transition-colors cursor-pointer">{t.footer.privacy}</button>
