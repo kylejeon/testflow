@@ -785,6 +785,8 @@ export default function ProjectRunsPage() {
         ? testCases.map(tc => tc.id)
         : selectedTestCases;
 
+      const { data: { user } } = await supabase.auth.getUser();
+
       if (editingRunId) {
         const prevRun = testRuns.find(r => r.id === editingRunId);
         const { error } = await supabase
@@ -803,7 +805,6 @@ export default function ProjectRunsPage() {
 
         // Notify when run is completed
         if (formData.status === 'completed' && prevRun?.status !== 'completed') {
-          const { data: { user } } = await supabase.auth.getUser();
           await notifyProjectMembers({
             projectId: id!,
             excludeUserId: user?.id,
@@ -836,7 +837,7 @@ export default function ProjectRunsPage() {
           retest: 0,
           untested: testCaseIds.length,
           tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
-          assignees: [],
+          assignees: user?.id ? [user.id] : [],
           test_case_ids: testCaseIds,
           executed_at: new Date().toISOString(),
           is_automated: formData.is_ci_cd_run,
@@ -850,7 +851,6 @@ export default function ProjectRunsPage() {
         if (error) throw error;
 
         // Notify all project members when a new run is created
-        const { data: { user } } = await supabase.auth.getUser();
         await notifyProjectMembers({
           projectId: id!,
           excludeUserId: user?.id,

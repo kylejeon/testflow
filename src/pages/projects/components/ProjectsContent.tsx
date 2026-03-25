@@ -166,7 +166,7 @@ export default function ProjectsContent() {
         .from('test_runs')
         .select('id')
         .in('project_id', projectIds)
-        .eq('status', 'active');
+        .in('status', ['new', 'in_progress', 'paused', 'under_review']);
       setActiveRunCount(activeRunsData?.length ?? 0);
 
       // Test cases created in the last 7 days

@@ -64,7 +64,7 @@ export function useActiveRuns() {
       const [{ data: runsData }, { data: projectsData }] = await Promise.all([
         supabase
           .from('test_runs')
-          .select('id, project_id, name, status, progress, passed, failed, blocked, retest, untested, test_case_ids, assignees, created_at, executed_at')
+          .select('id, project_id, name, status, progress, test_case_ids, assignees, assigned_to, created_at, executed_at')
           .in('project_id', projectIds)
           .in('status', ACTIVE_STATUSES)
           .order('created_at', { ascending: false }),
@@ -75,8 +75,38 @@ export function useActiveRuns() {
       const projectNameMap: Record<string, string> = {};
       (projectsData ?? []).forEach(p => { projectNameMap[p.id] = p.name; });
 
-      // Collect all unique assignee IDs
-      const assigneeIds = [...new Set(runs.flatMap(r => (r.assignees as string[] | null) ?? []).filter(id => id?.length > 0))];
+      // Fetch real test result counts (newest first so statusMap keeps latest per TC)
+      const runIds = runs.map(r => r.id);
+      const { data: resultsData } = runIds.length > 0
+        ? await supabase
+            .from('test_results')
+            .select('run_id, test_case_id, status, author')
+            .in('run_id', runIds)
+            .order('created_at', { ascending: false })
+        : { data: [] };
+
+      // Group results by run_id, keeping latest status per test_case_id
+      type ResultCounts = { passed: number; failed: number; blocked: number; retest: number; untested: number; firstAuthor: string | null };
+      const countsByRun: Record<string, ResultCounts> = {};
+      const seenTcByRun: Record<string, Set<string>> = {};
+      (resultsData ?? []).forEach(r => {
+        if (!countsByRun[r.run_id]) {
+          countsByRun[r.run_id] = { passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, firstAuthor: null };
+          seenTcByRun[r.run_id] = new Set();
+        }
+        if (!seenTcByRun[r.run_id].has(r.test_case_id)) {
+          seenTcByRun[r.run_id].add(r.test_case_id);
+          const s = r.status as keyof Omit<ResultCounts, 'firstAuthor'>;
+          if (s in countsByRun[r.run_id]) countsByRun[r.run_id][s]++;
+          if (!countsByRun[r.run_id].firstAuthor && r.author) countsByRun[r.run_id].firstAuthor = r.author;
+        }
+      });
+
+      // Collect all unique assignee IDs (from assignees array + assigned_to field)
+      const assigneeIds = [...new Set([
+        ...runs.flatMap(r => (r.assignees as string[] | null) ?? []),
+        ...runs.map(r => r.assigned_to as string | null).filter(Boolean) as string[],
+      ].filter(id => id?.length > 0))];
       const profileMap: Record<string, { full_name: string | null; email: string }> = {};
       if (assigneeIds.length > 0) {
         const { data: profiles } = await supabase
@@ -92,27 +122,37 @@ export function useActiveRuns() {
 
       const runItems: ActiveRunItem[] = runs.map((r, idx) => {
         const tcIds = (r.test_case_ids as string[] | null) ?? [];
-        const tcCount = tcIds.length || ((r.passed ?? 0) + (r.failed ?? 0) + (r.blocked ?? 0) + (r.retest ?? 0) + (r.untested ?? 0));
-        const assigneeId = ((r.assignees as string[] | null) ?? [])[0] ?? null;
+        const counts = countsByRun[r.id];
+
+        // Compute accurate counts from test_results; untested = TCs with no result
+        const testedTcIds = seenTcByRun[r.id] ?? new Set<string>();
+        const passed  = counts?.passed  ?? 0;
+        const failed  = counts?.failed  ?? 0;
+        const blocked = counts?.blocked ?? 0;
+        const retest  = counts?.retest  ?? 0;
+        const untested = tcIds.length > 0 ? tcIds.filter(id => !testedTcIds.has(id)).length : (counts?.untested ?? 0);
+        const tcCount = tcIds.length || (passed + failed + blocked + retest + untested);
+        const total = passed + failed + blocked + retest + untested;
+        const progressPct = total > 0 ? Math.round(((passed + failed + blocked + retest) / total) * 100) : (r.progress ?? 0);
+
+        // Resolve assignee: assignees[] → assigned_to → test result author → Unassigned
+        const assigneeId = ((r.assignees as string[] | null) ?? [])[0] ?? (r.assigned_to as string | null) ?? null;
         const profile = assigneeId ? profileMap[assigneeId] : null;
-        const displayName = profile?.full_name || profile?.email || (assigneeId ?? 'Unassigned');
-        const total = (r.passed ?? 0) + (r.failed ?? 0) + (r.blocked ?? 0) + (r.retest ?? 0) + (r.untested ?? 0);
-        const passed = r.passed ?? 0;
-        const progressPct = total > 0 ? Math.round(((total - (r.untested ?? 0)) / total) * 100) : (r.progress ?? 0);
+        const displayName = profile?.full_name || profile?.email || (assigneeId && !assigneeId.includes('-') ? assigneeId : null) || counts?.firstAuthor || 'Unassigned';
 
         return {
           id: r.id,
           name: r.name,
           status: r.status as RunStatus,
           projectName: projectNameMap[r.project_id] ?? 'Unknown',
-          tcCount: tcCount || total,
+          tcCount,
           createdAt: r.created_at,
           executedAt: r.executed_at,
           progressPct,
           passed,
-          failed: r.failed ?? 0,
-          blocked: r.blocked ?? 0,
-          untested: r.untested ?? 0,
+          failed,
+          blocked,
+          untested,
           assigneeName: displayName,
           assigneeInitials: getInitials(displayName),
           assigneeColor: AVATAR_COLORS[idx % AVATAR_COLORS.length],
