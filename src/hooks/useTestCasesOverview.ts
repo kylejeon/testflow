@@ -25,7 +25,7 @@ export interface TCOverviewData {
   totalCount: number;
   deltaThisWeek: number;
   byPriority: { critical: number; high: number; medium: number; low: number };
-  byStatus: { pending: number; passed: number; failed: number };
+  byStatus: { active: number; draft: number; deprecated: number };
   projects: TCOverviewProject[];
   weeklyGrowth: { label: string; total: number }[];
   recent: TCOverviewRecent[];
@@ -79,7 +79,7 @@ export function useTestCasesOverview() {
       const deltaThisWeek = tcs.filter(tc => tc.created_at >= sevenDaysAgo).length;
 
       const byPriority = { critical: 0, high: 0, medium: 0, low: 0 };
-      const byStatus = { pending: 0, passed: 0, failed: 0 };
+      const byStatus = { active: 0, draft: 0, deprecated: 0 };
       const perProject: Record<string, { count: number; delta: number }> = {};
 
       tcs.forEach(tc => {
@@ -114,10 +114,10 @@ export function useTestCasesOverview() {
           passRate: passRateByProject[pid] ?? null,
         }));
 
-      // Weekly cumulative growth (last 8 weeks)
+      // Weekly cumulative growth (last 10 weeks)
       const now = Date.now();
-      const weeklyGrowth = Array.from({ length: 8 }, (_, i) => {
-        const weekEnd = new Date(now - (7 - i) * 7 * 24 * 60 * 60 * 1000).toISOString();
+      const weeklyGrowth = Array.from({ length: 10 }, (_, i) => {
+        const weekEnd = new Date(now - (9 - i) * 7 * 24 * 60 * 60 * 1000).toISOString();
         const total = tcs.filter(tc => tc.created_at <= weekEnd).length;
         return { label: `W${i + 1}`, total };
       });
@@ -147,7 +147,7 @@ function empty(): TCOverviewData {
   return {
     totalCount: 0, deltaThisWeek: 0,
     byPriority: { critical: 0, high: 0, medium: 0, low: 0 },
-    byStatus: { pending: 0, passed: 0, failed: 0 },
+    byStatus: { active: 0, draft: 0, deprecated: 0 },
     projects: [], weeklyGrowth: [], recent: [],
   };
 }

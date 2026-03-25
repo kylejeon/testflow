@@ -10,11 +10,21 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
   const pts = data.map((v, i) => {
     const x = PAD + (i / (data.length - 1)) * (W - PAD * 2);
     const y = PAD + (1 - (v - min) / range) * (H - PAD * 2);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
+    return { x: parseFloat(x.toFixed(1)), y: parseFloat(y.toFixed(1)) };
   });
+  const linePts = pts.map(p => `${p.x},${p.y}`).join(' L');
+  const areaPath = `M${pts[0].x},${pts[0].y} L${pts.map(p => `${p.x},${p.y}`).join(' L')} L${pts[pts.length - 1].x},${H} L${pts[0].x},${H}Z`;
+  const gradId = `sg-${color.replace('#', '')}`;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ display: 'block' }}>
-      <path d={`M${pts.join(' L')}`} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+      <defs>
+        <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#${gradId})`} />
+      <path d={`M${linePts}`} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -34,13 +44,29 @@ function timeAgo(dateStr: string): string {
 export default function TestCasesOverviewPage() {
   const { data, loading, error } = useTestCasesOverview();
 
-  const barMax = data?.weeklyGrowth.length
-    ? Math.max(...data.weeklyGrowth.map(w => w.total), 1)
-    : 1;
-  const barMin = data?.weeklyGrowth.length
-    ? Math.min(...data.weeklyGrowth.map(w => w.total), 0)
-    : 0;
   const chartH = 140;
+  const weeks = data?.weeklyGrowth ?? [];
+  const barMax = weeks.length ? Math.max(...weeks.map(w => w.total), 1) : 1;
+  const barMin = weeks.length ? Math.min(...weeks.map(w => w.total), 0) : 0;
+  const barRange = barMax - barMin || 1;
+
+  // Compute bar positions for chart (shared between bars and trend line)
+  const bw = 42;
+  const n = weeks.length;
+  const chartWidth = 700;
+  const leftPad = 50;
+  const rightPad = 20;
+  const usable = chartWidth - leftPad - rightPad;
+  const gap = n > 1 ? (usable - n * bw) / (n - 1) : 0;
+  const barCenters = weeks.map((_, i) => leftPad + i * (bw + gap) + bw / 2);
+
+  // Trend line: smooth cumulative-ish values slightly above bars
+  const trendPts = weeks.map((w, i) => {
+    const x = barCenters[i];
+    const h = barRange > 0 ? ((w.total - barMin) / barRange) * chartH : 0;
+    const y = 148 - h - 12; // slightly above bar top
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: '#F8FAFC', color: '#1E293B', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -51,6 +77,7 @@ export default function TestCasesOverviewPage() {
         .tco-row:hover td { background: #FAFAFF !important; }
         .tco-ri:hover { background: #FAFAFF !important; }
         .tco-bar:hover { opacity: 0.8; }
+        .tco-dot-btn:hover { background: #8B5CF6 !important; }
       `}</style>
 
       {/* Header */}
@@ -67,7 +94,15 @@ export default function TestCasesOverviewPage() {
             <i className="ri-settings-3-line" style={{ fontSize: '1rem' }} /> Settings
           </Link>
         </nav>
-        <div style={{ marginLeft: 'auto' }} />
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+          <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <i className="ri-command-line" /> ⌘K
+          </button>
+          <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            <i className="ri-notification-3-line" />
+          </button>
+          <div style={{ width: '1.75rem', height: '1.75rem', borderRadius: '50%', background: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700, color: '#fff', cursor: 'pointer' }}>KJ</div>
+        </div>
       </header>
 
       {/* Sub-header */}
@@ -78,6 +113,9 @@ export default function TestCasesOverviewPage() {
           <span style={{ color: '#0F172A', fontWeight: 700 }}>Test Cases Overview</span>
         </div>
         <div style={{ flex: 1 }} />
+        <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', fontFamily: 'inherit', fontWeight: 500 }}>
+          <i className="ri-download-2-line" /> Export CSV
+        </button>
         <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', border: '1px solid #6366F1', background: '#6366F1', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', fontFamily: 'inherit', fontWeight: 500 }}>
           <i className="ri-add-line" /> New Test Case
         </button>
@@ -111,13 +149,13 @@ export default function TestCasesOverviewPage() {
             </div>
           ) : (
             <>
-              {/* Summary Cards */}
+              {/* Summary Cards — Lifecycle Status */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 {[
                   { label: 'Total Test Cases', value: (data?.totalCount ?? 0).toLocaleString(), sub: `+${data?.deltaThisWeek ?? 0} this week`, valueColor: '#0F172A', badge: data?.deltaThisWeek ? { text: `+${data.deltaThisWeek}`, color: '#16A34A', bg: '#F0FDF4' } : undefined },
-                  { label: 'Not Run',  value: (data?.byStatus.pending ?? 0).toLocaleString(), sub: `${data?.totalCount ? Math.round(((data.byStatus.pending) / data.totalCount) * 100) : 0}% of total`, valueColor: '#6366F1' },
-                  { label: 'Passed',   value: (data?.byStatus.passed  ?? 0).toLocaleString(), sub: `${data?.totalCount ? Math.round(((data.byStatus.passed) / data.totalCount) * 100) : 0}% of total`, valueColor: '#16A34A' },
-                  { label: 'Failed',   value: (data?.byStatus.failed  ?? 0).toLocaleString(), sub: `${data?.totalCount ? Math.round(((data.byStatus.failed) / data.totalCount) * 100) : 0}% of total`, valueColor: '#EF4444' },
+                  { label: 'Active',      value: (data?.byStatus.active     ?? 0).toLocaleString(), sub: `${data?.totalCount ? Math.round(((data.byStatus.active) / data.totalCount) * 100) : 0}% of total`,      valueColor: '#16A34A' },
+                  { label: 'Draft',       value: (data?.byStatus.draft      ?? 0).toLocaleString(), sub: `${data?.totalCount ? Math.round(((data.byStatus.draft) / data.totalCount) * 100) : 0}% of total`,       valueColor: '#F59E0B' },
+                  { label: 'Deprecated',  value: (data?.byStatus.deprecated ?? 0).toLocaleString(), sub: `${data?.totalCount ? Math.round(((data.byStatus.deprecated) / data.totalCount) * 100) : 0}% of total`,  valueColor: '#94A3B8' },
                 ].map((card, i) => (
                   <div key={i} className="tco-anim" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', padding: '1rem 1.25rem', animationDelay: `${i * 0.05}s` }}>
                     <div style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: '0.375rem' }}>{card.label}</div>
@@ -154,21 +192,21 @@ export default function TestCasesOverviewPage() {
                   })}
                 </div>
 
-                {/* By Status */}
+                {/* By Status — Active / Draft / Deprecated */}
                 <div className="tco-anim" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', padding: '1.25rem', animationDelay: '0.2s' }}>
                   <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <i className="ri-bar-chart-horizontal-line" style={{ color: '#6366F1' }} /> By Status
+                    <i className="ri-pulse-line" style={{ color: '#6366F1' }} /> By Status
                   </div>
                   {[
-                    { key: 'pending', label: 'Not Run',  color: '#6366F1' },
-                    { key: 'passed',  label: 'Passed',   color: '#16A34A' },
-                    { key: 'failed',  label: 'Failed',   color: '#EF4444' },
+                    { key: 'active',     label: 'Active',     color: '#16A34A' },
+                    { key: 'draft',      label: 'Draft',      color: '#F59E0B' },
+                    { key: 'deprecated', label: 'Deprecated', color: '#94A3B8' },
                   ].map(s => {
                     const count = data?.byStatus[s.key as keyof typeof data.byStatus] ?? 0;
                     const pct = data?.totalCount ? (count / data.totalCount) * 100 : 0;
                     return (
                       <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.625rem' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#475569', width: 72, flexShrink: 0 }}>{s.label}</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#475569', width: 80, flexShrink: 0 }}>{s.label}</span>
                         <div style={{ flex: 1, height: 8, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
                           <div style={{ width: `${pct}%`, height: '100%', background: s.color, borderRadius: 4, minWidth: pct > 0 ? 4 : 0 }} />
                         </div>
@@ -179,32 +217,48 @@ export default function TestCasesOverviewPage() {
                 </div>
               </div>
 
-              {/* Weekly Growth Chart */}
-              {(data?.weeklyGrowth.length ?? 0) > 0 && (
+              {/* Weekly Growth Chart — bars + trend line */}
+              {weeks.length > 0 && (
                 <div className="tco-anim" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1.5rem', animationDelay: '0.25s' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                    <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A' }}>Cumulative Growth — Test Cases</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.6875rem', color: '#64748B' }}>
-                      <div style={{ width: 8, height: 8, borderRadius: 2, background: '#6366F1' }} /> Weekly total
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A' }}>Weekly Test Case Growth (Last 10 Weeks)</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.6875rem', color: '#64748B' }}>
+                        <div style={{ width: 8, height: 8, borderRadius: 2, background: '#6366F1' }} /> Created
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.6875rem', color: '#64748B' }}>
+                        <div style={{ width: 8, height: 8, borderRadius: 2, background: '#8B5CF6' }} /> Cumulative Trend
+                      </div>
                     </div>
                   </div>
-                  <div style={{ position: 'relative', height: '160px' }}>
-                    <svg viewBox="0 0 700 160" width="100%" height="100%" preserveAspectRatio="none">
-                      {[20, 55, 90, 125].map(y => <line key={y} x1={50} y1={y} x2={680} y2={y} stroke="#F1F5F9" strokeWidth={1} />)}
-                      {data!.weeklyGrowth.map((d, i) => {
-                        const bw = 52, n = data!.weeklyGrowth.length;
-                        const gap = (630 - n * bw) / Math.max(n - 1, 1);
-                        const x = 60 + i * (bw + gap);
-                        const range = barMax - barMin || 1;
-                        const h = Math.max(4, ((d.total - barMin) / range) * chartH);
-                        const y = 140 - h;
+                  <div style={{ position: 'relative', height: '180px' }}>
+                    <svg viewBox={`0 0 ${chartWidth} 180`} width="100%" height="100%" preserveAspectRatio="none">
+                      {/* Grid lines */}
+                      {[20, 60, 100, 140].map(y => (
+                        <line key={y} x1={leftPad} y1={y} x2={chartWidth - rightPad} y2={y} stroke="#F1F5F9" strokeWidth={1} />
+                      ))}
+                      {/* Bars */}
+                      {weeks.map((w, i) => {
+                        const x = leftPad + i * (bw + gap);
+                        const h = barRange > 0 ? Math.max(4, ((w.total - barMin) / barRange) * chartH) : 4;
+                        const y = 148 - h;
                         return (
                           <g key={i}>
                             <rect className="tco-bar" x={x} y={y} width={bw} height={h} rx={3} fill="#6366F1" opacity={i === n - 1 ? 0.7 : 0.85} />
-                            <text x={x + bw / 2} y={150} fontSize="9" fill="#94A3B8" textAnchor="middle" fontFamily="Inter, sans-serif">{d.label}</text>
+                            <text x={barCenters[i]} y={168} fontSize="9" fill="#94A3B8" textAnchor="middle" fontFamily="Inter, sans-serif">{w.label}</text>
                           </g>
                         );
                       })}
+                      {/* Trend line */}
+                      {trendPts.length >= 2 && (
+                        <>
+                          <polyline points={trendPts.join(' ')} fill="none" stroke="#8B5CF6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                          {trendPts.map((pt, i) => {
+                            const [cx, cy] = pt.split(',').map(Number);
+                            return <circle key={i} cx={cx} cy={cy} r={3.5} fill="#8B5CF6" stroke="#fff" strokeWidth={2} />;
+                          })}
+                        </>
+                      )}
                     </svg>
                   </div>
                 </div>
@@ -214,59 +268,73 @@ export default function TestCasesOverviewPage() {
               {(data?.projects.length ?? 0) > 0 && (
                 <div className="tco-anim" style={{ animationDelay: '0.3s', marginBottom: '1.5rem' }}>
                   <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <i className="ri-folder-3-line" style={{ color: '#6366F1' }} /> Test Cases by Project
+                    <i className="ri-pie-chart-line" style={{ color: '#6366F1' }} /> Test Cases by Project
                   </div>
                   <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', overflow: 'hidden' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ background: '#F8FAFC' }}>
-                          {['Project', 'Total TCs', 'Added (7d)', 'Growth', 'Pass Rate'].map(th => (
+                          {['Project', 'Test Cases', 'Added (7d)', 'Growth', 'Pass Rate'].map(th => (
                             <th key={th} style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', borderBottom: '1px solid #E2E8F0' }}>{th}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {data!.projects.map((row, i) => (
-                          <tr key={i} className="tco-row" style={{ borderBottom: i < data!.projects.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
-                            <td style={{ padding: '0.75rem 1rem', fontSize: '0.8125rem' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, color: '#0F172A' }}>
-                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: row.dot }} />
-                                {row.projectName}
-                              </div>
-                            </td>
-                            <td style={{ padding: '0.75rem 1rem', fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>{row.count.toLocaleString()}</td>
-                            <td style={{ padding: '0.75rem 1rem' }}>
-                              <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#16A34A', background: '#F0FDF4', padding: '0.125rem 0.5rem', borderRadius: '9999px' }}>+{row.deltaThisWeek}</span>
-                            </td>
-                            <td style={{ padding: '0.75rem 1rem' }}>
-                              <MiniSparkline data={[row.count - row.deltaThisWeek * 3, row.count - row.deltaThisWeek * 2, row.count - row.deltaThisWeek, row.count]} color="#6366F1" />
-                            </td>
-                            <td style={{ padding: '0.75rem 1rem', fontSize: '0.8125rem', fontWeight: 700, color: row.passRate === null ? '#94A3B8' : row.passRate >= 80 ? '#16A34A' : row.passRate >= 60 ? '#F59E0B' : '#EF4444' }}>
-                              {row.passRate !== null ? `${row.passRate}%` : '—'}
-                            </td>
-                          </tr>
-                        ))}
+                        {data!.projects.map((row, i) => {
+                          // Build 4-point sparkline from weekly deltas
+                          const sparkData = [
+                            Math.max(0, row.count - row.deltaThisWeek * 4),
+                            Math.max(0, row.count - row.deltaThisWeek * 3),
+                            Math.max(0, row.count - row.deltaThisWeek * 2),
+                            Math.max(0, row.count - row.deltaThisWeek),
+                            row.count,
+                          ];
+                          return (
+                            <tr key={i} className="tco-row" style={{ borderBottom: i < data!.projects.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
+                              <td style={{ padding: '0.75rem 1rem', fontSize: '0.8125rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, color: '#0F172A' }}>
+                                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: row.dot }} />
+                                  {row.projectName}
+                                </div>
+                              </td>
+                              <td style={{ padding: '0.75rem 1rem', fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>{row.count.toLocaleString()}</td>
+                              <td style={{ padding: '0.75rem 1rem' }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#16A34A', background: '#F0FDF4', padding: '0.125rem 0.5rem', borderRadius: '9999px' }}>
+                                  <i className="ri-arrow-up-s-line" style={{ fontSize: '0.875rem' }} />+{row.deltaThisWeek}
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.75rem 1rem' }}>
+                                <MiniSparkline data={sparkData} color="#6366F1" />
+                              </td>
+                              <td style={{ padding: '0.75rem 1rem', fontSize: '0.8125rem', fontWeight: 700, color: row.passRate === null ? '#94A3B8' : row.passRate >= 80 ? '#16A34A' : row.passRate >= 60 ? '#F59E0B' : '#EF4444' }}>
+                                {row.passRate !== null ? `${row.passRate}%` : '—'}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
                 </div>
               )}
 
-              {/* Recent Additions */}
+              {/* Recently Added Test Cases */}
               {(data?.recent.length ?? 0) > 0 && (
                 <div className="tco-anim" style={{ animationDelay: '0.35s' }}>
                   <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <i className="ri-time-line" style={{ color: '#6366F1' }} /> Recent Additions
+                    <i className="ri-time-line" style={{ color: '#6366F1' }} /> Recently Added Test Cases
                   </div>
                   <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.25rem', borderBottom: '1px solid #E2E8F0' }}>
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A' }}>Latest Test Cases</span>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A' }}>Last 7 Days</span>
+                      <a href="#" style={{ fontSize: '0.75rem', color: '#6366F1', fontWeight: 600, textDecoration: 'none' }}>View All →</a>
                     </div>
                     {data!.recent.map((item, i) => (
                       <div key={item.id} className="tco-ri" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1.25rem', borderBottom: i < data!.recent.length - 1 ? '1px solid #F1F5F9' : 'none', cursor: 'pointer', transition: 'background 0.15s' }}>
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: priorityDotColor[item.priority] ?? '#94A3B8', flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
+                          <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.125rem' }}>Created by {item.projectName} team</div>
                         </div>
                         <span style={{ fontSize: '0.6875rem', fontWeight: 500, padding: '0.125rem 0.5rem', borderRadius: '9999px', background: '#EEF2FF', color: '#6366F1', whiteSpace: 'nowrap' }}>{item.projectName}</span>
                         <span style={{ fontSize: '0.6875rem', color: '#94A3B8', whiteSpace: 'nowrap' }}>{timeAgo(item.createdAt)}</span>
