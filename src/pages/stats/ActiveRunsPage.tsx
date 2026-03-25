@@ -38,7 +38,6 @@ export default function ActiveRunsPage() {
       <header style={{ background: '#fff', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', padding: '0 1.5rem', height: '3.5rem', gap: '1.5rem', flexShrink: 0 }}>
         <Link to="/projects" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', marginRight: '0.5rem' }}>
           <LogoMark />
-          <span style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.9375rem' }}>Testably</span>
         </Link>
         <nav style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
           {[

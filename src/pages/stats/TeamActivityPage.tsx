@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { useTeamActivity } from '../../hooks/useTeamActivity';
@@ -10,25 +10,26 @@ const badgeStyle: Record<string, { bg: string; color: string }> = {
   commented: { bg: '#FEF3C7', color: '#D97706' },
 };
 
-const heatmapColors = ['#F1F5F9', '#E0E7FF', '#C7D2FE', '#A5B4FC', '#818CF8', '#6366F1'];
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const HM_COLORS = ['#F1F5F9', '#E0E7FF', '#C7D2FE', '#A5B4FC', '#818CF8', '#6366F1'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// Show Mon/Wed/Fri only (indices 1,3,5 in Sun=0 scheme)
+const DAY_LABEL_VISIBLE: Record<number, string> = { 1: 'Mon', 3: 'Wed', 5: 'Fri' };
 
 function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
 function Heatmap({ data }: { data: number[] }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const tooltip = useRef<HTMLDivElement | null>(null);
 
-  // Build grid: 52 cols × 7 rows (Sun–Sat), data[0] = col0/row0 = oldest Sunday
-  // Compute month labels: track which col each month starts in
+  // Anchor: oldest Sunday = 52 weeks back from this week's Sunday
   const now = new Date();
-  const todayDay = now.getDay();
+  const todayDay = now.getDay(); // 0=Sun
   const sunday52WeeksAgo = new Date(now);
   sunday52WeeksAgo.setDate(sunday52WeeksAgo.getDate() - todayDay - 51 * 7);
   sunday52WeeksAgo.setHours(0, 0, 0, 0);
 
+  // Month labels: first week column where a new month starts
   const monthLabels: { col: number; label: string }[] = [];
   let lastMonth = -1;
   for (let col = 0; col < 52; col++) {
@@ -40,85 +41,81 @@ function Heatmap({ data }: { data: number[] }) {
     }
   }
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    // Clear tooltip
-    const existing = el.parentElement?.querySelector('.hm-tooltip');
-    if (existing) existing.remove();
-  }, [data]);
-
-  const tooltip = useRef<HTMLDivElement | null>(null);
-
-  const showTooltip = (e: React.MouseEvent, col: number, row: number, level: number) => {
-    const d = new Date(sunday52WeeksAgo);
-    d.setDate(d.getDate() + col * 7 + row);
-    const dateStr = toDateStr(d);
-    const tip = tooltip.current;
-    if (!tip) return;
-    tip.textContent = `${dateStr} · intensity ${level}`;
-    tip.style.display = 'block';
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    const parent = (e.target as HTMLElement).closest('.hm-wrap')?.getBoundingClientRect();
-    if (parent) {
-      tip.style.left = `${rect.left - parent.left + rect.width / 2}px`;
-      tip.style.top = `${rect.top - parent.top - 28}px`;
-    }
-  };
   const hideTooltip = () => {
     if (tooltip.current) tooltip.current.style.display = 'none';
   };
+  const showTooltip = (e: React.MouseEvent, col: number, row: number) => {
+    const tip = tooltip.current;
+    if (!tip) return;
+    const d = new Date(sunday52WeeksAgo);
+    d.setDate(d.getDate() + col * 7 + row);
+    tip.textContent = toDateStr(d);
+    tip.style.display = 'block';
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const wrap = (e.currentTarget as HTMLElement).closest('.hm-wrap-outer') as HTMLElement | null;
+    if (wrap) {
+      const wb = wrap.getBoundingClientRect();
+      tip.style.left = `${rect.left - wb.left + rect.width / 2}px`;
+      tip.style.top = `${rect.top - wb.top - 24}px`;
+    }
+  };
 
+  // Render: 7 rows × 52 cols (row = day-of-week, col = week)
+  // data[col * 7 + row] = intensity for that cell
   return (
-    <div className="hm-wrap" style={{ position: 'relative' }}>
-      {/* Month labels row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(52, 1fr)', marginLeft: 28, marginBottom: 4 }}>
-        {Array.from({ length: 52 }, (_, col) => {
-          const lbl = monthLabels.find(m => m.col === col);
-          return (
-            <div key={col} style={{ fontSize: '0.5rem', color: '#94A3B8', fontWeight: 500, whiteSpace: 'nowrap' }}>
-              {lbl?.label ?? ''}
-            </div>
-          );
-        })}
-      </div>
-      {/* Day labels + cells */}
-      <div style={{ display: 'flex', gap: 0 }}>
-        {/* Day labels */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginRight: 4, width: 24, flexShrink: 0 }}>
-          {DAY_LABELS.map((d, i) => (
-            <div key={d} style={{ fontSize: '0.5rem', color: i % 2 === 1 ? '#94A3B8' : 'transparent', height: 10, lineHeight: '10px', fontWeight: 500, userSelect: 'none' }}>
-              {d}
+    <div className="hm-wrap-outer" style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', gap: 4 }}>
+        {/* Day labels column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0, width: 28 }}>
+          <div style={{ height: 13 }} />{/* spacer for month row */}
+          {Array.from({ length: 7 }, (_, r) => (
+            <div key={r} style={{ height: 11, lineHeight: '11px', fontSize: 9, color: DAY_LABEL_VISIBLE[r] ? '#94A3B8' : 'transparent', fontWeight: 500, textAlign: 'right', userSelect: 'none' }}>
+              {DAY_LABEL_VISIBLE[r] ?? '\u00A0'}
             </div>
           ))}
         </div>
         {/* Grid */}
-        <div ref={containerRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(52, 1fr)', gridTemplateRows: 'repeat(7, 10px)', gap: 3, flex: 1 }}>
-          {Array.from({ length: 52 }, (_, col) =>
-            Array.from({ length: 7 }, (_, row) => {
-              const idx = col * 7 + row;
-              const level = data[idx] ?? 0;
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Month labels row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(52, 1fr)', gap: 2, height: 13, alignItems: 'end', marginBottom: 0 }}>
+            {Array.from({ length: 52 }, (_, col) => {
+              const lbl = monthLabels.find(m => m.col === col);
               return (
-                <div
-                  key={`${col}-${row}`}
-                  style={{ borderRadius: 2, background: heatmapColors[level], cursor: 'pointer', transition: 'transform 0.1s', gridColumn: col + 1, gridRow: row + 1 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.4)'; showTooltip(e, col, row, level); }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; hideTooltip(); }}
-                />
+                <div key={col} style={{ fontSize: 9, color: '#64748B', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'visible' }}>
+                  {lbl?.label ?? ''}
+                </div>
               );
-            })
-          )}
+            })}
+          </div>
+          {/* 7 day-rows */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {Array.from({ length: 7 }, (_, row) => (
+              <div key={row} style={{ display: 'grid', gridTemplateColumns: 'repeat(52, 1fr)', gap: 2 }}>
+                {Array.from({ length: 52 }, (_, col) => {
+                  const level = data[col * 7 + row] ?? 0;
+                  return (
+                    <div
+                      key={col}
+                      style={{ aspectRatio: '1', borderRadius: 2, background: HM_COLORS[level], cursor: 'pointer', outline: '1px solid rgba(27,31,35,0.06)', outlineOffset: -1 }}
+                      onMouseEnter={e => showTooltip(e, col, row)}
+                      onMouseLeave={hideTooltip}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
       {/* Tooltip */}
-      <div ref={tooltip} style={{ display: 'none', position: 'absolute', pointerEvents: 'none', background: '#1E293B', color: '#fff', fontSize: '0.625rem', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', whiteSpace: 'nowrap', zIndex: 10, transform: 'translateX(-50%)' }} />
+      <div ref={tooltip} style={{ display: 'none', position: 'absolute', pointerEvents: 'none', background: '#1E293B', color: '#fff', fontSize: 9, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', zIndex: 10, transform: 'translateX(-50%)' }} />
       {/* Legend */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.625rem', justifyContent: 'flex-end' }}>
-        <span style={{ fontSize: '0.5625rem', color: '#94A3B8' }}>Less</span>
-        {heatmapColors.map((c, i) => (
-          <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: c }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: '0.375rem', justifyContent: 'flex-end' }}>
+        <span style={{ fontSize: 9, color: '#94A3B8', margin: '0 2px' }}>Less</span>
+        {HM_COLORS.map((c, i) => (
+          <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: c, outline: '1px solid rgba(27,31,35,0.06)', outlineOffset: -1 }} />
         ))}
-        <span style={{ fontSize: '0.5625rem', color: '#94A3B8' }}>More</span>
+        <span style={{ fontSize: 9, color: '#94A3B8', margin: '0 2px' }}>More</span>
       </div>
     </div>
   );
@@ -154,7 +151,6 @@ export default function TeamActivityPage() {
       <header style={{ background: '#fff', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', padding: '0 1.5rem', height: '3.5rem', gap: '1.5rem', flexShrink: 0 }}>
         <Link to="/projects" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', marginRight: '0.5rem' }}>
           <LogoMark />
-          <span style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.9375rem' }}>Testably</span>
         </Link>
         <nav style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
           {[
@@ -257,8 +253,11 @@ export default function TeamActivityPage() {
               </div>
 
               {/* Heatmap */}
-              <div className="ta-anim" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', animationDelay: '0.2s' }}>
-                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem' }}>Team Activity — Last 52 Weeks</div>
+              <div className="ta-anim" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', padding: '0.875rem 1rem', marginBottom: '1rem', animationDelay: '0.2s' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.375rem', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A' }}>{data.totalActivities.toLocaleString()}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 400 }}>activities in the last year</span>
+                </div>
                 <Heatmap data={data.heatmapData} />
               </div>
 

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { usePassRateReport } from '../../hooks/usePassRateReport';
 import { supabase } from '../../lib/supabase';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const priorityStyle: Record<string, { color: string; bg: string }> = {
   critical: { color: '#DC2626', bg: '#FEF2F2' },
@@ -25,8 +27,61 @@ function dateRangeLabel(): string {
 export default function PassRateReportPage() {
   const { data, loading, error } = usePassRateReport();
   const [userInitials, setUserInitials] = useState('');
+  const [exporting, setExporting] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const pdfContentRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(700);
+
+  async function exportPDF() {
+    if (!pdfContentRef.current || exporting) return;
+    setExporting(true);
+    try {
+      const el = pdfContentRef.current;
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#F8FAFC',
+        logging: false,
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const imgW = pageW - margin * 2;
+      const imgH = (canvas.height * imgW) / canvas.width;
+
+      let yPos = margin;
+      let remainingH = imgH;
+      const sliceH = pageH - margin * 2;
+
+      // Multi-page: slice canvas across pages
+      while (remainingH > 0) {
+        const currentSlice = Math.min(remainingH, sliceH);
+        const srcY = (imgH - remainingH) * (canvas.height / imgH);
+        const srcH = currentSlice * (canvas.height / imgH);
+
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = srcH;
+        const ctx = sliceCanvas.getContext('2d')!;
+        ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+        const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+
+        if (yPos > margin) pdf.addPage();
+        pdf.addImage(sliceData, 'JPEG', margin, margin, imgW, currentSlice);
+        remainingH -= currentSlice;
+        yPos += currentSlice;
+      }
+
+      const date = new Date().toISOString().slice(0, 10);
+      pdf.save(`pass-rate-report-${date}.pdf`);
+    } catch (e) {
+      console.error('Export PDF error:', e);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -86,7 +141,6 @@ export default function PassRateReportPage() {
       <header style={{ background: '#fff', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', padding: '0 1.5rem', height: '3.5rem', gap: '1.5rem', flexShrink: 0 }}>
         <Link to="/projects" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', marginRight: '0.5rem' }}>
           <LogoMark />
-          <span style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.9375rem' }}>Testably</span>
         </Link>
         <nav style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
           {[
@@ -124,8 +178,8 @@ export default function PassRateReportPage() {
           <span style={{ color: '#0F172A', fontWeight: 700 }}>Pass Rate Report — Last 7 Days</span>
         </div>
         <div style={{ flex: 1 }} />
-        <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', fontFamily: 'inherit', fontWeight: 500 }}>
-          <i className="ri-download-2-line" /> Export PDF
+        <button onClick={exportPDF} disabled={exporting || !data} style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', border: '1px solid #E2E8F0', background: exporting ? '#F8FAFC' : '#fff', color: exporting ? '#94A3B8' : '#475569', cursor: exporting ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', fontFamily: 'inherit', fontWeight: 500 }}>
+          <i className={exporting ? 'ri-loader-4-line' : 'ri-download-2-line'} style={exporting ? { animation: 'spin 1s linear infinite' } : {}} /> {exporting ? 'Exporting…' : 'Export PDF'}
         </button>
         <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', fontFamily: 'inherit', fontWeight: 500 }}>
           <i className="ri-calendar-line" /> {dateRangeLabel()}
@@ -134,7 +188,7 @@ export default function PassRateReportPage() {
 
       {/* Content */}
       <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div ref={pdfContentRef} style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
           {/* Error */}
           {error && (

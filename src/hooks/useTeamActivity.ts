@@ -36,6 +36,7 @@ export interface FeedItem {
 export interface TeamActivityData {
   members: TeamMember[];
   heatmapData: number[];  // 364 cells: 52 weeks × 7 days (Sun–Sat), intensity 0–5
+  totalActivities: number; // raw activity count for "N activities in the last year"
   feedItems: FeedItem[];
   activeToday: number;
   tcCreatedToday: number;
@@ -117,6 +118,7 @@ export function useTeamActivity() {
         { data: recentTCs },
         { data: recentResults },
         { data: recentComments },
+        { data: allTcIds },
       ] = await Promise.all([
         // All members across user's projects (distinct by user_id)
         supabase
@@ -157,10 +159,23 @@ export function useTeamActivity() {
           )
           .gte('created_at', thirtyDaysAgo)
           .limit(30),
+
+        // All TCs for TC-ID numbering (oldest first)
+        supabase
+          .from('test_cases')
+          .select('id')
+          .in('project_id', projectIds)
+          .order('created_at', { ascending: true }),
       ]);
 
       const projectNameMap: Record<string, string> = {};
       (projectsData ?? []).forEach(p => { projectNameMap[p.id] = p.name; });
+
+      // TC-ID map: UUID → "TC-001" (oldest TC = TC-001)
+      const tcIdLabelMap: Record<string, string> = {};
+      (allTcIds ?? []).forEach((tc, i) => {
+        tcIdLabelMap[tc.id] = `TC-${(i + 1).toString().padStart(3, '0')}`;
+      });
 
       // Deduplicate members by user_id
       const seenUsers = new Set<string>();
@@ -192,7 +207,7 @@ export function useTeamActivity() {
         if (uid && memberStatsToday[uid]) {
           memberStatsToday[uid].created++;
           if (!memberStatsToday[uid].lastTime || tc.created_at > memberStatsToday[uid].lastTime) {
-            memberStatsToday[uid].lastAction = `Created ${tc.title.slice(0, 20)}`;
+            memberStatsToday[uid].lastAction = `Created ${tcIdLabelMap[tc.id] ?? tc.id.slice(0, 6).toUpperCase()}`;
             memberStatsToday[uid].lastTime = tc.created_at;
           }
         }
@@ -217,7 +232,7 @@ export function useTeamActivity() {
       (recentTCs ?? []).forEach(tc => {
         const uid = tc.created_by;
         if (uid && memberStatsToday[uid] && (!memberStatsToday[uid].lastTime || tc.created_at > memberStatsToday[uid].lastTime)) {
-          memberStatsToday[uid].lastAction = `Created ${tc.title.slice(0, 20)}`;
+          memberStatsToday[uid].lastAction = `Created ${tcIdLabelMap[tc.id] ?? tc.id.slice(0, 6).toUpperCase()}`;
           memberStatsToday[uid].lastTime = tc.created_at;
         }
       });
@@ -285,7 +300,9 @@ export function useTeamActivity() {
       });
 
       // Quantile-based intensity bucketing
-      const nonZeroValues = Object.values(activityByDay).filter(v => v > 0).sort((a, b) => a - b);
+      const allDayCounts = Object.values(activityByDay);
+      const totalActivities = allDayCounts.reduce((s, v) => s + v, 0);
+      const nonZeroValues = allDayCounts.filter(v => v > 0).sort((a, b) => a - b);
       const maxActivity = nonZeroValues.length > 0 ? nonZeroValues[nonZeroValues.length - 1] : 1;
       const heatmapData: number[] = [];
       for (let i = 0; i < 364; i++) {
@@ -316,7 +333,7 @@ export function useTeamActivity() {
             color: AVATAR_COLORS[(memberIdx >= 0 ? memberIdx : idx) % AVATAR_COLORS.length],
             actorName,
             action: 'created',
-            target: tc.title.length > 30 ? tc.title.slice(0, 30) + '…' : tc.title,
+            target: tcIdLabelMap[tc.id] ?? tc.id.slice(0, 6).toUpperCase(),
             badge: { text: 'New', type: 'created' as FeedBadgeType },
             time: timeAgo(tc.created_at),
             project: projectNameMap[tc.project_id] ?? 'Unknown',
@@ -359,6 +376,7 @@ export function useTeamActivity() {
       setData({
         members,
         heatmapData,
+        totalActivities,
         feedItems,
         activeToday,
         tcCreatedToday,
@@ -382,7 +400,7 @@ export function useTeamActivity() {
 
 function empty(): TeamActivityData {
   return {
-    members: [], heatmapData: Array(364).fill(0),
+    members: [], heatmapData: Array(364).fill(0), totalActivities: 0,
     feedItems: [], activeToday: 0, tcCreatedToday: 0,
     tcExecutedToday: 0, tcPassedToday: 0, tcFailedToday: 0, tcBlockedToday: 0,
     totalMembers: 0, avgResponseTimeHours: null,

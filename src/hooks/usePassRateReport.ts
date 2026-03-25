@@ -95,9 +95,10 @@ export function usePassRateReport() {
       (projectsData ?? []).forEach(p => { projectNameMap[p.id] = p.name; });
 
       const runIds = (runsAll ?? []).map(r => r.id);
+      if (runIds.length === 0) { setData(empty()); return; }
 
-      // 3 parallel fetches: last 7d results, prev 7d for delta, all-time fallback
-      const [{ data: results7d }, { data: resultsPrev7d }, { data: allRunResults }] = await Promise.all([
+      // 2 parallel fetches: last 7d results + prev 7d for delta
+      const [{ data: results7d }, { data: resultsPrev7d }] = await Promise.all([
         supabase.from('test_results')
           .select('id, run_id, test_case_id, status, created_at')
           .in('run_id', runIds)
@@ -107,45 +108,45 @@ export function usePassRateReport() {
           .select('id, run_id, test_case_id, status, created_at')
           .in('run_id', runIds)
           .gte('created_at', fourteenDaysAgo)
-          .lt('created_at', sevenDaysAgo),
-        // All-time fallback: used when 7d window is empty
-        supabase.from('test_results')
-          .select('run_id, status')
-          .in('run_id', runIds)
-          .limit(5000),
+          .lt('created_at', sevenDaysAgo)
+          .order('created_at', { ascending: false }),
       ]);
 
-      // ── Summary stats — always prefer 7d results ──────────────────────────
-      const r7 = results7d ?? [];
+      // Deduplicate: latest status per (run_id, test_case_id)
+      function dedup<T extends { run_id: string; test_case_id: string }>(rows: T[]): T[] {
+        const seen = new Set<string>();
+        return rows.filter(r => {
+          const k = `${r.run_id}::${r.test_case_id}`;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+      }
+
+      const r7 = dedup(results7d ?? []);
+      const rPrev = dedup(resultsPrev7d ?? []);
       const has7d = r7.length > 0;
 
+      // ── Summary stats ─────────────────────────────────────────────────────
       let totalExecuted: number;
       let passed7d: number;
       let failed7d: number;
       let blocked7d: number;
       let passRateDelta: number | null = null;
 
-      if (has7d) {
-        totalExecuted = r7.filter(r => r.status !== 'untested').length;
-        passed7d   = r7.filter(r => r.status === 'passed').length;
-        failed7d   = r7.filter(r => r.status === 'failed').length;
-        blocked7d  = r7.filter(r => r.status === 'blocked').length;
+      totalExecuted = r7.filter(r => r.status !== 'untested').length;
+      passed7d   = r7.filter(r => r.status === 'passed').length;
+      failed7d   = r7.filter(r => r.status === 'failed').length;
+      blocked7d  = r7.filter(r => r.status === 'blocked').length;
 
-        const prev = resultsPrev7d ?? [];
-        const prevTotal  = prev.filter(r => r.status !== 'untested').length;
-        const prevPassed = prev.filter(r => r.status === 'passed').length;
+      if (has7d && rPrev.length > 0) {
+        const prevTotal  = rPrev.filter(r => r.status !== 'untested').length;
+        const prevPassed = rPrev.filter(r => r.status === 'passed').length;
         const prevRate = prevTotal  > 0 ? (prevPassed / prevTotal)  * 100 : null;
         const curRate  = totalExecuted > 0 ? (passed7d / totalExecuted) * 100 : null;
         if (prevRate !== null && curRate !== null) {
           passRateDelta = parseFloat((curRate - prevRate).toFixed(1));
         }
-      } else {
-        // No 7d data — fall back to all-time test_results
-        const all = allRunResults ?? [];
-        totalExecuted = all.filter(r => r.status !== 'untested').length;
-        passed7d  = all.filter(r => r.status === 'passed').length;
-        failed7d  = all.filter(r => r.status === 'failed').length;
-        blocked7d = all.filter(r => r.status === 'blocked').length;
       }
 
       const overallPassRate = totalExecuted > 0
@@ -164,18 +165,10 @@ export function usePassRateReport() {
         const dayEndISO   = dayEnd.toISOString();
         const isToday = d === 0;
 
-        let dayPassed = 0, dayFailed = 0, dayBlocked = 0;
-        if (has7d) {
-          const dayResults = r7.filter(r => r.created_at >= dayStartISO && r.created_at <= dayEndISO);
-          dayPassed  = dayResults.filter(r => r.status === 'passed').length;
-          dayFailed  = dayResults.filter(r => r.status === 'failed').length;
-          dayBlocked = dayResults.filter(r => r.status === 'blocked').length;
-        } else {
-          const dayRuns = (runsAll ?? []).filter(r => r.created_at >= dayStartISO && r.created_at <= dayEndISO);
-          dayPassed  = dayRuns.reduce((s, r) => s + (r.passed  ?? 0), 0);
-          dayFailed  = dayRuns.reduce((s, r) => s + (r.failed  ?? 0), 0);
-          dayBlocked = dayRuns.reduce((s, r) => s + (r.blocked ?? 0), 0);
-        }
+        const dayResults = r7.filter(r => r.created_at >= dayStartISO && r.created_at <= dayEndISO);
+        const dayPassed  = dayResults.filter(r => r.status === 'passed').length;
+        const dayFailed  = dayResults.filter(r => r.status === 'failed').length;
+        const dayBlocked = dayResults.filter(r => r.status === 'blocked').length;
 
         const label = d === 0
           ? 'Today'
@@ -189,8 +182,7 @@ export function usePassRateReport() {
 
       const projStats: Record<string, { passed: number; executed: number }> = {};
 
-      const sourceForProject = has7d ? r7 : (allRunResults ?? []);
-      sourceForProject.forEach((r: any) => {
+      r7.forEach(r => {
         const pid = runProjectMap[r.run_id];
         if (!pid) return;
         if (!projStats[pid]) projStats[pid] = { passed: 0, executed: 0 };
@@ -199,15 +191,6 @@ export function usePassRateReport() {
           if (r.status === 'passed') projStats[pid].passed++;
         }
       });
-
-      // Stored-column fallback when test_results are entirely empty
-      if (Object.values(projStats).every(s => s.executed === 0)) {
-        (runsAll ?? []).forEach(r => {
-          if (!projStats[r.project_id]) projStats[r.project_id] = { passed: 0, executed: 0 };
-          projStats[r.project_id].passed   += (r.passed  ?? 0);
-          projStats[r.project_id].executed += (r.passed  ?? 0) + (r.failed ?? 0) + (r.blocked ?? 0) + (r.retest ?? 0);
-        });
-      }
 
       const byProject: PassRateProject[] = Object.entries(projStats)
         .map(([pid, s], i) => {
