@@ -158,11 +158,6 @@ export default function ProjectDetail() {
 
       if (allRunsError) throw allRunsError;
 
-      // Compute pass rate from ALL runs using stored aggregate columns
-      const _prTotal = (allRunsData || []).reduce((acc: number, r: any) => acc + (r.passed||0) + (r.failed||0) + (r.blocked||0) + (r.retest||0), 0);
-      const _prPassed = (allRunsData || []).reduce((acc: number, r: any) => acc + (r.passed||0), 0);
-      setProjectPassRateData({ total: _prTotal, passed: _prPassed });
-
       const { data: allTestResultsData, error: allTestResultsError } = await supabase
         .from('test_results')
         .select('run_id, test_case_id, status')
@@ -170,6 +165,11 @@ export default function ProjectDetail() {
         .order('created_at', { ascending: false });
 
       if (allTestResultsError) throw allTestResultsError;
+
+      // Compute pass rate from actual test_results (stored run columns are unreliable)
+      const _prTotal = (allTestResultsData || []).filter((r: any) => r.status !== 'untested').length;
+      const _prPassed = (allTestResultsData || []).filter((r: any) => r.status === 'passed').length;
+      setProjectPassRateData({ total: _prTotal, passed: _prPassed });
 
       // calculate milestone progress
       const milestonesWithProgress = (milestonesData || []).map((milestone) => {
