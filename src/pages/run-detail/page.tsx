@@ -1843,6 +1843,18 @@ export default function RunDetail() {
                     </div>
                   )}
 
+                  {/* §11 Deprecated TC Info Banner */}
+                  {testCases.some(tc => (tc as any).lifecycle_status === 'deprecated') && (
+                    <div className="flex items-start gap-2.5 mx-4 my-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                      <i className="ri-information-line text-blue-500 text-base mt-0.5 flex-shrink-0" />
+                      <div>
+                        <strong>Some TCs in this run have been deprecated.</strong>{' '}
+                        {testCases.filter(tc => (tc as any).lifecycle_status === 'deprecated').length} test case(s) were deprecated after this run was created.
+                        Existing results are preserved. These TCs won't appear in new runs.
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200">
                     <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -1879,11 +1891,12 @@ export default function RunDetail() {
                     </div>
                   ) : (
                     filteredTestCases.map((testCase) => (
-                      <div 
-                        key={testCase.id} 
+                      <div
+                        key={testCase.id}
                         className={`grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-all cursor-pointer ${
                           selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : ''
                         }`}
+                        style={(testCase as any).lifecycle_status === 'deprecated' ? { opacity: 0.6 } : undefined}
                         onClick={() => setSelectedTestCase(testCase)}
                       >
                         <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>

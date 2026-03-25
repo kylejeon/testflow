@@ -88,6 +88,12 @@ export default function ProjectRunsPage() {
   const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number; avatar_emoji: string } | null>(null);
   const [showSelectCasesModal, setShowSelectCasesModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+
+  // ─── Add Run 2-step wizard ──────────────────────────────────────
+  const [addRunStep, setAddRunStep] = useState<1 | 2>(1);
+  const [runAssignees, setRunAssignees] = useState<string[]>([]);
+  const [includeDraftTCs, setIncludeDraftTCs] = useState(false);
+  const [showDraftWarningDismissed, setShowDraftWarningDismissed] = useState(false);
   const [caseSearchQuery, setCaseSearchQuery] = useState('');
   const [priorityFilters, setPriorityFilters] = useState<string[]>(['high', 'medium', 'low']);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
@@ -837,7 +843,7 @@ export default function ProjectRunsPage() {
           retest: 0,
           untested: testCaseIds.length,
           tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
-          assignees: user?.id ? [user.id] : [],
+          assignees: runAssignees.length > 0 ? runAssignees : (user?.id ? [user.id] : []),
           test_case_ids: testCaseIds,
           executed_at: new Date().toISOString(),
           is_automated: formData.is_ci_cd_run,
@@ -902,6 +908,10 @@ export default function ProjectRunsPage() {
       setSelectedTestCases([]);
       setEditingRunId(null);
       setShowAddRunModal(false);
+      setAddRunStep(1);
+      setRunAssignees([]);
+      setIncludeDraftTCs(false);
+      setShowDraftWarningDismissed(false);
     } catch (error) {
       console.error('Error saving test run:', error);
       alert('Failed to save test run. Please try again.');
@@ -1769,230 +1779,352 @@ export default function ProjectRunsPage() {
         </main>
       </div>
 
-      {showAddRunModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">{editingRunId ? 'Edit run' : 'Add run'}</h2>
-              <button 
-                onClick={() => {
-                  setShowAddRunModal(false);
-                  setEditingRunId(null);
-                }}
-                className="text-gray-400 hover:text-gray-600 cursor-pointer"
-              >
-                <i className="ri-close-line text-xl"></i>
-              </button>
-            </div>
+      {showAddRunModal && (() => {
+        // TC lists for step 2 (exclude deprecated always)
+        const activeTCs = testCases.filter((tc: TestCase & { lifecycle_status?: string }) => (tc.lifecycle_status || 'active') === 'active');
+        const draftTCs = testCases.filter((tc: TestCase & { lifecycle_status?: string }) => (tc.lifecycle_status || 'active') === 'draft');
+        const visibleTCs = includeDraftTCs ? [...activeTCs, ...draftTCs] : activeTCs;
+        const selectedDraftIds = selectedTestCases.filter(id => draftTCs.some(tc => tc.id === id));
+        const hasDraftSelected = selectedDraftIds.length > 0;
 
-            <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
-              <div className="p-6">
-                <div className="flex gap-8 border-b border-gray-200 mb-6">
-                  <button className="pb-3 px-1 border-b-2 border-indigo-500 text-indigo-600 font-medium text-sm cursor-pointer whitespace-nowrap">
-                    RUN
-                  </button>
-                  <button className="pb-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm cursor-pointer whitespace-nowrap">
-                    NOTES
-                  </button>
+        const closeModal = () => {
+          setShowAddRunModal(false);
+          setEditingRunId(null);
+          setAddRunStep(1);
+          setRunAssignees([]);
+          setIncludeDraftTCs(false);
+          setShowDraftWarningDismissed(false);
+        };
+
+        return (
+          <div className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-start justify-center z-50 py-[3vh] overflow-y-auto">
+            <div className={`bg-white rounded-xl shadow-2xl w-full overflow-hidden animate-fade-in ${addRunStep === 1 ? 'max-w-lg' : 'max-w-3xl'}`}>
+
+              {/* ── Modal Header ── */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
+                    <i className="ri-play-circle-line text-indigo-500 text-lg" />
+                  </div>
+                  <span className="text-base font-bold text-gray-900">{editingRunId ? 'Edit Run' : 'Add Run'}</span>
                 </div>
+                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1 rounded-lg hover:bg-gray-100">
+                  <i className="ri-close-line text-xl" />
+                </button>
+              </div>
 
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Run name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                    />
-                  </div>
+              {/* ── Step Indicator ── */}
+              <div className="flex border-b border-gray-100 px-6">
+                {[{ n: 1, label: 'Configure' }, { n: 2, label: 'Select Cases' }].map(s => (
+                  <button
+                    key={s.n}
+                    onClick={() => s.n < addRunStep ? setAddRunStep(s.n as 1 | 2) : undefined}
+                    className={`flex items-center gap-1.5 py-3 mr-6 text-xs font-medium border-b-2 transition-colors ${
+                      addRunStep === s.n ? 'text-indigo-600 border-indigo-500 font-semibold'
+                      : s.n < addRunStep ? 'text-green-600 border-transparent'
+                      : 'text-gray-400 border-transparent'
+                    }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center border-1.5 ${
+                      addRunStep === s.n ? 'bg-indigo-500 text-white border-indigo-500'
+                      : s.n < addRunStep ? 'bg-green-500 text-white border-green-500'
+                      : 'border-gray-300 text-gray-400'
+                    }`}>{s.n < addRunStep ? '✓' : s.n}</span>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
 
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700">Configuration</label>
-                      <button className="text-xs text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap">Apply to cases</button>
+              {/* ═══════════════ STEP 1: Configure ═══════════════ */}
+              {addRunStep === 1 && (
+                <>
+                  <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+                    {/* Name */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                        Run Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        placeholder="e.g. Sprint 24 — Regression Run"
+                        autoFocus
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+                      />
                     </div>
-                    <select 
-                      name="configuration"
-                      value={formData.configuration}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-gray-500 cursor-pointer"
-                    >
-                      <option value="">Select configuration</option>
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">The environment or configuration to test against, if any.</p>
+
+                    {/* Milestone */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Milestone</label>
+                      <select
+                        name="milestone_id"
+                        value={formData.milestone_id}
+                        onChange={(e) => setFormData(prev => ({ ...prev, milestone_id: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm cursor-pointer"
+                      >
+                        <option value="">No milestone</option>
+                        {milestones.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Assignees multi-select */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Assignees</label>
+                      <div className="flex flex-wrap gap-2">
+                        {contributors.map(c => {
+                          const selected = runAssignees.includes(c.id);
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => setRunAssignees(prev => selected ? prev.filter(a => a !== c.id) : [...prev, c.id])}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                                selected ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-indigo-200'
+                              }`}
+                            >
+                              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white`} style={{ background: c.color }}>
+                                {c.name.charAt(0).toUpperCase()}
+                              </span>
+                              {c.name}
+                              {selected && <i className="ri-check-line text-indigo-500" />}
+                            </button>
+                          );
+                        })}
+                        {contributors.length === 0 && <span className="text-xs text-gray-400">No project members found</span>}
+                      </div>
+                    </div>
+
+                    {/* Status */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Status</label>
+                      <select
+                        name="status"
+                        value={formData.status}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm cursor-pointer"
+                      >
+                        <option value="new">New</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </div>
+
+                    {/* Tags */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Tags</label>
+                      <input
+                        type="text"
+                        name="tags"
+                        value={formData.tags}
+                        onChange={handleInputChange}
+                        placeholder="Comma-separated tags"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+                      />
+                    </div>
+
+                    {/* CI/CD toggle */}
+                    <div className="bg-purple-50 rounded-lg p-3.5 border border-purple-100">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.is_ci_cd_run}
+                          onChange={(e) => setFormData(prev => ({ ...prev, is_ci_cd_run: e.target.checked }))}
+                          className="w-4 h-4 text-purple-600 cursor-pointer mt-0.5"
+                        />
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <i className="ri-robot-line text-purple-600 text-sm" />
+                            <span className="text-xs font-semibold text-purple-900">CI/CD Run</span>
+                          </div>
+                          <p className="text-xs text-purple-700">Mark as automated for GitHub Actions / GitLab CI integration.</p>
+                        </div>
+                      </label>
+                    </div>
                   </div>
 
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700">Milestone</label>
-                      <button className="text-indigo-600 hover:text-indigo-700 cursor-pointer">
-                        <i className="ri-add-line"></i>
+                  <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
+                    <button onClick={closeModal} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">Cancel</button>
+                    <button
+                      onClick={() => { if (!formData.name.trim()) { alert('Please enter a run name'); return; } setAddRunStep(2); }}
+                      className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold cursor-pointer flex items-center gap-2"
+                    >
+                      Next: Select Cases <i className="ri-arrow-right-line" />
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* ═══════════════ STEP 2: Select Cases ═══════════════ */}
+              {addRunStep === 2 && (
+                <>
+                  {/* Filter bar */}
+                  <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100 bg-gray-50">
+                    <div className="relative flex-1">
+                      <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                      <input
+                        type="text"
+                        value={caseSearchQuery}
+                        onChange={e => setCaseSearchQuery(e.target.value)}
+                        placeholder="Search test cases..."
+                        className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                      />
+                    </div>
+                    {/* Draft toggle */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setIncludeDraftTCs(p => !p)}
+                        className={`w-9 h-5 rounded-full relative transition-colors flex-shrink-0 ${includeDraftTCs ? 'bg-indigo-500' : 'bg-gray-200'}`}
+                      >
+                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${includeDraftTCs ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                      </button>
+                      <span className="text-xs text-gray-600 font-medium whitespace-nowrap">Include Draft TCs</span>
+                      {!includeDraftTCs && draftTCs.length > 0 && (
+                        <span className="text-[10px] text-gray-400">{draftTCs.length} hidden</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* TC count summary */}
+                  <div className="px-5 py-2 bg-gray-50 border-b border-gray-100 text-xs text-gray-500">
+                    {includeDraftTCs
+                      ? `${activeTCs.length} Active + ${draftTCs.length} Draft TCs`
+                      : `${activeTCs.length} Active TCs available`
+                    }
+                  </div>
+
+                  {/* TC table */}
+                  <div className="max-h-[42vh] overflow-y-auto">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-gray-50 border-b border-gray-100 z-10">
+                        <tr>
+                          <th className="px-5 py-2.5 w-9">
+                            <input
+                              type="checkbox"
+                              className="w-3.5 h-3.5 accent-indigo-500 cursor-pointer"
+                              checked={visibleTCs.length > 0 && visibleTCs.every(tc => selectedTestCases.includes(tc.id))}
+                              onChange={() => {
+                                const allSelected = visibleTCs.every(tc => selectedTestCases.includes(tc.id));
+                                setSelectedTestCases(allSelected ? [] : visibleTCs.map(tc => tc.id));
+                              }}
+                            />
+                          </th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">ID</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Title</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                          <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Priority</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {visibleTCs
+                          .filter(tc => !caseSearchQuery || tc.title.toLowerCase().includes(caseSearchQuery.toLowerCase()))
+                          .map((tc: TestCase & { lifecycle_status?: string }) => {
+                            const lcStatus = tc.lifecycle_status || 'active';
+                            return (
+                              <tr
+                                key={tc.id}
+                                onClick={() => toggleTestCase(tc.id)}
+                                className={`cursor-pointer transition-colors ${
+                                  lcStatus === 'draft' ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-indigo-50/40'
+                                }`}
+                              >
+                                <td className="px-5 py-2.5">
+                                  <input
+                                    type="checkbox"
+                                    className="w-3.5 h-3.5 accent-indigo-500 cursor-pointer"
+                                    checked={selectedTestCases.includes(tc.id)}
+                                    onChange={() => {}}
+                                  />
+                                </td>
+                                <td className="px-3 py-2.5 font-mono text-xs text-indigo-600 font-semibold">{(tc as any).custom_id || '-'}</td>
+                                <td className="px-3 py-2.5 text-xs font-medium text-gray-800">{tc.title}</td>
+                                <td className="px-3 py-2.5">
+                                  <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
+                                    lcStatus === 'draft' ? 'bg-yellow-50 text-yellow-800 border-yellow-200' : 'bg-green-50 text-green-800 border-green-200'
+                                  }`}>
+                                    <i className={lcStatus === 'draft' ? 'ri-draft-line' : 'ri-checkbox-circle-line'} />
+                                    {lcStatus.charAt(0).toUpperCase() + lcStatus.slice(1)}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2.5">
+                                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                    tc.priority === 'critical' ? 'bg-red-100 text-red-700'
+                                    : tc.priority === 'high' ? 'bg-amber-100 text-amber-700'
+                                    : tc.priority === 'medium' ? 'bg-indigo-100 text-indigo-700'
+                                    : 'bg-gray-100 text-gray-600'
+                                  }`}>{tc.priority?.toUpperCase()}</span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        {visibleTCs.filter(tc => !caseSearchQuery || tc.title.toLowerCase().includes(caseSearchQuery.toLowerCase())).length === 0 && (
+                          <tr><td colSpan={5} className="px-5 py-8 text-center text-xs text-gray-400">No test cases found</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Draft Warning Banner */}
+                  {hasDraftSelected && !showDraftWarningDismissed && (
+                    <div className="flex items-start gap-2.5 mx-5 my-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                      <i className="ri-error-warning-line text-base mt-0.5 flex-shrink-0" />
+                      <div>
+                        <strong>Draft TCs included:</strong> {selectedDraftIds.length} draft TC(s) are selected and may be incomplete.
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={async () => {
+                              // Convert selected drafts to active
+                              const { data: { user } } = await supabase.auth.getUser();
+                              await supabase.from('test_cases').update({ lifecycle_status: 'active' }).in('id', selectedDraftIds);
+                              if (user) {
+                                await supabase.from('test_case_history').insert(
+                                  selectedDraftIds.map(tcId => ({ test_case_id: tcId, user_id: user.id, action_type: 'status_changed', field_name: 'lifecycle_status', old_value: 'draft', new_value: 'active' }))
+                                );
+                              }
+                              setShowDraftWarningDismissed(true);
+                            }}
+                            className="px-2.5 py-1 bg-amber-100 border border-amber-200 rounded text-[11px] font-semibold hover:bg-amber-200 cursor-pointer"
+                          >
+                            <i className="ri-checkbox-circle-line" /> Convert all to Active
+                          </button>
+                          <button onClick={() => setShowDraftWarningDismissed(true)} className="px-2.5 py-1 bg-white border border-gray-200 rounded text-[11px] font-semibold text-gray-500 hover:bg-gray-50 cursor-pointer">
+                            Proceed as is
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100 bg-gray-50">
+                    <div className="text-xs text-gray-500">
+                      <strong className="text-gray-900 text-sm">{selectedTestCases.length}</strong> selected
+                      {includeDraftTCs && selectedDraftIds.length > 0 && (
+                        <span className="ml-2 text-amber-600">({selectedDraftIds.length} draft)</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setAddRunStep(1)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-1">
+                        <i className="ri-arrow-left-line" /> Back
+                      </button>
+                      <button
+                        onClick={() => { setFormData(prev => ({ ...prev, include_all_cases: false })); handleAddRun(); }}
+                        disabled={submitting}
+                        className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold cursor-pointer disabled:opacity-50"
+                      >
+                        {submitting ? 'Creating...' : editingRunId ? 'Update Run' : 'Create Run'}
                       </button>
                     </div>
-                    <select 
-                      name="milestone_id"
-                      value={formData.milestone_id}
-                      onChange={(e) => {
-                        setFormData(prev => ({ ...prev, milestone_id: e.target.value }));
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
-                    >
-                      <option value="">Select milestone</option>
-                      {milestones.map((milestone) => (
-                        <option key={milestone.id} value={milestone.id}>
-                          {milestone.name}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">Optionally choose a milestone for this run or add a new one.</p>
                   </div>
+                </>
+              )}
 
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div className="space-y-3">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="include_all_cases"
-                          checked={formData.include_all_cases}
-                          onChange={() => setFormData(prev => ({ ...prev, include_all_cases: true }))}
-                          className="w-4 h-4 text-indigo-600 cursor-pointer"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Include all test cases</span>
-                        <i className="ri-information-line text-gray-400"></i>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="include_all_cases"
-                          checked={!formData.include_all_cases}
-                          onChange={() => setFormData(prev => ({ ...prev, include_all_cases: false }))}
-                          className="w-4 h-4 text-indigo-600 cursor-pointer"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Select cases to include:</span>
-                      </label>
-                      
-                      {!formData.include_all_cases && (
-                        <div className="ml-6 mt-3">
-                          <button
-                            onClick={() => {
-                              setSelectedFolder(null);
-                              setShowSelectCasesModal(true);
-                            }}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm font-medium cursor-pointer whitespace-nowrap flex items-center gap-2"
-                          >
-                            <i className="ri-checkbox-multiple-line"></i>
-                            Select cases ({selectedTestCases.length} selected)
-                          </button>
-                          {selectedTestCases.length > 0 && (
-                            <div className="mt-2 text-sm text-gray-600">
-                              {selectedTestCases.length} / {testCases.length} test cases selected
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {formData.include_all_cases && (
-                        <div className="ml-6 text-sm text-gray-500">
-                          All {testCases.length} test cases will be included
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">State <span className="text-red-500">*</span></label>
-                    <select 
-                      name="status"
-                      value={formData.status}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
-                    >
-                      <option value="new">🌟 New</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="under_review">Under Review</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700">Issues</label>
-                      <button className="text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap">+ Add</button>
-                    </div>
-                    <select 
-                      name="issues"
-                      value={formData.issues}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-gray-500 cursor-pointer"
-                    >
-                      <option value="">Select issues</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
-                    <input
-                      type="text"
-                      name="tags"
-                      value={formData.tags}
-                      onChange={handleInputChange}
-                      placeholder="Enter tags separated by commas"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">You can add tags to filter runs.</p>
-                  </div>
-
-                  {/* CI/CD Run 체크박스 추가 */}
-                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.is_ci_cd_run}
-                        onChange={(e) => setFormData(prev => ({ ...prev, is_ci_cd_run: e.target.checked }))}
-                        className="w-4 h-4 text-purple-600 cursor-pointer mt-0.5"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <i className="ri-robot-line text-purple-600"></i>
-                          <span className="text-sm font-semibold text-gray-900">CI/CD Run</span>
-                        </div>
-                        <p className="text-xs text-gray-600">
-                          이 Run을 CI/CD 자동화 전용으로 표시합니다. GitHub Actions, GitLab CI 등에서 테스트 결과를 자동으로 업로드할 때 사용하세요.
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
-              <button
-                onClick={() => {
-                  setShowAddRunModal(false);
-                  setEditingRunId(null);
-                }}
-                disabled={submitting}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddRun}
-                disabled={submitting}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? (editingRunId ? 'Updating...' : 'Adding...') : (editingRunId ? 'Update run' : 'Add run')}
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {showSelectCasesModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">

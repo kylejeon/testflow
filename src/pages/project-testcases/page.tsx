@@ -13,6 +13,11 @@ export default function ProjectTestCases() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [lifecycleFilter, setLifecycleFilter] = useState<'all' | 'draft' | 'active' | 'deprecated'>('all');
+
+  // Toast state
+  const [lcToast, setLcToast] = useState<{ show: boolean; tcId: string; phase: 'draft' | 'active' }>({ show: false, tcId: '', phase: 'draft' });
+  const lcToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -152,7 +157,7 @@ export default function ProjectTestCases() {
 
       const { data, error } = await supabase
         .from('test_cases')
-        .insert([{ ...testCase, project_id: id, created_by: user?.id, ...(custom_id ? { custom_id } : {}) }])
+        .insert([{ ...testCase, lifecycle_status: 'draft', project_id: id, created_by: user?.id, ...(custom_id ? { custom_id } : {}) }])
         .select(`
           *,
           creator:profiles!test_cases_created_by_fkey(full_name, email)
@@ -171,6 +176,11 @@ export default function ProjectTestCases() {
       }
 
       setTestCases([data, ...testCases]);
+
+      // Show "created as Draft" toast
+      if (lcToastTimerRef.current) clearTimeout(lcToastTimerRef.current);
+      setLcToast({ show: true, tcId: data.id, phase: 'draft' });
+      lcToastTimerRef.current = setTimeout(() => setLcToast(t => ({ ...t, show: false })), 5000);
     } catch (error) {
       console.error('테스트 케이스 추가 오류:', error);
     }
@@ -316,12 +326,35 @@ export default function ProjectTestCases() {
     // Keeping it here for backward compatibility but it won't be called
   };
 
+  const handleMarkActive = async () => {
+    const tcId = lcToast.tcId;
+    if (!tcId) return;
+    if (lcToastTimerRef.current) clearTimeout(lcToastTimerRef.current);
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('test_cases').update({ lifecycle_status: 'active' }).eq('id', tcId);
+    if (user) {
+      await supabase.from('test_case_history').insert({
+        test_case_id: tcId, user_id: user.id, action_type: 'status_changed',
+        field_name: 'lifecycle_status', old_value: 'draft', new_value: 'active',
+      });
+    }
+    setTestCases(prev => prev.map(tc => tc.id === tcId ? { ...tc, lifecycle_status: 'active' } : tc));
+    setLcToast({ show: true, tcId, phase: 'active' });
+    lcToastTimerRef.current = setTimeout(() => setLcToast(t => ({ ...t, show: false })), 3000);
+  };
+
   const filteredTestCases = testCases.filter(testCase => {
     const matchesSearch = testCase.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          testCase.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesPriority = priorityFilter === 'all' || testCase.priority === priorityFilter;
-    
-    return matchesSearch && matchesPriority;
+    const lc = testCase.lifecycle_status || 'active';
+    let matchesLifecycle = true;
+    if (lifecycleFilter === 'all') {
+      matchesLifecycle = lc !== 'deprecated'; // All tab hides deprecated
+    } else {
+      matchesLifecycle = lc === lifecycleFilter;
+    }
+    return matchesSearch && matchesPriority && matchesLifecycle;
   });
 
   if (loading) {
@@ -375,6 +408,43 @@ export default function ProjectTestCases() {
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200">
+              {/* ── Lifecycle Filter Tabs ── */}
+              {(() => {
+                const counts = {
+                  all: testCases.filter(tc => (tc.lifecycle_status || 'active') !== 'deprecated').length,
+                  draft: testCases.filter(tc => (tc.lifecycle_status || 'active') === 'draft').length,
+                  active: testCases.filter(tc => (tc.lifecycle_status || 'active') === 'active').length,
+                  deprecated: testCases.filter(tc => (tc.lifecycle_status || 'active') === 'deprecated').length,
+                };
+                const tabs: { key: 'all' | 'draft' | 'active' | 'deprecated'; label: string; icon?: string; iconCls?: string }[] = [
+                  { key: 'all', label: 'All' },
+                  { key: 'draft', label: 'Draft', icon: 'ri-draft-line', iconCls: 'text-amber-500' },
+                  { key: 'active', label: 'Active', icon: 'ri-checkbox-circle-line', iconCls: 'text-green-500' },
+                  { key: 'deprecated', label: 'Deprecated', icon: 'ri-forbid-line', iconCls: 'text-slate-400' },
+                ];
+                return (
+                  <div className="flex border-b border-gray-200">
+                    {tabs.map(tab => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setLifecycleFilter(tab.key)}
+                        className={`flex items-center gap-1.5 px-4 py-3 text-xs font-medium border-b-2 transition-colors ${
+                          lifecycleFilter === tab.key
+                            ? 'text-indigo-700 border-indigo-600 font-semibold'
+                            : 'text-gray-400 border-transparent hover:text-gray-600'
+                        }`}
+                      >
+                        {tab.icon && <i className={`${tab.icon} ${lifecycleFilter === tab.key ? '' : tab.iconCls}`} />}
+                        {tab.label}
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                          lifecycleFilter === tab.key ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'
+                        }`}>{counts[tab.key]}</span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center gap-4">
                   <div className="flex-1 relative">
@@ -438,6 +508,32 @@ export default function ProjectTestCases() {
           onSave={handleSaveAIGeneratedCases}
           onClose={() => setShowAIModal(false)}
         />
+      )}
+
+      {/* ── TC Creation Lifecycle Toast ── */}
+      {lcToast.show && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[999] animate-fade-in">
+          {lcToast.phase === 'draft' ? (
+            <div className="flex items-center gap-3 px-5 py-3.5 bg-slate-800 text-white rounded-xl shadow-2xl text-sm font-medium">
+              <i className="ri-check-line text-green-400 text-lg flex-shrink-0" />
+              <span>Test case created as Draft.</span>
+              <button
+                onClick={handleMarkActive}
+                className="text-indigo-400 font-semibold underline hover:text-indigo-300 ml-1 cursor-pointer"
+              >
+                Mark as Active
+              </button>
+              <button onClick={() => setLcToast(t => ({ ...t, show: false }))} className="ml-2 text-slate-400 hover:text-slate-300 cursor-pointer">
+                <i className="ri-close-line" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 px-5 py-3.5 bg-green-800 text-white rounded-xl shadow-2xl text-sm font-medium">
+              <i className="ri-checkbox-circle-line text-green-300 text-lg flex-shrink-0" />
+              <span>Test case marked as Active.</span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

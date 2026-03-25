@@ -71,12 +71,15 @@ export interface TestCase {
   description: string | null;
   priority: 'critical' | 'high' | 'medium' | 'low';
   status: 'passed' | 'failed' | 'pending';
+  lifecycle_status: 'draft' | 'active' | 'deprecated';
   is_automated: boolean;
   folder: string | null;
   assignee: string | null;
   created_at: string;
   updated_at: string;
 }
+
+export type LifecycleStatus = 'draft' | 'active' | 'deprecated';
 
 export interface Milestone {
   id: string;

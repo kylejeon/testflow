@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import ExportImportModal from './ExportImportModal';
 import { BulkActionBar } from '../../../components/BulkActionBar';
 import { StepEditor, type Step } from '../../../components/StepEditor';
+import { LifecycleBadge, type LifecycleStatus } from '../../../components/LifecycleBadge';
 
 interface TestCase {
   id: string;
@@ -22,6 +23,7 @@ interface TestCase {
   created_at: string;
   updated_at: string;
   project_id: string;
+  lifecycle_status?: LifecycleStatus;
 }
 
 interface TestCaseListProps {
@@ -223,6 +225,25 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [userTier, setUserTier] = useState<number>(1);
 
+  // ─── Lifecycle Status ───────────────────────────────────────────
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tcId: string; tcTitle: string } | null>(null);
+  const [contextMenuStatusOpen, setContextMenuStatusOpen] = useState(false);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+
+  // Deprecate confirm dialog state
+  const [deprecateDialog, setDeprecateDialog] = useState<{ tcId: string; tcTitle: string; bulk: boolean; bulkIds?: string[] } | null>(null);
+  const [deprecating, setDeprecating] = useState(false);
+
+  // Close context menu on outside click / scroll
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => { setContextMenu(null); setContextMenuStatusOpen(false); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('scroll', close, true);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('scroll', close, true); };
+  }, [contextMenu]);
+
   // projectName 상태 제거 (propProjectName을 직접 사용)
 
   // propProjectName 동기화 useEffect 제거
@@ -243,6 +264,102 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     };
     fetchUserTier();
   }, []);
+
+  // ─── Lifecycle Status Helpers ────────────────────────────────────
+  const updateLifecycleStatus = async (tcId: string, newStatus: LifecycleStatus, oldStatus: LifecycleStatus) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    // Optimistic update
+    const tc = testCases.find(t => t.id === tcId);
+    if (tc) onUpdate({ ...tc, lifecycle_status: newStatus });
+
+    const { error } = await supabase
+      .from('test_cases')
+      .update({ lifecycle_status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', tcId);
+
+    if (error) {
+      // Rollback
+      if (tc) onUpdate({ ...tc, lifecycle_status: oldStatus });
+      return;
+    }
+    // History
+    if (user) {
+      await supabase.from('test_case_history').insert({
+        test_case_id: tcId,
+        user_id: user.id,
+        action_type: 'status_changed',
+        field_name: 'lifecycle_status',
+        old_value: oldStatus,
+        new_value: newStatus,
+      });
+    }
+  };
+
+  const bulkUpdateLifecycleStatus = async (tcIds: string[], newStatus: LifecycleStatus) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from('test_cases')
+      .update({ lifecycle_status: newStatus, updated_at: new Date().toISOString() })
+      .in('id', tcIds);
+    if (error) return;
+    tcIds.forEach(tcId => {
+      const tc = testCases.find(t => t.id === tcId);
+      if (tc) onUpdate({ ...tc, lifecycle_status: newStatus });
+    });
+    if (user) {
+      await supabase.from('test_case_history').insert(
+        tcIds.map(tcId => ({
+          test_case_id: tcId,
+          user_id: user.id,
+          action_type: 'status_changed',
+          field_name: 'lifecycle_status',
+          new_value: newStatus,
+        }))
+      );
+    }
+    setSelectedTestCaseIds(new Set());
+  };
+
+  const handleLifecycleChange = (tc: TestCase, newStatus: LifecycleStatus) => {
+    const oldStatus = tc.lifecycle_status || 'active';
+    if (newStatus === 'deprecated') {
+      setDeprecateDialog({ tcId: tc.id, tcTitle: tc.title, bulk: false });
+    } else {
+      updateLifecycleStatus(tc.id, newStatus, oldStatus);
+    }
+  };
+
+  const handleContextMenuLifecycleChange = (newStatus: LifecycleStatus) => {
+    if (!contextMenu) return;
+    const tc = testCases.find(t => t.id === contextMenu.tcId);
+    setContextMenu(null);
+    setContextMenuStatusOpen(false);
+    if (!tc) return;
+    handleLifecycleChange(tc, newStatus);
+  };
+
+  const handleConfirmDeprecate = async () => {
+    if (!deprecateDialog) return;
+    setDeprecating(true);
+    if (deprecateDialog.bulk && deprecateDialog.bulkIds) {
+      await bulkUpdateLifecycleStatus(deprecateDialog.bulkIds, 'deprecated');
+    } else {
+      const tc = testCases.find(t => t.id === deprecateDialog.tcId);
+      await updateLifecycleStatus(deprecateDialog.tcId, 'deprecated', tc?.lifecycle_status || 'active');
+    }
+    setDeprecating(false);
+    setDeprecateDialog(null);
+  };
+
+  const handleBulkLifecycleChange = (newStatus: LifecycleStatus) => {
+    const ids = Array.from(selectedTestCaseIds);
+    if (newStatus === 'deprecated') {
+      const firstTitle = testCases.find(tc => tc.id === ids[0])?.title || '';
+      setDeprecateDialog({ tcId: ids[0], tcTitle: firstTitle, bulk: true, bulkIds: ids });
+    } else {
+      bulkUpdateLifecycleStatus(ids, newStatus);
+    }
+  };
 
   const handleOpenExportImport = () => {
     if (userTier < 2) {
@@ -2020,6 +2137,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       Test Case
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Lifecycle
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Folder
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -2029,17 +2149,24 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {paddingTop > 0 && (
-                    <tr><td colSpan={5} style={{ height: paddingTop }} /></tr>
+                    <tr><td colSpan={6} style={{ height: paddingTop }} /></tr>
                   )}
                   {virtualItems.map((vItem) => {
                     const testCase = filteredTestCases[vItem.index];
+                    const lcStatus = testCase.lifecycle_status || 'active';
                     return (
-                    <tr 
-                      key={testCase.id} 
+                    <tr
+                      key={testCase.id}
                       className={`hover:bg-gray-50 transition-all cursor-pointer ${
                         selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : ''
                       }`}
+                      style={lcStatus === 'deprecated' ? { opacity: 0.5 } : undefined}
                       onClick={() => { setSelectedTestCase(testCase); window.scrollTo(0, 0); }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setContextMenu({ x: e.clientX, y: e.clientY, tcId: testCase.id, tcTitle: testCase.title });
+                        setContextMenuStatusOpen(false);
+                      }}
                     >
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         <input 
@@ -2053,6 +2180,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         <span className="text-sm text-gray-500 font-mono">
                           {testCase.custom_id || '-'}
                         </span>
+                      </td>
+                      <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                        <LifecycleBadge
+                          status={lcStatus}
+                          size="sm"
+                          clickable
+                          onStatusChange={(ns) => handleLifecycleChange(testCase, ns)}
+                        />
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -2091,7 +2226,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     );
                   })}
                   {paddingBottom > 0 && (
-                    <tr><td colSpan={5} style={{ height: paddingBottom }} /></tr>
+                    <tr><td colSpan={6} style={{ height: paddingBottom }} /></tr>
                   )}
                 </tbody>
               </table>
@@ -3580,11 +3715,88 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         </div>
       )}
     </div>
+
+    {/* ─── Right-click Context Menu ─── */}
+    {contextMenu && (
+      <div
+        ref={contextMenuRef}
+        style={{ position: 'fixed', top: contextMenu.y, left: contextMenu.x, zIndex: 200 }}
+        className="bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[11rem] animate-dropdown"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {[
+          { icon: 'ri-eye-line', label: 'View Details', action: () => { const tc = testCases.find(t => t.id === contextMenu.tcId); if (tc) setSelectedTestCase(tc); setContextMenu(null); } },
+          { icon: 'ri-edit-line', label: 'Edit', action: () => { const tc = testCases.find(t => t.id === contextMenu.tcId); if (tc) { setSelectedTestCase(tc); } setContextMenu(null); } },
+        ].map(item => (
+          <button key={item.label} onClick={item.action} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">
+            <i className={`${item.icon} text-slate-400`} /> {item.label}
+          </button>
+        ))}
+        <div className="h-px bg-slate-100 my-1" />
+        <div
+          className="relative"
+          onMouseEnter={() => setContextMenuStatusOpen(true)}
+          onMouseLeave={() => setContextMenuStatusOpen(false)}
+        >
+          <button className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">
+            <i className="ri-arrow-left-right-line text-slate-400" /> Set Status
+            <i className="ri-arrow-right-s-line text-slate-400 ml-auto" />
+          </button>
+          {contextMenuStatusOpen && (
+            <div className="absolute left-full top-0 ml-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[10rem] z-[210]">
+              {(['draft', 'active', 'deprecated'] as LifecycleStatus[]).map(s => {
+                const icons: Record<LifecycleStatus, string> = { draft: 'ri-draft-line', active: 'ri-checkbox-circle-line', deprecated: 'ri-forbid-line' };
+                const colors: Record<LifecycleStatus, string> = { draft: 'text-amber-600', active: 'text-green-600', deprecated: 'text-slate-400' };
+                const current = (testCases.find(t => t.id === contextMenu.tcId)?.lifecycle_status || 'active') as LifecycleStatus;
+                return (
+                  <button key={s} onClick={() => handleContextMenuLifecycleChange(s)} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 capitalize">
+                    <i className={`${icons[s]} ${colors[s]}`} /> {s.charAt(0).toUpperCase() + s.slice(1)}
+                    {current === s && <i className="ri-check-line text-indigo-500 ml-auto" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div className="h-px bg-slate-100 my-1" />
+        <button onClick={() => { const tc = testCases.find(t => t.id === contextMenu.tcId); if (tc) { onDelete(tc.id); } setContextMenu(null); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50">
+          <i className="ri-delete-bin-line" /> Delete
+        </button>
+      </div>
+    )}
+
+    {/* ─── Deprecate Confirm Dialog ─── */}
+    {deprecateDialog && (
+      <div className="fixed inset-0 bg-black/40 z-[300] flex items-center justify-center" onClick={() => setDeprecateDialog(null)}>
+        <div className="bg-white rounded-xl p-6 max-w-sm w-[90%] shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mb-3">
+            <i className="ri-alert-line text-amber-600 text-xl" />
+          </div>
+          <h4 className="text-sm font-bold text-slate-900 mb-1">
+            {deprecateDialog.bulk ? `Deprecate ${deprecateDialog.bulkIds?.length} Test Cases?` : 'Deprecate Test Case?'}
+          </h4>
+          <p className="text-xs text-slate-500 leading-relaxed mb-1">
+            {deprecateDialog.bulk
+              ? `${deprecateDialog.bulkIds?.length} test cases will be deprecated and won't be included in new Runs.`
+              : <><span className="font-semibold text-slate-700">"{deprecateDialog.tcTitle}"</span> will be deprecated. It won't be included in new Runs.</>
+            }
+          </p>
+          <div className="flex gap-2 justify-end mt-4">
+            <button onClick={() => setDeprecateDialog(null)} className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50">Cancel</button>
+            <button onClick={handleConfirmDeprecate} disabled={deprecating} className="px-3 py-1.5 text-xs font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50">
+              {deprecating ? 'Deprecating...' : deprecateDialog.bulk ? `Deprecate ${deprecateDialog.bulkIds?.length} Cases` : 'Deprecate'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     <BulkActionBar
       selectedIds={selectedTestCaseIds}
       onClear={() => setSelectedTestCaseIds(new Set())}
       onMove={() => setShowBulkFolderModal(true)}
       onDelete={() => setShowBulkDeleteModal(true)}
+      onSetLifecycleStatus={handleBulkLifecycleChange}
     />
     </>
   );

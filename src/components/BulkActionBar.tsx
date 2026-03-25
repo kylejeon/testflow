@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 
 type TestStatus = 'passed' | 'failed' | 'blocked' | 'retest' | 'untested';
+type LifecycleStatus = 'draft' | 'active' | 'deprecated';
 
 interface BulkActionBarProps {
   selectedIds: Set<string>;
   onClear: () => void;
   onSetStatus?: (status: TestStatus) => void;
+  onSetLifecycleStatus?: (status: LifecycleStatus) => void;
   onAssign?: () => void;
   onTag?: () => void;
   onMove?: () => void;
@@ -23,6 +25,7 @@ export function BulkActionBar({
   selectedIds,
   onClear,
   onSetStatus,
+  onSetLifecycleStatus,
   onAssign,
   onTag,
   onMove,
@@ -30,11 +33,12 @@ export function BulkActionBar({
   className = '',
 }: BulkActionBarProps) {
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [lifecycleMenuOpen, setLifecycleMenuOpen] = useState(false);
   const count = selectedIds.size;
 
-  // Close status menu when selection clears
+  // Close menus when selection clears
   useEffect(() => {
-    if (count === 0) setStatusMenuOpen(false);
+    if (count === 0) { setStatusMenuOpen(false); setLifecycleMenuOpen(false); }
   }, [count]);
 
   // Escape to clear selection
@@ -80,6 +84,37 @@ export function BulkActionBar({
             )}
             {onTag && (
               <BulkButton icon="ri-price-tag-3-line" label="Tag" onClick={onTag} />
+            )}
+            {onSetLifecycleStatus && (
+              <div className="relative">
+                <BulkButton
+                  icon="ri-arrow-left-right-line"
+                  label="Set Status"
+                  onClick={() => setLifecycleMenuOpen((p) => !p)}
+                  active={lifecycleMenuOpen}
+                />
+                {lifecycleMenuOpen && (
+                  <div className="absolute bottom-full mb-2 left-0 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[140px] z-50">
+                    {([
+                      { status: 'draft' as LifecycleStatus, label: 'Draft', icon: 'ri-draft-line', color: 'text-amber-600' },
+                      { status: 'active' as LifecycleStatus, label: 'Active', icon: 'ri-checkbox-circle-line', color: 'text-green-600' },
+                      { status: 'deprecated' as LifecycleStatus, label: 'Deprecated', icon: 'ri-forbid-line', color: 'text-slate-400' },
+                    ]).map(({ status, label, icon, color }) => (
+                      <button
+                        key={status}
+                        onClick={() => {
+                          onSetLifecycleStatus(status);
+                          setLifecycleMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-indigo-50 transition-colors"
+                      >
+                        <i className={`${icon} ${color}`} />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
             {onSetStatus && (
               <div className="relative">
