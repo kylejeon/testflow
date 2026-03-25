@@ -379,11 +379,11 @@ export default function ProjectTestCases() {
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
         <main className="flex-1 overflow-y-auto bg-gray-50/30">
-          <div className="p-8">
-            <div className="flex items-center justify-between mb-8">
+          <div className="p-[1.75rem]">
+            <div className="flex items-center justify-between mb-[1.75rem]">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Test Cases</h1>
-                <p className="text-sm text-gray-500 mt-1">
+                <h1 className="text-[1.375rem] font-bold text-gray-900">Test Cases</h1>
+                <p className="text-[0.8125rem] text-gray-500 mt-1">
                   {project?.name} • {filteredTestCases.length} test cases
                 </p>
               </div>
@@ -391,7 +391,7 @@ export default function ProjectTestCases() {
                 {testCases.some(tc => !tc.custom_id) && project?.prefix && (
                   <button
                     onClick={handleAssignMissingIds}
-                    className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all font-semibold text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                    className="px-[0.875rem] py-[0.4375rem] bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all font-semibold text-[0.8125rem] flex items-center gap-2 cursor-pointer whitespace-nowrap"
                   >
                     <i className="ri-price-tag-3-line"></i>
                     ID 없는 케이스에 ID 부여
@@ -399,7 +399,7 @@ export default function ProjectTestCases() {
                 )}
                 <button
                   onClick={() => setShowAIModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-sm flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                  className="px-[0.875rem] py-[0.4375rem] bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-[0.8125rem] flex items-center gap-2 cursor-pointer whitespace-nowrap"
                 >
                   <i className="ri-sparkling-2-fill"></i>
                   Generate with AI
@@ -445,7 +445,7 @@ export default function ProjectTestCases() {
                 );
               })()}
 
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-[1.3125rem] border-b border-gray-200">
                 <div className="flex items-center gap-4">
                   <div className="flex-1 relative">
                     <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg w-5 h-5 flex items-center justify-center"></i>
@@ -454,14 +454,14 @@ export default function ProjectTestCases() {
                       placeholder="Search test cases..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                      className="w-full pl-10 pr-4 py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-[0.8125rem]"
                     />
                   </div>
 
                   <select
                     value={priorityFilter}
                     onChange={(e) => setPriorityFilter(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm cursor-pointer"
+                    className="px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-[0.8125rem] cursor-pointer"
                   >
                     <option value="all">All Priority</option>
                     <option value="high">High</option>

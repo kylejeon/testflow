@@ -11,26 +11,130 @@ const badgeStyle: Record<string, { bg: string; color: string }> = {
 };
 
 const heatmapColors = ['#F1F5F9', '#E0E7FF', '#C7D2FE', '#A5B4FC', '#818CF8', '#6366F1'];
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function toDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
 
 function Heatmap({ data }: { data: number[] }) {
-  const gridRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Build grid: 52 cols × 7 rows (Sun–Sat), data[0] = col0/row0 = oldest Sunday
+  // Compute month labels: track which col each month starts in
+  const now = new Date();
+  const todayDay = now.getDay();
+  const sunday52WeeksAgo = new Date(now);
+  sunday52WeeksAgo.setDate(sunday52WeeksAgo.getDate() - todayDay - 51 * 7);
+  sunday52WeeksAgo.setHours(0, 0, 0, 0);
+
+  const monthLabels: { col: number; label: string }[] = [];
+  let lastMonth = -1;
+  for (let col = 0; col < 52; col++) {
+    const d = new Date(sunday52WeeksAgo);
+    d.setDate(d.getDate() + col * 7);
+    if (d.getMonth() !== lastMonth) {
+      monthLabels.push({ col, label: MONTH_NAMES[d.getMonth()] });
+      lastMonth = d.getMonth();
+    }
+  }
 
   useEffect(() => {
-    const el = gridRef.current;
+    const el = containerRef.current;
     if (!el) return;
-    el.innerHTML = '';
-    data.forEach(level => {
-      const cell = document.createElement('div');
-      cell.style.cssText = `aspect-ratio:1;border-radius:3px;background:${heatmapColors[level]};cursor:pointer;transition:transform 0.15s;`;
-      cell.addEventListener('mouseenter', () => { cell.style.transform = 'scale(1.3)'; cell.style.zIndex = '1'; cell.style.position = 'relative'; });
-      cell.addEventListener('mouseleave', () => { cell.style.transform = ''; cell.style.zIndex = ''; cell.style.position = ''; });
-      el.appendChild(cell);
-    });
+    // Clear tooltip
+    const existing = el.parentElement?.querySelector('.hm-tooltip');
+    if (existing) existing.remove();
   }, [data]);
 
+  const tooltip = useRef<HTMLDivElement | null>(null);
+
+  const showTooltip = (e: React.MouseEvent, col: number, row: number, level: number) => {
+    const d = new Date(sunday52WeeksAgo);
+    d.setDate(d.getDate() + col * 7 + row);
+    const dateStr = toDateStr(d);
+    const tip = tooltip.current;
+    if (!tip) return;
+    tip.textContent = `${dateStr} · intensity ${level}`;
+    tip.style.display = 'block';
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    const parent = (e.target as HTMLElement).closest('.hm-wrap')?.getBoundingClientRect();
+    if (parent) {
+      tip.style.left = `${rect.left - parent.left + rect.width / 2}px`;
+      tip.style.top = `${rect.top - parent.top - 28}px`;
+    }
+  };
+  const hideTooltip = () => {
+    if (tooltip.current) tooltip.current.style.display = 'none';
+  };
+
   return (
-    <div ref={gridRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }} />
+    <div className="hm-wrap" style={{ position: 'relative' }}>
+      {/* Month labels row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(52, 1fr)', marginLeft: 28, marginBottom: 4 }}>
+        {Array.from({ length: 52 }, (_, col) => {
+          const lbl = monthLabels.find(m => m.col === col);
+          return (
+            <div key={col} style={{ fontSize: '0.5rem', color: '#94A3B8', fontWeight: 500, whiteSpace: 'nowrap' }}>
+              {lbl?.label ?? ''}
+            </div>
+          );
+        })}
+      </div>
+      {/* Day labels + cells */}
+      <div style={{ display: 'flex', gap: 0 }}>
+        {/* Day labels */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginRight: 4, width: 24, flexShrink: 0 }}>
+          {DAY_LABELS.map((d, i) => (
+            <div key={d} style={{ fontSize: '0.5rem', color: i % 2 === 1 ? '#94A3B8' : 'transparent', height: 10, lineHeight: '10px', fontWeight: 500, userSelect: 'none' }}>
+              {d}
+            </div>
+          ))}
+        </div>
+        {/* Grid */}
+        <div ref={containerRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(52, 1fr)', gridTemplateRows: 'repeat(7, 10px)', gap: 3, flex: 1 }}>
+          {Array.from({ length: 52 }, (_, col) =>
+            Array.from({ length: 7 }, (_, row) => {
+              const idx = col * 7 + row;
+              const level = data[idx] ?? 0;
+              return (
+                <div
+                  key={`${col}-${row}`}
+                  style={{ borderRadius: 2, background: heatmapColors[level], cursor: 'pointer', transition: 'transform 0.1s', gridColumn: col + 1, gridRow: row + 1 }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.4)'; showTooltip(e, col, row, level); }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; hideTooltip(); }}
+                />
+              );
+            })
+          )}
+        </div>
+      </div>
+      {/* Tooltip */}
+      <div ref={tooltip} style={{ display: 'none', position: 'absolute', pointerEvents: 'none', background: '#1E293B', color: '#fff', fontSize: '0.625rem', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', whiteSpace: 'nowrap', zIndex: 10, transform: 'translateX(-50%)' }} />
+      {/* Legend */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.625rem', justifyContent: 'flex-end' }}>
+        <span style={{ fontSize: '0.5625rem', color: '#94A3B8' }}>Less</span>
+        {heatmapColors.map((c, i) => (
+          <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: c }} />
+        ))}
+        <span style={{ fontSize: '0.5625rem', color: '#94A3B8' }}>More</span>
+      </div>
+    </div>
   );
+}
+
+function getResponseTimeColor(hours: number | null): string {
+  if (hours === null) return '#94A3B8';
+  if (hours < 1) return '#16A34A';
+  if (hours <= 4) return '#D97706';
+  return '#DC2626';
+}
+
+function formatResponseTime(hours: number | null): string {
+  if (hours === null) return '—';
+  if (hours < 1) return `${Math.round(hours * 60)}m`;
+  return `${hours.toFixed(1)}h`;
 }
 
 export default function TeamActivityPage() {
@@ -127,10 +231,9 @@ export default function TeamActivityPage() {
               {/* Summary Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 {[
-                  { label: 'Active Today',      value: String(data.activeToday),    extra: `/ ${data.totalMembers}`, sub: 'team members',                                                                    color: '#8B5CF6' },
-                  { label: 'TC Created Today',  value: String(data.tcCreatedToday), sub: 'new test cases',                                                                                                    color: '#0F172A' },
-                  { label: 'TC Executed Today', value: String(data.tcExecutedToday), sub: `${data.tcPassedToday} passed, ${data.tcFailedToday} failed, ${data.tcBlockedToday} blocked`,                      color: '#16A34A' },
-                  { label: 'Pass Rate Today',   value: data.tcExecutedToday > 0 ? `${Math.round((data.tcPassedToday / data.tcExecutedToday) * 100)}%` : '—', sub: 'of executed today',                      color: '#0F172A' },
+                  { label: 'Active Today',      value: String(data.activeToday),     extra: `/ ${data.totalMembers}`, sub: 'team members',                                                                color: '#8B5CF6' },
+                  { label: 'TC Created Today',  value: String(data.tcCreatedToday),  sub: 'new test cases',                                                                                               color: '#0F172A' },
+                  { label: 'TC Executed Today', value: String(data.tcExecutedToday), sub: `${data.tcPassedToday} passed, ${data.tcFailedToday} failed, ${data.tcBlockedToday} blocked`,                  color: '#16A34A' },
                 ].map((card, i) => (
                   <div key={i} className="ta-anim" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', padding: '1rem 1.25rem', animationDelay: `${i * 0.05}s` }}>
                     <div style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: '0.375rem' }}>{card.label}</div>
@@ -141,24 +244,22 @@ export default function TeamActivityPage() {
                     <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.25rem' }}>{card.sub}</div>
                   </div>
                 ))}
+                {/* 4th card: AVG Response Time */}
+                <div className="ta-anim" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', padding: '1rem 1.25rem', animationDelay: '0.15s' }}>
+                  <div style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: '0.375rem' }}>Avg Response Time</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: getResponseTimeColor(data.avgResponseTimeHours), lineHeight: 1 }}>
+                    {formatResponseTime(data.avgResponseTimeHours)}
+                  </div>
+                  <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.25rem' }}>
+                    {data.avgResponseTimeHours === null ? 'no resolutions today' : data.avgResponseTimeHours < 1 ? 'great response today' : data.avgResponseTimeHours <= 4 ? 'acceptable today' : 'needs attention'}
+                  </div>
+                </div>
               </div>
 
               {/* Heatmap */}
               <div className="ta-anim" style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', animationDelay: '0.2s' }}>
-                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem' }}>Team Activity — Last 4 Weeks</div>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem' }}>Team Activity — Last 52 Weeks</div>
                 <Heatmap data={data.heatmapData} />
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginTop: '0.375rem' }}>
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-                    <span key={d} style={{ fontSize: '0.5625rem', color: '#94A3B8', textAlign: 'center', fontWeight: 500 }}>{d}</span>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.75rem', justifyContent: 'flex-end' }}>
-                  <span style={{ fontSize: '0.5625rem', color: '#94A3B8' }}>Less</span>
-                  {heatmapColors.map((c, i) => (
-                    <div key={i} style={{ width: 12, height: 12, borderRadius: 2, background: c }} />
-                  ))}
-                  <span style={{ fontSize: '0.5625rem', color: '#94A3B8' }}>More</span>
-                </div>
               </div>
 
               {/* Main Grid: Members + Feed */}

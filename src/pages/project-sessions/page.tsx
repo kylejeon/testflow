@@ -575,13 +575,13 @@ export default function ProjectSessions() {
         <ProjectHeader projectId={projectId || ''} projectName={project?.name || ''} />
         
         <main className="flex-1 overflow-y-auto bg-gray-50/30">
-          <div className="p-8">
+          <div className="p-[1.75rem]">
             {/* Header */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Discovery Logs</h1>
+            <div className="mb-[1.3125rem]">
+              <div className="flex items-center justify-between mb-[1.3125rem]">
+                <h1 className="text-[1.375rem] font-bold text-gray-900">Discovery Logs</h1>
                 <div className="flex items-center gap-3">
-                  <button 
+                  <button
                     onClick={() => {
                       setEditingSessionId(null);
                       setFormData({
@@ -593,7 +593,7 @@ export default function ProjectSessions() {
                       });
                       setShowAddSessionModal(true);
                     }}
-                    className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center gap-2 text-sm font-medium cursor-pointer whitespace-nowrap"
+                    className="px-[0.875rem] py-[0.4375rem] bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center gap-2 text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap"
                   >
                     <i className="ri-add-line"></i>
                     New Log
@@ -602,14 +602,14 @@ export default function ProjectSessions() {
               </div>
 
               {/* Stats Cards */}
-              <div className="grid grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-3 gap-[1.3125rem] mb-[1.3125rem]">
                 {/* Active Sessions */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <div className="text-sm text-gray-500 mb-1">ACTIVE LOGS</div>
-                      <div className="text-3xl font-bold text-gray-900">{stats.activeSessions}</div>
-                      <div className="text-sm text-gray-500 mt-1">{stats.unstarted} unstarted</div>
+                      <div className="text-[0.8125rem] text-gray-500 mb-1">ACTIVE LOGS</div>
+                      <div className="text-[1.75rem] font-bold text-gray-900">{stats.activeSessions}</div>
+                      <div className="text-[0.8125rem] text-gray-500 mt-1">{stats.unstarted} unstarted</div>
                     </div>
                     <div className="w-16 h-16 bg-indigo-500 rounded-full flex items-center justify-center relative">
                       <div className="absolute inset-0 bg-indigo-500 rounded-full opacity-20 animate-ping"></div>
@@ -627,8 +627,8 @@ export default function ProjectSessions() {
                 </div>
 
                 {/* Latest Results */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="text-sm text-gray-500 mb-3">LATEST RESULTS</div>
+                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
+                  <div className="text-[0.8125rem] text-gray-500 mb-3">LATEST RESULTS</div>
                   <div className="h-[120px] flex flex-col gap-1">
                     {[0, 1, 2].map((row) => (
                       <div key={row} className="flex gap-1 flex-1">
@@ -649,11 +649,11 @@ export default function ProjectSessions() {
                 </div>
 
                 {/* Recently Closed */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <div className="text-sm text-gray-500 mb-1">RECENTLY CLOSED</div>
-                      <div className="text-3xl font-bold text-gray-900">{stats.closedSessions}</div>
+                      <div className="text-[0.8125rem] text-gray-500 mb-1">RECENTLY CLOSED</div>
+                      <div className="text-[1.75rem] font-bold text-gray-900">{stats.closedSessions}</div>
                     </div>
                     <div className="w-20 h-12">
                       <svg className="w-full h-full" viewBox="0 0 80 48">
@@ -689,7 +689,7 @@ export default function ProjectSessions() {
               <div className="flex space-x-8 border-b border-gray-200">
                 <button
                   onClick={() => setActiveTab('active')}
-                  className={`pb-4 px-1 border-b-2 font-medium text-sm cursor-pointer whitespace-nowrap ${
+                  className={`pb-4 px-1 border-b-2 font-medium text-[0.8125rem] cursor-pointer whitespace-nowrap ${
                     activeTab === 'active'
                       ? 'border-indigo-500 text-indigo-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -699,7 +699,7 @@ export default function ProjectSessions() {
                 </button>
                 <button
                   onClick={() => setActiveTab('closed')}
-                  className={`pb-4 px-1 border-b-2 font-medium text-sm cursor-pointer whitespace-nowrap ${
+                  className={`pb-4 px-1 border-b-2 font-medium text-[0.8125rem] cursor-pointer whitespace-nowrap ${
                     activeTab === 'closed'
                       ? 'border-indigo-500 text-indigo-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -711,7 +711,7 @@ export default function ProjectSessions() {
             </div>
 
             {/* Search and Filter */}
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-[1.3125rem]">
               <div className="flex-1 relative">
                 <i className="ri-search-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 <input
@@ -719,15 +719,15 @@ export default function ProjectSessions() {
                   placeholder="Search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full pl-10 pr-4 py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.8125rem]"
                 />
               </div>
-              
+
               {/* Filter Dropdown */}
               <div className="relative" ref={filterDropdownRef}>
-                <button 
+                <button
                   onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 cursor-pointer whitespace-nowrap"
+                  className="px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-[0.8125rem] text-gray-700 cursor-pointer whitespace-nowrap"
                 >
                   <i className="ri-filter-3-line"></i>
                   {activeFilterCount > 0 && (

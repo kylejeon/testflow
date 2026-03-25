@@ -35,7 +35,7 @@ export interface FeedItem {
 
 export interface TeamActivityData {
   members: TeamMember[];
-  heatmapData: number[];  // 28 cells: 4 weeks × 7 days (Mon–Sun), intensity 0–5
+  heatmapData: number[];  // 364 cells: 52 weeks × 7 days (Sun–Sat), intensity 0–5
   feedItems: FeedItem[];
   activeToday: number;
   tcCreatedToday: number;
@@ -44,6 +44,7 @@ export interface TeamActivityData {
   tcFailedToday: number;
   tcBlockedToday: number;
   totalMembers: number;
+  avgResponseTimeHours: number | null;
 }
 
 function getInitials(name: string): string {
@@ -94,7 +95,7 @@ export function useTeamActivity() {
       const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
       const todayISO = todayStart.toISOString();
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const twentyEightDaysAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString();
+      const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
       // All runs (needed to get run IDs for test_results lookup)
@@ -134,15 +135,15 @@ export function useTeamActivity() {
           .order('created_at', { ascending: false })
           .limit(50),
 
-        // Recent test results (last 30 days) — only if runs exist
+        // Recent test results (last year) — only if runs exist
         runIds.length > 0
           ? supabase
               .from('test_results')
-              .select('id, run_id, test_case_id, status, author, created_at')
+              .select('id, run_id, test_case_id, status, author, created_at, resolved_at')
               .in('run_id', runIds)
-              .gte('created_at', thirtyDaysAgo)
+              .gte('created_at', oneYearAgo)
               .order('created_at', { ascending: false })
-              .limit(100)
+              .limit(500)
           : Promise.resolve({ data: [] }),
 
         // Recent comments (last 30 days)
@@ -247,13 +248,32 @@ export function useTeamActivity() {
       const tcFailedToday = resultsToday.filter(r => r.status === 'failed').length;
       const tcBlockedToday = resultsToday.filter(r => r.status === 'blocked').length;
 
-      // Heatmap: 28 days (4×7), count test_results + test_cases per day, mapped to intensity 0–5
-      const activityByDay: Record<string, number> = {};
+      // Avg Response Time today: avg hours from created_at to resolved_at for results resolved today
+      const resolvedToday = (recentResults ?? []).filter(
+        r => r.resolved_at && r.resolved_at >= todayISO
+      );
+      let avgResponseTimeHours: number | null = null;
+      if (resolvedToday.length > 0) {
+        const totalHours = resolvedToday.reduce((sum, r) => {
+          const ms = new Date(r.resolved_at as string).getTime() - new Date(r.created_at).getTime();
+          return sum + ms / 3600000;
+        }, 0);
+        avgResponseTimeHours = Math.round((totalHours / resolvedToday.length) * 10) / 10;
+      }
+
+      // Heatmap: 52 weeks × 7 days (Sun–Sat), GitHub-style
       const now = new Date();
-      for (let d = 27; d >= 0; d--) {
-        const day = new Date(now);
-        day.setDate(day.getDate() - d);
-        activityByDay[toDateStr(day)] = 0;
+      const activityByDay: Record<string, number> = {};
+      // Start from the Sunday 52 weeks ago
+      const sunday52WeeksAgo = new Date(now);
+      const todayDay = now.getDay(); // 0=Sun
+      sunday52WeeksAgo.setDate(sunday52WeeksAgo.getDate() - todayDay - 51 * 7);
+      sunday52WeeksAgo.setHours(0, 0, 0, 0);
+
+      for (let i = 0; i < 364; i++) {
+        const d = new Date(sunday52WeeksAgo);
+        d.setDate(d.getDate() + i);
+        activityByDay[toDateStr(d)] = 0;
       }
       (recentResults ?? []).forEach(r => {
         const d = r.created_at.slice(0, 10);
@@ -264,24 +284,17 @@ export function useTeamActivity() {
         if (d in activityByDay) activityByDay[d]++;
       });
 
-      // Align to Mon–Sun grid (start from Monday 4 weeks ago)
-      const monday4WeeksAgo = new Date(now);
-      // Go back to last Monday
-      const dayOfWeek = monday4WeeksAgo.getDay(); // 0=Sun, 1=Mon...
-      const daysToLastMon = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
-      monday4WeeksAgo.setDate(monday4WeeksAgo.getDate() - daysToLastMon - 21);
-      monday4WeeksAgo.setHours(0, 0, 0, 0);
-
-      const activityValues = Object.values(activityByDay);
-      const maxActivity = Math.max(...activityValues, 1);
+      // Quantile-based intensity bucketing
+      const nonZeroValues = Object.values(activityByDay).filter(v => v > 0).sort((a, b) => a - b);
+      const maxActivity = nonZeroValues.length > 0 ? nonZeroValues[nonZeroValues.length - 1] : 1;
       const heatmapData: number[] = [];
-      for (let i = 0; i < 28; i++) {
-        const d = new Date(monday4WeeksAgo);
+      for (let i = 0; i < 364; i++) {
+        const d = new Date(sunday52WeeksAgo);
         d.setDate(d.getDate() + i);
-        const key = toDateStr(d);
-        const count = activityByDay[key] ?? 0;
-        // Map to 0–5 intensity
-        const intensity = count === 0 ? 0 : Math.min(5, Math.ceil((count / maxActivity) * 5));
+        const count = activityByDay[toDateStr(d)] ?? 0;
+        if (count === 0) { heatmapData.push(0); continue; }
+        const ratio = count / maxActivity;
+        const intensity = ratio <= 0.15 ? 1 : ratio <= 0.35 ? 2 : ratio <= 0.55 ? 3 : ratio <= 0.80 ? 4 : 5;
         heatmapData.push(intensity);
       }
 
@@ -354,6 +367,7 @@ export function useTeamActivity() {
         tcFailedToday,
         tcBlockedToday,
         totalMembers: memberList.length,
+        avgResponseTimeHours,
       });
     } catch (e) {
       console.error('useTeamActivity:', e);
@@ -368,9 +382,9 @@ export function useTeamActivity() {
 
 function empty(): TeamActivityData {
   return {
-    members: [], heatmapData: Array(28).fill(0),
+    members: [], heatmapData: Array(364).fill(0),
     feedItems: [], activeToday: 0, tcCreatedToday: 0,
     tcExecutedToday: 0, tcPassedToday: 0, tcFailedToday: 0, tcBlockedToday: 0,
-    totalMembers: 0,
+    totalMembers: 0, avgResponseTimeHours: null,
   };
 }

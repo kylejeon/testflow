@@ -341,7 +341,7 @@ export default function ProjectMilestones() {
 
     return (
       <div key={milestone.id}>
-        <div className="block bg-white rounded-lg border border-gray-200 p-6 hover:border-indigo-500 transition-all">
+        <div className="block bg-white rounded-lg border border-gray-200 p-[1.3125rem] hover:border-indigo-500 transition-all">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3 flex-1">
               {hasSubMilestones && (
@@ -357,21 +357,21 @@ export default function ProjectMilestones() {
               </Link>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600">{formatMonthDay(milestone.start_date).month} {formatMonthDay(milestone.start_date).day} - {endDateInfo.month} {endDateInfo.day}</span>
-              <span className={`px-3 py-1 rounded text-xs font-semibold ${badge.className}`}>{badge.label}</span>
+              <span className="text-[0.8125rem] text-gray-600">{formatMonthDay(milestone.start_date).month} {formatMonthDay(milestone.start_date).day} - {endDateInfo.month} {endDateInfo.day}</span>
+              <span className={`px-3 py-1 rounded text-[0.6875rem] font-semibold ${badge.className}`}>{badge.label}</span>
               {!isSubMilestone && (
-                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setParentMilestoneId(milestone.id); setShowCreateModal(true); }} className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5">
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setParentMilestoneId(milestone.id); setShowCreateModal(true); }} className="px-3 py-[0.4375rem] text-[0.8125rem] font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5">
                   <i className="ri-add-line text-base w-4 h-4 flex items-center justify-center"></i>Sub
                 </button>
               )}
-              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditFormData({ name: milestone.name, start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '', end_date: milestone.end_date ? milestone.end_date.split('T')[0] : '', status: milestone.status }); setEditingMilestone(milestone); }} className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5">
+              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditFormData({ name: milestone.name, start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '', end_date: milestone.end_date ? milestone.end_date.split('T')[0] : '', status: milestone.status }); setEditingMilestone(milestone); }} className="px-3 py-[0.4375rem] text-[0.8125rem] font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5">
                 <i className="ri-edit-line text-base w-4 h-4 flex items-center justify-center"></i>Edit
               </button>
               {milestone.status === 'upcoming' && (
-                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleStartMilestone(milestone.id); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap">Start</button>
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleStartMilestone(milestone.id); }} className="px-[0.875rem] py-[0.4375rem] text-[0.8125rem] font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap">Start</button>
               )}
               {(milestone.status === 'started' || milestone.status === 'past_due') && (
-                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleMarkAsComplete(milestone.id); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap">Complete</button>
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleMarkAsComplete(milestone.id); }} className="px-[0.875rem] py-[0.4375rem] text-[0.8125rem] font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap">Complete</button>
               )}
             </div>
           </div>
@@ -463,21 +463,21 @@ export default function ProjectMilestones() {
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
         <main className="flex-1 overflow-y-auto bg-gray-50/30">
-          <div className="p-8">
-            <div className="flex items-center justify-between mb-8">
-              <h1 className="text-2xl font-bold text-gray-900">Milestones</h1>
-              <button onClick={() => { setParentMilestoneId(null); setShowCreateModal(true); }} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2">
+          <div className="p-[1.75rem]">
+            <div className="flex items-center justify-between mb-[1.75rem]">
+              <h1 className="text-[1.375rem] font-bold text-gray-900">Milestones</h1>
+              <button onClick={() => { setParentMilestoneId(null); setShowCreateModal(true); }} className="px-[0.875rem] py-[0.4375rem] bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 text-[0.8125rem]">
                 <i className="ri-add-line text-lg w-5 h-5 flex items-center justify-center"></i>Milestone
               </button>
             </div>
 
             <div className="mb-6">
               <div className="flex items-center gap-4 border-b border-gray-200">
-                <button onClick={() => setActiveTab('active')} className={`px-1 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'active' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                <button onClick={() => setActiveTab('active')} className={`px-1 py-3 text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'active' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
                   ACTIVE ({milestones.filter(m => m.status !== 'completed').length})
                   {activeTab === 'active' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>}
                 </button>
-                <button onClick={() => setActiveTab('completed')} className={`px-1 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'completed' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                <button onClick={() => setActiveTab('completed')} className={`px-1 py-3 text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'completed' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
                   COMPLETED ({milestones.filter(m => m.status === 'completed').length})
                   {activeTab === 'completed' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>}
                 </button>

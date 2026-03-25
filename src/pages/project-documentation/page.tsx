@@ -178,28 +178,28 @@ export default function ProjectDocumentation() {
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
         <main className="flex-1 overflow-y-auto bg-gray-50/30">
-          <div className="p-8">
-            <div className="flex items-center justify-between mb-8">
+          <div className="p-[1.75rem]">
+            <div className="flex items-center justify-between mb-[1.75rem]">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
                   <i className="ri-file-text-line text-white text-xl"></i>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-                  <p className="text-sm text-gray-500">{project?.name}</p>
+                  <h1 className="text-[1.375rem] font-bold text-gray-900">{t('title')}</h1>
+                  <p className="text-[0.8125rem] text-gray-500">{project?.name}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button 
+                <button
                   onClick={() => setShowAddLinkModal(true)}
-                  className="px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
+                  className="px-[0.875rem] py-[0.4375rem] bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 text-[0.8125rem]"
                 >
                   <i className="ri-link text-lg w-5 h-5 flex items-center justify-center"></i>
                   {t('addLink')}
                 </button>
-                <button 
+                <button
                   onClick={() => setShowUploadModal(true)}
-                  className="px-4 py-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
+                  className="px-[0.875rem] py-[0.4375rem] bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 text-[0.8125rem]"
                 >
                   <i className="ri-upload-2-line text-lg w-5 h-5 flex items-center justify-center"></i>
                   {t('uploadFile')}
@@ -208,11 +208,11 @@ export default function ProjectDocumentation() {
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-[1.3125rem] border-b border-gray-200">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setFilterType('all')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-[0.875rem] py-[0.4375rem] rounded-lg text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap ${
                       filterType === 'all'
                         ? 'bg-indigo-500 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -222,7 +222,7 @@ export default function ProjectDocumentation() {
                   </button>
                   <button
                     onClick={() => setFilterType('link')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-[0.875rem] py-[0.4375rem] rounded-lg text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap ${
                       filterType === 'link'
                         ? 'bg-indigo-500 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -232,7 +232,7 @@ export default function ProjectDocumentation() {
                   </button>
                   <button
                     onClick={() => setFilterType('file')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-[0.875rem] py-[0.4375rem] rounded-lg text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap ${
                       filterType === 'file'
                         ? 'bg-indigo-500 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -243,7 +243,7 @@ export default function ProjectDocumentation() {
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-[1.3125rem]">
                 {filteredDocuments.length === 0 ? (
                   <div className="text-center py-16">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">

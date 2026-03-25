@@ -228,15 +228,37 @@ Deno.serve(async (req) => {
         : customIdMap[result.test_case_id],
     }));
 
+    // Fetch existing results to determine resolved_at for transitions
+    const tcIds = resolvedResults.map(r => r.test_case_id).filter(Boolean);
+    let existingStatusMap: Record<string, string> = {};
+    if (tcIds.length > 0) {
+      const { data: existingResults } = await supabase
+        .from('test_results')
+        .select('test_case_id, status')
+        .eq('run_id', run_id)
+        .in('test_case_id', tcIds);
+      (existingResults ?? []).forEach(r => {
+        existingStatusMap[r.test_case_id] = r.status;
+      });
+    }
+
+    const now = new Date().toISOString();
+
     // Insert/update test results
-    const resultsToInsert = resolvedResults.map(result => ({
-      run_id,
-      test_case_id: result.test_case_id,
-      status: result.status,
-      note: result.note || '',
-      elapsed: result.elapsed || 0,
-      author: result.author || 'CI/CD',
-    }));
+    const resultsToInsert = resolvedResults.map(result => {
+      const prevStatus = existingStatusMap[result.test_case_id];
+      const isResolution = (result.status === 'passed' || result.status === 'retest')
+        && (prevStatus === 'failed' || prevStatus === 'blocked');
+      return {
+        run_id,
+        test_case_id: result.test_case_id,
+        status: result.status,
+        note: result.note || '',
+        elapsed: result.elapsed || 0,
+        author: result.author || 'CI/CD',
+        ...(isResolution ? { resolved_at: now } : {}),
+      };
+    });
 
     const { error: insertError } = await supabase
       .from('test_results')

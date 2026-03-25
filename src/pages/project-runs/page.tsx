@@ -1261,12 +1261,12 @@ export default function ProjectRunsPage() {
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
         <main className="flex-1 overflow-y-auto bg-gray-50/30">
-          <div className="p-8">
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Runs & Results</h1>
+          <div className="p-[1.75rem]">
+            <div className="mb-[1.3125rem]">
+              <div className="flex items-center justify-between mb-[1.3125rem]">
+                <h1 className="text-[1.375rem] font-bold text-gray-900">Runs & Results</h1>
                 <div className="flex items-center gap-3">
-                  <button 
+                  <button
                     onClick={() => {
                       setEditingRunId(null);
                       setFormData({
@@ -1282,7 +1282,7 @@ export default function ProjectRunsPage() {
                       setSelectedTestCases([]);
                       setShowAddRunModal(true);
                     }}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium cursor-pointer whitespace-nowrap"
+                    className="px-[0.875rem] py-[0.4375rem] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap"
                   >
                     <i className="ri-add-line"></i>
                     Run
@@ -1290,12 +1290,12 @@ export default function ProjectRunsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-6 mb-6">
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="grid grid-cols-3 gap-[1.3125rem] mb-[1.3125rem]">
+                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <div className="text-sm text-gray-500 mb-1">Active Runs</div>
-                      <div className="text-3xl font-bold text-gray-900">{stats.activeRuns}</div>
+                      <div className="text-[0.8125rem] text-gray-500 mb-1">Active Runs</div>
+                      <div className="text-[1.75rem] font-bold text-gray-900">{stats.activeRuns}</div>
                     </div>
                     <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
                       <i className="ri-play-circle-line text-indigo-600 text-xl"></i>
@@ -1334,11 +1334,11 @@ export default function ProjectRunsPage() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <div className="text-sm text-gray-500 mb-1">Latest Results</div>
-                      <div className="text-3xl font-bold text-green-600">{stats.successRate}%</div>
+                      <div className="text-[0.8125rem] text-gray-500 mb-1">Latest Results</div>
+                      <div className="text-[1.75rem] font-bold text-green-600">{stats.successRate}%</div>
                     </div>
                     <div className="relative w-16 h-16">
                       <svg className="w-16 h-16 transform -rotate-90">
@@ -1351,14 +1351,14 @@ export default function ProjectRunsPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-600">{stats.dateRangeText}</div>
+                  <div className="text-[0.8125rem] text-gray-600">{stats.dateRangeText}</div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <div className="text-sm text-gray-500 mb-1">Recently Closed</div>
-                      <div className="text-3xl font-bold text-gray-900">{stats.closedRuns}</div>
+                      <div className="text-[0.8125rem] text-gray-500 mb-1">Recently Closed</div>
+                      <div className="text-[1.75rem] font-bold text-gray-900">{stats.closedRuns}</div>
                     </div>
                     <div className="w-20 h-12">
                       <svg className="w-full h-full" viewBox="0 0 80 48">
@@ -1373,14 +1373,14 @@ export default function ProjectRunsPage() {
                       </svg>
                     </div>
                   </div>
-                  <div className="text-sm text-green-600 font-semibold">+{stats.closedThisMonth} this month</div>
+                  <div className="text-[0.8125rem] text-green-600 font-semibold">+{stats.closedThisMonth} this month</div>
                 </div>
               </div>
 
               <div className="flex space-x-8 border-b border-gray-200">
                 <button
                   onClick={() => setActiveTab('active')}
-                  className={`pb-4 px-1 border-b-2 font-medium text-sm cursor-pointer whitespace-nowrap ${
+                  className={`pb-4 px-1 border-b-2 font-medium text-[0.8125rem] cursor-pointer whitespace-nowrap ${
                     activeTab === 'active'
                       ? 'border-indigo-500 text-indigo-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -1390,7 +1390,7 @@ export default function ProjectRunsPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('closed')}
-                  className={`pb-4 px-1 border-b-2 font-medium text-sm cursor-pointer whitespace-nowrap ${
+                  className={`pb-4 px-1 border-b-2 font-medium text-[0.8125rem] cursor-pointer whitespace-nowrap ${
                     activeTab === 'closed'
                       ? 'border-indigo-500 text-indigo-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

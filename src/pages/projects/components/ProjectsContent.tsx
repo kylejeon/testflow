@@ -141,24 +141,49 @@ export default function ProjectsContent() {
         setTestRunCounts(counts);
       }
 
-      const { data: testRunStatsData } = await supabase
+      // Compute pass rates from test_results (accurate, not stale stored columns)
+      const { data: allRunsForStats } = await supabase
         .from('test_runs')
-        .select('project_id, passed, failed, blocked, retest')
+        .select('id, project_id')
         .in('project_id', projectIds);
 
-      if (testRunStatsData) {
-        const passRates: Record<string, number | null> = {};
-        const grouped: Record<string, typeof testRunStatsData> = {};
-        testRunStatsData.forEach(r => {
-          if (!grouped[r.project_id]) grouped[r.project_id] = [];
-          grouped[r.project_id].push(r);
-        });
-        for (const [pid, runs] of Object.entries(grouped)) {
-          const totalTested = runs.reduce((acc, r) => acc + (r.passed || 0) + (r.failed || 0) + (r.blocked || 0) + (r.retest || 0), 0);
-          const totalPassed = runs.reduce((acc, r) => acc + (r.passed || 0), 0);
-          passRates[pid] = totalTested > 0 ? Math.round((totalPassed / totalTested) * 100) : null;
+      if (allRunsForStats && allRunsForStats.length > 0) {
+        const runIds = allRunsForStats.map(r => r.id);
+        const runProjectMap: Record<string, string> = {};
+        allRunsForStats.forEach(r => { runProjectMap[r.id] = r.project_id; });
+
+        const { data: resultsData } = await supabase
+          .from('test_results')
+          .select('run_id, test_case_id, status')
+          .in('run_id', runIds)
+          .order('created_at', { ascending: false });
+
+        if (resultsData) {
+          // Latest status per (run_id, test_case_id)
+          const latestByKey: Record<string, string> = {};
+          resultsData.forEach(r => {
+            const key = `${r.run_id}::${r.test_case_id}`;
+            if (!(key in latestByKey)) latestByKey[key] = r.status;
+          });
+
+          const passRates: Record<string, number | null> = {};
+          const projectCounts: Record<string, { passed: number; total: number }> = {};
+          Object.entries(latestByKey).forEach(([key, status]) => {
+            const runId = key.split('::')[0];
+            const pid = runProjectMap[runId];
+            if (!pid) return;
+            if (!projectCounts[pid]) projectCounts[pid] = { passed: 0, total: 0 };
+            if (status !== 'untested') {
+              projectCounts[pid].total++;
+              if (status === 'passed') projectCounts[pid].passed++;
+            }
+          });
+
+          for (const [pid, counts] of Object.entries(projectCounts)) {
+            passRates[pid] = counts.total > 0 ? Math.round((counts.passed / counts.total) * 100) : null;
+          }
+          setProjectPassRates(passRates);
         }
-        setProjectPassRates(passRates);
       }
 
       // Active runs count

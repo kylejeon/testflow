@@ -599,8 +599,20 @@ export default function RunDetail() {
 
   const handlePassAndNext = async () => {
     if (!selectedTestCase || !currentUser) return;
-    
+
     try {
+      // Check previous result to set resolved_at if transitioning from failed/blocked
+      const { data: prevResults } = await supabase
+        .from('test_results')
+        .select('status')
+        .eq('test_case_id', selectedTestCase.id)
+        .eq('run_id', runId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const prevStatus = prevResults?.[0]?.status;
+      const resolvedAt = (prevStatus === 'failed' || prevStatus === 'blocked')
+        ? new Date().toISOString() : undefined;
+
       // Create a test result
       const { data: resultData, error: resultError } = await supabase
         .from('test_results')
@@ -613,6 +625,7 @@ export default function RunDetail() {
           elapsed: '00:00',
           attachments: [],
           step_statuses: {},
+          ...(resolvedAt ? { resolved_at: resolvedAt } : {}),
         })
         .select()
         .single();
@@ -760,6 +773,22 @@ export default function RunDetail() {
         }
       }
 
+      // Check previous result to set resolved_at if transitioning from failed/blocked
+      let resolvedAt: string | undefined;
+      if (resultFormData.status === 'passed' || resultFormData.status === 'retest') {
+        const { data: prevResults } = await supabase
+          .from('test_results')
+          .select('status')
+          .eq('test_case_id', selectedTestCase.id)
+          .eq('run_id', runId)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        const prevStatus = prevResults?.[0]?.status;
+        if (prevStatus === 'failed' || prevStatus === 'blocked') {
+          resolvedAt = new Date().toISOString();
+        }
+      }
+
       // Save to Supabase
       const { data, error } = await supabase
         .from('test_results')
@@ -773,6 +802,7 @@ export default function RunDetail() {
           attachments: resultFormData.attachments.map(f => f.url),
           step_statuses: stepStatuses,
           issues: finalIssuesList,
+          ...(resolvedAt ? { resolved_at: resolvedAt } : {}),
         })
         .select()
         .single();
