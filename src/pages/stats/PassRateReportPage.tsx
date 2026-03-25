@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { usePassRateReport } from '../../hooks/usePassRateReport';
@@ -25,6 +25,8 @@ function dateRangeLabel(): string {
 export default function PassRateReportPage() {
   const { data, loading, error } = usePassRateReport();
   const [userInitials, setUserInitials] = useState('');
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(700);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -38,6 +40,32 @@ export default function PassRateReportPage() {
         });
     });
   }, []);
+
+  // Responsive chart: measure actual container width
+  const updateChartWidth = useCallback(() => {
+    if (chartContainerRef.current) {
+      setChartWidth(chartContainerRef.current.clientWidth || 700);
+    }
+  }, []);
+
+  useEffect(() => {
+    updateChartWidth();
+    const ro = new ResizeObserver(updateChartWidth);
+    if (chartContainerRef.current) ro.observe(chartContainerRef.current);
+    return () => ro.disconnect();
+  }, [updateChartWidth]);
+
+  // Compute bar/label positions relative to actual chart pixel width
+  const getChartSlot = (i: number) => {
+    const leftMargin = 50;
+    const rightPad = 10;
+    const available = chartWidth - leftMargin - rightPad;
+    const slotW = available / 7;
+    const bw = Math.min(Math.round(slotW * 0.65), 80);
+    const x = leftMargin + i * slotW + (slotW - bw) / 2;
+    const labelX = leftMargin + i * slotW + slotW / 2;
+    return { x, bw, labelX };
+  };
 
   const maxDayTotal = data
     ? Math.max(...data.dailyTrend.map(d => d.passed + d.failed + d.blocked), 1)
@@ -185,15 +213,15 @@ export default function PassRateReportPage() {
                       ))}
                     </div>
                   </div>
-                  <div style={{ position: 'relative', height: '220px' }}>
-                    <svg viewBox="0 0 700 220" width="100%" height="100%" preserveAspectRatio="none">
+                  <div ref={chartContainerRef} style={{ position: 'relative', height: '220px' }}>
+                    <svg viewBox={`0 0 ${chartWidth} 220`} width="100%" height="100%" preserveAspectRatio="none">
+                      {/* Gridlines spanning full measured width */}
                       {[20, 60, 100, 140, 180].map(y => (
-                        <line key={y} x1={50} y1={y} x2={680} y2={y} stroke="#F1F5F9" strokeWidth={1} />
+                        <line key={y} x1={50} y1={y} x2={chartWidth - 5} y2={y} stroke="#F1F5F9" strokeWidth={1} />
                       ))}
+                      {/* Stacked bars — positions computed relative to chartWidth */}
                       {data.dailyTrend.map((day, i) => {
-                        const bw = 60;
-                        const gap = 26;
-                        const x = 66 + i * (bw + gap);
+                        const { x, bw } = getChartSlot(i);
                         const scale = 160 / maxDayTotal;
                         const passH = day.passed * scale;
                         const failH = day.failed * scale;
@@ -209,11 +237,10 @@ export default function PassRateReportPage() {
                           </g>
                         );
                       })}
+                      {/* X-axis labels — centered in each slot, directly under bars */}
                       {data.dailyTrend.map((day, i) => {
-                        const bw = 60;
-                        const gap = 26;
-                        const x = 66 + i * (bw + gap) + bw / 2;
-                        return <text key={i} x={x} y={205} fontSize="9" fill="#94A3B8" textAnchor="middle" fontFamily="Inter, sans-serif">{day.label}</text>;
+                        const { labelX } = getChartSlot(i);
+                        return <text key={i} x={labelX} y={215} fontSize={Math.max(9, Math.min(11, chartWidth / 90))} fill="#94A3B8" textAnchor="middle" fontFamily="Inter, sans-serif">{day.label}</text>;
                       })}
                     </svg>
                   </div>
