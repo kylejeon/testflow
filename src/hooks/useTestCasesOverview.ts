@@ -161,16 +161,18 @@ export async function exportTestCasesCSV(projectIds: string[], projectNameMap: R
     .in('project_id', projectIds)
     .order('created_at', { ascending: false });
 
+  const LIFECYCLE_LABEL: Record<string, string> = { active: 'Active', draft: 'Draft', deprecated: 'Deprecated' };
+
   const rows = (tcs ?? []).map((tc, i) => [
     `TC-${(tcs!.length - i).toString().padStart(3, '0')}`,
     `"${(tc.title ?? '').replace(/"/g, '""')}"`,
     projectNameMap[tc.project_id] ?? 'Unknown',
     tc.priority ?? '',
-    tc.status ?? '',
+    LIFECYCLE_LABEL[tc.status] ?? tc.status ?? '',
     tc.created_at ?? '',
   ]);
 
-  const header = ['ID', 'Title', 'Project', 'Priority', 'Status', 'Created At'];
+  const header = ['ID', 'Title', 'Project', 'Priority', 'Lifecycle Status', 'Created At'];
   const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
