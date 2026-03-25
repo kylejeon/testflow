@@ -44,6 +44,7 @@ export default function ProjectDetail() {
   const [showQuickCreateTC, setShowQuickCreateTC] = useState(false);
   const [showContinueRun, setShowContinueRun] = useState(false);
   const [showAIAssist, setShowAIAssist] = useState(false);
+  const [projectPassRateData, setProjectPassRateData] = useState<{ total: number; passed: number } | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -156,6 +157,11 @@ export default function ProjectDetail() {
         .eq('project_id', id);
 
       if (allRunsError) throw allRunsError;
+
+      // Compute pass rate from ALL runs using stored aggregate columns
+      const _prTotal = (allRunsData || []).reduce((acc: number, r: any) => acc + (r.passed||0) + (r.failed||0) + (r.blocked||0) + (r.retest||0), 0);
+      const _prPassed = (allRunsData || []).reduce((acc: number, r: any) => acc + (r.passed||0), 0);
+      setProjectPassRateData({ total: _prTotal, passed: _prPassed });
 
       const { data: allTestResultsData, error: allTestResultsError } = await supabase
         .from('test_results')
@@ -590,9 +596,10 @@ export default function ProjectDetail() {
 
   // ── Dashboard computed values ──
   const activeRunsCount = testRuns.filter(r => r.status !== 'completed').length;
-  const totalTested = testRuns.reduce((acc, r) => acc + (r.passed||0) + (r.failed||0) + (r.blocked||0) + (r.retest||0), 0);
-  const totalPassed = testRuns.reduce((acc, r) => acc + (r.passed||0), 0);
-  const passRate = totalTested > 0 ? Math.round((totalPassed / totalTested) * 100) : 0;
+  // Use all-runs aggregate for pass rate (falls back to recent 5 runs if not yet loaded)
+  const prTotal = projectPassRateData?.total ?? testRuns.reduce((acc, r) => acc + (r.passed||0) + (r.failed||0) + (r.blocked||0) + (r.retest||0), 0);
+  const prPassed = projectPassRateData?.passed ?? testRuns.reduce((acc, r) => acc + (r.passed||0), 0);
+  const passRate = prTotal > 0 ? Math.round((prPassed / prTotal) * 100) : 0;
   const healthColor = passRate >= 80 ? '#16A34A' : passRate >= 50 ? '#D97706' : '#DC2626';
   const AI_LIMITS: Record<number, number> = { 1: 5, 2: 30, 3: 150, 4: -1, 5: -1, 6: -1 };
   const aiLimit = AI_LIMITS[currentTier] ?? 5;
@@ -898,8 +905,8 @@ export default function ProjectDetail() {
                           <i className="ri-checkbox-circle-line text-green-600"></i>
                         </div>
                         <div>
-                          <p className="text-xl font-bold leading-none" style={{ color: totalTested > 0 ? healthColor : '#9CA3AF' }}>
-                            {totalTested > 0 ? `${passRate}%` : '—'}
+                          <p className="text-xl font-bold leading-none" style={{ color: prTotal > 0 ? healthColor : '#9CA3AF' }}>
+                            {prTotal > 0 ? `${passRate}%` : '—'}
                           </p>
                           <p className="text-[11px] text-gray-400 mt-0.5">Pass Rate</p>
                         </div>

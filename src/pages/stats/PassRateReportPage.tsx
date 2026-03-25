@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { usePassRateReport } from '../../hooks/usePassRateReport';
+import { supabase } from '../../lib/supabase';
 
 const priorityStyle: Record<string, { color: string; bg: string }> = {
   critical: { color: '#DC2626', bg: '#FEF2F2' },
@@ -13,8 +15,29 @@ function fmt(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
 
+function dateRangeLabel(): string {
+  const end = new Date();
+  const start = new Date(end.getTime() - 6 * 24 * 60 * 60 * 1000);
+  const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
 export default function PassRateReportPage() {
   const { data, loading, error } = usePassRateReport();
+  const [userInitials, setUserInitials] = useState('');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from('profiles').select('full_name, avatar_emoji').eq('id', user.id).maybeSingle()
+        .then(({ data: profile }) => {
+          if (profile?.avatar_emoji) { setUserInitials(profile.avatar_emoji); return; }
+          const name = profile?.full_name || user.email || '';
+          const parts = name.split(/\s+/);
+          setUserInitials(parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase());
+        });
+    });
+  }, []);
 
   const maxDayTotal = data
     ? Math.max(...data.dailyTrend.map(d => d.passed + d.failed + d.blocked), 1)
@@ -59,6 +82,9 @@ export default function PassRateReportPage() {
           <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
             <i className="ri-notification-3-line" />
           </button>
+          <div style={{ width: '1.75rem', height: '1.75rem', borderRadius: '50%', background: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
+            {userInitials || '?'}
+          </div>
         </div>
       </header>
 
@@ -71,7 +97,10 @@ export default function PassRateReportPage() {
         </div>
         <div style={{ flex: 1 }} />
         <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', fontFamily: 'inherit', fontWeight: 500 }}>
-          <i className="ri-calendar-line" /> Last 7 Days
+          <i className="ri-download-2-line" /> Export PDF
+        </button>
+        <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', fontFamily: 'inherit', fontWeight: 500 }}>
+          <i className="ri-calendar-line" /> {dateRangeLabel()}
         </button>
       </div>
 
@@ -163,8 +192,8 @@ export default function PassRateReportPage() {
                       ))}
                       {data.dailyTrend.map((day, i) => {
                         const bw = 60;
-                        const gap = (630 - 7 * bw) / 6;
-                        const x = 60 + i * (bw + gap);
+                        const gap = 26;
+                        const x = 66 + i * (bw + gap);
                         const scale = 160 / maxDayTotal;
                         const passH = day.passed * scale;
                         const failH = day.failed * scale;
@@ -182,8 +211,8 @@ export default function PassRateReportPage() {
                       })}
                       {data.dailyTrend.map((day, i) => {
                         const bw = 60;
-                        const gap = (630 - 7 * bw) / 6;
-                        const x = 60 + i * (bw + gap) + bw / 2;
+                        const gap = 26;
+                        const x = 66 + i * (bw + gap) + bw / 2;
                         return <text key={i} x={x} y={205} fontSize="9" fill="#94A3B8" textAnchor="middle" fontFamily="Inter, sans-serif">{day.label}</text>;
                       })}
                     </svg>
@@ -250,6 +279,7 @@ export default function PassRateReportPage() {
                           <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: '#FEF2F2', color: '#DC2626', padding: '0.125rem 0.5rem', borderRadius: '9999px' }}>{data.failed}</span>
                         )}
                       </span>
+                      <Link to="/projects" style={{ fontSize: '0.75rem', color: '#6366F1', fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
                     </div>
                     {data.failedItems.length === 0 ? (
                       <div style={{ padding: '2rem', textAlign: 'center', color: '#94A3B8', fontSize: '0.875rem' }}>No failures in the last 7 days</div>
@@ -262,7 +292,9 @@ export default function PassRateReportPage() {
                               <i className="ri-close-line" style={{ fontSize: '0.75rem', color: '#EF4444' }} />
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
+                              <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <span style={{ color: '#94A3B8', marginRight: '0.25rem' }}>TC-{String(i + 1).padStart(3, '0')}:</span>{item.title}
+                              </div>
                               <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.125rem' }}>{item.projectName} · Failed {item.failCount} {item.failCount === 1 ? 'time' : 'times'}</div>
                             </div>
                             <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '0.125rem 0.5rem', borderRadius: '9999px', background: ps.bg, color: ps.color, whiteSpace: 'nowrap', textTransform: 'capitalize' }}>{item.priority}</span>
