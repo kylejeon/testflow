@@ -1301,7 +1301,7 @@ export default function ProjectRunsPage() {
                       <i className="ri-play-circle-line text-indigo-600 text-xl"></i>
                     </div>
                   </div>
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-[0.8125rem]">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Est. workload</span>
                       <span className="font-semibold text-gray-900">{testRuns.length * 45}h</span>
@@ -1401,16 +1401,16 @@ export default function ProjectRunsPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-[1.3125rem]">
               <div className="flex-1 relative">
                 <i className="ri-search-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 <input
                   type="text"
                   placeholder="Search runs..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full pl-10 pr-4 py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.8125rem]"
                 />
               </div>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 cursor-pointer whitespace-nowrap">
+              <button className="px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-[0.8125rem] text-gray-700 cursor-pointer whitespace-nowrap">
                 <i className="ri-filter-3-line"></i>
                 Filter
                 <i className="ri-close-line"></i>
@@ -1422,7 +1422,7 @@ export default function ProjectRunsPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-[1.3125rem]">
                 {milestones.length > 0 && (
                   <div className="bg-white rounded-lg border border-gray-200">
                     {milestones.map((milestone, index) => {
@@ -1435,7 +1435,7 @@ export default function ProjectRunsPage() {
                       
                       return (
                         <div key={milestone.id} className={index !== milestones.length - 1 ? 'border-b border-gray-200' : ''}>
-                          <div className="flex items-center justify-between p-4 bg-gray-50">
+                          <div className="flex items-center justify-between p-[1.3125rem] bg-gray-50">
                             <div className="flex items-center gap-3">
                               <i className="ri-flag-line text-gray-400"></i>
                               <span className="font-semibold text-gray-900">{milestone.name}</span>
@@ -1444,12 +1444,12 @@ export default function ProjectRunsPage() {
                               </span>
                             </div>
                             <div className="flex items-center gap-4">
-                              <span className="text-sm text-gray-500">{formatDateRange(milestone.start_date, milestone.end_date)}</span>
+                              <span className="text-[0.8125rem] text-gray-500">{formatDateRange(milestone.start_date, milestone.end_date)}</span>
                               {activeTab === 'closed' && (
                                 <button
                                   onClick={(e) => handleExportPdfClick(e, milestone, milestoneRuns)}
                                   disabled={generatingPdf === milestone.id}
-                                  className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                  className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                   {generatingPdf === milestone.id ? (
                                     <>
@@ -1474,7 +1474,7 @@ export default function ProjectRunsPage() {
                             {milestoneRuns.map((run) => (
                               <div 
                                 key={run.id} 
-                                className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                                className="py-[0.6875rem] px-4 hover:bg-gray-50 transition-colors cursor-pointer"
                                 onClick={() => handleRunClick(run.id)}
                               >
                                 <div className="flex items-start gap-4">
@@ -1505,7 +1505,7 @@ export default function ProjectRunsPage() {
                                       ))}
                                     </div>
                                     
-                                    <div className="flex items-center gap-6 text-sm text-gray-600 mb-3">
+                                    <div className="flex items-center gap-6 text-[0.8125rem] text-gray-600 mb-3">
                                       <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                         <span>{run.passed} Passed</span>
@@ -1535,7 +1535,7 @@ export default function ProjectRunsPage() {
                                           style={{ width: `${run.progress}%` }}
                                         ></div>
                                       </div>
-                                      <span className="text-sm font-semibold text-gray-700 min-w-[40px] text-right">{run.progress}%</span>
+                                      <span className="text-[0.8125rem] font-semibold text-gray-700 min-w-[40px] text-right">{run.progress}%</span>
                                     </div>
                                   </div>
 
@@ -1608,7 +1608,7 @@ export default function ProjectRunsPage() {
 
                 {getRunsWithoutMilestone().length > 0 && (
                   <div className="bg-white rounded-lg border border-gray-200">
-                    <div className="flex items-center justify-between p-4 bg-gray-50">
+                    <div className="flex items-center justify-between p-[1.3125rem] bg-gray-50">
                       <div className="flex items-center gap-3">
                         <i className="ri-inbox-line text-gray-400"></i>
                         <span className="font-semibold text-gray-900">Unassigned Milestones</span>

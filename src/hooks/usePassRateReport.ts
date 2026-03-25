@@ -116,7 +116,7 @@ export function usePassRateReport() {
       function dedup<T extends { run_id: string; test_case_id: string }>(rows: T[]): T[] {
         const seen = new Set<string>();
         return rows.filter(r => {
-          const k = `${r.run_id}::${r.test_case_id}`;
+          const k = r.test_case_id;
           if (seen.has(k)) return false;
           seen.add(k);
           return true;

@@ -379,7 +379,7 @@ export default function ProjectMilestones() {
             <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
               <div className={`h-full rounded-full transition-all ${getProgressBarColor(milestone.status)}`} style={{ width: `${milestone.actualProgress}%` }}></div>
             </div>
-            <span className="text-sm font-semibold text-gray-900 min-w-[50px] text-right">{milestone.actualProgress}%</span>
+            <span className="text-[0.8125rem] font-semibold text-gray-900 min-w-[50px] text-right">{milestone.actualProgress}%</span>
           </div>
         </div>
         {hasSubMilestones && isExpanded && (

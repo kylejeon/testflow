@@ -616,7 +616,7 @@ export default function ProjectSessions() {
                       <span className="text-2xl font-bold text-white relative z-10">{stats.activeSessions}</span>
                     </div>
                   </div>
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-[0.8125rem]">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">3w estimated workload</span>
                     </div>
@@ -854,7 +854,7 @@ export default function ProjectSessions() {
                 <p className="text-gray-500 text-lg">
                   {searchQuery || activeFilterCount > 0 ? 'No discovery logs found' : 'No discovery logs yet'}
                 </p>
-                <p className="text-gray-400 text-sm mt-2">
+                <p className="text-gray-400 text-[0.8125rem] mt-2">
                   {searchQuery || activeFilterCount > 0
                     ? 'Try adjusting your search or filters'
                     : 'Create your first discovery log to get started'}
@@ -875,7 +875,7 @@ export default function ProjectSessions() {
                       
                       return (
                         <div key={milestone.id} className={index !== milestones.length - 1 ? 'border-b border-gray-200' : ''}>
-                          <div className="flex items-center justify-between p-4 bg-gray-50">
+                          <div className="flex items-center justify-between p-[1.3125rem] bg-gray-50">
                             <div className="flex items-center gap-3">
                               <i className="ri-flag-line text-gray-400"></i>
                               <span className="font-semibold text-gray-900">{milestone.name}</span>
@@ -884,7 +884,7 @@ export default function ProjectSessions() {
                               </span>
                             </div>
                             <div className="flex items-center gap-4">
-                              <span className="text-sm text-gray-500">{formatDateRange(milestone.start_date, milestone.end_date)}</span>
+                              <span className="text-[0.8125rem] text-gray-500">{formatDateRange(milestone.start_date, milestone.end_date)}</span>
                             </div>
                           </div>
 
@@ -893,25 +893,25 @@ export default function ProjectSessions() {
                             <table className="w-full">
                               <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
-                                  <th className="px-4 py-3 text-left">
+                                  <th className="px-4 py-[0.6875rem] text-left">
                                     <input type="checkbox" className="w-4 h-4 text-indigo-600 cursor-pointer" />
                                   </th>
-                                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Discovery Log</th>
-                                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">State</th>
-                                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tags</th>
-                                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Contributors</th>
-                                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Activity</th>
-                                  <th className="px-4 py-3"></th>
+                                  <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Discovery Log</th>
+                                  <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">State</th>
+                                  <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Tags</th>
+                                  <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Contributors</th>
+                                  <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Activity</th>
+                                  <th className="px-4 py-[0.6875rem]"></th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-100">
                                 {milestoneSessions.map((session) => {
                                   return (
                                     <tr key={session.id} className="hover:bg-gray-50">
-                                      <td className="px-4 py-4">
+                                      <td className="px-4 py-[0.6875rem]">
                                         <input type="checkbox" className="w-4 h-4 text-indigo-600 cursor-pointer" />
                                       </td>
-                                      <td className="px-4 py-4">
+                                      <td className="px-4 py-[0.6875rem]">
                                         <div className="flex items-center gap-3">
                                           <i className={`${
                                             session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
@@ -927,7 +927,7 @@ export default function ProjectSessions() {
                                           </Link>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4">
+                                      <td className="px-4 py-[0.6875rem]">
                                         <div className="flex items-center gap-2">
                                           <i className={`${
                                             session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
@@ -935,7 +935,7 @@ export default function ProjectSessions() {
                                             session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
                                             'ri-check-line text-purple-500'
                                           }`}></i>
-                                          <span className="text-sm text-gray-700">
+                                          <span className="text-[0.8125rem] text-gray-700">
                                             {session.actualStatus === 'new' ? 'New' :
                                              session.actualStatus === 'in_progress' ? 'In progress' :
                                              session.actualStatus === 'paused' ? 'Paused' :
@@ -943,7 +943,7 @@ export default function ProjectSessions() {
                                           </span>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4">
+                                      <td className="px-4 py-[0.6875rem]">
                                         <div className="flex items-center gap-2">
                                           {session.tags && session.tags.slice(0, 2).map((tag, idx) => (
                                             <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
@@ -952,7 +952,7 @@ export default function ProjectSessions() {
                                           ))}
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4">
+                                      <td className="px-4 py-[0.6875rem]">
                                         {session.assignees && session.assignees.length > 0 ? (
                                           <div className="flex -space-x-2">
                                             {session.assignees.slice(0, 4).map((userId, idx) => {
@@ -985,7 +985,7 @@ export default function ProjectSessions() {
                                           <span className="text-xs text-gray-400">-</span>
                                         )}
                                       </td>
-                                      <td className="px-4 py-4">
+                                      <td className="px-4 py-[0.6875rem]">
                                         <div className="flex gap-1">
                                           {session.activityData && session.activityData.map((color, i) => (
                                             <div
@@ -997,7 +997,7 @@ export default function ProjectSessions() {
                                           ))}
                                         </div>
                                       </td>
-                                      <td className="px-4 py-4">
+                                      <td className="px-4 py-[0.6875rem]">
                                         <div className="relative" data-session-menu>
                                           <button 
                                             onClick={(e) => handleMenuOpen(e, session.id)}
@@ -1022,7 +1022,7 @@ export default function ProjectSessions() {
                 {/* Sessions without Milestone */}
                 {getSessionsWithoutMilestone().length > 0 && (
                   <div className="bg-white rounded-lg border border-gray-200">
-                    <div className="flex items-center justify-between p-4 bg-gray-50">
+                    <div className="flex items-center justify-between p-[1.3125rem] bg-gray-50">
                       <div className="flex items-center gap-3">
                         <i className="ri-inbox-line text-gray-400"></i>
                         <span className="font-semibold text-gray-900">Unassigned Milestones</span>
@@ -1036,7 +1036,7 @@ export default function ProjectSessions() {
                       <table className="w-full">
                         <thead className="bg-gray-50 border-b border-gray-200">
                           <tr>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Session</th>
+                            <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Session</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">State</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tags</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Contributors</th>
@@ -1048,7 +1048,7 @@ export default function ProjectSessions() {
                           {getSessionsWithoutMilestone().map((session) => {
                             return (
                               <tr key={session.id} className="hover:bg-gray-50">
-                                <td className="px-4 py-4">
+                                <td className="px-4 py-[0.6875rem]">
                                   <div className="flex items-center gap-3">
                                     <i className={`${
                                       session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
@@ -1064,7 +1064,7 @@ export default function ProjectSessions() {
                                     </Link>
                                   </div>
                                 </td>
-                                <td className="px-4 py-4">
+                                <td className="px-4 py-[0.6875rem]">
                                   <div className="flex items-center gap-2">
                                     <i className={`${
                                       session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
@@ -1080,7 +1080,7 @@ export default function ProjectSessions() {
                                     </span>
                                   </div>
                                 </td>
-                                <td className="px-4 py-4">
+                                <td className="px-4 py-[0.6875rem]">
                                   <div className="flex items-center gap-2">
                                     {session.tags && session.tags.slice(0, 2).map((tag, idx) => (
                                       <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
@@ -1089,7 +1089,7 @@ export default function ProjectSessions() {
                                     ))}
                                   </div>
                                 </td>
-                                <td className="px-4 py-4">
+                                <td className="px-4 py-[0.6875rem]">
                                   {session.assignees && session.assignees.length > 0 ? (
                                     <div className="flex -space-x-2">
                                       {session.assignees.slice(0, 4).map((userId, idx) => {
@@ -1122,7 +1122,7 @@ export default function ProjectSessions() {
                                     <span className="text-xs text-gray-400">-</span>
                                   )}
                                 </td>
-                                <td className="px-4 py-4">
+                                <td className="px-4 py-[0.6875rem]">
                                   <div className="flex gap-1">
                                     {session.activityData && session.activityData.map((color, i) => (
                                       <div
@@ -1134,7 +1134,7 @@ export default function ProjectSessions() {
                                     ))}
                                   </div>
                                 </td>
-                                <td className="px-4 py-4">
+                                <td className="px-4 py-[0.6875rem]">
                                   <div className="relative" data-session-menu>
                                     <button 
                                       onClick={(e) => handleMenuOpen(e, session.id)}

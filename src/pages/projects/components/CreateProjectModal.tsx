@@ -192,7 +192,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">새 프로젝트 만들기</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Create New Project</h2>
             <button
               onClick={onClose}
               className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
@@ -212,28 +212,28 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
               <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <i className="ri-error-warning-line text-3xl text-amber-600"></i>
               </div>
-              <h3 className="text-lg font-bold text-amber-800 mb-2">프로젝트 생성 한도 초과</h3>
+              <h3 className="text-lg font-bold text-amber-800 mb-2">Project Limit Reached</h3>
               <p className="text-amber-700 mb-4">
-                {subscriptionTier === 1 ? 'Free' : subscriptionTier === 2 ? 'Starter' : 'Professional'} 요금제에서는 최대 {maxProjects}개의 프로젝트만 생성할 수 있습니다.
+                Your {subscriptionTier === 1 ? 'Free' : subscriptionTier === 2 ? 'Starter' : 'Professional'} plan allows up to {maxProjects} projects.
                 <br />
-                현재 {currentProjectCount}개의 프로젝트를 보유하고 있습니다.
+                You currently have {currentProjectCount} projects.
               </p>
               <p className="text-sm text-amber-600 mb-4">
-                더 많은 프로젝트가 필요하시면 요금제를 업그레이드해 주세요.
+                Upgrade your plan to create more projects.
               </p>
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={onClose}
                   className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all cursor-pointer whitespace-nowrap"
                 >
-                  닫기
+                  Close
                 </button>
                 <a
                   href="/settings"
                   className="px-5 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 font-medium transition-all cursor-pointer whitespace-nowrap inline-flex items-center gap-2"
                 >
                   <i className="ri-vip-crown-line"></i>
-                  요금제 확인
+                  View Plans
                 </a>
               </div>
             </div>
@@ -271,7 +271,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
                   <i className="ri-information-line text-gray-500"></i>
                   <span className="text-sm text-gray-600">
-                    Free 요금제: {currentProjectCount}/{maxProjects}개 프로젝트 사용 중
+                    Free plan: {currentProjectCount}/{maxProjects} projects used
                   </span>
                 </div>
               )}
@@ -279,20 +279,20 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
                   <i className="ri-information-line text-gray-500"></i>
                   <span className="text-sm text-gray-600">
-                    Starter 요금제: {currentProjectCount}/{maxProjects}개 프로젝트 사용 중
+                    Starter plan: {currentProjectCount}/{maxProjects} projects used
                   </span>
                 </div>
               )}
               
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  프로젝트 이름 <span className="text-red-500">*</span>
+                  Project Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="예: 모바일 앱 테스트"
+                  placeholder="e.g. Mobile App Testing"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   required
                 />
@@ -300,21 +300,21 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  테스트 케이스 ID Prefix
+                  Test Case ID Prefix
                 </label>
                 <input
                   type="text"
                   value={formData.prefix}
                   onChange={(e) => setFormData({ ...formData, prefix: e.target.value.toUpperCase() })}
-                  placeholder="예: TC, LOGIN (영문 대문자 권장, 최대 10자)"
+                  placeholder="e.g. TC, LOGIN (uppercase recommended, max 10 chars)"
                   maxLength={10}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono"
                 />
                 <p className="mt-2 text-xs text-gray-500">
-                  테스트 케이스 ID 형식: <span className="font-mono font-semibold text-indigo-600">{formData.prefix || 'PREFIX'}-001</span>
+                  Test case ID format: <span className="font-mono font-semibold text-indigo-600">{formData.prefix || 'PREFIX'}-001</span>
                   {!formData.prefix && formData.name && (
                     <span className="ml-2 text-gray-400">
-                      (비워두면 "<span className="font-mono font-semibold">{generatePrefix(formData.name)}</span>" 사용)
+                      (leave empty to use "<span className="font-mono font-semibold">{generatePrefix(formData.name)}</span>")
                     </span>
                   )}
                 </p>
@@ -322,12 +322,12 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  설명
+                  Description
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="프로젝트에 대한 간단한 설명을 입력하세요"
+                  placeholder="Enter a brief description of this project"
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                 />
@@ -341,24 +341,24 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                   type="text"
                   value={formData.jiraProjectKey}
                   onChange={(e) => setFormData({ ...formData, jiraProjectKey: e.target.value.toUpperCase() })}
-                  placeholder="예: PROJ, SUI (Jira 프로젝트 키)"
+                  placeholder="e.g. PROJ, SUI (Jira project key)"
                   maxLength={20}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono uppercase"
                 />
-                <p className="mt-1 text-xs text-gray-500">이 프로젝트와 연결할 Jira 프로젝트 키를 입력하세요 (선택사항)</p>
+                <p className="mt-1 text-xs text-gray-500">Enter the Jira project key to link with this project (optional)</p>
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  상태
+                  Status
                 </label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
                 >
-                  <option value="active">활성</option>
-                  <option value="archived">보관됨</option>
+                  <option value="active">Active</option>
+                  <option value="archived">Archived</option>
                 </select>
               </div>
             </div>
@@ -369,13 +369,13 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
                 onClick={onClose}
                 className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all cursor-pointer whitespace-nowrap"
               >
-                취소
+                Cancel
               </button>
               <button
                 type="submit"
                 className="px-5 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 font-medium transition-all cursor-pointer whitespace-nowrap"
               >
-                프로젝트 생성
+                Create Project
               </button>
             </div>
           </form>

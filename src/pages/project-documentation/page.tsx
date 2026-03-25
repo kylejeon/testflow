@@ -284,7 +284,7 @@ export default function ProjectDocumentation() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-gray-900 mb-1">{doc.title}</h3>
                           {doc.description && (
-                            <p className="text-sm text-gray-500 mb-2">{doc.description}</p>
+                            <p className="text-[0.8125rem] text-gray-500 mb-2">{doc.description}</p>
                           )}
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span>{formatDate(doc.created_at)}</span>
@@ -300,7 +300,7 @@ export default function ProjectDocumentation() {
                               href={doc.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap text-sm font-medium"
+                              className="px-[0.875rem] py-[0.4375rem] bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap text-[0.8125rem] font-medium"
                             >
                               {t('open')}
                             </a>
@@ -309,7 +309,7 @@ export default function ProjectDocumentation() {
                             <a
                               href={doc.file_url}
                               download={doc.file_name}
-                              className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap text-sm font-medium"
+                              className="px-[0.875rem] py-[0.4375rem] bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap text-[0.8125rem] font-medium"
                             >
                               {t('download')}
                             </a>
