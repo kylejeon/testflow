@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Logo from '../../components/Logo';
-import SEOHead from '../../components/SEOHead';
+import MarketingLayout from '../../components/marketing/MarketingLayout';
 
 const entries = [
   {
@@ -94,7 +92,6 @@ const entries = [
 ];
 
 export default function ChangelogPage() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -117,26 +114,12 @@ export default function ChangelogPage() {
   };
 
   return (
-    <>
-      <SEOHead
-        title="Changelog | Testably — Product Updates"
-        description="See what's new in Testably. Product updates, new features, and release notes for the QA test management platform."
-        keywords="testably changelog, product updates, release notes, new features"
-      />
-      <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
-        {/* Navbar */}
-        <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <button onClick={() => navigate('/')} className="cursor-pointer">
-              <Logo variant="light" className="h-9" />
-            </button>
-            <div className="flex items-center gap-3">
-              <button onClick={() => navigate('/roadmap')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Roadmap</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all cursor-pointer">Log in</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all cursor-pointer">Get Started</button>
-            </div>
-          </div>
-        </nav>
+    <MarketingLayout
+      title="Changelog | Testably"
+      description="See what's new in Testably. Recent updates, improvements, and bug fixes."
+      keywords="testably changelog, product updates, release notes, new features"
+      showCTA={false}
+    >
 
         {/* Hero */}
         <header className="py-20 bg-gray-950 text-center relative overflow-hidden">
@@ -217,14 +200,6 @@ export default function ChangelogPage() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="bg-gray-100 py-8">
-          <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Logo variant="light" className="h-7" />
-            <p className="text-gray-400 text-xs">© {new Date().getFullYear()} Testably. All rights reserved.</p>
-          </div>
-        </footer>
-      </div>
-    </>
+    </MarketingLayout>
   );
 }

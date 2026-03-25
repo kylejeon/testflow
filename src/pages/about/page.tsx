@@ -1,6 +1,4 @@
-import { useNavigate } from 'react-router-dom';
-import Logo from '../../components/Logo';
-import SEOHead from '../../components/SEOHead';
+import MarketingLayout from '../../components/marketing/MarketingLayout';
 
 const differentiators = [
   {
@@ -64,30 +62,13 @@ const stats = [
 ];
 
 export default function AboutPage() {
-  const navigate = useNavigate();
-
   return (
-    <>
-      <SEOHead
-        title="About | Testably — Our Mission and Story"
-        description="Learn about Testably — our mission to make great QA tools accessible to every software team, our values, and what makes us different."
-        keywords="about testably, QA platform mission, test management company, flat rate QA tools"
-      />
-      <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
-        {/* Navbar */}
-        <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <button onClick={() => navigate('/')} className="cursor-pointer">
-              <Logo variant="light" className="h-9" />
-            </button>
-            <div className="flex items-center gap-3">
-              <button onClick={() => navigate('/features')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Features</button>
-              <button onClick={() => navigate('/pricing')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Pricing</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all cursor-pointer">Log in</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all cursor-pointer">Get Started</button>
-            </div>
-          </div>
-        </nav>
+    <MarketingLayout
+      title="About | Testably"
+      description="Meet the team behind Testably. Our mission: make quality testing accessible to every team."
+      keywords="about testably, QA platform mission, test management company, flat rate QA tools"
+      showCTA={false}
+    >
 
         {/* Hero */}
         <header className="py-24 bg-gray-950 text-center relative overflow-hidden">
@@ -183,7 +164,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Contact + CTA */}
+        {/* Contact CTA */}
         <section className="py-20 bg-indigo-500 text-center">
           <div className="max-w-2xl mx-auto px-6">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Get in touch</h2>
@@ -198,24 +179,9 @@ export default function AboutPage() {
                 <i className="ri-mail-line"></i>
                 hello@testably.app
               </a>
-              <button
-                onClick={() => navigate('/auth')}
-                className="px-8 py-3.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all cursor-pointer"
-              >
-                Start for Free
-              </button>
             </div>
           </div>
         </section>
-
-        {/* Footer */}
-        <footer className="bg-gray-100 py-8">
-          <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Logo variant="light" className="h-7" />
-            <p className="text-gray-400 text-xs">© {new Date().getFullYear()} Testably. All rights reserved.</p>
-          </div>
-        </footer>
-      </div>
-    </>
+    </MarketingLayout>
   );
 }

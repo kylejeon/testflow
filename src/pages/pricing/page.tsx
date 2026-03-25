@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import Logo from '../../components/Logo';
 import { useNavigate, Link } from 'react-router-dom';
-import SEOHead from '../../components/SEOHead';
+import MarketingLayout from '../../components/marketing/MarketingLayout';
 
 const plans = [
   {
@@ -191,26 +190,12 @@ export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <>
-      <SEOHead
-        title="Pricing | Testably — Flat-Rate QA Test Management"
-        description="Testably pricing: Free $0, Starter $49, Professional $99, Enterprise from $249. Flat-rate plans — no per-seat charges. 14-day free trial on all paid plans."
-        keywords="testably pricing, QA tool pricing, test management cost, flat rate QA software"
-      />
-      <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
-        {/* Navbar */}
-        <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <button onClick={() => navigate('/')} className="cursor-pointer">
-              <Logo variant="light" className="h-9" />
-            </button>
-            <div className="flex items-center gap-3">
-              <button onClick={() => navigate('/features')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Features</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all cursor-pointer">Log in</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all cursor-pointer">Get Started</button>
-            </div>
-          </div>
-        </nav>
+    <MarketingLayout
+      title="Pricing | Testably"
+      description="Simple flat-rate pricing for teams. Free plan available. No per-seat fees."
+      keywords="testably pricing, QA tool pricing, test management cost, flat rate QA software"
+      showCTA={false}
+    >
 
         {/* Hero */}
         <header className="py-20 bg-gray-950 text-center relative overflow-hidden">
@@ -490,14 +475,6 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="bg-gray-100 py-8">
-          <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Logo variant="light" className="h-7" />
-            <p className="text-gray-400 text-xs">© {new Date().getFullYear()} Testably. All rights reserved.</p>
-          </div>
-        </footer>
-      </div>
-    </>
+    </MarketingLayout>
   );
 }

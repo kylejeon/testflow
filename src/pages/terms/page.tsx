@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import SEOHead from '../../components/SEOHead';
-import Logo from '../../components/Logo';
+import MarketingLayout from '../../components/marketing/MarketingLayout';
 import { useLanguage } from '../../hooks/useLanguage';
 
 const content = {
@@ -192,7 +190,6 @@ const content = {
 };
 
 export default function TermsPage() {
-  const navigate = useNavigate();
   const { currentLanguage, changeLanguage } = useLanguage();
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const langMenuRef = useRef<HTMLDivElement>(null);
@@ -210,59 +207,11 @@ export default function TermsPage() {
   }, [langMenuOpen]);
 
   return (
-    <>
-      <SEOHead
-        title={lang === 'ko' ? '이용약관 | Testably' : 'Terms of Service | Testably'}
-        description="Read Testably's Terms of Service. Learn about account usage, subscriptions, payments, refund policy, and user responsibilities."
-        keywords="terms of service, user agreement, subscription, refund policy"
-        noindex={true}
-      />
-      <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
-        {/* Navbar */}
-        <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <button onClick={() => navigate('/')} className="cursor-pointer">
-              <Logo variant="light" className="h-9" />
-            </button>
-            <div className="flex items-center gap-3">
-              {/* Language Switcher */}
-              <div className="relative" ref={langMenuRef}>
-                <button
-                  onClick={() => setLangMenuOpen(!langMenuOpen)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 bg-white transition-all cursor-pointer"
-                >
-                  <i className="ri-translate-2 text-base"></i>
-                  <span>{lang === 'en' ? 'EN' : 'KO'}</span>
-                  <i className={`ri-arrow-down-s-line text-sm transition-transform ${langMenuOpen ? 'rotate-180' : ''}`}></i>
-                </button>
-                {langMenuOpen && (
-                  <div className="absolute right-0 top-10 w-40 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
-                    {(['en', 'ko'] as const).map((l) => (
-                      <button
-                        key={l}
-                        onClick={() => { changeLanguage(l); setLangMenuOpen(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between cursor-pointer transition-colors hover:bg-gray-50 ${lang === l ? 'text-indigo-600 bg-indigo-50 font-semibold' : 'text-gray-700'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span>{l === 'en' ? '🇬🇧' : '🇰🇷'}</span>
-                          <span>{l === 'en' ? 'English' : '한국어'}</span>
-                        </div>
-                        {lang === l && <i className="ri-check-line text-indigo-600"></i>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => navigate('/')}
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
-              >
-                <i className="ri-arrow-left-line"></i>
-                {t.back}
-              </button>
-            </div>
-          </div>
-        </nav>
+    <MarketingLayout
+      title={lang === 'ko' ? '이용약관 | Testably' : 'Terms of Service | Testably'}
+      description="Terms and conditions for using Testably."
+      showCTA={false}
+    >
 
         {/* Content */}
         <main className="max-w-3xl mx-auto px-6 py-16">
@@ -350,18 +299,6 @@ export default function TermsPage() {
           </article>
         </main>
 
-        {/* Footer */}
-        <footer className="bg-gray-100 py-8 mt-16 border-t border-gray-200">
-          <div className="max-w-3xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-400 text-xs">© {new Date().getFullYear()} Testably. All rights reserved.</p>
-            <nav className="flex items-center gap-4 text-xs text-gray-500">
-              <button onClick={() => navigate('/privacy')} className="hover:text-gray-900 transition-colors cursor-pointer">{t.privacy}</button>
-              <span className="text-gray-300">|</span>
-              <button onClick={() => navigate('/terms')} className="hover:text-gray-900 transition-colors cursor-pointer font-semibold text-indigo-600">{t.terms}</button>
-            </nav>
-          </div>
-        </footer>
-      </div>
-    </>
+    </MarketingLayout>
   );
 }

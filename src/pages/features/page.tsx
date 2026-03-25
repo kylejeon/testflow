@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import Logo from '../../components/Logo';
-import SEOHead from '../../components/SEOHead';
+import MarketingLayout from '../../components/marketing/MarketingLayout';
 
 const features = [
   {
@@ -178,26 +177,11 @@ export default function FeaturesPage() {
   const navigate = useNavigate();
 
   return (
-    <>
-      <SEOHead
-        title="Features | Testably — QA Test Management Platform"
-        description="Explore all Testably features: test case management, test runs, discovery logs, AI generation, Jira integration, CI/CD, Slack & Teams notifications, and more."
-        keywords="test case management features, QA tools, Jira integration, CI/CD testing, discovery logs, AI test generation"
-      />
-      <div className="min-h-screen bg-white" style={{ fontFamily: '"Inter", "Noto Sans KR", sans-serif' }}>
-        {/* Navbar */}
-        <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <button onClick={() => navigate('/')} className="cursor-pointer">
-              <Logo variant="light" className="h-9" />
-            </button>
-            <div className="flex items-center gap-3">
-              <button onClick={() => navigate('/pricing')} className="text-sm text-gray-500 hover:text-gray-900 transition-colors cursor-pointer">Pricing</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all cursor-pointer">Log in</button>
-              <button onClick={() => navigate('/auth')} className="text-sm font-semibold px-5 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all cursor-pointer">Get Started</button>
-            </div>
-          </div>
-        </nav>
+    <MarketingLayout
+      title="Features | Testably"
+      description="Explore Testably's QA features: test case management, runs, discovery logs, AI generation, and more."
+      keywords="test case management features, QA tools, Jira integration, CI/CD testing, discovery logs, AI test generation"
+    >
 
         {/* Hero */}
         <header className="py-24 bg-gray-950 text-center relative overflow-hidden">
@@ -275,14 +259,6 @@ export default function FeaturesPage() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="bg-gray-100 py-8">
-          <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Logo variant="light" className="h-7" />
-            <p className="text-gray-400 text-xs">© {new Date().getFullYear()} Testably. All rights reserved.</p>
-          </div>
-        </footer>
-      </div>
-    </>
+    </MarketingLayout>
   );
 }

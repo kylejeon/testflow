@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import SEOHead from '../../components/SEOHead';
+import MarketingLayout from '../../components/marketing/MarketingLayout';
 import { testrailData } from '../../data/competitors/testrail';
 import { zephyrData } from '../../data/competitors/zephyr';
 import { qaseData } from '../../data/competitors/qase';
@@ -75,12 +75,11 @@ export default function ComparePage() {
   }
 
   return (
-    <>
-      <SEOHead
-        title={data.metaTitle}
-        description={data.metaDescription}
-        keywords={data.metaKeywords.join(', ')}
-      />
+    <MarketingLayout
+      title={data.metaTitle}
+      description={data.metaDescription}
+      keywords={data.metaKeywords.join(', ')}
+    >
 
       {/* Hero */}
       <section className="bg-gray-900 text-white py-20 px-4">
@@ -242,6 +241,6 @@ export default function ComparePage() {
           </div>
         </div>
       </section>
-    </>
+    </MarketingLayout>
   );
 }

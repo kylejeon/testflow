@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import SEOHead from '../../components/SEOHead';
+import MarketingLayout from '../../components/marketing/MarketingLayout';
 
 const competitors = [
   {
@@ -73,14 +73,12 @@ const toolKeys: ToolKey[] = ['testably', 'testrail', 'zephyr', 'qase'];
 
 export default function CompareIndexPage() {
   return (
-    <>
-      <SEOHead
-        title="Compare Testably vs Competitors | Testably"
-        description="Compare Testably with TestRail, Zephyr Scale, and Qase. See features, pricing, and why QA teams are switching to Testably."
-        keywords="testably alternatives, testrail alternative, zephyr scale alternative, qase alternative, test management comparison"
-      />
-
-      <div className="min-h-screen bg-white">
+    <MarketingLayout
+      title="Compare Testably vs Competitors | Testably"
+      description="See how Testably compares to competitors. Feature comparison, pricing, and migration guide."
+      keywords="testably alternatives, testrail alternative, zephyr scale alternative, qase alternative, test management comparison"
+    >
+      <div>
 
         {/* Hero */}
         <section className="relative bg-gray-950 pt-32 pb-20 overflow-hidden">
@@ -270,6 +268,6 @@ export default function CompareIndexPage() {
         </section>
 
       </div>
-    </>
+    </MarketingLayout>
   );
 }

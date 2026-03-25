@@ -221,9 +221,25 @@ export default function AuthPage() {
     setLoading(true);
     setError('');
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       localStorage.setItem('testably_last_email', email);
+
+      // Returning user: permanently dismiss onboarding modal (CEO req)
+      if (data.user) {
+        supabase
+          .from('user_onboarding')
+          .update({ welcome_completed: true })
+          .eq('user_id', data.user.id)
+          .then(() => {/* fire-and-forget */});
+
+        // Loops.so: track login event
+        sendLoopsEvent(email, 'user_login', {
+          plan: 'unknown',
+          loginDate: new Date().toISOString().split('T')[0],
+        });
+      }
+
       const invitationToken = sessionStorage.getItem('invitation_token');
       if (invitationToken) {
         sessionStorage.removeItem('invitation_token');
