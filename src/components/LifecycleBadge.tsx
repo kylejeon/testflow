@@ -34,23 +34,41 @@ const OPTIONS: LifecycleStatus[] = ['draft', 'active', 'deprecated'];
 
 export function LifecycleBadge({ status, size = 'sm', clickable = false, onStatusChange }: LifecycleBadgeProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const badgeRef = useRef<HTMLSpanElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const cfg = CONFIG[status];
 
   const textSizeCls = size === 'md' ? 'text-xs px-2 py-1' : 'text-[10px] px-1.5 py-0.5';
   const iconSizeCls = size === 'md' ? 'text-sm' : 'text-[11px]';
 
+  // Compute fixed position when opening
+  const handleOpen = () => {
+    if (!open && badgeRef.current) {
+      const rect = badgeRef.current.getBoundingClientRect();
+      setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen((p) => !p);
+  };
+
+  // Close on outside click, Escape, or scroll
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    const close = (e: MouseEvent) => {
+      if (
+        badgeRef.current && !badgeRef.current.contains(e.target as Node) &&
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node)
+      ) setOpen(false);
     };
-    const keyHandler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('keydown', keyHandler);
+    const closeKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const closeScroll = () => setOpen(false);
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', closeKey);
+    window.addEventListener('scroll', closeScroll, true);
     return () => {
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('keydown', keyHandler);
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', closeKey);
+      window.removeEventListener('scroll', closeScroll, true);
     };
   }, [open]);
 
@@ -60,12 +78,13 @@ export function LifecycleBadge({ status, size = 'sm', clickable = false, onStatu
   };
 
   return (
-    <div className="relative inline-flex" ref={ref}>
+    <>
       <span
+        ref={badgeRef}
         role={clickable ? 'button' : undefined}
         aria-haspopup={clickable ? 'listbox' : undefined}
         aria-expanded={clickable ? open : undefined}
-        onClick={clickable ? () => setOpen((p) => !p) : undefined}
+        onClick={clickable ? handleOpen : undefined}
         className={`inline-flex items-center gap-0.5 rounded-full font-semibold ${textSizeCls} ${cfg.badgeCls} ${clickable ? 'cursor-pointer select-none' : ''}`}
       >
         <i className={`${cfg.icon} ${iconSizeCls}`} />
@@ -73,10 +92,17 @@ export function LifecycleBadge({ status, size = 'sm', clickable = false, onStatu
         {clickable && <i className="ri-arrow-down-s-line text-[9px] ml-0.5" />}
       </span>
 
-      {open && (
+      {open && dropdownPos && (
         <div
+          ref={dropdownRef}
           role="listbox"
-          className="absolute top-full mt-1 left-0 bg-white border border-slate-200 rounded-lg shadow-md py-1 min-w-[10rem] z-50 animate-dropdown"
+          style={{
+            position: 'fixed',
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            zIndex: 9999,
+          }}
+          className="bg-white border border-slate-200 rounded-lg shadow-md py-1 min-w-[10rem] animate-dropdown"
         >
           {OPTIONS.map((opt) => {
             const c = CONFIG[opt];
@@ -96,6 +122,6 @@ export function LifecycleBadge({ status, size = 'sm', clickable = false, onStatu
           })}
         </div>
       )}
-    </div>
+    </>
   );
 }
