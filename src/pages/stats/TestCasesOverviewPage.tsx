@@ -110,9 +110,6 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function padId(n: number) {
-  return `TC-${n.toString().padStart(3, '0')}`;
-}
 
 /* ══ Page ════════════════════════════════════════════════════ */
 export default function TestCasesOverviewPage() {
@@ -500,7 +497,7 @@ export default function TestCasesOverviewPage() {
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: priorityDotColor[item.priority] ?? '#94A3B8', flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            <span style={{ color: '#6366F1', fontWeight: 600, marginRight: '0.375rem' }}>{padId(item.tcDisplayId)}</span>{item.title}
+                            <span style={{ color: '#6366F1', fontWeight: 600, marginRight: '0.375rem' }}>{item.tcIdLabel}</span>{item.title}
                           </div>
                           <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.125rem' }}>Created by {item.projectName} team</div>
                         </div>

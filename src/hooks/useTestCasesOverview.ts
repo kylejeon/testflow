@@ -19,7 +19,7 @@ export interface TCOverviewRecent {
   priority: 'critical' | 'high' | 'medium' | 'low';
   projectName: string;
   createdAt: string;
-  tcDisplayId: number;
+  tcIdLabel: string;
 }
 
 export interface TCOverviewData {
@@ -60,20 +60,41 @@ export function useTestCasesOverview() {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       // Parallel fetches
-      const [{ data: projectsData }, { data: allTCs }, { data: runStats }] = await Promise.all([
-        supabase.from('projects').select('id, name').in('id', projectIds),
+      const [{ data: projectsData }, { data: allTCs }, { data: runStats }, { data: allTCsForSeq }] = await Promise.all([
+        supabase.from('projects').select('id, name, prefix').in('id', projectIds),
         supabase.from('test_cases')
-          .select('id, project_id, priority, status, title, created_at')
+          .select('id, project_id, priority, status, title, created_at, custom_id')
           .in('project_id', projectIds)
           .order('created_at', { ascending: false }),
         supabase.from('test_runs')
           .select('project_id, passed, failed, blocked, retest')
           .in('project_id', projectIds),
+        supabase.from('test_cases')
+          .select('id, project_id, custom_id')
+          .in('project_id', projectIds)
+          .order('created_at', { ascending: true }),
       ]);
 
       const tcs = allTCs ?? [];
       const projectNameMap: Record<string, string> = {};
-      (projectsData ?? []).forEach(p => { projectNameMap[p.id] = p.name; });
+      const projectPrefixMap: Record<string, string> = {};
+      (projectsData ?? []).forEach(p => {
+        projectNameMap[p.id] = p.name;
+        if (p.prefix) projectPrefixMap[p.id] = p.prefix;
+      });
+
+      // Build TC-ID label map: custom_id > {prefix}-{seq}
+      const tcIdLabelMap: Record<string, string> = {};
+      const projectTcCounter: Record<string, number> = {};
+      (allTCsForSeq ?? []).forEach(tc => {
+        if (tc.custom_id) {
+          tcIdLabelMap[tc.id] = tc.custom_id;
+        } else {
+          const prefix = projectPrefixMap[tc.project_id] || 'TC';
+          projectTcCounter[prefix] = (projectTcCounter[prefix] || 0) + 1;
+          tcIdLabelMap[tc.id] = `${prefix}-${projectTcCounter[prefix].toString().padStart(3, '0')}`;
+        }
+      });
 
       // Aggregates
       const totalCount = tcs.length;
@@ -124,13 +145,13 @@ export function useTestCasesOverview() {
       });
 
       // Recent additions (top 8)
-      const recent: TCOverviewRecent[] = tcs.slice(0, 8).map((tc, i) => ({
+      const recent: TCOverviewRecent[] = tcs.slice(0, 8).map(tc => ({
         id: tc.id,
         title: tc.title,
         priority: (tc.priority as 'critical' | 'high' | 'medium' | 'low') ?? 'medium',
         projectName: projectNameMap[tc.project_id] ?? 'Unknown',
         createdAt: tc.created_at,
-        tcDisplayId: totalCount - i,
+        tcIdLabel: tcIdLabelMap[tc.id] ?? tc.id.slice(0, 8),
       }));
 
       setData({ totalCount, deltaThisWeek, byPriority, byStatus, projects, weeklyGrowth, recent });
