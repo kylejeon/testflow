@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Avatar } from './Avatar';
 
 export type TestStatus = 'passed' | 'failed' | 'blocked' | 'retest' | 'untested';
 
@@ -214,10 +215,13 @@ function StepRow({ step, expectedResult, index, result, showResultButtons, onSte
           <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{step}</p>
         )}
         {expectedResult && (
-          <p className="text-[0.6875rem] text-green-600 mt-1 flex items-start gap-1">
-            <i className="ri-checkbox-circle-line text-xs flex-shrink-0 mt-0.5" />
-            {expectedResult}
-          </p>
+          <div className="mt-1.5 bg-[#F0FDF4] border-l-2 border-green-400 rounded-r px-2 py-1">
+            <div className="flex items-center gap-1 mb-0.5">
+              <i className="ri-checkbox-circle-line text-green-500 text-[0.6875rem]" />
+              <span className="text-[0.5625rem] font-bold text-green-700 uppercase tracking-wider">Expected Result</span>
+            </div>
+            <p className="text-[0.6875rem] text-green-800 leading-relaxed">{expectedResult}</p>
+          </div>
         )}
       </div>
       {showResultButtons && (
@@ -457,7 +461,28 @@ export function DetailPanel({
           {/* Assignee */}
           <div>
             <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Assignee</div>
-            {projectMembers.length > 0 ? (
+            {isRun ? (
+              /* Run context: read-only */
+              <div className="flex items-center gap-1.5 text-[0.8125rem] font-medium text-gray-800">
+                {assigneeName ? (
+                  <>
+                    {(() => {
+                      const m = projectMembers.find((mb) => (mb.full_name || mb.email) === assigneeName);
+                      return (
+                        <Avatar
+                          userId={m?.user_id || assigneeName}
+                          name={assigneeName}
+                          size="xs"
+                        />
+                      );
+                    })()}
+                    <span>{assigneeName}</span>
+                  </>
+                ) : (
+                  <span className="text-gray-400">—</span>
+                )}
+              </div>
+            ) : projectMembers.length > 0 ? (
               <div className="relative">
                 <div className="flex items-center gap-1.5 px-2 py-1 border border-gray-200 rounded-lg bg-white text-[0.8125rem]">
                   {assigneeName ? (
@@ -560,12 +585,12 @@ export function DetailPanel({
         <div className="max-h-[40vh] overflow-y-auto px-5 py-3.5 border-b border-gray-200 flex-shrink-0 space-y-3">
           {/* Precondition */}
           {testCase.precondition && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }} className="rounded-md px-3 py-2.5">
               <div className="flex items-center gap-1.5 mb-1">
                 <i className="ri-alert-line text-amber-500 text-xs" />
-                <span className="text-[0.6875rem] font-bold text-amber-700 uppercase tracking-wider">Precondition</span>
+                <span className="text-[0.5625rem] font-bold uppercase tracking-wider" style={{ color: '#92400E' }}>⚠ Precondition</span>
               </div>
-              <p className="text-xs text-amber-800 leading-relaxed">{testCase.precondition}</p>
+              <p className="text-xs leading-relaxed" style={{ color: '#92400E' }}>{testCase.precondition}</p>
             </div>
           )}
 
@@ -600,7 +625,12 @@ export function DetailPanel({
           {/* Attachments */}
           {testCase.attachments && testCase.attachments.length > 0 && (
             <div>
-              <div className="text-[0.625rem] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Attachments</div>
+              <div className="flex items-center gap-1 mb-2">
+                <i className="ri-attachment-2 text-gray-400 text-xs" />
+                <span className="text-[0.5625rem] font-bold text-gray-400 uppercase tracking-wider">
+                  Attachments ({testCase.attachments.length})
+                </span>
+              </div>
               <div className="grid grid-cols-3 gap-1.5">
                 {testCase.attachments.map((file, i) => (
                   <a
@@ -608,15 +638,18 @@ export function DetailPanel({
                     href={file.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 h-12 px-2 bg-gray-50 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors overflow-hidden"
+                    className="flex flex-col items-center justify-center gap-1 bg-gray-50 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors overflow-hidden"
+                    style={{ height: '80px' }}
                     title={file.name}
                   >
                     {isImageFile(file.name) ? (
-                      <img src={file.url} alt={file.name} className="w-8 h-8 object-cover rounded flex-shrink-0" />
+                      <img src={file.url} alt={file.name} className="w-full h-full object-cover" style={{ maxHeight: '60px' }} />
                     ) : (
-                      <i className="ri-file-text-line text-gray-400 text-base flex-shrink-0" />
+                      <>
+                        <i className="ri-file-text-line text-gray-400 text-xl" />
+                        <span className="text-[0.5625rem] text-gray-500 truncate px-1 w-full text-center">{file.name}</span>
+                      </>
                     )}
-                    <span className="text-[0.625rem] text-gray-600 truncate">{file.name}</span>
                   </a>
                 ))}
               </div>
@@ -664,66 +697,74 @@ export function DetailPanel({
 
         {/* Comments Tab */}
         {activeTab === 'comments' && (
-          <div className="space-y-4">
-            <div>
-              <textarea
-                value={commentText}
-                onChange={(e) => onCommentChange?.(e.target.value)}
-                placeholder="Add a comment..."
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs resize-none"
-              />
-              <button
-                onClick={onCommentSubmit}
-                disabled={!commentText?.trim()}
-                className="mt-1.5 px-3 py-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                Post Comment
-              </button>
-            </div>
+          <div className="flex flex-col gap-3">
+            {/* Comment list first */}
             {loadingComments ? (
               <div className="text-center py-6">
                 <i className="ri-loader-4-line animate-spin text-xl text-gray-400" />
               </div>
             ) : comments.length === 0 ? (
-              <div className="text-center py-6">
+              <div className="text-center py-4">
                 <i className="ri-chat-3-line text-2xl text-gray-300 block mb-1" />
                 <p className="text-xs text-gray-400">No comments yet</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {comments.map((c) => (
-                  <div key={c.id} className="bg-white border border-gray-100 rounded-lg p-3 group relative">
-                    <div className="flex items-start gap-2">
-                      <div className="w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center text-white text-[0.4375rem] font-bold flex-shrink-0">
-                        {c.author.substring(0, 2).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs font-semibold text-gray-800">{c.author}</span>
-                          <span className="text-[0.6875rem] text-gray-400">
-                            {c.timestamp.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-700 whitespace-pre-wrap break-words">{c.text}</p>
-                      </div>
-                      <button
-                        onClick={() => onCommentDelete?.(c.id)}
-                        className="w-5 h-5 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100 cursor-pointer flex-shrink-0"
-                      >
-                        <i className="ri-delete-bin-line text-xs" />
-                      </button>
+                  <div key={c.id} className="group">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Avatar
+                        userId={c.user_id || c.author}
+                        name={c.author}
+                        size="xs"
+                      />
+                      <span className="text-xs font-semibold text-gray-800">{c.author}</span>
+                      <span className="text-[0.6875rem] text-gray-400">
+                        {c.timestamp.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                      </span>
+                      {c.user_id === currentUserId && (
+                        <button
+                          onClick={() => onCommentDelete?.(c.id)}
+                          className="ml-auto w-5 h-5 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100 cursor-pointer flex-shrink-0"
+                        >
+                          <i className="ri-delete-bin-line text-xs" />
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap break-words bg-[#F8FAFC] border border-[#F1F5F9] rounded px-3 py-2"
+                      style={{ marginLeft: '1.625rem' }}
+                    >
+                      {c.text}
                     </div>
                   </div>
                 ))}
               </div>
             )}
+
+            {/* Input at bottom */}
+            <div className="flex gap-2 pt-2 border-t border-gray-100">
+              <textarea
+                value={commentText}
+                onChange={(e) => onCommentChange?.(e.target.value)}
+                placeholder="Add a comment..."
+                rows={2}
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs resize-none"
+              />
+              <button
+                onClick={onCommentSubmit}
+                disabled={!commentText?.trim()}
+                className="px-3 py-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer self-end whitespace-nowrap"
+              >
+                Post
+              </button>
+            </div>
           </div>
         )}
 
         {/* Results Tab */}
         {activeTab === 'results' && (
-          <div className="space-y-2.5">
+          <div>
             {testResults.length === 0 ? (
               <div className="text-center py-6">
                 <i className="ri-file-list-line text-2xl text-gray-300 block mb-1" />
@@ -731,52 +772,63 @@ export function DetailPanel({
               </div>
             ) : (
               testResults.map((result) => {
-                const isAutomated =
-                  result.author && (
-                    result.author.includes('GitHub Actions') ||
-                    result.author.includes('GitLab CI') ||
-                    result.author.includes('Jenkins') ||
-                    result.author.includes('CI/CD') ||
-                    result.is_automated
-                  );
+                const statusDot: Record<string, string> = {
+                  passed:   '#22C55E',
+                  failed:   '#EF4444',
+                  blocked:  '#F59E0B',
+                  retest:   '#8B5CF6',
+                  untested: '#94A3B8',
+                };
+                const statusBg: Record<string, string> = {
+                  passed:   '#F0FDF4',
+                  failed:   '#FEF2F2',
+                  blocked:  '#FFFBEB',
+                  retest:   '#F5F3FF',
+                  untested: '#F8FAFC',
+                };
+                const statusFg: Record<string, string> = {
+                  passed:   '#166534',
+                  failed:   '#991B1B',
+                  blocked:  '#92400E',
+                  retest:   '#5B21B6',
+                  untested: '#64748B',
+                };
+                const dot = statusDot[result.status] || '#94A3B8';
+                const bg  = statusBg[result.status]  || '#F8FAFC';
+                const fg  = statusFg[result.status]  || '#64748B';
+                const runName = result.run?.name || 'Unknown Run';
+                const dateStr = result.timestamp instanceof Date
+                  ? result.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : '';
+                const timeStr = result.timestamp instanceof Date
+                  ? result.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                  : '';
+
                 return (
                   <div
                     key={result.id}
-                    className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="flex items-center gap-2.5 py-2 border-b border-[#F1F5F9] cursor-pointer hover:bg-[#FAFAFF] rounded px-1 transition-colors"
                     onClick={() => onResultClick?.(result)}
                   >
-                    <div className="flex items-center gap-2.5">
-                      {isAutomated ? (
-                        <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <i className="ri-robot-line text-purple-600" />
-                        </div>
-                      ) : (
-                        <div className="w-9 h-9 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                          {result.author ? result.author.substring(0, 2).toUpperCase() : 'NA'}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className={`text-xs font-semibold capitalize ${STATUS_TEXT_COLORS[result.status] || 'text-gray-700'}`}>
-                            {result.status}
-                          </span>
-                          {result.elapsed && result.elapsed !== '00:00' && (
-                            <span className="text-[0.6875rem] text-gray-400">{result.elapsed}</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[0.6875rem] text-gray-500">
-                          <span className="font-medium text-gray-700">{result.author}</span>
-                          <span className="text-gray-300">·</span>
-                          <span>
-                            {result.timestamp instanceof Date
-                              ? result.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                              : ''}
-                          </span>
-                        </div>
-                        {result.note && (
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{result.note}</p>
-                        )}
+                    {/* Status badge */}
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold flex-shrink-0"
+                      style={{ background: bg, color: fg }}
+                    >
+                      <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: dot }} />
+                      {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
+                    </span>
+
+                    {/* Run info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-gray-900 truncate">{runName}</div>
+                      <div className="text-[0.6875rem] text-gray-400">
+                        {dateStr}{timeStr ? ` · ${timeStr}` : ''}{result.author ? ` · by ${result.author}` : ''}
+                        {result.elapsed && result.elapsed !== '00:00' ? ` · ${result.elapsed}` : ''}
                       </div>
+                      {result.note && (
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{result.note}</p>
+                      )}
                     </div>
                   </div>
                 );
@@ -788,19 +840,8 @@ export function DetailPanel({
         {/* Issues Tab */}
         {activeTab === 'issues' && (
           <div className="space-y-2.5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Linked Issues</span>
-              <button
-                onClick={onAddIssue}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
-              >
-                <i className="ri-add-line" />
-                Add Issue
-              </button>
-            </div>
-
             {!isProfessionalOrHigher && (
-              <div className="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+              <div className="mb-2 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
                 <div className="flex items-start gap-2.5">
                   <i className="ri-lock-line text-indigo-600 text-lg mt-0.5" />
                   <div>
@@ -813,48 +854,107 @@ export function DetailPanel({
 
             {uniqueIssues.length === 0 ? (
               <div className="text-center py-6">
-                <i className="ri-bug-line text-2xl text-gray-300 block mb-1" />
-                <p className="text-xs text-gray-400">No issues linked</p>
+                <i className="ri-bug-line text-2xl text-gray-300 block mb-2" />
+                <p className="text-xs text-gray-400 mb-3">No linked issues</p>
+                <button
+                  onClick={onAddIssue}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-[#C7D2FE] text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                >
+                  <i className="ri-add-line" />
+                  Link Issue
+                </button>
               </div>
             ) : (
-              uniqueIssues.map((issue, idx) => {
-                const issueUrl = jiraDomain ? `https://${jiraDomain}/browse/${issue.issueKey}` : '';
-                const card = (
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <i className="ri-bug-line text-red-600 text-sm" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold text-gray-800">{issue.issueKey}</div>
-                      <div className="text-[0.6875rem] text-gray-500">From run: {issue.runName}</div>
-                    </div>
-                  </div>
-                );
-                return issueUrl ? (
-                  <a
-                    key={idx}
-                    href={issueUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block bg-white border border-gray-200 rounded-lg p-3 hover:border-indigo-400 hover:shadow-sm transition-all"
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Linked Issues</span>
+                  <button
+                    onClick={onAddIssue}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
                   >
-                    {card}
-                  </a>
-                ) : (
-                  <div key={idx} className="bg-white border border-gray-200 rounded-lg p-3">
-                    {card}
-                  </div>
-                );
-              })
+                    <i className="ri-add-line" />
+                    Link Issue
+                  </button>
+                </div>
+                {uniqueIssues.map((issue, idx) => {
+                  const issueUrl = jiraDomain ? `https://${jiraDomain}/browse/${issue.issueKey}` : '';
+                  const card = (
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-6 h-6 rounded bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0">
+                        <i className="ri-bug-line text-sm" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold text-gray-800">{issue.issueKey}</div>
+                        <div className="text-[0.6875rem] text-gray-400">From run: {issue.runName}</div>
+                      </div>
+                    </div>
+                  );
+                  return issueUrl ? (
+                    <a
+                      key={idx}
+                      href={issueUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block bg-white border border-gray-200 rounded-lg p-3 hover:border-indigo-400 hover:shadow-sm transition-all"
+                    >
+                      {card}
+                    </a>
+                  ) : (
+                    <div key={idx} className="bg-white border border-gray-200 rounded-lg p-3">
+                      {card}
+                    </div>
+                  );
+                })}
+              </>
             )}
           </div>
         )}
 
         {/* History Tab */}
         {activeTab === 'history' && (
-          <div className="text-center py-8">
-            <i className="ri-time-line text-2xl text-gray-300 block mb-1" />
-            <p className="text-xs text-gray-400">No history yet</p>
+          <div>
+            {testResults.length === 0 ? (
+              <div className="text-center py-8">
+                <i className="ri-time-line text-2xl text-gray-300 block mb-1" />
+                <p className="text-xs text-gray-400">No history yet</p>
+              </div>
+            ) : (
+              <div>
+                {testResults.map((result) => {
+                  const statusLabel = result.status.charAt(0).toUpperCase() + result.status.slice(1);
+                  const statusColors: Record<string, string> = {
+                    passed: '#16A34A', failed: '#DC2626', blocked: '#D97706', retest: '#7C3AED', untested: '#64748B',
+                  };
+                  const color = statusColors[result.status] || '#64748B';
+                  const dateStr = result.timestamp instanceof Date
+                    ? result.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : '';
+                  const timeStr = result.timestamp instanceof Date
+                    ? result.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                    : '';
+
+                  return (
+                    <div key={result.id} className="flex gap-2.5 py-2.5 border-b border-[#F1F5F9]">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-200 flex-shrink-0 mt-[0.4rem]" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-gray-700 leading-relaxed">
+                          <span className="font-semibold text-gray-900">{result.author || 'Unknown'}</span>
+                          {' marked as '}
+                          <span className="font-semibold" style={{ color }}>{statusLabel}</span>
+                          {result.run?.name ? ` in ${result.run.name}` : ''}
+                        </div>
+                        <div className="text-[0.6875rem] text-gray-400 mt-0.5">
+                          {dateStr}{timeStr ? ` · ${timeStr}` : ''}
+                        </div>
+                        {result.note && (
+                          <p className="text-[0.6875rem] text-gray-500 mt-0.5 italic line-clamp-2">"{result.note}"</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
