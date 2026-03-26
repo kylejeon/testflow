@@ -2349,7 +2349,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     : 'text-[#94A3B8] border-b-2 border-transparent hover:text-[#475569]'
                 }`}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab === 'comments' && comments.length > 0
+                  ? `Comments (${comments.length})`
+                  : tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
             ))}
           </div>
@@ -2445,7 +2447,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
                 {selectedTestCase.attachments && selectedTestCase.attachments.length > 0 && (
                   <div>
-                    <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem]">Attachments</div>
+                    <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem] flex items-center gap-1">
+                      <i className="ri-attachment-2 text-[0.75rem]"></i>
+                      Attachments ({selectedTestCase.attachments.length})
+                    </div>
                     <div className="grid grid-cols-3 gap-[0.375rem]">
                       {selectedTestCase.attachments.map((file, index) => (
                         <div
