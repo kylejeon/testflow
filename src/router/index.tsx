@@ -1,6 +1,6 @@
 import { useNavigate, useLocation, type NavigateFunction } from "react-router-dom";
 import { useRoutes } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import routes from "./config";
 
 let navigateResolver: (navigate: ReturnType<typeof useNavigate>) => void;
@@ -15,6 +15,14 @@ export const navigatePromise = new Promise<NavigateFunction>((resolve) => {
   navigateResolver = resolve;
 });
 
+function PageLoadingFallback() {
+  return (
+    <div className="flex h-screen items-center justify-center bg-white">
+      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
 export function AppRoutes() {
   const element = useRoutes(routes);
   const navigate = useNavigate();
@@ -28,5 +36,5 @@ export function AppRoutes() {
     window.REACT_APP_NAVIGATE = navigate;
     navigateResolver(window.REACT_APP_NAVIGATE);
   });
-  return element;
+  return <Suspense fallback={<PageLoadingFallback />}>{element}</Suspense>;
 }
