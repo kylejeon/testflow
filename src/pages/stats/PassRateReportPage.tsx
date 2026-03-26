@@ -1,13 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-
-interface HoveredBar {
-  date: string;
-  passed: number;
-  failed: number;
-  blocked: number;
-  x: number;  // CSS px from container left — bar center, via g.getBoundingClientRect()
-  y: number;  // CSS px from container top — bar top, via g.getBoundingClientRect()
-}
+import { useState, useEffect, useRef } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { usePassRateReport, type PeriodFilter } from '../../hooks/usePassRateReport';
@@ -40,13 +32,10 @@ export default function PassRateReportPage() {
     () => (localStorage.getItem(LS_KEY) as PeriodFilter | null) ?? 'active_run'
   );
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [hoveredBar, setHoveredBar] = useState<HoveredBar | null>(null);
   const { data, loading, error } = usePassRateReport(period);
   const [userInitials, setUserInitials] = useState('');
   const [exporting, setExporting] = useState(false);
-  const chartContainerRef = useRef<HTMLDivElement>(null);
   const pdfContentRef = useRef<HTMLDivElement>(null);
-  const [chartWidth, setChartWidth] = useState(700);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Persist period selection
@@ -132,36 +121,41 @@ export default function PassRateReportPage() {
     });
   }, []);
 
-  // Responsive chart: measure actual container width
-  const updateChartWidth = useCallback(() => {
-    if (chartContainerRef.current) {
-      setChartWidth(chartContainerRef.current.clientWidth || 700);
-    }
-  }, []);
+  interface TooltipProps {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; color: string }>;
+    label?: string;
+  }
 
-  useEffect(() => {
-    updateChartWidth();
-    const ro = new ResizeObserver(updateChartWidth);
-    if (chartContainerRef.current) ro.observe(chartContainerRef.current);
-    return () => ro.disconnect();
-  }, [updateChartWidth]);
-
-  // Compute bar/label positions relative to actual chart pixel width
-  const trendCount = data?.dailyTrend.length ?? 7;
-  const getChartSlot = (i: number) => {
-    const leftMargin = 50;
-    const rightPad = 10;
-    const available = chartWidth - leftMargin - rightPad;
-    const slotW = available / trendCount;
-    const bw = Math.min(Math.round(slotW * 0.65), 80);
-    const x = leftMargin + i * slotW + (slotW - bw) / 2;
-    const labelX = leftMargin + i * slotW + slotW / 2;
-    return { x, bw, labelX };
-  };
-
-  const maxDayTotal = data
-    ? Math.max(...data.dailyTrend.map(d => d.passed + d.failed + d.blocked), 1)
-    : 1;
+  function ChartTooltip({ active, payload, label }: TooltipProps) {
+    if (!active || !payload?.length) return null;
+    const passed  = payload.find(p => p.name === 'passed')?.value  ?? 0;
+    const failed  = payload.find(p => p.name === 'failed')?.value  ?? 0;
+    const blocked = payload.find(p => p.name === 'blocked')?.value ?? 0;
+    return (
+      <div style={{ background: '#1E293B', color: '#fff', borderRadius: '0.5rem', padding: '0.625rem 0.75rem', fontSize: '0.6875rem', lineHeight: 1.6, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: '140px' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#fff', marginBottom: '0.25rem' }}>{label}</div>
+        {([
+          { color: '#22C55E', label: 'Passed',  value: passed },
+          { color: '#EF4444', label: 'Failed',  value: failed },
+          { color: '#F59E0B', label: 'Blocked', value: blocked },
+        ] as const).map(row => (
+          <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#CBD5E1' }}>
+              <span style={{ width: 7, height: 7, borderRadius: 2, background: row.color, flexShrink: 0, display: 'inline-block' }} />
+              {row.label}
+            </span>
+            <span style={{ fontWeight: 600, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{row.value}</span>
+          </div>
+        ))}
+        <hr style={{ border: 'none', borderTop: '1px solid #334155', margin: '0.25rem 0' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+          <span style={{ fontWeight: 600, color: '#fff' }}>Total</span>
+          <span style={{ fontWeight: 600, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{passed + failed + blocked}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: '#F8FAFC', color: '#1E293B', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -171,12 +165,6 @@ export default function PassRateReportPage() {
         .pr-anim { animation: fadeInUp 0.35s ease-out backwards; }
         .pr-row:hover td { background: #FAFAFF !important; }
         .pr-fi:hover { background: #FFFBFB !important; }
-        .pr-daybar { cursor: pointer; }
-        .pr-bar-highlight { opacity: 0; transition: opacity 0.12s ease; }
-        .pr-daybar:hover .pr-bar-highlight { opacity: 1; }
-        .pr-daybar:hover .pr-bar-passed,
-        .pr-daybar:hover .pr-bar-failed,
-        .pr-daybar:hover .pr-bar-blocked { filter: brightness(1.08); }
       `}</style>
 
       {/* Top Header */}
@@ -332,105 +320,17 @@ export default function PassRateReportPage() {
                       ))}
                     </div>
                   </div>
-                  <div ref={chartContainerRef} style={{ position: 'relative', height: '220px' }} onMouseLeave={() => setHoveredBar(null)}>
-                    <svg viewBox={`0 0 ${chartWidth} 220`} width="100%" height="100%" preserveAspectRatio="none">
-                      {/* Gridlines spanning full measured width */}
-                      {[20, 60, 100, 140, 180].map(y => (
-                        <line key={y} x1={50} y1={y} x2={chartWidth - 5} y2={y} stroke="#F1F5F9" strokeWidth={1} />
-                      ))}
-                      {/* Stacked bars — positions computed relative to chartWidth */}
-                      {data.dailyTrend.map((day, i) => {
-                        const { x, bw } = getChartSlot(i);
-                        const scale = 160 / maxDayTotal;
-                        const passH = day.passed * scale;
-                        const failH = day.failed * scale;
-                        const blockH = day.blocked * scale;
-                        const totalH = passH + failH + blockH;
-                        const baseY = 185;
-                        const opacity = day.isToday ? 0.7 : 1;
-                        return (
-                          <g
-                            key={i}
-                            className="pr-daybar"
-                            opacity={opacity}
-                            onMouseEnter={(e) => {
-                              const containerEl = chartContainerRef.current;
-                              if (!containerEl) return;
-                              const gRect = (e.currentTarget as SVGGElement).getBoundingClientRect();
-                              const containerRect = containerEl.getBoundingClientRect();
-                              setHoveredBar({
-                                date: day.label,
-                                passed: day.passed,
-                                failed: day.failed,
-                                blocked: day.blocked,
-                                x: gRect.left + gRect.width / 2 - containerRect.left,
-                                y: gRect.top - containerRect.top,
-                              });
-                            }}
-                            onMouseLeave={() => setHoveredBar(null)}
-                          >
-                            {/* Hover highlight overlay */}
-                            <rect className="pr-bar-highlight" x={x} y={baseY - totalH} width={bw} height={totalH} rx={3} fill="rgba(255,255,255,0.15)" />
-                            <rect className="pr-bar-passed" x={x} y={baseY - passH} width={bw} height={passH} rx={0} fill="#16A34A" />
-                            <rect className="pr-bar-blocked" x={x} y={baseY - passH - blockH} width={bw} height={blockH} fill="#F59E0B" />
-                            <rect className="pr-bar-failed" x={x} y={baseY - totalH} width={bw} height={failH} rx={3} fill="#EF4444" />
-                          </g>
-                        );
-                      })}
-                      {/* X-axis labels — skip every other label when many points */}
-                      {data.dailyTrend.map((day, i) => {
-                        const { labelX } = getChartSlot(i);
-                        const skip = trendCount > 14 ? i % Math.ceil(trendCount / 10) !== 0 : false;
-                        if (skip) return null;
-                        return <text key={i} x={labelX} y={215} fontSize={Math.max(8, Math.min(11, chartWidth / (trendCount * 7)))} fill="#94A3B8" textAnchor="middle" fontFamily="Inter, sans-serif">{day.label}</text>;
-                      })}
-                    </svg>
-                    {/* Chart Tooltip */}
-                    {hoveredBar && (() => {
-                      const tooltipHalfW = 70;
-                      const clampedX = Math.max(tooltipHalfW, Math.min(hoveredBar.x, chartWidth - tooltipHalfW));
-                      return (
-                        <div style={{
-                          position: 'absolute',
-                          pointerEvents: 'none',
-                          background: '#1E293B',
-                          color: '#fff',
-                          borderRadius: '0.5rem',
-                          padding: '0.625rem 0.75rem',
-                          fontSize: '0.6875rem',
-                          lineHeight: 1.6,
-                          zIndex: 100,
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                          minWidth: '140px',
-                          left: clampedX,
-                          top: Math.max(0, hoveredBar.y - 8),
-                          transform: 'translate(-50%, -100%)',
-                        }}>
-                          {/* Caret */}
-                          <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #1E293B' }} />
-                          <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#fff', marginBottom: '0.25rem' }}>{hoveredBar.date}</div>
-                          {([
-                            { color: '#22C55E', label: 'Passed',  value: hoveredBar.passed },
-                            { color: '#EF4444', label: 'Failed',  value: hoveredBar.failed },
-                            { color: '#F59E0B', label: 'Blocked', value: hoveredBar.blocked },
-                          ] as const).map(row => (
-                            <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#CBD5E1' }}>
-                                <span style={{ width: 7, height: 7, borderRadius: 2, background: row.color, flexShrink: 0, display: 'inline-block' }} />
-                                {row.label}
-                              </span>
-                              <span style={{ fontWeight: 600, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{row.value}</span>
-                            </div>
-                          ))}
-                          <hr style={{ border: 'none', borderTop: '1px solid #334155', margin: '0.25rem 0' }} />
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-                            <span style={{ fontWeight: 600, color: '#fff' }}>Total</span>
-                            <span style={{ fontWeight: 600, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{hoveredBar.passed + hoveredBar.failed + hoveredBar.blocked}</span>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={data.dailyTrend} barCategoryGap="35%" margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid vertical={false} stroke="#F1F5F9" />
+                      <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94A3B8', fontFamily: 'Inter, sans-serif' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#94A3B8', fontFamily: 'Inter, sans-serif' }} axisLine={false} tickLine={false} width={35} allowDecimals={false} />
+                      <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(241,245,249,0.6)' }} />
+                      <Bar dataKey="passed"  stackId="a" fill="#16A34A" name="passed" />
+                      <Bar dataKey="blocked" stackId="a" fill="#F59E0B" name="blocked" />
+                      <Bar dataKey="failed"  stackId="a" fill="#EF4444" name="failed" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               )}
 
