@@ -51,6 +51,8 @@ export default function ProjectsContent() {
   const [activeRunCount, setActiveRunCount] = useState(0);
   const [testCasesThisWeek, setTestCasesThisWeek] = useState(0);
   const [projectPassRates, setProjectPassRates] = useState<Record<string, number | null>>({});
+  const [passRateDelta, setPassRateDelta] = useState<number | null>(null);
+  const [passRateDeltaLabel, setPassRateDeltaLabel] = useState<string | null>(null);
   const [projectMembers, setProjectMembers] = useState<Record<string, Array<{ initials: string; color: string; userId?: string; name?: string }>>>({});
   const [loading, setLoading] = useState(true);
   const [sampleLoading, setSampleLoading] = useState(false);
@@ -81,6 +83,8 @@ export default function ProjectsContent() {
     try {
       setLoading(true);
       setError(null);
+
+      const period = (localStorage.getItem('passrate_period') ?? 'active_run') as 'active_run' | '7d' | '30d' | 'all';
 
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
@@ -141,27 +145,57 @@ export default function ProjectsContent() {
         setTestRunCounts(counts);
       }
 
-      // Compute pass rates from test_results (accurate, not stale stored columns)
-      const { data: allRunsForStats } = await supabase
-        .from('test_runs')
-        .select('id, project_id')
-        .in('project_id', projectIds);
+      // Compute pass rates from test_results — period-aware
+      const now = new Date();
+      const activeStatuses = ['new', 'in_progress', 'paused', 'under_review'];
+
+      let runsQuery = supabase.from('test_runs').select('id, project_id').in('project_id', projectIds);
+      if (period === 'active_run') {
+        runsQuery = (runsQuery as any).in('status', activeStatuses);
+      }
+      const { data: allRunsForStats } = await runsQuery;
 
       if (allRunsForStats && allRunsForStats.length > 0) {
-        const runIds = allRunsForStats.map(r => r.id);
+        const runIds = allRunsForStats.map((r: { id: string; project_id: string }) => r.id);
         const runProjectMap: Record<string, string> = {};
-        allRunsForStats.forEach(r => { runProjectMap[r.id] = r.project_id; });
+        allRunsForStats.forEach((r: { id: string; project_id: string }) => { runProjectMap[r.id] = r.project_id; });
 
-        const { data: resultsData } = await supabase
+        // Date range for current period
+        let startDate: string | null = null;
+        let prevStartDate: string | null = null;
+        let prevEndDate: string | null = null;
+        if (period === '7d') {
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          prevStartDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
+          prevEndDate = startDate;
+        } else if (period === '30d') {
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+          prevStartDate = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString();
+          prevEndDate = startDate;
+        }
+
+        let resultsQuery = supabase
           .from('test_results')
-          .select('run_id, test_case_id, status')
+          .select('run_id, test_case_id, status, created_at')
           .in('run_id', runIds)
           .order('created_at', { ascending: false });
+        if (startDate) resultsQuery = (resultsQuery as any).gte('created_at', startDate);
+
+        const { data: resultsData } = await resultsQuery;
+
+        // Helper: dedup by (run_id, tc_id) and compute overall pass rate
+        const computeRate = (rows: Array<{ run_id: string; test_case_id: string; status: string }>) => {
+          const seen: Record<string, string> = {};
+          rows.forEach(r => { const k = `${r.run_id}::${r.test_case_id}`; if (!(k in seen)) seen[k] = r.status; });
+          let passed = 0, total = 0;
+          Object.values(seen).forEach(s => { if (s !== 'untested') { total++; if (s === 'passed') passed++; } });
+          return total > 0 ? (passed / total) * 100 : null;
+        };
 
         if (resultsData) {
-          // Latest status per (run_id, test_case_id)
+          // Per-project pass rates
           const latestByKey: Record<string, string> = {};
-          resultsData.forEach(r => {
+          resultsData.forEach((r: { run_id: string; test_case_id: string; status: string }) => {
             const key = `${r.run_id}::${r.test_case_id}`;
             if (!(key in latestByKey)) latestByKey[key] = r.status;
           });
@@ -178,11 +212,40 @@ export default function ProjectsContent() {
               if (status === 'passed') projectCounts[pid].passed++;
             }
           });
-
           for (const [pid, counts] of Object.entries(projectCounts)) {
             passRates[pid] = counts.total > 0 ? Math.round((counts.passed / counts.total) * 100) : null;
           }
           setProjectPassRates(passRates);
+
+          // Delta calculation for 7d / 30d periods
+          if (prevStartDate && prevEndDate) {
+            const allRunIdsForDelta = (
+              await supabase.from('test_runs').select('id').in('project_id', projectIds)
+            ).data?.map((r: { id: string }) => r.id) ?? [];
+
+            if (allRunIdsForDelta.length > 0) {
+              const { data: prevData } = await supabase
+                .from('test_results')
+                .select('run_id, test_case_id, status')
+                .in('run_id', allRunIdsForDelta)
+                .gte('created_at', prevStartDate)
+                .lt('created_at', prevEndDate);
+
+              const currentRate = computeRate(resultsData);
+              const prevRate = computeRate(prevData ?? []);
+              const delta = currentRate !== null && prevRate !== null
+                ? parseFloat((currentRate - prevRate).toFixed(1))
+                : null;
+              setPassRateDelta(delta);
+              setPassRateDeltaLabel(period === '7d' ? 'vs prev week' : 'vs prev 30d');
+            }
+          } else if (period === 'active_run') {
+            setPassRateDelta(null);
+            setPassRateDeltaLabel('vs prev run');
+          } else {
+            setPassRateDelta(null);
+            setPassRateDeltaLabel(null);
+          }
         }
       }
 
@@ -388,7 +451,8 @@ export default function ProjectsContent() {
     activeRuns: activeRunCount,
     untestedRemaining: Math.max(0, totalTestCases - activeRunCount * 10),
     passRate: avgPassRate,
-    passRateDelta: avgPassRate !== null ? 2.1 : null,
+    passRateDelta: avgPassRate !== null ? passRateDelta : null,
+    deltaLabel: passRateDeltaLabel,
     passRateSparkline,
     teamMemberCount: allTeamMembers.length,
     teamMembers: allTeamMembers,

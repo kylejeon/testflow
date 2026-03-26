@@ -213,6 +213,7 @@ export interface StatCardsData {
   untestedRemaining: number;
   passRate: number | null;
   passRateDelta: number | null;
+  deltaLabel: string | null;
   passRateSparkline: number[];
   teamMemberCount: number;
   teamMembers: AvatarStackMember[];
@@ -329,7 +330,7 @@ export default function StatCards({ data }: { data: StatCardsData }) {
                     background: prDeltaUp ? '#F0FDF4' : '#FEF2F2',
                   }}>
                     <i className={`ri-arrow-${prDeltaUp ? 'up' : 'down'}-s-line`} />
-                    {prDeltaUp ? '+' : ''}{data.passRateDelta.toFixed(1)}% vs last week
+                    {prDeltaUp ? '+' : ''}{data.passRateDelta.toFixed(1)}% {data.deltaLabel ?? 'vs last week'}
                   </span>
                 )}
               </>
