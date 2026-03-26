@@ -126,12 +126,12 @@ export function useTeamActivity() {
           .select('user_id, role, profiles(full_name, email, avatar_emoji)')
           .in('project_id', projectIds),
 
-        supabase.from('projects').select('id, name').in('id', projectIds),
+        supabase.from('projects').select('id, name, prefix').in('id', projectIds),
 
         // Recent TCs (last 30 days)
         supabase
           .from('test_cases')
-          .select('id, title, project_id, priority, created_by, created_at')
+          .select('id, title, custom_id, project_id, priority, created_by, created_at')
           .in('project_id', projectIds)
           .gte('created_at', thirtyDaysAgo)
           .order('created_at', { ascending: false })
@@ -163,18 +163,29 @@ export function useTeamActivity() {
         // All TCs for TC-ID numbering (oldest first)
         supabase
           .from('test_cases')
-          .select('id')
+          .select('id, project_id, custom_id')
           .in('project_id', projectIds)
           .order('created_at', { ascending: true }),
       ]);
 
       const projectNameMap: Record<string, string> = {};
-      (projectsData ?? []).forEach(p => { projectNameMap[p.id] = p.name; });
+      const projectPrefixMap: Record<string, string> = {};
+      (projectsData ?? []).forEach(p => {
+        projectNameMap[p.id] = p.name;
+        if (p.prefix) projectPrefixMap[p.id] = p.prefix;
+      });
 
-      // TC-ID map: UUID → "TC-001" (oldest TC = TC-001)
+      // TC-ID map: UUID → "{PREFIX}-{seq}" using custom_id if set, else project prefix + per-project counter
       const tcIdLabelMap: Record<string, string> = {};
-      (allTcIds ?? []).forEach((tc, i) => {
-        tcIdLabelMap[tc.id] = `TC-${(i + 1).toString().padStart(3, '0')}`;
+      const projectTcCounter: Record<string, number> = {};
+      (allTcIds ?? []).forEach((tc) => {
+        if (tc.custom_id) {
+          tcIdLabelMap[tc.id] = tc.custom_id;
+        } else {
+          const prefix = projectPrefixMap[tc.project_id] || 'TC';
+          projectTcCounter[prefix] = (projectTcCounter[prefix] || 0) + 1;
+          tcIdLabelMap[tc.id] = `${prefix}-${projectTcCounter[prefix].toString().padStart(3, '0')}`;
+        }
       });
 
       // Deduplicate members by user_id

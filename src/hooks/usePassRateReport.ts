@@ -200,8 +200,8 @@ export function usePassRateReport(period: PeriodFilter) {
         deltaLabel = null; // no delta for all-time
       }
 
-      const rPrimary = dedup(primaryResults);
-      const rDelta = dedup(deltaResults);
+      const rPrimary = primaryResults;
+      const rDelta = deltaResults;
 
       // ── Summary stats ──────────────────────────────────────────────────────
       const totalExecuted = rPrimary.filter(r => r.status !== 'untested').length;

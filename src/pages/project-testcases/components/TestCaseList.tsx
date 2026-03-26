@@ -129,6 +129,34 @@ interface Project {
   status?: string;
 }
 
+// ── Compact design helpers ──────────────────────────────────────────────────
+function tcTimeAgo(dateStr: string): string {
+  if (!dateStr) return '-';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+const TC_AVATAR_COLORS = ['#6366F1', '#10B981', '#EC4899', '#F59E0B', '#8B5CF6', '#06B6D4'];
+function getAssigneeColor(str: string): string {
+  if (!str) return '#94A3B8';
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  return TC_AVATAR_COLORS[Math.abs(hash) % TC_AVATAR_COLORS.length];
+}
+function getAssigneeInitials(assignee: string): string {
+  if (!assignee) return '?';
+  const name = assignee.includes('@') ? assignee.split('@')[0] : assignee;
+  return name.split(/[\s._-]+/).filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+}
+const PRIORITY_DOT_COLORS: Record<string, string> = {
+  critical: '#EF4444', high: '#F59E0B', medium: '#6366F1', low: '#94A3B8',
+};
+// ────────────────────────────────────────────────────────────────────────────
+
 export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId, projectName: propProjectName }: TestCaseListProps) {
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [showNewCaseModal, setShowNewCaseModal] = useState(false);
@@ -1963,116 +1991,91 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     <>
     <div className="flex h-full">
       {/* 폴더 사이드바 */}
-      <div className={`${isFolderPanelOpen ? 'w-80' : 'w-0'} bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden`}>
-        <div className="w-80 p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Folders</h2>
-            <div className="space-y-1">
-              {allFolders.map((folder) => (
-                <div key={folder.id} className="group relative">
-                  <button
-                    onClick={() => setSelectedFolder(folder.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                      selectedFolder === folder.id
-                        ? 'bg-indigo-50 text-indigo-700'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getFolderColorClass(folder.color)}`}>
-                        <i className={`${folder.icon} text-lg`}></i>
-                      </div>
-                      <span className="font-medium">{folder.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">{folder.count}</span>
-                      {folder.id !== 'all' && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteFolder(folder.id);
-                          }}
-                          className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                        >
-                          <i className="ri-delete-bin-line text-sm"></i>
-                        </button>
-                      )}
-                    </div>
-                  </button>
-                </div>
-              ))}
-            </div>
+      <div className={`${isFolderPanelOpen ? 'w-[220px] min-w-[220px]' : 'w-0'} bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden flex flex-col`}>
+        <div className="w-[220px] flex flex-col h-full">
+          <div className="flex items-center justify-between px-[0.875rem] py-[0.875rem] border-b border-gray-200">
+            <span className="text-[0.8125rem] font-semibold text-gray-900">Folders</span>
+            <button onClick={() => setIsFolderPanelOpen(false)} className="flex items-center justify-center cursor-pointer text-gray-500 hover:text-gray-700 transition-colors">
+              <i className="ri-arrow-left-s-line text-base"></i>
+            </button>
           </div>
-
-          <div className="pt-6 border-t border-gray-200">
+          <div className="flex-1 overflow-y-auto">
+            {allFolders.map((folder) => (
+              <div key={folder.id} className="group relative">
+                <button
+                  onClick={() => setSelectedFolder(folder.id)}
+                  className={`w-full flex items-center gap-2 px-[0.875rem] py-2 text-[0.8125rem] cursor-pointer transition-all whitespace-nowrap ${
+                    selectedFolder === folder.id
+                      ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
+                      : 'text-[#475569] hover:bg-gray-50'
+                  }`}
+                >
+                  <i className="ri-folder-3-line text-base" style={{ color: selectedFolder === folder.id ? '#6366F1' : '#94A3B8' }}></i>
+                  <span className="flex-1 text-left">{folder.name}</span>
+                  <span className={`text-[0.75rem] ${selectedFolder === folder.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>({folder.count})</span>
+                  {folder.id !== 'all' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }}
+                      className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-600 rounded opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                    >
+                      <i className="ri-delete-bin-line text-xs"></i>
+                    </button>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="px-[0.875rem] py-3 border-t border-gray-200">
             <button
               onClick={() => setShowNewFolderModal(true)}
-              className="w-full px-4 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              className="w-full bg-indigo-500 text-white rounded-lg py-2 px-3 text-[0.8125rem] font-medium flex items-center justify-center gap-1.5 cursor-pointer hover:bg-indigo-600 transition-all whitespace-nowrap"
             >
-              <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
+              <i className="ri-add-line text-base"></i>
               New Folder
             </button>
           </div>
         </div>
       </div>
 
-      {/* 토글 버튼 */}
-      <button
-        onClick={() => setIsFolderPanelOpen(!isFolderPanelOpen)}
-        className="w-8 h-12 bg-white border border-gray-200 rounded-r-lg flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all cursor-pointer self-start mt-8 -ml-px"
-      >
-        <i className={`${isFolderPanelOpen ? 'ri-arrow-left-s-line' : 'ri-arrow-right-s-line'} text-xl`}></i>
-      </button>
+      {/* 폴더 패널 열기 버튼 - 닫혀있을 때만 표시 */}
+      {!isFolderPanelOpen && (
+        <button
+          onClick={() => setIsFolderPanelOpen(true)}
+          className="w-7 h-10 bg-white border-r border-y border-gray-200 rounded-r flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-all cursor-pointer self-start mt-6"
+        >
+          <i className="ri-arrow-right-s-line text-base"></i>
+        </button>
+      )}
 
       {/* 테스트 케이스 목록 */}
-      <div className={`${selectedTestCase ? 'flex-1' : 'flex-1'} p-8`}>
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Test Cases</h1>
-              <p className="text-gray-600 mb-6">Manage and execute all test cases</p>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    setEditingTestCase(null);
-                    // 현재 선택된 폴더가 있으면 해당 폴더로 설정
-                    const currentFolder = selectedFolder !== 'all' 
-                      ? folders.find(f => f.id === selectedFolder)?.name || ''
-                      : '';
-                    setNewTestCase({
-                      title: '',
-                      description: '',
-                      precondition: '',
-                      folder: currentFolder,
-                      priority: 'medium',
-                      assignee: '',
-                      is_automated: false,
-                      steps: '',
-                      expected_result: '',
-                      tags: '',
-                      attachments: [],
-                    });
-                    setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
-                    setShowNewCaseModal(true);
-                  }}
-                  className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                >
-                  <i className="ri-add-line text-xl w-5 h-5 flex items-center justify-center"></i>
-                  New Test Case
-                </button>
-                <button
-                  onClick={handleOpenExportImport}
-                  className="px-5 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                >
-                  <i className="ri-file-transfer-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                  Export / Import
-                </button>
-              </div>
-            </div>
-          </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* 액션 바 */}
+        <div className="flex items-center justify-end gap-2 px-4 py-[0.6875rem] border-b border-gray-100 bg-white">
+          <button
+            onClick={() => {
+              setEditingTestCase(null);
+              const currentFolder = selectedFolder !== 'all'
+                ? folders.find(f => f.id === selectedFolder)?.name || ''
+                : '';
+              setNewTestCase({ title: '', description: '', precondition: '', folder: currentFolder, priority: 'medium', assignee: '', is_automated: false, steps: '', expected_result: '', tags: '', attachments: [] });
+              setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
+              setShowNewCaseModal(true);
+            }}
+            className="px-[0.875rem] py-[0.4375rem] bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+          >
+            <i className="ri-add-line text-base"></i>
+            New Test Case
+          </button>
+          <button
+            onClick={handleOpenExportImport}
+            className="px-[0.875rem] py-[0.4375rem] border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-all text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+          >
+            <i className="ri-file-transfer-line text-base"></i>
+            Export / Import
+          </button>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200">
+        <div className="flex-1 overflow-hidden">
           {filteredTestCases.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -2115,41 +2118,29 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               style={{ maxHeight: 'calc(100vh - 280px)' }}
             >
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                <thead className="bg-[#F8FAFC] border-b border-gray-200 sticky top-0 z-10">
                   <tr>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-4 py-[0.6875rem] text-left w-9">
                       <input
                         type="checkbox"
-                        className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                        className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-indigo-500"
                         checked={isAllSelected}
-                        ref={(el) => {
-                          if (el) {
-                            el.indeterminate = isSomeSelected;
-                          }
-                        }}
+                        ref={(el) => { if (el) el.indeterminate = isSomeSelected; }}
                         onChange={handleSelectAll}
                       />
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Test Case
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Lifecycle
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Folder
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Priority
-                    </th>
+                    <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]">ID</th>
+                    <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]">Title</th>
+                    <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]">Priority</th>
+                    <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]">Status</th>
+                    <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]">Folder</th>
+                    <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]">Assignee</th>
+                    <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]">Updated</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {paddingTop > 0 && (
-                    <tr><td colSpan={6} style={{ height: paddingTop }} /></tr>
+                    <tr><td colSpan={8} style={{ height: paddingTop }} /></tr>
                   )}
                   {virtualItems.map((vItem) => {
                     const testCase = filteredTestCases[vItem.index];
@@ -2157,8 +2148,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     return (
                     <tr
                       key={testCase.id}
-                      className={`hover:bg-gray-50 transition-all cursor-pointer ${
-                        selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : ''
+                      className={`transition-colors cursor-pointer ${
+                        selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : 'hover:bg-[#FAFAFF]'
                       }`}
                       style={lcStatus === 'deprecated' ? { opacity: 0.5 } : undefined}
                       onClick={() => { setSelectedTestCase(testCase); window.scrollTo(0, 0); }}
@@ -2168,20 +2159,40 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         setContextMenuStatusOpen(false);
                       }}
                     >
-                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                        <input 
-                          type="checkbox" 
-                          className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                      {/* Checkbox */}
+                      <td className="px-4 py-[0.6875rem] w-9" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-indigo-500"
                           checked={selectedTestCaseIds.has(testCase.id)}
                           onChange={() => handleSelectTestCase(testCase.id)}
                         />
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-500 font-mono">
+                      {/* ID */}
+                      <td className="px-4 py-[0.6875rem]">
+                        <span className="font-mono text-[0.8125rem] text-indigo-600 font-semibold cursor-pointer hover:underline">
                           {testCase.custom_id || '-'}
                         </span>
                       </td>
-                      <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                      {/* Title */}
+                      <td className="px-4 py-[0.6875rem]">
+                        <span className="text-[0.8125rem] font-semibold text-[#0F172A] block max-w-[360px] whitespace-nowrap overflow-hidden text-ellipsis">
+                          {testCase.is_automated && <i className="ri-robot-line text-purple-500 mr-1 text-xs"></i>}
+                          {testCase.title}
+                        </span>
+                      </td>
+                      {/* Priority - dot + text */}
+                      <td className="px-4 py-[0.6875rem]">
+                        <span className="flex items-center gap-1.5">
+                          <span
+                            className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ background: PRIORITY_DOT_COLORS[testCase.priority] || '#94A3B8' }}
+                          />
+                          <span className="text-[0.8125rem] text-[#475569] capitalize">{testCase.priority}</span>
+                        </span>
+                      </td>
+                      {/* Status (lifecycle) */}
+                      <td className="px-4 py-[0.6875rem]" onClick={(e) => e.stopPropagation()}>
                         <LifecycleBadge
                           status={lcStatus}
                           size="sm"
@@ -2189,44 +2200,42 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           onStatusChange={(ns) => handleLifecycleChange(testCase, ns)}
                         />
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          {testCase.is_automated && (
-                            <div className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center">
-                              <i className="ri-robot-line text-purple-600 text-lg"></i>
-                            </div>
-                          )}
-                          <div>
-                            <div className="text-sm font-semibold text-gray-900 mb-1">
-                              {testCase.title}
-                            </div>
-                            {testCase.description && (
-                              <div className="text-xs text-gray-500">{testCase.description}</div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
+                      {/* Folder */}
+                      <td className="px-4 py-[0.6875rem]">
                         {testCase.folder ? (
-                          <span className="text-sm text-gray-600">{testCase.folder}</span>
+                          <span className="flex items-center gap-1 text-[0.8125rem] text-[#475569]">
+                            <i className="ri-folder-3-line text-[#94A3B8] text-[0.9375rem]"></i>
+                            {testCase.folder}
+                          </span>
                         ) : (
-                          <span className="text-sm text-gray-400">-</span>
+                          <span className="text-[0.8125rem] text-[#94A3B8]">-</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
-                            testCase.priority
-                          )}`}
-                        >
-                          {testCase.priority.toUpperCase()}
+                      {/* Assignee */}
+                      <td className="px-4 py-[0.6875rem]">
+                        {testCase.assignee ? (
+                          <span
+                            className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[0.5625rem] font-bold flex-shrink-0"
+                            style={{ background: getAssigneeColor(testCase.assignee) }}
+                            title={testCase.assignee}
+                          >
+                            {getAssigneeInitials(testCase.assignee)}
+                          </span>
+                        ) : (
+                          <span className="text-[0.8125rem] text-[#94A3B8]">-</span>
+                        )}
+                      </td>
+                      {/* Updated */}
+                      <td className="px-4 py-[0.6875rem]">
+                        <span className="text-[0.8125rem] text-[#94A3B8]">
+                          {tcTimeAgo(testCase.updated_at)}
                         </span>
                       </td>
                     </tr>
                     );
                   })}
                   {paddingBottom > 0 && (
-                    <tr><td colSpan={6} style={{ height: paddingBottom }} /></tr>
+                    <tr><td colSpan={8} style={{ height: paddingBottom }} /></tr>
                   )}
                 </tbody>
               </table>
