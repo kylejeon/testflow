@@ -5,8 +5,8 @@ interface HoveredBar {
   passed: number;
   failed: number;
   blocked: number;
-  x: number;  // CSS px from container left (center of bar), scaled via getBoundingClientRect
-  y: number;  // CSS px from container top (top of bar), scaled via getBoundingClientRect
+  x: number;  // CSS px from container left — bar center, via g.getBoundingClientRect()
+  y: number;  // CSS px from container top — bar top, via g.getBoundingClientRect()
 }
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
@@ -45,7 +45,6 @@ export default function PassRateReportPage() {
   const [userInitials, setUserInitials] = useState('');
   const [exporting, setExporting] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(700);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -334,7 +333,7 @@ export default function PassRateReportPage() {
                     </div>
                   </div>
                   <div ref={chartContainerRef} style={{ position: 'relative', height: '220px' }} onMouseLeave={() => setHoveredBar(null)}>
-                    <svg ref={svgRef} viewBox={`0 0 ${chartWidth} 220`} width="100%" height="100%" preserveAspectRatio="none">
+                    <svg viewBox={`0 0 ${chartWidth} 220`} width="100%" height="100%" preserveAspectRatio="none">
                       {/* Gridlines spanning full measured width */}
                       {[20, 60, 100, 140, 180].map(y => (
                         <line key={y} x1={50} y1={y} x2={chartWidth - 5} y2={y} stroke="#F1F5F9" strokeWidth={1} />
@@ -354,26 +353,18 @@ export default function PassRateReportPage() {
                             key={i}
                             className="pr-daybar"
                             opacity={opacity}
-                            onMouseEnter={() => {
-                              const svgEl = svgRef.current;
+                            onMouseEnter={(e) => {
                               const containerEl = chartContainerRef.current;
-                              let px = x + bw / 2;
-                              let py = baseY - totalH;
-                              if (svgEl && containerEl) {
-                                const svgRect = svgEl.getBoundingClientRect();
-                                const containerRect = containerEl.getBoundingClientRect();
-                                const scaleX = svgRect.width / chartWidth;
-                                const scaleY = svgRect.height / 220;
-                                px = (x + bw / 2) * scaleX + (svgRect.left - containerRect.left);
-                                py = (baseY - totalH) * scaleY + (svgRect.top - containerRect.top);
-                              }
+                              if (!containerEl) return;
+                              const gRect = (e.currentTarget as SVGGElement).getBoundingClientRect();
+                              const containerRect = containerEl.getBoundingClientRect();
                               setHoveredBar({
                                 date: day.label,
                                 passed: day.passed,
                                 failed: day.failed,
                                 blocked: day.blocked,
-                                x: px,
-                                y: py,
+                                x: gRect.left + gRect.width / 2 - containerRect.left,
+                                y: gRect.top - containerRect.top,
                               });
                             }}
                             onMouseLeave={() => setHoveredBar(null)}
@@ -516,7 +507,7 @@ export default function PassRateReportPage() {
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                <span style={{ color: '#94A3B8', marginRight: '0.25rem' }}>TC-{String(i + 1).padStart(3, '0')}:</span>{item.title}
+                                <span style={{ color: '#94A3B8', marginRight: '0.25rem' }}>{item.tcIdLabel}:</span>{item.title}
                               </div>
                               <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.125rem' }}>{item.projectName} · Failed {item.failCount} {item.failCount === 1 ? 'time' : 'times'}</div>
                             </div>

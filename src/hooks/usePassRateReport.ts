@@ -16,6 +16,7 @@ export interface PassRateProject {
 
 export interface FailedTCItem {
   tcId: string;
+  tcIdLabel: string;
   title: string;
   projectName: string;
   priority: string;
@@ -98,14 +99,18 @@ export function usePassRateReport(period: PeriodFilter) {
       const now = new Date();
 
       const [{ data: projectsData }, { data: runsAll }] = await Promise.all([
-        supabase.from('projects').select('id, name').in('id', projectIds),
+        supabase.from('projects').select('id, name, prefix').in('id', projectIds),
         supabase.from('test_runs')
           .select('id, project_id, status, executed_at, created_at')
           .in('project_id', projectIds),
       ]);
 
       const projectNameMap: Record<string, string> = {};
-      (projectsData ?? []).forEach(p => { projectNameMap[p.id] = p.name; });
+      const projectPrefixMap: Record<string, string> = {};
+      (projectsData ?? []).forEach(p => {
+        projectNameMap[p.id] = p.name;
+        if (p.prefix) projectPrefixMap[p.id] = p.prefix;
+      });
 
       const allRunIds = (runsAll ?? []).map(r => r.id);
       if (allRunIds.length === 0) { setData(empty()); return; }
@@ -312,10 +317,24 @@ export function usePassRateReport(period: PeriodFilter) {
       )].slice(0, 10);
 
       if (tcIds.length > 0) {
-        const { data: tcData } = await supabase
-          .from('test_cases')
-          .select('id, title, priority, project_id')
-          .in('id', tcIds);
+        // Also fetch all TCs (ordered by created_at asc) for stable per-project sequencing
+        const [{ data: tcData }, { data: allTcSeq }] = await Promise.all([
+          supabase.from('test_cases').select('id, title, priority, project_id, custom_id').in('id', tcIds),
+          supabase.from('test_cases').select('id, project_id, custom_id').in('project_id', projectIds).order('created_at', { ascending: true }),
+        ]);
+
+        // Build tcIdLabel map: custom_id > prefix-seq
+        const tcIdLabelMap: Record<string, string> = {};
+        const projectTcCounter: Record<string, number> = {};
+        (allTcSeq ?? []).forEach(tc => {
+          if (tc.custom_id) {
+            tcIdLabelMap[tc.id] = tc.custom_id;
+          } else {
+            const prefix = projectPrefixMap[tc.project_id] || 'TC';
+            projectTcCounter[prefix] = (projectTcCounter[prefix] || 0) + 1;
+            tcIdLabelMap[tc.id] = `${prefix}-${projectTcCounter[prefix].toString().padStart(3, '0')}`;
+          }
+        });
 
         const tcMap: Record<string, { title: string; priority: string; projectId: string }> = {};
         (tcData ?? []).forEach(tc => {
@@ -335,6 +354,7 @@ export function usePassRateReport(period: PeriodFilter) {
         failedItems = tcIds
           .map(id => ({
             tcId: id,
+            tcIdLabel: tcIdLabelMap[id] ?? `TC-${id.slice(0, 6).toUpperCase()}`,
             title: tcMap[id]?.title ?? `Test Case ${id.slice(0, 8)}`,
             projectName: tcMap[id] ? (projectNameMap[tcMap[id].projectId] ?? 'Unknown') : 'Unknown',
             priority: tcMap[id]?.priority ?? 'medium',
