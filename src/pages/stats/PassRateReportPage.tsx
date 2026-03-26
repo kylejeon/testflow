@@ -5,8 +5,8 @@ interface HoveredBar {
   passed: number;
   failed: number;
   blocked: number;
-  x: number;  // screen center X of bar group
-  y: number;  // screen top Y of stacked bar
+  x: number;  // SVG viewBox px = CSS px from container left (center of bar)
+  y: number;  // SVG viewBox px = CSS px from container top (top of bar)
 }
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
@@ -359,8 +359,8 @@ export default function PassRateReportPage() {
                                 passed: day.passed,
                                 failed: day.failed,
                                 blocked: day.blocked,
-                                x: x + bw / 2,
-                                y: baseY - totalH,
+                                x: x + bw / 2,       // SVG viewBox px === CSS px (chartWidth = containerClientWidth)
+                                y: baseY - totalH,    // SVG viewBox px === CSS px from container top
                               });
                             }}
                             onMouseLeave={() => setHoveredBar(null)}
@@ -384,6 +384,7 @@ export default function PassRateReportPage() {
                     {/* Chart Tooltip */}
                     {hoveredBar && (() => {
                       const tooltipHalfW = 70;
+                      // hoveredBar.x/y are SVG viewBox coords which equal CSS px (1:1 mapping)
                       const clampedX = Math.max(tooltipHalfW, Math.min(hoveredBar.x, chartWidth - tooltipHalfW));
                       return (
                         <div style={{
@@ -399,8 +400,8 @@ export default function PassRateReportPage() {
                           boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                           minWidth: '140px',
                           left: clampedX,
-                          bottom: 220 - hoveredBar.y + 12,
-                          transform: 'translateX(-50%)',
+                          top: Math.max(0, hoveredBar.y - 8),
+                          transform: 'translate(-50%, -100%)',
                         }}>
                           {/* Caret */}
                           <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #1E293B' }} />
