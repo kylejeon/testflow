@@ -164,7 +164,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
   // Removed duplicate editingTestCase declaration that caused a conflict.
   const [isFolderPanelOpen, setIsFolderPanelOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'comments' | 'results' | 'issues' | 'history'>('comments');
+  const [activeTab, setActiveTab] = useState<'details' | 'comments' | 'results' | 'issues' | 'history'>('details');
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -2293,16 +2293,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 </p>
               </div>
 
-              {selectedTestCase.folder && (
-                <div>
-                  <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Folder</div>
-                  <p className="text-[0.8125rem] font-medium text-[#0F172A]">{selectedTestCase.folder}</p>
-                </div>
-              )}
+              <div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Folder</div>
+                {selectedTestCase.folder
+                  ? <p className="text-[0.8125rem] font-medium text-[#0F172A]">{selectedTestCase.folder}</p>
+                  : <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>}
+              </div>
 
-              {selectedTestCase.assignee && (
-                <div>
-                  <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Assignee</div>
+              <div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Assignee</div>
+                {selectedTestCase.assignee ? (
                   <div className="flex items-center gap-[0.375rem]">
                     <div
                       className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
@@ -2312,13 +2312,15 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     </div>
                     <span className="text-[0.8125rem] font-medium text-[#0F172A] truncate">{selectedTestCase.assignee}</span>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>
+                )}
+              </div>
             </div>
 
-            {selectedTestCase.tags && (
-              <div className="mt-[0.625rem]">
-                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Tags</div>
+            <div className="mt-[0.625rem]">
+              <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Tags</div>
+              {selectedTestCase.tags ? (
                 <div className="flex flex-wrap gap-1">
                   {selectedTestCase.tags.split(',').map((tag, index) => (
                     <span
@@ -2329,13 +2331,15 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     </span>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>
+              )}
+            </div>
           </div>
 
           {/* §3 — Tabs */}
           <div className="flex border-b border-[#E2E8F0] flex-shrink-0">
-            {(['comments', 'results', 'issues', 'history'] as const).map((tab) => (
+            {(['details', 'comments', 'results', 'issues', 'history'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -2350,12 +2354,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             ))}
           </div>
 
-          {/* §4 — Scrollable body: detail content + tab-specific content */}
+          {/* §4 — Scrollable body: tab-specific content */}
           <div className="flex-1 overflow-y-auto px-5 py-[0.875rem]">
 
-            {/* Detail sections: precondition, steps, expected result, attachments */}
-            {(selectedTestCase.precondition || selectedTestCase.steps || selectedTestCase.expected_result || (selectedTestCase.attachments && selectedTestCase.attachments.length > 0)) && (
-              <div className="space-y-[0.875rem] mb-[0.875rem] pb-[0.875rem] border-b border-[#F1F5F9]">
+            {/* Details tab: precondition, steps, expected result, attachments */}
+            {activeTab === 'details' && (
+              <div className="space-y-[0.875rem]">
+            {(selectedTestCase.precondition || selectedTestCase.steps || selectedTestCase.expected_result || (selectedTestCase.attachments && selectedTestCase.attachments.length > 0)) ? (
+              <div className="space-y-[0.875rem]">
                 {selectedTestCase.precondition && (
                   <div>
                     <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem] flex items-center gap-1">
@@ -2453,6 +2459,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     </div>
                   </div>
                 )}
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <i className="ri-file-list-3-line text-3xl text-gray-200 mb-2 block"></i>
+                <p className="text-[0.8125rem] text-[#94A3B8]">No detail content yet</p>
+                <p className="text-[0.75rem] text-[#CBD5E1] mt-1">Add preconditions, test steps, or expected results when editing</p>
+              </div>
+            )}
               </div>
             )}
 
