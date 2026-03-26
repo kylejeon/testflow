@@ -185,8 +185,8 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
           }}
           className="hover:bg-slate-100 transition-colors"
         >
-          <span style={{ maxWidth: '12rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {projectName || '…'}
+          <span style={{ maxWidth: '20rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {projectName}
           </span>
           <i className="ri-arrow-down-s-line" style={{ fontSize: '1rem', color: '#94A3B8' }}></i>
         </button>

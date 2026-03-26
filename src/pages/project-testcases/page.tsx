@@ -2,15 +2,44 @@ import { LogoMark } from '../../components/Logo';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import TestCaseList from './components/TestCaseList';
 import AIGenerateModal from './components/AIGenerateModal';
 import ProjectHeader from '../../components/ProjectHeader';
 
 export default function ProjectTestCases() {
   const { id } = useParams();
-  const [project, setProject] = useState<any>(null);
-  const [testCases, setTestCases] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: project } = useQuery({
+    queryKey: ['project', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name, prefix, description, color, status')
+        .eq('id', id!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: testCases = [], isLoading: loading } = useQuery({
+    queryKey: ['testCases', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('test_cases')
+        .select('*, creator:profiles!test_cases_created_by_fkey(full_name, email)')
+        .eq('project_id', id!)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id,
+    staleTime: 60_000,
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [lifecycleFilter, setLifecycleFilter] = useState<'all' | 'draft' | 'active' | 'deprecated'>('all');
@@ -21,37 +50,27 @@ export default function ProjectTestCases() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number; avatar_emoji: string } | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (id) {
-      fetchData();
-      fetchUserProfile();
-    }
-  }, [id]);
-
-  const fetchUserProfile = async () => {
-    try {
+  const { data: userProfile } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, email, subscription_tier, avatar_emoji')
-          .eq('id', user.id)
-          .maybeSingle();
-        
-        setUserProfile({
-          full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
-          email: profile?.email || user.email || '',
-          subscription_tier: profile?.subscription_tier || 1,
-          avatar_emoji: profile?.avatar_emoji || '',
-        });
-      }
-    } catch (error) {
-      console.error('프로필 로딩 오류:', error);
-    }
-  };
+      if (!user) return null;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email, subscription_tier, avatar_emoji')
+        .eq('id', user.id)
+        .maybeSingle();
+      return {
+        full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
+        email: profile?.email || user.email || '',
+        subscription_tier: profile?.subscription_tier || 1,
+        avatar_emoji: profile?.avatar_emoji || '',
+      };
+    },
+    staleTime: 10 * 60_000,
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -86,36 +105,6 @@ export default function ProjectTestCases() {
     };
   }, []);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      
-      const { data: projectData, error: projectError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (projectError) throw projectError;
-      setProject(projectData);
-
-      const { data: testCasesData, error: testCasesError } = await supabase
-        .from('test_cases')
-        .select(`
-          *,
-          creator:profiles!test_cases_created_by_fkey(full_name, email)
-        `)
-        .eq('project_id', id)
-        .order('created_at', { ascending: false });
-
-      if (testCasesError) throw testCasesError;
-      setTestCases(testCasesData || []);
-    } catch (error) {
-      console.error('데이터 로딩 오류:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddTestCase = async (testCase: any) => {
     try {
@@ -175,7 +164,7 @@ export default function ProjectTestCases() {
         });
       }
 
-      setTestCases([data, ...testCases]);
+      queryClient.setQueryData(['testCases', id], (old: any[] = []) => [data, ...old]);
 
       // Show "created as Draft" toast
       if (lcToastTimerRef.current) clearTimeout(lcToastTimerRef.current);
@@ -210,7 +199,9 @@ export default function ProjectTestCases() {
       if (fetchError) throw fetchError;
 
       // 상태 업데이트
-      setTestCases(testCases.map(tc => tc.id === updatedTestCase.id ? refreshedData : tc));
+      queryClient.setQueryData(['testCases', id], (old: any[] = []) =>
+        old.map(tc => tc.id === updatedTestCase.id ? refreshedData : tc)
+      );
     } catch (error) {
       console.error('테스트 케이스 수정 오류:', error);
     }
@@ -224,7 +215,9 @@ export default function ProjectTestCases() {
         .eq('id', testCaseId);
 
       if (error) throw error;
-      setTestCases(testCases.filter(tc => tc.id !== testCaseId));
+      queryClient.setQueryData(['testCases', id], (old: any[] = []) =>
+        old.filter(tc => tc.id !== testCaseId)
+      );
     } catch (error) {
       console.error('테스트 케이스 삭제 오류:', error);
     }
@@ -287,7 +280,7 @@ export default function ProjectTestCases() {
           .eq('id', casesWithoutId[i].id);
       }
 
-      await fetchData();
+      await queryClient.invalidateQueries({ queryKey: ['testCases', id] });
       alert(`${casesWithoutId.length}개의 테스트 케이스에 ID가 부여되었습니다.`);
     } catch (error) {
       console.error('ID 일괄 부여 오류:', error);
@@ -297,7 +290,7 @@ export default function ProjectTestCases() {
 
   // 전체 데이터 새로고침 함수 추가
   const handleRefreshData = async () => {
-    await fetchData();
+    await queryClient.invalidateQueries({ queryKey: ['testCases', id] });
   };
 
   // AI 생성 케이스 일괄 저장
@@ -318,7 +311,7 @@ export default function ProjectTestCases() {
         tags: '',
       });
     }
-    await fetchData();
+    await queryClient.invalidateQueries({ queryKey: ['testCases', id] });
   };
 
   const handleRestoreToBefore = async () => {
@@ -338,7 +331,9 @@ export default function ProjectTestCases() {
         field_name: 'lifecycle_status', old_value: 'draft', new_value: 'active',
       });
     }
-    setTestCases(prev => prev.map(tc => tc.id === tcId ? { ...tc, lifecycle_status: 'active' } : tc));
+    queryClient.setQueryData(['testCases', id], (prev: any[] = []) =>
+      prev.map(tc => tc.id === tcId ? { ...tc, lifecycle_status: 'active' } : tc)
+    );
     setLcToast({ show: true, tcId, phase: 'active' });
     lcToastTimerRef.current = setTimeout(() => setLcToast(t => ({ ...t, show: false })), 3000);
   };

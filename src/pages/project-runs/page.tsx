@@ -1,6 +1,7 @@
 import { LogoMark } from '../../components/Logo';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import NotificationBell from '../../components/feature/NotificationBell';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
@@ -106,7 +107,6 @@ export default function ProjectRunsPage() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number; avatar_emoji: string } | null>(null);
   const [showSelectCasesModal, setShowSelectCasesModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [folderMetas, setFolderMetas] = useState<FolderMeta[]>([]);
@@ -589,16 +589,40 @@ export default function ProjectRunsPage() {
     }
   };
 
+  // userProfile: 10분 캐시 (페이지 간 공유, supabase.auth 재호출 방지)
+  const { data: userProfile } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email, subscription_tier, avatar_emoji')
+        .eq('id', user.id)
+        .maybeSingle();
+      return {
+        full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
+        email: profile?.email || user.email || '',
+        subscription_tier: profile?.subscription_tier || 1,
+        avatar_emoji: profile?.avatar_emoji || '',
+      };
+    },
+    staleTime: 10 * 60_000,
+  });
+
   useEffect(() => {
     if (!id || id === 'undefined') {
       navigate('/projects');
       return;
     }
     fetchData();
-    fetchUserProfile();
-  }, [id, activeTab]);
+    // activeTab을 deps에서 제거: fetchData는 탭과 무관하게 전체 runs를 fetch하므로
+    // activeTab 변경 시 re-fetch 불필요 (클라이언트 사이드 필터링)
+  }, [id]);
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfileLegacy = async () => {
+    // userProfile은 이제 React Query로 관리됨 (위의 useQuery 참조)
+    // 이 함수는 호환성을 위해 유지하지만 실제로 호출되지 않음
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -607,7 +631,7 @@ export default function ProjectRunsPage() {
           .select('full_name, email, subscription_tier, avatar_emoji')
           .eq('id', user.id)
           .maybeSingle();
-        
+
         setUserProfile({
           full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
           email: profile?.email || user.email || '',
@@ -644,60 +668,36 @@ export default function ProjectRunsPage() {
     if (!id || id === 'undefined') return;
     try {
       setLoading(true);
-      
-      const { data: projectData, error: projectError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', id)
-        .single();
+
+      // 독립적인 쿼리 5개를 병렬로 실행 (순차 실행 대비 ~4배 빠름)
+      const [
+        { data: projectData, error: projectError },
+        { data: milestonesData, error: milestonesError },
+        { data: testCasesData, error: testCasesError },
+        { data: foldersData },
+        { data: testRunsData, error: testRunsError },
+      ] = await Promise.all([
+        supabase.from('projects').select('*').eq('id', id).single(),
+        supabase.from('milestones').select('*').eq('project_id', id).order('created_at', { ascending: false }),
+        supabase.from('test_cases').select('id, title, folder, priority, status, tags, description, lifecycle_status, custom_id').eq('project_id', id).order('created_at', { ascending: true }),
+        supabase.from('folders').select('id, name, icon, color').eq('project_id', id).order('created_at', { ascending: true }),
+        supabase.from('test_runs').select('*').eq('project_id', id).order('created_at', { ascending: false }),
+      ]);
 
       if (projectError) throw projectError;
-      setProject(projectData);
-
-      const { data: milestonesData, error: milestonesError } = await supabase
-        .from('milestones')
-        .select('*')
-        .eq('project_id', id)
-        .order('created_at', { ascending: false });
-
       if (milestonesError) throw milestonesError;
-      
-      console.log('=== 전체 마일스톤 데이터 (필터링 전) ===');
-      console.log('milestonesData:', milestonesData);
-      
-      setMilestones(milestonesData || []);
-
-      const { data: testCasesData, error: testCasesError } = await supabase
-        .from('test_cases')
-        .select('*')
-        .eq('project_id', id)
-        .order('created_at', { ascending: true });
-
       if (testCasesError) throw testCasesError;
-      setTestCases(testCasesData || []);
+      if (testRunsError) throw testRunsError;
 
-      const { data: foldersData } = await supabase
-        .from('folders')
-        .select('id, name, icon, color')
-        .eq('project_id', id)
-        .order('created_at', { ascending: true });
-      setFolderMetas((foldersData || []).map(f => ({
+      setProject(projectData);
+      setMilestones(milestonesData || []);
+      setTestCases(testCasesData || []);
+      setFolderMetas((foldersData || []).map((f: any) => ({
         id: f.id,
         name: f.name,
         icon: f.icon || 'ri-folder-line',
         color: f.color || 'indigo',
       })));
-
-      const { data: testRunsData, error: testRunsError } = await supabase
-        .from('test_runs')
-        .select('*')
-        .eq('project_id', id)
-        .order('created_at', { ascending: false });
-
-      if (testRunsError) throw testRunsError;
-
-      console.log('=== 전체 Test Runs 데이터 (DB에서 가져온 직후) ===');
-      console.log('testRunsData:', testRunsData);
 
       const { data: testResultsData, error: testResultsError } = await supabase
         .from('test_results')
@@ -782,13 +782,6 @@ export default function ProjectRunsPage() {
         };
       });
 
-      console.log('=== 통계 계산 후 Test Runs ===');
-      console.log('runsWithStats:', runsWithStats);
-      console.log('각 Run의 상세 정보:');
-      runsWithStats.forEach(run => {
-        console.log(`- Run "${run.name}": status="${run.status}", milestone_id="${run.milestone_id}"`);
-      });
-
       setTestRuns(runsWithStats);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -799,7 +792,6 @@ export default function ProjectRunsPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    console.log('Input changed:', name, '=', value, 'Type:', typeof value);
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -998,66 +990,23 @@ export default function ProjectRunsPage() {
   };
 
   const getRunsByMilestone = (milestoneId: string) => {
-    console.log('=== getRunsByMilestone 호출 ===');
-    console.log('milestoneId:', milestoneId);
-    console.log('activeTab:', activeTab);
-    console.log('전체 runs:', testRuns);
-    
-    const filtered = testRuns.filter(run => {
+    return testRuns.filter(run => {
       const runMilestoneId = run.milestone_id ? String(run.milestone_id).trim() : null;
-      const targetMilestoneId = String(milestoneId).trim();
-      const milestoneMatch = runMilestoneId === targetMilestoneId;
-      
-      const statusMatch = activeTab === 'active' 
-        ? run.status !== 'completed' 
+      const milestoneMatch = runMilestoneId === String(milestoneId).trim();
+      const statusMatch = activeTab === 'active'
+        ? run.status !== 'completed'
         : run.status === 'completed';
-      
-      const finalResult = milestoneMatch && statusMatch;
-      
-      console.log(`Run ${run.name}:`, {
-        run_milestone_id: runMilestoneId,
-        target_milestone_id: targetMilestoneId,
-        status: run.status,
-        activeTab: activeTab,
-        milestoneMatch,
-        statusMatch,
-        finalResult
-      });
-      
-      return finalResult;
+      return milestoneMatch && statusMatch;
     });
-    
-    console.log('필터링 결과:', filtered);
-    return filtered;
   };
 
   const getRunsWithoutMilestone = () => {
-    console.log('=== getRunsWithoutMilestone 호출 ===');
-    console.log('activeTab:', activeTab);
-    console.log('전체 runs:', testRuns);
-    
-    const filtered = testRuns.filter(run => {
-      const noMilestone = !run.milestone_id;
-      const statusMatch = activeTab === 'active' 
-        ? run.status !== 'completed' 
+    return testRuns.filter(run => {
+      const statusMatch = activeTab === 'active'
+        ? run.status !== 'completed'
         : run.status === 'completed';
-      
-      const finalResult = noMilestone && statusMatch;
-      
-      console.log(`Run ${run.name}:`, {
-        milestone_id: run.milestone_id,
-        status: run.status,
-        activeTab: activeTab,
-        noMilestone,
-        statusMatch,
-        finalResult
-      });
-      
-      return finalResult;
+      return !run.milestone_id && statusMatch;
     });
-    
-    console.log('필터링 결과:', filtered);
-    return filtered;
   };
 
   const calculateStats = () => {
@@ -1274,11 +1223,6 @@ export default function ProjectRunsPage() {
   };
 
   const allTags = getAllTags();
-
-  console.log('=== Tags Debug ===');
-  console.log('testCases:', testCases);
-  console.log('testCases with tags:', testCases.filter(tc => tc.tags));
-  console.log('allTags:', allTags);
 
   return (
     <div className="flex h-screen bg-white">

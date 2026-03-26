@@ -1,6 +1,7 @@
 import { LogoMark } from '../../components/Logo';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import ProjectMembersPanel from './components/ProjectMembersPanel';
 import InviteMemberModal from './components/InviteMemberModal';
@@ -34,7 +35,6 @@ export default function ProjectDetail() {
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [memberRefreshTrigger, setMemberRefreshTrigger] = useState(0);
@@ -76,39 +76,36 @@ export default function ProjectDetail() {
     return () => window.removeEventListener('keydown', handleDashboardShortcuts);
   }, [showQuickCreateTC, showContinueRun, showAIAssist]);
 
+  const queryClient = useQueryClient();
+
+  // userProfile: 10분 캐시 (페이지 간 공유)
+  const { data: userProfile } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('email, full_name, subscription_tier, avatar_emoji')
+        .eq('id', user.id)
+        .maybeSingle();
+      return {
+        email: data?.email || user.email || '',
+        full_name: data?.full_name || '',
+        subscription_tier: data?.subscription_tier || 1,
+        avatar_emoji: data?.avatar_emoji || '',
+      };
+    },
+    staleTime: 10 * 60_000,
+  });
+
   useEffect(() => {
     if (id) {
       fetchData();
       fetchIntegrationStatus();
     }
-    fetchUserProfile();
   }, [id]);
 
-  const fetchUserProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('email, full_name, subscription_tier, avatar_emoji')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setUserProfile({
-          email: data.email || user.email || '',
-          full_name: data.full_name || '',
-          subscription_tier: data.subscription_tier || 1,
-          avatar_emoji: data.avatar_emoji || '',
-        });
-      }
-    } catch (error) {
-      console.error('프로필 로딩 오류:', error);
-    }
-  };
 
   const fetchIntegrationStatus = async () => {
     if (!id) return;
@@ -124,47 +121,52 @@ export default function ProjectDetail() {
     try {
       setLoading(true);
 
-      // ── PROJECT ──
-      const { data: projectData, error: projectError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', id)
-        .single();
+      // ── 독립 쿼리를 모두 병렬로 실행 ──
+      const [
+        { data: projectData, error: projectError },
+        { count: tcCount },
+        { data: milestonesData, error: milestonesError },
+        { data: allRunsData, error: allRunsError },
+        { data: sessionsRaw },
+      ] = await Promise.all([
+        supabase.from('projects').select('*').eq('id', id).single(),
+        supabase.from('test_cases').select('id', { count: 'exact', head: true }).eq('project_id', id),
+        supabase.from('milestones').select('*').eq('project_id', id).order('end_date', { ascending: true }),
+        supabase.from('test_runs').select('*').eq('project_id', id).order('created_at', { ascending: false }),
+        supabase.from('sessions').select('*').eq('project_id', id).order('created_at', { ascending: false }).limit(20),
+      ]);
 
       if (projectError) throw projectError;
-      setProject(projectData);
-
-      // ── TEST CASE COUNT ──
-      const { count: tcCount } = await supabase
-        .from('test_cases')
-        .select('id', { count: 'exact', head: true })
-        .eq('project_id', id);
-      setTestCaseCount(tcCount || 0);
-
-      // ── MILESTONES ──
-      const { data: milestonesData, error: milestonesError } = await supabase
-        .from('milestones')
-        .select('*')
-        .eq('project_id', id)
-        .order('end_date', { ascending: true });
-
       if (milestonesError) throw milestonesError;
-
-      // ── TEST RUNS & RESULTS ──
-      const { data: allRunsData, error: allRunsError } = await supabase
-        .from('test_runs')
-        .select('*')
-        .eq('project_id', id);
-
       if (allRunsError) throw allRunsError;
 
-      const { data: allTestResultsData, error: allTestResultsError } = await supabase
-        .from('test_results')
-        .select('run_id, test_case_id, status')
-        .in('run_id', (allRunsData || []).map(r => r.id))
-        .order('created_at', { ascending: false });
+      setProject(projectData);
+      setTestCaseCount(tcCount || 0);
+
+      // ── test_results를 모든 run에 대해 한 번에 fetch (N+1 제거) ──
+      const runIds = (allRunsData || []).map(r => r.id);
+      const sessionIds = (sessionsRaw || []).map((s: any) => s.id);
+
+      const [
+        { data: allTestResultsData, error: allTestResultsError },
+        { data: sessionLogsData },
+      ] = await Promise.all([
+        runIds.length
+          ? supabase.from('test_results').select('run_id, test_case_id, status, created_at').in('run_id', runIds).order('created_at', { ascending: false })
+          : Promise.resolve({ data: [], error: null }),
+        sessionIds.length
+          ? supabase.from('session_logs').select('session_id, type, created_at').in('session_id', sessionIds).order('created_at', { ascending: false })
+          : Promise.resolve({ data: [], error: null }),
+      ]);
 
       if (allTestResultsError) throw allTestResultsError;
+
+      // ── test_results를 run_id별로 그룹화 (메모리에서 O(1) 조회) ──
+      const allResultsByRun = new Map<string, any[]>();
+      (allTestResultsData || []).forEach((r: any) => {
+        if (!allResultsByRun.has(r.run_id)) allResultsByRun.set(r.run_id, []);
+        allResultsByRun.get(r.run_id)!.push(r);
+      });
 
       // Compute pass rate from actual test_results (stored run columns are unreliable)
       const _prTotal = (allTestResultsData || []).filter((r: any) => r.status !== 'untested').length;
@@ -234,68 +236,34 @@ export default function ProjectDetail() {
       const milestoneMap = new Map<string, string>();
       (milestonesData || []).forEach(m => milestoneMap.set(m.id, m.name));
 
-      // ── LATEST RUNS WITH PROGRESS ──
-      const { data: runsData, error: runsError } = await supabase
-        .from('test_runs')
-        .select('*')
-        .eq('project_id', id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // ── LATEST RUNS WITH PROGRESS (캐싱된 allResultsByRun 사용, N+1 없음) ──
+      const runsWithProgress = (allRunsData || []).slice(0, 5).map((run: any) => {
+        const runResults = allResultsByRun.get(run.id) || [];
+        const statusMap = new Map<string, string>();
+        runResults.forEach((r: any) => {
+          if (!statusMap.has(r.test_case_id)) statusMap.set(r.test_case_id, r.status);
+        });
 
-      if (runsError) throw runsError;
+        let passed = 0, failed = 0, blocked = 0, retest = 0, untested = 0;
+        (run.test_case_ids || []).forEach((tcId: string) => {
+          const s = statusMap.get(tcId) || 'untested';
+          if (s === 'passed') passed++;
+          else if (s === 'failed') failed++;
+          else if (s === 'blocked') blocked++;
+          else if (s === 'retest') retest++;
+          else untested++;
+        });
 
-      const runsWithProgress = await Promise.all(
-        (runsData || []).map(async (run) => {
-          const { data: testResultsData } = await supabase
-            .from('test_results')
-            .select('test_case_id, status')
-            .eq('run_id', run.id)
-            .order('created_at', { ascending: false })
-            .limit(50);
-
-          const statusMap = new Map<string, string>();
-          testResultsData?.forEach(r => {
-            if (!statusMap.has(r.test_case_id)) statusMap.set(r.test_case_id, r.status);
-          });
-
-          let passed = 0, failed = 0, blocked = 0, retest = 0, untested = 0;
-          run.test_case_ids.forEach((tcId: string) => {
-            const s = statusMap.get(tcId) || 'untested';
-            if (s === 'passed') passed++;
-            else if (s === 'failed') failed++;
-            else if (s === 'blocked') blocked++;
-            else if (s === 'retest') retest++;
-            else untested++;
-          });
-
-          const milestoneName = run.milestone_id ? milestoneMap.get(run.milestone_id) || null : null;
-
-          return { ...run, passed, failed, blocked, retest, untested, milestoneName };
-        })
-      );
+        const milestoneName = run.milestone_id ? milestoneMap.get(run.milestone_id) || null : null;
+        return { ...run, passed, failed, blocked, retest, untested, milestoneName };
+      });
       setTestRuns(runsWithProgress);
 
-      // ── SESSIONS & ACTIVITY ──
-      const { data: sessionsData, error: sessionsError } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('project_id', id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (sessionsError) throw sessionsError;
-
-      const sessionIds = (sessionsData || []).map(s => s.id);
-      const { data: sessionLogsData, error: sessionLogsError } = await supabase
-        .from('session_logs')
-        .select('*')
-        .in('session_id', sessionIds)
-        .order('created_at', { ascending: false });
-
-      if (sessionLogsError) throw sessionLogsError;
+      // ── SESSIONS & ACTIVITY (이미 병렬로 fetch한 sessionsRaw + sessionLogsData 재사용) ──
+      const sessionsData = sessionsRaw;
 
       const logsBySession = new Map<string, any[]>();
-      (sessionLogsData || []).forEach(log => {
+      (sessionLogsData || []).forEach((log: any) => {
         if (!logsBySession.has(log.session_id)) logsBySession.set(log.session_id, []);
         logsBySession.get(log.session_id)!.push(log);
       });
@@ -347,27 +315,16 @@ export default function ProjectDetail() {
 
       setSessions(sessionsWithActivity);
 
-      // ── TIMELINE ACTIVITY ──
+      // ── TIMELINE ACTIVITY (allResultsByRun 재사용, N+1 없음) ──
       const runResultSummary: Record<string, {
         passed: number; failed: number; blocked: number; retest: number; latestAt: string; runName: string;
       }> = {};
 
-      const recentResultsPerRun = await Promise.all(
-        (allRunsData || []).slice(0, 10).map(async (run) => {
-          const { data } = await supabase
-            .from('test_results')
-            .select('status, created_at')
-            .eq('run_id', run.id)
-            .order('created_at', { ascending: false })
-            .limit(50);
-          return { run, results: data || [] };
-        })
-      );
-
-      recentResultsPerRun.forEach(({ run, results }) => {
+      (allRunsData || []).slice(0, 10).forEach((run: any) => {
+        const results = allResultsByRun.get(run.id) || [];
         if (!results.length) return;
         let passed = 0, failed = 0, blocked = 0, retest = 0;
-        results.forEach(r => {
+        results.forEach((r: any) => {
           if (r.status === 'passed') passed++;
           else if (r.status === 'failed') failed++;
           else if (r.status === 'blocked') blocked++;
@@ -380,45 +337,31 @@ export default function ProjectDetail() {
         };
       });
 
-      const { data: allRunsTimeline } = await supabase
-        .from('test_runs')
-        .select('*')
-        .eq('project_id', id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      const { data: allSessionsTimeline } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('project_id', id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      const { data: allMilestonesTimeline } = await supabase
-        .from('milestones')
-        .select('*')
-        .eq('project_id', id)
-        .order('created_at', { ascending: false })
-        .limit(20);
+      // 이미 fetch한 데이터 재사용 (중복 fetch 제거)
+      const allRunsTimeline = (allRunsData || []).slice(0, 20);
+      const allSessionsTimeline = (sessionsData || []).slice(0, 20);
+      const allMilestonesTimeline = [...(milestonesData || [])].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ).slice(0, 20);
 
       const activities = [
         // Milestones
-        ...(allMilestonesTimeline || []).map((m: any) => ({
+        ...allMilestonesTimeline.map((m: any) => ({
           type: 'milestone', action: 'created', name: m.name, created_at: m.created_at,
           meta: { status: m.status, start_date: m.start_date, end_date: m.end_date },
         })),
-        ...(allMilestonesTimeline || [])
+        ...allMilestonesTimeline
           .filter((m: any) => m.status === 'completed' && m.updated_at)
           .map((m: any) => ({
             type: 'milestone', action: 'completed', name: m.name, created_at: m.updated_at,
             meta: { status: m.status },
           })),
         // Runs
-        ...(allRunsTimeline || []).map((r: any) => ({
+        ...allRunsTimeline.map((r: any) => ({
           type: 'run', action: 'created', name: r.name, created_at: r.created_at,
           meta: { testCount: r.test_case_ids?.length || 0, status: r.status },
         })),
-        ...(allRunsTimeline || [])
+        ...allRunsTimeline
           .filter((r: any) => r.status === 'completed' && r.executed_at)
           .map((r: any) => ({
             type: 'run', action: 'completed', name: r.name, created_at: r.executed_at,
