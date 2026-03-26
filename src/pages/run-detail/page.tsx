@@ -1492,39 +1492,35 @@ export default function RunDetail() {
         
         <main className="flex-1 overflow-hidden bg-gray-50/30 flex">
           {/* 폴더 사이드바 */}
-          <div className={`flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto transition-all duration-200 ${isFolderSidebarOpen ? 'w-52' : 'w-12'}`}>
-            <div className={`px-3 py-4 border-b border-gray-100 flex items-center ${isFolderSidebarOpen ? 'justify-between' : 'justify-center'}`}>
+          <div className={`flex-shrink-0 bg-white border-r border-[#E2E8F0] flex flex-col overflow-y-auto transition-all duration-200 ${isFolderSidebarOpen ? 'w-[200px]' : 'w-12'}`}>
+            <div className={`px-[0.875rem] py-[0.75rem] border-b border-[#E2E8F0] flex items-center ${isFolderSidebarOpen ? 'justify-between' : 'justify-center'}`}>
               {isFolderSidebarOpen && (
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Folders</h3>
+                <span className="text-[0.6875rem] font-bold text-[#94A3B8] uppercase tracking-[0.04em]">Folders</span>
               )}
               <button
                 onClick={() => setIsFolderSidebarOpen(!isFolderSidebarOpen)}
-                className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all cursor-pointer flex-shrink-0"
+                className="w-5 h-5 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] rounded transition-all cursor-pointer flex-shrink-0 border-0 bg-transparent"
                 title={isFolderSidebarOpen ? '접기' : '펼치기'}
               >
                 <i className={`ri-${isFolderSidebarOpen ? 'arrow-left-s' : 'arrow-right-s'}-line text-base`}></i>
               </button>
             </div>
-            <div className="flex-1 py-2">
+            <div className="flex-1 py-1">
               {/* All */}
               <button
                 onClick={() => { setSelectedFolder(null); setSelectedTestCase(null); }}
-                className={`w-full flex items-center gap-2.5 py-2.5 text-sm font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-4' : 'px-0 justify-center'} ${
+                className={`w-full flex items-center gap-2 py-[0.4375rem] text-[0.8125rem] font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-[0.875rem]' : 'px-0 justify-center'} ${
                   selectedFolder === null
-                    ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
+                    : 'text-[#475569] hover:bg-[#F8FAFC]'
                 }`}
                 title={!isFolderSidebarOpen ? 'All Cases' : undefined}
               >
-                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-semibold text-sm flex-shrink-0">
-                  <i className="ri-stack-line text-base"></i>
-                </div>
+                <i className={`ri-folder-3-line text-[0.9375rem] flex-shrink-0 ${selectedFolder === null ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}></i>
                 {isFolderSidebarOpen && (
                   <>
                     <span className="truncate">All Cases</span>
-                    <span className={`ml-auto text-xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                      selectedFolder === null ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
+                    <span className={`ml-auto text-[0.75rem] flex-shrink-0 ${selectedFolder === null ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
                       {testCases.length}
                     </span>
                   </>
@@ -1533,7 +1529,7 @@ export default function RunDetail() {
 
               {/* 폴더 목록 */}
               {folders.length > 0 && (
-                <div className="mt-1">
+                <div className="">
                   {folders.map((folder) => {
                     const count = testCases.filter(tc => tc.folder === folder.name).length;
                     const isSelected = selectedFolder === folder.name;
@@ -1541,10 +1537,10 @@ export default function RunDetail() {
                       <button
                         key={folder.id}
                         onClick={() => { setSelectedFolder(folder.name); setSelectedTestCase(null); }}
-                        className={`w-full flex items-center gap-2.5 py-2.5 text-sm font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-4' : 'px-0 justify-center'} ${
+                        className={`w-full flex items-center gap-2 py-[0.4375rem] text-[0.8125rem] font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-[0.875rem]' : 'px-0 justify-center'} ${
                           isSelected
-                            ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500'
-                            : 'text-gray-700 hover:bg-gray-50'
+                            ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
+                            : 'text-[#475569] hover:bg-[#F8FAFC]'
                         }`}
                         title={!isFolderSidebarOpen ? folder.name : undefined}
                       >
@@ -1553,18 +1549,16 @@ export default function RunDetail() {
                           return (
                             <span
                               className="flex-shrink-0 flex items-center justify-center"
-                              style={{ width: 22, height: 22, borderRadius: 5, background: fs.bg }}
+                              style={{ width: 15, height: 15, flexShrink: 0 }}
                             >
-                              <i className={`${folder.icon || 'ri-folder-line'} text-[0.8125rem]`} style={{ color: fs.fg }}></i>
+                              <i className={`${folder.icon || 'ri-folder-line'} text-[0.9375rem]`} style={{ color: isSelected ? '#6366F1' : fs.fg }}></i>
                             </span>
                           );
                         })()}
                         {isFolderSidebarOpen && (
                           <>
                             <span className="truncate">{folder.name}</span>
-                            <span className={`ml-auto text-xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                              isSelected ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'
-                            }`}>
+                            <span className={`ml-auto text-[0.75rem] flex-shrink-0 ${isSelected ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
                               {count}
                             </span>
                           </>
@@ -1576,16 +1570,15 @@ export default function RunDetail() {
               )}
 
               {folders.length === 0 && !loading && isFolderSidebarOpen && (
-                <div className="px-4 py-6 text-center">
-                  <i className="ri-folder-open-line text-2xl text-gray-300 mb-2"></i>
-                  <p className="text-sm text-gray-500">폴더 없음</p>
+                <div className="px-[0.875rem] py-4 text-center">
+                  <p className="text-[0.75rem] text-[#94A3B8]">폴더 없음</p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className={`${selectedTestCase ? 'flex-1' : 'flex-1'} overflow-y-auto`}>
-            <div className="p-7">
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-[1.75rem]">
               <div className="mb-5">
                 <Link
                   to={`/projects/${projectId}/runs`}
@@ -1626,6 +1619,9 @@ export default function RunDetail() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button className="flex items-center gap-1 px-[0.875rem] py-[0.4375rem] rounded-lg text-[0.8125rem] font-semibold cursor-pointer border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] transition-colors">
+                      <i className="ri-more-2-fill" />
+                    </button>
                     {testCases.length > 0 && (
                       <button
                         onClick={() => setFocusModeOpen(true)}
@@ -1642,7 +1638,7 @@ export default function RunDetail() {
 
               <div className="grid grid-cols-5 gap-[0.875rem] mb-4">
                 {[
-                  { label: 'Total', icon: 'ri-file-list-3-line', iconBg: '#DBEAFE', iconColor: '#2563EB', value: testCases.length, valueColor: undefined },
+                  { label: 'Total Tests', icon: 'ri-file-list-3-line', iconBg: '#DBEAFE', iconColor: '#2563EB', value: testCases.length, valueColor: undefined },
                   { label: 'Passed', icon: 'ri-checkbox-circle-fill', iconBg: '#D1FAE5', iconColor: '#16A34A', value: testCases.filter(tc => tc.runStatus === 'passed').length, valueColor: '#16A34A' },
                   { label: 'Failed', icon: 'ri-close-circle-fill', iconBg: '#FEE2E2', iconColor: '#DC2626', value: testCases.filter(tc => tc.runStatus === 'failed').length, valueColor: undefined },
                   { label: 'Blocked', icon: 'ri-forbid-fill', iconBg: '#F1F5F9', iconColor: '#64748B', value: testCases.filter(tc => tc.runStatus === 'blocked').length, valueColor: undefined },
