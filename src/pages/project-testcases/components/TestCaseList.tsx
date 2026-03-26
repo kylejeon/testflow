@@ -173,6 +173,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [isFolderPanelOpen, setIsFolderPanelOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'comments' | 'results' | 'issues' | 'history'>('comments');
   const [stepsCollapsed, setStepsCollapsed] = useState(false);
+  const [stepsHeightPx, setStepsHeightPx] = useState<number | null>(null);
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -2191,7 +2192,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : 'hover:bg-[#FAFAFF]'
                       }`}
                       style={lcStatus === 'deprecated' ? { opacity: 0.5 } : undefined}
-                      onClick={() => { setSelectedTestCase(testCase); window.scrollTo(0, 0); }}
+                      onClick={() => { setSelectedTestCase(testCase); setStepsHeightPx(null); window.scrollTo(0, 0); }}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setContextMenu({ x: e.clientX, y: e.clientY, tcId: testCase.id, tcTitle: testCase.title });
@@ -2292,6 +2293,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       {/* 우측 상세 패널 */}
       {selectedTestCase && (
         <div ref={detailPanelRef} className="w-[500px] min-w-[500px] flex-shrink-0 bg-white border-l border-[#E2E8F0] flex flex-col overflow-hidden">
+
 
           {/* §1 — Header */}
           <div className="px-5 pt-4 pb-[0.875rem] border-b border-[#E2E8F0] flex-shrink-0">
@@ -2398,6 +2400,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             </div>
           </div>
 
+          {/* ── dp-split: steps + drag handle + tabs (flex-1) ── */}
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+
           {/* Steps Toggle Bar */}
           <button
             onClick={() => setStepsCollapsed(!stepsCollapsed)}
@@ -2422,9 +2427,12 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             </span>
           </button>
 
-          {/* Steps Area (collapsible, max-height 40vh) */}
+          {/* Steps Area (collapsible, smart max-height) */}
           {!stepsCollapsed && (
-            <div className="max-h-[40vh] overflow-y-auto px-5 py-[0.875rem] border-b border-[#E2E8F0] flex-shrink-0 space-y-3">
+            <div
+              className="overflow-y-auto px-5 py-[0.875rem] border-b border-[#E2E8F0] flex-shrink-0 space-y-3"
+              style={{ height: stepsHeightPx !== null ? `${stepsHeightPx}px` : undefined, maxHeight: stepsHeightPx !== null ? undefined : '40vh' }}
+            >
 
               {/* Precondition */}
               {selectedTestCase.precondition && (
@@ -2512,6 +2520,32 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             </div>
           )}
 
+          {/* ── Drag resize handle (visible only when steps expanded) ── */}
+          {!stepsCollapsed && (
+            <div
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const startY = e.clientY;
+                const startHeight = stepsHeightPx !== null
+                  ? stepsHeightPx
+                  : (detailPanelRef.current ? Math.round(detailPanelRef.current.clientHeight * 0.4) : 200);
+                const onMove = (ev: MouseEvent) => {
+                  const newH = Math.max(60, startHeight + (ev.clientY - startY));
+                  setStepsHeightPx(newH);
+                };
+                const onUp = () => {
+                  document.removeEventListener('mousemove', onMove);
+                  document.removeEventListener('mouseup', onUp);
+                };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+              }}
+              className="h-[6px] flex-shrink-0 cursor-row-resize bg-[#F8FAFC] border-b border-[#E2E8F0] flex items-center justify-center hover:bg-[#EEF2FF] transition-colors group"
+            >
+              <div className="w-8 h-[3px] bg-[#CBD5E1] rounded-full group-hover:bg-[#6366F1] transition-colors" />
+            </div>
+          )}
+
           {/* §3 — Tabs (no Details tab) */}
           <div className="flex border-b border-[#E2E8F0] flex-shrink-0">
             {(['comments', 'results', 'issues', 'history'] as const).map((tab) => {
@@ -2546,8 +2580,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             })}
           </div>
 
-          {/* §4 — Tab Body (flex-1, scrollable) */}
-          <div className="flex-1 overflow-y-auto px-5 py-[0.875rem]">
+          {/* §4 — Tab Body (flex-1, min 220px, scrollable) */}
+          <div className="flex-1 overflow-y-auto px-5 py-[0.875rem]" style={{ minHeight: '220px' }}>
 
             {/* Comments Tab */}
             {activeTab === 'comments' && (
@@ -2760,6 +2794,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 )}
               </div>
             )}
+          </div>
+          {/* ── /dp-split ── */}
           </div>
 
           {/* §5 — Footer */}

@@ -1231,35 +1231,73 @@ export default function ProjectRunsPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
-        <main className="flex-1 overflow-y-auto bg-gray-50/30">
+        <main className="flex-1 overflow-hidden flex flex-col">
+          {/* ── Edge-to-edge page header ── */}
+          <div className="flex items-center gap-3 px-5 py-[0.875rem] bg-white border-b border-[#E2E8F0] flex-shrink-0">
+            <span className="text-[1.125rem] font-bold text-[#0F172A]">Runs &amp; Results</span>
+            <span className="text-[0.8125rem] text-[#94A3B8] font-medium">· {testRuns.length} runs</span>
+            <div className="ml-auto">
+              <button
+                onClick={() => {
+                  setEditingRunId(null);
+                  setFormData({
+                    name: '',
+                    configuration: '',
+                    milestone_id: '',
+                    status: 'new',
+                    issues: '',
+                    tags: '',
+                    include_all_cases: true,
+                    is_ci_cd_run: false,
+                  });
+                  setSelectedTestCases([]);
+                  setShowAddRunModal(true);
+                }}
+                className="px-[0.875rem] py-[0.4375rem] bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-[0.8125rem] flex items-center gap-2 cursor-pointer whitespace-nowrap shadow-sm"
+                style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
+              >
+                <i className="ri-play-circle-line"></i>
+                Start New Run
+              </button>
+            </div>
+          </div>
+
+          {/* ── Edge-to-edge lifecycle tabs ── */}
+          <div className="flex border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`flex items-center gap-[0.3125rem] px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-2 transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
+                activeTab === 'active'
+                  ? 'text-[#6366F1] border-[#6366F1] font-semibold'
+                  : 'text-[#64748B] border-transparent hover:text-[#475569]'
+              }`}
+            >
+              <i className="ri-play-circle-line text-[0.875rem]"></i>
+              Active
+              <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${activeTab === 'active' ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
+                {testRuns.filter(r => r.status !== 'completed').length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('closed')}
+              className={`flex items-center gap-[0.3125rem] px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-2 transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
+                activeTab === 'closed'
+                  ? 'text-[#6366F1] border-[#6366F1] font-semibold'
+                  : 'text-[#64748B] border-transparent hover:text-[#475569]'
+              }`}
+            >
+              <i className="ri-checkbox-circle-line text-[0.875rem]"></i>
+              Completed
+              <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${activeTab === 'closed' ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
+                {testRuns.filter(r => r.status === 'completed').length}
+              </span>
+            </button>
+          </div>
+
+          {/* ── Scrollable content ── */}
+          <div className="flex-1 overflow-y-auto bg-[#F8FAFC]">
           <div className="p-[1.75rem]">
             <div className="mb-[1.3125rem]">
-              <div className="flex items-center justify-between mb-[1.3125rem]">
-                <h1 className="text-[1.375rem] font-bold text-gray-900">Runs & Results</h1>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => {
-                      setEditingRunId(null);
-                      setFormData({
-                        name: '',
-                        configuration: '',
-                        milestone_id: '',
-                        status: 'new',
-                        issues: '',
-                        tags: '',
-                        include_all_cases: true,
-                        is_ci_cd_run: false,
-                      });
-                      setSelectedTestCases([]);
-                      setShowAddRunModal(true);
-                    }}
-                    className="px-[0.875rem] py-[0.4375rem] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap"
-                  >
-                    <i className="ri-add-line"></i>
-                    Run
-                  </button>
-                </div>
-              </div>
 
               <div className="grid grid-cols-3 gap-[1.3125rem] mb-[1.3125rem]">
                 <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
@@ -1349,34 +1387,6 @@ export default function ProjectRunsPage() {
                 </div>
               </div>
 
-              <div className="flex border-b border-gray-200 mb-4">
-                <button
-                  onClick={() => setActiveTab('active')}
-                  className={`flex items-center gap-1.5 px-4 py-2 text-[0.8125rem] font-medium border-b-2 cursor-pointer whitespace-nowrap transition-all ${
-                    activeTab === 'active'
-                      ? 'border-indigo-500 text-indigo-600 font-semibold'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Active
-                  <span className={`text-[0.6875rem] px-1.5 py-0.5 rounded-full font-semibold ${activeTab === 'active' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
-                    {testRuns.filter(r => r.status !== 'completed').length}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('closed')}
-                  className={`flex items-center gap-1.5 px-4 py-2 text-[0.8125rem] font-medium border-b-2 cursor-pointer whitespace-nowrap transition-all ${
-                    activeTab === 'closed'
-                      ? 'border-indigo-500 text-indigo-600 font-semibold'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Completed
-                  <span className={`text-[0.6875rem] px-1.5 py-0.5 rounded-full font-semibold ${activeTab === 'closed' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
-                    {testRuns.filter(r => r.status === 'completed').length}
-                  </span>
-                </button>
-              </div>
             </div>
 
             <div className="flex items-center gap-3 mb-[1.3125rem]">
@@ -1650,6 +1660,8 @@ export default function ProjectRunsPage() {
                 )}
               </div>
             )}
+          </div>
+          {/* ── /scrollable content ── */}
           </div>
         </main>
       </div>
