@@ -247,7 +247,7 @@ export default function ProjectDocumentation() {
                 {filteredDocuments.length === 0 ? (
                   <div className="text-center py-16">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <i className="ri-file-text-line text-3xl text-gray-400"></i>
+                      <i className="ri-file-text-line text-[1.75rem] text-gray-400"></i>
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('noDocuments')}</h3>
                     <p className="text-gray-500 mb-6">{t('noDocumentsDesc')}</p>

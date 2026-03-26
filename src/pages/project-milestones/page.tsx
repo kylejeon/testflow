@@ -473,11 +473,11 @@ export default function ProjectMilestones() {
 
             <div className="mb-6">
               <div className="flex items-center gap-4 border-b border-gray-200">
-                <button onClick={() => setActiveTab('active')} className={`px-1 py-3 text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'active' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                <button onClick={() => setActiveTab('active')} className={`px-1 py-[0.4375rem] text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'active' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
                   ACTIVE ({milestones.filter(m => m.status !== 'completed').length})
                   {activeTab === 'active' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>}
                 </button>
-                <button onClick={() => setActiveTab('completed')} className={`px-1 py-3 text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'completed' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                <button onClick={() => setActiveTab('completed')} className={`px-1 py-[0.4375rem] text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'completed' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
                   COMPLETED ({milestones.filter(m => m.status === 'completed').length})
                   {activeTab === 'completed' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>}
                 </button>
@@ -500,13 +500,13 @@ export default function ProjectMilestones() {
                       const isLastOverall = month === Object.keys(groupedMilestones)[Object.keys(groupedMilestones).length - 1] && isLastInMonth;
                       const isPastDue = isMonthPastDue(monthMilestones);
                       return (
-                        <div key={milestone.id} className="flex gap-6">
+                        <div key={milestone.id} className="flex gap-[1.3125rem]">
                           <div className="flex flex-col items-center w-16 flex-shrink-0">
                             {index === 0 && (
                               <div className={`${isPastDue ? 'bg-orange-500' : 'bg-gray-400'} text-white text-sm font-bold px-3 py-1.5 rounded mb-2`}>{month}</div>
                             )}
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-gray-900">{endDateInfo.day}</div>
+                              <div className="text-[1.375rem] font-bold text-gray-900">{endDateInfo.day}</div>
                             </div>
                           </div>
                           <div className="flex flex-col items-center flex-shrink-0">
@@ -532,21 +532,21 @@ export default function ProjectMilestones() {
             <form onSubmit={(e) => { e.preventDefault(); const formData = new FormData(e.currentTarget); handleCreateMilestone({ name: formData.get('name'), start_date: formData.get('start_date'), end_date: formData.get('end_date') }); }}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Name</label>
                   <input type="text" name="name" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Start Date</label>
                   <input type="date" name="start_date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">End Date</label>
                   <input type="date" name="end_date" required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-6">
-                <button type="button" onClick={() => { setShowCreateModal(false); setParentMilestoneId(null); }} className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap">Cancel</button>
-                <button type="submit" className="flex-1 px-4 py-2 text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">Create</button>
+                <button type="button" onClick={() => { setShowCreateModal(false); setParentMilestoneId(null); }} className="flex-1 px-[0.875rem] py-[0.4375rem] text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap">Cancel</button>
+                <button type="submit" className="flex-1 px-[0.875rem] py-[0.4375rem] text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">Create</button>
               </div>
             </form>
           </div>
@@ -560,11 +560,11 @@ export default function ProjectMilestones() {
             <form onSubmit={(e) => { e.preventDefault(); const formData = new FormData(e.currentTarget); handleUpdateMilestone(editingMilestone.id, { name: formData.get('name'), start_date: formData.get('start_date'), end_date: formData.get('end_date'), status: formData.get('status') }); }}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Name</label>
                   <input type="text" name="name" defaultValue={editFormData.name} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Status</label>
                   <select name="status" defaultValue={editFormData.status} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm">
                     <option value="upcoming">Upcoming</option>
                     <option value="started">In Progress</option>
@@ -573,19 +573,19 @@ export default function ProjectMilestones() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Start Date</label>
                   <input type="date" name="start_date" defaultValue={editFormData.start_date} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">End Date</label>
                   <input type="date" name="end_date" defaultValue={editFormData.end_date} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-6">
-                <button type="button" onClick={() => handleDeleteMilestone(editingMilestone.id)} className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all cursor-pointer whitespace-nowrap">Delete</button>
+                <button type="button" onClick={() => handleDeleteMilestone(editingMilestone.id)} className="px-[0.875rem] py-[0.4375rem] text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all cursor-pointer whitespace-nowrap">Delete</button>
                 <div className="flex-1"></div>
-                <button type="button" onClick={() => setEditingMilestone(null)} className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap">Cancel</button>
-                <button type="submit" className="px-4 py-2 text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">Save</button>
+                <button type="button" onClick={() => setEditingMilestone(null)} className="px-[0.875rem] py-[0.4375rem] text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap">Cancel</button>
+                <button type="submit" className="px-[0.875rem] py-[0.4375rem] text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">Save</button>
               </div>
             </form>
           </div>

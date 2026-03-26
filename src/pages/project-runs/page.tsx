@@ -1505,7 +1505,7 @@ export default function ProjectRunsPage() {
                                       ))}
                                     </div>
                                     
-                                    <div className="flex items-center gap-6 text-[0.8125rem] text-gray-600 mb-3">
+                                    <div className="flex items-center gap-[1.3125rem] text-[0.8125rem] text-gray-600 mb-3">
                                       <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                         <span>{run.passed} Passed</span>
@@ -1530,7 +1530,7 @@ export default function ProjectRunsPage() {
 
                                     <div className="flex items-center gap-3">
                                       <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-                                        <div 
+                                        <div
                                           className="h-full bg-indigo-500 rounded-full transition-all"
                                           style={{ width: `${run.progress}%` }}
                                         ></div>
@@ -1540,6 +1540,7 @@ export default function ProjectRunsPage() {
                                   </div>
 
                                   <div className="flex items-center gap-3 flex-shrink-0">
+                                    <span className="text-[0.75rem] text-gray-400 font-medium">Assigned to</span>
                                     <div className="flex -space-x-2">
                                       {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
                                         <div 
@@ -1567,7 +1568,7 @@ export default function ProjectRunsPage() {
                                               e.stopPropagation();
                                               handleEditRun(run);
                                             }}
-                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                                            className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
                                           >
                                             <i className="ri-edit-line"></i>
                                             <span>Edit</span>
@@ -1577,7 +1578,7 @@ export default function ProjectRunsPage() {
                                               e.stopPropagation();
                                               handlePauseResumeRun(run);
                                             }}
-                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                                            className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
                                           >
                                             <i className={run.status === 'in_progress' ? 'ri-pause-line' : 'ri-play-line'}></i>
                                             <span>{run.status === 'in_progress' ? 'Pause' : 'Resume'}</span>
@@ -1587,7 +1588,7 @@ export default function ProjectRunsPage() {
                                               e.stopPropagation();
                                               handleDeleteRun(run.id);
                                             }}
-                                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
+                                            className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
                                           >
                                             <i className="ri-delete-bin-line"></i>
                                             <span>Delete</span>
@@ -1656,7 +1657,7 @@ export default function ProjectRunsPage() {
                                 ))}
                               </div>
                               
-                              <div className="flex items-center gap-6 text-sm text-gray-600 mb-3">
+                              <div className="flex items-center gap-[1.3125rem] text-[0.8125rem] text-gray-600 mb-3">
                                 <div className="flex items-center gap-2">
                                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                   <span>{run.passed} Passed</span>
@@ -1698,14 +1699,15 @@ export default function ProjectRunsPage() {
                                     );
                                   })()}
                                 </div>
-                                <span className="text-sm font-semibold text-gray-700 min-w-[40px] text-right">{run.progress}%</span>
+                                <span className="text-[0.8125rem] font-semibold text-gray-700 min-w-[40px] text-right">{run.progress}%</span>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-3 flex-shrink-0">
+                              <span className="text-[0.75rem] text-gray-400 font-medium">Assigned to</span>
                               <div className="flex -space-x-2">
                                 {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
-                                  <div 
+                                  <div
                                     key={idx}
                                     className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-semibold"
                                   >
@@ -1714,7 +1716,7 @@ export default function ProjectRunsPage() {
                                 ))}
                               </div>
                               <div className="relative" ref={openMenuId === run.id ? menuRef : null}>
-                                <button 
+                                <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setOpenMenuId(openMenuId === run.id ? null : run.id);
@@ -1730,7 +1732,7 @@ export default function ProjectRunsPage() {
                                         e.stopPropagation();
                                         handleEditRun(run);
                                       }}
-                                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                                      className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
                                     >
                                       <i className="ri-edit-line"></i>
                                       <span>Edit</span>
@@ -1740,7 +1742,7 @@ export default function ProjectRunsPage() {
                                         e.stopPropagation();
                                         handlePauseResumeRun(run);
                                       }}
-                                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                                      className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
                                     >
                                       <i className={run.status === 'in_progress' ? 'ri-pause-line' : 'ri-play-line'}></i>
                                       <span>{run.status === 'in_progress' ? 'Pause' : 'Resume'}</span>
@@ -1750,7 +1752,7 @@ export default function ProjectRunsPage() {
                                         e.stopPropagation();
                                         handleDeleteRun(run.id);
                                       }}
-                                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
+                                      className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
                                     >
                                       <i className="ri-delete-bin-line"></i>
                                       <span>Delete</span>
@@ -1801,7 +1803,7 @@ export default function ProjectRunsPage() {
             <div className={`bg-white rounded-xl shadow-2xl w-full overflow-hidden animate-fade-in ${addRunStep === 1 ? 'max-w-lg' : 'max-w-3xl'}`}>
 
               {/* ── Modal Header ── */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center justify-between px-[1.3125rem] py-[1rem] border-b border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
                     <i className="ri-play-circle-line text-indigo-500 text-lg" />
@@ -1946,7 +1948,7 @@ export default function ProjectRunsPage() {
                   </div>
 
                   <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
-                    <button onClick={closeModal} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">Cancel</button>
+                    <button onClick={closeModal} className="px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">Cancel</button>
                     <button
                       onClick={() => { if (!formData.name.trim()) { alert('Please enter a run name'); return; } setAddRunStep(2); }}
                       className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold cursor-pointer flex items-center gap-2"

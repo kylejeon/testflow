@@ -613,7 +613,7 @@ export default function ProjectSessions() {
                     </div>
                     <div className="w-16 h-16 bg-indigo-500 rounded-full flex items-center justify-center relative">
                       <div className="absolute inset-0 bg-indigo-500 rounded-full opacity-20 animate-ping"></div>
-                      <span className="text-2xl font-bold text-white relative z-10">{stats.activeSessions}</span>
+                      <span className="text-[1.75rem] font-bold text-white relative z-10">{stats.activeSessions}</span>
                     </div>
                   </div>
                   <div className="space-y-2 text-[0.8125rem]">
@@ -679,7 +679,7 @@ export default function ProjectSessions() {
                       </svg>
                     </div>
                   </div>
-                  <div className="text-sm text-indigo-600 font-semibold">
+                  <div className="text-[0.8125rem] text-indigo-600 font-semibold">
                     +28 this month
                   </div>
                 </div>
@@ -768,7 +768,7 @@ export default function ProjectSessions() {
                             <div
                               key={tag}
                               onClick={() => handleTagFilterToggle(tag)}
-                              className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 rounded-lg flex items-center justify-between ${
+                              className={`px-[0.875rem] py-[0.4375rem] text-[0.8125rem] cursor-pointer hover:bg-gray-50 rounded-lg flex items-center justify-between ${
                                 selectedTags.includes(tag) ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
                               }`}
                             >
@@ -821,7 +821,7 @@ export default function ProjectSessions() {
                             <div
                               key={tag}
                               onClick={() => handleTagFilterToggle(tag)}
-                              className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 rounded-lg flex items-center justify-between ${
+                              className={`px-[0.875rem] py-[0.4375rem] text-[0.8125rem] cursor-pointer hover:bg-gray-50 rounded-lg flex items-center justify-between ${
                                 selectedTags.includes(tag) ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
                               }`}
                             >
@@ -861,7 +861,7 @@ export default function ProjectSessions() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {/* Milestone-based Sessions */}
                 {milestones.length > 0 && (
                   <div className="bg-white rounded-lg border border-gray-200">
@@ -912,19 +912,33 @@ export default function ProjectSessions() {
                                         <input type="checkbox" className="w-4 h-4 text-indigo-600 cursor-pointer" />
                                       </td>
                                       <td className="px-4 py-[0.6875rem]">
-                                        <div className="flex items-center gap-3">
-                                          <i className={`${
+                                        <div className="flex items-start gap-3">
+                                          <i className={`mt-0.5 ${
                                             session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
                                             session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' :
                                             session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
                                             'ri-check-line text-purple-500'
                                           }`}></i>
-                                          <Link 
-                                            to={`/projects/${projectId}/discovery-logs/${session.id}`}
-                                            className="font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
-                                          >
-                                            {session.name}
-                                          </Link>
+                                          <div>
+                                            <Link
+                                              to={`/projects/${projectId}/discovery-logs/${session.id}`}
+                                              className="font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                                            >
+                                              {session.name}
+                                            </Link>
+                                            <div className="flex items-center gap-1.5 text-[0.8125rem] text-gray-500 mt-0.5">
+                                              <i className="ri-calendar-line text-indigo-400 text-[0.9375rem]"></i>
+                                              <span>{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                              <span className="text-gray-300">·</span>
+                                              <span>{new Date(session.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                                              {session.actualStatus === 'in_progress' && (
+                                                <>
+                                                  <span className="text-gray-300">·</span>
+                                                  <span className="text-gray-400 text-[0.75rem]">In Progress</span>
+                                                </>
+                                              )}
+                                            </div>
+                                          </div>
                                         </div>
                                       </td>
                                       <td className="px-4 py-[0.6875rem]">
@@ -1037,11 +1051,11 @@ export default function ProjectSessions() {
                         <thead className="bg-gray-50 border-b border-gray-200">
                           <tr>
                             <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Session</th>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">State</th>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tags</th>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Contributors</th>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Activity</th>
-                            <th className="px-4 py-3"></th>
+                            <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">State</th>
+                            <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Tags</th>
+                            <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Contributors</th>
+                            <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Activity</th>
+                            <th className="px-4 py-[0.6875rem]"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -1049,19 +1063,33 @@ export default function ProjectSessions() {
                             return (
                               <tr key={session.id} className="hover:bg-gray-50">
                                 <td className="px-4 py-[0.6875rem]">
-                                  <div className="flex items-center gap-3">
-                                    <i className={`${
+                                  <div className="flex items-start gap-3">
+                                    <i className={`mt-0.5 ${
                                       session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
                                       session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' :
                                       session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
                                       'ri-check-line text-purple-500'
                                     }`}></i>
-                                    <Link 
-                                      to={`/projects/${projectId}/discovery-logs/${session.id}`}
-                                      className="font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
-                                    >
-                                      {session.name}
-                                    </Link>
+                                    <div>
+                                      <Link
+                                        to={`/projects/${projectId}/discovery-logs/${session.id}`}
+                                        className="font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                                      >
+                                        {session.name}
+                                      </Link>
+                                      <div className="flex items-center gap-1.5 text-[0.8125rem] text-gray-500 mt-0.5">
+                                        <i className="ri-calendar-line text-indigo-400 text-[0.9375rem]"></i>
+                                        <span>{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                        <span className="text-gray-300">·</span>
+                                        <span>{new Date(session.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                                        {session.actualStatus === 'in_progress' && (
+                                          <>
+                                            <span className="text-gray-300">·</span>
+                                            <span className="text-gray-400 text-[0.75rem]">In Progress</span>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
                                 </td>
                                 <td className="px-4 py-[0.6875rem]">
@@ -1072,7 +1100,7 @@ export default function ProjectSessions() {
                                       session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
                                       'ri-check-line text-purple-500'
                                     }`}></i>
-                                    <span className="text-sm text-gray-700">
+                                    <span className="text-[0.8125rem] text-gray-700">
                                       {session.actualStatus === 'new' ? 'New' :
                                        session.actualStatus === 'in_progress' ? 'In progress' :
                                        session.actualStatus === 'paused' ? 'Paused' :
@@ -1185,7 +1213,7 @@ export default function ProjectSessions() {
                       e.stopPropagation();
                       handleEditSession(session);
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                    className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
                   >
                     <i className="ri-edit-line"></i>
                     <span>Edit</span>
@@ -1196,7 +1224,7 @@ export default function ProjectSessions() {
                         e.stopPropagation();
                         handleCloseSession(session.id);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                      className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
                     >
                       <i className="ri-check-line"></i>
                       <span>Close Session</span>
@@ -1207,7 +1235,7 @@ export default function ProjectSessions() {
                       e.stopPropagation();
                       handleDeleteSession(session.id);
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
+                    className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
                   >
                     <i className="ri-delete-bin-line"></i>
                     <span>Delete</span>
@@ -1241,7 +1269,7 @@ export default function ProjectSessions() {
                 <div className="space-y-6">
                   {/* Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-2">
                       Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -1250,25 +1278,25 @@ export default function ProjectSessions() {
                       value={formData.name}
                       onChange={handleInputChange}
                       placeholder="Log name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                      className="w-full px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.8125rem]"
                     />
                   </div>
 
                   {/* Milestone */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-[0.8125rem] font-medium text-gray-700">
                         Milestone
                       </label>
                       <button className="text-indigo-600 hover:text-indigo-700 cursor-pointer">
                         <i className="ri-add-line"></i>
                       </button>
                     </div>
-                    <select 
+                    <select
                       name="milestone_id"
                       value={formData.milestone_id}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
+                      className="w-full px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.8125rem] cursor-pointer"
                     >
                       <option value="">Select milestone</option>
                       {milestones.map((milestone) => (
@@ -1281,7 +1309,7 @@ export default function ProjectSessions() {
 
                   {/* Assignees */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-2">
                       Assignees
                     </label>
 
@@ -1330,7 +1358,7 @@ export default function ProjectSessions() {
                           setShowAssigneeDropdown(prev => !prev);
                           setAssigneeSearch('');
                         }}
-                        className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-500 hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer bg-white"
+                        className="w-full flex items-center justify-between px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg text-[0.8125rem] text-gray-500 hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer bg-white"
                       >
                         <span>{formData.assignees.length > 0 ? `${formData.assignees.length}명 선택됨` : '멤버 선택...'}</span>
                         <i className={`ri-arrow-${showAssigneeDropdown ? 'up' : 'down'}-s-line text-gray-400`}></i>
@@ -1403,7 +1431,7 @@ export default function ProjectSessions() {
 
                   {/* Mission */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-2">
                       Mission
                     </label>
                     <textarea
@@ -1412,13 +1440,13 @@ export default function ProjectSessions() {
                       onChange={handleInputChange}
                       placeholder="Describe the testing mission and objectives..."
                       rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
+                      className="w-full px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.8125rem] resize-none"
                     />
                   </div>
 
                   {/* Tags */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-2">
                       Tags
                     </label>
                     <input
@@ -1427,7 +1455,7 @@ export default function ProjectSessions() {
                       value={formData.tags}
                       onChange={handleInputChange}
                       placeholder="Enter tags separated by commas"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                      className="w-full px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.8125rem]"
                     />
                   </div>
                 </div>
@@ -1441,14 +1469,14 @@ export default function ProjectSessions() {
                   setEditingSessionId(null);
                 }}
                 disabled={submitting}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-[0.875rem] py-[0.4375rem] text-[0.8125rem] font-medium text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddSession}
                 disabled={submitting}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-[0.875rem] py-[0.4375rem] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (editingSessionId ? 'Updating...' : 'Adding...') : (editingSessionId ? 'Update session' : 'Add session')}
               </button>
