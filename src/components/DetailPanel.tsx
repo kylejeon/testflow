@@ -91,15 +91,17 @@ const FOLDER_COLOR_MAP: Record<string, { bg: string; fg: string }> = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function parseSteps(raw?: string): { step: string; expectedResult: string }[] {
+function parseSteps(raw?: string, expectedResultRaw?: string): { step: string; expectedResult: string }[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed;
   } catch {}
-  return raw.split('\n').filter(Boolean).map((s) => ({
+  const stepsArr = raw.split('\n').filter(Boolean);
+  const expectedArr = expectedResultRaw ? expectedResultRaw.split('\n').filter(Boolean) : [];
+  return stepsArr.map((s, i) => ({
     step: s.replace(/^\d+\.\s*/, ''),
-    expectedResult: '',
+    expectedResult: (expectedArr[i] || '').replace(/^\d+\.\s*/, ''),
   }));
 }
 
@@ -286,7 +288,7 @@ export function DetailPanel({
 
   const isRun = context === 'run';
   const effectiveStepResults = Object.keys(stepResults).length > 0 ? stepResults : localStepResults;
-  const steps = parseSteps(testCase.steps);
+  const steps = parseSteps(testCase.steps, testCase.expected_result);
   const passedCount = Object.values(effectiveStepResults).filter((v) => v === 'passed').length;
 
   const handleStepResult = (index: number, status: 'passed' | 'failed' | null) => {
@@ -866,26 +868,27 @@ export function DetailPanel({
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Linked Issues</span>
-                  <button
-                    onClick={onAddIssue}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
-                  >
-                    <i className="ri-add-line" />
-                    Link Issue
-                  </button>
-                </div>
                 {uniqueIssues.map((issue, idx) => {
                   const issueUrl = jiraDomain ? `https://${jiraDomain}/browse/${issue.issueKey}` : '';
+                  const dateStr = issue.createdAt instanceof Date
+                    ? issue.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    : '';
+                  const statusLabel = issue.status
+                    ? issue.status.charAt(0).toUpperCase() + issue.status.slice(1)
+                    : '';
                   const card = (
                     <div className="flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0">
+                      <div
+                        className="w-6 h-6 flex items-center justify-center flex-shrink-0"
+                        style={{ background: '#FEF2F2', color: '#EF4444', borderRadius: '0.25rem' }}
+                      >
                         <i className="ri-bug-line text-sm" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs font-semibold text-gray-800">{issue.issueKey}</div>
-                        <div className="text-[0.6875rem] text-gray-400">From run: {issue.runName}</div>
+                        <div className="text-xs font-semibold text-gray-800 truncate">{issue.issueKey}</div>
+                        <div className="text-[0.6875rem] text-gray-400">
+                          {issue.issueKey}{statusLabel ? ` · ${statusLabel}` : ''}{dateStr ? ` · ${dateStr}` : ''}
+                        </div>
                       </div>
                     </div>
                   );
@@ -905,6 +908,15 @@ export function DetailPanel({
                     </div>
                   );
                 })}
+                <div className="flex justify-center pt-2">
+                  <button
+                    onClick={onAddIssue}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-[#C7D2FE] text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-add-circle-line" />
+                    Link an issue
+                  </button>
+                </div>
               </>
             )}
           </div>
