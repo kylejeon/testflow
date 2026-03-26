@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { useTestCasesOverview, exportTestCasesCSV } from '../../hooks/useTestCasesOverview';
@@ -181,26 +182,36 @@ export default function TestCasesOverviewPage() {
     }
   };
 
-  /* chart layout */
+  /* chart data */
   const weeks = data?.weeklyGrowth ?? [];
-  const chartH = 120;
-  const SVG_W = 700, SVG_H = 210, TOP_PAD = 30, BOTTOM_PAD = 30;
-  const leftPad = 10, rightPad = 10;
-  const usable = SVG_W - leftPad - rightPad;
-  const n = weeks.length;
-  const bw = Math.floor(usable / (n * 1.6));
-  const gap = n > 1 ? (usable - n * bw) / (n - 1) : 0;
-  const barMax = n ? Math.max(...weeks.map(w => w.total), 1) : 1;
-  const barMin = n ? Math.min(...weeks.map(w => w.total), 0) : 0;
-  const barRange = barMax - barMin || 1;
-  const barBaseY = SVG_H - BOTTOM_PAD;
 
-  const barCenters = weeks.map((_, i) => leftPad + i * (bw + gap) + bw / 2);
-  const trendPts = weeks.map((w, i) => {
-    const barH = Math.max(4, ((w.total - barMin) / barRange) * chartH);
-    const barTopY = barBaseY - barH;
-    return `${barCenters[i].toFixed(1)},${(barTopY - 10).toFixed(1)}`;
-  });
+  interface WeekTooltipProps {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; color: string }>;
+    label?: string;
+  }
+  function WeekTooltip({ active, payload, label }: WeekTooltipProps) {
+    if (!active || !payload?.length) return null;
+    const created    = payload.find(p => p.name === 'total')?.value ?? 0;
+    const cumulative = payload.find(p => p.name === 'cumulative')?.value ?? 0;
+    return (
+      <div style={{ background: '#1E293B', color: '#fff', borderRadius: '0.5rem', padding: '0.625rem 0.75rem', fontSize: '0.6875rem', lineHeight: 1.6, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: '140px' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#fff', marginBottom: '0.25rem' }}>{label}</div>
+        {([
+          { color: '#6366F1', label: 'Created',          value: created },
+          { color: '#8B5CF6', label: 'Cumulative Trend', value: cumulative },
+        ] as const).map(row => (
+          <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#CBD5E1' }}>
+              <span style={{ width: 7, height: 7, borderRadius: 2, background: row.color, flexShrink: 0, display: 'inline-block' }} />
+              {row.label}
+            </span>
+            <span style={{ fontWeight: 600, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{row.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: '#F8FAFC', color: '#1E293B', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -399,35 +410,24 @@ export default function TestCasesOverviewPage() {
                       </div>
                     </div>
                   </div>
-                  {/* SVG with viewBox big enough for dots; no preserveAspectRatio:none to avoid label distortion */}
-                  <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" style={{ display: 'block', overflow: 'visible' }}>
-                    {/* Grid lines */}
-                    {[TOP_PAD, TOP_PAD + SVG_H * 0.25, TOP_PAD + SVG_H * 0.5, TOP_PAD + SVG_H * 0.75].map((y, idx) => (
-                      <line key={idx} x1={leftPad} y1={y} x2={SVG_W - rightPad} y2={y} stroke="#F1F5F9" strokeWidth={1} />
-                    ))}
-                    {/* Bars */}
-                    {weeks.map((w, i) => {
-                      const x = leftPad + i * (bw + gap);
-                      const barH = Math.max(4, ((w.total - barMin) / barRange) * chartH);
-                      const y = barBaseY - barH;
-                      return (
-                        <g key={i}>
-                          <rect className="tco-bar" x={x} y={y} width={bw} height={barH} rx={3} fill="#6366F1" opacity={i === n - 1 ? 0.7 : 0.85} />
-                          <text x={barCenters[i]} y={barBaseY + 16} fontSize={10} fill="#94A3B8" textAnchor="middle" fontFamily="Inter, sans-serif">{w.label}</text>
-                        </g>
-                      );
-                    })}
-                    {/* Trend line */}
-                    {trendPts.length >= 2 && (
-                      <>
-                        <polyline points={trendPts.join(' ')} fill="none" stroke="#8B5CF6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                        {trendPts.map((pt, i) => {
-                          const [cx, cy] = pt.split(',').map(Number);
-                          return <circle key={i} cx={cx} cy={cy} r={3.5} fill="#8B5CF6" stroke="#fff" strokeWidth={2} />;
-                        })}
-                      </>
-                    )}
-                  </svg>
+                  <ResponsiveContainer width="100%" height={210}>
+                    <ComposedChart
+                      data={weeks.map((w, i) => ({
+                        label: w.label,
+                        created: i === 0 ? w.total : w.total - weeks[i - 1].total,
+                        cumulative: w.total,
+                      }))}
+                      barCategoryGap="35%"
+                      margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid vertical={false} stroke="#F1F5F9" />
+                      <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94A3B8', fontFamily: 'Inter, sans-serif' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#94A3B8', fontFamily: 'Inter, sans-serif' }} axisLine={false} tickLine={false} width={35} allowDecimals={false} />
+                      <Tooltip content={<WeekTooltip />} cursor={{ fill: 'rgba(241,245,249,0.6)' }} />
+                      <Bar dataKey="created" name="total" fill="#6366F1" fillOpacity={0.85} radius={[3, 3, 0, 0]} />
+                      <Line dataKey="cumulative" name="cumulative" type="monotone" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3.5, fill: '#8B5CF6', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
                 </div>
               )}
 
