@@ -2457,9 +2457,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                               <p className="text-[0.75rem] text-[#334155] whitespace-pre-wrap leading-[1.5]">{s.step}</p>
                             )}
                             {s.expectedResult && (
-                              <div className="mt-[0.375rem] px-2 py-1 bg-[#F0FDF4] border border-[#BBF7D0] rounded text-[0.6875rem] text-[#16A34A] flex items-start gap-1 leading-[1.4]">
-                                <i className="ri-checkbox-circle-line text-[0.75rem] flex-shrink-0 mt-[0.0625rem]"></i>
-                                <span>{s.expectedResult}</span>
+                              <div className="mt-[0.25rem] flex items-start gap-1 leading-[1.4]">
+                                <span className="text-[0.75rem] text-[#16A34A] flex-shrink-0 font-medium">✓</span>
+                                <span className="text-[0.6875rem] text-[#16A34A]">{htmlToText(s.expectedResult)}</span>
                               </div>
                             )}
                           </div>
