@@ -12,8 +12,9 @@ const badgeStyle: Record<string, { bg: string; color: string }> = {
 
 const HM_COLORS = ['#F1F5F9', '#E0E7FF', '#C7D2FE', '#A5B4FC', '#818CF8', '#6366F1'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-// Show Mon/Wed/Fri only (indices 1,3,5 in Sun=0 scheme)
-const DAY_LABEL_VISIBLE: Record<number, string> = { 1: 'Mon', 3: 'Wed', 5: 'Fri' };
+// GitHub style: rows 0–6 = Sun–Sat; show Mon(1)/Wed(3)/Fri(5) labels only
+const DAY_LABELS: (string | null)[] = [null, 'Mon', null, 'Wed', null, 'Fri', null];
+const HM_LABEL_W = 28;
 
 function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -60,52 +61,54 @@ function Heatmap({ data }: { data: number[] }) {
     }
   };
 
-  // Render: 7 rows × 52 cols (row = day-of-week, col = week)
-  // data[col * 7 + row] = intensity for that cell
+  // Render: 7 rows × 52 cols; row 0=Sun … row 6=Sat (GitHub order)
+  // Each row contains its label + cells in the same flex container → always aligned
   return (
     <div className="hm-wrap-outer" style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {/* Day labels column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0, width: 28 }}>
-          <div style={{ height: 13 }} />{/* spacer for month row */}
-          {Array.from({ length: 7 }, (_, r) => (
-            <div key={r} style={{ height: 11, lineHeight: '11px', fontSize: 9, color: DAY_LABEL_VISIBLE[r] ? '#94A3B8' : 'transparent', fontWeight: 500, textAlign: 'right', userSelect: 'none' }}>
-              {DAY_LABEL_VISIBLE[r] ?? '\u00A0'}
-            </div>
-          ))}
-        </div>
-        {/* Grid */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Month labels row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(52, 1fr)', gap: 2, height: 13, alignItems: 'end', marginBottom: 0 }}>
-            {Array.from({ length: 52 }, (_, col) => {
-              const lbl = monthLabels.find(m => m.col === col);
-              return (
-                <div key={col} style={{ fontSize: 9, color: '#64748B', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'visible' }}>
-                  {lbl?.label ?? ''}
-                </div>
-              );
-            })}
-          </div>
-          {/* 7 day-rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {Array.from({ length: 7 }, (_, row) => (
-              <div key={row} style={{ display: 'grid', gridTemplateColumns: 'repeat(52, 1fr)', gap: 2 }}>
-                {Array.from({ length: 52 }, (_, col) => {
-                  const level = data[col * 7 + row] ?? 0;
-                  return (
-                    <div
-                      key={col}
-                      style={{ aspectRatio: '1', borderRadius: 2, background: HM_COLORS[level], cursor: 'pointer', outline: '1px solid rgba(27,31,35,0.06)', outlineOffset: -1 }}
-                      onMouseEnter={e => showTooltip(e, col, row)}
-                      onMouseLeave={hideTooltip}
-                    />
-                  );
-                })}
+      {/* Month labels row (with left spacer matching label column width) */}
+      <div style={{ display: 'flex', marginBottom: 2 }}>
+        <div style={{ width: HM_LABEL_W, flexShrink: 0 }} />
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(52, 1fr)', gap: 2, height: 13, alignItems: 'end' }}>
+          {Array.from({ length: 52 }, (_, col) => {
+            const lbl = monthLabels.find(m => m.col === col);
+            return (
+              <div key={col} style={{ fontSize: 9, color: '#64748B', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'visible' }}>
+                {lbl?.label ?? ''}
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
+      </div>
+      {/* 7 day rows — label + cells share the same flex row for perfect alignment */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {Array.from({ length: 7 }, (_, row) => (
+          <div key={row} style={{ display: 'flex' }}>
+            {/* Day label: only Mon/Wed/Fri visible; hidden rows still reserve space */}
+            <div style={{
+              width: HM_LABEL_W, flexShrink: 0,
+              fontSize: 9, fontWeight: 500, textAlign: 'right', userSelect: 'none',
+              color: DAY_LABELS[row] ? '#94A3B8' : 'transparent',
+              paddingRight: 4,
+              display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+            }}>
+              {DAY_LABELS[row] ?? '\u00A0'}
+            </div>
+            {/* 52 weekly cells for this day-of-week */}
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(52, 1fr)', gap: 2 }}>
+              {Array.from({ length: 52 }, (_, col) => {
+                const level = data[col * 7 + row] ?? 0;
+                return (
+                  <div
+                    key={col}
+                    style={{ aspectRatio: '1', borderRadius: 2, background: HM_COLORS[level], cursor: 'pointer', outline: '1px solid rgba(27,31,35,0.06)', outlineOffset: -1 }}
+                    onMouseEnter={e => showTooltip(e, col, row)}
+                    onMouseLeave={hideTooltip}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
       {/* Tooltip */}
       <div ref={tooltip} style={{ display: 'none', position: 'absolute', pointerEvents: 'none', background: '#1E293B', color: '#fff', fontSize: 9, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', zIndex: 10, transform: 'translateX(-50%)' }} />

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
-import { usePassRateReport } from '../../hooks/usePassRateReport';
+import { usePassRateReport, type PeriodFilter } from '../../hooks/usePassRateReport';
 import { supabase } from '../../lib/supabase';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -13,24 +13,50 @@ const priorityStyle: Record<string, { color: string; bg: string }> = {
   low:      { color: '#16A34A', bg: '#F0FDF4' },
 };
 
+const PERIOD_OPTIONS: { value: PeriodFilter; label: string; desc: string }[] = [
+  { value: 'active_run', label: 'Active Run',   desc: '— ongoing runs' },
+  { value: '7d',         label: 'Last 7 Days',  desc: '' },
+  { value: '30d',        label: 'Last 30 Days', desc: '' },
+  { value: 'all',        label: 'All Time',     desc: '' },
+];
+
+const LS_KEY = 'passrate_period';
+
 function fmt(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
 
-function dateRangeLabel(): string {
-  const end = new Date();
-  const start = new Date(end.getTime() - 6 * 24 * 60 * 60 * 1000);
-  const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return `${fmt(start)} – ${fmt(end)}`;
-}
-
 export default function PassRateReportPage() {
-  const { data, loading, error } = usePassRateReport();
+  const [period, setPeriod] = useState<PeriodFilter>(
+    () => (localStorage.getItem(LS_KEY) as PeriodFilter | null) ?? 'active_run'
+  );
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { data, loading, error } = usePassRateReport(period);
   const [userInitials, setUserInitials] = useState('');
   const [exporting, setExporting] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(700);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Persist period selection
+  useEffect(() => {
+    localStorage.setItem(LS_KEY, period);
+  }, [period]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const selectedOption = PERIOD_OPTIONS.find(o => o.value === period) ?? PERIOD_OPTIONS[0];
+  const periodLabel = selectedOption.label;
 
   async function exportPDF() {
     if (!pdfContentRef.current || exporting) return;
@@ -111,11 +137,12 @@ export default function PassRateReportPage() {
   }, [updateChartWidth]);
 
   // Compute bar/label positions relative to actual chart pixel width
+  const trendCount = data?.dailyTrend.length ?? 7;
   const getChartSlot = (i: number) => {
     const leftMargin = 50;
     const rightPad = 10;
     const available = chartWidth - leftMargin - rightPad;
-    const slotW = available / 7;
+    const slotW = available / trendCount;
     const bw = Math.min(Math.round(slotW * 0.65), 80);
     const x = leftMargin + i * slotW + (slotW - bw) / 2;
     const labelX = leftMargin + i * slotW + slotW / 2;
@@ -175,15 +202,37 @@ export default function PassRateReportPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem' }}>
           <Link to="/projects" style={{ color: '#6366F1', textDecoration: 'none', fontWeight: 500 }}>Projects</Link>
           <span style={{ color: '#CBD5E1', fontSize: '0.75rem' }}><i className="ri-arrow-right-s-line" /></span>
-          <span style={{ color: '#0F172A', fontWeight: 700 }}>Pass Rate Report — Last 7 Days</span>
+          <span style={{ color: '#0F172A', fontWeight: 700 }}>Pass Rate Report — {periodLabel}</span>
         </div>
         <div style={{ flex: 1 }} />
         <button onClick={exportPDF} disabled={exporting || !data} style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', border: '1px solid #E2E8F0', background: exporting ? '#F8FAFC' : '#fff', color: exporting ? '#94A3B8' : '#475569', cursor: exporting ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', fontFamily: 'inherit', fontWeight: 500 }}>
           <i className={exporting ? 'ri-loader-4-line' : 'ri-download-2-line'} style={exporting ? { animation: 'spin 1s linear infinite' } : {}} /> {exporting ? 'Exporting…' : 'Export PDF'}
         </button>
-        <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', fontFamily: 'inherit', fontWeight: 500 }}>
-          <i className="ri-calendar-line" /> {dateRangeLabel()}
-        </button>
+        {/* Period filter dropdown */}
+        <div ref={dropdownRef} style={{ position: 'relative' }}>
+          <button
+            onClick={() => setDropdownOpen(o => !o)}
+            style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '9999px', border: `1px solid ${dropdownOpen ? '#6366F1' : '#E2E8F0'}`, background: dropdownOpen ? '#EEF2FF' : '#fff', color: dropdownOpen ? '#6366F1' : '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', fontFamily: 'inherit', fontWeight: 500 }}
+          >
+            <i className="ri-filter-3-line" /> {periodLabel} <i className="ri-arrow-down-s-line" />
+          </button>
+          {dropdownOpen && (
+            <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '0.25rem 0', minWidth: 180, zIndex: 50 }}>
+              {PERIOD_OPTIONS.map(opt => (
+                <div
+                  key={opt.value}
+                  onClick={() => { setPeriod(opt.value); setDropdownOpen(false); }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', fontSize: '0.8125rem', color: period === opt.value ? '#6366F1' : '#334155', fontWeight: period === opt.value ? 600 : 400, cursor: 'pointer', background: 'transparent' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#F1F5F9')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span>{opt.label}{opt.desc && <span style={{ fontSize: '0.6875rem', color: '#94A3B8', marginLeft: '0.25rem' }}>{opt.desc}</span>}</span>
+                  {period === opt.value && <i className="ri-check-line" style={{ fontSize: '0.875rem', color: '#6366F1' }} />}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Content */}
@@ -204,7 +253,7 @@ export default function PassRateReportPage() {
             </div>
             <div>
               <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A' }}>Pass Rate Report</div>
-              <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: '0.125rem' }}>7-day test execution results across all projects</div>
+              <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: '0.125rem' }}>{periodLabel} test execution results across all projects</div>
             </div>
           </div>
 
@@ -227,8 +276,9 @@ export default function PassRateReportPage() {
                   const passPct = data.totalExecuted > 0 ? `${((data.passed / data.totalExecuted) * 100).toFixed(1)}%` : '—';
                   const hasDelta = data.passRateDelta !== null;
                   const deltaPos = hasDelta && data.passRateDelta! >= 0;
+                  const deltaSub = data.deltaLabel ? data.deltaLabel : 'overall pass rate';
                   return [
-                    { label: 'Overall Pass Rate', value: pct, sub: 'vs previous 7 days', color: data.overallPassRate >= 80 ? '#16A34A' : data.overallPassRate >= 60 ? '#F59E0B' : '#EF4444', badge: hasDelta ? { text: `${deltaPos ? '+' : ''}${data.passRateDelta}%`, color: deltaPos ? '#16A34A' : '#EF4444', bg: deltaPos ? '#F0FDF4' : '#FEF2F2' } : undefined },
+                    { label: 'Overall Pass Rate', value: pct, sub: deltaSub, color: data.overallPassRate >= 80 ? '#16A34A' : data.overallPassRate >= 60 ? '#F59E0B' : '#EF4444', badge: hasDelta ? { text: `${deltaPos ? '+' : ''}${data.passRateDelta}%`, color: deltaPos ? '#16A34A' : '#EF4444', bg: deltaPos ? '#F0FDF4' : '#FEF2F2' } : undefined },
                     { label: 'Total Executed', value: fmt(data.totalExecuted), sub: 'test case executions', color: '#0F172A' },
                     { label: 'Passed',         value: fmt(data.passed),        sub: `${passPct} of executed`,   color: '#16A34A' },
                     { label: 'Failed',         value: fmt(data.failed),        sub: `${failPct} of executed`,   color: '#EF4444' },
@@ -291,10 +341,12 @@ export default function PassRateReportPage() {
                           </g>
                         );
                       })}
-                      {/* X-axis labels — centered in each slot, directly under bars */}
+                      {/* X-axis labels — skip every other label when many points */}
                       {data.dailyTrend.map((day, i) => {
                         const { labelX } = getChartSlot(i);
-                        return <text key={i} x={labelX} y={215} fontSize={Math.max(9, Math.min(11, chartWidth / 90))} fill="#94A3B8" textAnchor="middle" fontFamily="Inter, sans-serif">{day.label}</text>;
+                        const skip = trendCount > 14 ? i % Math.ceil(trendCount / 10) !== 0 : false;
+                        if (skip) return null;
+                        return <text key={i} x={labelX} y={215} fontSize={Math.max(8, Math.min(11, chartWidth / (trendCount * 7)))} fill="#94A3B8" textAnchor="middle" fontFamily="Inter, sans-serif">{day.label}</text>;
                       })}
                     </svg>
                   </div>
