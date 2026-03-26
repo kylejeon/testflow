@@ -131,15 +131,20 @@ interface Project {
 }
 
 // ── Compact design helpers ──────────────────────────────────────────────────
-function parseStepsList(raw?: string): { step: string; expectedResult: string }[] {
+function parseStepsList(raw?: string, rawExpected?: string): { step: string; expectedResult: string }[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed;
   } catch {}
-  return raw.split('\n').filter(Boolean).map((s) => ({
-    step: s.replace(/^\d+\.\s*/, ''),
-    expectedResult: '',
+  // plain-text: "1. step\n2. step" — pair with expected_result column by index
+  const steps = raw.split('\n').filter(Boolean).map((s) => s.replace(/^\d+\.\s*/, ''));
+  const expected = rawExpected
+    ? rawExpected.split('\n').filter(Boolean).map((s) => s.replace(/^\d+\.\s*/, ''))
+    : [];
+  return steps.map((step, i) => ({
+    step,
+    expectedResult: expected[i] || '',
   }));
 }
 
@@ -2407,7 +2412,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             </div>
             <span className="text-[0.6875rem] text-[#94A3B8] font-medium">
               {(() => {
-                const stepsList = parseStepsList(selectedTestCase.steps);
+                const stepsList = parseStepsList(selectedTestCase.steps, selectedTestCase.expected_result);
                 const attachCount = selectedTestCase.attachments?.length || 0;
                 const stepCount = stepsList.length;
                 let right = `${stepCount} step${stepCount !== 1 ? 's' : ''}`;
@@ -2436,7 +2441,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
               {/* Steps with inline Expected Result */}
               {(() => {
-                const stepsList = parseStepsList(selectedTestCase.steps);
+                const stepsList = parseStepsList(selectedTestCase.steps, selectedTestCase.expected_result);
                 if (stepsList.length > 0) {
                   return (
                     <div className="flex flex-col gap-[0.375rem]">
@@ -2546,58 +2551,63 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
             {/* Comments Tab */}
             {activeTab === 'comments' && (
-              <div className="flex flex-col h-full gap-3">
-                <div className="flex-1 space-y-3">
-                  {loadingComments ? (
-                    <div className="text-center py-6">
-                      <i className="ri-loader-4-line animate-spin text-xl text-[#94A3B8]"></i>
-                    </div>
-                  ) : comments.length === 0 ? (
-                    <div className="text-center py-6">
-                      <i className="ri-chat-3-line text-2xl text-[#CBD5E1] block mb-1"></i>
-                      <p className="text-[0.75rem] text-[#94A3B8]">No comments yet</p>
-                    </div>
-                  ) : (
-                    comments.map((comment) => (
-                      <div key={comment.id} className="group">
-                        <div className="flex items-center gap-[0.375rem] mb-[0.25rem]">
-                          <Avatar userId={comment.user_id} name={comment.author} size="xs" />
-                          <span className="text-[0.75rem] font-semibold text-[#0F172A]">{comment.author}</span>
-                          <span className="text-[0.6875rem] text-[#94A3B8]">
-                            {comment.timestamp.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
-                          </span>
-                          <button
-                            onClick={() => handleDeleteComment(comment.id)}
-                            className="ml-auto w-5 h-5 flex items-center justify-center text-[#CBD5E1] hover:text-[#EF4444] hover:bg-[#FEF2F2] rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100 border-none bg-transparent"
-                          >
-                            <i className="ri-delete-bin-line text-xs"></i>
-                          </button>
-                        </div>
-                        <div className="text-[0.75rem] text-[#475569] leading-[1.5] bg-[#F8FAFC] px-[0.75rem] py-[0.5rem] rounded-md border border-[#F1F5F9] ml-[1.625rem] whitespace-pre-wrap break-words">
-                          {comment.text}
-                        </div>
+              <div className="space-y-3">
+                {loadingComments ? (
+                  <div className="text-center py-6">
+                    <i className="ri-loader-4-line animate-spin text-xl text-[#94A3B8]"></i>
+                  </div>
+                ) : comments.length === 0 ? (
+                  <div className="text-center py-4">
+                    <i className="ri-chat-3-line text-2xl text-[#CBD5E1] block mb-1"></i>
+                    <p className="text-[0.75rem] text-[#94A3B8]">No comments yet</p>
+                  </div>
+                ) : (
+                  comments.map((comment) => (
+                    <div key={comment.id} className="group">
+                      <div className="flex items-center gap-[0.375rem] mb-[0.25rem]">
+                        <Avatar userId={comment.user_id} name={comment.author} size="xs" />
+                        <span className="text-[0.75rem] font-semibold text-[#0F172A]">{comment.author}</span>
+                        <span className="text-[0.6875rem] text-[#94A3B8]">
+                          {comment.timestamp.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="ml-auto w-5 h-5 flex items-center justify-center text-[#CBD5E1] hover:text-[#EF4444] hover:bg-[#FEF2F2] rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100 border-none bg-transparent"
+                        >
+                          <i className="ri-delete-bin-line text-xs"></i>
+                        </button>
                       </div>
-                    ))
-                  )}
-                </div>
-                {/* Comment input at the bottom */}
-                <div className="flex gap-2 flex-shrink-0 pt-1 border-t border-[#F1F5F9]">
-                  <textarea
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Add a comment..."
-                    rows={1}
-                    className="flex-1 text-[0.75rem] px-[0.75rem] py-[0.5rem] border border-[#E2E8F0] rounded-md focus:outline-none focus:border-[#6366F1] resize-none font-[inherit]"
-                    style={{ height: '2.5rem' }}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (commentText.trim()) handlePostComment(); } }}
+                      <div className="text-[0.75rem] text-[#475569] leading-[1.5] bg-[#F8FAFC] px-[0.75rem] py-[0.5rem] rounded-md border border-[#F1F5F9] ml-[1.625rem] whitespace-pre-wrap break-words">
+                        {comment.text}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {/* Comment input — flows naturally after comments */}
+                <div className="flex items-start gap-2 pt-1">
+                  <Avatar
+                    userId={currentUser?.id || ''}
+                    name={currentUser?.full_name || currentUser?.email || 'You'}
+                    size="xs"
                   />
-                  <button
-                    onClick={handlePostComment}
-                    disabled={!commentText.trim()}
-                    className="text-[0.75rem] font-semibold px-[0.75rem] py-[0.375rem] rounded-md bg-[#6366F1] text-white border-none cursor-pointer font-[inherit] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#4F46E5] transition-colors"
-                  >
-                    Post
-                  </button>
+                  <div className="flex-1 flex gap-2">
+                    <textarea
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Add a comment..."
+                      rows={1}
+                      className="flex-1 text-[0.75rem] px-[0.75rem] py-[0.5rem] border border-[#E2E8F0] rounded-md focus:outline-none focus:border-[#6366F1] resize-none font-[inherit]"
+                      style={{ height: '2.5rem' }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (commentText.trim()) handlePostComment(); } }}
+                    />
+                    <button
+                      onClick={handlePostComment}
+                      disabled={!commentText.trim()}
+                      className="text-[0.75rem] font-semibold px-[0.75rem] py-[0.375rem] rounded-md bg-[#6366F1] text-white border-none cursor-pointer font-[inherit] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#4F46E5] transition-colors flex-shrink-0"
+                    >
+                      Post
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
