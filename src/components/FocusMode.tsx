@@ -10,6 +10,13 @@ export interface FocusTestCase {
   expected_result?: string;
   precondition?: string;
   runStatus?: TestStatus;
+  // Extended for 3-tier metadata bar
+  customId?: string;
+  folder?: string;
+  priority?: string;
+  tags?: string;
+  assignee?: string;
+  attachments?: { name: string; url: string; size: number }[];
 }
 
 interface FocusModeProps {

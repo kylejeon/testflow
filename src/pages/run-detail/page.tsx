@@ -18,6 +18,7 @@ interface TestCase {
   created_at: string;
   steps?: string;
   expected_result?: string;
+  precondition?: string;
   tags?: string;
   attachments?: { name: string; url: string; size: number }[];
 }
@@ -1367,10 +1368,23 @@ export default function RunDetail() {
 
   // Focus Mode handler
   const handleFocusStatusChange = useCallback(
-    async (testId: string, status: TestStatus, _note?: string) => {
+    async (testId: string, status: TestStatus, note?: string) => {
       await handleStatusChange(testId, status);
+      if (note?.trim()) {
+        const { data: latest } = await supabase
+          .from('test_results')
+          .select('id')
+          .eq('run_id', runId)
+          .eq('test_case_id', testId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latest?.id) {
+          await supabase.from('test_results').update({ note: note.trim() }).eq('id', latest.id);
+        }
+      }
     },
-    [handleStatusChange]
+    [handleStatusChange, runId]
   );
 
   const focusTests: FocusTestCase[] = testCases.map((tc) => ({
@@ -1379,6 +1393,11 @@ export default function RunDetail() {
     description: tc.description,
     steps: tc.steps,
     expected_result: tc.expected_result,
+    precondition: tc.precondition,
+    folder: tc.folder,
+    priority: tc.priority,
+    tags: tc.tags,
+    assignee: tc.assignee,
     runStatus: tc.runStatus,
   }));
 
