@@ -2163,7 +2163,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         onChange={handleSelectAll}
                       />
                     </th>
-                    <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]">ID</th>
+                    <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]" style={{ minWidth: '80px' }}>ID</th>
                     <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]">Title</th>
                     <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]">Priority</th>
                     <th className="px-4 py-[0.6875rem] text-left text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-[0.05em]">Status</th>
@@ -2203,8 +2203,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                         />
                       </td>
                       {/* ID */}
-                      <td className="px-4 py-[0.6875rem]">
-                        <span className="font-mono text-[0.8125rem] text-indigo-600 font-semibold cursor-pointer hover:underline">
+                      <td className="px-4 py-[0.6875rem]" style={{ minWidth: '80px' }}>
+                        <span className="font-mono text-[0.8125rem] text-indigo-600 font-semibold cursor-pointer hover:underline whitespace-nowrap">
                           {testCase.custom_id || '-'}
                         </span>
                       </td>
@@ -2452,10 +2452,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                               <p className="text-[0.75rem] text-[#334155] whitespace-pre-wrap leading-[1.5]">{s.step}</p>
                             )}
                             {s.expectedResult && (
-                              <p className="text-[0.6875rem] text-[#16A34A] mt-1 flex items-start gap-1 leading-[1.4]">
+                              <div className="mt-[0.375rem] px-2 py-1 bg-[#F0FDF4] border border-[#BBF7D0] rounded text-[0.6875rem] text-[#16A34A] flex items-start gap-1 leading-[1.4]">
                                 <i className="ri-checkbox-circle-line text-[0.75rem] flex-shrink-0 mt-[0.0625rem]"></i>
-                                {s.expectedResult}
-                              </p>
+                                <span>{s.expectedResult}</span>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -2596,7 +2596,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     disabled={!commentText.trim()}
                     className="text-[0.75rem] font-semibold px-[0.75rem] py-[0.375rem] rounded-md bg-[#6366F1] text-white border-none cursor-pointer font-[inherit] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#4F46E5] transition-colors"
                   >
-                    Send
+                    Post
                   </button>
                 </div>
               </div>
@@ -2625,21 +2625,24 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       untested: { bg: '#F8FAFC', color: '#64748B', dot: '#94A3B8' },
                     };
                     const st = statusStyles[result.status] || statusStyles.untested;
-                    const authorInitials = result.author ? result.author.substring(0, 2).toUpperCase() : '—';
+                    const dateStr = result.created_at
+                      ? new Date(result.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : '';
+                    const timeAgo = result.created_at ? tcTimeAgo(result.created_at) : '';
                     return (
-                      <div key={result.id} className="flex items-center gap-2 py-2 border-b border-[#F1F5F9]">
-                        <span className="inline-flex items-center gap-1 text-[0.6875rem] font-semibold px-2 py-[0.125rem] rounded-full flex-shrink-0" style={{ background: st.bg, color: st.color }}>
+                      <div key={result.id} className="flex items-start gap-2 py-2 border-b border-[#F1F5F9]">
+                        <span className="inline-flex items-center gap-1 text-[0.6875rem] font-semibold px-2 py-[0.125rem] rounded-full flex-shrink-0 mt-0.5" style={{ background: st.bg, color: st.color }}>
                           <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: st.dot }}></span>
                           {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="text-[0.75rem] font-semibold text-[#0F172A] truncate">{result.run?.name || 'Unknown Run'}</div>
-                          <div className="text-[0.6875rem] text-[#94A3B8]">
-                            {result.created_at ? new Date(result.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
-                            {result.elapsed && result.elapsed !== '00:00' ? ` · ${result.elapsed}` : ''}
+                          <div className="text-[0.6875rem] text-[#94A3B8] flex items-center gap-1 flex-wrap">
+                            {dateStr && <span>{dateStr}</span>}
+                            {timeAgo && <><span>·</span><span>{timeAgo}</span></>}
+                            {result.author && <><span>·</span><span className="text-[#64748B]">{result.author}</span></>}
                           </div>
                         </div>
-                        <span className="text-[0.6875rem] text-[#64748B] flex-shrink-0">by {authorInitials}</span>
                       </div>
                     );
                   })
@@ -2649,29 +2652,47 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
             {/* Issues Tab */}
             {activeTab === 'issues' && (
-              <div className="space-y-0">
-                {loadingIssues ? (
-                  <div className="text-center py-8">
-                    <i className="ri-loader-4-line animate-spin text-2xl text-[#94A3B8]"></i>
-                  </div>
-                ) : testIssues.length === 0 ? (
-                  <div className="text-center py-8">
-                    <i className="ri-bug-line text-2xl text-[#CBD5E1] block mb-1"></i>
-                    <p className="text-[0.75rem] text-[#94A3B8]">No issues linked</p>
-                  </div>
-                ) : (
-                  testIssues.map((issue) => (
-                    <div key={issue.id} className="flex items-center gap-2 py-2 border-b border-[#F1F5F9]">
-                      <div className="w-6 h-6 rounded bg-[#FEF2F2] text-[#EF4444] flex items-center justify-center text-xs flex-shrink-0">
-                        <i className="ri-bug-line"></i>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[0.75rem] font-semibold text-[#0F172A]">{issue.issue_key}</div>
-                        <div className="text-[0.6875rem] text-[#94A3B8]">From run: {issue.run_name}</div>
-                      </div>
+              <div className="flex flex-col h-full">
+                <div className="flex-1">
+                  {loadingIssues ? (
+                    <div className="text-center py-8">
+                      <i className="ri-loader-4-line animate-spin text-2xl text-[#94A3B8]"></i>
                     </div>
-                  ))
-                )}
+                  ) : testIssues.length === 0 ? (
+                    <div className="text-center py-8">
+                      <i className="ri-bug-line text-2xl text-[#CBD5E1] block mb-1"></i>
+                      <p className="text-[0.75rem] text-[#94A3B8]">No issues linked</p>
+                    </div>
+                  ) : (
+                    testIssues.map((issue) => {
+                      const issueDate = issue.created_at
+                        ? new Date(issue.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        : '';
+                      return (
+                        <div key={issue.id} className="flex items-start gap-2 py-2 border-b border-[#F1F5F9]">
+                          <div className="w-6 h-6 rounded bg-[#FEF2F2] text-[#EF4444] flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
+                            <i className="ri-bug-line"></i>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[0.75rem] font-semibold text-[#0F172A] truncate">{issue.issue_key}</div>
+                            <div className="text-[0.6875rem] text-[#94A3B8] flex items-center gap-1 flex-wrap">
+                              <span>{issue.run_name}</span>
+                              {issue.status && <><span>·</span><span className={issue.status.toLowerCase() === 'resolved' ? 'text-[#16A34A]' : 'text-[#94A3B8]'}>{issue.status}</span></>}
+                              {issueDate && <><span>·</span><span>{issueDate}</span></>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+                {/* Link an issue button */}
+                <div className="pt-3 mt-1 border-t border-[#F1F5F9] flex-shrink-0">
+                  <button className="flex items-center gap-1.5 text-[0.75rem] font-semibold text-[#6366F1] hover:text-[#4F46E5] hover:bg-[#EEF2FF] px-2 py-1 rounded-md transition-colors cursor-pointer bg-transparent border-none">
+                    <i className="ri-add-circle-line text-sm"></i>
+                    Link an issue
+                  </button>
+                </div>
               </div>
             )}
 
