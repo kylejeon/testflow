@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
+import { Avatar } from '../../components/Avatar';
 
 interface Session {
   id: string;
@@ -969,24 +970,17 @@ export default function ProjectSessions() {
                                       <td className="px-4 py-[0.6875rem]">
                                         {session.assignees && session.assignees.length > 0 ? (
                                           <div className="flex -space-x-2">
-                                            {session.assignees.slice(0, 4).map((userId, idx) => {
+                                            {session.assignees.slice(0, 4).map((userId) => {
                                               const member = projectMembers.find(m => m.user_id === userId);
-                                              const colors = [
-                                                'from-indigo-400 to-indigo-600',
-                                                'from-orange-400 to-orange-600',
-                                                'from-violet-400 to-violet-600',
-                                                'from-pink-400 to-pink-600',
-                                                'from-sky-400 to-sky-600',
-                                              ];
-                                              const colorClass = colors[idx % colors.length];
                                               return (
-                                                <div
+                                                <Avatar
                                                   key={userId}
-                                                  className={`w-7 h-7 bg-gradient-to-br ${colorClass} rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-semibold`}
+                                                  userId={userId}
+                                                  name={member?.full_name}
+                                                  size="sm"
                                                   title={member?.full_name || userId}
-                                                >
-                                                  {member ? member.full_name.charAt(0).toUpperCase() : '?'}
-                                                </div>
+                                                  style={{ border: '2px solid #fff' }}
+                                                />
                                               );
                                             })}
                                             {session.assignees.length > 4 && (
@@ -1120,24 +1114,17 @@ export default function ProjectSessions() {
                                 <td className="px-4 py-[0.6875rem]">
                                   {session.assignees && session.assignees.length > 0 ? (
                                     <div className="flex -space-x-2">
-                                      {session.assignees.slice(0, 4).map((userId, idx) => {
+                                      {session.assignees.slice(0, 4).map((userId) => {
                                         const member = projectMembers.find(m => m.user_id === userId);
-                                        const colors = [
-                                          'from-indigo-400 to-indigo-600',
-                                          'from-orange-400 to-orange-600',
-                                          'from-violet-400 to-violet-600',
-                                          'from-pink-400 to-pink-600',
-                                          'from-sky-400 to-sky-600',
-                                        ];
-                                        const colorClass = colors[idx % colors.length];
                                         return (
-                                          <div
+                                          <Avatar
                                             key={userId}
-                                            className={`w-7 h-7 bg-gradient-to-br ${colorClass} rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-semibold`}
+                                            userId={userId}
+                                            name={member?.full_name}
+                                            size="sm"
                                             title={member?.full_name || userId}
-                                          >
-                                            {member ? member.full_name.charAt(0).toUpperCase() : '?'}
-                                          </div>
+                                            style={{ border: '2px solid #fff' }}
+                                          />
                                         );
                                       })}
                                       {session.assignees.length > 4 && (
@@ -1316,26 +1303,19 @@ export default function ProjectSessions() {
                     {/* Selected chips */}
                     {formData.assignees.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
-                        {formData.assignees.map((userId, idx) => {
+                        {formData.assignees.map((userId) => {
                           const member = projectMembers.find(m => m.user_id === userId);
                           if (!member) return null;
-                          const colors = [
-                            'from-indigo-400 to-indigo-600',
-                            'from-orange-400 to-orange-600',
-                            'from-violet-400 to-violet-600',
-                            'from-pink-400 to-pink-600',
-                            'from-sky-400 to-sky-600',
-                          ];
-                          const memberIdx = projectMembers.findIndex(m => m.user_id === userId);
-                          const colorClass = colors[memberIdx % colors.length];
                           return (
                             <div
                               key={userId}
                               className="flex items-center gap-1.5 pl-1 pr-2 py-1 bg-indigo-50 border border-indigo-200 rounded-full text-sm text-indigo-700"
                             >
-                              <div className={`w-5 h-5 bg-gradient-to-br ${colorClass} rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
-                                {member.full_name.charAt(0).toUpperCase()}
-                              </div>
+                              <Avatar
+                                userId={userId}
+                                name={member.full_name}
+                                size="xs"
+                              />
                               <span className="text-xs font-medium">{member.full_name}</span>
                               <button
                                 type="button"
@@ -1393,14 +1373,6 @@ export default function ProjectSessions() {
                                 )
                                 .map((member, idx) => {
                                   const isSelected = formData.assignees.includes(member.user_id);
-                                  const colors = [
-                                    'from-indigo-400 to-indigo-600',
-                                    'from-orange-400 to-orange-600',
-                                    'from-violet-400 to-violet-600',
-                                    'from-pink-400 to-pink-600',
-                                    'from-sky-400 to-sky-600',
-                                  ];
-                                  const colorClass = colors[projectMembers.findIndex(m => m.user_id === member.user_id) % colors.length];
                                   return (
                                     <div
                                       key={member.user_id}
@@ -1409,9 +1381,11 @@ export default function ProjectSessions() {
                                         isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'
                                       }`}
                                     >
-                                      <div className={`w-7 h-7 bg-gradient-to-br ${colorClass} rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
-                                        {member.full_name.charAt(0).toUpperCase()}
-                                      </div>
+                                      <Avatar
+                                        userId={member.user_id}
+                                        name={member.full_name}
+                                        size="sm"
+                                      />
                                       <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">{member.full_name}</p>
                                         <p className="text-xs text-gray-400 truncate">{member.email}</p>

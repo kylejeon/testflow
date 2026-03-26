@@ -5,6 +5,7 @@ import ExportImportModal from './ExportImportModal';
 import { BulkActionBar } from '../../../components/BulkActionBar';
 import { StepEditor, type Step } from '../../../components/StepEditor';
 import { LifecycleBadge, type LifecycleStatus } from '../../../components/LifecycleBadge';
+import { Avatar } from '../../../components/Avatar';
 
 interface TestCase {
   id: string;
@@ -140,18 +141,7 @@ function tcTimeAgo(dateStr: string): string {
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
 }
-const TC_AVATAR_COLORS = ['#6366F1', '#10B981', '#EC4899', '#F59E0B', '#8B5CF6', '#06B6D4'];
-function getAssigneeColor(str: string): string {
-  if (!str) return '#94A3B8';
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  return TC_AVATAR_COLORS[Math.abs(hash) % TC_AVATAR_COLORS.length];
-}
-function getAssigneeInitials(assignee: string): string {
-  if (!assignee) return '?';
-  const name = assignee.includes('@') ? assignee.split('@')[0] : assignee;
-  return name.split(/[\s._-]+/).filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-}
+
 const PRIORITY_DOT_COLORS: Record<string, string> = {
   critical: '#EF4444', high: '#F59E0B', medium: '#6366F1', low: '#94A3B8',
 };
@@ -2216,13 +2206,12 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       {/* Assignee */}
                       <td className="px-4 py-[0.6875rem]">
                         {testCase.assignee ? (
-                          <span
-                            className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[0.5625rem] font-bold flex-shrink-0"
-                            style={{ background: getAssigneeColor(testCase.assignee) }}
+                          <Avatar
+                            userId={testCase.assignee}
+                            name={testCase.assignee}
+                            size="sm"
                             title={testCase.assignee}
-                          >
-                            {getAssigneeInitials(testCase.assignee)}
-                          </span>
+                          />
                         ) : (
                           <span className="text-[0.8125rem] text-[#94A3B8]">-</span>
                         )}
@@ -2304,12 +2293,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Assignee</div>
                 {selectedTestCase.assignee ? (
                   <div className="flex items-center gap-[0.375rem]">
-                    <div
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-                      style={{ background: getAssigneeColor(selectedTestCase.assignee), fontSize: '0.4375rem' }}
-                    >
-                      {getAssigneeInitials(selectedTestCase.assignee)}
-                    </div>
+                    <Avatar
+                      userId={selectedTestCase.assignee}
+                      name={selectedTestCase.assignee}
+                      size="xs"
+                    />
                     <span className="text-[0.8125rem] font-medium text-[#0F172A] truncate">{selectedTestCase.assignee}</span>
                   </div>
                 ) : (
@@ -2502,9 +2490,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     comments.map((comment) => (
                       <div key={comment.id} className="bg-gray-50 rounded-lg p-4 group relative">
                         <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                            {comment.author.substring(0, 2).toUpperCase()}
-                          </div>
+                          <Avatar
+                            userId={comment.user_id}
+                            name={comment.author}
+                            size="md"
+                          />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-sm font-semibold text-gray-900">{comment.author}</span>
@@ -2684,7 +2674,6 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 ) : (
                   historyData.map((history: any) => {
                     const userName = history.user?.full_name || history.user?.email || 'Unknown';
-                    const userInitials = userName.substring(0, 2).toUpperCase();
                     const timestamp = new Date(history.created_at).toLocaleString('en-US', {
                       year: 'numeric',
                       month: 'short',
@@ -2718,9 +2707,12 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
                     return (
                       <div key={history.id} className="flex items-start gap-3">
-                        <div className={`w-10 h-10 ${actionColor} rounded-full flex items-center justify-center text-gray-700 text-sm font-semibold flex-shrink-0`}>
-                          {userInitials}
-                        </div>
+                        <Avatar
+                          userId={history.user_id}
+                          name={history.user?.full_name}
+                          email={history.user?.email}
+                          size="lg"
+                        />
                         <div className="flex-1">
                           <div className="flex items-center gap-1 flex-wrap">
                             <span className="font-semibold text-gray-900">{userName}</span>

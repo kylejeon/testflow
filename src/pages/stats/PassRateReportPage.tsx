@@ -5,8 +5,8 @@ interface HoveredBar {
   passed: number;
   failed: number;
   blocked: number;
-  x: number;  // SVG viewBox px = CSS px from container left (center of bar)
-  y: number;  // SVG viewBox px = CSS px from container top (top of bar)
+  x: number;  // CSS px from container left (center of bar), scaled via getBoundingClientRect
+  y: number;  // CSS px from container top (top of bar), scaled via getBoundingClientRect
 }
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
@@ -45,6 +45,7 @@ export default function PassRateReportPage() {
   const [userInitials, setUserInitials] = useState('');
   const [exporting, setExporting] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(700);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -333,7 +334,7 @@ export default function PassRateReportPage() {
                     </div>
                   </div>
                   <div ref={chartContainerRef} style={{ position: 'relative', height: '220px' }} onMouseLeave={() => setHoveredBar(null)}>
-                    <svg viewBox={`0 0 ${chartWidth} 220`} width="100%" height="100%" preserveAspectRatio="none">
+                    <svg ref={svgRef} viewBox={`0 0 ${chartWidth} 220`} width="100%" height="100%" preserveAspectRatio="none">
                       {/* Gridlines spanning full measured width */}
                       {[20, 60, 100, 140, 180].map(y => (
                         <line key={y} x1={50} y1={y} x2={chartWidth - 5} y2={y} stroke="#F1F5F9" strokeWidth={1} />
@@ -354,13 +355,25 @@ export default function PassRateReportPage() {
                             className="pr-daybar"
                             opacity={opacity}
                             onMouseEnter={() => {
+                              const svgEl = svgRef.current;
+                              const containerEl = chartContainerRef.current;
+                              let px = x + bw / 2;
+                              let py = baseY - totalH;
+                              if (svgEl && containerEl) {
+                                const svgRect = svgEl.getBoundingClientRect();
+                                const containerRect = containerEl.getBoundingClientRect();
+                                const scaleX = svgRect.width / chartWidth;
+                                const scaleY = svgRect.height / 220;
+                                px = (x + bw / 2) * scaleX + (svgRect.left - containerRect.left);
+                                py = (baseY - totalH) * scaleY + (svgRect.top - containerRect.top);
+                              }
                               setHoveredBar({
                                 date: day.label,
                                 passed: day.passed,
                                 failed: day.failed,
                                 blocked: day.blocked,
-                                x: x + bw / 2,       // SVG viewBox px === CSS px (chartWidth = containerClientWidth)
-                                y: baseY - totalH,    // SVG viewBox px === CSS px from container top
+                                x: px,
+                                y: py,
                               });
                             }}
                             onMouseLeave={() => setHoveredBar(null)}
@@ -384,7 +397,6 @@ export default function PassRateReportPage() {
                     {/* Chart Tooltip */}
                     {hoveredBar && (() => {
                       const tooltipHalfW = 70;
-                      // hoveredBar.x/y are SVG viewBox coords which equal CSS px (1:1 mapping)
                       const clampedX = Math.max(tooltipHalfW, Math.min(hoveredBar.x, chartWidth - tooltipHalfW));
                       return (
                         <div style={{

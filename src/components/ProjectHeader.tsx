@@ -3,12 +3,13 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { LogoMark } from './Logo';
 import NotificationBell from './feature/NotificationBell';
+import { Avatar } from './Avatar';
 
 interface UserProfile {
+  id: string;
   email: string;
   full_name: string;
   subscription_tier: number;
-  avatar_emoji: string;
 }
 
 interface Project {
@@ -62,15 +63,15 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
       if (!user) return;
       const { data } = await supabase
         .from('profiles')
-        .select('email, full_name, subscription_tier, avatar_emoji')
+        .select('email, full_name, subscription_tier')
         .eq('id', user.id)
         .maybeSingle();
       if (data) {
         setUserProfile({
+          id: user.id,
           email: data.email || user.email || '',
           full_name: data.full_name || '',
           subscription_tier: data.subscription_tier || 1,
-          avatar_emoji: data.avatar_emoji || '',
         });
       }
     } catch {}
@@ -272,28 +273,13 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
         <NotificationBell />
 
         <div ref={profileMenuRef} style={{ position: 'relative' }}>
-          <div
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
-            style={{
-              width: '2rem',
-              height: '2rem',
-              background: 'linear-gradient(135deg, #818CF8, #6366F1)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: '0.8125rem',
-              cursor: 'pointer',
-              overflow: 'hidden',
-            }}
-          >
-            {userProfile?.avatar_emoji ? (
-              <span style={{ fontSize: '1.125rem', lineHeight: 1 }}>{userProfile.avatar_emoji}</span>
-            ) : (
-              <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
-            )}
+          <div onClick={() => setShowProfileMenu(!showProfileMenu)} style={{ cursor: 'pointer' }}>
+            <Avatar
+              userId={userProfile?.id}
+              name={userProfile?.full_name}
+              email={userProfile?.email}
+              size="md"
+            />
           </div>
 
           {showProfileMenu && (

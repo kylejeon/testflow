@@ -6,6 +6,7 @@ import NotificationBell from '../../components/feature/NotificationBell';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
 import ProjectHeader from '../../components/ProjectHeader';
+import { Avatar } from '../../components/Avatar';
 
 interface TestRun {
   id: string;
@@ -53,7 +54,6 @@ interface Contributor {
   id: string;
   name: string;
   email: string;
-  color: string;
 }
 
 export default function ProjectRunsPage() {
@@ -682,22 +682,10 @@ export default function ProjectRunsPage() {
           .select('id, name, email')
           .in('id', Array.from(uniqueAuthors));
 
-        const colors = [
-          'from-blue-400 to-blue-600',
-          'from-purple-400 to-purple-600',
-          'from-pink-400 to-pink-600',
-          'from-green-400 to-green-600',
-          'from-orange-400 to-orange-600',
-          'from-indigo-400 to-indigo-600',
-          'from-red-400 to-red-600',
-          'from-indigo-400 to-indigo-600',
-        ];
-
-        const contributorsList: Contributor[] = (profilesData || []).map((profile, index) => ({
+        const contributorsList: Contributor[] = (profilesData || []).map((profile) => ({
           id: profile.id,
           name: profile.name || profile.email?.split('@')[0] || 'Unknown',
           email: profile.email || '',
-          color: colors[index % colors.length],
         }));
 
         setContributors(contributorsList);
@@ -1311,13 +1299,14 @@ export default function ProjectRunsPage() {
                         {contributors.length > 0 ? (
                           <>
                             {contributors.slice(0, 3).map((contributor) => (
-                              <div 
+                              <Avatar
                                 key={contributor.id}
-                                className={`w-6 h-6 bg-gradient-to-br ${contributor.color} rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-semibold`}
+                                userId={contributor.id}
+                                name={contributor.name}
+                                size="sm"
                                 title={contributor.name}
-                              >
-                                {contributor.name.substring(0, 1).toUpperCase()}
-                              </div>
+                                style={{ border: '2px solid #fff' }}
+                              />
                             ))}
                             {contributors.length > 3 && (
                               <div className="w-6 h-6 bg-gray-200 rounded-full border-2 border-white flex items-center justify-center text-gray-600 text-xs font-semibold">
@@ -1545,10 +1534,8 @@ export default function ProjectRunsPage() {
                                   <div className="flex items-center gap-[0.375rem]">
                                     <span className="text-[0.75rem] text-[#94A3B8] font-medium whitespace-nowrap">Assigned to</span>
                                     <div className="flex gap-1">
-                                      {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
-                                        <div key={idx} className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold" style={{ fontSize: '9px' }}>
-                                          {assignee.substring(0, 2).toUpperCase()}
-                                        </div>
+                                      {run.assignees && run.assignees.slice(0, 3).map((assignee) => (
+                                        <Avatar key={assignee} userId={assignee} name={assignee} size="sm" title={assignee} />
                                       ))}
                                     </div>
                                   </div>
@@ -1651,10 +1638,8 @@ export default function ProjectRunsPage() {
                             <div className="flex items-center gap-[0.375rem]">
                               <span className="text-[0.75rem] text-[#94A3B8] font-medium whitespace-nowrap">Assigned to</span>
                               <div className="flex gap-1">
-                                {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
-                                  <div key={idx} className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold" style={{ fontSize: '9px' }}>
-                                    {assignee.substring(0, 2).toUpperCase()}
-                                  </div>
+                                {run.assignees && run.assignees.slice(0, 3).map((assignee) => (
+                                  <Avatar key={assignee} userId={assignee} name={assignee} size="sm" title={assignee} />
                                 ))}
                               </div>
                             </div>
@@ -1799,9 +1784,7 @@ export default function ProjectRunsPage() {
                                 selected ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-indigo-200'
                               }`}
                             >
-                              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white`} style={{ background: c.color }}>
-                                {c.name.charAt(0).toUpperCase()}
-                              </span>
+                              <Avatar userId={c.id} name={c.name} size="xs" />
                               {c.name}
                               {selected && <i className="ri-check-line text-indigo-500" />}
                             </button>
