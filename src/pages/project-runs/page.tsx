@@ -7,6 +7,7 @@ import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar } from '../../components/Avatar';
+import { useToast, ToastContainer } from '../../components/Toast';
 
 interface TestRun {
   id: string;
@@ -79,6 +80,7 @@ interface Contributor {
 export default function ProjectRunsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toasts, showToast, dismiss } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -566,12 +568,12 @@ export default function ProjectRunsPage() {
       if (printWindow) {
         printWindow.onbeforeunload = () => { URL.revokeObjectURL(url); };
       } else {
-        alert('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
+        showToast('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.', 'warning');
         URL.revokeObjectURL(url);
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('PDF 생성에 실패했습니다.');
+      showToast('PDF 생성에 실패했습니다.', 'error');
     } finally {
       setGeneratingPdf(null);
     }
@@ -669,7 +671,7 @@ export default function ProjectRunsPage() {
         .from('test_cases')
         .select('*')
         .eq('project_id', id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (testCasesError) throw testCasesError;
       setTestCases(testCasesData || []);
@@ -803,7 +805,7 @@ export default function ProjectRunsPage() {
 
   const handleAddRun = async () => {
     if (!formData.name.trim()) {
-      alert('Please enter a run name');
+      showToast('Please enter a run name', 'error');
       return;
     }
 
@@ -938,7 +940,7 @@ export default function ProjectRunsPage() {
       setShowDraftWarningDismissed(false);
     } catch (error) {
       console.error('Error saving test run:', error);
-      alert('Failed to save test run. Please try again.');
+      showToast('Failed to save test run. Please try again.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -1134,7 +1136,7 @@ export default function ProjectRunsPage() {
       setOpenMenuId(null);
     } catch (error) {
       console.error('Error deleting test run:', error);
-      alert('테스트 런 삭제에 실패했습니다.');
+      showToast('테스트 런 삭제에 실패했습니다.', 'error');
     }
   };
 
@@ -1153,7 +1155,7 @@ export default function ProjectRunsPage() {
       setOpenMenuId(null);
     } catch (error) {
       console.error('Error updating test run status:', error);
-      alert('상태 변경에 실패했습니다.');
+      showToast('상태 변경에 실패했습니다.', 'error');
     }
   };
 
@@ -1280,6 +1282,7 @@ export default function ProjectRunsPage() {
 
   return (
     <div className="flex h-screen bg-white">
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
@@ -1969,9 +1972,13 @@ export default function ProjectRunsPage() {
                       <button
                         type="button"
                         onClick={() => setIncludeDraftTCs(p => !p)}
-                        className={`w-9 h-5 rounded-full relative transition-colors flex-shrink-0 cursor-pointer ${includeDraftTCs ? 'bg-indigo-500' : 'bg-gray-200'}`}
+                        className={`relative flex-shrink-0 cursor-pointer transition-colors duration-200 rounded-full overflow-hidden ${includeDraftTCs ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                        style={{ width: 42, height: 24 }}
                       >
-                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${includeDraftTCs ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                        <span
+                          className="absolute top-[3px] left-0 w-[18px] h-[18px] bg-white rounded-full shadow transition-transform duration-200"
+                          style={{ transform: includeDraftTCs ? 'translateX(21px)' : 'translateX(3px)' }}
+                        />
                       </button>
                       <span className="text-xs text-gray-600 font-medium whitespace-nowrap">Include Draft TCs</span>
                       {!includeDraftTCs && draftTCs.length > 0 && (
