@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
 
 export type TestStatus = 'passed' | 'failed' | 'blocked' | 'retest' | 'untested';
 
@@ -65,7 +66,13 @@ function parseSteps(raw?: string): { step: string; expectedResult: string }[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
+    if (Array.isArray(parsed)) {
+      return parsed.map((s: any) => ({
+        step: s.step || s.action || '',
+        // Accept both camelCase and snake_case keys from DB
+        expectedResult: s.expectedResult || s.expected_result || '',
+      }));
+    }
   } catch {}
   return raw.split('\n').filter(Boolean).map((s) => ({
     step: s.replace(/^\d+\.\s*/, ''),
@@ -106,6 +113,11 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   // Lightbox
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  // Tier 3: real data from Supabase
+  const [tcComments, setTcComments] = useState<Record<string, { id: string; text: string; author: string; timestamp: Date }[]>>({});
+  const [tcHistory, setTcHistory] = useState<Record<string, { id: string; status: string; runName: string; author: string; timestamp: Date; note?: string }[]>>({});
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -129,6 +141,67 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
     // Scroll body to top
     if (bodyRef.current) bodyRef.current.scrollTop = 0;
   }, []);
+
+  // ── Supabase data fetchers ────────────────────────────────────────────────
+  const fetchComments = useCallback(async (tcId: string) => {
+    if (tcComments[tcId] !== undefined) return; // already loaded
+    setLoadingComments(true);
+    try {
+      const { data } = await supabase
+        .from('test_case_comments')
+        .select(`id, comment, created_at, user_id, profiles:user_id (email, full_name)`)
+        .eq('test_case_id', tcId)
+        .order('created_at', { ascending: false });
+      setTcComments((prev) => ({
+        ...prev,
+        [tcId]: (data || []).map((item: any) => ({
+          id: item.id,
+          text: item.comment,
+          author: item.profiles?.full_name || item.profiles?.email || 'Unknown',
+          timestamp: new Date(item.created_at),
+        })),
+      }));
+    } catch {
+      setTcComments((prev) => ({ ...prev, [tcId]: [] }));
+    } finally {
+      setLoadingComments(false);
+    }
+  }, [tcComments]);
+
+  const fetchHistory = useCallback(async (tcId: string) => {
+    if (tcHistory[tcId] !== undefined) return; // already loaded
+    setLoadingHistory(true);
+    try {
+      const { data } = await supabase
+        .from('test_results')
+        .select(`id, status, note, author, created_at, run:runs(id, name)`)
+        .eq('test_case_id', tcId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      setTcHistory((prev) => ({
+        ...prev,
+        [tcId]: (data || []).map((item: any) => ({
+          id: item.id,
+          status: item.status,
+          runName: item.run?.name || 'Unknown Run',
+          author: item.author || '',
+          timestamp: new Date(item.created_at),
+          note: item.note || '',
+        })),
+      }));
+    } catch {
+      setTcHistory((prev) => ({ ...prev, [tcId]: [] }));
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [tcHistory]);
+
+  // Auto-load when panel opens
+  useEffect(() => {
+    if (!test?.id) return;
+    if (openPanel === 'comments') fetchComments(test.id);
+    if (openPanel === 'history') fetchHistory(test.id);
+  }, [openPanel, test?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -614,79 +687,181 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
             </div>
           )}
 
-          {/* G. Tier 3: Comments panel (collapsible, C key) */}
-          <div style={{ marginBottom: '0.75rem' }}>
-            <button
-              onClick={() => setOpenPanel((v) => v === 'comments' ? 'none' : 'comments')}
-              className="w-full flex items-center justify-between cursor-pointer transition-all"
-              style={{
-                padding: '0.625rem 1rem',
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: openPanel === 'comments' ? '0.5rem 0.5rem 0 0' : '0.5rem',
-                textAlign: 'left',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#F1F5F9'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#F8FAFC'; }}
-            >
-              <div className="flex items-center gap-1.5" style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>
-                <i className="ri-chat-3-line" style={{ fontSize: '1rem', color: '#94A3B8' }} />
-                Comments
-                <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: '#F1F5F9', color: '#64748B', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>
-                  0
-                </span>
-                <kbd style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1rem', height: '1rem', background: '#E2E8F0', border: '1px solid #CBD5E1', borderRadius: '0.25rem', fontSize: '0.5625rem', fontWeight: 700, fontFamily: 'monospace', color: '#64748B', marginLeft: '0.25rem' }}>
-                  C
-                </kbd>
+          {/* G. Tier 3: Comments panel (collapsible, C key) — real data */}
+          {(() => {
+            const comments = tcComments[test.id] || [];
+            const commentCount = tcComments[test.id]?.length ?? 0;
+            const isOpen = openPanel === 'comments';
+            return (
+              <div style={{ marginBottom: '0.75rem' }}>
+                <button
+                  onClick={() => setOpenPanel((v) => v === 'comments' ? 'none' : 'comments')}
+                  className="w-full flex items-center justify-between cursor-pointer transition-all"
+                  style={{
+                    padding: '0.625rem 1rem',
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: isOpen ? '0.5rem 0.5rem 0 0' : '0.5rem',
+                    textAlign: 'left',
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#F1F5F9'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#F8FAFC'; }}
+                >
+                  <div className="flex items-center gap-1.5" style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>
+                    <i className="ri-chat-3-line" style={{ fontSize: '1rem', color: '#94A3B8' }} />
+                    Comments
+                    {tcComments[test.id] !== undefined && (
+                      <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: '#F1F5F9', color: '#64748B', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>
+                        {commentCount}
+                      </span>
+                    )}
+                    <kbd style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1rem', height: '1rem', background: '#E2E8F0', border: '1px solid #CBD5E1', borderRadius: '0.25rem', fontSize: '0.5625rem', fontWeight: 700, fontFamily: 'monospace', color: '#64748B', marginLeft: '0.25rem' }}>
+                      C
+                    </kbd>
+                  </div>
+                  <i
+                    className="ri-arrow-right-s-line"
+                    style={{ fontSize: '1rem', color: '#94A3B8', transition: 'transform 0.2s', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                  />
+                </button>
+                {isOpen && (
+                  <div style={{ border: '1px solid #E2E8F0', borderTop: 'none', borderRadius: '0 0 0.5rem 0.5rem', padding: '0.75rem 1rem', background: '#fff' }}>
+                    {loadingComments ? (
+                      <div className="flex items-center justify-center gap-2" style={{ padding: '0.5rem 0', fontSize: '0.8125rem', color: '#94A3B8' }}>
+                        <i className="ri-loader-4-line animate-spin" />
+                        Loading...
+                      </div>
+                    ) : comments.length === 0 ? (
+                      <p style={{ fontSize: '0.8125rem', color: '#94A3B8', textAlign: 'center', padding: '0.5rem 0' }}>No comments yet</p>
+                    ) : (
+                      comments.map((c) => {
+                        const initials = c.author.substring(0, 2).toUpperCase();
+                        const relTime = (() => {
+                          const diff = Date.now() - c.timestamp.getTime();
+                          const d = Math.floor(diff / 86400000);
+                          if (d === 0) return 'today';
+                          if (d === 1) return '1d ago';
+                          return `${d}d ago`;
+                        })();
+                        return (
+                          <div key={c.id} style={{ background: '#F8FAFC', borderRadius: '0.375rem', padding: '0.625rem 0.75rem', marginBottom: '0.5rem' }}>
+                            <div className="flex items-center gap-1.5" style={{ marginBottom: '0.25rem' }}>
+                              <div style={{ width: '1.25rem', height: '1.25rem', borderRadius: '50%', background: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.4375rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                                {initials}
+                              </div>
+                              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#4338CA' }}>{c.author}</span>
+                              <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>· {relTime}</span>
+                            </div>
+                            <div style={{ fontSize: '0.8125rem', color: '#475569', lineHeight: 1.5 }}>{c.text}</div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
               </div>
-              <i
-                className="ri-arrow-right-s-line"
-                style={{ fontSize: '1rem', color: '#94A3B8', transition: 'transform 0.2s', transform: openPanel === 'comments' ? 'rotate(90deg)' : 'rotate(0deg)' }}
-              />
-            </button>
-            {openPanel === 'comments' && (
-              <div style={{ border: '1px solid #E2E8F0', borderTop: 'none', borderRadius: '0 0 0.5rem 0.5rem', padding: '0.75rem 1rem', background: '#fff' }}>
-                <p style={{ fontSize: '0.8125rem', color: '#94A3B8', textAlign: 'center', padding: '0.5rem 0' }}>No comments yet</p>
-              </div>
-            )}
-          </div>
+            );
+          })()}
 
-          {/* H. Tier 3: Execution History panel (collapsible, H key) */}
-          <div style={{ marginBottom: '0.75rem' }}>
-            <button
-              onClick={() => setOpenPanel((v) => v === 'history' ? 'none' : 'history')}
-              className="w-full flex items-center justify-between cursor-pointer transition-all"
-              style={{
-                padding: '0.625rem 1rem',
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: openPanel === 'history' ? '0.5rem 0.5rem 0 0' : '0.5rem',
-                textAlign: 'left',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#F1F5F9'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#F8FAFC'; }}
-            >
-              <div className="flex items-center gap-1.5" style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>
-                <i className="ri-history-line" style={{ fontSize: '1rem', color: '#94A3B8' }} />
-                Execution History
-                <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: '#F1F5F9', color: '#64748B', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>
-                  0
-                </span>
-                <kbd style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1rem', height: '1rem', background: '#E2E8F0', border: '1px solid #CBD5E1', borderRadius: '0.25rem', fontSize: '0.5625rem', fontWeight: 700, fontFamily: 'monospace', color: '#64748B', marginLeft: '0.25rem' }}>
-                  H
-                </kbd>
+          {/* H. Tier 3: Execution History panel (collapsible, H key) — real data */}
+          {(() => {
+            const history = tcHistory[test.id] || [];
+            const historyCount = tcHistory[test.id]?.length ?? 0;
+            const isOpen = openPanel === 'history';
+
+            const statusStyle = (status: string): React.CSSProperties => {
+              if (status === 'passed')  return { background: '#F0FDF4', color: '#166534' };
+              if (status === 'failed')  return { background: '#FEF2F2', color: '#991B1B' };
+              if (status === 'blocked') return { background: '#FFFBEB', color: '#92400E' };
+              if (status === 'retest')  return { background: '#F5F3FF', color: '#5B21B6' };
+              return { background: '#F8FAFC', color: '#64748B' };
+            };
+            const statusDot = (status: string): string => {
+              if (status === 'passed')  return '#22C55E';
+              if (status === 'failed')  return '#EF4444';
+              if (status === 'blocked') return '#F59E0B';
+              if (status === 'retest')  return '#8B5CF6';
+              return '#94A3B8';
+            };
+
+            return (
+              <div style={{ marginBottom: '0.75rem' }}>
+                <button
+                  onClick={() => setOpenPanel((v) => v === 'history' ? 'none' : 'history')}
+                  className="w-full flex items-center justify-between cursor-pointer transition-all"
+                  style={{
+                    padding: '0.625rem 1rem',
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: isOpen ? '0.5rem 0.5rem 0 0' : '0.5rem',
+                    textAlign: 'left',
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#F1F5F9'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#F8FAFC'; }}
+                >
+                  <div className="flex items-center gap-1.5" style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>
+                    <i className="ri-history-line" style={{ fontSize: '1rem', color: '#94A3B8' }} />
+                    Execution History
+                    {tcHistory[test.id] !== undefined && (
+                      <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: '#F1F5F9', color: '#64748B', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>
+                        {historyCount}
+                      </span>
+                    )}
+                    <kbd style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1rem', height: '1rem', background: '#E2E8F0', border: '1px solid #CBD5E1', borderRadius: '0.25rem', fontSize: '0.5625rem', fontWeight: 700, fontFamily: 'monospace', color: '#64748B', marginLeft: '0.25rem' }}>
+                      H
+                    </kbd>
+                  </div>
+                  <i
+                    className="ri-arrow-right-s-line"
+                    style={{ fontSize: '1rem', color: '#94A3B8', transition: 'transform 0.2s', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                  />
+                </button>
+                {isOpen && (
+                  <div style={{ border: '1px solid #E2E8F0', borderTop: 'none', borderRadius: '0 0 0.5rem 0.5rem', padding: '0.75rem 1rem', background: '#fff' }}>
+                    {loadingHistory ? (
+                      <div className="flex items-center justify-center gap-2" style={{ padding: '0.5rem 0', fontSize: '0.8125rem', color: '#94A3B8' }}>
+                        <i className="ri-loader-4-line animate-spin" />
+                        Loading...
+                      </div>
+                    ) : history.length === 0 ? (
+                      <p style={{ fontSize: '0.8125rem', color: '#94A3B8', textAlign: 'center', padding: '0.5rem 0' }}>No execution history</p>
+                    ) : (
+                      history.map((h) => {
+                        const relTime = (() => {
+                          const diff = Date.now() - h.timestamp.getTime();
+                          const d = Math.floor(diff / 86400000);
+                          if (d === 0) return 'today';
+                          if (d === 1) return '1d ago';
+                          return `${d}d ago`;
+                        })();
+                        const sStyle = statusStyle(h.status);
+                        const dotColor = statusDot(h.status);
+                        return (
+                          <div key={h.id} className="flex items-start gap-2.5" style={{ padding: '0.5rem 0', borderBottom: '1px solid #F1F5F9' }}>
+                            <div className="inline-flex items-center gap-1 whitespace-nowrap" style={{ ...sStyle, fontSize: '0.75rem', fontWeight: 600, padding: '0.125rem 0.5rem', borderRadius: '9999px', flexShrink: 0 }}>
+                              <span style={{ width: 5, height: 5, borderRadius: '50%', background: dotColor, display: 'inline-block' }} />
+                              {h.status.charAt(0).toUpperCase() + h.status.slice(1)}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#475569' }}>{h.runName}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
+                                {relTime}{h.author ? ` · by ${h.author}` : ''}
+                              </div>
+                              {h.note && (
+                                <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontStyle: 'italic', marginTop: '0.125rem', paddingLeft: '0.25rem' }}>
+                                  "{h.note}"
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
               </div>
-              <i
-                className="ri-arrow-right-s-line"
-                style={{ fontSize: '1rem', color: '#94A3B8', transition: 'transform 0.2s', transform: openPanel === 'history' ? 'rotate(90deg)' : 'rotate(0deg)' }}
-              />
-            </button>
-            {openPanel === 'history' && (
-              <div style={{ border: '1px solid #E2E8F0', borderTop: 'none', borderRadius: '0 0 0.5rem 0.5rem', padding: '0.75rem 1rem', background: '#fff' }}>
-                <p style={{ fontSize: '0.8125rem', color: '#94A3B8', textAlign: 'center', padding: '0.5rem 0' }}>No execution history</p>
-              </div>
-            )}
-          </div>
+            );
+          })()}
 
           {/* I. Note input — ALWAYS visible (not toggled) */}
           <div style={{ marginBottom: '1rem' }}>
