@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { FocusMode, type FocusTestCase, type TestStatus } from '../../components/FocusMode';
 import { StatusBadge } from '../../components/StatusBadge';
+import { DetailPanel } from '../../components/DetailPanel';
 
 interface TestCase {
   id: string;
@@ -2062,631 +2063,62 @@ export default function RunDetail() {
             </div>
           </div>
 
-          {/* 우측 상세 패널 */}
+          {/* 우측 상세 패널 — Option A (DetailPanel) */}
           {selectedTestCase && (
-            <div className="w-[576px] bg-white border-l border-gray-200 flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-6 border-b border-gray-200">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">Details</h2>
-                    <div className="flex items-center gap-3">
-                      <select
-                        value={selectedTestCase.runStatus}
-                        onChange={(e) => handleStatusChange(selectedTestCase.id, e.target.value)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${getStatusColor(selectedTestCase.runStatus)}`}
-                      >
-                        <option value="untested">Untested</option>
-                        <option value="passed">Passed</option>
-                        <option value="failed">Failed</option>
-                        <option value="blocked">Blocked</option>
-                        <option value="retest">Retest</option>
-                      </select>
-                      <button
-                        onClick={() => setSelectedTestCase(null)}
-                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
-                      >
-                        <i className="ri-close-line text-xl"></i>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-2 mb-6">
-                    <button 
-                      onClick={handleAddResult}
-                      className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
-                    >
-                      Add result
-                    </button>
-                    <button 
-                      onClick={handlePassAndNext}
-                      className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
-                    >
-                      Pass & Next
-                    </button>
-                    <button
-                      onClick={handlePreviousTestCase}
-                      disabled={filteredTestCases.findIndex(tc => tc.id === selectedTestCase.id) === 0}
-                      className="w-10 h-10 flex items-center justify-center bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <i className="ri-arrow-left-s-line text-xl w-5 h-5 flex items-center justify-center"></i>
-                    </button>
-                    <button
-                      onClick={handleNextTestCase}
-                      disabled={filteredTestCases.findIndex(tc => tc.id === selectedTestCase.id) === filteredTestCases.length - 1}
-                      className="w-10 h-10 flex items-center justify-center bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <i className="ri-arrow-right-s-line text-xl w-5 h-5 flex items-center justify-center"></i>
-                    </button>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        {selectedTestCase.is_automated && (
-                          <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
-                            <i className="ri-robot-line text-purple-600 text-lg"></i>
-                          </div>
-                        )}
-                        <h3 className="text-lg font-bold text-gray-900">{selectedTestCase.title}</h3>
-                      </div>
-                      {selectedTestCase.description && (
-                        <p className="text-sm text-gray-600">{selectedTestCase.description}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Priority</label>
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
-                            selectedTestCase.priority
-                          )}`}
-                        >
-                          {selectedTestCase.priority.toUpperCase()}
-                        </span>
-                      </div>
-
-                      {selectedTestCase.folder && (
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Folder</label>
-                          <p className="text-sm text-gray-900">{selectedTestCase.folder}</p>
-                        </div>
-                      )}
-
-                      {selectedTestCase.tags && (
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Tags</label>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedTestCase.tags.split(',').map((tag, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium"
-                              >
-                                {tag.trim()}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Assignee</label>
-                        {(() => {
-                          const assigneeName = runAssignees.get(selectedTestCase.id) || '';
-                          const assignedMember = assigneeName
-                            ? projectMembers.find(m => (m.full_name || m.email) === assigneeName)
-                            : null;
-                          return (
-                            <div className="relative">
-                              <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg bg-white">
-                                {assigneeName ? (
-                                  <>
-                                    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100">
-                                      {assignedMember?.avatar_emoji ? (
-                                        <span className="text-base leading-none">{assignedMember.avatar_emoji}</span>
-                                      ) : (
-                                        <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                                          {assigneeName.substring(0, 2).toUpperCase()}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <span className="text-sm font-medium text-gray-900 flex-1">{assigneeName}</span>
-                                  </>
-                                ) : (
-                                  <span className="text-sm text-gray-400 flex-1">— Unassigned —</span>
-                                )}
-                                <i className="ri-arrow-down-s-line text-gray-400 flex-shrink-0"></i>
-                                <select
-                                  value={assigneeName}
-                                  onChange={(e) => handleAssigneeChange(selectedTestCase.id, e.target.value)}
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                >
-                                  <option value="">— Unassigned —</option>
-                                  {projectMembers.map((member) => (
-                                    <option key={member.id} value={member.full_name || member.email}>
-                                      {member.avatar_emoji ? `${member.avatar_emoji} ` : ''}{member.full_name || member.email}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Created</label>
-                        <p className="text-sm text-gray-900">
-                          {new Date(selectedTestCase.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </p>
-                      </div>
-                    </div>
-
-                    {selectedTestCase.steps && selectedTestCase.expected_result && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Test Steps</label>
-                        <div className="space-y-2">
-                          {selectedTestCase.steps.split('\n').filter(s => s.trim()).map((step, index) => {
-                            const stepContent = step.replace(/^\d+\.\s*/, '');
-                            const isHtml = /<[^>]+>/.test(stepContent);
-                            const expectedResults = selectedTestCase.expected_result?.split('\n').filter(s => s.trim()) || [];
-                            const expectedResult = expectedResults[index] || '';
-                            const expectedContent = expectedResult.replace(/^\d+\.\s*/, '');
-                            const expectedIsHtml = /<[^>]+>/.test(expectedContent);
-                            return (
-                              <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
-                                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                  <span className="text-indigo-700 text-xs font-bold">{index + 1}</span>
-                                </div>
-                                {isHtml ? (
-                                  <div
-                                    className="text-sm text-gray-700 mb-2 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                                    dangerouslySetInnerHTML={{ __html: stepContent }}
-                                    onClick={(e) => {
-                                      const target = e.target as HTMLElement;
-                                      if (target.tagName === 'IMG') {
-                                        const img = target as HTMLImageElement;
-                                        setPreviewImage({ url: img.src, name: img.alt || 'image' });
-                                      }
-                                    }}
-                                  />
-                                ) : (
-                                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{stepContent}</p>
-                                )}
-                                {expectedContent && (
-                                  <div className="bg-gray-50 rounded p-2 mb-2">
-                                    <p className="text-xs text-gray-600 mb-1 font-semibold">Expected Result:</p>
-                                    {expectedIsHtml ? (
-                                      <div
-                                        className="text-xs text-gray-700 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                                        dangerouslySetInnerHTML={{ __html: expectedContent }}
-                                      />
-                                    ) : (
-                                      <p className="text-xs text-gray-700 whitespace-pre-wrap">{expectedContent}</p>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedTestCase.expected_result && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Expected Result</label>
-                        <div className="space-y-2">
-                          {selectedTestCase.expected_result.split('\n').filter((s: string) => s.trim()).map((result, index) => {
-                            const content = result.replace(/^\d+\.\s*/, '');
-                            const isHtml = /<[^>]+>/.test(content);
-                            return (
-                              <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
-                                <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <span className="text-green-700 text-xs font-bold">{index + 1}</span>
-                                </div>
-                                {isHtml ? (
-                                  <div
-                                    className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                                    dangerouslySetInnerHTML={{ __html: content }}
-                                    onClick={(e) => {
-                                      const target = e.target as HTMLElement;
-                                      if (target.tagName === 'IMG') {
-                                        const img = target as HTMLImageElement;
-                                        setPreviewImage({ url: img.src, name: img.alt || 'image' });
-                                      }
-                                    }}
-                                  />
-                                ) : (
-                                  <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedTestCase.attachments && selectedTestCase.attachments.length > 0 && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-500 uppercase mb-2">Attachments</label>
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                          <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
-                            <input
-                              type="file"
-                              multiple
-                              onChange={handleFileUpload}
-                              className="hidden"
-                              id="result-file-upload"
-                              disabled={uploadingFile}
-                            />
-                            <label
-                              htmlFor="result-file-upload"
-                              className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap ${
-                              uploadingFile ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
-                            >
-                              <i className="ri-file-line"></i>
-                              Choose files
-                            </label>
-                            <span>or</span>
-                            <button
-                              onClick={handleScreenshot}
-                              disabled={uploadingFile}
-                              className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap ${
-                              uploadingFile ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
-                            >
-                              <i className="ri-screenshot-line"></i>
-                              screenshot
-                            </button>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-2">or drag/paste here</p>
-                        </div>
-                        
-                        {uploadingFile && (
-                          <div className="mt-3 text-center">
-                            <i className="ri-loader-4-line animate-spin text-indigo-500 text-xl"></i>
-                            <p className="text-sm text-gray-600 mt-1">업로드 중...</p>
-                          </div>
-                        )}
-
-                        {resultFormData.attachments.length > 0 && (
-                          <div className="mt-3 space-y-2">
-                            {resultFormData.attachments.map((file, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center justify-between p-2 bg-gray-50 rounded-lg group"
-                              >
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  <i className="ri-file-line text-gray-400"></i>
-                                  <span className="text-sm text-gray-700 truncate">{file.name}</span>
-                                  <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveAttachment(index)}
-                                  className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-                                >
-                                  <i className="ri-close-line"></i>
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* 탭 메뉴 */}
-                <div className="border-b border-gray-200">
-                  <div className="flex">
-                    <button
-                      onClick={() => setActiveTab('comments')}
-                      className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                        activeTab === 'comments'
-                          ? 'text-indigo-600 border-b-2 border-indigo-600'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Comments
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('results')}
-                      className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                        activeTab === 'results'
-                          ? 'text-indigo-600 border-b-2 border-indigo-600'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Results
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('issues')}
-                      className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                        activeTab === 'issues'
-                          ? 'text-indigo-600 border-b-2 border-indigo-600'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Issues
-                    </button>
-                  </div>
-                </div>
-
-                {/* 탭 콘텐츠 */}
-                <div className="flex-1 overflow-y-auto p-6">
-                  {activeTab === 'comments' && (
-                    <div className="space-y-4">
-                      <div>
-                        <textarea
-                          value={commentText}
-                          onChange={(e) => setCommentText(e.target.value)}
-                          placeholder="Add a comment..."
-                          rows={3}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
-                        ></textarea>
-                        <button 
-                          onClick={handlePostComment}
-                          disabled={!commentText.trim() || !currentUser}
-                          className="mt-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Post Comment
-                        </button>
-                      </div>
-                      <div className="space-y-3">
-                        {loadingComments ? (
-                          <div className="text-center py-8">
-                            <i className="ri-loader-4-line animate-spin text-2xl text-gray-400 mb-2"></i>
-                            <p className="text-sm text-gray-500">Loading comments...</p>
-                          </div>
-                        ) : comments.length === 0 ? (
-                          <div className="text-center py-8">
-                            <i className="ri-chat-3-line text-3xl text-gray-300 mb-2"></i>
-                            <p className="text-sm text-gray-500">No comments yet</p>
-                          </div>
-                        ) : (
-                          comments.map((comment) => (
-                            <div key={comment.id} className="bg-white border border-gray-200 rounded-lg p-4 group relative">
-                              <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0">
-                                  <span className="inline-flex items-center px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-semibold">
-                                    전용
-                                  </span>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-sm font-semibold text-gray-900">{comment.author}</span>
-                                    <span className="text-xs text-gray-500">
-                                      {comment.timestamp.toLocaleString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        hour12: true
-                                      })}
-                                    </span>
-                                  </div>
-                                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{comment.text}</p>
-                                </div>
-                                <button
-                                  onClick={() => handleDeleteComment(comment.id)}
-                                  className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-                                >
-                                  <i className="ri-delete-bin-line"></i>
-                                </button>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'results' && (
-                    <div className="space-y-3">
-                      {testResults.length === 0 ? (
-                        <div className="text-center py-8">
-                          <i className="ri-file-list-line text-3xl text-gray-300 mb-2"></i>
-                          <p className="text-sm text-gray-500">No test results yet</p>
-                        </div>
-                      ) : (
-                        testResults.map((result) => {
-                          // CI/CD 자동화 여부 판단 (author가 GitHub Actions, GitLab CI 등인 경우)
-                          const isAutomated = result.author && (
-                            result.author.includes('GitHub Actions') ||
-                            result.author.includes('GitLab CI') ||
-                            result.author.includes('Jenkins') ||
-                            result.author.includes('CI/CD') ||
-                            result.is_automated
-                          );
-
-                          return (
-                            <div 
-                              key={result.id}
-                              className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all cursor-pointer"
-                              onClick={() => setSelectedResult(result)}
-                            >
-                              <div className="flex items-center gap-3">
-                                {isAutomated ? (
-                                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                    <i className="ri-robot-line text-purple-600 text-xl"></i>
-                                  </div>
-                                ) : (
-                                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                                    {result.author ? result.author.substring(0, 2).toUpperCase() : 'NA'}
-                                  </div>
-                                )}
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className={`text-sm font-semibold capitalize ${
-                                      result.status === 'passed' ? 'text-green-700' :
-                                      result.status === 'failed' ? 'text-red-700' :
-                                      result.status === 'blocked' ? 'text-orange-700' :
-                                      result.status === 'retest' ? 'text-yellow-700' :
-                                      'text-gray-700'
-                                    }`}>
-                                      {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
-                                    </span>
-                                    {isAutomated && (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-semibold">
-                                        <i className="ri-robot-line"></i>
-                                        CI/CD
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <i className="ri-time-line text-lg"></i>
-                                    <span className="text-sm text-gray-700">{result.elapsed}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === 'issues' && (
-                    <div className="space-y-3">
-                      {/* Add Issue Button */}
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-gray-700">Linked Issues</h3>
-                        <button
-                          onClick={() => {
-                            if (!isProfessionalOrHigher) {
-                              setShowUpgradeModal(true);
-                              return;
-                            }
-                            if (!jiraSettings || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.api_token) {
-                              if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) {
-                                navigate('/settings');
-                              }
-                              return;
-                            }
-                            setShowAddIssueModal(true);
-                          }}
-                          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
-                        >
-                          <i className="ri-add-line"></i>
-                          Add Issue
-                        </button>
-                      </div>
-
-                      {!isProfessionalOrHigher && (
-                        <div className="mb-4 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                              <i className="ri-lock-line text-indigo-600 text-xl"></i>
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900 mb-1">Jira 이슈 생성은 Professional 이상 요금제에서 사용 가능합니다</h4>
-                              <p className="text-sm text-gray-600 mb-3">
-                                테스트 결과에서 바로 Jira 이슈를 생성하고 관리하세요.
-                              </p>
-                              <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap">
-                                <i className="ri-arrow-up-circle-line mr-2"></i>
-                                업그레이드 문의
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {(() => {
-                        // Collect all unique issues from test results
-                        const allIssues = testResults
-                          .filter(r => r.issues && r.issues.length > 0)
-                          .flatMap(r => (r.issues || []).map(issueKey => ({
-                            issueKey,
-                            runName: r.run?.name || run?.name || 'Unknown Run',
-                            runId: r.run?.id || runId,
-                            status: r.status,
-                            createdAt: r.timestamp,
-                          })));
-                        
-                        // Remove duplicates by issue key
-                        const uniqueIssuesMap = new Map();
-                        allIssues.forEach(issue => {
-                          if (!uniqueIssuesMap.has(issue.issueKey)) {
-                            uniqueIssuesMap.set(issue.issueKey, issue);
-                          }
-                        });
-                        const uniqueIssues = Array.from(uniqueIssuesMap.values());
-
-                        if (uniqueIssues.length === 0) {
-                          return (
-                            <div className="text-center py-8">
-                              <i className="ri-bug-line text-3xl text-gray-300 mb-2"></i>
-                              <p className="text-sm text-gray-500">No issues linked</p>
-                            </div>
-                          );
-                        }
-
-                        return uniqueIssues.map((issue, idx) => {
-                          // Jira URL 생성
-                          const issueUrl = jiraDomain && issue.issueKey
-                            ? `https://${jiraDomain}/browse/${issue.issueKey}`
-                            : '';
-
-                          const CardContent = (
-                            <>
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                  <i className="ri-bug-line text-red-600"></i>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="text-sm font-semibold text-gray-900">
-                                    {issue.issueKey}
-                                  </div>
-                                  <p className="text-sm text-gray-700 mt-1">{issue.summary}</p>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    From run: <span className="font-medium text-gray-700">{issue.runName}</span>
-                                  </p>
-                                </div>
-                              </div>
-                            </>
-                          );
-
-                          if (issueUrl) {
-                            return (
-                              <a
-                                key={idx}
-                                href={issueUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block bg-white border border-gray-200 rounded-lg p-4 transition-all hover:border-indigo-500 hover:shadow-md cursor-pointer"
-                              >
-                                {CardContent}
-                              </a>
-                            );
-                          }
-
-                          return (
-                            <div
-                              key={idx}
-                              className="bg-white border border-gray-200 rounded-lg p-4"
-                            >
-                              {CardContent}
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <DetailPanel
+              context="run"
+              testCase={{
+                id: selectedTestCase.id,
+                title: selectedTestCase.title,
+                description: selectedTestCase.description,
+                folder: selectedTestCase.folder,
+                priority: selectedTestCase.priority,
+                tags: selectedTestCase.tags,
+                assignee: selectedTestCase.assignee,
+                createdAt: selectedTestCase.created_at,
+                steps: selectedTestCase.steps,
+                expected_result: selectedTestCase.expected_result,
+                precondition: selectedTestCase.precondition,
+                is_automated: selectedTestCase.is_automated,
+                attachments: selectedTestCase.attachments,
+              }}
+              runStatus={selectedTestCase.runStatus}
+              onClose={() => setSelectedTestCase(null)}
+              onStatusChange={(status) => handleStatusChange(selectedTestCase.id, status)}
+              onPassAndNext={handlePassAndNext}
+              onAddResult={handleAddResult}
+              onPrev={handlePreviousTestCase}
+              onNext={handleNextTestCase}
+              canGoPrev={filteredTestCases.findIndex(tc => tc.id === selectedTestCase.id) > 0}
+              canGoNext={filteredTestCases.findIndex(tc => tc.id === selectedTestCase.id) < filteredTestCases.length - 1}
+              comments={comments}
+              commentText={commentText}
+              loadingComments={loadingComments}
+              onCommentChange={setCommentText}
+              onCommentSubmit={handlePostComment}
+              onCommentDelete={handleDeleteComment}
+              currentUserId={currentUser?.id}
+              testResults={testResults}
+              onResultClick={setSelectedResult}
+              jiraDomain={jiraDomain}
+              isProfessionalOrHigher={isProfessionalOrHigher}
+              onAddIssue={() => {
+                if (!jiraSettings?.domain) {
+                  if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) {
+                    navigate('/settings');
+                  }
+                  return;
+                }
+                setShowAddIssueModal(true);
+              }}
+              projectMembers={projectMembers}
+              assigneeName={runAssignees.get(selectedTestCase.id) || ''}
+              onAssigneeChange={(name) => handleAssigneeChange(selectedTestCase.id, name)}
+              onPreviewImage={(url, name) => setPreviewImage({ url, name })}
+            />
           )}
 
-          {/* Upgrade Modal */}
+                    {/* Upgrade Modal */}
           {showUpgradeModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
               <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
