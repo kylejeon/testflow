@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
+import ProjectHeader from '../../components/ProjectHeader';
 import { useTranslation } from 'react-i18next';
 import { FocusMode, type FocusTestCase, type TestStatus } from '../../components/FocusMode';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -1427,68 +1428,7 @@ export default function RunDetail() {
     )}
     <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Link to="/projects" className="flex items-center cursor-pointer">
-                <LogoMark />
-              </Link>
-
-              <div className="w-px h-5 bg-gray-300" />
-
-              <span className="text-sm text-gray-500">{project?.name}</span>
-            </div>
-            
-            <div className="flex items-center gap-3 relative">
-              <div 
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
-                  {userProfile?.avatar_emoji ? (
-                    <span className="text-base leading-none">{userProfile.avatar_emoji}</span>
-                  ) : (
-                    <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
-                  )}
-                </div>
-              </div>
-              
-              {showProfileMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-10" 
-                    onClick={() => setShowProfileMenu(false)}
-                  ></div>
-                  <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
-                      <p className="text-xs text-gray-500">{userProfile?.email}</p>
-                      <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
-                        <i className={`${tierInfo.icon} text-sm`}></i>
-                        {tierInfo.name}
-                      </div>
-                    </div>
-                    <Link
-                      to="/settings"
-                      onClick={() => setShowProfileMenu(false)}
-                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
-                    >
-                      <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                      <span>{t('common:settings')}</span>
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
-                    >
-                      <i className="ri-logout-box-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                      <span>{t('common:logout')}</span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </header>
+        <ProjectHeader projectId={projectId || ''} projectName={project?.name || ''} />
         
         <main className="flex-1 overflow-hidden bg-gray-50/30 flex">
           {/* 폴더 사이드바 */}
@@ -1834,13 +1774,13 @@ export default function RunDetail() {
                     <div className="col-span-1">
                       <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">ID</span>
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-4">
                       <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Test Case</span>
                     </div>
                     <div className="col-span-1">
                       <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Priority</span>
                     </div>
-                    <div className="col-span-3 flex items-center">
+                    <div className="col-span-2 flex items-center">
                       <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Assignee</span>
                     </div>
                     <div className="col-span-3 flex items-center">
@@ -1879,8 +1819,8 @@ export default function RunDetail() {
                             {(testCase as any).custom_id || testCase.id.substring(0, 8)}
                           </span>
                         </div>
-                        <div className="col-span-3 flex items-center">
-                          <span className="text-[0.8125rem] font-semibold text-[#0F172A] truncate block max-w-[260px] hover:text-indigo-600">
+                        <div className="col-span-4 flex items-center">
+                          <span className="text-[0.8125rem] font-semibold text-[#0F172A] truncate block max-w-[320px] hover:text-indigo-600">
                             {testCase.title}
                           </span>
                         </div>
@@ -1895,7 +1835,7 @@ export default function RunDetail() {
                             {testCase.priority === 'medium' ? 'Med' : testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1)}
                           </span>
                         </div>
-                        <div className="col-span-3 flex items-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="col-span-2 flex items-center" onClick={(e) => e.stopPropagation()}>
                           {(() => {
                             const assigneeName = runAssignees.get(testCase.id) || '';
                             const assignedMember = assigneeName
@@ -1984,6 +1924,7 @@ export default function RunDetail() {
               context="run"
               testCase={{
                 id: selectedTestCase.id,
+                customId: (selectedTestCase as any).custom_id,
                 title: selectedTestCase.title,
                 description: selectedTestCase.description,
                 folder: selectedTestCase.folder,

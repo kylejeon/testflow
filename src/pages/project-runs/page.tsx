@@ -1420,7 +1420,7 @@ export default function ProjectRunsPage() {
                       : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  Closed
+                  Completed
                   <span className={`text-[0.6875rem] px-1.5 py-0.5 rounded-full font-semibold ${activeTab === 'closed' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
                     {testRuns.filter(r => r.status === 'completed').length}
                   </span>
@@ -1656,19 +1656,21 @@ export default function ProjectRunsPage() {
                           </div>
                           {/* Row 2: Progress bar */}
                           <div className="flex items-center gap-2 mb-[0.5rem]">
-                            <div className="flex-1 h-[6px] bg-[#F1F5F9] rounded-full overflow-hidden flex">
-                              {run.passed > 0 && <div className="h-full bg-[#10B981] transition-all" style={{ width: `${passedPct}%` }}></div>}
+                            <div className="flex-1 h-[6px] bg-[#F1F5F9] rounded-full overflow-hidden flex gap-px">
+                              {run.passed > 0 && <div className="h-full bg-[#22C55E] transition-all" style={{ width: `${passedPct}%` }}></div>}
                               {run.failed > 0 && <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }}></div>}
-                              {run.blocked > 0 && <div className="h-full bg-[#F59E0B] transition-all" style={{ width: `${blockedPct}%` }}></div>}
+                              {run.blocked > 0 && <div className="h-full bg-[#94A3B8] transition-all" style={{ width: `${blockedPct}%` }}></div>}
+                              {run.retest > 0 && <div className="h-full bg-[#FACC15] transition-all" style={{ width: `${retestPct}%` }}></div>}
                             </div>
                             <span className="text-[0.8125rem] font-semibold text-[#0F172A] min-w-[2.5rem] text-right">{run.progress}%</span>
                           </div>
                           {/* Row 3: Stats */}
                           <div className="flex items-center gap-4 text-[0.8125rem] text-[#64748B] mb-[0.5rem]">
-                            <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#10B981] inline-block"></span>{run.passed} passed</span>
+                            <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#22C55E] inline-block"></span>{run.passed} passed</span>
                             <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#EF4444] inline-block"></span>{run.failed} failed</span>
-                            {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#F59E0B] inline-block"></span>{run.blocked} blocked</span>}
-                            <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#94A3B8] inline-block"></span>{run.untested} remaining</span>
+                            {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#94A3B8] inline-block"></span>{run.blocked} blocked</span>}
+                            {run.retest > 0 && <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#FACC15] inline-block"></span>{run.retest} retest</span>}
+                            <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#E2E8F0] inline-block"></span>{run.untested} untested</span>
                           </div>
                           {/* Row 4: Assignees + timestamp */}
                           <div className="flex items-center gap-[0.875rem] text-[0.8125rem] text-[#64748B]">

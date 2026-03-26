@@ -121,6 +121,19 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function getTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 function isImageFile(name: string) {
   return /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name);
 }
@@ -491,30 +504,53 @@ export function DetailPanel({
             <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Created</div>
             <div className="text-[0.8125rem] font-medium text-gray-800">{formatDate(testCase.createdAt)}</div>
           </div>
+
+          {/* Last Run */}
+          <div>
+            <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Last Run</div>
+            {testResults.length > 0 ? (() => {
+              const lastResult = testResults[0];
+              const timeAgo = lastResult.timestamp instanceof Date ? getTimeAgo(lastResult.timestamp) : '';
+              const statusColor: Record<string, string> = {
+                passed: '#16A34A', failed: '#DC2626', blocked: '#D97706', retest: '#7C3AED', untested: '#64748B',
+              };
+              const label = lastResult.status.charAt(0).toUpperCase() + lastResult.status.slice(1);
+              return (
+                <div className="text-[0.8125rem] font-medium" style={{ color: statusColor[lastResult.status] || '#64748B' }}>
+                  {label}
+                  {timeAgo && <span className="text-[#94A3B8] font-normal text-[0.75rem]"> · {timeAgo}</span>}
+                </div>
+              );
+            })() : (
+              <span className="text-[0.8125rem] text-gray-400">—</span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ④ Steps Toggle Bar */}
       <button
         onClick={() => setStepsCollapsed(!stepsCollapsed)}
-        className="flex items-center justify-between w-full px-5 py-2 bg-gray-50 hover:bg-gray-100 transition-colors border-b border-gray-200 flex-shrink-0 cursor-pointer border-l-0 border-r-0 border-t-0"
+        className="flex items-center justify-between w-full px-5 py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] transition-colors border-b border-[#E2E8F0] flex-shrink-0 cursor-pointer border-l-0 border-r-0 border-t-0"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-[0.375rem]">
           <i
-            className={`ri-arrow-down-s-line text-gray-500 text-base transition-transform duration-200 ${stepsCollapsed ? '-rotate-90' : ''}`}
+            className={`ri-arrow-down-s-line text-[#6366F1] text-[0.875rem] transition-transform duration-200 ${stepsCollapsed ? '-rotate-90' : ''}`}
           />
-          <span className="text-[0.6875rem] font-bold text-gray-600 uppercase tracking-wider">Test Steps</span>
+          <span className="text-[0.6875rem] font-bold text-[#475569] uppercase tracking-[0.04em]">
+            {steps.length} step{steps.length !== 1 ? 's' : ''}
+            {testCase.attachments && testCase.attachments.length > 0 ? ` · ${testCase.attachments.length} attachment${testCase.attachments.length !== 1 ? 's' : ''}` : ''}
+          </span>
         </div>
         {isRun && steps.length > 0 ? (
-          <span className="text-[0.6875rem]">
-            <span className={`font-semibold ${passedCount > 0 ? 'text-green-600' : 'text-gray-400'}`}>{passedCount}</span>
-            <span className="text-gray-300 mx-0.5">/</span>
-            <span className="text-gray-500">{steps.length} steps passed</span>
+          <span className="text-[0.6875rem] font-semibold flex items-center gap-[0.25rem]">
+            <span className={passedCount > 0 ? 'text-[#16A34A]' : 'text-[#64748B]'}>{passedCount}</span>
+            <span className="text-[#CBD5E1]">/</span>
+            <span className="text-[#64748B]">{steps.length} steps passed</span>
           </span>
         ) : (
-          <span className="text-[0.6875rem] text-gray-400">
-            {steps.length} step{steps.length !== 1 ? 's' : ''}
-            {testCase.attachments && testCase.attachments.length > 0 && ` · ${testCase.attachments.length} attachment${testCase.attachments.length !== 1 ? 's' : ''}`}
+          <span className="text-[0.6875rem] text-[#94A3B8] font-medium">
+            {testCase.attachments && testCase.attachments.length > 0 ? `${testCase.attachments.length} attachment${testCase.attachments.length !== 1 ? 's' : ''}` : ''}
           </span>
         )}
       </button>
