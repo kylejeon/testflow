@@ -292,9 +292,17 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
         ))}
       </nav>
 
-      {/* Right: Notification + Avatar */}
+      {/* Right: Notification + Keyboard shortcuts + Avatar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
         <NotificationBell />
+
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('open-shortcuts'))}
+          title="Keyboard Shortcuts (?)"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+        >
+          <i className="ri-keyboard-line text-base" />
+        </button>
 
         <div ref={profileMenuRef} style={{ position: 'relative' }}>
           <div onClick={() => setShowProfileMenu(!showProfileMenu)} style={{ cursor: 'pointer' }}>

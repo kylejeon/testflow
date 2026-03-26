@@ -90,6 +90,13 @@ function AppContent() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Listen for programmatic open-shortcuts events (e.g. from ProjectHeader icon)
+  useEffect(() => {
+    const handler = () => setShortcutsHelpOpen(true);
+    window.addEventListener('open-shortcuts', handler);
+    return () => window.removeEventListener('open-shortcuts', handler);
+  }, []);
+
   // Global keyboard shortcuts
   useKeyboardShortcuts({
     onOpenCommandPalette: () => setCmdPaletteOpen((p) => !p),
