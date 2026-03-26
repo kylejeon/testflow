@@ -7,7 +7,7 @@ export type PeriodFilter = 'active_run' | '7d' | '30d' | 'all';
 
 export interface FilteredTC {
   id: string;
-  tcIdStr: string;       // TC-001 format (created_at ASC rank)
+  tcIdStr: string;       // custom_id if set, else {prefix}-{perProjectSeq}
   title: string;
   projectId: string;
   projectName: string;
@@ -75,26 +75,37 @@ export function useFilteredTestCases(period: PeriodFilter): FilteredTCResult {
       // 2. Get all test_cases for those projects (sorted by created_at for TC-ID numbering)
       const { data: tcRows, error: tcErr } = await supabase
         .from('test_cases')
-        .select('id, title, priority, assignee, project_id, created_at')
+        .select('id, title, priority, assignee, project_id, created_at, custom_id')
         .in('project_id', projectIds)
         .order('created_at', { ascending: true });
 
       if (tcErr) throw tcErr;
       const tcs = tcRows ?? [];
 
-      // 3. Build TC-ID map (TC-001, TC-002, ...)
-      const tcIdMap: Record<string, string> = {};
-      tcs.forEach((tc, idx) => {
-        tcIdMap[tc.id] = `TC-${String(idx + 1).padStart(3, '0')}`;
-      });
-
-      // 4. Get projects map
+      // 3. Get projects map (with prefix for TC-ID generation)
       const { data: projectsData } = await supabase
         .from('projects')
-        .select('id, name')
+        .select('id, name, prefix')
         .in('id', projectIds);
       const projectNameMap: Record<string, string> = {};
-      (projectsData ?? []).forEach(p => { projectNameMap[p.id] = p.name; });
+      const projectPrefixMap: Record<string, string> = {};
+      (projectsData ?? []).forEach(p => {
+        projectNameMap[p.id] = p.name;
+        projectPrefixMap[p.id] = p.prefix;
+      });
+
+      // 4. Build TC-ID map: custom_id first, else {prefix}-{perProjectSeq}
+      const tcIdLabelMap: Record<string, string> = {};
+      const projectTcCounter: Record<string, number> = {};
+      tcs.forEach(tc => {
+        if (tc.custom_id) {
+          tcIdLabelMap[tc.id] = tc.custom_id;
+        } else {
+          const prefix = projectPrefixMap[tc.project_id] || 'TC';
+          projectTcCounter[prefix] = (projectTcCounter[prefix] || 0) + 1;
+          tcIdLabelMap[tc.id] = `${prefix}-${projectTcCounter[prefix].toString().padStart(3, '0')}`;
+        }
+      });
 
       // 5. Get test_results based on period
       const { data: runsAll } = await supabase
@@ -177,7 +188,7 @@ export function useFilteredTestCases(period: PeriodFilter): FilteredTCResult {
         const execStatus = computeExecStatus(a);
         return {
           id: tc.id,
-          tcIdStr: tcIdMap[tc.id],
+          tcIdStr: tcIdLabelMap[tc.id],
           title: tc.title,
           projectId: tc.project_id,
           projectName: projectNameMap[tc.project_id] ?? 'Unknown',
