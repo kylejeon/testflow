@@ -181,7 +181,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [newFolder, setNewFolder] = useState({
     name: '',
     icon: 'ri-folder-line',
-    color: 'gray',
+    color: 'indigo',
   });
 
   const [newTestCase, setNewTestCase] = useState({
@@ -491,6 +491,29 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     setTimeout(() => setShowToast(false), 3000);
   };
 
+  const FOLDER_COLOR_MAP: Record<string, { bg: string; fg: string }> = {
+    indigo:  { bg: '#EEF2FF', fg: '#6366F1' },
+    violet:  { bg: '#F5F3FF', fg: '#8B5CF6' },
+    pink:    { bg: '#FDF2F8', fg: '#EC4899' },
+    emerald: { bg: '#F0FDF4', fg: '#10B981' },
+    amber:   { bg: '#FFFBEB', fg: '#F59E0B' },
+    cyan:    { bg: '#ECFEFF', fg: '#06B6D4' },
+    red:     { bg: '#FEF2F2', fg: '#EF4444' },
+    teal:    { bg: '#F0FDFA', fg: '#14B8A6' },
+    orange:  { bg: '#FFF7ED', fg: '#F97316' },
+    blue:    { bg: '#EFF6FF', fg: '#3B82F6' },
+  };
+
+  const getNextFolderColor = (existingFolders: { color: string }[]): string => {
+    const allColors = Object.keys(FOLDER_COLOR_MAP);
+    const usedColors = existingFolders.map(f => f.color);
+    const unused = allColors.filter(c => !usedColors.includes(c));
+    if (unused.length > 0) return unused[0];
+    const counts = allColors.map(c => ({ color: c, count: usedColors.filter(u => u === c).length }));
+    counts.sort((a, b) => a.count - b.count);
+    return counts[0].color;
+  };
+
   const iconOptions = [
     'ri-folder-line',
     'ri-layout-line',
@@ -503,14 +526,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   ];
 
   const colorOptions = [
-    { name: 'gray', class: 'bg-gray-100 text-gray-700' },
-    { name: 'blue', class: 'bg-blue-100 text-blue-700' },
-    { name: 'purple', class: 'bg-purple-100 text-purple-700' },
-    { name: 'green', class: 'bg-green-100 text-green-700' },
-    { name: 'red', class: 'bg-red-100 text-red-700' },
-    { name: 'yellow', class: 'bg-yellow-100 text-yellow-700' },
-    { name: 'pink', class: 'bg-pink-100 text-pink-700' },
-    { name: 'indigo', class: 'bg-indigo-100 text-indigo-700' },
+    { name: 'indigo',  bg: '#EEF2FF', fg: '#6366F1',  label: 'Indigo' },
+    { name: 'violet',  bg: '#F5F3FF', fg: '#8B5CF6',  label: 'Violet' },
+    { name: 'pink',    bg: '#FDF2F8', fg: '#EC4899',  label: 'Pink' },
+    { name: 'emerald', bg: '#F0FDF4', fg: '#10B981',  label: 'Emerald' },
+    { name: 'amber',   bg: '#FFFBEB', fg: '#F59E0B',  label: 'Amber' },
+    { name: 'cyan',    bg: '#ECFEFF', fg: '#06B6D4',  label: 'Cyan' },
+    { name: 'red',     bg: '#FEF2F2', fg: '#EF4444',  label: 'Red' },
+    { name: 'teal',    bg: '#F0FDFA', fg: '#14B8A6',  label: 'Teal' },
+    { name: 'orange',  bg: '#FFF7ED', fg: '#F97316',  label: 'Orange' },
+    { name: 'blue',    bg: '#EFF6FF', fg: '#3B82F6',  label: 'Blue' },
   ];
 
   // 컴포넌트 마운트 시 데이터베이스에서 폴더 불러오기
@@ -564,8 +589,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           icon: data.icon,
           color: data.color,
         };
-        setFolders([...folders, folder]);
-        setNewFolder({ name: '', icon: 'ri-folder-line', color: 'gray' });
+        const updatedFolders = [...folders, folder];
+        setFolders(updatedFolders);
+        setNewFolder({ name: '', icon: 'ri-folder-line', color: getNextFolderColor(updatedFolders) });
         setShowNewFolderModal(false);
 
         // 토스트 메시지 표시
@@ -775,27 +801,17 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     }
   };
 
-  const getFolderColorClass = (color: string) => {
-    const colorMap: Record<string, string> = {
-      gray: 'bg-gray-100 text-gray-700',
-      blue: 'bg-blue-100 text-blue-700',
-      purple: 'bg-purple-100 text-purple-700',
-      green: 'bg-green-100 text-green-700',
-      red: 'bg-red-100 text-red-700',
-      yellow: 'bg-yellow-100 text-yellow-700',
-      pink: 'bg-pink-100 text-pink-700',
-      indigo: 'bg-indigo-100 text-indigo-700',
-    };
-    return colorMap[color] || 'bg-gray-100 text-gray-700';
+  const getFolderStyle = (color: string): { bg: string; fg: string } => {
+    return FOLDER_COLOR_MAP[color] || { bg: '#EEF2FF', fg: '#6366F1' };
   };
 
   const allFolders = [
-    { 
-      id: 'all', 
-      name: 'All Test Cases', 
-      count: testCases.length, 
+    {
+      id: 'all',
+      name: 'All Test Cases',
+      count: testCases.length,
       icon: 'ri-folder-line',
-      color: 'gray'
+      color: 'indigo'
     },
     ...folders.map(folder => ({
       ...folder,
@@ -1987,7 +2003,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             <div className="flex items-center justify-between">
               <span className="text-[0.8125rem] font-bold text-[#0F172A]">Folders</span>
               <button
-                onClick={() => setShowNewFolderModal(true)}
+                onClick={() => {
+                  setNewFolder({ name: '', icon: 'ri-folder-line', color: getNextFolderColor(folders) });
+                  setShowNewFolderModal(true);
+                }}
                 className="flex items-center gap-[0.25rem] text-[0.6875rem] font-semibold text-[#6366F1] cursor-pointer px-2 py-1 rounded-md border-none bg-transparent hover:bg-[#EEF2FF] transition-colors"
               >
                 <i className="ri-add-line text-sm"></i>
@@ -2006,7 +2025,17 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       : 'text-[#475569] hover:bg-[#F8FAFC]'
                   }`}
                 >
-                  <i className={`${selectedFolder === folder.id ? 'ri-folder-fill' : 'ri-folder-line'} text-base flex-shrink-0`} style={{ color: selectedFolder === folder.id ? '#6366F1' : '#94A3B8' }}></i>
+                  {(() => {
+                    const fs = getFolderStyle(folder.color);
+                    return (
+                      <span
+                        className="flex-shrink-0 flex items-center justify-center"
+                        style={{ width: 22, height: 22, borderRadius: 5, background: fs.bg }}
+                      >
+                        <i className={`${folder.icon} text-[0.8125rem]`} style={{ color: fs.fg }}></i>
+                      </span>
+                    );
+                  })()}
                   <span className="flex-1 text-left truncate">{folder.name}</span>
                   <span className={`text-[0.75rem] font-medium ${selectedFolder === folder.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>{folder.count}</span>
                   {folder.id !== 'all' && (
@@ -2194,12 +2223,19 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       </td>
                       {/* Folder */}
                       <td className="px-4 py-[0.6875rem]">
-                        {testCase.folder ? (
-                          <span className="flex items-center gap-1 text-[0.8125rem] text-[#475569]">
-                            <i className="ri-folder-3-line text-[#94A3B8] text-[0.9375rem]"></i>
-                            {testCase.folder}
-                          </span>
-                        ) : (
+                        {testCase.folder ? (() => {
+                          const f = folders.find(fd => fd.name === testCase.folder);
+                          const fs = getFolderStyle(f?.color || 'indigo');
+                          const icon = f?.icon || 'ri-folder-line';
+                          return (
+                            <span className="flex items-center gap-1.5 text-[0.8125rem] text-[#475569]">
+                              <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 18, height: 18, borderRadius: 4, background: fs.bg }}>
+                                <i className={`${icon} text-[0.6875rem]`} style={{ color: fs.fg }}></i>
+                              </span>
+                              {testCase.folder}
+                            </span>
+                          );
+                        })() : (
                           <span className="text-[0.8125rem] text-[#94A3B8]">-</span>
                         )}
                       </td>
@@ -2284,9 +2320,19 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
               <div>
                 <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Folder</div>
-                {selectedTestCase.folder
-                  ? <p className="text-[0.8125rem] font-medium text-[#0F172A]">{selectedTestCase.folder}</p>
-                  : <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>}
+                {selectedTestCase.folder ? (() => {
+                  const f = folders.find(fd => fd.name === selectedTestCase.folder);
+                  const fs = getFolderStyle(f?.color || 'indigo');
+                  const icon = f?.icon || 'ri-folder-line';
+                  return (
+                    <p className="text-[0.8125rem] font-medium text-[#0F172A] flex items-center gap-1.5">
+                      <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 18, height: 18, borderRadius: 4, background: fs.bg }}>
+                        <i className={`${icon} text-[0.6875rem]`} style={{ color: fs.fg }}></i>
+                      </span>
+                      {selectedTestCase.folder}
+                    </p>
+                  );
+                })() : <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>}
               </div>
 
               <div>
@@ -2796,83 +2842,133 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       {/* 새 폴더 모달 */}
       {showNewFolderModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-md">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">New Folder</h2>
-                <button
-                  onClick={() => setShowNewFolderModal(false)}
-                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
-                >
-                  <i className="ri-close-line text-xl"></i>
-                </button>
-              </div>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-[420px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
+              <h2 className="text-base font-bold text-gray-900">New Folder</h2>
+              <button
+                onClick={() => setShowNewFolderModal(false)}
+                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+              >
+                <i className="ri-close-line text-xl"></i>
+              </button>
             </div>
-            <div className="p-6 space-y-4">
+
+            {/* Body */}
+            <div className="px-6 pt-6 pb-5 space-y-5">
+              {/* Live Preview */}
+              {(() => {
+                const fs = getFolderStyle(newFolder.color);
+                return (
+                  <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-[0.625rem] border border-dashed border-gray-200">
+                    <span
+                      className="flex-shrink-0 flex items-center justify-center transition-all duration-200"
+                      style={{ width: 44, height: 44, borderRadius: 10, background: fs.bg }}
+                    >
+                      <i className={`${newFolder.icon} text-[1.25rem]`} style={{ color: fs.fg }}></i>
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[0.625rem] font-semibold uppercase tracking-[0.04em] text-gray-400 mb-0.5">Preview</div>
+                      <div className="text-[0.9375rem] font-semibold text-gray-900 truncate">
+                        {newFolder.name || 'Folder Preview'}
+                      </div>
+                      <div className="text-[0.6875rem] text-gray-400">아이콘과 컬러를 선택하면 실시간 반영됩니다</div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Folder Name */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Folder Name
-                </label>
+                <label className="block text-[0.75rem] font-semibold text-gray-700 mb-1.5">Folder Name</label>
                 <input
                   type="text"
                   value={newFolder.name}
                   onChange={(e) => setNewFolder({ ...newFolder, name: e.target.value })}
                   placeholder="e.g., Performance Tests"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 text-[0.875rem] text-gray-900 placeholder:text-gray-300"
                 />
               </div>
+
+              {/* Icon Grid */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Icon
-                </label>
+                <label className="block text-[0.75rem] font-semibold text-gray-700 mb-1.5">Icon</label>
                 <div className="grid grid-cols-4 gap-2">
                   {iconOptions.map((icon) => (
                     <button
                       key={icon}
                       onClick={() => setNewFolder({ ...newFolder, icon })}
-                      className={`w-full h-12 flex items-center justify-center rounded-lg border-2 transition-all cursor-pointer ${
+                      className={`w-full aspect-square flex items-center justify-center rounded-lg border-2 transition-all cursor-pointer text-[1.25rem] ${
                         newFolder.icon === icon
-                          ? 'border-indigo-500 bg-indigo-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-600'
+                          : 'border-gray-200 text-gray-500 hover:border-indigo-200 hover:bg-gray-50'
                       }`}
                     >
-                      <i className={`${icon} text-xl`}></i>
+                      <i className={icon}></i>
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* Color Grid */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Color
-                </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[0.75rem] font-semibold text-gray-700">Color</label>
+                  <button
+                    onClick={() => {
+                      const randomIcon = iconOptions[Math.floor(Math.random() * iconOptions.length)];
+                      const randomColor = colorOptions[Math.floor(Math.random() * colorOptions.length)].name;
+                      setNewFolder({ ...newFolder, icon: randomIcon, color: randomColor });
+                    }}
+                    className="flex items-center gap-1 text-[0.6875rem] font-semibold text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer bg-transparent border-none"
+                  >
+                    <i className="ri-shuffle-line text-[0.8125rem]"></i>
+                    Random
+                  </button>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
                   {colorOptions.map((color) => (
                     <button
                       key={color.name}
                       onClick={() => setNewFolder({ ...newFolder, color: color.name })}
-                      className={`w-full h-12 flex items-center justify-center rounded-lg border-2 transition-all cursor-pointer ${color.class} ${
+                      className={`flex flex-col items-center gap-1 py-2 rounded-lg border-2 transition-all cursor-pointer ${
                         newFolder.color === color.name
-                          ? 'border-gray-900 ring-2 ring-gray-900'
-                          : 'border-transparent'
+                          ? 'border-indigo-500 bg-gray-50'
+                          : 'border-transparent hover:bg-gray-50'
                       }`}
                     >
-                      <i className="ri-checkbox-blank-circle-fill text-xl"></i>
+                      <span
+                        className="w-7 h-7 rounded-full flex items-center justify-center transition-transform duration-150"
+                        style={{
+                          background: color.fg,
+                          transform: newFolder.color === color.name ? 'scale(1.1)' : 'scale(1)',
+                        }}
+                      >
+                        {newFolder.color === color.name && (
+                          <i className="ri-check-line text-white text-[0.75rem]"></i>
+                        )}
+                      </span>
+                      <span className={`text-[0.5625rem] font-semibold uppercase tracking-wide ${newFolder.color === color.name ? 'text-indigo-600' : 'text-gray-400'}`}>
+                        {color.label}
+                      </span>
                     </button>
                   ))}
                 </div>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200">
               <button
                 onClick={() => setShowNewFolderModal(false)}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-all text-[0.8125rem] font-semibold cursor-pointer whitespace-nowrap"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddFolder}
-                className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all text-[0.8125rem] font-semibold cursor-pointer whitespace-nowrap"
               >
                 Create
               </button>
@@ -3410,8 +3506,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     onClick={() => handleBulkAddToFolder(folder.name)}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-all cursor-pointer text-left"
                   >
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getFolderColorClass(folder.color)}`}>
-                      <i className={`${folder.icon} text-2xl`}></i>
+                    <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: getFolderStyle(folder.color).bg }}>
+                      <i className={`${folder.icon} text-2xl`} style={{ color: getFolderStyle(folder.color).fg }}></i>
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold text-gray-900 truncate">{folder.name}</p>
@@ -3463,8 +3559,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             </div>
             <div className="p-6">
               <div className="flex items-center gap-4 mb-4">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getFolderColorClass(folderToDelete.color)}`}>
-                  <i className={`${folderToDelete.icon} text-2xl`}></i>
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: getFolderStyle(folderToDelete.color).bg }}>
+                  <i className={`${folderToDelete.icon} text-2xl`} style={{ color: getFolderStyle(folderToDelete.color).fg }}></i>
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">{folderToDelete.name}</p>

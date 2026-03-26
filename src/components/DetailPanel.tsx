@@ -69,7 +69,24 @@ export interface DetailPanelProps {
 
   // Image preview
   onPreviewImage?: (url: string, name: string) => void;
+
+  // Folder metadata for icon+color display
+  folders?: Array<{ id: string; name: string; icon: string; color: string }>;
 }
+
+// ── Folder Color Map ─────────────────────────────────────────────────────────
+const FOLDER_COLOR_MAP: Record<string, { bg: string; fg: string }> = {
+  indigo:  { bg: '#EEF2FF', fg: '#6366F1' },
+  violet:  { bg: '#F5F3FF', fg: '#8B5CF6' },
+  pink:    { bg: '#FDF2F8', fg: '#EC4899' },
+  emerald: { bg: '#F0FDF4', fg: '#10B981' },
+  amber:   { bg: '#FFFBEB', fg: '#F59E0B' },
+  cyan:    { bg: '#ECFEFF', fg: '#06B6D4' },
+  red:     { bg: '#FEF2F2', fg: '#EF4444' },
+  teal:    { bg: '#F0FDFA', fg: '#14B8A6' },
+  orange:  { bg: '#FFF7ED', fg: '#F97316' },
+  blue:    { bg: '#EFF6FF', fg: '#3B82F6' },
+};
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -244,6 +261,7 @@ export function DetailPanel({
   assigneeName,
   onAssigneeChange,
   onPreviewImage,
+  folders = [],
 }: DetailPanelProps) {
   const [activeTab, setActiveTab] = useState<'comments' | 'results' | 'issues' | 'history'>('comments');
   const [stepsCollapsed, setStepsCollapsed] = useState(false);
@@ -388,13 +406,20 @@ export function DetailPanel({
           {/* Folder */}
           <div>
             <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Folder</div>
-            <div className="text-[0.8125rem] font-medium text-gray-800 flex items-center gap-1">
-              {testCase.folder ? (
-                <>
-                  <i className="ri-folder-line text-gray-400 text-xs" />
-                  {testCase.folder}
-                </>
-              ) : (
+            <div className="text-[0.8125rem] font-medium text-gray-800 flex items-center gap-1.5">
+              {testCase.folder ? (() => {
+                const f = folders.find(fd => fd.name === testCase.folder);
+                const fs = FOLDER_COLOR_MAP[f?.color || 'indigo'] || { bg: '#EEF2FF', fg: '#6366F1' };
+                const icon = f?.icon || 'ri-folder-line';
+                return (
+                  <>
+                    <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 18, height: 18, borderRadius: 4, background: fs.bg }}>
+                      <i className={`${icon} text-[0.6875rem]`} style={{ color: fs.fg }}></i>
+                    </span>
+                    {testCase.folder}
+                  </>
+                );
+              })() : (
                 <span className="text-gray-400">—</span>
               )}
             </div>

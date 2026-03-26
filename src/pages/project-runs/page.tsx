@@ -50,6 +50,26 @@ interface TestCase {
   description?: string;
 }
 
+interface FolderMeta {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+}
+
+const RUNS_FOLDER_COLOR_MAP: Record<string, { bg: string; fg: string }> = {
+  indigo:  { bg: '#EEF2FF', fg: '#6366F1' },
+  violet:  { bg: '#F5F3FF', fg: '#8B5CF6' },
+  pink:    { bg: '#FDF2F8', fg: '#EC4899' },
+  emerald: { bg: '#F0FDF4', fg: '#10B981' },
+  amber:   { bg: '#FFFBEB', fg: '#F59E0B' },
+  cyan:    { bg: '#ECFEFF', fg: '#06B6D4' },
+  red:     { bg: '#FEF2F2', fg: '#EF4444' },
+  teal:    { bg: '#F0FDFA', fg: '#14B8A6' },
+  orange:  { bg: '#FFF7ED', fg: '#F97316' },
+  blue:    { bg: '#EFF6FF', fg: '#3B82F6' },
+};
+
 interface Contributor {
   id: string;
   name: string;
@@ -87,6 +107,7 @@ export default function ProjectRunsPage() {
   const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number; avatar_emoji: string } | null>(null);
   const [showSelectCasesModal, setShowSelectCasesModal] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [folderMetas, setFolderMetas] = useState<FolderMeta[]>([]);
 
   // ─── Add Run 2-step wizard ──────────────────────────────────────
   const [addRunStep, setAddRunStep] = useState<1 | 2>(1);
@@ -649,6 +670,18 @@ export default function ProjectRunsPage() {
 
       if (testCasesError) throw testCasesError;
       setTestCases(testCasesData || []);
+
+      const { data: foldersData } = await supabase
+        .from('folders')
+        .select('id, name, icon, color')
+        .eq('project_id', id)
+        .order('created_at', { ascending: true });
+      setFolderMetas((foldersData || []).map(f => ({
+        id: f.id,
+        name: f.name,
+        icon: f.icon || 'ri-folder-line',
+        color: f.color || 'indigo',
+      })));
 
       const { data: testRunsData, error: testRunsError } = await supabase
         .from('test_runs')
@@ -2048,45 +2081,54 @@ export default function ProjectRunsPage() {
                 <div className="p-4">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Folders</h3>
                   <div className="space-y-1">
-                    <div 
+                    <div
                       onClick={() => setSelectedFolder(null)}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${
-                        selectedFolder === null 
-                          ? 'bg-indigo-100 text-indigo-700' 
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer ${
+                        selectedFolder === null
+                          ? 'bg-indigo-100 text-indigo-700'
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <i className="ri-folder-line"></i>
+                      <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 22, height: 22, borderRadius: 5, background: '#EEF2FF' }}>
+                        <i className="ri-folder-line text-[0.8125rem]" style={{ color: '#6366F1' }}></i>
+                      </span>
                       <span className="font-medium">All Cases</span>
                       <span className={`ml-auto text-xs px-2 py-1 rounded ${
-                        selectedFolder === null 
-                            ? 'bg-indigo-200 text-indigo-700' 
+                        selectedFolder === null
+                            ? 'bg-indigo-200 text-indigo-700'
                             : 'text-gray-500'
                       }`}>
                         {selectedTestCases.length}/{testCases.length}
                       </span>
                     </div>
-                    {folders.map((folder) => (
-                      <div 
-                        key={folder.name}
-                        onClick={() => setSelectedFolder(folder.name)}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${
-                          selectedFolder === folder.name 
-                            ? 'bg-indigo-100 text-indigo-700' 
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        <i className="ri-folder-line"></i>
-                        <span>{folder.name}</span>
-                        <span className={`ml-auto text-xs px-2 py-1 rounded ${
-                          selectedFolder === folder.name 
-                            ? 'bg-indigo-200 text-indigo-700' 
-                            : 'text-gray-500'
-                      }`}>
-                          {getTestCasesByFolder(folder.name).filter(tc => selectedTestCases.includes(tc.id)).length}/{folder.count}
-                        </span>
-                      </div>
-                    ))}
+                    {folders.map((folder) => {
+                      const meta = folderMetas.find(m => m.name === folder.name);
+                      const fs = RUNS_FOLDER_COLOR_MAP[meta?.color || 'indigo'] || { bg: '#EEF2FF', fg: '#6366F1' };
+                      const icon = meta?.icon || 'ri-folder-line';
+                      return (
+                        <div
+                          key={folder.name}
+                          onClick={() => setSelectedFolder(folder.name)}
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer ${
+                            selectedFolder === folder.name
+                              ? 'bg-indigo-100 text-indigo-700'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 22, height: 22, borderRadius: 5, background: fs.bg }}>
+                            <i className={`${icon} text-[0.8125rem]`} style={{ color: fs.fg }}></i>
+                          </span>
+                          <span>{folder.name}</span>
+                          <span className={`ml-auto text-xs px-2 py-1 rounded ${
+                            selectedFolder === folder.name
+                              ? 'bg-indigo-200 text-indigo-700'
+                              : 'text-gray-500'
+                          }`}>
+                            {getTestCasesByFolder(folder.name).filter(tc => selectedTestCases.includes(tc.id)).length}/{folder.count}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

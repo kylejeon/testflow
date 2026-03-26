@@ -74,6 +74,19 @@ interface Folder {
   color?: string;
 }
 
+const FOLDER_COLOR_MAP: Record<string, { bg: string; fg: string }> = {
+  indigo:  { bg: '#EEF2FF', fg: '#6366F1' },
+  violet:  { bg: '#F5F3FF', fg: '#8B5CF6' },
+  pink:    { bg: '#FDF2F8', fg: '#EC4899' },
+  emerald: { bg: '#F0FDF4', fg: '#10B981' },
+  amber:   { bg: '#FFFBEB', fg: '#F59E0B' },
+  cyan:    { bg: '#ECFEFF', fg: '#06B6D4' },
+  red:     { bg: '#FEF2F2', fg: '#EF4444' },
+  teal:    { bg: '#F0FDFA', fg: '#14B8A6' },
+  orange:  { bg: '#FFF7ED', fg: '#F97316' },
+  blue:    { bg: '#EFF6FF', fg: '#3B82F6' },
+};
+
 const TIER_INFO = {
   1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
   2: { name: 'Starter', color: 'bg-indigo-50 text-indigo-700 border-indigo-300', icon: 'ri-vip-crown-line' },
@@ -1535,11 +1548,17 @@ export default function RunDetail() {
                         }`}
                         title={!isFolderSidebarOpen ? folder.name : undefined}
                       >
-                        <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
-                          <i className={`${folder.icon || 'ri-folder-3-line'} text-base`}
-                            style={{ color: isSelected ? undefined : (folder.color || undefined) }}
-                          ></i>
-                        </div>
+                        {(() => {
+                          const fs = FOLDER_COLOR_MAP[folder.color || 'indigo'] || { bg: '#EEF2FF', fg: '#6366F1' };
+                          return (
+                            <span
+                              className="flex-shrink-0 flex items-center justify-center"
+                              style={{ width: 22, height: 22, borderRadius: 5, background: fs.bg }}
+                            >
+                              <i className={`${folder.icon || 'ri-folder-line'} text-[0.8125rem]`} style={{ color: fs.fg }}></i>
+                            </span>
+                          );
+                        })()}
                         {isFolderSidebarOpen && (
                           <>
                             <span className="truncate">{folder.name}</span>
@@ -2015,6 +2034,7 @@ export default function RunDetail() {
               assigneeName={runAssignees.get(selectedTestCase.id) || ''}
               onAssigneeChange={(name) => handleAssigneeChange(selectedTestCase.id, name)}
               onPreviewImage={(url, name) => setPreviewImage({ url, name })}
+              folders={folders.map(f => ({ id: f.id, name: f.name, icon: f.icon || 'ri-folder-line', color: f.color || 'indigo' }))}
             />
           )}
 
