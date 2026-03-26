@@ -489,7 +489,7 @@ export default function PassRateReportPage() {
                           <span style={{ fontSize: '0.6875rem', fontWeight: 700, background: '#FEF2F2', color: '#DC2626', padding: '0.125rem 0.5rem', borderRadius: '9999px' }}>{data.failed}</span>
                         )}
                       </span>
-                      <Link to="/projects" style={{ fontSize: '0.75rem', color: '#6366F1', fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
+                      <Link to={`/testcases?status=failed&period=${period}`} style={{ fontSize: '0.75rem', color: '#6366F1', fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
                     </div>
                     {data.failedItems.length === 0 ? (
                       <div style={{ padding: '2rem', textAlign: 'center', color: '#94A3B8', fontSize: '0.875rem' }}>No failures in the last 7 days</div>
