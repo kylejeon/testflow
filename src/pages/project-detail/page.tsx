@@ -506,7 +506,7 @@ export default function ProjectDetail() {
             <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
               <div className="text-center">
                 <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600">프로젝트를 불러오는 중...</p>
+                <p className="text-gray-600">Loading project...</p>
               </div>
             </main>
           </div>

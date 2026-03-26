@@ -69,7 +69,7 @@ export const common = {
   members: '멤버',
   
   // Messages
-  loading: '로딩 중...',
+  loading: 'Loading...',
   noData: '데이터가 없습니다',
   error: '오류가 발생했습니다',
   success: '성공',

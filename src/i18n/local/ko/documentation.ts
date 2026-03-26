@@ -6,7 +6,7 @@ export const documentation = {
   noDocuments: '문서가 없습니다',
   noDocumentsDesc: '링크를 추가하거나 파일을 업로드하여 시작하세요.',
   searchPlaceholder: '문서 검색...',
-  loading: '문서를 불러오는 중...',
+  loading: 'Loading documents...',
 
   // Filter
   all: '전체',

@@ -2320,7 +2320,7 @@ export default function RunDetail() {
                       {uploadingFile && (
                         <div className="mt-3 text-center">
                           <i className="ri-loader-4-line animate-spin text-indigo-500 text-xl"></i>
-                          <p className="text-sm text-gray-600 mt-1">업로드 중...</p>
+                          <p className="text-sm text-gray-600 mt-1">Uploading...</p>
                         </div>
                       )}
 
