@@ -115,6 +115,9 @@ export default function ProjectRunsPage() {
   const [includeDraftTCs, setIncludeDraftTCs] = useState(false);
   const [showDraftWarningDismissed, setShowDraftWarningDismissed] = useState(false);
   const [caseSearchQuery, setCaseSearchQuery] = useState('');
+  const [selectedCaseFolder, setSelectedCaseFolder] = useState('');
+  const [tagInput, setTagInput] = useState('');
+  const [runNameError, setRunNameError] = useState('');
   const [priorityFilters, setPriorityFilters] = useState<string[]>(['high', 'medium', 'low']);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
@@ -1709,7 +1712,10 @@ export default function ProjectRunsPage() {
         // TC lists for step 2 (exclude deprecated always)
         const activeTCs = testCases.filter((tc: TestCase & { lifecycle_status?: string }) => (tc.lifecycle_status || 'active') === 'active');
         const draftTCs = testCases.filter((tc: TestCase & { lifecycle_status?: string }) => (tc.lifecycle_status || 'active') === 'draft');
-        const visibleTCs = includeDraftTCs ? [...activeTCs, ...draftTCs] : activeTCs;
+        const baseTCs = includeDraftTCs ? [...activeTCs, ...draftTCs] : activeTCs;
+        const visibleTCs = selectedCaseFolder
+          ? baseTCs.filter(tc => selectedCaseFolder === '__none__' ? !tc.folder : tc.folder === selectedCaseFolder)
+          : baseTCs;
         const selectedDraftIds = selectedTestCases.filter(id => draftTCs.some(tc => tc.id === id));
         const hasDraftSelected = selectedDraftIds.length > 0;
 
@@ -1720,6 +1726,9 @@ export default function ProjectRunsPage() {
           setRunAssignees([]);
           setIncludeDraftTCs(false);
           setShowDraftWarningDismissed(false);
+          setTagInput('');
+          setSelectedCaseFolder('');
+          setRunNameError('');
         };
 
         return (
@@ -1774,11 +1783,16 @@ export default function ProjectRunsPage() {
                         type="text"
                         name="name"
                         value={formData.name}
-                        onChange={handleInputChange}
+                        onChange={e => { handleInputChange(e); if (runNameError) setRunNameError(''); }}
                         placeholder="e.g. Sprint 24 — Regression Run"
                         autoFocus
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm ${runNameError ? 'border-red-400' : 'border-gray-200'}`}
                       />
+                      {runNameError && (
+                        <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                          <i className="ri-error-warning-line" />{runNameError}
+                        </p>
+                      )}
                     </div>
 
                     {/* Description */}
@@ -1852,12 +1866,39 @@ export default function ProjectRunsPage() {
                     {/* Tags */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Tags</label>
+                      {formData.tags && formData.tags.split(',').map(t => t.trim()).filter(Boolean).length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {formData.tags.split(',').map(t => t.trim()).filter(Boolean).map((tag, i) => (
+                            <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-xs font-medium">
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newTags = formData.tags.split(',').map(t => t.trim()).filter((_, idx) => idx !== i);
+                                  setFormData(prev => ({ ...prev, tags: newTags.join(', ') }));
+                                }}
+                                className="ml-0.5 text-indigo-400 hover:text-indigo-700 cursor-pointer leading-none"
+                              >×</button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <input
                         type="text"
-                        name="tags"
-                        value={formData.tags}
-                        onChange={handleInputChange}
-                        placeholder="Comma-separated tags"
+                        value={tagInput}
+                        onChange={e => setTagInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && tagInput.trim()) {
+                            e.preventDefault();
+                            const tag = tagInput.trim();
+                            const existing = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+                            if (!existing.includes(tag)) {
+                              setFormData(prev => ({ ...prev, tags: [...existing, tag].join(', ') }));
+                            }
+                            setTagInput('');
+                          }
+                        }}
+                        placeholder="Type a tag and press Enter"
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
                       />
                     </div>
@@ -1885,7 +1926,7 @@ export default function ProjectRunsPage() {
                   <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
                     <button onClick={closeModal} className="px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">Cancel</button>
                     <button
-                      onClick={() => { if (!formData.name.trim()) { alert('Please enter a run name'); return; } setAddRunStep(2); }}
+                      onClick={() => { if (!formData.name.trim()) { setRunNameError('Please enter a run name'); return; } setRunNameError(''); setAddRunStep(2); }}
                       className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold cursor-pointer flex items-center gap-2"
                     >
                       Next: Select Cases <i className="ri-arrow-right-line" />
@@ -1898,8 +1939,8 @@ export default function ProjectRunsPage() {
               {addRunStep === 2 && (
                 <>
                   {/* Filter bar */}
-                  <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100 bg-gray-50">
-                    <div className="relative flex-1">
+                  <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50 flex-wrap">
+                    <div className="relative flex-1 min-w-[140px]">
                       <i className="ri-search-line absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                       <input
                         type="text"
@@ -1909,11 +1950,26 @@ export default function ProjectRunsPage() {
                         className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
                       />
                     </div>
+                    {/* Folder filter */}
+                    {folderMetas.length > 0 && (
+                      <select
+                        value={selectedCaseFolder}
+                        onChange={e => setSelectedCaseFolder(e.target.value)}
+                        className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer bg-white"
+                      >
+                        <option value="">All Folders</option>
+                        {folderMetas.map(f => (
+                          <option key={f.id} value={f.name}>{f.name}</option>
+                        ))}
+                        <option value="__none__">No Folder</option>
+                      </select>
+                    )}
                     {/* Draft toggle */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <button
+                        type="button"
                         onClick={() => setIncludeDraftTCs(p => !p)}
-                        className={`w-9 h-5 rounded-full relative transition-colors flex-shrink-0 ${includeDraftTCs ? 'bg-indigo-500' : 'bg-gray-200'}`}
+                        className={`w-9 h-5 rounded-full relative transition-colors flex-shrink-0 cursor-pointer ${includeDraftTCs ? 'bg-indigo-500' : 'bg-gray-200'}`}
                       >
                         <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${includeDraftTCs ? 'translate-x-4' : 'translate-x-0.5'}`} />
                       </button>
