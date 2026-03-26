@@ -378,9 +378,9 @@ export default function ProjectTestCases() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
-        <main className="flex-1 overflow-y-auto bg-gray-50/30">
-          <div className="p-[1.75rem]">
-            <div className="flex items-center justify-between mb-[1.75rem]">
+        <main className="flex-1 overflow-hidden flex flex-col bg-gray-50/30">
+          <div className="flex-1 flex flex-col overflow-hidden p-[1.75rem] min-h-0">
+            <div className="flex items-center justify-between mb-[1.75rem] flex-shrink-0">
               <div>
                 <h1 className="text-[1.375rem] font-bold text-gray-900">Test Cases</h1>
                 <p className="text-[0.8125rem] text-gray-500 mt-1">
@@ -407,7 +407,7 @@ export default function ProjectTestCases() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="bg-white rounded-lg border border-gray-200 flex-1 flex flex-col overflow-hidden min-h-0">
               {/* ── Lifecycle Filter Tabs ── */}
               {(() => {
                 const counts = {
@@ -423,7 +423,7 @@ export default function ProjectTestCases() {
                   { key: 'deprecated', label: 'Deprecated', icon: 'ri-forbid-line', iconCls: 'text-slate-400' },
                 ];
                 return (
-                  <div className="flex border-b border-gray-200">
+                  <div className="flex border-b border-gray-200 flex-shrink-0">
                     {tabs.map(tab => (
                       <button
                         key={tab.key}
@@ -445,7 +445,7 @@ export default function ProjectTestCases() {
                 );
               })()}
 
-              <div className="p-[1.3125rem] border-b border-gray-200">
+              <div className="p-[1.3125rem] border-b border-gray-200 flex-shrink-0">
                 <div className="flex items-center gap-4">
                   <div className="flex-1 relative">
                     <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg w-5 h-5 flex items-center justify-center"></i>
@@ -471,15 +471,17 @@ export default function ProjectTestCases() {
                 </div>
               </div>
 
-              <TestCaseList
-                testCases={filteredTestCases}
-                onAdd={handleAddTestCase}
-                onUpdate={handleUpdateTestCase}
-                onDelete={handleDeleteTestCase}
-                onRefresh={handleRefreshData}
-                projectId={id!}
-                projectName={project?.name || ''}
-              />
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <TestCaseList
+                  testCases={filteredTestCases}
+                  onAdd={handleAddTestCase}
+                  onUpdate={handleUpdateTestCase}
+                  onDelete={handleDeleteTestCase}
+                  onRefresh={handleRefreshData}
+                  projectId={id!}
+                  projectName={project?.name || ''}
+                />
+              </div>
             </div>
           </div>
         </main>

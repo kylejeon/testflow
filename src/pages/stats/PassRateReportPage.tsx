@@ -1,4 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+
+interface HoveredBar {
+  date: string;
+  passed: number;
+  failed: number;
+  blocked: number;
+  x: number;  // screen center X of bar group
+  y: number;  // screen top Y of stacked bar
+}
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { usePassRateReport, type PeriodFilter } from '../../hooks/usePassRateReport';
@@ -31,6 +40,7 @@ export default function PassRateReportPage() {
     () => (localStorage.getItem(LS_KEY) as PeriodFilter | null) ?? 'active_run'
   );
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [hoveredBar, setHoveredBar] = useState<HoveredBar | null>(null);
   const { data, loading, error } = usePassRateReport(period);
   const [userInitials, setUserInitials] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -161,7 +171,12 @@ export default function PassRateReportPage() {
         .pr-anim { animation: fadeInUp 0.35s ease-out backwards; }
         .pr-row:hover td { background: #FAFAFF !important; }
         .pr-fi:hover { background: #FFFBFB !important; }
-        .pr-daybar:hover { opacity: 0.85; }
+        .pr-daybar { cursor: pointer; }
+        .pr-bar-highlight { opacity: 0; transition: opacity 0.12s ease; }
+        .pr-daybar:hover .pr-bar-highlight { opacity: 1; }
+        .pr-daybar:hover .pr-bar-passed,
+        .pr-daybar:hover .pr-bar-failed,
+        .pr-daybar:hover .pr-bar-blocked { filter: brightness(1.08); }
       `}</style>
 
       {/* Top Header */}
@@ -317,7 +332,7 @@ export default function PassRateReportPage() {
                       ))}
                     </div>
                   </div>
-                  <div ref={chartContainerRef} style={{ position: 'relative', height: '220px' }}>
+                  <div ref={chartContainerRef} style={{ position: 'relative', height: '220px' }} onMouseLeave={() => setHoveredBar(null)}>
                     <svg viewBox={`0 0 ${chartWidth} 220`} width="100%" height="100%" preserveAspectRatio="none">
                       {/* Gridlines spanning full measured width */}
                       {[20, 60, 100, 140, 180].map(y => (
@@ -334,10 +349,29 @@ export default function PassRateReportPage() {
                         const baseY = 185;
                         const opacity = day.isToday ? 0.7 : 1;
                         return (
-                          <g key={i} className="pr-daybar" opacity={opacity}>
-                            <rect x={x} y={baseY - passH} width={bw} height={passH} rx={0} fill="#16A34A" />
-                            <rect x={x} y={baseY - passH - blockH} width={bw} height={blockH} fill="#F59E0B" />
-                            <rect x={x} y={baseY - totalH} width={bw} height={failH} rx={3} fill="#EF4444" />
+                          <g
+                            key={i}
+                            className="pr-daybar"
+                            opacity={opacity}
+                            onMouseEnter={() => {
+                              const rect = chartContainerRef.current?.getBoundingClientRect();
+                              if (!rect) return;
+                              setHoveredBar({
+                                date: day.label,
+                                passed: day.passed,
+                                failed: day.failed,
+                                blocked: day.blocked,
+                                x: rect.left + x + bw / 2,
+                                y: rect.top + (baseY - totalH),
+                              });
+                            }}
+                            onMouseLeave={() => setHoveredBar(null)}
+                          >
+                            {/* Hover highlight overlay */}
+                            <rect className="pr-bar-highlight" x={x} y={baseY - totalH} width={bw} height={totalH} rx={3} fill="rgba(255,255,255,0.15)" />
+                            <rect className="pr-bar-passed" x={x} y={baseY - passH} width={bw} height={passH} rx={0} fill="#16A34A" />
+                            <rect className="pr-bar-blocked" x={x} y={baseY - passH - blockH} width={bw} height={blockH} fill="#F59E0B" />
+                            <rect className="pr-bar-failed" x={x} y={baseY - totalH} width={bw} height={failH} rx={3} fill="#EF4444" />
                           </g>
                         );
                       })}
@@ -349,6 +383,51 @@ export default function PassRateReportPage() {
                         return <text key={i} x={labelX} y={215} fontSize={Math.max(8, Math.min(11, chartWidth / (trendCount * 7)))} fill="#94A3B8" textAnchor="middle" fontFamily="Inter, sans-serif">{day.label}</text>;
                       })}
                     </svg>
+                    {/* Chart Tooltip */}
+                    {hoveredBar && (() => {
+                      const tooltipHalfW = 70;
+                      const clampedX = Math.max(8 + tooltipHalfW, Math.min(hoveredBar.x, window.innerWidth - tooltipHalfW - 8));
+                      return (
+                        <div style={{
+                          position: 'fixed',
+                          pointerEvents: 'none',
+                          background: '#1E293B',
+                          color: '#fff',
+                          borderRadius: '0.5rem',
+                          padding: '0.625rem 0.75rem',
+                          fontSize: '0.6875rem',
+                          lineHeight: 1.6,
+                          zIndex: 100,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          minWidth: '140px',
+                          left: clampedX,
+                          bottom: window.innerHeight - hoveredBar.y + 12,
+                          transform: 'translateX(-50%)',
+                        }}>
+                          {/* Caret */}
+                          <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #1E293B' }} />
+                          <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#fff', marginBottom: '0.25rem' }}>{hoveredBar.date}</div>
+                          {([
+                            { color: '#22C55E', label: 'Passed',  value: hoveredBar.passed },
+                            { color: '#EF4444', label: 'Failed',  value: hoveredBar.failed },
+                            { color: '#F59E0B', label: 'Blocked', value: hoveredBar.blocked },
+                          ] as const).map(row => (
+                            <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#CBD5E1' }}>
+                                <span style={{ width: 7, height: 7, borderRadius: 2, background: row.color, flexShrink: 0, display: 'inline-block' }} />
+                                {row.label}
+                              </span>
+                              <span style={{ fontWeight: 600, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{row.value}</span>
+                            </div>
+                          ))}
+                          <hr style={{ border: 'none', borderTop: '1px solid #334155', margin: '0.25rem 0' }} />
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                            <span style={{ fontWeight: 600, color: '#fff' }}>Total</span>
+                            <span style={{ fontWeight: 600, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{hoveredBar.passed + hoveredBar.failed + hoveredBar.blocked}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}

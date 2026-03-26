@@ -2053,7 +2053,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       {/* 테스트 케이스 목록 */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* 액션 바 */}
-        <div className="flex items-center justify-end gap-2 px-4 py-[0.6875rem] border-b border-gray-100 bg-white">
+        <div className="flex items-center justify-end gap-2 px-4 py-[0.6875rem] border-b border-gray-100 bg-white flex-shrink-0">
           <button
             onClick={() => {
               setEditingTestCase(null);
@@ -2078,7 +2078,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           </button>
         </div>
 
-        <div>
+        <div className="flex-1 min-h-0 overflow-hidden">
           {filteredTestCases.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -2117,8 +2117,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           ) : (
             <div
               ref={tableContainerRef}
-              className="overflow-x-auto overflow-y-auto"
-              style={{ maxHeight: 'calc(100vh - 280px)' }}
+              className="overflow-x-auto overflow-y-auto h-full"
             >
               <table className="w-full">
                 <thead className="bg-[#F8FAFC] border-b border-gray-200 sticky top-0 z-10">
