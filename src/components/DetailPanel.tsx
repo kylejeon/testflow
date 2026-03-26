@@ -217,12 +217,11 @@ function StepRow({ step, expectedResult, index, result, showResultButtons, onSte
           <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{step}</p>
         )}
         {expectedResult && (
-          <div className="mt-1.5 bg-[#F0FDF4] border-l-2 border-green-400 rounded-r px-2 py-1">
-            <div className="flex items-center gap-1 mb-0.5">
-              <i className="ri-checkbox-circle-line text-green-500 text-[0.6875rem]" />
-              <span className="text-[0.5625rem] font-bold text-green-700 uppercase tracking-wider">Expected Result</span>
-            </div>
-            <p className="text-[0.6875rem] text-green-800 leading-relaxed">{expectedResult}</p>
+          <div className="mt-1 flex items-start gap-1">
+            <i className="ri-checkbox-circle-line text-green-500 text-[0.75rem] flex-shrink-0 mt-[0.05rem]" />
+            <p className="text-[0.6875rem] text-green-600 leading-relaxed">
+              {expectedResult.replace(/<[^>]*>/g, '').trim()}
+            </p>
           </div>
         )}
       </div>
