@@ -354,15 +354,13 @@ export default function PassRateReportPage() {
                             className="pr-daybar"
                             opacity={opacity}
                             onMouseEnter={() => {
-                              const rect = chartContainerRef.current?.getBoundingClientRect();
-                              if (!rect) return;
                               setHoveredBar({
                                 date: day.label,
                                 passed: day.passed,
                                 failed: day.failed,
                                 blocked: day.blocked,
-                                x: rect.left + x + bw / 2,
-                                y: rect.top + (baseY - totalH),
+                                x: x + bw / 2,
+                                y: baseY - totalH,
                               });
                             }}
                             onMouseLeave={() => setHoveredBar(null)}
@@ -386,10 +384,10 @@ export default function PassRateReportPage() {
                     {/* Chart Tooltip */}
                     {hoveredBar && (() => {
                       const tooltipHalfW = 70;
-                      const clampedX = Math.max(8 + tooltipHalfW, Math.min(hoveredBar.x, window.innerWidth - tooltipHalfW - 8));
+                      const clampedX = Math.max(tooltipHalfW, Math.min(hoveredBar.x, chartWidth - tooltipHalfW));
                       return (
                         <div style={{
-                          position: 'fixed',
+                          position: 'absolute',
                           pointerEvents: 'none',
                           background: '#1E293B',
                           color: '#fff',
@@ -401,7 +399,7 @@ export default function PassRateReportPage() {
                           boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                           minWidth: '140px',
                           left: clampedX,
-                          bottom: window.innerHeight - hoveredBar.y + 12,
+                          bottom: 220 - hoveredBar.y + 12,
                           transform: 'translateX(-50%)',
                         }}>
                           {/* Caret */}
