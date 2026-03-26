@@ -2246,50 +2246,36 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       {/* 우측 상세 패널 */}
       {selectedTestCase && (
-        <div ref={detailPanelRef} className="w-2/5 bg-white border-l border-gray-200 flex flex-col">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-start justify-between mb-4">
+        <div ref={detailPanelRef} className="w-[500px] min-w-[500px] flex-shrink-0 bg-white border-l border-gray-200 flex flex-col">
+          <div className="pt-4 px-5 pb-3.5 border-b border-gray-200">
+            <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
                 {selectedTestCase.custom_id && (
-                  <div className="text-sm text-gray-500 font-mono mb-2">
+                  <div className="text-[11px] text-[#94A3B8] font-mono mb-1">
                     {selectedTestCase.custom_id}
                   </div>
                 )}
-                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                <h2 className="text-[15px] font-bold text-gray-900 mb-1">
                   {selectedTestCase.title}
                 </h2>
                 {selectedTestCase.description && (
-                  <p className="text-sm text-gray-600">{selectedTestCase.description}</p>
+                  <p className="text-[12px] text-gray-500 leading-relaxed">{selectedTestCase.description}</p>
                 )}
               </div>
               <button
                 onClick={() => setSelectedTestCase(null)}
-                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+                className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-all cursor-pointer flex-shrink-0"
               >
-                <i className="ri-close-line text-xl"></i>
+                <i className="ri-close-line text-lg"></i>
               </button>
             </div>
 
-            <div className="space-y-6">
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  {selectedTestCase.is_automated && (
-                    <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                      {selectedTestCase.assignee.substring(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                  <h3 className="text-lg font-bold text-gray-900">{selectedTestCase.title}</h3>
-                </div>
-                {selectedTestCase.description && (
-                  <p className="text-sm text-gray-600">{selectedTestCase.description}</p>
-                )}
-              </div>
-
-              <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-2">Priority</label>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Priority</div>
                   <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${getPriorityColor(
                       selectedTestCase.priority
                     )}`}
                   >
@@ -2297,92 +2283,92 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   </span>
                 </div>
 
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Created</div>
+                  <p className="text-[13px] font-medium text-gray-900">
+                    {new Date(selectedTestCase.created_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
+
                 {selectedTestCase.folder && (
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-2">Folder</label>
-                    <p className="text-sm text-gray-900">{selectedTestCase.folder}</p>
-                  </div>
-                )}
-
-                {selectedTestCase.tags && (
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-2">Tags</label>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedTestCase.tags.split(',').map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium"
-                        >
-                          {tag.trim()}
-                        </span>
-                      ))}
-                    </div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Folder</div>
+                    <p className="text-[13px] font-medium text-gray-900">{selectedTestCase.folder}</p>
                   </div>
                 )}
 
                 {selectedTestCase.assignee && (
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-2">Assignee</label>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Assignee</div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-5 h-5 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold" style={{ fontSize: '7px' }}>
                         {selectedTestCase.assignee.substring(0, 2).toUpperCase()}
                       </div>
-                      <span className="text-sm text-gray-900">{selectedTestCase.assignee}</span>
+                      <span className="text-[13px] font-medium text-gray-900">{selectedTestCase.assignee}</span>
                     </div>
                   </div>
                 )}
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-2">Created</label>
-                  <p className="text-sm text-gray-900">
-                    {new Date(selectedTestCase.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                </div>
               </div>
+
+              {selectedTestCase.tags && (
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Tags</div>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedTestCase.tags.split(',').map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[11px] font-medium"
+                      >
+                        {tag.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {selectedTestCase.precondition && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">PreCondition</label>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{htmlToText(selectedTestCase.precondition)}</p>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1.5">Precondition</div>
+                  <div className="bg-gray-50 rounded-lg px-3 py-2.5">
+                    <p className="text-[12px] text-gray-600 whitespace-pre-wrap leading-relaxed">{htmlToText(selectedTestCase.precondition)}</p>
                   </div>
                 </div>
               )}
 
               {selectedTestCase.steps && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Test Steps</label>
-                  <div className="space-y-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1.5">Test Steps</div>
+                  <div className="space-y-1.5">
                     {selectedTestCase.steps.split('\n').filter(s => s.trim()).map((step, index) => {
                       const content = step.replace(/^\d+\.\s*/, '');
                       const isHtml = /<[^>]+>/.test(content);
                       return (
-                        <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
-                          <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-semibold text-xs flex-shrink-0 mt-0.5">
+                        <div key={index} className="flex items-start gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                          <div className="w-5 h-5 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-semibold flex-shrink-0 mt-0.5" style={{ fontSize: '10px' }}>
                             {index + 1}
                           </div>
                           {isHtml ? (
                             <div
-                              className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                              className="text-[12px] text-gray-600 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
                               dangerouslySetInnerHTML={{ __html: content }}
                             />
                           ) : (
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
+                            <p className="text-[12px] text-gray-600 whitespace-pre-wrap flex-1 leading-relaxed">{content}</p>
                           )}
                         </div>
                       );
                     })}
                     {/* 하단 Add step 버튼 */}
-                    <div className="mt-3 flex justify-end">
+                    <div className="mt-2 flex justify-end">
                       <button
                         onClick={handleAddStep}
-                        className="flex items-center gap-1 px-3 py-1 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                        className="flex items-center gap-1 px-2.5 py-1 text-[12px] text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
                       >
-                        <i className="ri-add-line text-lg w-4 h-4 flex items-center justify-center"></i>
+                        <i className="ri-add-line text-sm w-3.5 h-3.5 flex items-center justify-center"></i>
                         Add step
                       </button>
                     </div>
@@ -2392,23 +2378,23 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
               {selectedTestCase.expected_result && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Expected Result</label>
-                  <div className="space-y-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1.5">Expected Result</div>
+                  <div className="space-y-1.5">
                     {selectedTestCase.expected_result.split('\n').filter(s => s.trim()).map((result, index) => {
                       const content = result.replace(/^\d+\.\s*/, '');
                       const isHtml = /<[^>]+>/.test(content);
                       return (
-                        <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
-                          <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-semibold text-xs flex-shrink-0 mt-0.5">
+                        <div key={index} className="flex items-start gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                          <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-semibold flex-shrink-0 mt-0.5" style={{ fontSize: '10px' }}>
                             {index + 1}
                           </div>
                           {isHtml ? (
                             <div
-                              className="text-sm text-gray-700 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                              className="text-[12px] text-gray-600 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
                               dangerouslySetInnerHTML={{ __html: content }}
                             />
                           ) : (
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">{content}</p>
+                            <p className="text-[12px] text-gray-600 whitespace-pre-wrap flex-1 leading-relaxed">{content}</p>
                           )}
                         </div>
                       );
@@ -2438,12 +2424,12 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 </div>
               )}
 
-              <div className="pt-6 border-t border-gray-200 flex gap-3">
+              <div className="pt-3 border-t border-gray-200 flex gap-2">
                 <button
                   onClick={() => handleEdit(selectedTestCase)}
-                  className="flex-1 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                  className="flex-1 px-3 py-[7px] bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold text-[13px] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1"
                 >
-                  Edit
+                  <i className="ri-edit-line text-sm"></i> Edit
                 </button>
                 <button
                   onClick={() => {
@@ -2452,9 +2438,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       setSelectedTestCase(null);
                     }
                   }}
-                  className="flex-1 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                  className="flex-1 px-3 py-[7px] border border-red-300 text-red-500 rounded-lg hover:bg-red-50 transition-all font-semibold text-[13px] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1"
                 >
-                  Delete
+                  <i className="ri-delete-bin-line text-sm"></i> Delete
                 </button>
               </div>
             </div>
@@ -2465,40 +2451,40 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             <div className="flex">
               <button
                 onClick={() => setActiveTab('comments')}
-                className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`flex-1 px-3 py-2 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'comments'
                     ? 'text-indigo-600 border-b-2 border-indigo-600'
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-[#94A3B8] hover:text-gray-600'
                 }`}
               >
                 Comments
               </button>
               <button
                 onClick={() => setActiveTab('results')}
-                className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`flex-1 px-3 py-2 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'results'
                     ? 'text-indigo-600 border-b-2 border-indigo-600'
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-[#94A3B8] hover:text-gray-600'
                 }`}
               >
                 Results
               </button>
               <button
                 onClick={() => setActiveTab('issues')}
-                className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`flex-1 px-3 py-2 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'issues'
                     ? 'text-indigo-600 border-b-2 border-indigo-600'
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-[#94A3B8] hover:text-gray-600'
                 }`}
               >
                 Issues
               </button>
               <button
                 onClick={() => setActiveTab('history')}
-                className={`flex-1 px-4 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`flex-1 px-3 py-2 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'history'
                     ? 'text-indigo-600 border-b-2 border-indigo-600'
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-[#94A3B8] hover:text-gray-600'
                 }`}
               >
                 History

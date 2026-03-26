@@ -100,7 +100,7 @@ export function usePassRateReport(period: PeriodFilter) {
       const [{ data: projectsData }, { data: runsAll }] = await Promise.all([
         supabase.from('projects').select('id, name').in('id', projectIds),
         supabase.from('test_runs')
-          .select('id, project_id, status, updated_at, created_at')
+          .select('id, project_id, status, executed_at, created_at')
           .in('project_id', projectIds),
       ]);
 
@@ -147,7 +147,7 @@ export function usePassRateReport(period: PeriodFilter) {
           // Delta: most recent completed run(s)
           const completedRuns = (runsAll ?? [])
             .filter(r => r.status === 'completed')
-            .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+            .sort((a, b) => new Date(b.executed_at ?? b.created_at).getTime() - new Date(a.executed_at ?? a.created_at).getTime())
             .slice(0, activeRunIds.length || 1);
 
           if (completedRuns.length > 0) {

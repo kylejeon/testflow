@@ -141,7 +141,7 @@ export function useTeamActivity() {
         runIds.length > 0
           ? supabase
               .from('test_results')
-              .select('id, run_id, test_case_id, status, author, created_at, resolved_at')
+              .select('id, run_id, test_case_id, status, executed_by, created_at')
               .in('run_id', runIds)
               .gte('created_at', oneYearAgo)
               .order('created_at', { ascending: false })
@@ -224,11 +224,11 @@ export function useTeamActivity() {
         }
       });
 
-      // Test results today — match author string to member by email
+      // Test results today — match executed_by (user ID) to member
       const resultsToday = (recentResults ?? []).filter(r => r.created_at >= todayISO);
       resultsToday.forEach(r => {
-        // Try to match author to a user by email
-        const uid = r.author ? profileByEmail[r.author] : null;
+        // executed_by stores the user UUID directly
+        const uid = r.executed_by ?? null;
         if (uid && memberStatsToday[uid]) {
           memberStatsToday[uid].executed++;
           if (r.status === 'failed') memberStatsToday[uid].failed++;
@@ -274,18 +274,8 @@ export function useTeamActivity() {
       const tcFailedToday = resultsToday.filter(r => r.status === 'failed').length;
       const tcBlockedToday = resultsToday.filter(r => r.status === 'blocked').length;
 
-      // Avg Response Time today: avg hours from created_at to resolved_at for results resolved today
-      const resolvedToday = (recentResults ?? []).filter(
-        r => r.resolved_at && r.resolved_at >= todayISO
-      );
-      let avgResponseTimeHours: number | null = null;
-      if (resolvedToday.length > 0) {
-        const totalHours = resolvedToday.reduce((sum, r) => {
-          const ms = new Date(r.resolved_at as string).getTime() - new Date(r.created_at).getTime();
-          return sum + ms / 3600000;
-        }, 0);
-        avgResponseTimeHours = Math.round((totalHours / resolvedToday.length) * 10) / 10;
-      }
+      // resolved_at column not yet migrated — skip avg response time calc
+      const avgResponseTimeHours: number | null = null;
 
       // Heatmap: 52 weeks × 7 days (Sun–Sat), GitHub-style
       const now = new Date();
@@ -355,9 +345,10 @@ export function useTeamActivity() {
 
       // From test_results (executed)
       (recentResults ?? []).slice(0, 30).forEach((r, idx) => {
-        const authorUid = r.author ? profileByEmail[r.author] : null;
+        const authorUid = r.executed_by ?? null;
         const memberIdx = memberList.findIndex(m => m.userId === authorUid);
-        const actorName = r.author || 'Someone';
+        const member = memberList[memberIdx];
+        const actorName = member?.name || 'Someone';
         const projectId = runProjectMap[r.run_id];
         let badgeText = 'Executed';
         let badgeType: FeedBadgeType = 'executed';

@@ -1376,26 +1376,32 @@ export default function ProjectRunsPage() {
                 </div>
               </div>
 
-              <div className="flex space-x-8 border-b border-gray-200">
+              <div className="flex border-b border-gray-200 mb-4">
                 <button
                   onClick={() => setActiveTab('active')}
-                  className={`pb-4 px-1 border-b-2 font-medium text-[0.8125rem] cursor-pointer whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-4 py-2 text-[0.8125rem] font-medium border-b-2 cursor-pointer whitespace-nowrap transition-all ${
                     activeTab === 'active'
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-indigo-500 text-indigo-600 font-semibold'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  Active ({testRuns.filter(r => r.status !== 'completed').length})
+                  Active
+                  <span className={`text-[0.6875rem] px-1.5 py-0.5 rounded-full font-semibold ${activeTab === 'active' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {testRuns.filter(r => r.status !== 'completed').length}
+                  </span>
                 </button>
                 <button
                   onClick={() => setActiveTab('closed')}
-                  className={`pb-4 px-1 border-b-2 font-medium text-[0.8125rem] cursor-pointer whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-4 py-2 text-[0.8125rem] font-medium border-b-2 cursor-pointer whitespace-nowrap transition-all ${
                     activeTab === 'closed'
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-indigo-500 text-indigo-600 font-semibold'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  Closed ({testRuns.filter(r => r.status === 'completed').length})
+                  Closed
+                  <span className={`text-[0.6875rem] px-1.5 py-0.5 rounded-full font-semibold ${activeTab === 'closed' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {testRuns.filter(r => r.status === 'completed').length}
+                  </span>
                 </button>
               </div>
             </div>
@@ -1470,135 +1476,86 @@ export default function ProjectRunsPage() {
                           </div>
 
                           <div className="divide-y divide-gray-100">
-                            {milestoneRuns.map((run) => (
-                              <div 
-                                key={run.id} 
-                                className="py-[0.6875rem] px-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                            {milestoneRuns.map((run) => {
+                              const total = run.passed + run.failed + run.blocked + run.retest + run.untested;
+                              const passedPct = total > 0 ? (run.passed / total) * 100 : 0;
+                              const failedPct = total > 0 ? (run.failed / total) * 100 : 0;
+                              const blockedPct = total > 0 ? (run.blocked / total) * 100 : 0;
+                              return (
+                              <div
+                                key={run.id}
+                                className="px-[1.3125rem] py-[1rem] hover:bg-gray-50/60 transition-colors cursor-pointer"
                                 onClick={() => handleRunClick(run.id)}
                               >
-                                <div className="flex items-start gap-4">
-                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                                    run.is_automated ? 'bg-purple-100' : 'bg-indigo-100'
-                                  }`}>
-                                    <i className={`${
-                                      run.is_automated ? 'ri-robot-line text-purple-600' : 'ri-play-circle-line text-indigo-600'
-                                    }`}></i>
-                                  </div>
-                                  
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <h3 className="font-semibold text-gray-900 hover:text-indigo-600 transition-colors">{run.name}</h3>
-                                      <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusBadge(run.status).className}`}>
-                                        {getStatusBadge(run.status).label}
+                                {/* Row 1: Name + badges + menu */}
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="font-semibold text-[0.9375rem] text-gray-900 hover:text-indigo-600 transition-colors truncate">{run.name}</span>
+                                    <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-[0.6875rem] font-semibold rounded-full ${getStatusBadge(run.status).className}`}>
+                                      {run.status === 'in_progress' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"></span>}
+                                      {getStatusBadge(run.status).label}
+                                    </span>
+                                    {run.is_automated && (
+                                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-sky-50 text-sky-700 rounded-full text-[0.6875rem] font-semibold">
+                                        <i className="ri-robot-line text-[0.75rem]"></i>Automated
                                       </span>
-                                      {run.is_automated && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-semibold border border-purple-200">
-                                          <i className="ri-robot-line"></i>
-                                          Automated
-                                        </span>
-                                      )}
-                                      {run.tags && run.tags.map((tag, idx) => (
-                                        <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                          {tag}
-                                        </span>
-                                      ))}
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-[1.3125rem] text-[0.8125rem] text-gray-600 mb-3">
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                        <span>{run.passed} Passed</span>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                        <span>{run.failed} Failed</span>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                                        <span>{run.blocked} Blocked</span>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                                        <span>{run.retest} Retest</span>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                                        <span>{run.untested} Untested</span>
-                                      </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-                                        <div
-                                          className="h-full bg-indigo-500 rounded-full transition-all"
-                                          style={{ width: `${run.progress}%` }}
-                                        ></div>
-                                      </div>
-                                      <span className="text-[0.8125rem] font-semibold text-gray-700 min-w-[40px] text-right">{run.progress}%</span>
-                                    </div>
+                                    )}
                                   </div>
-
-                                  <div className="flex items-center gap-3 flex-shrink-0">
-                                    <span className="text-[0.75rem] text-gray-400 font-medium">Assigned to</span>
-                                    <div className="flex -space-x-2">
-                                      {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
-                                        <div 
-                                          key={idx}
-                                          className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-semibold"
-                                        >
-                                          {assignee.substring(0, 2).toUpperCase()}
-                                        </div>
-                                      ))}
-                                    </div>
-                                    <div className="relative" ref={openMenuId === run.id ? menuRef : null}>
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setOpenMenuId(openMenuId === run.id ? null : run.id);
-                                        }}
-                                        className="text-gray-400 hover:text-gray-600 p-2 cursor-pointer"
-                                      >
-                                        <i className="ri-more-2-fill"></i>
-                                      </button>
-                                      {openMenuId === run.id && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleEditRun(run);
-                                            }}
-                                            className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                                          >
-                                            <i className="ri-edit-line"></i>
-                                            <span>Edit</span>
-                                          </button>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handlePauseResumeRun(run);
-                                            }}
-                                            className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                                          >
-                                            <i className={run.status === 'in_progress' ? 'ri-pause-line' : 'ri-play-line'}></i>
-                                            <span>{run.status === 'in_progress' ? 'Pause' : 'Resume'}</span>
-                                          </button>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleDeleteRun(run.id);
-                                            }}
-                                            className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
-                                          >
-                                            <i className="ri-delete-bin-line"></i>
-                                            <span>Delete</span>
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
+                                  <div className="relative flex-shrink-0" ref={openMenuId === run.id ? menuRef : null}>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === run.id ? null : run.id); }}
+                                      className="text-gray-400 hover:text-gray-600 p-1.5 rounded cursor-pointer"
+                                    >
+                                      <i className="ri-more-2-fill"></i>
+                                    </button>
+                                    {openMenuId === run.id && (
+                                      <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                                        <button onClick={(e) => { e.stopPropagation(); handleEditRun(run); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
+                                          <i className="ri-edit-line"></i><span>Edit</span>
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); handlePauseResumeRun(run); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
+                                          <i className={run.status === 'in_progress' ? 'ri-pause-line' : 'ri-play-line'}></i>
+                                          <span>{run.status === 'in_progress' ? 'Pause' : 'Resume'}</span>
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteRun(run.id); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer border-t border-gray-200">
+                                          <i className="ri-delete-bin-line"></i><span>Delete</span>
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
+                                {/* Row 2: Progress bar */}
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
+                                    {run.passed > 0 && <div className="h-full bg-emerald-500 transition-all" style={{ width: `${passedPct}%` }}></div>}
+                                    {run.failed > 0 && <div className="h-full bg-red-500 transition-all" style={{ width: `${failedPct}%` }}></div>}
+                                    {run.blocked > 0 && <div className="h-full bg-amber-400 transition-all" style={{ width: `${blockedPct}%` }}></div>}
+                                  </div>
+                                  <span className="text-[0.8125rem] font-semibold text-gray-700 min-w-[36px] text-right">{run.progress}%</span>
+                                </div>
+                                {/* Row 3: Stats */}
+                                <div className="flex items-center gap-4 text-[0.8125rem] text-gray-500 mb-1.5">
+                                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>{run.passed} passed</span>
+                                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span>{run.failed} failed</span>
+                                  {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>{run.blocked} blocked</span>}
+                                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block"></span>{run.untested} remaining</span>
+                                </div>
+                                {/* Row 4: Assignees + timestamp */}
+                                <div className="flex items-center gap-3 text-[0.8125rem] text-gray-400">
+                                  <span className="text-[0.75rem] text-[#94A3B8]">Assigned to</span>
+                                  <div className="flex gap-1">
+                                    {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
+                                      <div key={idx} className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full border-2 border-white flex items-center justify-center text-white font-semibold" style={{ fontSize: '9px' }}>
+                                        {assignee.substring(0, 2).toUpperCase()}
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <span className="text-[#CBD5E1]">·</span>
+                                  <span className="text-[0.75rem]">{run.created_at ? `Started ${new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
+                                </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       );
@@ -1622,147 +1579,87 @@ export default function ProjectRunsPage() {
                     </div>
 
                     <div className="divide-y divide-gray-100">
-                      {getRunsWithoutMilestone().map((run) => (
-                        <div 
-                          key={run.id} 
-                          className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                      {getRunsWithoutMilestone().map((run) => {
+                        const total = run.passed + run.failed + run.blocked + run.retest + run.untested;
+                        const passedPct = total > 0 ? (run.passed / total) * 100 : 0;
+                        const failedPct = total > 0 ? (run.failed / total) * 100 : 0;
+                        const blockedPct = total > 0 ? (run.blocked / total) * 100 : 0;
+                        return (
+                        <div
+                          key={run.id}
+                          className="px-[1.3125rem] py-[1rem] hover:bg-gray-50/60 transition-colors cursor-pointer"
                           onClick={() => handleRunClick(run.id)}
                         >
-                          <div className="flex items-start gap-4">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                              run.is_automated ? 'bg-purple-100' : 'bg-gray-100'
-                            }`}>
-                              <i className={`${
-                                run.is_automated ? 'ri-robot-line text-purple-600' : 'ri-play-circle-line text-gray-600'
-                              }`}></i>
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-semibold text-gray-900 hover:text-gray-600 transition-colors">{run.name}</h3>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded ${getStatusBadge(run.status).className}`}>
-                                  {getStatusBadge(run.status).label}
+                          {/* Row 1: Name + badges + menu */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-semibold text-[0.9375rem] text-gray-900 hover:text-indigo-600 transition-colors truncate">{run.name}</span>
+                              <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-[0.6875rem] font-semibold rounded-full ${getStatusBadge(run.status).className}`}>
+                                {run.status === 'in_progress' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"></span>}
+                                {getStatusBadge(run.status).label}
+                              </span>
+                              {run.is_automated && (
+                                <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-sky-50 text-sky-700 rounded-full text-[0.6875rem] font-semibold">
+                                  <i className="ri-robot-line text-[0.75rem]"></i>Automated
                                 </span>
-                                {run.is_automated && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-semibold border border-purple-200">
-                                    <i className="ri-robot-line"></i>
-                                    Automated
-                                  </span>
-                                )}
-                                {run.tags && run.tags.map((tag, idx) => (
-                                  <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-                              
-                              <div className="flex items-center gap-[1.3125rem] text-[0.8125rem] text-gray-600 mb-3">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                  <span>{run.passed} Passed</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                  <span>{run.failed} Failed</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                                  <span>{run.blocked} Blocked</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                                  <span>{run.retest} Retest</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                                  <span>{run.untested} Untested</span>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-3">
-                                <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-                                  {(() => {
-                                    const total = run.passed + run.failed + run.blocked + run.retest + run.untested;
-                                    if (total === 0) return <div className="h-full bg-gray-300 rounded-full" style={{ width: '0%' }}></div>;
-                                    const passedPct = (run.passed / total) * 100;
-                                    const failedPct = (run.failed / total) * 100;
-                                    const blockedPct = (run.blocked / total) * 100;
-                                    const retestPct = (run.retest / total) * 100;
-                                    return (
-                                      <div className="h-full flex rounded-full overflow-hidden">
-                                        {run.passed > 0 && <div className="h-full bg-green-500 transition-all" style={{ width: `${passedPct}%` }}></div>}
-                                        {run.failed > 0 && <div className="h-full bg-red-500 transition-all" style={{ width: `${failedPct}%` }}></div>}
-                                        {run.blocked > 0 && <div className="h-full bg-gray-400 transition-all" style={{ width: `${blockedPct}%` }}></div>}
-                                        {run.retest > 0 && <div className="h-full bg-yellow-500 transition-all" style={{ width: `${retestPct}%` }}></div>}
-                                      </div>
-                                    );
-                                  })()}
-                                </div>
-                                <span className="text-[0.8125rem] font-semibold text-gray-700 min-w-[40px] text-right">{run.progress}%</span>
-                              </div>
+                              )}
                             </div>
-
-                            <div className="flex items-center gap-3 flex-shrink-0">
-                              <span className="text-[0.75rem] text-gray-400 font-medium">Assigned to</span>
-                              <div className="flex -space-x-2">
-                                {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-semibold"
-                                  >
-                                    {assignee.substring(0, 2).toUpperCase()}
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="relative" ref={openMenuId === run.id ? menuRef : null}>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setOpenMenuId(openMenuId === run.id ? null : run.id);
-                                  }}
-                                  className="text-gray-400 hover:text-gray-600 p-2 cursor-pointer"
-                                >
-                                  <i className="ri-more-2-fill"></i>
-                                </button>
-                                {openMenuId === run.id && (
-                                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditRun(run);
-                                      }}
-                                      className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                                    >
-                                      <i className="ri-edit-line"></i>
-                                      <span>Edit</span>
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePauseResumeRun(run);
-                                      }}
-                                      className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                                    >
-                                      <i className={run.status === 'in_progress' ? 'ri-pause-line' : 'ri-play-line'}></i>
-                                      <span>{run.status === 'in_progress' ? 'Pause' : 'Resume'}</span>
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteRun(run.id);
-                                      }}
-                                      className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
-                                    >
-                                      <i className="ri-delete-bin-line"></i>
-                                      <span>Delete</span>
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
+                            <div className="relative flex-shrink-0" ref={openMenuId === run.id ? menuRef : null}>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === run.id ? null : run.id); }}
+                                className="text-gray-400 hover:text-gray-600 p-1.5 rounded cursor-pointer"
+                              >
+                                <i className="ri-more-2-fill"></i>
+                              </button>
+                              {openMenuId === run.id && (
+                                <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                                  <button onClick={(e) => { e.stopPropagation(); handleEditRun(run); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
+                                    <i className="ri-edit-line"></i><span>Edit</span>
+                                  </button>
+                                  <button onClick={(e) => { e.stopPropagation(); handlePauseResumeRun(run); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
+                                    <i className={run.status === 'in_progress' ? 'ri-pause-line' : 'ri-play-line'}></i>
+                                    <span>{run.status === 'in_progress' ? 'Pause' : 'Resume'}</span>
+                                  </button>
+                                  <button onClick={(e) => { e.stopPropagation(); handleDeleteRun(run.id); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer border-t border-gray-200">
+                                    <i className="ri-delete-bin-line"></i>
+                                    <span>Delete</span>
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
+                          {/* Row 2: Progress bar */}
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
+                              {run.passed > 0 && <div className="h-full bg-emerald-500 transition-all" style={{ width: `${passedPct}%` }}></div>}
+                              {run.failed > 0 && <div className="h-full bg-red-500 transition-all" style={{ width: `${failedPct}%` }}></div>}
+                              {run.blocked > 0 && <div className="h-full bg-amber-400 transition-all" style={{ width: `${blockedPct}%` }}></div>}
+                            </div>
+                            <span className="text-[0.8125rem] font-semibold text-gray-700 min-w-[36px] text-right">{run.progress}%</span>
+                          </div>
+                          {/* Row 3: Stats */}
+                          <div className="flex items-center gap-4 text-[0.8125rem] text-gray-500 mb-1.5">
+                            <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>{run.passed} passed</span>
+                            <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span>{run.failed} failed</span>
+                            {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>{run.blocked} blocked</span>}
+                            <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block"></span>{run.untested} remaining</span>
+                          </div>
+                          {/* Row 4: Assignees + timestamp */}
+                          <div className="flex items-center gap-3 text-[0.8125rem] text-gray-400">
+                            <span className="text-[0.75rem] text-[#94A3B8]">Assigned to</span>
+                            <div className="flex gap-1">
+                              {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
+                                <div key={idx} className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full border-2 border-white flex items-center justify-center text-white font-semibold" style={{ fontSize: '9px' }}>
+                                  {assignee.substring(0, 2).toUpperCase()}
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-[#CBD5E1]">·</span>
+                            <span className="text-[0.75rem]">{run.created_at ? `Started ${new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
+                          </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
