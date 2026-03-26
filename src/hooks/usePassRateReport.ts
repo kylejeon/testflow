@@ -125,32 +125,41 @@ export function usePassRateReport(period: PeriodFilter) {
         const activeRunIds = activeRuns.map(r => r.id);
 
         if (activeRunIds.length === 0) {
-          setData({ ...empty(), deltaLabel: null });
-          return;
-        }
-
-        const { data: res } = await supabase
-          .from('test_results')
-          .select('id, run_id, test_case_id, status, created_at')
-          .in('run_id', activeRunIds)
-          .order('created_at', { ascending: false });
-        primaryResults = res ?? [];
-
-        // Delta: most recent completed run(s)
-        const completedRuns = (runsAll ?? [])
-          .filter(r => r.status === 'completed')
-          .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-          .slice(0, activeRunIds.length || 1);
-
-        if (completedRuns.length > 0) {
-          const prevRunIds = completedRuns.map(r => r.id);
-          const { data: prevRes } = await supabase
+          // No active runs → fallback: show all-time data across all runs
+          console.log('[PassRate] No active runs, falling back to all-time data. allRunIds:', allRunIds.length);
+          const { data: res } = await supabase
             .from('test_results')
             .select('id, run_id, test_case_id, status, created_at')
-            .in('run_id', prevRunIds)
+            .in('run_id', allRunIds)
             .order('created_at', { ascending: false });
-          deltaResults = prevRes ?? [];
-          deltaLabel = 'vs prev run';
+          primaryResults = res ?? [];
+          console.log('[PassRate] Fallback results:', primaryResults.length);
+          deltaLabel = null;
+        } else {
+          const { data: res } = await supabase
+            .from('test_results')
+            .select('id, run_id, test_case_id, status, created_at')
+            .in('run_id', activeRunIds)
+            .order('created_at', { ascending: false });
+          primaryResults = res ?? [];
+          console.log('[PassRate] Active run results:', primaryResults.length);
+
+          // Delta: most recent completed run(s)
+          const completedRuns = (runsAll ?? [])
+            .filter(r => r.status === 'completed')
+            .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+            .slice(0, activeRunIds.length || 1);
+
+          if (completedRuns.length > 0) {
+            const prevRunIds = completedRuns.map(r => r.id);
+            const { data: prevRes } = await supabase
+              .from('test_results')
+              .select('id, run_id, test_case_id, status, created_at')
+              .in('run_id', prevRunIds)
+              .order('created_at', { ascending: false });
+            deltaResults = prevRes ?? [];
+            deltaLabel = 'vs prev run';
+          }
         }
 
       } else if (period === '7d') {
@@ -204,6 +213,7 @@ export function usePassRateReport(period: PeriodFilter) {
       const rDelta = deltaResults;
 
       // ── Summary stats ──────────────────────────────────────────────────────
+      console.log('[PassRate] rPrimary count:', rPrimary.length, 'period:', period);
       const totalExecuted = rPrimary.filter(r => r.status !== 'untested').length;
       const passed = rPrimary.filter(r => r.status === 'passed').length;
       const failed = rPrimary.filter(r => r.status === 'failed').length;
