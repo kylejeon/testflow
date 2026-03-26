@@ -1991,32 +1991,38 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     <>
     <div className="flex h-full">
       {/* 폴더 사이드바 */}
-      <div className={`${isFolderPanelOpen ? 'w-[220px] min-w-[220px]' : 'w-0'} bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden flex flex-col`}>
+      <div className={`${isFolderPanelOpen ? 'w-[220px] min-w-[220px]' : 'w-0'} bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden flex flex-col flex-shrink-0`}>
         <div className="w-[220px] flex flex-col h-full">
-          <div className="flex items-center justify-between px-[0.875rem] py-[0.875rem] border-b border-gray-200">
-            <span className="text-[0.8125rem] font-semibold text-gray-900">Folders</span>
-            <button onClick={() => setIsFolderPanelOpen(false)} className="flex items-center justify-center cursor-pointer text-gray-500 hover:text-gray-700 transition-colors">
-              <i className="ri-arrow-left-s-line text-base"></i>
-            </button>
+          <div className="px-[0.875rem] py-[0.75rem] border-b border-gray-200 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <span className="text-[0.8125rem] font-bold text-[#0F172A]">Folders</span>
+              <button
+                onClick={() => setShowNewFolderModal(true)}
+                className="flex items-center gap-[0.25rem] text-[0.6875rem] font-semibold text-[#6366F1] cursor-pointer px-2 py-1 rounded-md border-none bg-transparent hover:bg-[#EEF2FF] transition-colors"
+              >
+                <i className="ri-add-line text-sm"></i>
+                New
+              </button>
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto py-[0.375rem]">
             {allFolders.map((folder) => (
               <div key={folder.id} className="group relative">
                 <button
                   onClick={() => setSelectedFolder(folder.id)}
-                  className={`w-full flex items-center gap-2 px-[0.875rem] py-2 text-[0.8125rem] cursor-pointer transition-all whitespace-nowrap ${
+                  className={`w-full flex items-center gap-[0.375rem] px-[0.875rem] py-[0.4375rem] text-[0.8125rem] cursor-pointer transition-all whitespace-nowrap ${
                     selectedFolder === folder.id
                       ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
-                      : 'text-[#475569] hover:bg-gray-50'
+                      : 'text-[#475569] hover:bg-[#F8FAFC]'
                   }`}
                 >
-                  <i className="ri-folder-3-line text-base" style={{ color: selectedFolder === folder.id ? '#6366F1' : '#94A3B8' }}></i>
-                  <span className="flex-1 text-left">{folder.name}</span>
-                  <span className={`text-[0.75rem] ${selectedFolder === folder.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>({folder.count})</span>
+                  <i className={`${selectedFolder === folder.id ? 'ri-folder-fill' : 'ri-folder-line'} text-base flex-shrink-0`} style={{ color: selectedFolder === folder.id ? '#6366F1' : '#94A3B8' }}></i>
+                  <span className="flex-1 text-left truncate">{folder.name}</span>
+                  <span className={`text-[0.75rem] font-medium ${selectedFolder === folder.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>{folder.count}</span>
                   {folder.id !== 'all' && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }}
-                      className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-600 rounded opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                      className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-600 rounded opacity-0 group-hover:opacity-100 transition-all cursor-pointer flex-shrink-0"
                     >
                       <i className="ri-delete-bin-line text-xs"></i>
                     </button>
@@ -2026,12 +2032,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             ))}
           </div>
           <div className="px-[0.875rem] py-3 border-t border-gray-200">
-            <button
-              onClick={() => setShowNewFolderModal(true)}
-              className="w-full bg-indigo-500 text-white rounded-lg py-2 px-3 text-[0.8125rem] font-medium flex items-center justify-center gap-1.5 cursor-pointer hover:bg-indigo-600 transition-all whitespace-nowrap"
-            >
-              <i className="ri-add-line text-base"></i>
-              New Folder
+            <button onClick={() => setIsFolderPanelOpen(false)} className="flex items-center gap-1 text-[0.75rem] text-[#94A3B8] hover:text-[#475569] cursor-pointer bg-transparent border-none transition-colors">
+              <i className="ri-arrow-left-s-line text-sm"></i>
+              Collapse
             </button>
           </div>
         </div>
@@ -2246,254 +2249,214 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       {/* 우측 상세 패널 */}
       {selectedTestCase && (
-        <div ref={detailPanelRef} className="w-[500px] min-w-[500px] flex-shrink-0 bg-white border-l border-gray-200 flex flex-col">
-          <div className="pt-4 px-5 pb-3.5 border-b border-gray-200">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1">
+        <div ref={detailPanelRef} className="w-[500px] min-w-[500px] flex-shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-hidden">
+          {/* §1 — Header: ID + title + description + close */}
+          <div className="px-5 pt-4 pb-[0.875rem] border-b border-[#E2E8F0] flex-shrink-0">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="flex-1 min-w-0">
                 {selectedTestCase.custom_id && (
-                  <div className="text-[11px] text-[#94A3B8] font-mono mb-1">
+                  <div className="text-[0.6875rem] font-mono text-[#94A3B8] mb-[0.25rem]">
                     {selectedTestCase.custom_id}
                   </div>
                 )}
-                <h2 className="text-[15px] font-bold text-gray-900 mb-1">
+                <h2 className="text-[0.9375rem] font-bold text-[#0F172A] leading-[1.3]">
                   {selectedTestCase.title}
                 </h2>
                 {selectedTestCase.description && (
-                  <p className="text-[12px] text-gray-500 leading-relaxed">{selectedTestCase.description}</p>
+                  <p className="text-[0.75rem] text-[#64748B] leading-[1.5] mt-[0.375rem]">{selectedTestCase.description}</p>
                 )}
               </div>
               <button
                 onClick={() => setSelectedTestCase(null)}
-                className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-all cursor-pointer flex-shrink-0"
+                className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F1F5F9] rounded-md transition-all cursor-pointer flex-shrink-0 border-none bg-transparent"
               >
-                <i className="ri-close-line text-lg"></i>
+                <i className="ri-close-line text-[1.125rem]"></i>
               </button>
             </div>
+          </div>
 
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+          {/* §2 — Meta: 2-col grid */}
+          <div className="px-5 py-[0.875rem] border-b border-[#F1F5F9] flex-shrink-0">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-[0.625rem]">
+              <div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Priority</div>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[0.625rem] font-semibold ${getPriorityColor(selectedTestCase.priority)}`}
+                >
+                  {selectedTestCase.priority.toUpperCase()}
+                </span>
+              </div>
+
+              <div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Updated</div>
+                <p className="text-[0.8125rem] font-medium text-[#0F172A]">
+                  {tcTimeAgo(selectedTestCase.updated_at)}
+                </p>
+              </div>
+
+              {selectedTestCase.folder && (
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Priority</div>
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${getPriorityColor(
-                      selectedTestCase.priority
-                    )}`}
-                  >
-                    {selectedTestCase.priority.toUpperCase()}
-                  </span>
+                  <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Folder</div>
+                  <p className="text-[0.8125rem] font-medium text-[#0F172A]">{selectedTestCase.folder}</p>
                 </div>
+              )}
 
+              {selectedTestCase.assignee && (
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Created</div>
-                  <p className="text-[13px] font-medium text-gray-900">
-                    {new Date(selectedTestCase.created_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </p>
-                </div>
-
-                {selectedTestCase.folder && (
-                  <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Folder</div>
-                    <p className="text-[13px] font-medium text-gray-900">{selectedTestCase.folder}</p>
+                  <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Assignee</div>
+                  <div className="flex items-center gap-[0.375rem]">
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                      style={{ background: getAssigneeColor(selectedTestCase.assignee), fontSize: '0.4375rem' }}
+                    >
+                      {getAssigneeInitials(selectedTestCase.assignee)}
+                    </div>
+                    <span className="text-[0.8125rem] font-medium text-[#0F172A] truncate">{selectedTestCase.assignee}</span>
                   </div>
-                )}
+                </div>
+              )}
+            </div>
 
-                {selectedTestCase.assignee && (
+            {selectedTestCase.tags && (
+              <div className="mt-[0.625rem]">
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Tags</div>
+                <div className="flex flex-wrap gap-1">
+                  {selectedTestCase.tags.split(',').map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-[0.4375rem] py-0.5 bg-[#EEF2FF] text-[#4338CA] rounded text-[0.6875rem] font-medium"
+                    >
+                      {tag.trim()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* §3 — Tabs */}
+          <div className="flex border-b border-[#E2E8F0] flex-shrink-0">
+            {(['comments', 'results', 'issues', 'history'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-2 text-[0.75rem] font-semibold transition-all cursor-pointer whitespace-nowrap bg-transparent border-t-0 border-l-0 border-r-0 capitalize ${
+                  activeTab === tab
+                    ? 'text-[#6366F1] border-b-2 border-[#6366F1]'
+                    : 'text-[#94A3B8] border-b-2 border-transparent hover:text-[#475569]'
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {/* §4 — Scrollable body: detail content + tab-specific content */}
+          <div className="flex-1 overflow-y-auto px-5 py-[0.875rem]">
+
+            {/* Detail sections: precondition, steps, expected result, attachments */}
+            {(selectedTestCase.precondition || selectedTestCase.steps || selectedTestCase.expected_result || (selectedTestCase.attachments && selectedTestCase.attachments.length > 0)) && (
+              <div className="space-y-[0.875rem] mb-[0.875rem] pb-[0.875rem] border-b border-[#F1F5F9]">
+                {selectedTestCase.precondition && (
                   <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Assignee</div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold" style={{ fontSize: '7px' }}>
-                        {selectedTestCase.assignee.substring(0, 2).toUpperCase()}
-                      </div>
-                      <span className="text-[13px] font-medium text-gray-900">{selectedTestCase.assignee}</span>
+                    <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem] flex items-center gap-1">
+                      <i className="ri-information-line text-[0.75rem]"></i>
+                      Precondition
+                    </div>
+                    <div className="bg-[#F8FAFC] rounded-lg px-[0.75rem] py-[0.625rem]">
+                      <p className="text-[0.75rem] text-[#475569] whitespace-pre-wrap leading-[1.5]">{htmlToText(selectedTestCase.precondition)}</p>
                     </div>
                   </div>
                 )}
-              </div>
 
-              {selectedTestCase.tags && (
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1">Tags</div>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedTestCase.tags.split(',').map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[11px] font-medium"
-                      >
-                        {tag.trim()}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {selectedTestCase.precondition && (
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1.5">Precondition</div>
-                  <div className="bg-gray-50 rounded-lg px-3 py-2.5">
-                    <p className="text-[12px] text-gray-600 whitespace-pre-wrap leading-relaxed">{htmlToText(selectedTestCase.precondition)}</p>
-                  </div>
-                </div>
-              )}
-
-              {selectedTestCase.steps && (
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1.5">Test Steps</div>
-                  <div className="space-y-1.5">
-                    {selectedTestCase.steps.split('\n').filter(s => s.trim()).map((step, index) => {
-                      const content = step.replace(/^\d+\.\s*/, '');
-                      const isHtml = /<[^>]+>/.test(content);
-                      return (
-                        <div key={index} className="flex items-start gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                          <div className="w-5 h-5 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-semibold flex-shrink-0 mt-0.5" style={{ fontSize: '10px' }}>
-                            {index + 1}
+                {selectedTestCase.steps && (
+                  <div>
+                    <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem] flex items-center gap-1">
+                      <i className="ri-list-ordered text-[0.75rem]"></i>
+                      Test Steps
+                    </div>
+                    <div className="flex flex-col gap-[0.375rem]">
+                      {selectedTestCase.steps.split('\n').filter(s => s.trim()).map((step, index) => {
+                        const content = step.replace(/^\d+\.\s*/, '');
+                        const isHtml = /<[^>]+>/.test(content);
+                        return (
+                          <div key={index} className="flex gap-2 bg-[#F8FAFC] rounded-lg px-[0.75rem] py-[0.5rem]">
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 mt-[0.0625rem] bg-[#EEF2FF] text-[#4338CA]" style={{ fontSize: '0.625rem' }}>
+                              {index + 1}
+                            </div>
+                            {isHtml ? (
+                              <div
+                                className="text-[0.75rem] text-[#475569] flex-1 leading-[1.5] prose prose-sm max-w-none"
+                                dangerouslySetInnerHTML={{ __html: content }}
+                              />
+                            ) : (
+                              <p className="text-[0.75rem] text-[#475569] whitespace-pre-wrap flex-1 leading-[1.5]">{content}</p>
+                            )}
                           </div>
-                          {isHtml ? (
-                            <div
-                              className="text-[12px] text-gray-600 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                              dangerouslySetInnerHTML={{ __html: content }}
-                            />
-                          ) : (
-                            <p className="text-[12px] text-gray-600 whitespace-pre-wrap flex-1 leading-relaxed">{content}</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {/* 하단 Add step 버튼 */}
+                        );
+                      })}
+                    </div>
                     <div className="mt-2 flex justify-end">
                       <button
                         onClick={handleAddStep}
-                        className="flex items-center gap-1 px-2.5 py-1 text-[12px] text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                        className="flex items-center gap-1 px-2.5 py-1 text-[0.75rem] text-[#6366F1] hover:text-[#4F46E5] hover:bg-[#EEF2FF] rounded-lg transition-all cursor-pointer whitespace-nowrap bg-transparent border-none"
                       >
-                        <i className="ri-add-line text-sm w-3.5 h-3.5 flex items-center justify-center"></i>
+                        <i className="ri-add-line text-sm"></i>
                         Add step
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {selectedTestCase.expected_result && (
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[#94A3B8] mb-1.5">Expected Result</div>
-                  <div className="space-y-1.5">
-                    {selectedTestCase.expected_result.split('\n').filter(s => s.trim()).map((result, index) => {
-                      const content = result.replace(/^\d+\.\s*/, '');
-                      const isHtml = /<[^>]+>/.test(content);
-                      return (
-                        <div key={index} className="flex items-start gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                          <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-semibold flex-shrink-0 mt-0.5" style={{ fontSize: '10px' }}>
-                            {index + 1}
+                {selectedTestCase.expected_result && (
+                  <div>
+                    <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem] flex items-center gap-1">
+                      <i className="ri-check-double-line text-[0.75rem]"></i>
+                      Expected Result
+                    </div>
+                    <div className="flex flex-col gap-[0.375rem]">
+                      {selectedTestCase.expected_result.split('\n').filter(s => s.trim()).map((result, index) => {
+                        const content = result.replace(/^\d+\.\s*/, '');
+                        const isHtml = /<[^>]+>/.test(content);
+                        return (
+                          <div key={index} className="flex gap-2 bg-[#F8FAFC] rounded-lg px-[0.75rem] py-[0.5rem]">
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 mt-[0.0625rem] bg-[#DCFCE7] text-[#166534]" style={{ fontSize: '0.625rem' }}>
+                              {index + 1}
+                            </div>
+                            {isHtml ? (
+                              <div
+                                className="text-[0.75rem] text-[#475569] flex-1 leading-[1.5] prose prose-sm max-w-none"
+                                dangerouslySetInnerHTML={{ __html: content }}
+                              />
+                            ) : (
+                              <p className="text-[0.75rem] text-[#475569] whitespace-pre-wrap flex-1 leading-[1.5]">{content}</p>
+                            )}
                           </div>
-                          {isHtml ? (
-                            <div
-                              className="text-[12px] text-gray-600 flex-1 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                              dangerouslySetInnerHTML={{ __html: content }}
-                            />
-                          ) : (
-                            <p className="text-[12px] text-gray-600 whitespace-pre-wrap flex-1 leading-relaxed">{content}</p>
-                          )}
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {selectedTestCase.attachments && selectedTestCase.attachments.length > 0 && (
+                  <div>
+                    <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem]">Attachments</div>
+                    <div className="grid grid-cols-3 gap-[0.375rem]">
+                      {selectedTestCase.attachments.map((file, index) => (
+                        <div
+                          key={index}
+                          onClick={() => setImagePreview(file.url)}
+                          className="aspect-square rounded-md overflow-hidden bg-[#F1F5F9] cursor-pointer hover:border-[#C7D2FE] transition-all border border-[#E2E8F0] flex items-center justify-center"
+                        >
+                          <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {selectedTestCase.attachments && selectedTestCase.attachments.length > 0 && (
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Attachments</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {selectedTestCase.attachments.map((file, index) => (
-                      <div
-                        key={index}
-                        onClick={() => setImagePreview(file.url)}
-                        className="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-80 transition-all border border-gray-200"
-                      >
-                        <img
-                          src={file.url}
-                          alt={file.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-3 border-t border-gray-200 flex gap-2">
-                <button
-                  onClick={() => handleEdit(selectedTestCase)}
-                  className="flex-1 px-3 py-[7px] bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold text-[13px] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1"
-                >
-                  <i className="ri-edit-line text-sm"></i> Edit
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm('Are you sure you want to delete this test case?')) {
-                      onDelete(selectedTestCase.id);
-                      setSelectedTestCase(null);
-                    }
-                  }}
-                  className="flex-1 px-3 py-[7px] border border-red-300 text-red-500 rounded-lg hover:bg-red-50 transition-all font-semibold text-[13px] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1"
-                >
-                  <i className="ri-delete-bin-line text-sm"></i> Delete
-                </button>
+                )}
               </div>
-            </div>
-          </div>
+            )}
 
-          {/* 탭 메뉴 */}
-          <div className="border-b border-gray-200">
-            <div className="flex">
-              <button
-                onClick={() => setActiveTab('comments')}
-                className={`flex-1 px-3 py-2 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                  activeTab === 'comments'
-                    ? 'text-indigo-600 border-b-2 border-indigo-600'
-                    : 'text-[#94A3B8] hover:text-gray-600'
-                }`}
-              >
-                Comments
-              </button>
-              <button
-                onClick={() => setActiveTab('results')}
-                className={`flex-1 px-3 py-2 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                  activeTab === 'results'
-                    ? 'text-indigo-600 border-b-2 border-indigo-600'
-                    : 'text-[#94A3B8] hover:text-gray-600'
-                }`}
-              >
-                Results
-              </button>
-              <button
-                onClick={() => setActiveTab('issues')}
-                className={`flex-1 px-3 py-2 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                  activeTab === 'issues'
-                    ? 'text-indigo-600 border-b-2 border-indigo-600'
-                    : 'text-[#94A3B8] hover:text-gray-600'
-                }`}
-              >
-                Issues
-              </button>
-              <button
-                onClick={() => setActiveTab('history')}
-                className={`flex-1 px-3 py-2 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                  activeTab === 'history'
-                    ? 'text-indigo-600 border-b-2 border-indigo-600'
-                    : 'text-[#94A3B8] hover:text-gray-600'
-                }`}
-              >
-                History
-              </button>
-            </div>
-          </div>
-
-          {/* 탭 콘텐츠 */}
-          <div className="flex-1 overflow-y-auto p-6">
             {activeTab === 'comments' && (
               <div className="space-y-4">
                 <div>
@@ -2773,6 +2736,27 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 )}
               </div>
             )}
+          </div>
+
+          {/* §5 — Action buttons (fixed footer) */}
+          <div className="px-5 py-[0.75rem] border-t border-[#E2E8F0] flex gap-2 flex-shrink-0">
+            <button
+              onClick={() => handleEdit(selectedTestCase)}
+              className="flex-1 px-[0.75rem] py-[0.4375rem] bg-[#6366F1] text-white rounded-lg hover:bg-[#4F46E5] transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1 border-none"
+            >
+              <i className="ri-edit-line text-sm"></i> Edit
+            </button>
+            <button
+              onClick={() => {
+                if (confirm('Are you sure you want to delete this test case?')) {
+                  onDelete(selectedTestCase.id);
+                  setSelectedTestCase(null);
+                }
+              }}
+              className="flex-1 px-[0.75rem] py-[0.4375rem] bg-white text-[#EF4444] border border-[#FCA5A5] rounded-lg hover:bg-[#FEF2F2] transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1"
+            >
+              <i className="ri-delete-bin-line text-sm"></i> Delete
+            </button>
           </div>
         </div>
       )}

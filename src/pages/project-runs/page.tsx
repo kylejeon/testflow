@@ -1475,7 +1475,7 @@ export default function ProjectRunsPage() {
                             </div>
                           </div>
 
-                          <div className="divide-y divide-gray-100">
+                          <div className="flex flex-col gap-[0.75rem] p-[1.3125rem]">
                             {milestoneRuns.map((run) => {
                               const total = run.passed + run.failed + run.blocked + run.retest + run.untested;
                               const passedPct = total > 0 ? (run.passed / total) * 100 : 0;
@@ -1484,19 +1484,19 @@ export default function ProjectRunsPage() {
                               return (
                               <div
                                 key={run.id}
-                                className="px-[1.3125rem] py-[1rem] hover:bg-gray-50/60 transition-colors cursor-pointer"
+                                className="bg-white border border-[#E2E8F0] rounded-lg p-[1.3125rem] cursor-pointer hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-shadow"
                                 onClick={() => handleRunClick(run.id)}
                               >
                                 {/* Row 1: Name + badges + menu */}
-                                <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center justify-between mb-[0.625rem]">
                                   <div className="flex items-center gap-2 min-w-0">
-                                    <span className="font-semibold text-[0.9375rem] text-gray-900 hover:text-indigo-600 transition-colors truncate">{run.name}</span>
+                                    <span className="font-semibold text-[0.9375rem] text-[#0F172A] hover:text-indigo-600 transition-colors truncate">{run.name}</span>
                                     <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-[0.6875rem] font-semibold rounded-full ${getStatusBadge(run.status).className}`}>
                                       {run.status === 'in_progress' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"></span>}
                                       {getStatusBadge(run.status).label}
                                     </span>
                                     {run.is_automated && (
-                                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-sky-50 text-sky-700 rounded-full text-[0.6875rem] font-semibold">
+                                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-[#F0F9FF] text-[#0284C7] rounded-full text-[0.6875rem] font-semibold">
                                         <i className="ri-robot-line text-[0.75rem]"></i>Automated
                                       </span>
                                     )}
@@ -1525,30 +1525,32 @@ export default function ProjectRunsPage() {
                                   </div>
                                 </div>
                                 {/* Row 2: Progress bar */}
-                                <div className="flex items-center gap-2 mb-1.5">
-                                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
-                                    {run.passed > 0 && <div className="h-full bg-emerald-500 transition-all" style={{ width: `${passedPct}%` }}></div>}
-                                    {run.failed > 0 && <div className="h-full bg-red-500 transition-all" style={{ width: `${failedPct}%` }}></div>}
-                                    {run.blocked > 0 && <div className="h-full bg-amber-400 transition-all" style={{ width: `${blockedPct}%` }}></div>}
+                                <div className="flex items-center gap-2 mb-[0.5rem]">
+                                  <div className="flex-1 h-[6px] bg-[#F1F5F9] rounded-full overflow-hidden flex">
+                                    {run.passed > 0 && <div className="h-full bg-[#10B981] transition-all" style={{ width: `${passedPct}%` }}></div>}
+                                    {run.failed > 0 && <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }}></div>}
+                                    {run.blocked > 0 && <div className="h-full bg-[#F59E0B] transition-all" style={{ width: `${blockedPct}%` }}></div>}
                                   </div>
-                                  <span className="text-[0.8125rem] font-semibold text-gray-700 min-w-[36px] text-right">{run.progress}%</span>
+                                  <span className="text-[0.8125rem] font-semibold text-[#0F172A] min-w-[2.5rem] text-right">{run.progress}%</span>
                                 </div>
                                 {/* Row 3: Stats */}
-                                <div className="flex items-center gap-4 text-[0.8125rem] text-gray-500 mb-1.5">
-                                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>{run.passed} passed</span>
-                                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span>{run.failed} failed</span>
-                                  {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>{run.blocked} blocked</span>}
-                                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block"></span>{run.untested} remaining</span>
+                                <div className="flex items-center gap-4 text-[0.8125rem] text-[#64748B] mb-[0.5rem]">
+                                  <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#10B981] inline-block"></span>{run.passed} passed</span>
+                                  <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#EF4444] inline-block"></span>{run.failed} failed</span>
+                                  {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#F59E0B] inline-block"></span>{run.blocked} blocked</span>}
+                                  <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#94A3B8] inline-block"></span>{run.untested} remaining</span>
                                 </div>
                                 {/* Row 4: Assignees + timestamp */}
-                                <div className="flex items-center gap-3 text-[0.8125rem] text-gray-400">
-                                  <span className="text-[0.75rem] text-[#94A3B8]">Assigned to</span>
-                                  <div className="flex gap-1">
-                                    {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
-                                      <div key={idx} className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full border-2 border-white flex items-center justify-center text-white font-semibold" style={{ fontSize: '9px' }}>
-                                        {assignee.substring(0, 2).toUpperCase()}
-                                      </div>
-                                    ))}
+                                <div className="flex items-center gap-[0.875rem] text-[0.8125rem] text-[#64748B]">
+                                  <div className="flex items-center gap-[0.375rem]">
+                                    <span className="text-[0.75rem] text-[#94A3B8] font-medium whitespace-nowrap">Assigned to</span>
+                                    <div className="flex gap-1">
+                                      {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
+                                        <div key={idx} className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold" style={{ fontSize: '9px' }}>
+                                          {assignee.substring(0, 2).toUpperCase()}
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
                                   <span className="text-[#CBD5E1]">·</span>
                                   <span className="text-[0.75rem]">{run.created_at ? `Started ${new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
@@ -1578,7 +1580,7 @@ export default function ProjectRunsPage() {
                       </button>
                     </div>
 
-                    <div className="divide-y divide-gray-100">
+                    <div className="flex flex-col gap-[0.75rem] p-[1.3125rem]">
                       {getRunsWithoutMilestone().map((run) => {
                         const total = run.passed + run.failed + run.blocked + run.retest + run.untested;
                         const passedPct = total > 0 ? (run.passed / total) * 100 : 0;
@@ -1587,19 +1589,19 @@ export default function ProjectRunsPage() {
                         return (
                         <div
                           key={run.id}
-                          className="px-[1.3125rem] py-[1rem] hover:bg-gray-50/60 transition-colors cursor-pointer"
+                          className="bg-white border border-[#E2E8F0] rounded-lg p-[1.3125rem] cursor-pointer hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-shadow"
                           onClick={() => handleRunClick(run.id)}
                         >
                           {/* Row 1: Name + badges + menu */}
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-[0.625rem]">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="font-semibold text-[0.9375rem] text-gray-900 hover:text-indigo-600 transition-colors truncate">{run.name}</span>
+                              <span className="font-semibold text-[0.9375rem] text-[#0F172A] hover:text-indigo-600 transition-colors truncate">{run.name}</span>
                               <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-[0.6875rem] font-semibold rounded-full ${getStatusBadge(run.status).className}`}>
                                 {run.status === 'in_progress' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"></span>}
                                 {getStatusBadge(run.status).label}
                               </span>
                               {run.is_automated && (
-                                <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-sky-50 text-sky-700 rounded-full text-[0.6875rem] font-semibold">
+                                <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-[#F0F9FF] text-[#0284C7] rounded-full text-[0.6875rem] font-semibold">
                                   <i className="ri-robot-line text-[0.75rem]"></i>Automated
                                 </span>
                               )}
@@ -1629,30 +1631,32 @@ export default function ProjectRunsPage() {
                             </div>
                           </div>
                           {/* Row 2: Progress bar */}
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
-                              {run.passed > 0 && <div className="h-full bg-emerald-500 transition-all" style={{ width: `${passedPct}%` }}></div>}
-                              {run.failed > 0 && <div className="h-full bg-red-500 transition-all" style={{ width: `${failedPct}%` }}></div>}
-                              {run.blocked > 0 && <div className="h-full bg-amber-400 transition-all" style={{ width: `${blockedPct}%` }}></div>}
+                          <div className="flex items-center gap-2 mb-[0.5rem]">
+                            <div className="flex-1 h-[6px] bg-[#F1F5F9] rounded-full overflow-hidden flex">
+                              {run.passed > 0 && <div className="h-full bg-[#10B981] transition-all" style={{ width: `${passedPct}%` }}></div>}
+                              {run.failed > 0 && <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }}></div>}
+                              {run.blocked > 0 && <div className="h-full bg-[#F59E0B] transition-all" style={{ width: `${blockedPct}%` }}></div>}
                             </div>
-                            <span className="text-[0.8125rem] font-semibold text-gray-700 min-w-[36px] text-right">{run.progress}%</span>
+                            <span className="text-[0.8125rem] font-semibold text-[#0F172A] min-w-[2.5rem] text-right">{run.progress}%</span>
                           </div>
                           {/* Row 3: Stats */}
-                          <div className="flex items-center gap-4 text-[0.8125rem] text-gray-500 mb-1.5">
-                            <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>{run.passed} passed</span>
-                            <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span>{run.failed} failed</span>
-                            {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>{run.blocked} blocked</span>}
-                            <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block"></span>{run.untested} remaining</span>
+                          <div className="flex items-center gap-4 text-[0.8125rem] text-[#64748B] mb-[0.5rem]">
+                            <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#10B981] inline-block"></span>{run.passed} passed</span>
+                            <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#EF4444] inline-block"></span>{run.failed} failed</span>
+                            {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#F59E0B] inline-block"></span>{run.blocked} blocked</span>}
+                            <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#94A3B8] inline-block"></span>{run.untested} remaining</span>
                           </div>
                           {/* Row 4: Assignees + timestamp */}
-                          <div className="flex items-center gap-3 text-[0.8125rem] text-gray-400">
-                            <span className="text-[0.75rem] text-[#94A3B8]">Assigned to</span>
-                            <div className="flex gap-1">
-                              {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
-                                <div key={idx} className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full border-2 border-white flex items-center justify-center text-white font-semibold" style={{ fontSize: '9px' }}>
-                                  {assignee.substring(0, 2).toUpperCase()}
-                                </div>
-                              ))}
+                          <div className="flex items-center gap-[0.875rem] text-[0.8125rem] text-[#64748B]">
+                            <div className="flex items-center gap-[0.375rem]">
+                              <span className="text-[0.75rem] text-[#94A3B8] font-medium whitespace-nowrap">Assigned to</span>
+                              <div className="flex gap-1">
+                                {run.assignees && run.assignees.slice(0, 3).map((assignee, idx) => (
+                                  <div key={idx} className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold" style={{ fontSize: '9px' }}>
+                                    {assignee.substring(0, 2).toUpperCase()}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                             <span className="text-[#CBD5E1]">·</span>
                             <span className="text-[0.75rem]">{run.created_at ? `Started ${new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>

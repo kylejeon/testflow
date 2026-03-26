@@ -342,22 +342,6 @@ export function usePassRateReport(period: PeriodFilter) {
             lastFailedAt: timeAgo(failCounts[id]?.lastAt ?? new Date().toISOString()),
           }))
           .sort((a, b) => b.failCount - a.failCount);
-      } else if (totalExecuted === 0) {
-        const { data: failedTCs } = await supabase
-          .from('test_cases')
-          .select('id, title, priority, project_id, updated_at')
-          .in('project_id', projectIds)
-          .eq('status', 'failed')
-          .order('updated_at', { ascending: false })
-          .limit(6);
-        failedItems = (failedTCs ?? []).map(tc => ({
-          tcId: tc.id,
-          title: tc.title,
-          projectName: projectNameMap[tc.project_id] ?? 'Unknown',
-          priority: tc.priority,
-          failCount: 1,
-          lastFailedAt: timeAgo(tc.updated_at),
-        }));
       }
 
       setData({
