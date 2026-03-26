@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import PageLoader from '../../../components/PageLoader';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useFilteredTestCases, type ExecStatusFilter, type PeriodFilter } from '../../../hooks/useFilteredTestCases';
 
@@ -176,16 +177,7 @@ export default function TestCaseList() {
 
   const showExtendedCols = statusFilter === 'failed' || sortBy === 'fail_count' || sortBy === 'last_failed';
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 400 }}>
-        <div style={{ textAlign: 'center' }}>
-          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p style={{ color: '#64748B', fontSize: '0.875rem' }}>Loading test cases…</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   if (error) {
     return (

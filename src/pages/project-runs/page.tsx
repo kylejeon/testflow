@@ -1,4 +1,5 @@
 import { LogoMark } from '../../components/Logo';
+import PageLoader from '../../components/PageLoader';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -1395,9 +1396,7 @@ export default function ProjectRunsPage() {
             </div>
 
             {loading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-              </div>
+              <PageLoader />
             ) : (
               <div className="space-y-[1.3125rem]">
                 {milestones.length > 0 && (

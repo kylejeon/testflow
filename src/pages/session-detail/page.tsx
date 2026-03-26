@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import PageLoader from '../../components/PageLoader';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import QuillEditor from './components/QuillEditor';
@@ -836,16 +837,7 @@ export default function SessionDetail() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-white">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageLoader fullScreen />;
 
   if (!session) {
     return (

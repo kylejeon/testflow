@@ -2,6 +2,7 @@ import { useNavigate, useLocation, type NavigateFunction } from "react-router-do
 import { useRoutes } from "react-router-dom";
 import { useEffect, Suspense } from "react";
 import routes from "./config";
+import PageLoader from "../components/PageLoader";
 
 let navigateResolver: (navigate: ReturnType<typeof useNavigate>) => void;
 
@@ -16,11 +17,7 @@ export const navigatePromise = new Promise<NavigateFunction>((resolve) => {
 });
 
 function PageLoadingFallback() {
-  return (
-    <div className="flex h-screen items-center justify-center bg-white">
-      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  return <PageLoader fullScreen />;
 }
 
 export function AppRoutes() {

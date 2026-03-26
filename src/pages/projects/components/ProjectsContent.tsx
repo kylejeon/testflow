@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import PageLoader from '../../../components/PageLoader';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase, type Project } from '../../../lib/supabase';
 import CreateProjectModal from './CreateProjectModal';
@@ -551,10 +552,7 @@ export default function ProjectsContent() {
       <div className="flex flex-col h-full">
         {SubHeader}
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Loading...</p>
-          </div>
+          <PageLoader />
         </div>
       </div>
     );

@@ -1,4 +1,5 @@
 import { LogoMark } from '../../components/Logo';
+import PageLoader from '../../components/PageLoader';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -846,9 +847,7 @@ export default function ProjectSessions() {
 
             {/* Sessions List */}
             {loading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-              </div>
+              <PageLoader />
             ) : filteredSessions.length === 0 ? (
               <div className="text-center py-12">
                 <i className="ri-calendar-line text-6xl text-gray-300 mb-4"></i>

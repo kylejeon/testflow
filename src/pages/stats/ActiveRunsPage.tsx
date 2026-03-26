@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { useActiveRuns, type RunStatus } from '../../hooks/useActiveRuns';
+import PageLoader from '../../components/PageLoader';
 
 const statusMeta: Record<RunStatus, { label: string; bg: string; color: string; dotColor: string; pulse: boolean }> = {
   'new':          { label: 'New',        bg: '#F0FDF4', color: '#16A34A', dotColor: '#16A34A', pulse: false },
@@ -118,12 +119,7 @@ export default function ActiveRunsPage() {
           </div>
 
           {/* Loading */}
-          {loading && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem', color: '#94A3B8', fontSize: '0.875rem' }}>
-              <i className="ri-loader-4-line" style={{ marginRight: '0.5rem', animation: 'spin 1s linear infinite' }} />Loading runs…
-              <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-            </div>
-          )}
+          {loading && <PageLoader />}
 
           {/* Empty */}
           {!loading && !error && data && data.runs.length === 0 && (

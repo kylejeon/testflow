@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { useTeamActivity } from '../../hooks/useTeamActivity';
+import PageLoader from '../../components/PageLoader';
 
 const badgeStyle: Record<string, { bg: string; color: string }> = {
   created:   { bg: '#EEF2FF', color: '#6366F1' },
@@ -218,12 +219,7 @@ export default function TeamActivityPage() {
           </div>
 
           {/* Loading */}
-          {loading && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem', color: '#94A3B8', fontSize: '0.875rem' }}>
-              <i className="ri-loader-4-line" style={{ marginRight: '0.5rem', animation: 'spin 1s linear infinite' }} />Loading activity…
-              <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-            </div>
-          )}
+          {loading && <PageLoader />}
 
           {!loading && data && (
             <>

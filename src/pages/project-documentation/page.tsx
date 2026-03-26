@@ -1,4 +1,5 @@
 import { LogoMark } from '../../components/Logo';
+import PageLoader from '../../components/PageLoader';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -156,16 +157,7 @@ export default function ProjectDocumentation() {
   const currentTier = userProfile?.subscription_tier || 1;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading documents...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageLoader fullScreen />;
 
   return (
     <div className="flex h-screen bg-white">

@@ -1,4 +1,5 @@
 import { LogoMark } from '../../components/Logo';
+import PageLoader from '../../components/PageLoader';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -352,127 +353,111 @@ export default function ProjectTestCases() {
     return matchesSearch && matchesPriority && matchesLifecycle;
   });
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageLoader fullScreen />;
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
-        
-        <main className="flex-1 overflow-hidden flex flex-col bg-gray-50/30">
-          <div className="flex-1 flex flex-col overflow-hidden p-[1.75rem] min-h-0">
-            <div className="flex items-center justify-between mb-[1.75rem] flex-shrink-0">
-              <div>
-                <h1 className="text-[1.375rem] font-bold text-gray-900">Test Cases</h1>
-                <p className="text-[0.8125rem] text-gray-500 mt-1">
-                  {project?.name} • {filteredTestCases.length} test cases
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {testCases.some(tc => !tc.custom_id) && project?.prefix && (
-                  <button
-                    onClick={handleAssignMissingIds}
-                    className="px-[0.875rem] py-[0.4375rem] bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all font-semibold text-[0.8125rem] flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                  >
-                    <i className="ri-price-tag-3-line"></i>
-                    ID 없는 케이스에 ID 부여
-                  </button>
-                )}
+
+        <main className="flex-1 overflow-hidden flex flex-col">
+          {/* ── Edge-to-edge page header ── */}
+          <div className="flex items-center gap-3 px-5 py-[0.875rem] bg-white border-b border-[#E2E8F0] flex-shrink-0">
+            <span className="text-[1.125rem] font-bold text-[#0F172A]">Test Cases</span>
+            <span className="text-[0.8125rem] text-[#94A3B8] font-medium">· {filteredTestCases.length} test cases</span>
+            <div className="ml-auto flex items-center gap-2">
+              {testCases.some(tc => !tc.custom_id) && project?.prefix && (
                 <button
-                  onClick={() => setShowAIModal(true)}
-                  className="px-[0.875rem] py-[0.4375rem] bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-[0.8125rem] flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                  onClick={handleAssignMissingIds}
+                  className="px-[0.875rem] py-[0.4375rem] bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all font-semibold text-[0.8125rem] flex items-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <i className="ri-sparkling-2-fill"></i>
-                  Generate with AI
+                  <i className="ri-price-tag-3-line"></i>
+                  ID 없는 케이스에 ID 부여
                 </button>
-              </div>
+              )}
+              <button
+                onClick={() => setShowAIModal(true)}
+                className="px-[0.875rem] py-[0.4375rem] bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-[0.8125rem] flex items-center gap-2 cursor-pointer whitespace-nowrap shadow-sm"
+                style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
+              >
+                <i className="ri-sparkling-2-fill"></i>
+                Generate with AI
+              </button>
             </div>
+          </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 flex-1 flex flex-col overflow-hidden min-h-0">
-              {/* ── Lifecycle Filter Tabs ── */}
-              {(() => {
-                const counts = {
-                  all: testCases.filter(tc => (tc.lifecycle_status || 'active') !== 'deprecated').length,
-                  draft: testCases.filter(tc => (tc.lifecycle_status || 'active') === 'draft').length,
-                  active: testCases.filter(tc => (tc.lifecycle_status || 'active') === 'active').length,
-                  deprecated: testCases.filter(tc => (tc.lifecycle_status || 'active') === 'deprecated').length,
-                };
-                const tabs: { key: 'all' | 'draft' | 'active' | 'deprecated'; label: string; icon?: string; iconCls?: string }[] = [
-                  { key: 'all', label: 'All' },
-                  { key: 'draft', label: 'Draft', icon: 'ri-draft-line', iconCls: 'text-amber-500' },
-                  { key: 'active', label: 'Active', icon: 'ri-checkbox-circle-line', iconCls: 'text-green-500' },
-                  { key: 'deprecated', label: 'Deprecated', icon: 'ri-forbid-line', iconCls: 'text-slate-400' },
-                ];
-                return (
-                  <div className="flex border-b border-gray-200 flex-shrink-0">
-                    {tabs.map(tab => (
-                      <button
-                        key={tab.key}
-                        onClick={() => setLifecycleFilter(tab.key)}
-                        className={`flex items-center gap-1.5 px-4 py-3 text-xs font-medium border-b-2 transition-colors ${
-                          lifecycleFilter === tab.key
-                            ? 'text-indigo-700 border-indigo-600 font-semibold'
-                            : 'text-gray-400 border-transparent hover:text-gray-600'
-                        }`}
-                      >
-                        {tab.icon && <i className={`${tab.icon} ${lifecycleFilter === tab.key ? '' : tab.iconCls}`} />}
-                        {tab.label}
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-                          lifecycleFilter === tab.key ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'
-                        }`}>{counts[tab.key]}</span>
-                      </button>
-                    ))}
-                  </div>
-                );
-              })()}
-
-              <div className="p-[1.3125rem] border-b border-gray-200 flex-shrink-0">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 relative">
-                    <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg w-5 h-5 flex items-center justify-center"></i>
-                    <input
-                      type="text"
-                      placeholder="Search test cases..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-[0.8125rem]"
-                    />
-                  </div>
-
-                  <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
-                    className="px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-[0.8125rem] cursor-pointer"
+          {/* ── Edge-to-edge lifecycle tabs ── */}
+          {(() => {
+            const counts = {
+              all: testCases.filter(tc => (tc.lifecycle_status || 'active') !== 'deprecated').length,
+              draft: testCases.filter(tc => (tc.lifecycle_status || 'active') === 'draft').length,
+              active: testCases.filter(tc => (tc.lifecycle_status || 'active') === 'active').length,
+              deprecated: testCases.filter(tc => (tc.lifecycle_status || 'active') === 'deprecated').length,
+            };
+            const tabs: { key: 'all' | 'draft' | 'active' | 'deprecated'; label: string; icon?: string; iconCls?: string }[] = [
+              { key: 'all', label: 'All' },
+              { key: 'draft', label: 'Draft', icon: 'ri-draft-line', iconCls: 'text-amber-500' },
+              { key: 'active', label: 'Active', icon: 'ri-checkbox-circle-line', iconCls: 'text-green-500' },
+              { key: 'deprecated', label: 'Deprecated', icon: 'ri-forbid-line', iconCls: 'text-slate-400' },
+            ];
+            return (
+              <div className="flex border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+                {tabs.map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setLifecycleFilter(tab.key)}
+                    className={`flex items-center gap-1.5 px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-2 transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
+                      lifecycleFilter === tab.key
+                        ? 'text-[#6366F1] border-[#6366F1] font-semibold'
+                        : 'text-[#64748B] border-transparent hover:text-[#475569]'
+                    }`}
                   >
-                    <option value="all">All Priority</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
+                    {tab.icon && <i className={`${tab.icon} text-[0.875rem] ${lifecycleFilter === tab.key ? 'text-[#6366F1]' : tab.iconCls}`} />}
+                    {tab.label}
+                    <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${
+                      lifecycleFilter === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'
+                    }`}>{counts[tab.key]}</span>
+                  </button>
+                ))}
               </div>
+            );
+          })()}
 
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <TestCaseList
-                  testCases={filteredTestCases}
-                  onAdd={handleAddTestCase}
-                  onUpdate={handleUpdateTestCase}
-                  onDelete={handleDeleteTestCase}
-                  onRefresh={handleRefreshData}
-                  projectId={id!}
-                  projectName={project?.name || ''}
-                />
-              </div>
+          {/* ── Search / filter toolbar ── */}
+          <div className="flex items-center gap-3 px-5 py-[0.625rem] border-b border-[#E2E8F0] bg-white flex-shrink-0">
+            <div className="flex-1 flex items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-md px-[0.625rem] py-[0.3125rem]">
+              <i className="ri-search-line text-[#94A3B8] text-sm flex-shrink-0"></i>
+              <input
+                type="text"
+                placeholder="Search test cases..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-[0.8125rem] text-[#1E293B] font-[inherit]"
+              />
             </div>
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="text-[0.75rem] px-[0.625rem] py-[0.3125rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] cursor-pointer font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="all">All Priority</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+
+          {/* ── Content: TestCaseList (handles sidebar + list + detail panel) ── */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <TestCaseList
+              testCases={filteredTestCases}
+              onAdd={handleAddTestCase}
+              onUpdate={handleUpdateTestCase}
+              onDelete={handleDeleteTestCase}
+              onRefresh={handleRefreshData}
+              projectId={id!}
+              projectName={project?.name || ''}
+            />
           </div>
         </main>
       </div>

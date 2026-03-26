@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { usePassRateReport, type PeriodFilter } from '../../hooks/usePassRateReport';
+import PageLoader from '../../components/PageLoader';
 import { supabase } from '../../lib/supabase';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -261,12 +262,7 @@ export default function PassRateReportPage() {
           </div>
 
           {/* Loading */}
-          {loading && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem', color: '#94A3B8', fontSize: '0.875rem' }}>
-              <i className="ri-loader-4-line" style={{ marginRight: '0.5rem', animation: 'spin 1s linear infinite' }} />Loading report…
-              <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-            </div>
-          )}
+          {loading && <PageLoader />}
 
           {!loading && data && (
             <>

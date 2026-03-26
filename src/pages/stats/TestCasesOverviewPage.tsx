@@ -3,6 +3,7 @@ import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, CartesianGrid, Respons
 import { Link, useNavigate } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { useTestCasesOverview, exportTestCasesCSV } from '../../hooks/useTestCasesOverview';
+import PageLoader from '../../components/PageLoader';
 import NotificationBell from '../../components/feature/NotificationBell';
 import QuickCreateTCModal from '../project-detail/components/QuickCreateTCModal';
 import { supabase } from '../../lib/supabase';
@@ -320,9 +321,7 @@ export default function TestCasesOverviewPage() {
           )}
 
           {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem', color: '#94A3B8' }}>
-              <i className="ri-loader-4-line" style={{ fontSize: '1.5rem', marginRight: '0.5rem' }} /> Loading data…
-            </div>
+            <PageLoader />
           ) : (
             <>
               {/* Summary Cards */}
