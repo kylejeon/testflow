@@ -72,13 +72,12 @@ export default function ProjectRunsPage() {
   const [contributors, setContributors] = useState<Contributor[]>([]);
   const [formData, setFormData] = useState({
     name: '',
-    configuration: '',
+    description: '',
     milestone_id: '',
     status: 'new' as 'new' | 'in_progress' | 'under_review' | 'completed',
-    issues: '',
     tags: '',
     include_all_cases: true,
-    is_ci_cd_run: false, // CI/CD Run 체크박스
+    is_ci_cd_run: false,
   });
   const [submitting, setSubmitting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -772,7 +771,7 @@ export default function ProjectRunsPage() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     console.log('Input changed:', name, '=', value, 'Type:', typeof value);
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -799,6 +798,7 @@ export default function ProjectRunsPage() {
           .from('test_runs')
           .update({
             name: formData.name,
+            description: formData.description.trim() || null,
             milestone_id: formData.milestone_id && formData.milestone_id.trim() !== '' ? formData.milestone_id : null,
             status: formData.status,
             tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
@@ -835,6 +835,7 @@ export default function ProjectRunsPage() {
           project_id: id,
           milestone_id: formData.milestone_id && formData.milestone_id.trim() !== '' ? formData.milestone_id : null,
           name: formData.name,
+          description: formData.description.trim() || null,
           status: formData.status,
           progress: 0,
           passed: 0,
@@ -897,10 +898,9 @@ export default function ProjectRunsPage() {
       
       setFormData({
         name: '',
-        configuration: '',
+        description: '',
         milestone_id: '',
         status: 'new',
-        issues: '',
         tags: '',
         include_all_cases: true,
         is_ci_cd_run: false,
@@ -1137,10 +1137,9 @@ export default function ProjectRunsPage() {
     setEditingRunId(run.id);
     setFormData({
       name: run.name,
-      configuration: '',
+      description: (run as any).description || '',
       milestone_id: run.milestone_id || '',
       status: run.status,
-      issues: '',
       tags: run.tags ? run.tags.join(', ') : '',
       include_all_cases: run.test_case_ids.length === testCases.length,
       is_ci_cd_run: run.is_automated || false,
@@ -1854,6 +1853,19 @@ export default function ProjectRunsPage() {
                         placeholder="e.g. Sprint 24 — Regression Run"
                         autoFocus
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Description</label>
+                      <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        placeholder="Optional notes about this run's scope or goals"
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm resize-none"
                       />
                     </div>
 
