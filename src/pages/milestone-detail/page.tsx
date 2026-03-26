@@ -624,32 +624,10 @@ export default function MilestoneDetail() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-white">
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link to="/projects" className="flex items-center cursor-pointer">
-                  <LogoMark />
-                </Link>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
-                  {userProfile?.avatar_emoji ? (
-                    <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
-                  ) : (
-                    <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </header>
-          <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading...</p>
-            </div>
-          </main>
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     );

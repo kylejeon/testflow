@@ -158,15 +158,10 @@ export default function ProjectDocumentation() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-white">
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <ProjectHeader projectId={id || ''} projectName="" />
-          <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600">{t('loading')}</p>
-            </div>
-          </main>
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading documents...</p>
         </div>
       </div>
     );

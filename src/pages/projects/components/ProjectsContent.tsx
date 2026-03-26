@@ -548,12 +548,12 @@ export default function ProjectsContent() {
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex flex-col">
+      <div className="flex flex-col h-full">
         {SubHeader}
-        <div className="flex items-center justify-center" style={{ padding: '4rem 2rem' }}>
+        <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">{t('common:loading')}</p>
+            <p className="text-gray-600">Loading...</p>
           </div>
         </div>
       </div>

@@ -171,7 +171,7 @@ export default function ProjectsPage() {
             </div>
           </header>
           
-          <main className="flex-1 overflow-y-auto bg-gray-50/30">
+          <main className="flex-1 overflow-y-auto bg-gray-50/30 h-full">
             <ProjectsContent />
           </main>
         </div>
