@@ -131,6 +131,18 @@ interface Project {
 }
 
 // ── Compact design helpers ──────────────────────────────────────────────────
+function parseStepsList(raw?: string): { step: string; expectedResult: string }[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {}
+  return raw.split('\n').filter(Boolean).map((s) => ({
+    step: s.replace(/^\d+\.\s*/, ''),
+    expectedResult: '',
+  }));
+}
+
 function tcTimeAgo(dateStr: string): string {
   if (!dateStr) return '-';
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -154,7 +166,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
   // Removed duplicate editingTestCase declaration that caused a conflict.
   const [isFolderPanelOpen, setIsFolderPanelOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'details' | 'comments' | 'results' | 'issues' | 'history'>('details');
+  const [activeTab, setActiveTab] = useState<'comments' | 'results' | 'issues' | 'history'>('comments');
+  const [stepsCollapsed, setStepsCollapsed] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -2273,10 +2286,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       {/* 우측 상세 패널 */}
       {selectedTestCase && (
-        <div ref={detailPanelRef} className="w-[500px] min-w-[500px] flex-shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-hidden">
-          {/* §1 — Header: ID + title + description + close */}
+        <div ref={detailPanelRef} className="w-[500px] min-w-[500px] flex-shrink-0 bg-white border-l border-[#E2E8F0] flex flex-col overflow-hidden">
+
+          {/* §1 — Header */}
           <div className="px-5 pt-4 pb-[0.875rem] border-b border-[#E2E8F0] flex-shrink-0">
-            <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex items-start justify-between gap-2 mb-[0.5rem]">
               <div className="flex-1 min-w-0">
                 {selectedTestCase.custom_id && (
                   <div className="text-[0.6875rem] font-mono text-[#94A3B8] mb-[0.25rem]">
@@ -2286,9 +2300,6 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 <h2 className="text-[0.9375rem] font-bold text-[#0F172A] leading-[1.3]">
                   {selectedTestCase.title}
                 </h2>
-                {selectedTestCase.description && (
-                  <p className="text-[0.75rem] text-[#64748B] leading-[1.5] mt-[0.375rem]">{selectedTestCase.description}</p>
-                )}
               </div>
               <button
                 onClick={() => setSelectedTestCase(null)}
@@ -2297,27 +2308,35 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 <i className="ri-close-line text-[1.125rem]"></i>
               </button>
             </div>
+            {selectedTestCase.description && (
+              <p className="text-[0.75rem] text-[#64748B] leading-[1.5] mt-[0.375rem]">{selectedTestCase.description}</p>
+            )}
           </div>
 
-          {/* §2 — Meta: 2-col grid */}
+          {/* §2 — Meta Grid (always visible, 2-col) */}
           <div className="px-5 py-[0.875rem] border-b border-[#F1F5F9] flex-shrink-0">
             <div className="grid grid-cols-2 gap-x-4 gap-y-[0.625rem]">
+              {/* Priority */}
               <div>
                 <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Priority</div>
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[0.625rem] font-semibold ${getPriorityColor(selectedTestCase.priority)}`}
-                >
-                  {selectedTestCase.priority.toUpperCase()}
-                </span>
+                {(() => {
+                  const pStyle: Record<string, { bg: string; color: string }> = {
+                    critical: { bg: '#FEE2E2', color: '#991B1B' },
+                    high:     { bg: '#FEE2E2', color: '#991B1B' },
+                    medium:   { bg: '#FEF3C7', color: '#92400E' },
+                    low:      { bg: '#F1F5F9', color: '#64748B' },
+                  };
+                  const s = pStyle[selectedTestCase.priority] || pStyle.low;
+                  return (
+                    <span className="inline-flex items-center gap-1 px-2 py-[0.125rem] rounded-full text-[0.625rem] font-semibold" style={{ background: s.bg, color: s.color }}>
+                      <i className="ri-flag-fill" />
+                      {selectedTestCase.priority.charAt(0).toUpperCase() + selectedTestCase.priority.slice(1)}
+                    </span>
+                  );
+                })()}
               </div>
 
-              <div>
-                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Updated</div>
-                <p className="text-[0.8125rem] font-medium text-[#0F172A]">
-                  {tcTimeAgo(selectedTestCase.updated_at)}
-                </p>
-              </div>
-
+              {/* Folder */}
               <div>
                 <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Folder</div>
                 {selectedTestCase.folder ? (() => {
@@ -2335,374 +2354,320 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 })() : <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>}
               </div>
 
+              {/* Tags */}
+              <div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Tags</div>
+                {selectedTestCase.tags ? (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedTestCase.tags.split(',').map((tag, index) => (
+                      <span key={index} className="inline-flex items-center px-[0.4375rem] py-0.5 bg-[#EEF2FF] text-[#4338CA] rounded text-[0.6875rem] font-medium">
+                        {tag.trim()}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>
+                )}
+              </div>
+
+              {/* Assignee */}
               <div>
                 <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Assignee</div>
                 {selectedTestCase.assignee ? (
                   <div className="flex items-center gap-[0.375rem]">
-                    <Avatar
-                      userId={selectedTestCase.assignee}
-                      name={selectedTestCase.assignee}
-                      size="xs"
-                    />
+                    <Avatar userId={selectedTestCase.assignee} name={selectedTestCase.assignee} size="xs" />
                     <span className="text-[0.8125rem] font-medium text-[#0F172A] truncate">{selectedTestCase.assignee}</span>
                   </div>
                 ) : (
                   <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>
                 )}
               </div>
-            </div>
 
-            <div className="mt-[0.625rem]">
-              <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Tags</div>
-              {selectedTestCase.tags ? (
-                <div className="flex flex-wrap gap-1">
-                  {selectedTestCase.tags.split(',').map((tag, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center px-[0.4375rem] py-0.5 bg-[#EEF2FF] text-[#4338CA] rounded text-[0.6875rem] font-medium"
-                    >
-                      {tag.trim()}
-                    </span>
-                  ))}
+              {/* Created */}
+              <div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Created</div>
+                <p className="text-[0.8125rem] font-medium text-[#0F172A]">
+                  {new Date(selectedTestCase.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Steps Toggle Bar */}
+          <button
+            onClick={() => setStepsCollapsed(!stepsCollapsed)}
+            className="flex items-center justify-between w-full px-5 py-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] transition-colors border-b border-[#E2E8F0] flex-shrink-0 cursor-pointer border-l-0 border-r-0 border-t-0"
+          >
+            <div className="flex items-center gap-2">
+              <i
+                className={`ri-arrow-down-s-line text-[0.875rem] transition-transform duration-200 ${stepsCollapsed ? '-rotate-90' : ''}`}
+                style={{ color: '#6366F1' }}
+              />
+              <span className="text-[0.6875rem] font-bold text-[#475569] uppercase tracking-[0.04em]">Test Steps</span>
+            </div>
+            <span className="text-[0.6875rem] text-[#94A3B8] font-medium">
+              {(() => {
+                const stepsList = parseStepsList(selectedTestCase.steps);
+                const attachCount = selectedTestCase.attachments?.length || 0;
+                const stepCount = stepsList.length;
+                let right = `${stepCount} step${stepCount !== 1 ? 's' : ''}`;
+                if (attachCount > 0) right += ` · ${attachCount} attachment${attachCount !== 1 ? 's' : ''}`;
+                return right;
+              })()}
+            </span>
+          </button>
+
+          {/* Steps Area (collapsible, max-height 40vh) */}
+          {!stepsCollapsed && (
+            <div className="max-h-[40vh] overflow-y-auto px-5 py-[0.875rem] border-b border-[#E2E8F0] flex-shrink-0 space-y-3">
+
+              {/* Precondition */}
+              {selectedTestCase.precondition && (
+                <div>
+                  <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem] flex items-center gap-1">
+                    <i className="ri-alert-line text-[0.75rem]"></i>
+                    Precondition
+                  </div>
+                  <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-md px-[0.75rem] py-[0.5rem]">
+                    <p className="text-[0.75rem] text-[#92400E] leading-[1.5]">{htmlToText(selectedTestCase.precondition)}</p>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-[0.8125rem] text-[#CBD5E1]">—</p>
               )}
-            </div>
-          </div>
 
-          {/* §3 — Tabs */}
-          <div className="flex border-b border-[#E2E8F0] flex-shrink-0">
-            {(['details', 'comments', 'results', 'issues', 'history'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2 text-[0.75rem] font-semibold transition-all cursor-pointer whitespace-nowrap bg-transparent border-t-0 border-l-0 border-r-0 capitalize ${
-                  activeTab === tab
-                    ? 'text-[#6366F1] border-b-2 border-[#6366F1]'
-                    : 'text-[#94A3B8] border-b-2 border-transparent hover:text-[#475569]'
-                }`}
-              >
-                {tab === 'comments' && comments.length > 0
-                  ? `Comments (${comments.length})`
-                  : tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          {/* §4 — Scrollable body: tab-specific content */}
-          <div className="flex-1 overflow-y-auto px-5 py-[0.875rem]">
-
-            {/* Details tab: precondition, steps, expected result, attachments */}
-            {activeTab === 'details' && (
-              <div className="space-y-[0.875rem]">
-            {(selectedTestCase.precondition || selectedTestCase.steps || selectedTestCase.expected_result || (selectedTestCase.attachments && selectedTestCase.attachments.length > 0)) ? (
-              <div className="space-y-[0.875rem]">
-                {selectedTestCase.precondition && (
-                  <div>
-                    <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem] flex items-center gap-1">
-                      <i className="ri-information-line text-[0.75rem]"></i>
-                      Precondition
-                    </div>
-                    <div className="bg-[#F8FAFC] rounded-lg px-[0.75rem] py-[0.625rem]">
-                      <p className="text-[0.75rem] text-[#475569] whitespace-pre-wrap leading-[1.5]">{htmlToText(selectedTestCase.precondition)}</p>
-                    </div>
-                  </div>
-                )}
-
-                {selectedTestCase.steps && (
-                  <div>
-                    <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem] flex items-center gap-1">
-                      <i className="ri-list-ordered text-[0.75rem]"></i>
-                      Test Steps
-                    </div>
+              {/* Steps with inline Expected Result */}
+              {(() => {
+                const stepsList = parseStepsList(selectedTestCase.steps);
+                if (stepsList.length > 0) {
+                  return (
                     <div className="flex flex-col gap-[0.375rem]">
-                      {selectedTestCase.steps.split('\n').filter(s => s.trim()).map((step, index) => {
-                        const content = step.replace(/^\d+\.\s*/, '');
-                        const isHtml = /<[^>]+>/.test(content);
-                        return (
-                          <div key={index} className="flex gap-2 bg-[#F8FAFC] rounded-lg px-[0.75rem] py-[0.5rem]">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 mt-[0.0625rem] bg-[#EEF2FF] text-[#4338CA]" style={{ fontSize: '0.625rem' }}>
-                              {index + 1}
-                            </div>
-                            {isHtml ? (
-                              <div
-                                className="text-[0.75rem] text-[#475569] flex-1 leading-[1.5] prose prose-sm max-w-none"
-                                dangerouslySetInnerHTML={{ __html: content }}
-                              />
+                      {stepsList.map((s, index) => (
+                        <div key={index} className="flex gap-2 bg-[#F8FAFC] rounded-lg px-[0.75rem] py-[0.5rem] items-start">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 mt-[0.0625rem] bg-[#EEF2FF] text-[#4338CA]" style={{ fontSize: '0.625rem' }}>
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            {/<[^>]+>/.test(s.step) ? (
+                              <div className="text-[0.75rem] text-[#334155] leading-[1.5] prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: s.step }} />
                             ) : (
-                              <p className="text-[0.75rem] text-[#475569] whitespace-pre-wrap flex-1 leading-[1.5]">{content}</p>
+                              <p className="text-[0.75rem] text-[#334155] whitespace-pre-wrap leading-[1.5]">{s.step}</p>
+                            )}
+                            {s.expectedResult && (
+                              <p className="text-[0.6875rem] text-[#16A34A] mt-1 flex items-start gap-1 leading-[1.4]">
+                                <i className="ri-checkbox-circle-line text-[0.75rem] flex-shrink-0 mt-[0.0625rem]"></i>
+                                {s.expectedResult}
+                              </p>
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
-                    <div className="mt-2 flex justify-end">
-                      <button
-                        onClick={handleAddStep}
-                        className="flex items-center gap-1 px-2.5 py-1 text-[0.75rem] text-[#6366F1] hover:text-[#4F46E5] hover:bg-[#EEF2FF] rounded-lg transition-all cursor-pointer whitespace-nowrap bg-transparent border-none"
-                      >
-                        <i className="ri-add-line text-sm"></i>
-                        Add step
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {selectedTestCase.expected_result && (
-                  <div>
-                    <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem] flex items-center gap-1">
-                      <i className="ri-check-double-line text-[0.75rem]"></i>
-                      Expected Result
-                    </div>
-                    <div className="flex flex-col gap-[0.375rem]">
-                      {selectedTestCase.expected_result.split('\n').filter(s => s.trim()).map((result, index) => {
-                        const content = result.replace(/^\d+\.\s*/, '');
-                        const isHtml = /<[^>]+>/.test(content);
-                        return (
-                          <div key={index} className="flex gap-2 bg-[#F8FAFC] rounded-lg px-[0.75rem] py-[0.5rem]">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 mt-[0.0625rem] bg-[#DCFCE7] text-[#166534]" style={{ fontSize: '0.625rem' }}>
-                              {index + 1}
-                            </div>
-                            {isHtml ? (
-                              <div
-                                className="text-[0.75rem] text-[#475569] flex-1 leading-[1.5] prose prose-sm max-w-none"
-                                dangerouslySetInnerHTML={{ __html: content }}
-                              />
-                            ) : (
-                              <p className="text-[0.75rem] text-[#475569] whitespace-pre-wrap flex-1 leading-[1.5]">{content}</p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {selectedTestCase.attachments && selectedTestCase.attachments.length > 0 && (
-                  <div>
-                    <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.375rem] flex items-center gap-1">
-                      <i className="ri-attachment-2 text-[0.75rem]"></i>
-                      Attachments ({selectedTestCase.attachments.length})
-                    </div>
-                    <div className="grid grid-cols-3 gap-[0.375rem]">
-                      {selectedTestCase.attachments.map((file, index) => (
-                        <div
-                          key={index}
-                          onClick={() => setImagePreview(file.url)}
-                          className="aspect-square rounded-md overflow-hidden bg-[#F1F5F9] cursor-pointer hover:border-[#C7D2FE] transition-all border border-[#E2E8F0] flex items-center justify-center"
-                        >
-                          <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-10">
-                <i className="ri-file-list-3-line text-3xl text-gray-200 mb-2 block"></i>
-                <p className="text-[0.8125rem] text-[#94A3B8]">No detail content yet</p>
-                <p className="text-[0.75rem] text-[#CBD5E1] mt-1">Add preconditions, test steps, or expected results when editing</p>
-              </div>
-            )}
-              </div>
-            )}
+                  );
+                } else if (selectedTestCase.expected_result) {
+                  return (
+                    <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg px-3 py-2.5">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <i className="ri-checkbox-circle-line text-[#16A34A] text-xs"></i>
+                        <span className="text-[0.6875rem] font-bold text-[#16A34A] uppercase tracking-wider">Expected Result</span>
+                      </div>
+                      <p className="text-xs text-[#166534] leading-relaxed">{selectedTestCase.expected_result}</p>
+                    </div>
+                  );
+                }
+                return <p className="text-[0.75rem] text-[#94A3B8] text-center py-2">No steps defined</p>;
+              })()}
 
-            {activeTab === 'comments' && (
-              <div className="space-y-4">
+              {/* Attachments */}
+              {selectedTestCase.attachments && selectedTestCase.attachments.length > 0 && (
                 <div>
-                  <textarea
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Add a comment..."
-                    rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
-                  ></textarea>
-                  <button 
-                    onClick={handlePostComment}
-                    className="mt-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap"
-                  >
-                    Post Comment
-                  </button>
+                  <div className="text-[0.625rem] font-bold text-[#94A3B8] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <i className="ri-attachment-2 text-[0.75rem]"></i>
+                    Attachments ({selectedTestCase.attachments.length})
+                  </div>
+                  <div className="grid grid-cols-3 gap-[0.375rem]">
+                    {selectedTestCase.attachments.map((file, index) => (
+                      <div
+                        key={index}
+                        onClick={() => setImagePreview(file.url)}
+                        className="h-12 rounded-md overflow-hidden bg-[#F1F5F9] cursor-pointer hover:border-[#C7D2FE] transition-all border border-[#E2E8F0] flex items-center justify-center gap-1"
+                        title={file.name}
+                      >
+                        {/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(file.name) ? (
+                          <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <>
+                            <i className="ri-file-text-line text-[#94A3B8] text-sm"></i>
+                            <span className="text-[0.625rem] text-[#94A3B8] truncate px-1">{file.name}</span>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  {comments.length === 0 ? (
-                    <div className="text-center py-8">
-                      <i className="ri-chat-3-line text-3xl text-gray-300 mb-2"></i>
-                      <p className="text-sm text-gray-500">No comments yet</p>
+              )}
+            </div>
+          )}
+
+          {/* §3 — Tabs (no Details tab) */}
+          <div className="flex border-b border-[#E2E8F0] flex-shrink-0">
+            {(['comments', 'results', 'issues', 'history'] as const).map((tab) => {
+              const labels: Record<string, string> = { comments: 'Comments', results: 'Results', issues: 'Issues', history: 'History' };
+              const counts: Record<string, number | undefined> = {
+                comments: comments.length || undefined,
+                results: testResults.length || undefined,
+                issues: testIssues.length || undefined,
+                history: undefined,
+              };
+              const count = counts[tab];
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex-1 flex items-center justify-center gap-1 py-2 text-[0.75rem] font-semibold transition-all cursor-pointer whitespace-nowrap bg-transparent border-t-0 border-l-0 border-r-0 ${
+                    activeTab === tab
+                      ? 'text-[#6366F1] border-b-2 border-[#6366F1]'
+                      : 'text-[#94A3B8] border-b-2 border-transparent hover:text-[#475569]'
+                  }`}
+                >
+                  {labels[tab]}
+                  {count !== undefined && count > 0 && (
+                    <span className={`text-[0.5625rem] font-bold px-1.5 py-0.5 rounded-full ${
+                      activeTab === tab ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* §4 — Tab Body (flex-1, scrollable) */}
+          <div className="flex-1 overflow-y-auto px-5 py-[0.875rem]">
+
+            {/* Comments Tab */}
+            {activeTab === 'comments' && (
+              <div className="flex flex-col h-full gap-3">
+                <div className="flex-1 space-y-3">
+                  {loadingComments ? (
+                    <div className="text-center py-6">
+                      <i className="ri-loader-4-line animate-spin text-xl text-[#94A3B8]"></i>
+                    </div>
+                  ) : comments.length === 0 ? (
+                    <div className="text-center py-6">
+                      <i className="ri-chat-3-line text-2xl text-[#CBD5E1] block mb-1"></i>
+                      <p className="text-[0.75rem] text-[#94A3B8]">No comments yet</p>
                     </div>
                   ) : (
                     comments.map((comment) => (
-                      <div key={comment.id} className="bg-gray-50 rounded-lg p-4 group relative">
-                        <div className="flex items-start gap-3">
-                          <Avatar
-                            userId={comment.user_id}
-                            name={comment.author}
-                            size="md"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-semibold text-gray-900">{comment.author}</span>
-                              <span className="text-xs text-gray-500">
-                                {comment.timestamp.toLocaleString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">{comment.text}</p>
-                          </div>
+                      <div key={comment.id} className="group">
+                        <div className="flex items-center gap-[0.375rem] mb-[0.25rem]">
+                          <Avatar userId={comment.user_id} name={comment.author} size="xs" />
+                          <span className="text-[0.75rem] font-semibold text-[#0F172A]">{comment.author}</span>
+                          <span className="text-[0.6875rem] text-[#94A3B8]">
+                            {comment.timestamp.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </span>
                           <button
                             onClick={() => handleDeleteComment(comment.id)}
-                            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                            className="ml-auto w-5 h-5 flex items-center justify-center text-[#CBD5E1] hover:text-[#EF4444] hover:bg-[#FEF2F2] rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100 border-none bg-transparent"
                           >
-                            <i className="ri-delete-bin-line"></i>
+                            <i className="ri-delete-bin-line text-xs"></i>
                           </button>
+                        </div>
+                        <div className="text-[0.75rem] text-[#475569] leading-[1.5] bg-[#F8FAFC] px-[0.75rem] py-[0.5rem] rounded-md border border-[#F1F5F9] ml-[1.625rem] whitespace-pre-wrap break-words">
+                          {comment.text}
                         </div>
                       </div>
                     ))
                   )}
                 </div>
+                {/* Comment input at the bottom */}
+                <div className="flex gap-2 flex-shrink-0 pt-1 border-t border-[#F1F5F9]">
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Add a comment..."
+                    rows={1}
+                    className="flex-1 text-[0.75rem] px-[0.75rem] py-[0.5rem] border border-[#E2E8F0] rounded-md focus:outline-none focus:border-[#6366F1] resize-none font-[inherit]"
+                    style={{ height: '2.5rem' }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (commentText.trim()) handlePostComment(); } }}
+                  />
+                  <button
+                    onClick={handlePostComment}
+                    disabled={!commentText.trim()}
+                    className="text-[0.75rem] font-semibold px-[0.75rem] py-[0.375rem] rounded-md bg-[#6366F1] text-white border-none cursor-pointer font-[inherit] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#4F46E5] transition-colors"
+                  >
+                    Send
+                  </button>
+                </div>
               </div>
             )}
 
+            {/* Results Tab */}
             {activeTab === 'results' && (
-              <div className="space-y-3">
+              <div>
                 {loadingResults ? (
                   <div className="text-center py-8">
-                    <i className="ri-loader-4-line animate-spin text-2xl text-gray-400 mb-2"></i>
-                    <p className="text-sm text-gray-500">Loading results...</p>
+                    <i className="ri-loader-4-line animate-spin text-2xl text-[#94A3B8] block mb-2"></i>
+                    <p className="text-[0.75rem] text-[#94A3B8]">Loading results...</p>
                   </div>
                 ) : testResults.length === 0 ? (
                   <div className="text-center py-8">
-                    <i className="ri-file-list-line text-3xl text-gray-300 mb-2"></i>
-                    <p className="text-sm text-gray-500">No test results yet</p>
+                    <i className="ri-file-list-line text-2xl text-[#CBD5E1] block mb-1"></i>
+                    <p className="text-[0.75rem] text-[#94A3B8]">No test results yet</p>
                   </div>
                 ) : (
-                  testResults.map((result) => (
-                    <div key={result.id} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                            result.status === 'passed' ? 'bg-green-100' :
-                            result.status === 'failed' ? 'bg-red-100' :
-                            result.status === 'blocked' ? 'bg-orange-100' :
-                            result.status === 'retest' ? 'bg-yellow-100' :
-                            'bg-gray-100'
-                          }`}>
-                            <i className={`text-sm ${
-                              result.status === 'passed' ? 'ri-checkbox-circle-fill text-green-600' :
-                              result.status === 'failed' ? 'ri-close-circle-fill text-red-600' :
-                              result.status === 'blocked' ? 'ri-forbid-fill text-orange-600' :
-                              result.status === 'retest' ? 'ri-refresh-line text-yellow-600' :
-                              'ri-question-fill text-gray-600'
-                            }`}></i>
-                          </div>
-                          <span className={`text-sm font-semibold capitalize ${
-                            result.status === 'passed' ? 'text-green-700' :
-                            result.status === 'failed' ? 'text-red-700' :
-                            result.status === 'blocked' ? 'text-orange-700' :
-                            result.status === 'retest' ? 'text-yellow-700' :
-                            'text-gray-700'
-                          }`}>
-                            {result.status}
-                          </span>
-                        </div>
-                        {result.elapsed && (
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <i className="ri-time-line"></i>
-                            {result.elapsed}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mb-2">
-                        <p className="text-xs text-gray-500 mb-1">Run</p>
-                        <p className="text-sm text-gray-900 font-medium">{result.run?.name || 'Unknown Run'}</p>
-                      </div>
-                      {result.author && (
-                        <div className="mb-2">
-                          <p className="text-xs text-gray-500 mb-1">Executed by</p>
-                          <p className="text-sm text-gray-700">{result.author}</p>
-                        </div>
-                      )}
-                      {result.note && (
-                        <div className="mb-2">
-                          <p className="text-xs text-gray-500 mb-1">Note</p>
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{result.note}</p>
-                        </div>
-                      )}
-                      {result.issues && result.issues.length > 0 && (
-                        <div className="mb-2">
-                          <p className="text-xs text-gray-500 mb-1">Linked Issues</p>
-                          <div className="flex flex-wrap gap-1">
-                            {result.issues.map((issue, idx) => (
-                              <span key={idx} className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
-                                <i className="ri-bug-line mr-1"></i>
-                                {issue}
-                              </span>
-                            ))}
+                  testResults.map((result) => {
+                    const statusStyles: Record<string, { bg: string; color: string; dot: string }> = {
+                      passed:   { bg: '#F0FDF4', color: '#166534', dot: '#22C55E' },
+                      failed:   { bg: '#FEF2F2', color: '#991B1B', dot: '#EF4444' },
+                      blocked:  { bg: '#FFF7ED', color: '#9A3412', dot: '#F97316' },
+                      retest:   { bg: '#F5F3FF', color: '#5B21B6', dot: '#8B5CF6' },
+                      untested: { bg: '#F8FAFC', color: '#64748B', dot: '#94A3B8' },
+                    };
+                    const st = statusStyles[result.status] || statusStyles.untested;
+                    const authorInitials = result.author ? result.author.substring(0, 2).toUpperCase() : '—';
+                    return (
+                      <div key={result.id} className="flex items-center gap-2 py-2 border-b border-[#F1F5F9]">
+                        <span className="inline-flex items-center gap-1 text-[0.6875rem] font-semibold px-2 py-[0.125rem] rounded-full flex-shrink-0" style={{ background: st.bg, color: st.color }}>
+                          <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: st.dot }}></span>
+                          {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[0.75rem] font-semibold text-[#0F172A] truncate">{result.run?.name || 'Unknown Run'}</div>
+                          <div className="text-[0.6875rem] text-[#94A3B8]">
+                            {result.created_at ? new Date(result.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                            {result.elapsed && result.elapsed !== '00:00' ? ` · ${result.elapsed}` : ''}
                           </div>
                         </div>
-                      )}
-                      <p className="text-xs text-gray-400 mt-2">
-                        {new Date(result.created_at).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                  ))
+                        <span className="text-[0.6875rem] text-[#64748B] flex-shrink-0">by {authorInitials}</span>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}
 
+            {/* Issues Tab */}
             {activeTab === 'issues' && (
-              <div className="space-y-3">
+              <div className="space-y-0">
                 {loadingIssues ? (
                   <div className="text-center py-8">
-                    <i className="ri-loader-4-line animate-spin text-2xl text-gray-400 mb-2"></i>
-                    <p className="text-sm text-gray-500">Loading issues...</p>
+                    <i className="ri-loader-4-line animate-spin text-2xl text-[#94A3B8]"></i>
                   </div>
                 ) : testIssues.length === 0 ? (
                   <div className="text-center py-8">
-                    <i className="ri-bug-line text-3xl text-gray-300 mb-2"></i>
-                    <p className="text-sm text-gray-500">No issues linked</p>
+                    <i className="ri-bug-line text-2xl text-[#CBD5E1] block mb-1"></i>
+                    <p className="text-[0.75rem] text-[#94A3B8]">No issues linked</p>
                   </div>
                 ) : (
                   testIssues.map((issue) => (
-                    <div key={issue.id} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <i className="ri-bug-line text-red-600"></i>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-900">{issue.issue_key}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            From run: <span className="font-medium text-gray-700">{issue.run_name}</span>
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                              issue.status === 'passed' ? 'bg-green-100 text-green-700' :
-                              issue.status === 'failed' ? 'bg-red-100 text-red-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {issue.status}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              {new Date(issue.created_at).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric'
-                              })}
-                            </span>
-                          </div>
-                        </div>
+                    <div key={issue.id} className="flex items-center gap-2 py-2 border-b border-[#F1F5F9]">
+                      <div className="w-6 h-6 rounded bg-[#FEF2F2] text-[#EF4444] flex items-center justify-center text-xs flex-shrink-0">
+                        <i className="ri-bug-line"></i>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[0.75rem] font-semibold text-[#0F172A]">{issue.issue_key}</div>
+                        <div className="text-[0.6875rem] text-[#94A3B8]">From run: {issue.run_name}</div>
                       </div>
                     </div>
                   ))
@@ -2710,79 +2675,51 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               </div>
             )}
 
-            {/* History 탭 */}
+            {/* History Tab */}
             {activeTab === 'history' && (
-              <div className="space-y-4">
+              <div className="space-y-0">
                 {loadingHistory ? (
-                  <div className="text-center py-8 text-gray-500">Loading...</div>
+                  <div className="text-center py-8 text-[#94A3B8] text-[0.75rem]">Loading...</div>
                 ) : historyData.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">No history available</div>
+                  <div className="text-center py-8">
+                    <i className="ri-time-line text-2xl text-[#CBD5E1] block mb-1"></i>
+                    <p className="text-[0.75rem] text-[#94A3B8]">No history yet</p>
+                  </div>
                 ) : (
                   historyData.map((history: any) => {
                     const userName = history.user?.full_name || history.user?.email || 'Unknown';
-                    const timestamp = new Date(history.created_at).toLocaleString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
-
-                    // 변경된 필드 목록 파싱
+                    const timestamp = new Date(history.created_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                     const changedFields = history.field_name?.split(', ').filter((f: string) => f && f !== 'no changes') || [];
-                    
-                    // 액션 타입에 따른 메시지 생성
                     let actionMessage = '';
-                    let actionColor = 'bg-indigo-100';
-                    
                     if (history.action_type === 'created') {
                       actionMessage = 'created this test case';
-                      actionColor = 'bg-green-100';
                     } else if (history.action_type === 'restored') {
                       actionMessage = 'restored to previous version';
-                      actionColor = 'bg-blue-100';
                     } else if (history.action_type === 'updated') {
-                      if (changedFields.length > 0) {
-                        const formattedFields = changedFields.map((f: string) => getFieldLabel(f));
-                        actionMessage = formattedFields.join(', ');
-                      } else {
-                        actionMessage = 'updated this test case';
-                      }
-                      actionColor = 'bg-yellow-100';
+                      actionMessage = changedFields.length > 0 ? changedFields.map((f: string) => getFieldLabel(f)).join(', ') : 'updated this test case';
                     }
-
                     return (
-                      <div key={history.id} className="flex items-start gap-3">
-                        <Avatar
-                          userId={history.user_id}
-                          name={history.user?.full_name}
-                          email={history.user?.email}
-                          size="lg"
-                        />
+                      <div key={history.id} className="flex gap-2 py-2 border-b border-[#F1F5F9]">
+                        <div className="w-[6px] h-[6px] rounded-full bg-[#C7D2FE] flex-shrink-0 mt-[0.4rem]"></div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <span className="font-semibold text-gray-900">{userName}</span>
+                          <div className="text-[0.75rem] text-[#334155] leading-[1.4]">
+                            <strong className="font-semibold text-[#0F172A]">{userName}</strong>
                             {history.action_type === 'updated' && changedFields.length > 0 ? (
-                              <span className="text-gray-700">
-                                changed {changedFields.map((f: string, idx: number) => (
-                                  <span key={f}>
-                                    <span className="font-semibold">{getFieldLabel(f)}</span>
-                                    {idx < changedFields.length - 1 && ', '}
-                                  </span>
-                                ))}
-                              </span>
+                              <> changed {changedFields.map((f: string, idx: number) => (
+                                <span key={f}><strong>{getFieldLabel(f)}</strong>{idx < changedFields.length - 1 && ', '}</span>
+                              ))}</>
                             ) : (
-                              <span className="text-gray-700">{actionMessage}</span>
+                              <> {actionMessage}</>
                             )}
                           </div>
-                          <p className="text-sm text-gray-500 mt-0.5">{timestamp}</p>
+                          <div className="text-[0.6875rem] text-[#94A3B8]">{timestamp}</div>
                           {history.action_type === 'updated' && history.old_value && history.new_value && (
                             <button
                               onClick={() => handleHistoryClick(history)}
-                              className="text-sm text-indigo-600 hover:text-indigo-700 mt-1 flex items-center gap-1 cursor-pointer"
+                              className="text-[0.75rem] text-[#6366F1] hover:text-[#4F46E5] mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none"
                             >
                               <i className="ri-eye-line"></i>
-                              Click to view changes
+                              View changes
                             </button>
                           )}
                         </div>
@@ -2794,7 +2731,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             )}
           </div>
 
-          {/* §5 — Action buttons (fixed footer) */}
+          {/* §5 — Footer */}
           <div className="px-5 py-[0.75rem] border-t border-[#E2E8F0] flex gap-2 flex-shrink-0">
             <button
               onClick={() => handleEdit(selectedTestCase)}
