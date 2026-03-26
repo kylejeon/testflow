@@ -29,15 +29,39 @@ interface Props {
   projectName: string;
 }
 
+// Module-level cache — persists across tab navigations
+const projectNameCache = new Map<string, string>();
+
 export default function ProjectHeader({ projectId, projectName }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [resolvedName, setResolvedName] = useState<string>(
+    projectName || projectNameCache.get(projectId) || ''
+  );
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const projectDropRef = useRef<HTMLDivElement>(null);
+
+  // Sync prop → cache → state
+  useEffect(() => {
+    if (projectName) {
+      projectNameCache.set(projectId, projectName);
+      setResolvedName(projectName);
+    } else if (projectNameCache.has(projectId)) {
+      setResolvedName(projectNameCache.get(projectId)!);
+    } else if (projectId) {
+      // Fetch directly if not cached and prop is empty
+      supabase.from('projects').select('name').eq('id', projectId).maybeSingle().then(({ data }) => {
+        if (data?.name) {
+          projectNameCache.set(projectId, data.name);
+          setResolvedName(data.name);
+        }
+      });
+    }
+  }, [projectId, projectName]);
 
   useEffect(() => {
     fetchUserProfile();
@@ -186,7 +210,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
           className="hover:bg-slate-100 transition-colors"
         >
           <span style={{ maxWidth: '20rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {projectName}
+            {resolvedName}
           </span>
           <i className="ri-arrow-down-s-line" style={{ fontSize: '1rem', color: '#94A3B8' }}></i>
         </button>
