@@ -93,11 +93,11 @@ const STATUS_COLORS: Record<string, string> = {
   untested: 'bg-gray-50 text-gray-500 border border-gray-200',
 };
 
-const PRIORITY_COLORS: Record<string, string> = {
-  critical: 'bg-red-100 text-red-700',
-  high:     'bg-orange-100 text-orange-700',
-  medium:   'bg-yellow-100 text-yellow-700',
-  low:      'bg-gray-100 text-gray-600',
+const PRIORITY_STYLE: Record<string, { bg: string; color: string }> = {
+  critical: { bg: '#FEE2E2', color: '#991B1B' },
+  high:     { bg: '#FEE2E2', color: '#991B1B' },
+  medium:   { bg: '#FEF3C7', color: '#D97706' },
+  low:      { bg: '#F1F5F9', color: '#64748B' },
 };
 
 function formatDate(iso: string) {
@@ -311,24 +311,24 @@ export function DetailPanel({
 
       {/* ② Quick Actions Bar — Run Only */}
       {isRun && (
-        <div className="flex items-center gap-1.5 px-5 py-2.5 border-b border-gray-200 flex-shrink-0 bg-gray-50/60">
+        <div className="flex items-center gap-1.5 px-5 py-[0.625rem] border-b border-[#F1F5F9] flex-shrink-0">
           {/* Status select */}
           <select
             value={runStatus}
             onChange={(e) => onStatusChange?.(e.target.value)}
-            className={`px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${STATUS_COLORS[runStatus] || STATUS_COLORS.untested}`}
+            className={`px-2.5 py-[0.3125rem] rounded-full text-xs font-semibold cursor-pointer border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${STATUS_COLORS[runStatus] || STATUS_COLORS.untested}`}
           >
-            <option value="untested">Untested</option>
-            <option value="passed">Passed</option>
-            <option value="failed">Failed</option>
-            <option value="blocked">Blocked</option>
-            <option value="retest">Retest</option>
+            <option value="untested">— Untested</option>
+            <option value="passed">✓ Passed</option>
+            <option value="failed">✕ Failed</option>
+            <option value="blocked">⊘ Blocked</option>
+            <option value="retest">↻ Retest</option>
           </select>
 
           {/* Add Result */}
           <button
             onClick={onAddResult}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer border-0"
+            className="flex items-center gap-1 px-2.5 py-[0.3125rem] rounded text-xs font-semibold bg-[#F1F5F9] text-[#475569] hover:bg-[#E2E8F0] transition-colors cursor-pointer border-0"
           >
             <i className="ri-add-line text-sm" />
             Add Result
@@ -339,31 +339,29 @@ export function DetailPanel({
           {/* Pass & Next */}
           <button
             onClick={onPassAndNext}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors cursor-pointer border-0"
+            className="flex items-center gap-1 px-2.5 py-[0.3125rem] rounded text-xs font-semibold bg-[#22C55E] text-white hover:bg-[#16A34A] transition-colors cursor-pointer border-0"
           >
             <i className="ri-check-line text-sm" />
             Pass &amp; Next
           </button>
 
           {/* Nav ↑↓ */}
-          <div className="flex gap-0.5">
-            <button
-              onClick={onPrev}
-              disabled={!canGoPrev}
-              className="w-7 h-7 flex items-center justify-center rounded-md bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              title="Previous"
-            >
-              <i className="ri-arrow-up-s-line text-base" />
-            </button>
-            <button
-              onClick={onNext}
-              disabled={!canGoNext}
-              className="w-7 h-7 flex items-center justify-center rounded-md bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              title="Next"
-            >
-              <i className="ri-arrow-down-s-line text-base" />
-            </button>
-          </div>
+          <button
+            onClick={onPrev}
+            disabled={!canGoPrev}
+            className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-[#64748B] hover:bg-[#F8FAFC] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            title="Previous"
+          >
+            <i className="ri-arrow-up-s-line text-[0.875rem]" />
+          </button>
+          <button
+            onClick={onNext}
+            disabled={!canGoNext}
+            className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white text-[#64748B] hover:bg-[#F8FAFC] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            title="Next"
+          >
+            <i className="ri-arrow-down-s-line text-[0.875rem]" />
+          </button>
         </div>
       )}
 
@@ -373,9 +371,18 @@ export function DetailPanel({
           {/* Priority */}
           <div>
             <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Priority</div>
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[0.625rem] font-semibold ${PRIORITY_COLORS[testCase.priority] || PRIORITY_COLORS.low}`}>
-              {testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1)}
-            </span>
+            {(() => {
+              const style = PRIORITY_STYLE[testCase.priority] || PRIORITY_STYLE.low;
+              return (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-[0.125rem] rounded-full text-[0.625rem] font-semibold"
+                  style={{ background: style.bg, color: style.color }}
+                >
+                  <i className="ri-flag-fill" />
+                  {testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1)}
+                </span>
+              );
+            })()}
           </div>
 
           {/* Folder */}

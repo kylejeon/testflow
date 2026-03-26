@@ -1566,153 +1566,79 @@ export default function RunDetail() {
           </div>
 
           <div className={`${selectedTestCase ? 'flex-1' : 'flex-1'} overflow-y-auto`}>
-            <div className="p-8">
-              <div className="mb-8">
-                <Link 
+            <div className="p-7">
+              <div className="mb-5">
+                <Link
                   to={`/projects/${projectId}/runs`}
-                  className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4 cursor-pointer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline mb-1 cursor-pointer"
                 >
-                  <i className="ri-arrow-left-line"></i>
+                  <i className="ri-arrow-left-line text-sm"></i>
                   Back to Runs
                 </Link>
-                
+
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-bold text-gray-900">{run?.name}</h1>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h1 className="text-[1.375rem] font-bold text-[#0F172A]">{run?.name}</h1>
+                      {(() => {
+                        const statusLabel = run?.status === 'completed' ? 'Completed' :
+                          run?.status === 'in_progress' ? 'In Progress' :
+                          run?.status === 'under_review' ? 'Under Review' :
+                          run?.status === 'paused' ? 'Paused' : 'New';
+                        const isInProgress = run?.status === 'in_progress';
+                        return (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold bg-[#DBEAFE] text-[#1D4ED8]">
+                            {isInProgress && <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-pulse" />}
+                            {statusLabel}
+                          </span>
+                        );
+                      })()}
                       {run?.is_automated && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold border border-purple-200">
-                          <i className="ri-robot-line"></i>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold bg-[#F0F9FF] text-[#0284C7]">
+                          <i className="ri-robot-line" style={{ fontSize: '0.75rem' }}></i>
                           Automated
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs text-gray-400 font-mono">{runId}</span>
-                      <button
-                        onClick={handleCopyRunId}
-                        title="Run ID 복사"
-                        className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-all cursor-pointer whitespace-nowrap border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 text-gray-500 bg-white"
-                      >
-                        {copiedRunId ? (
-                          <>
-                            <i className="ri-check-line text-indigo-600"></i>
-                            <span className="text-indigo-600">Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <i className="ri-file-copy-line"></i>
-                            Copy ID
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-gray-600">{run?.description}</p>
+                    <p className="text-[0.8125rem] text-[#94A3B8]">
+                      {run?.created_at && `Started ${new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · `}
+                      {testCases.length > 0 && `${Math.round((testCases.filter(tc => tc.runStatus !== 'untested').length / testCases.length) * 100)}% completed · `}
+                      {testCases.length} test cases
+                    </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {/* Focus Mode button */}
+                  <div className="flex items-center gap-2">
                     {testCases.length > 0 && (
                       <button
                         onClick={() => setFocusModeOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-semibold transition-colors"
+                        className="flex items-center gap-1.5 px-3.5 py-[0.4375rem] bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-[0.8125rem] font-semibold transition-colors cursor-pointer border border-indigo-500"
                         title="Cmd+Shift+F"
                       >
-                        <i className="ri-focus-3-line" />
+                        <i className="ri-focus-3-line text-base" />
                         Focus Mode
                       </button>
                     )}
-                    <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold ${
-                      run?.status === 'completed' ? 'bg-green-100 text-green-700' :
-                      run?.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                      run?.status === 'under_review' ? 'bg-purple-100 text-purple-700' :
-                      run?.status === 'paused' ? 'bg-amber-100 text-amber-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      <i className={`${
-                      run?.status === 'completed' ? 'ri-checkbox-circle-fill' :
-                      run?.status === 'in_progress' ? 'ri-loader-4-line animate-spin' :
-                      run?.status === 'under_review' ? 'ri-eye-line' :
-                      run?.status === 'paused' ? 'ri-pause-circle-fill' :
-                      'ri-time-fill'
-                    } text-lg`}></i>
-                      {run?.status === 'completed' ? 'Completed' :
-                       run?.status === 'in_progress' ? 'In Progress' :
-                       run?.status === 'under_review' ? 'Under Review' :
-                       run?.status === 'paused' ? 'Paused' :
-                       'New'}
-                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-5 gap-6 mb-8">
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <i className="ri-file-list-3-line text-blue-600 text-xl"></i>
+              <div className="grid grid-cols-5 gap-[0.875rem] mb-4">
+                {[
+                  { label: 'Total', icon: 'ri-file-list-3-line', iconBg: '#DBEAFE', iconColor: '#2563EB', value: testCases.length, valueColor: undefined },
+                  { label: 'Passed', icon: 'ri-checkbox-circle-fill', iconBg: '#D1FAE5', iconColor: '#16A34A', value: testCases.filter(tc => tc.runStatus === 'passed').length, valueColor: '#16A34A' },
+                  { label: 'Failed', icon: 'ri-close-circle-fill', iconBg: '#FEE2E2', iconColor: '#DC2626', value: testCases.filter(tc => tc.runStatus === 'failed').length, valueColor: undefined },
+                  { label: 'Blocked', icon: 'ri-forbid-fill', iconBg: '#F1F5F9', iconColor: '#64748B', value: testCases.filter(tc => tc.runStatus === 'blocked').length, valueColor: undefined },
+                  { label: 'Untested', icon: 'ri-time-fill', iconBg: '#FEF3C7', iconColor: '#D97706', value: testCases.filter(tc => tc.runStatus === 'untested').length, valueColor: undefined },
+                ].map(({ label, icon, iconBg, iconColor, value, valueColor }) => (
+                  <div key={label} className="bg-white rounded-[0.625rem] border border-gray-200 py-4 px-[1.125rem] flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: iconBg }}>
+                      <i className={`${icon} text-base`} style={{ color: iconColor }}></i>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Total Tests</p>
-                      <p className="text-2xl font-bold text-gray-900">{testCases.length}</p>
+                      <p className="text-[0.6875rem] text-[#94A3B8] font-medium">{label}</p>
+                      <p className="text-[1.75rem] font-extrabold text-[#0F172A] leading-[1.2]" style={valueColor ? { color: valueColor } : undefined}>{value}</p>
                     </div>
                   </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <i className="ri-checkbox-circle-fill text-green-600 text-xl"></i>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Passed</p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {testCases.filter(tc => tc.runStatus === 'passed').length}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                      <i className="ri-close-circle-fill text-red-600 text-xl"></i>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Failed</p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {testCases.filter(tc => tc.runStatus === 'failed').length}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <i className="ri-forbid-fill text-gray-600 text-xl"></i>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Blocked</p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {testCases.filter(tc => tc.runStatus === 'blocked').length}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                      <i className="ri-time-fill text-yellow-600 text-xl"></i>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Untested</p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {testCases.filter(tc => tc.runStatus === 'untested').length}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
 
               {/* 진행률 바 */}
@@ -1731,14 +1657,14 @@ export default function RunDetail() {
                 const untestedPct = (untested / total) * 100;
 
                 return (
-                  <div className="bg-white rounded-xl border border-gray-200 p-5 mb-8">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="text-sm font-semibold text-gray-700">Progress</span>
-                      <span className="text-sm font-bold text-gray-900">
-                        {total > 0 ? Math.round(((passed + failed + blocked + retest) / total) * 100) : 0}% Completed
+                  <div className="bg-white rounded-[0.625rem] border border-gray-200 py-4 px-[1.125rem] mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[0.8125rem] font-semibold text-[#0F172A]">Execution Progress</span>
+                      <span className="text-[0.8125rem] font-bold text-[#0F172A]">
+                        {total > 0 ? Math.round(((passed + failed + blocked + retest) / total) * 100) : 0}%
                       </span>
                     </div>
-                    <div className="flex h-3 rounded-full overflow-hidden bg-gray-100 gap-px">
+                    <div className="flex h-2 rounded-full overflow-hidden bg-[#F1F5F9] gap-px mb-2">
                       {passed > 0 && (
                         <div
                           className="bg-green-500 transition-all duration-500"
@@ -1775,83 +1701,59 @@ export default function RunDetail() {
                         />
                       )}
                     </div>
-                    <div className="flex items-center gap-4 mt-3 flex-wrap">
-                      {passed > 0 && (
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-                          <span className="text-xs text-gray-600">Passed <strong>{passed}</strong></span>
-                        </div>
-                      )}
-                      {failed > 0 && (
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-                          <span className="text-xs text-gray-600">Failed <strong>{failed}</strong></span>
-                        </div>
-                      )}
-                      {blocked > 0 && (
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div>
-                          <span className="text-xs text-gray-600">Blocked <strong>{blocked}</strong></span>
-                        </div>
-                      )}
-                      {retest > 0 && (
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
-                          <span className="text-xs text-gray-600">Retest <strong>{retest}</strong></span>
-                        </div>
-                      )}
-                      {untested > 0 && (
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-gray-200 border border-gray-300"></div>
-                          <span className="text-xs text-gray-600">Untested <strong>{untested}</strong></span>
-                        </div>
-                      )}
+                    <div className="flex items-center gap-4 flex-wrap">
+                      {[
+                        { count: passed, color: '#22C55E', label: 'Passed' },
+                        { count: failed, color: '#EF4444', label: 'Failed' },
+                        { count: blocked, color: '#94A3B8', label: 'Blocked' },
+                        { count: retest, color: '#FACC15', label: 'Retest' },
+                        { count: untested, color: '#E2E8F0', label: 'Untested' },
+                      ].map(({ count, color, label }) => (
+                        <span key={label} className="inline-flex items-center gap-[0.3125rem] text-[0.6875rem] text-[#64748B]">
+                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                          <strong>{count}</strong> {label}
+                        </span>
+                      ))}
                     </div>
                   </div>
                 );
               })()}
 
-              <div className="bg-white rounded-xl border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">Test Cases</h2>
+              <div className="bg-white rounded-[0.625rem] border border-gray-200 overflow-hidden">
+                <div className="flex items-center gap-[0.625rem] py-[0.875rem] px-[1.125rem] border-b border-gray-200">
+                  <div className="flex-1 relative">
+                    <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-[0.9375rem]"></i>
+                    <input
+                      type="text"
+                      placeholder="Search test cases..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full text-[0.8125rem] py-[0.4375rem] pl-[2.125rem] pr-[0.875rem] rounded-lg border border-gray-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 bg-white text-[#334155]"
+                    />
                   </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 relative">
-                      <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg w-5 h-5 flex items-center justify-center"></i>
-                      <input
-                        type="text"
-                        placeholder="Search test cases..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                      />
-                    </div>
-                    
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="passed">Passed</option>
-                      <option value="failed">Failed</option>
-                      <option value="pending">Pending</option>
-                    </select>
-
-                    <select
-                      value={priorityFilter}
-                      onChange={(e) => setPriorityFilter(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
-                    >
-                      <option value="all">All Priority</option>
-                      <option value="critical">Critical</option>
-                      <option value="high">High</option>
-                      <option value="medium">Medium</option>
-                      <option value="low">Low</option>
-                    </select>
-                  </div>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="text-[0.8125rem] py-[0.4375rem] px-[0.625rem] rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium text-[#334155] bg-white"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="passed">Passed</option>
+                    <option value="failed">Failed</option>
+                    <option value="blocked">Blocked</option>
+                    <option value="retest">Retest</option>
+                    <option value="untested">Untested</option>
+                  </select>
+                  <select
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
+                    className="text-[0.8125rem] py-[0.4375rem] px-[0.625rem] rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium text-[#334155] bg-white"
+                  >
+                    <option value="all">All Priority</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
                 </div>
 
                 <div>
@@ -1905,29 +1807,29 @@ export default function RunDetail() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200">
+                  <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-[#F8FAFC] border-b border-gray-200">
                     <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
-                        className="w-4 h-4 text-indigo-600 cursor-pointer"
+                        className="w-[15px] h-[15px] accent-indigo-600 cursor-pointer"
                         checked={filteredTestCases.length > 0 && selectedIds.size === filteredTestCases.length}
                         onChange={(e) => handleSelectAll(e.target.checked)}
                       />
                     </div>
                     <div className="col-span-1">
-                      <span className="text-xs font-semibold text-gray-600 uppercase">ID</span>
+                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">ID</span>
                     </div>
                     <div className="col-span-3">
-                      <span className="text-xs font-semibold text-gray-600 uppercase">Test Case</span>
+                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Test Case</span>
                     </div>
                     <div className="col-span-1">
-                      <span className="text-xs font-semibold text-gray-600 uppercase">Priority</span>
+                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Priority</span>
                     </div>
                     <div className="col-span-3 flex items-center">
-                      <span className="text-xs font-semibold text-gray-600 uppercase">Assignee</span>
+                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Assignee</span>
                     </div>
                     <div className="col-span-3 flex items-center">
-                      <span className="text-xs font-semibold text-gray-600 uppercase">Status</span>
+                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Status</span>
                     </div>
                   </div>
 
@@ -1943,8 +1845,8 @@ export default function RunDetail() {
                     filteredTestCases.map((testCase) => (
                       <div
                         key={testCase.id}
-                        className={`grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-all cursor-pointer ${
-                          selectedTestCase?.id === testCase.id ? 'bg-indigo-50' : ''
+                        className={`grid grid-cols-12 gap-4 px-4 py-[0.625rem] border-b border-[#F1F5F9] hover:bg-[#FAFAFF] transition-colors cursor-pointer ${
+                          selectedTestCase?.id === testCase.id ? 'bg-[#EEF2FF]' : ''
                         }`}
                         style={(testCase as any).lifecycle_status === 'deprecated' ? { opacity: 0.6 } : undefined}
                         onClick={() => setSelectedTestCase(testCase)}
@@ -1952,32 +1854,30 @@ export default function RunDetail() {
                         <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
-                            className="w-4 h-4 text-indigo-600 cursor-pointer"
+                            className="w-[15px] h-[15px] accent-indigo-600 cursor-pointer"
                             checked={selectedIds.has(testCase.id)}
                             onChange={(e) => handleSelectOne(testCase.id, e.target.checked)}
                           />
                         </div>
                         <div className="col-span-1 flex items-center">
-                          <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded truncate max-w-full" title={testCase.id}>
+                          <span className="font-mono text-[0.75rem] text-[#94A3B8] bg-[#F1F5F9] px-1.5 py-0.5 rounded truncate max-w-full" title={testCase.id}>
                             {(testCase as any).custom_id || testCase.id.substring(0, 8)}
                           </span>
                         </div>
-                        <div className="col-span-3">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-1 hover:text-indigo-600">
+                        <div className="col-span-3 flex items-center">
+                          <span className="text-[0.8125rem] font-semibold text-[#0F172A] truncate block max-w-[260px] hover:text-indigo-600">
                             {testCase.title}
-                          </h3>
-                          {testCase.description && (
-                            <p className="text-xs text-gray-600 truncate">{testCase.description}</p>
-                          )}
+                          </span>
                         </div>
                         <div className="col-span-1 flex items-center">
-                          <span className={`inline-flex items-center gap-1 text-xs font-normal ${
-                            testCase.priority === 'high' ? 'text-red-600' :
-                            testCase.priority === 'medium' ? 'text-yellow-600' :
-                            'text-gray-600'
+                          <span className={`inline-flex items-center gap-1 text-[0.6875rem] font-semibold ${
+                            testCase.priority === 'critical' ? 'text-[#DC2626]' :
+                            testCase.priority === 'high' ? 'text-[#DC2626]' :
+                            testCase.priority === 'medium' ? 'text-[#D97706]' :
+                            'text-[#64748B]'
                           }`}>
                             <i className="ri-flag-fill"></i>
-                            {testCase.priority.toUpperCase()}
+                            {testCase.priority === 'medium' ? 'Med' : testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1)}
                           </span>
                         </div>
                         <div className="col-span-3 flex items-center" onClick={(e) => e.stopPropagation()}>
