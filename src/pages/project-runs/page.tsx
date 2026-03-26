@@ -824,7 +824,7 @@ export default function ProjectRunsPage() {
           .from('test_runs')
           .update({
             name: formData.name,
-            description: formData.description.trim() || null,
+            ...(formData.description !== undefined ? { description: formData.description.trim() || null } : {}),
             milestone_id: formData.milestone_id && formData.milestone_id.trim() !== '' ? formData.milestone_id : null,
             status: formData.status,
             tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
@@ -861,7 +861,7 @@ export default function ProjectRunsPage() {
           project_id: id,
           milestone_id: formData.milestone_id && formData.milestone_id.trim() !== '' ? formData.milestone_id : null,
           name: formData.name,
-          description: formData.description.trim() || null,
+          ...(formData.description !== undefined ? { description: formData.description.trim() || null } : {}),
           status: formData.status,
           progress: 0,
           passed: 0,
