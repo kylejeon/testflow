@@ -1,9 +1,9 @@
-import { LogoMark } from '../../components/Logo';
 import PageLoader from '../../components/PageLoader';
 import { StatusBadge, type TestStatus } from '../../components/StatusBadge';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import ProjectHeader from '../../components/ProjectHeader';
 
 interface Milestone {
   id: string;
@@ -63,19 +63,15 @@ interface ActivityLog {
   author: string;
 }
 
-interface UserProfile {
-  email: string;
-  full_name: string;
-  subscription_tier: number;
-  avatar_emoji: string;
+interface TcStats {
+  passed: number;
+  failed: number;
+  blocked: number;
+  retest: number;
+  untested: number;
+  total: number;
+  passRate: number;
 }
-
-const TIER_INFO = {
-  1: { name: 'Free', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: 'ri-user-line' },
-  2: { name: 'Starter', color: 'bg-indigo-50 text-indigo-700 border-indigo-300', icon: 'ri-vip-crown-line' },
-  3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
-  4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
-};
 
 export default function MilestoneDetail() {
   const { projectId, milestoneId } = useParams();
@@ -87,7 +83,6 @@ export default function MilestoneDetail() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<'results' | 'status' | 'activity' | 'issues'>('results');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({ name: '', start_date: '', end_date: '' });
@@ -95,58 +90,20 @@ export default function MilestoneDetail() {
   const [activityStats, setActivityStats] = useState({ notes: 0, passed: 0, failed: 0, retest: 0 });
   const [activityStatusFilter, setActivityStatusFilter] = useState<string>('all');
   const [activityPage, setActivityPage] = useState(1);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [contributorProfiles, setContributorProfiles] = useState<Map<string, string | null>>(new Map());
+  const [tcStats, setTcStats] = useState<TcStats>({ passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, total: 0, passRate: 0 });
   const activityPerPage = 10;
 
   useEffect(() => {
     if (projectId && milestoneId) {
       fetchData();
     }
-    fetchUserProfile();
   }, [projectId, milestoneId]);
-
-  const fetchUserProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('email, full_name, subscription_tier, avatar_emoji')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setUserProfile({
-          email: data.email || user.email || '',
-          full_name: data.full_name || '',
-          subscription_tier: data.subscription_tier || 1,
-          avatar_emoji: data.avatar_emoji || '',
-        });
-      }
-    } catch (error) {
-      console.error('프로필 로딩 오류:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      setShowProfileMenu(false);
-      navigate('/auth');
-    } catch (err) {
-      console.error('Logout failed:', err);
-    }
-  };
 
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      // Fetch project
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .select('*')
@@ -156,24 +113,6 @@ export default function MilestoneDetail() {
       if (projectError) throw projectError;
       setProject(projectData);
 
-      // Get jira_project_key from project and jira domain from jira_settings
-      const jiraProjectKey = projectData?.jira_project_key || '';
-      
-      // Fetch Jira settings for domain (global settings, not project-specific)
-      const { data: jiraSettings } = await supabase
-        .from('jira_settings')
-        .select('*')
-        .maybeSingle();
-
-      // Add https:// prefix if domain exists and doesn't already have it
-      let jiraDomain = '';
-      if (jiraSettings?.domain) {
-        jiraDomain = jiraSettings.domain.startsWith('http') 
-          ? jiraSettings.domain 
-          : `https://${jiraSettings.domain}`;
-      }
-
-      // Fetch milestone
       const { data: milestoneData, error: milestoneError } = await supabase
         .from('milestones')
         .select('*')
@@ -207,17 +146,14 @@ export default function MilestoneDetail() {
 
       setMilestone(correctedMilestone);
 
-      // Fetch sub milestones
-      const { data: subMilestonesData, error: subMilestonesError } = await supabase
+      const { data: subMilestonesData } = await supabase
         .from('milestones')
         .select('*')
         .eq('parent_milestone_id', milestoneId)
         .order('start_date', { ascending: true });
 
-      if (subMilestonesError) throw subMilestonesError;
       setSubMilestones(subMilestonesData || []);
 
-      // Fetch runs for this milestone
       const { data: runsData, error: runsError } = await supabase
         .from('test_runs')
         .select('*')
@@ -226,32 +162,20 @@ export default function MilestoneDetail() {
 
       if (runsError) throw runsError;
 
-      // Create a map of run names for issue display
-      const runNameMap = new Map<string, string>();
-      (runsData || []).forEach(run => {
-        runNameMap.set(run.id, run.name);
-      });
-
-      // Fetch all test case ids from runs
       const allTestCaseIds = new Set<string>();
       (runsData || []).forEach(run => {
         run.test_case_ids.forEach((id: string) => allTestCaseIds.add(id));
       });
 
-      // Fetch test case names
       const testCaseNameMap = new Map<string, string>();
       if (allTestCaseIds.size > 0) {
         const { data: testCasesData } = await supabase
           .from('test_cases')
           .select('id, title')
           .in('id', Array.from(allTestCaseIds));
-        
-        (testCasesData || []).forEach(tc => {
-          testCaseNameMap.set(tc.id, tc.title);
-        });
+        (testCasesData || []).forEach(tc => { testCaseNameMap.set(tc.id, tc.title); });
       }
 
-      // Calculate actual progress for each test run and collect issues
       const allIssues: Issue[] = [];
       const issueIdSet = new Set<string>();
       const allActivityLogs: ActivityLog[] = [];
@@ -259,6 +183,9 @@ export default function MilestoneDetail() {
       let passedCount = 0;
       let failedCount = 0;
       let retestCount = 0;
+
+      // For global TC stats
+      const allRawResults: Array<{ tcId: string; status: string; createdAt: string }> = [];
 
       const runsWithProgress = await Promise.all(
         (runsData || []).map(async (run) => {
@@ -269,13 +196,15 @@ export default function MilestoneDetail() {
             .order('created_at', { ascending: false });
 
           const statusMap = new Map<string, string>();
-          
+
           testResultsData?.forEach(result => {
+            // Accumulate for global stats
+            allRawResults.push({ tcId: result.test_case_id, status: result.status, createdAt: result.created_at });
+
             if (!statusMap.has(result.test_case_id)) {
               statusMap.set(result.test_case_id, result.status);
             }
 
-            // status 로그 추가 (untested 제외)
             if (result.status && result.status !== 'untested') {
               allActivityLogs.push({
                 id: `${run.id}-${result.test_case_id}-${result.created_at}-status`,
@@ -287,7 +216,6 @@ export default function MilestoneDetail() {
               });
             }
 
-            // note가 있으면 별도 note 로그 추가 (자동 생성 텍스트 제외)
             const autoNotePatterns = ['Status changed to', 'Passed via', 'via Pass', 'via pass'];
             const isAutoNote = autoNotePatterns.some(pattern => result.note?.includes(pattern));
             if (result.note && result.note.trim() && !isAutoNote) {
@@ -299,49 +227,27 @@ export default function MilestoneDetail() {
                 timestamp: new Date(result.created_at),
                 author: result.author || 'Unknown',
               });
+              notesCount++;
             }
 
-            // Count stats
-            if (result.note && result.note.trim() && !isAutoNote) notesCount++;
             if (result.status === 'passed') passedCount++;
             if (result.status === 'failed') failedCount++;
             if (result.status === 'retest') retestCount++;
           });
 
-          let passed_count = 0;
-          let failed_count = 0;
-          let blocked_count = 0;
-          let retest_count = 0;
-          let untested_count = 0;
-
+          let passed_count = 0, failed_count = 0, blocked_count = 0, retest_count = 0, untested_count = 0;
           run.test_case_ids.forEach((tcId: string) => {
             const status = statusMap.get(tcId) || 'untested';
             switch (status) {
-              case 'passed':
-                passed_count++;
-                break;
-              case 'failed':
-                failed_count++;
-                break;
-              case 'blocked':
-                blocked_count++;
-                break;
-              case 'retest':
-                retest_count++;
-                break;
-              default:
-                untested_count++;
+              case 'passed': passed_count++; break;
+              case 'failed': failed_count++; break;
+              case 'blocked': blocked_count++; break;
+              case 'retest': retest_count++; break;
+              default: untested_count++;
             }
           });
 
-          return {
-            ...run,
-            passed_count,
-            failed_count,
-            blocked_count,
-            retest_count,
-            untested_count,
-          };
+          return { ...run, passed_count, failed_count, blocked_count, retest_count, untested_count };
         })
       );
 
@@ -350,21 +256,34 @@ export default function MilestoneDetail() {
       setActivityLogs(allActivityLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
       setActivityStats({ notes: notesCount, passed: passedCount, failed: failedCount, retest: retestCount });
 
-      // Fetch contributor profiles after activity logs are set
-      const uniqueAuthors = Array.from(new Set(allActivityLogs.map(l => l.author)));
-      fetchContributorProfiles(uniqueAuthors);
+      // Compute global TC stats (unique TCs, latest result wins)
+      const globalTcStatusMap = new Map<string, string>();
+      allRawResults
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .forEach(r => { globalTcStatusMap.set(r.tcId, r.status); });
 
-      // Fetch sessions for this milestone
-      const { data: sessionsData, error: sessionsError } = await supabase
+      let aggPassed = 0, aggFailed = 0, aggBlocked = 0, aggRetest = 0;
+      globalTcStatusMap.forEach(status => {
+        if (status === 'passed') aggPassed++;
+        else if (status === 'failed') aggFailed++;
+        else if (status === 'blocked') aggBlocked++;
+        else if (status === 'retest') aggRetest++;
+      });
+      const aggTotal = allTestCaseIds.size;
+      const aggTested = aggPassed + aggFailed + aggBlocked + aggRetest;
+      const aggUntested = aggTotal - Math.min(globalTcStatusMap.size, aggTotal);
+      const aggPassRate = aggTested > 0 ? Math.round((aggPassed / aggTested) * 100) : 0;
+      setTcStats({ passed: aggPassed, failed: aggFailed, blocked: aggBlocked, retest: aggRetest, untested: Math.max(0, aggUntested), total: aggTotal, passRate: aggPassRate });
+
+      fetchContributorProfiles(Array.from(new Set(allActivityLogs.map(l => l.author))));
+
+      const { data: sessionsData } = await supabase
         .from('sessions')
         .select('*')
         .eq('milestone_id', milestoneId)
         .order('created_at', { ascending: false });
 
-      if (sessionsError) throw sessionsError;
-
-      // Fetch session logs
-      const sessionIds = (sessionsData || []).map(s => s.id);
+      const sessionIds = (sessionsData || []).map((s: any) => s.id);
       const { data: sessionLogsData } = await supabase
         .from('session_logs')
         .select('*')
@@ -372,57 +291,32 @@ export default function MilestoneDetail() {
         .order('created_at', { ascending: false });
 
       const logsBySession = new Map<string, any[]>();
-      (sessionLogsData || []).forEach(log => {
-        if (!logsBySession.has(log.session_id)) {
-          logsBySession.set(log.session_id, []);
-        }
+      (sessionLogsData || []).forEach((log: any) => {
+        if (!logsBySession.has(log.session_id)) logsBySession.set(log.session_id, []);
         logsBySession.get(log.session_id)!.push(log);
       });
 
       const generateActivityData = (logs: any[]) => {
         const blockCount = 24;
         const activityData: string[] = new Array(blockCount).fill('#e5e7eb');
-
         if (!logs || logs.length === 0) return activityData;
-
-        const recentLogs = logs.slice(0, blockCount);
-
-        recentLogs.forEach((log, index) => {
+        logs.slice(0, blockCount).forEach((log, index) => {
           switch (log.type) {
-            case 'note':
-              activityData[index] = '#3b82f6';
-              break;
-            case 'passed':
-              activityData[index] = '#10b981';
-              break;
-            case 'failed':
-              activityData[index] = '#ef4444';
-              break;
-            case 'blocked':
-              activityData[index] = '#f59e0b';
-              break;
-            default:
-              activityData[index] = '#6366F1';
+            case 'note': activityData[index] = '#3b82f6'; break;
+            case 'passed': activityData[index] = '#10b981'; break;
+            case 'failed': activityData[index] = '#ef4444'; break;
+            case 'blocked': activityData[index] = '#f59e0b'; break;
+            default: activityData[index] = '#6366F1';
           }
         });
-
         return activityData;
       };
 
-      const sessionsWithActivity = (sessionsData || []).map(session => {
+      const sessionsWithActivity = (sessionsData || []).map((session: any) => {
         const sessionLogs = logsBySession.get(session.id) || [];
-        const activityData = generateActivityData(sessionLogs);
-        
         let actualStatus = session.status;
-        if (session.status === 'active') {
-          actualStatus = sessionLogs.length === 0 ? 'new' : 'in_progress';
-        }
-        
-        return {
-          ...session,
-          actualStatus,
-          activityData
-        };
+        if (session.status === 'active') actualStatus = sessionLogs.length === 0 ? 'new' : 'in_progress';
+        return { ...session, actualStatus, activityData: generateActivityData(sessionLogs) };
       });
 
       setSessions(sessionsWithActivity);
@@ -438,8 +332,6 @@ export default function MilestoneDetail() {
     try {
       const validAuthors = authors.filter(a => a && a !== 'Unknown');
       if (validAuthors.length === 0) return;
-
-      // Try to match by full_name or email
       const { data } = await supabase
         .from('profiles')
         .select('full_name, email, avatar_emoji')
@@ -448,15 +340,10 @@ export default function MilestoneDetail() {
           ',' +
           validAuthors.map(a => `email.eq.${a}`).join(',')
         );
-
       const profileMap = new Map<string, string | null>();
       (data || []).forEach(p => {
-        if (p.full_name && validAuthors.includes(p.full_name)) {
-          profileMap.set(p.full_name, p.avatar_emoji || null);
-        }
-        if (p.email && validAuthors.includes(p.email)) {
-          profileMap.set(p.email, p.avatar_emoji || null);
-        }
+        if (p.full_name && validAuthors.includes(p.full_name)) profileMap.set(p.full_name, p.avatar_emoji || null);
+        if (p.email && validAuthors.includes(p.email)) profileMap.set(p.email, p.avatar_emoji || null);
       });
       setContributorProfiles(profileMap);
     } catch (e) {
@@ -464,35 +351,23 @@ export default function MilestoneDetail() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const badges = {
-      upcoming: { label: 'Upcoming', className: 'bg-blue-100 text-blue-700' },
-      started: { label: 'Started', className: 'bg-green-100 text-green-700' },
-      past_due: { label: 'Past due', className: 'bg-orange-500 text-white' },
-      completed: { label: 'Complete', className: 'bg-gray-100 text-gray-700' },
-    };
-    return badges[status as keyof typeof badges] || badges.upcoming;
-  };
-
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '';
     const [year, month, day] = dateStr.split('T')[0].split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+      .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   const formatDateRange = (startDate: string | null, endDate: string | null) => {
     if (!startDate) return 'Starts TBD';
     const start = formatDate(startDate);
     if (!endDate) return `Starts ${start}`;
-    const end = formatDate(endDate);
-    return `${start} - ${end}`;
+    return `${start} – ${formatDate(endDate)}`;
   };
 
   const calculateRunProgress = (run: Run) => {
     const total = (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0) + (run.untested_count || 0);
     if (total === 0) return { passed: 0, failed: 0, blocked: 0, retest: 0, untested: 100 };
-    
     return {
       passed: Math.round(((run.passed_count || 0) / total) * 100),
       failed: Math.round(((run.failed_count || 0) / total) * 100),
@@ -504,84 +379,59 @@ export default function MilestoneDetail() {
 
   const calculateMilestoneProgress = () => {
     if (runs.length === 0) return 0;
-    
-    let totalTests = 0;
-    let completedTests = 0;
-
+    let totalTests = 0, completedTests = 0;
     runs.forEach(run => {
-      const total = run.test_case_ids.length;
-      totalTests += total;
+      totalTests += run.test_case_ids.length;
       completedTests += (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0);
     });
-
     return totalTests > 0 ? Math.round((completedTests / totalTests) * 100) : 0;
   };
 
-  const generateChartPoints = (logs: ActivityLog[], type: string) => {
-    const days = 14;
-    const width = 100;
-    const height = 100;
-    const now = new Date();
-    now.setHours(23, 59, 59, 999);
-
-    // Count activities per day for the last 14 days
-    const dailyCounts: number[] = new Array(days).fill(0);
-
-    logs.forEach(log => {
-      if (log.type === type) {
-        const logDate = new Date(log.timestamp);
-        logDate.setHours(0, 0, 0, 0);
-        const todayStart = new Date(now);
-        todayStart.setHours(0, 0, 0, 0);
-        const daysDiff = Math.floor((todayStart.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysDiff >= 0 && daysDiff < days) {
-          dailyCounts[days - 1 - daysDiff]++;
-        }
-      }
-    });
-
-    return dailyCounts;
+  const getDDayBadge = (endDate: string | null) => {
+    if (!endDate) return { text: 'No deadline', bg: '#F1F5F9', color: '#64748B' };
+    const [ey, em, ed] = endDate.split('T')[0].split('-').map(Number);
+    const end = new Date(ey, em - 1, ed);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((end.getTime() - today.getTime()) / 86400000);
+    if (diffDays < 0)  return { text: `D+${Math.abs(diffDays)}`, bg: '#EF4444', color: '#fff' };
+    if (diffDays === 0) return { text: 'D-Day', bg: '#FEE2E2', color: '#B91C1C' };
+    if (diffDays <= 3) return { text: `D-${diffDays}`, bg: '#FEE2E2', color: '#B91C1C' };
+    if (diffDays <= 7) return { text: `D-${diffDays}`, bg: '#FEF3C7', color: '#92400E' };
+    if (diffDays <= 14) return { text: `D-${diffDays}`, bg: '#DBEAFE', color: '#1E40AF' };
+    return { text: `D-${diffDays}`, bg: '#F1F5F9', color: '#475569' };
   };
 
-  const generateDateLabels = () => {
-    const labels: string[] = [];
-    const now = new Date();
-
-    for (let i = 13; i >= 0; i -= 2) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      labels.push(date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }));
-    }
-
-    return labels;
+  const getStatusBadgeStyle = (status: string) => {
+    const map: Record<string, { bg: string; color: string; dot: string; label: string }> = {
+      upcoming: { bg: '#DBEAFE', color: '#1E40AF', dot: '#3B82F6', label: 'Upcoming' },
+      started:  { bg: '#DCFCE7', color: '#166534', dot: '#22C55E', label: 'Started' },
+      past_due: { bg: '#F97316', color: '#fff',    dot: '#fff',    label: 'Past Due' },
+      completed:{ bg: '#F1F5F9', color: '#475569', dot: '#94A3B8', label: 'Completed' },
+    };
+    return map[status] || map.upcoming;
   };
 
-  const buildPolylinePoints = (dailyCounts: number[], maxCount: number) => {
-    const days = 14;
-    const width = 100;
-    const height = 100;
-    return dailyCounts.map((count, idx) => {
-      const x = (idx / (days - 1)) * width;
-      const y = height - (maxCount > 0 ? (count / maxCount) * height : 0);
-      return `${x},${y}`;
-    }).join(' ');
+  const getRunStatusStyle = (status: string) => {
+    const map: Record<string, { bg: string; color: string; label: string }> = {
+      new:          { bg: '#F1F5F9', color: '#475569', label: 'New' },
+      in_progress:  { bg: '#DBEAFE', color: '#1E40AF', label: 'In Progress' },
+      paused:       { bg: '#FEF3C7', color: '#92400E', label: 'Paused' },
+      under_review: { bg: '#EDE9FE', color: '#6D28D9', label: 'Under Review' },
+      completed:    { bg: '#DCFCE7', color: '#166534', label: 'Completed' },
+    };
+    return map[status] || map.new;
   };
 
   const handleUpdateMilestone = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!milestone) return;
-
     try {
-      const { error } = await supabase
-        .from('milestones')
-        .update({
-          name: editFormData.name,
-          start_date: editFormData.start_date,
-          end_date: editFormData.end_date
-        })
-        .eq('id', milestone.id);
-
+      const { error } = await supabase.from('milestones').update({
+        name: editFormData.name,
+        start_date: editFormData.start_date,
+        end_date: editFormData.end_date,
+      }).eq('id', milestone.id);
       if (error) throw error;
-      
       setShowEditModal(false);
       fetchData();
     } catch (error) {
@@ -590,36 +440,59 @@ export default function MilestoneDetail() {
     }
   };
 
-  const currentTier = userProfile?.subscription_tier || 1;
-  const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
+  const handleComplete = async () => {
+    if (!milestone || milestone.status === 'completed') return;
+    try {
+      await supabase.from('milestones').update({ status: 'completed' }).eq('id', milestone.id);
+      setMilestone({ ...milestone, status: 'completed' });
+    } catch (e) {
+      console.error('complete error:', e);
+    }
+  };
 
-  // Derive unique contributors from activity logs
-  const contributors = Array.from(
-    new Map(
-      activityLogs.map(log => [log.author, log.author])
-    ).values()
-  ).slice(0, 8);
+  const generateChartPoints = (logs: ActivityLog[], type: string) => {
+    const days = 14;
+    const dailyCounts: number[] = new Array(days).fill(0);
+    const now = new Date(); now.setHours(23, 59, 59, 999);
+    logs.forEach(log => {
+      if (log.type === type) {
+        const logDate = new Date(log.timestamp); logDate.setHours(0, 0, 0, 0);
+        const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+        const daysDiff = Math.floor((todayStart.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff >= 0 && daysDiff < days) dailyCounts[days - 1 - daysDiff]++;
+      }
+    });
+    return dailyCounts;
+  };
+
+  const generateDateLabels = () => {
+    const labels: string[] = [];
+    const now = new Date();
+    for (let i = 13; i >= 0; i -= 2) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      labels.push(date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }));
+    }
+    return labels;
+  };
+
+  const buildPolylinePoints = (dailyCounts: number[], maxCount: number) => {
+    const days = 14;
+    return dailyCounts.map((count, idx) => {
+      const x = (idx / (days - 1)) * 100;
+      const y = 100 - (maxCount > 0 ? (count / maxCount) * 100 : 0);
+      return `${x},${y}`;
+    }).join(' ');
+  };
 
   const getContributorColor = (index: number) => {
-    const colors = [
-      'from-indigo-400 to-indigo-600',
-      'from-orange-400 to-orange-600',
-      'from-green-400 to-green-600',
-      'from-pink-400 to-pink-600',
-      'from-amber-400 to-amber-600',
-      'from-cyan-400 to-cyan-600',
-      'from-rose-400 to-rose-600',
-      'from-indigo-400 to-indigo-600',
-    ];
+    const colors = ['from-indigo-400 to-indigo-600', 'from-orange-400 to-orange-600', 'from-green-400 to-green-600', 'from-pink-400 to-pink-600', 'from-amber-400 to-amber-600', 'from-cyan-400 to-cyan-600', 'from-rose-400 to-rose-600', 'from-indigo-400 to-indigo-600'];
     return colors[index % colors.length];
   };
 
   const getContributorInitials = (author: string) => {
     if (!author || author === 'Unknown') return 'UN';
     const parts = author.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return author.substring(0, 2).toUpperCase();
   };
 
@@ -627,1021 +500,671 @@ export default function MilestoneDetail() {
 
   if (!milestone) {
     return (
-      <div className="flex h-screen bg-white">
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link to="/projects" className="flex items-center cursor-pointer">
-                  <LogoMark />
-                </Link>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
-                  {userProfile?.avatar_emoji ? (
-                    <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
-                  ) : (
-                    <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </header>
-          <main className="flex-1 overflow-y-auto bg-gray-50/30 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="ri-error-warning-line text-3xl text-gray-400"></i>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">마일스톤을 찾을 수 없습니다</h3>
-              <Link to={`/projects/${projectId}/milestones`} className="text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer">
-                마일스톤 목록으로 돌아가기
-              </Link>
-            </div>
-          </main>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#0F172A', marginBottom: '0.5rem' }}>마일스톤을 찾을 수 없습니다</div>
+            <Link to={`/projects/${projectId}/milestones`} style={{ color: '#6366F1', textDecoration: 'none', fontWeight: 500 }}>마일스톤 목록으로 돌아가기</Link>
+          </div>
         </div>
       </div>
     );
   }
 
-  const badge = getStatusBadge(milestone.status);
   const progress = calculateMilestoneProgress();
+  const msBadge = getStatusBadgeStyle(milestone.status);
+  const dday = getDDayBadge(milestone.end_date);
+  const progressColor = milestone.status === 'past_due' ? '#F97316' : milestone.status === 'completed' ? '#94A3B8' : '#22C55E';
+
+  // For Status tab: risk detection
+  const daysLeft = milestone.end_date ? (() => {
+    const [ey, em, ed] = milestone.end_date.split('T')[0].split('-').map(Number);
+    const end = new Date(ey, em - 1, ed);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return Math.round((end.getTime() - today.getTime()) / 86400000);
+  })() : null;
+  const isAtRisk = daysLeft !== null && daysLeft <= 7 && daysLeft >= 0 && tcStats.passRate < 70;
+  const isCritical = daysLeft !== null && daysLeft <= 3 && daysLeft >= 0 && tcStats.passRate < 50;
 
   return (
-    <div className="flex h-screen bg-white">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Link to="/projects" className="flex items-center cursor-pointer">
-                <LogoMark />
-              </Link>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F8FAFC', fontFamily: 'inherit', overflow: 'hidden' }}>
 
-              <div className="w-px h-5 bg-gray-300" />
+      {/* ── Row 1: ProjectHeader (Milestones active) ── */}
+      <ProjectHeader projectId={projectId!} projectName={project?.name || ''} />
 
-              <Link to={`/projects/${projectId}`} className="text-sm text-gray-500 hover:text-indigo-600 cursor-pointer">
-                {project?.name}
-              </Link>
+      {/* ── Row 2: Detail Info Bar ── */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #E2E8F0', padding: '1rem 1.5rem 0.875rem', flexShrink: 0 }}>
+        {/* Breadcrumb */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.75rem', marginBottom: '0.625rem' }}>
+          <Link
+            to={`/projects/${projectId}/milestones`}
+            style={{ color: '#6366F1', fontWeight: 500, textDecoration: 'none' }}
+            onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+            onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+          >
+            Milestones
+          </Link>
+          <span style={{ color: '#CBD5E1', fontSize: '0.625rem' }}>›</span>
+          <span style={{ color: '#94A3B8', fontWeight: 500 }}>{milestone.name}</span>
+        </div>
 
-              <div className="w-px h-5 bg-gray-300" />
-
-              <span className="text-sm text-gray-500">{milestone.name}</span>
-            </div>
-            
-            <div className="flex items-center gap-3 relative">
-              <div 
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-2 cursor-pointer"
+        {/* Info Row 1: Icon + Name + Status + Date + D-day + Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexWrap: 'wrap' }}>
+          <div style={{ width: '2rem', height: '2rem', background: '#F1F5F9', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <i className="ri-flag-line" style={{ fontSize: '1rem', color: '#6366F1' }} />
+          </div>
+          <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0F172A' }}>{milestone.name}</span>
+          <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '0.1875rem 0.5rem', borderRadius: '9999px', background: msBadge.bg, color: msBadge.color, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: msBadge.dot }} />
+            {msBadge.label}
+          </span>
+          {(milestone.start_date || milestone.end_date) && (
+            <span style={{ fontSize: '0.8125rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <i className="ri-calendar-line" style={{ fontSize: '0.875rem' }} />
+              {formatDateRange(milestone.start_date, milestone.end_date)}
+            </span>
+          )}
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.1875rem 0.625rem', borderRadius: '9999px', background: dday.bg, color: dday.color, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {dday.text}
+          </span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+            <button
+              onClick={() => {
+                setEditFormData({
+                  name: milestone.name,
+                  start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '',
+                  end_date: milestone.end_date ? milestone.end_date.split('T')[0] : '',
+                });
+                setShowEditModal(true);
+              }}
+              style={{ fontSize: '0.8125rem', fontWeight: 500, padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3125rem', fontFamily: 'inherit', transition: 'all 0.15s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F8FAFC'; (e.currentTarget as HTMLElement).style.borderColor = '#CBD5E1'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; }}
+            >
+              <i className="ri-pencil-line" /> Edit
+            </button>
+            {milestone.status !== 'completed' && (
+              <button
+                onClick={handleComplete}
+                style={{ fontSize: '0.8125rem', fontWeight: 600, padding: '0.375rem 0.875rem', borderRadius: '0.375rem', border: 'none', background: '#6366F1', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3125rem', fontFamily: 'inherit', transition: 'all 0.15s', boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#4F46E5'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#6366F1'}
               >
-                <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden">
-                  {userProfile?.avatar_emoji ? (
-                    <span className="text-xl leading-none">{userProfile.avatar_emoji}</span>
-                  ) : (
-                    <span>{userProfile?.full_name?.charAt(0) || 'U'}</span>
-                  )}
+                <i className="ri-checkbox-circle-line" /> Complete
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Info Row 2: Progress bar */}
+        <div style={{ marginTop: '0.625rem', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+          <div style={{ flex: 1, height: '0.5rem', background: '#E2E8F0', borderRadius: '9999px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: progressColor, borderRadius: '9999px', transition: 'width 0.3s' }} />
+          </div>
+          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap' }}>{progress}%</span>
+        </div>
+
+        {/* Info Row 3: TC Summary */}
+        <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.8125rem' }}>
+          {[
+            { dot: '#22C55E', label: 'Passed', value: tcStats.passed },
+            { dot: '#EF4444', label: 'Failed', value: tcStats.failed },
+            { dot: '#F59E0B', label: 'Blocked', value: tcStats.blocked },
+            { dot: '#CBD5E1', label: 'Untested', value: tcStats.untested },
+          ].map((s, i) => (
+            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#475569', marginLeft: i > 0 ? '0.75rem' : 0 }}>
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: s.dot, flexShrink: 0, display: 'inline-block' }} />
+              {s.label} <span style={{ fontWeight: 600, color: '#0F172A' }}>{s.value}</span>
+            </span>
+          ))}
+          <span style={{ width: 1, height: '1rem', background: '#E2E8F0', margin: '0 0.75rem', flexShrink: 0, display: 'inline-block' }} />
+          <span style={{ color: '#64748B' }}>Pass Rate</span>&nbsp;<span style={{ fontWeight: 700, color: '#0F172A' }}>{tcStats.passRate}%</span>
+          <span style={{ width: 1, height: '1rem', background: '#E2E8F0', margin: '0 0.75rem', flexShrink: 0, display: 'inline-block' }} />
+          <span style={{ color: '#64748B' }}>Total TCs</span>&nbsp;<span style={{ fontWeight: 700, color: '#0F172A' }}>{tcStats.total}</span>
+        </div>
+      </div>
+
+      {/* ── Row 3: Content Tab Row (42px) ── */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '0 1.5rem', background: '#fff', borderBottom: '1px solid #E2E8F0', height: '2.625rem', flexShrink: 0 }}>
+        {([
+          { key: 'results',  icon: 'ri-bar-chart-box-fill', iconColor: '#6366F1', label: 'Results',  badge: runs.length > 0 ? runs.length : null },
+          { key: 'status',   icon: 'ri-pie-chart-2-fill',   iconColor: '#3B82F6', label: 'Status',   badge: null },
+          { key: 'activity', icon: 'ri-history-fill',        iconColor: '#8B5CF6', label: 'Activity', badge: activityLogs.length > 0 ? activityLogs.length : null },
+          { key: 'issues',   icon: 'ri-bug-fill',            iconColor: '#EF4444', label: 'Issues',   badge: issues.length > 0 ? issues.length : null },
+        ] as const).map(tab => {
+          const isActive = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.3125rem',
+                padding: '0 0.75rem', height: '100%',
+                fontSize: '0.8125rem', fontWeight: isActive ? 600 : 500,
+                color: isActive ? '#6366F1' : '#64748B',
+                border: 'none', borderBottom: isActive ? '2.5px solid #6366F1' : '2.5px solid transparent',
+                background: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                transition: 'color 0.15s', position: 'relative', top: '1px',
+                fontFamily: 'inherit',
+              }}
+            >
+              <i className={tab.icon} style={{ fontSize: '0.875rem', color: tab.iconColor }} />
+              {tab.label}
+              {tab.badge !== null && (
+                <span style={{ fontSize: '0.625rem', fontWeight: 700, padding: '0.0625rem 0.375rem', borderRadius: '9999px', background: isActive ? '#EEF2FF' : '#F1F5F9', color: isActive ? '#6366F1' : '#64748B', minWidth: '1.25rem', textAlign: 'center' }}>
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Scrollable Content Area ── */}
+      <div style={{ flex: 1, overflowY: 'auto', background: '#F8FAFC', padding: '1.25rem 1.5rem' }}>
+
+        {/* ════ RESULTS TAB ════ */}
+        {activeTab === 'results' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+            {/* Sub Milestones */}
+            {subMilestones.length > 0 && (
+              <div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <i className="ri-git-branch-line" style={{ fontSize: '0.8125rem' }} /> Sub Milestones
+                  <span style={{ fontSize: '0.625rem', fontWeight: 700, background: '#F1F5F9', color: '#94A3B8', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>{subMilestones.length}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {subMilestones.map(sub => {
+                    const subBadge = getStatusBadgeStyle(sub.status);
+                    return (
+                      <Link
+                        key={sub.id}
+                        to={`/projects/${projectId}/milestones/${sub.id}`}
+                        style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', cursor: 'pointer', transition: 'all 0.15s' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#C7D2FE'; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(99,102,241,0.08)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.name}</div>
+                          <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.125rem' }}>{formatDateRange(sub.start_date, sub.end_date)}</div>
+                        </div>
+                        <span style={{ fontSize: '0.625rem', fontWeight: 600, padding: '0.125rem 0.4375rem', borderRadius: '9999px', background: subBadge.bg, color: subBadge.color, whiteSpace: 'nowrap', flexShrink: 0 }}>{subBadge.label}</span>
+                        <i className="ri-arrow-right-s-line" style={{ fontSize: '0.875rem', color: '#CBD5E1', flexShrink: 0 }} />
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
-              
-              {showProfileMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-10" 
-                    onClick={() => setShowProfileMenu(false)}
-                  ></div>
-                  <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
-                      <p className="text-xs text-gray-500">{userProfile?.email}</p>
-                      <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
-                        <i className={`${tierInfo.icon} text-sm`}></i>
-                        {tierInfo.name}
-                      </div>
-                    </div>
+            )}
+
+            {/* Runs */}
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <i className="ri-play-circle-line" style={{ fontSize: '0.8125rem' }} /> Runs
+                <span style={{ fontSize: '0.625rem', fontWeight: 700, background: '#F1F5F9', color: '#94A3B8', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>{runs.length}</span>
+              </div>
+              {runs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8', fontSize: '0.875rem' }}>No runs yet</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {runs.map(run => {
+                    const rp = calculateRunProgress(run);
+                    const completionRate = 100 - rp.untested;
+                    const runStyle = getRunStatusStyle(run.status);
+                    return (
+                      <Link
+                        key={run.id}
+                        to={`/projects/${projectId}/runs/${run.id}`}
+                        style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '0.875rem 1rem', textDecoration: 'none', cursor: 'pointer', transition: 'all 0.15s', display: 'block' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#C7D2FE'; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(99,102,241,0.08)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
+                      >
+                        {/* Row 1: Name + Status badge */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A', flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{run.name}</span>
+                          <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '0.125rem 0.5rem', borderRadius: '0.25rem', background: runStyle.bg, color: runStyle.color, whiteSpace: 'nowrap', flexShrink: 0 }}>{runStyle.label}</span>
+                        </div>
+                        {/* Row 2: Progress bar */}
+                        <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                          <div style={{ flex: 1, height: 6, background: '#F1F5F9', borderRadius: 3, overflow: 'hidden', display: 'flex' }}>
+                            {rp.passed > 0 && <div style={{ width: `${rp.passed}%`, background: '#22C55E', height: '100%' }} />}
+                            {rp.failed > 0 && <div style={{ width: `${rp.failed}%`, background: '#EF4444', height: '100%' }} />}
+                            {rp.blocked > 0 && <div style={{ width: `${rp.blocked}%`, background: '#F59E0B', height: '100%' }} />}
+                            {rp.retest > 0 && <div style={{ width: `${rp.retest}%`, background: '#FBBF24', height: '100%' }} />}
+                            {rp.untested > 0 && <div style={{ width: `${rp.untested}%`, background: '#E2E8F0', height: '100%' }} />}
+                          </div>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', minWidth: '2rem' }}>{completionRate}%</span>
+                        </div>
+                        {/* Row 3: TC stats */}
+                        <div style={{ marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          {[
+                            { dot: '#22C55E', n: run.passed_count || 0, label: 'passed' },
+                            { dot: '#EF4444', n: run.failed_count || 0, label: 'failed' },
+                            { dot: '#CBD5E1', n: run.untested_count || 0, label: 'untested' },
+                          ].map(s => (
+                            <span key={s.label} style={{ fontSize: '0.6875rem', display: 'inline-flex', alignItems: 'center', gap: '0.1875rem', color: '#64748B' }}>
+                              <span style={{ width: 6, height: 6, borderRadius: 1.5, background: s.dot, flexShrink: 0, display: 'inline-block' }} />
+                              <span style={{ fontWeight: 600, color: '#334155' }}>{s.n}</span> {s.label}
+                            </span>
+                          ))}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Discovery Logs */}
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <i className="ri-search-eye-line" style={{ fontSize: '0.8125rem' }} /> Discovery Logs
+                <span style={{ fontSize: '0.625rem', fontWeight: 700, background: '#F1F5F9', color: '#94A3B8', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>{sessions.length}</span>
+              </div>
+              {sessions.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8', fontSize: '0.875rem' }}>No discovery logs yet</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {sessions.map(session => (
                     <Link
-                      to="/settings"
-                      onClick={() => setShowProfileMenu(false)}
-                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer border-b border-gray-100"
+                      key={session.id}
+                      to={`/projects/${projectId}/discovery-logs/${session.id}`}
+                      style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', cursor: 'pointer', transition: 'all 0.15s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#C7D2FE'; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(99,102,241,0.08)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
                     >
-                      <i className="ri-settings-3-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                      <span>Settings</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>{session.name}</div>
+                        <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.125rem' }}>
+                          {new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: '0.625rem', fontWeight: 600, padding: '0.125rem 0.4375rem', borderRadius: '9999px', whiteSpace: 'nowrap', flexShrink: 0,
+                        background: session.actualStatus === 'in_progress' ? '#DBEAFE' : session.actualStatus === 'done' ? '#DCFCE7' : '#F1F5F9',
+                        color: session.actualStatus === 'in_progress' ? '#1E40AF' : session.actualStatus === 'done' ? '#166534' : '#475569',
+                      }}>
+                        {session.actualStatus === 'in_progress' ? 'In Progress' : session.actualStatus === 'done' ? 'Done' : 'New'}
+                      </span>
+                      <div style={{ width: 80, display: 'flex', gap: 2, flexShrink: 0 }}>
+                        {session.activityData && session.activityData.slice(0, 20).map((color: string, i: number) => (
+                          <div key={i} style={{ flex: 1, height: 6, borderRadius: 1.5, background: color }} />
+                        ))}
+                      </div>
                     </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
-                    >
-                      <i className="ri-logout-box-line text-lg"></i>
-                      <span>Log out</span>
-                    </button>
-                  </div>
-                </>
+                  ))}
+                </div>
               )}
             </div>
           </div>
-        </header>
-        
-        <main className="flex-1 overflow-y-auto bg-gray-50/30">
-          <div className="p-8">
-            {/* Milestone Header */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <i className="ri-flag-line text-gray-600 text-2xl"></i>
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{milestone.name}</h1>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-lg text-gray-600">
-                    {formatDateRange(milestone.start_date, milestone.end_date)}
-                  </span>
-                  <span className={`px-4 py-2 rounded-lg text-sm font-semibold ${badge.className}`}>
-                    {badge.label}
-                  </span>
-                  <button 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setEditFormData({
-                        name: milestone.name,
-                        start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '',
-                        end_date: milestone.end_date ? milestone.end_date.split('T')[0] : ''
-                      });
-                      setShowEditModal(true);
-                    }}
-                    className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                  >
-                    Edit
-                  </button>
-                  <button className="px-4 py-2 text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap">
-                    Complete
-                  </button>
-                </div>
-              </div>
+        )}
 
-              {/* Progress Bar */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      milestone.status === 'past_due' ? 'bg-orange-500' : 
-                      milestone.status === 'started' ? 'bg-green-500' : 
-                      'bg-gray-400'
-                    }`}
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 min-w-[50px] text-right">
-                  {progress}%
-                </span>
+        {/* ════ STATUS TAB ════ */}
+        {activeTab === 'status' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+            {/* Risk Banner */}
+            {(isCritical || isAtRisk) && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.625rem 1rem', borderRadius: '0.5rem',
+                background: isCritical ? '#FEE2E2' : '#FEF3C7',
+                color: isCritical ? '#991B1B' : '#92400E',
+                border: `1px solid ${isCritical ? '#FECACA' : '#FDE68A'}`,
+                fontSize: '0.8125rem', fontWeight: 600,
+              }}>
+                <i className={`${isCritical ? 'ri-alarm-warning-line' : 'ri-error-warning-line'}`} style={{ fontSize: '1rem' }} />
+                {isCritical
+                  ? `Critical: ${daysLeft} day${daysLeft === 1 ? '' : 's'} left with ${tcStats.passRate}% pass rate`
+                  : `At Risk: ${daysLeft} day${daysLeft === 1 ? '' : 's'} left with ${tcStats.passRate}% pass rate`}
               </div>
+            )}
+
+            {/* TC Distribution Widget */}
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '1rem 1.25rem' }}>
+              <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <i className="ri-pie-chart-2-fill" style={{ fontSize: '0.9375rem', color: '#3B82F6' }} /> TC Status Distribution
+              </div>
+              {tcStats.total > 0 ? (
+                <>
+                  {/* Stacked bar */}
+                  <div style={{ display: 'flex', height: '1.5rem', borderRadius: '0.375rem', overflow: 'hidden', width: '100%', marginBottom: '0.75rem' }}>
+                    {tcStats.passed > 0 && <div style={{ width: `${(tcStats.passed / tcStats.total) * 100}%`, background: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#fff', minWidth: '1.5rem' }}>{tcStats.passed}</div>}
+                    {tcStats.failed > 0 && <div style={{ width: `${(tcStats.failed / tcStats.total) * 100}%`, background: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#fff', minWidth: '1.5rem' }}>{tcStats.failed}</div>}
+                    {tcStats.blocked > 0 && <div style={{ width: `${(tcStats.blocked / tcStats.total) * 100}%`, background: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#fff', minWidth: '1.5rem' }}>{tcStats.blocked}</div>}
+                    {tcStats.untested > 0 && <div style={{ width: `${(tcStats.untested / tcStats.total) * 100}%`, background: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#94A3B8', minWidth: '1.5rem' }}>{tcStats.untested}</div>}
+                  </div>
+                  {/* Table */}
+                  <table style={{ width: '100%' }}>
+                    <tbody>
+                      {[
+                        { dot: '#22C55E', label: 'Passed',   value: tcStats.passed },
+                        { dot: '#EF4444', label: 'Failed',   value: tcStats.failed },
+                        { dot: '#F59E0B', label: 'Blocked',  value: tcStats.blocked },
+                        { dot: '#CBD5E1', label: 'Untested', value: tcStats.untested },
+                      ].map(row => (
+                        <tr key={row.label} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                          <td style={{ padding: '0.375rem 0.5rem', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#475569', fontWeight: 500 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: 2, background: row.dot, flexShrink: 0, display: 'inline-block' }} />
+                            {row.label}
+                          </td>
+                          <td style={{ padding: '0.375rem 0.5rem', fontSize: '0.8125rem', textAlign: 'right', fontWeight: 600, color: '#0F172A' }}>
+                            {row.value} <span style={{ fontWeight: 400, color: '#94A3B8', fontSize: '0.75rem' }}>({tcStats.total > 0 ? Math.round((row.value / tcStats.total) * 100) : 0}%)</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '1.5rem', color: '#94A3B8', fontSize: '0.875rem' }}>No test cases yet</div>
+              )}
             </div>
 
-            {/* Tabs */}
-            <div className="bg-white rounded-lg border border-gray-200 mb-6">
-              <div className="flex items-center gap-1 px-6 border-b border-gray-200">
-                <button
-                  onClick={() => setActiveTab('results')}
-                  className={`px-4 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${
-                    activeTab === 'results'
-                      ? 'text-indigo-600'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  RESULTS
-                  {activeTab === 'results' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-                  )}
-                </button>
-                <button
-                  onClick={() => setActiveTab('status')}
-                  className={`px-4 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${
-                    activeTab === 'status'
-                      ? 'text-indigo-600'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  STATUS
-                  {activeTab === 'status' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-                  )}
-                </button>
-                <button
-                  onClick={() => setActiveTab('activity')}
-                  className={`px-4 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${
-                    activeTab === 'activity'
-                      ? 'text-indigo-600'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  ACTIVITY
-                  {activeTab === 'activity' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-                  )}
-                </button>
-                <button
-                  onClick={() => setActiveTab('issues')}
-                  className={`px-4 py-3 text-sm font-medium transition-all cursor-pointer whitespace-nowrap relative ${
-                    activeTab === 'issues'
-                      ? 'text-indigo-600'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  ISSUES
-                  {activeTab === 'issues' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-                  )}
-                </button>
-              </div>
-
-              <div className="p-6">
-                {activeTab === 'results' && (
-                  <div className="space-y-6">
-                    {/* Runs & Sessions Chart */}
-                    <div className="grid grid-cols-2 gap-6">
-                      {/* Runs & Sessions */}
-                      <div className="bg-gray-50/50 border border-gray-200 rounded-lg p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-sm font-semibold text-gray-600 uppercase">RUNS & SESSIONS</h3>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <div className="relative w-32 h-32">
-                            <svg className="w-full h-full transform -rotate-90">
-                              <circle
-                                cx="64"
-                                cy="64"
-                                r="56"
-                                stroke="#e5e7eb"
-                                strokeWidth="16"
-                                fill="none"
-                              />
-                              <circle
-                                cx="64"
-                                cy="64"
-                                r="56"
-                                stroke="#6366F1"
-                                strokeWidth="16"
-                                fill="none"
-                                strokeDasharray={`${2 * Math.PI * 56}`}
-                                strokeDashoffset={`${2 * Math.PI * 56 * (1 - (progress / 100))}`}
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                              <div className="text-3xl font-bold text-gray-900">{progress}%</div>
-                              <div className="text-sm text-gray-500">Completed</div>
-                            </div>
-                          </div>
-                          <div className="flex-1 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
-                                <span className="text-sm text-gray-700">Runs</span>
-                              </div>
-                              <span className="text-sm font-semibold text-gray-900">{runs.length}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                <span className="text-sm text-gray-700">Discovery Logs</span>
-                              </div>
-                              <span className="text-sm font-semibold text-gray-900">{sessions.length}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Milestone Activity */}
-                      <div className="bg-blue-50/30 border border-blue-200 rounded-lg p-6">
-                        <h3 className="text-sm font-semibold text-gray-600 uppercase mb-4">MILESTONE ACTIVITY</h3>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700 font-medium">Runs</span>
-                            <div className="flex items-center gap-3">
-                              <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div className="bg-indigo-500 h-2 rounded-full" style={{ width: runs.length > 0 ? '100%' : '0%' }}></div>
-                              </div>
-                              <span className="text-sm font-semibold text-gray-900 min-w-[30px] text-right">{runs.length}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700 font-medium">Discovery Logs</span>
-                            <div className="flex items-center gap-3">
-                              <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div className="bg-indigo-500 h-2 rounded-full" style={{ width: sessions.length > 0 ? '100%' : '0%' }}></div>
-                              </div>
-                              <span className="text-sm font-semibold text-gray-900 min-w-[30px] text-right">{sessions.length}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700 font-medium">Automation</span>
-                            <div className="flex items-center gap-3">
-                              <div className="w-32 bg-gray-200 rounded-full h-2">
-                                <div className="bg-purple-500 h-2 rounded-full" style={{ width: '0%' }}></div>
-                              </div>
-                              <span className="text-sm font-semibold text-gray-900 min-w-[30px] text-right">0</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Sub Milestones */}
-                    {subMilestones.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-semibold text-gray-600 uppercase mb-4">SUB MILESTONES</h3>
-                        <div className="space-y-3">
-                          {subMilestones.map(sub => {
-                            const subBadge = getStatusBadge(sub.status);
-                            return (
-                              <Link
-                                key={sub.id}
-                                to={`/projects/${projectId}/milestones/${sub.id}`}
-                                className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-indigo-500 transition-all cursor-pointer"
-                              >
-                                <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                                  <i className="ri-run-line text-gray-600"></i>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="font-medium text-gray-900 mb-1">{sub.name}</div>
-                                  <div className="text-sm text-gray-500">{formatDateRange(sub.start_date, sub.end_date)}</div>
-                                </div>
-                                <span className={`px-3 py-1 rounded text-xs font-semibold ${subBadge.className}`}>
-                                  {subBadge.label}
-                                </span>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Runs List */}
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-600 uppercase mb-4">RUNS</h3>
-                      {runs.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          No runs yet
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {runs.map(run => {
-                            const runProgress = calculateRunProgress(run);
-                            const completionRate = 100 - runProgress.untested;
-                            
-                            return (
-                              <Link
-                                key={run.id}
-                                to={`/projects/${projectId}/runs/${run.id}`}
-                                className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-indigo-500 transition-all cursor-pointer group"
-                              >
-                                <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                                  <i className="ri-play-circle-line text-lg text-gray-600"></i>
-                                </div>
-                                
-                                <div className="flex-1">
-                                  <div className="font-medium text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
-                                    {run.name}
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-2">
-                                    <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-                                      <div className="h-full flex">
-                                        {runProgress.passed > 0 && (
-                                          <div className="bg-green-500" style={{ width: `${runProgress.passed}%` }}></div>
-                                        )}
-                                        {runProgress.failed > 0 && (
-                                          <div className="bg-red-500" style={{ width: `${runProgress.failed}%` }}></div>
-                                        )}
-                                        {runProgress.blocked > 0 && (
-                                          <div className="bg-orange-500" style={{ width: `${runProgress.blocked}%` }}></div>
-                                        )}
-                                        {runProgress.retest > 0 && (
-                                          <div className="bg-yellow-500" style={{ width: `${runProgress.retest}%` }}></div>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <span className="text-sm font-semibold text-gray-700 min-w-[45px] text-right">
-                                      {completionRate}%
-                                    </span>
-                                  </div>
-                                </div>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Sessions List */}
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-600 uppercase mb-4">SESSIONS</h3>
-                      {sessions.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          No sessions yet
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {sessions.map(session => (
-                            <Link
-                              key={session.id}
-                              to={`/projects/${projectId}/discovery-logs/${session.id}`}
-                              className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-indigo-500 transition-all cursor-pointer group"
-                            >
-                              <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                                <i className="ri-refresh-line text-lg text-gray-600"></i>
-                              </div>
-                              
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
-                                  {session.name}
-                                </div>
-                                
-                                <div className="flex items-center justify-between gap-4">
-                                  <div className="flex items-center gap-2">
-                                    <i className={`${
-                                      session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
-                                      session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' : 
-                                      'ri-check-line text-purple-500'
-                                    }`}></i>
-                                    <span className="text-sm text-gray-700">
-                                      {session.actualStatus === 'new' ? 'New' :
-                                       session.actualStatus === 'in_progress' ? 'In progress' : 
-                                       'Completed'}
-                                    </span>
-                                  </div>
-                                  
-                                  <div className="flex gap-1">
-                                    {session.activityData && session.activityData.map((color: string, i: number) => (
-                                      <div
-                                        key={i}
-                                        className="w-2 h-6 rounded-sm"
-                                        style={{ backgroundColor: color }}
-                                      ></div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'status' && (
-                  <div className="text-center py-12 text-gray-500">
-                    Status view coming soon
-                  </div>
-                )}
-
-                {activeTab === 'activity' && (
-                  <div className="space-y-6">
-                    {/* RUN ACTIVITY Chart */}
-                    <div className="border border-gray-200 rounded-lg p-6">
-                      <div className="flex items-center gap-2 mb-6">
-                        <h3 className="text-sm font-semibold text-gray-600 uppercase">RUN ACTIVITY</h3>
-                        <div className="w-4 h-4 flex items-center justify-center">
-                          <i className="ri-information-line text-gray-400 text-sm"></i>
-                        </div>
-                      </div>
-
-                      {(() => {
-                        const noteCounts = generateChartPoints(activityLogs, 'note');
-                        const passedCounts = generateChartPoints(activityLogs, 'passed');
-                        const failedCounts = generateChartPoints(activityLogs, 'failed');
-                        const retestCounts = generateChartPoints(activityLogs, 'retest');
-
-                        const allCounts = [...noteCounts, ...passedCounts, ...failedCounts, ...retestCounts];
-                        const maxCount = Math.max(...allCounts, 1);
-
-                        const yLabels = [maxCount, Math.round(maxCount / 2), 0];
-
-                        const hasNotes = noteCounts.some(c => c > 0);
-                        const hasPassed = passedCounts.some(c => c > 0);
-                        const hasFailed = failedCounts.some(c => c > 0);
-                        const hasRetest = retestCounts.some(c => c > 0);
-
-                        return (
-                          <div className="flex gap-8">
-                            {/* Chart Area */}
-                            <div className="flex-1">
-                              <div className="h-48 relative">
-                                {/* Y-axis labels */}
-                                <div className="absolute left-0 top-0 bottom-8 w-8 flex flex-col justify-between text-xs text-gray-400">
-                                  {yLabels.map((v, i) => (
-                                    <span key={i}>{v}</span>
-                                  ))}
-                                </div>
-
-                                {/* Chart grid and lines */}
-                                <div className="ml-10 h-40 relative border-b border-l border-gray-200">
-                                  {/* Grid lines */}
-                                  <div className="absolute inset-0">
-                                    <div className="absolute top-0 left-0 right-0 border-t border-gray-100"></div>
-                                    <div className="absolute top-1/2 left-0 right-0 border-t border-gray-100"></div>
-                                  </div>
-
-                                  {/* Activity lines visualization */}
-                                  <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-                                    {hasNotes && (
-                                      <polyline
-                                        fill="none"
-                                        stroke="#3b82f6"
-                                        strokeWidth="2"
-                                        vectorEffect="non-scaling-stroke"
-                                        points={buildPolylinePoints(noteCounts, maxCount)}
-                                      />
-                                    )}
-                                    {hasPassed && (
-                                      <polyline
-                                        fill="none"
-                                        stroke="#22c55e"
-                                        strokeWidth="2"
-                                        vectorEffect="non-scaling-stroke"
-                                        points={buildPolylinePoints(passedCounts, maxCount)}
-                                      />
-                                    )}
-                                    {hasFailed && (
-                                      <polyline
-                                        fill="none"
-                                        stroke="#ef4444"
-                                        strokeWidth="2"
-                                        vectorEffect="non-scaling-stroke"
-                                        points={buildPolylinePoints(failedCounts, maxCount)}
-                                      />
-                                    )}
-                                    {hasRetest && (
-                                      <polyline
-                                        fill="none"
-                                        stroke="#f97316"
-                                        strokeWidth="2"
-                                        vectorEffect="non-scaling-stroke"
-                                        points={buildPolylinePoints(retestCounts, maxCount)}
-                                      />
-                                    )}
-                                    {!hasNotes && !hasPassed && !hasFailed && !hasRetest && (
-                                      <line x1="0" y1="100" x2="100" y2="100" stroke="#e5e7eb" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-                                    )}
-                                  </svg>
-                                </div>
-
-                                {/* X-axis labels */}
-                                <div className="ml-10 flex justify-between text-xs text-gray-400 mt-2">
-                                  {generateDateLabels().map((label, idx) => (
-                                    <span key={idx}>{label}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Stats */}
-                            <div className="w-48 space-y-4">
-                              <div>
-                                <div className="text-lg font-bold text-gray-900">Last 14 days</div>
-                                <div className="text-sm text-gray-500">{activityStats.notes + activityStats.passed + activityStats.failed + activityStats.retest} recent changes</div>
-                              </div>
-
-                              <div className="space-y-3">
-                                {hasNotes && (
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-4 h-4 bg-blue-500 rounded-sm flex-shrink-0"></div>
-                                    <div>
-                                      <div className="text-sm font-semibold text-gray-900">Notes</div>
-                                      <div className="text-xs text-gray-500">{activityStats.notes} notes added</div>
-                                    </div>
-                                  </div>
-                                )}
-                                {hasPassed && (
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-4 h-4 bg-green-500 rounded-sm flex-shrink-0"></div>
-                                    <div>
-                                      <div className="text-sm font-semibold text-gray-900">Passed</div>
-                                      <div className="text-xs text-gray-500">{activityStats.passed} set to Passed</div>
-                                    </div>
-                                  </div>
-                                )}
-                                {hasFailed && (
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-4 h-4 bg-red-500 rounded-sm flex-shrink-0"></div>
-                                    <div>
-                                      <div className="text-sm font-semibold text-gray-900">Failed</div>
-                                      <div className="text-xs text-gray-500">{activityStats.failed} set to Failed</div>
-                                    </div>
-                                  </div>
-                                )}
-                                {hasRetest && (
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-4 h-4 bg-orange-500 rounded-sm flex-shrink-0"></div>
-                                    <div>
-                                      <div className="text-sm font-semibold text-gray-900">Retest</div>
-                                      <div className="text-xs text-gray-500">{activityStats.retest} set to Retest</div>
-                                    </div>
-                                  </div>
-                                )}
-                                {!hasNotes && !hasPassed && !hasFailed && !hasRetest && (
-                                  <div className="text-sm text-gray-400">No activity in last 14 days</div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-
-                    {/* ACTIVITY List */}
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-gray-600 uppercase">ACTIVITY</h3>
-                        <div className="relative">
-                          <select
-                            value={activityStatusFilter}
-                            onChange={(e) => {
-                              setActivityStatusFilter(e.target.value);
-                              setActivityPage(1);
-                            }}
-                            className="appearance-none pl-3 pr-8 py-1.5 text-sm border border-gray-300 rounded-lg bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          >
-                            <option value="all">Statuses</option>
-                            <option value="passed">Passed</option>
-                            <option value="failed">Failed</option>
-                            <option value="retest">Retest</option>
-                            <option value="blocked">Blocked</option>
-                            <option value="note">Notes</option>
-                          </select>
-                          <i className="ri-arrow-down-s-line absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                        </div>
-                      </div>
-
-                      {/* Activity Timeline */}
-                      <div className="space-y-6">
-                        {(() => {
-                          const filteredLogs = activityStatusFilter === 'all' 
-                            ? activityLogs 
-                            : activityLogs.filter(log => log.type === activityStatusFilter);
-                          
-                          // Group by date
-                          const groupedByDate = filteredLogs.reduce((acc, log) => {
-                            const dateKey = log.timestamp.toDateString();
-                            const today = new Date().toDateString();
-                            const yesterday = new Date(Date.now() - 86400000).toDateString();
-                            
-                            let displayDate = dateKey;
-                            if (dateKey === today) displayDate = 'Today';
-                            else if (dateKey === yesterday) displayDate = 'Yesterday';
-                            else displayDate = log.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                            
-                            if (!acc[displayDate]) acc[displayDate] = [];
-                            acc[displayDate].push(log);
-                            return acc;
-                          }, {} as Record<string, ActivityLog[]>);
-
-                          const dateGroups = Object.entries(groupedByDate);
-                          const totalPages = Math.ceil(filteredLogs.length / activityPerPage);
-                          const startIdx = (activityPage - 1) * activityPerPage;
-                          const paginatedLogs = filteredLogs.slice(startIdx, startIdx + activityPerPage);
-
-                          // Re-group paginated logs
-                          const paginatedGrouped = paginatedLogs.reduce((acc, log) => {
-                            const dateKey = log.timestamp.toDateString();
-                            const today = new Date().toDateString();
-                            const yesterday = new Date(Date.now() - 86400000).toDateString();
-                            
-                            let displayDate = dateKey;
-                            if (dateKey === today) displayDate = 'Today';
-                            else if (dateKey === yesterday) displayDate = 'Yesterday';
-                            else displayDate = log.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                            
-                            if (!acc[displayDate]) acc[displayDate] = [];
-                            acc[displayDate].push(log);
-                            return acc;
-                          }, {} as Record<string, ActivityLog[]>);
-
-                          if (filteredLogs.length === 0) {
-                            return (
-                              <div className="text-center py-12">
-                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                  <i className="ri-history-line text-3xl text-gray-400"></i>
-                                </div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">No activity yet</h3>
-                                <p className="text-gray-500">Activity will appear here when test results are recorded.</p>
-                              </div>
-                            );
-                          }
-
-                          return (
-                            <>
-                              {Object.entries(paginatedGrouped).map(([date, logs]) => (
-                                <div key={date}>
-                                  <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                                    <span className="text-sm font-semibold text-gray-700">{date}</span>
-                                  </div>
-                                  
-                                  <div className="ml-4 border-l-2 border-gray-200 pl-6 space-y-3">
-                                    {logs.map((log) => (
-                                      <div key={log.id} className="flex items-center gap-4 py-2">
-                                        {(['passed','failed','blocked','retest','untested'] as TestStatus[]).includes(log.type as TestStatus)
-                                          ? <StatusBadge status={log.type as TestStatus} size="sm" />
-                                          : <span className="px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap bg-blue-100 text-blue-700">Note</span>
-                                        }
-                                        
-                                        <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                                          <i className="ri-file-text-line text-gray-500 text-sm"></i>
-                                        </div>
-                                        
-                                        <span className="text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer truncate max-w-[300px]">
-                                          {log.testCaseName}
-                                        </span>
-                                        
-                                        <span className="text-sm text-gray-500 ml-auto whitespace-nowrap">
-                                          {log.timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                                        </span>
-                                        
-                                        <div className="w-7 h-7 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                                          {log.author.substring(0, 2).toUpperCase()}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-
-                              {/* Pagination */}
-                              {totalPages > 1 && (
-                                <div className="flex items-center justify-center gap-2 mt-6">
-                                  <button
-                                    onClick={() => setActivityPage(p => Math.max(1, p - 1))}
-                                    disabled={activityPage === 1}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                                  >
-                                    <i className="ri-arrow-left-s-line"></i>
-                                  </button>
-                                  
-                                  <div className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg">
-                                    <span className="text-sm font-semibold text-indigo-700">{activityPage}/{totalPages}</span>
-                                  </div>
-                                  
-                                  <button
-                                    onClick={() => setActivityPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={activityPage === totalPages}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                                  >
-                                    <i className="ri-arrow-right-s-line"></i>
-                                  </button>
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'issues' && (
-                  <div className="space-y-4">
-                    {issues.length === 0 ? (
-                      <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <i className="ri-bug-line text-3xl text-gray-400"></i>
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No issues found</h3>
-                        <p className="text-gray-500">이 마일스톤에 등록된 이슈가 없습니다.</p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-sm font-semibold text-gray-600 uppercase">
-                            REGISTERED ISSUES ({issues.length})
-                          </h3>
-                        </div>
-                        <div className="space-y-3">
-                          {issues.map((issue, index) => {
-                            const hasValidUrl = issue.url && issue.url.length > 0;
-                            
-                            return hasValidUrl ? (
-                              <a
-                                key={`${issue.id}-${index}`}
-                                href={issue.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-start gap-4 p-4 border border-gray-200 rounded-lg transition-all bg-white hover:border-indigo-500 hover:shadow-md cursor-pointer block"
-                              >
-                                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <i className="ri-bug-line text-red-600 text-lg"></i>
-                                </div>
-                                
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-medium text-gray-900 truncate">
-                                      {issue.title}
-                                    </span>
-                                    <i className="ri-external-link-line text-sm text-gray-400 flex-shrink-0"></i>
-                                    {issue.status && (
-                                      <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
-                                        issue.status.toLowerCase() === 'open' || issue.status.toLowerCase() === 'to do'
-                                          ? 'bg-red-100 text-red-700'
-                                          : issue.status.toLowerCase() === 'in progress'
-                                          ? 'bg-yellow-100 text-yellow-700'
-                                          : issue.status.toLowerCase() === 'done' || issue.status.toLowerCase() === 'closed'
-                                          ? 'bg-green-100 text-green-700'
-                                          : 'bg-gray-100 text-gray-700'
-                                      }`}>
-                                        {issue.status}
-                                      </span>
-                                    )}
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                                    <div className="flex items-center gap-1">
-                                      <i className="ri-play-circle-line text-xs"></i>
-                                      <span className="truncate max-w-[150px]">{issue.runName}</span>
-                                    </div>
-                                    {issue.testCaseName && (
-                                      <div className="flex items-center gap-1">
-                                        <i className="ri-file-list-line text-xs"></i>
-                                        <span className="truncate max-w-[200px]">{issue.testCaseName}</span>
-                                      </div>
-                                    )}
-                                    <div className="flex items-center gap-1">
-                                      <i className="ri-time-line text-xs"></i>
-                                      <span>{new Date(issue.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </a>
-                            ) : (
-                              <div
-                                key={`${issue.id}-${index}`}
-                                className="flex items-start gap-4 p-4 border border-gray-200 rounded-lg bg-white"
-                              >
-                                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <i className="ri-bug-line text-red-600 text-lg"></i>
-                                </div>
-                                
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-medium text-gray-900 truncate">
-                                      {issue.title}
-                                    </span>
-                                    {issue.status && (
-                                      <span className={`px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
-                                        issue.status.toLowerCase() === 'open' || issue.status.toLowerCase() === 'to do'
-                                          ? 'bg-red-100 text-red-700'
-                                          : issue.status.toLowerCase() === 'in progress'
-                                          ? 'bg-yellow-100 text-yellow-700'
-                                          : issue.status.toLowerCase() === 'done' || issue.status.toLowerCase() === 'closed'
-                                          ? 'bg-green-100 text-green-700'
-                                          : 'bg-gray-100 text-gray-700'
-                                      }`}>
-                                        {issue.status}
-                                      </span>
-                                    )}
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                                    <div className="flex items-center gap-1">
-                                      <i className="ri-play-circle-line text-xs"></i>
-                                      <span className="truncate max-w-[150px]">{issue.runName}</span>
-                                    </div>
-                                    {issue.testCaseName && (
-                                      <div className="flex items-center gap-1">
-                                        <i className="ri-file-list-line text-xs"></i>
-                                        <span className="truncate max-w-[200px]">{issue.testCaseName}</span>
-                                      </div>
-                                    )}
-                                    <div className="flex items-center gap-1">
-                                      <i className="ri-time-line text-xs"></i>
-                                      <span>{new Date(issue.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* About Section */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">ABOUT</h2>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <i className="ri-calendar-line text-gray-600 text-lg"></i>
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-gray-900">Timeline</div>
-                    <div className="text-xs text-gray-500">{formatDateRange(milestone.start_date, milestone.end_date)}</div>
-                  </div>
+            {/* Sub-milestone progress (if any) */}
+            {subMilestones.length > 0 && (
+              <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '1rem 1.25rem' }}>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <i className="ri-git-branch-line" style={{ fontSize: '0.9375rem', color: '#3B82F6' }} /> Sub-Milestone Progress
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <i className="ri-team-line text-gray-600 text-lg"></i>
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-gray-900">Contributors</div>
-                    {contributors.length === 0 ? (
-                      <div className="text-xs text-gray-400 mt-2">No contributors yet</div>
-                    ) : (
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        {contributors.map((author, index) => {
-                          const emoji = contributorProfiles.get(author);
-                          return (
-                            <div
-                              key={author}
-                              className="relative group"
-                            >
-                              {emoji ? (
-                                <div
-                                  className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-lg cursor-default"
-                                >
-                                  {emoji}
-                                </div>
-                              ) : (
-                                <div
-                                  className={`w-8 h-8 bg-gradient-to-br ${getContributorColor(index)} rounded-full flex items-center justify-center text-white font-semibold text-xs cursor-default`}
-                                >
-                                  {getContributorInitials(author)}
-                                </div>
-                              )}
-                              {/* Fast tooltip */}
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-75 z-10">
-                                {author}
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                              </div>
-                            </div>
-                          );
-                        })}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                  {subMilestones.map(sub => {
+                    const subBadge = getStatusBadgeStyle(sub.status);
+                    return (
+                      <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#0F172A', minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</span>
+                        <span style={{ fontSize: '0.625rem', fontWeight: 600, padding: '0.125rem 0.4375rem', borderRadius: '9999px', background: subBadge.bg, color: subBadge.color, whiteSpace: 'nowrap', flexShrink: 0 }}>{subBadge.label}</span>
+                        <div style={{ width: 100, height: 6, background: '#F1F5F9', borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
+                          <div style={{ height: '100%', width: `${sub.progress || 0}%`, background: '#22C55E', borderRadius: 3 }} />
+                        </div>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', flexShrink: 0 }}>{sub.progress || 0}%</span>
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
+              </div>
+            )}
+
+            {/* Overview stats */}
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '1rem 1.25rem' }}>
+              <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <i className="ri-bar-chart-box-fill" style={{ fontSize: '0.9375rem', color: '#6366F1' }} /> Overview
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                {[
+                  { label: 'Runs', value: runs.length, icon: 'ri-play-circle-line', color: '#6366F1' },
+                  { label: 'Discovery Logs', value: sessions.length, icon: 'ri-search-eye-line', color: '#3B82F6' },
+                  { label: 'Pass Rate', value: `${tcStats.passRate}%`, icon: 'ri-percent-line', color: '#22C55E' },
+                ].map(stat => (
+                  <div key={stat.label} style={{ textAlign: 'center', padding: '0.75rem', background: '#F8FAFC', borderRadius: '0.5rem' }}>
+                    <i className={stat.icon} style={{ fontSize: '1.25rem', color: stat.color, display: 'block', marginBottom: '0.25rem' }} />
+                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0F172A', lineHeight: 1 }}>{stat.value}</div>
+                    <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.25rem' }}>{stat.label}</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        </main>
+        )}
+
+        {/* ════ ACTIVITY TAB ════ */}
+        {activeTab === 'activity' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* RUN ACTIVITY Chart */}
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '1rem 1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>RUN ACTIVITY</span>
+              </div>
+              {(() => {
+                const noteCounts = generateChartPoints(activityLogs, 'note');
+                const passedCounts = generateChartPoints(activityLogs, 'passed');
+                const failedCounts = generateChartPoints(activityLogs, 'failed');
+                const retestCounts = generateChartPoints(activityLogs, 'retest');
+                const allCounts = [...noteCounts, ...passedCounts, ...failedCounts, ...retestCounts];
+                const maxCount = Math.max(...allCounts, 1);
+                const yLabels = [maxCount, Math.round(maxCount / 2), 0];
+                const hasNotes = noteCounts.some(c => c > 0);
+                const hasPassed = passedCounts.some(c => c > 0);
+                const hasFailed = failedCounts.some(c => c > 0);
+                const hasRetest = retestCounts.some(c => c > 0);
+                return (
+                  <div className="flex gap-8">
+                    <div className="flex-1">
+                      <div className="h-48 relative">
+                        <div className="absolute left-0 top-0 bottom-8 w-8 flex flex-col justify-between text-xs text-gray-400">
+                          {yLabels.map((v, i) => <span key={i}>{v}</span>)}
+                        </div>
+                        <div className="ml-10 h-40 relative border-b border-l border-gray-200">
+                          <div className="absolute inset-0">
+                            <div className="absolute top-0 left-0 right-0 border-t border-gray-100"></div>
+                            <div className="absolute top-1/2 left-0 right-0 border-t border-gray-100"></div>
+                          </div>
+                          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+                            {hasNotes && <polyline fill="none" stroke="#3b82f6" strokeWidth="2" vectorEffect="non-scaling-stroke" points={buildPolylinePoints(noteCounts, maxCount)} />}
+                            {hasPassed && <polyline fill="none" stroke="#22c55e" strokeWidth="2" vectorEffect="non-scaling-stroke" points={buildPolylinePoints(passedCounts, maxCount)} />}
+                            {hasFailed && <polyline fill="none" stroke="#ef4444" strokeWidth="2" vectorEffect="non-scaling-stroke" points={buildPolylinePoints(failedCounts, maxCount)} />}
+                            {hasRetest && <polyline fill="none" stroke="#f97316" strokeWidth="2" vectorEffect="non-scaling-stroke" points={buildPolylinePoints(retestCounts, maxCount)} />}
+                            {!hasNotes && !hasPassed && !hasFailed && !hasRetest && <line x1="0" y1="100" x2="100" y2="100" stroke="#e5e7eb" strokeWidth="1" vectorEffect="non-scaling-stroke" />}
+                          </svg>
+                        </div>
+                        <div className="ml-10 flex justify-between text-xs text-gray-400 mt-2">
+                          {generateDateLabels().map((label, idx) => <span key={idx}>{label}</span>)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="w-48 space-y-4">
+                      <div>
+                        <div className="text-lg font-bold text-gray-900">Last 14 days</div>
+                        <div className="text-sm text-gray-500">{activityStats.notes + activityStats.passed + activityStats.failed + activityStats.retest} recent changes</div>
+                      </div>
+                      <div className="space-y-3">
+                        {hasNotes && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-blue-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">Notes</div><div className="text-xs text-gray-500">{activityStats.notes} notes added</div></div></div>}
+                        {hasPassed && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-green-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">Passed</div><div className="text-xs text-gray-500">{activityStats.passed} set to Passed</div></div></div>}
+                        {hasFailed && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-red-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">Failed</div><div className="text-xs text-gray-500">{activityStats.failed} set to Failed</div></div></div>}
+                        {hasRetest && <div className="flex items-center gap-3"><div className="w-4 h-4 bg-orange-500 rounded-sm flex-shrink-0"></div><div><div className="text-sm font-semibold text-gray-900">Retest</div><div className="text-xs text-gray-500">{activityStats.retest} set to Retest</div></div></div>}
+                        {!hasNotes && !hasPassed && !hasFailed && !hasRetest && <div className="text-sm text-gray-400">No activity in last 14 days</div>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* ACTIVITY List */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ACTIVITY</div>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    value={activityStatusFilter}
+                    onChange={(e) => { setActivityStatusFilter(e.target.value); setActivityPage(1); }}
+                    style={{ appearance: 'none', paddingLeft: '0.75rem', paddingRight: '2rem', paddingTop: '0.375rem', paddingBottom: '0.375rem', fontSize: '0.875rem', border: '1px solid #E2E8F0', borderRadius: '0.5rem', background: '#fff', cursor: 'pointer', fontFamily: 'inherit', outline: 'none' }}
+                  >
+                    <option value="all">Statuses</option>
+                    <option value="passed">Passed</option>
+                    <option value="failed">Failed</option>
+                    <option value="retest">Retest</option>
+                    <option value="blocked">Blocked</option>
+                    <option value="note">Notes</option>
+                  </select>
+                  <i className="ri-arrow-down-s-line" style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {(() => {
+                  const filteredLogs = activityStatusFilter === 'all' ? activityLogs : activityLogs.filter(log => log.type === activityStatusFilter);
+                  const totalPages = Math.ceil(filteredLogs.length / activityPerPage);
+                  const startIdx = (activityPage - 1) * activityPerPage;
+                  const paginatedLogs = filteredLogs.slice(startIdx, startIdx + activityPerPage);
+
+                  const paginatedGrouped = paginatedLogs.reduce((acc, log) => {
+                    const dateKey = log.timestamp.toDateString();
+                    const today = new Date().toDateString();
+                    const yesterday = new Date(Date.now() - 86400000).toDateString();
+                    let displayDate = dateKey;
+                    if (dateKey === today) displayDate = 'Today';
+                    else if (dateKey === yesterday) displayDate = 'Yesterday';
+                    else displayDate = log.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    if (!acc[displayDate]) acc[displayDate] = [];
+                    acc[displayDate].push(log);
+                    return acc;
+                  }, {} as Record<string, ActivityLog[]>);
+
+                  if (filteredLogs.length === 0) {
+                    return (
+                      <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                        <div style={{ width: '4rem', height: '4rem', background: '#F1F5F9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                          <i className="ri-history-line" style={{ fontSize: '1.875rem', color: '#94A3B8' }} />
+                        </div>
+                        <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#0F172A', marginBottom: '0.5rem' }}>No activity yet</div>
+                        <div style={{ color: '#64748B', fontSize: '0.875rem' }}>Activity will appear here when test results are recorded.</div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      {Object.entries(paginatedGrouped).map(([date, logs]) => (
+                        <div key={date}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                            <span className="text-sm font-semibold text-gray-700">{date}</span>
+                          </div>
+                          <div className="ml-4 border-l-2 border-gray-200 pl-6 space-y-3">
+                            {logs.map((log) => (
+                              <div key={log.id} className="flex items-center gap-4 py-2">
+                                {(['passed','failed','blocked','retest','untested'] as TestStatus[]).includes(log.type as TestStatus)
+                                  ? <StatusBadge status={log.type as TestStatus} size="sm" />
+                                  : <span className="px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap bg-blue-100 text-blue-700">Note</span>
+                                }
+                                <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                                  <i className="ri-file-text-line text-gray-500 text-sm"></i>
+                                </div>
+                                <span className="text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer truncate max-w-[300px]">{log.testCaseName}</span>
+                                <span className="text-sm text-gray-500 ml-auto whitespace-nowrap">
+                                  {log.timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                                </span>
+                                <div className="w-7 h-7 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                  {log.author.substring(0, 2).toUpperCase()}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 mt-6">
+                          <button onClick={() => setActivityPage(p => Math.max(1, p - 1))} disabled={activityPage === 1} className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                            <i className="ri-arrow-left-s-line"></i>
+                          </button>
+                          <div className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg">
+                            <span className="text-sm font-semibold text-indigo-700">{activityPage}/{totalPages}</span>
+                          </div>
+                          <button onClick={() => setActivityPage(p => Math.min(totalPages, p + 1))} disabled={activityPage === totalPages} className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                            <i className="ri-arrow-right-s-line"></i>
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ════ ISSUES TAB ════ */}
+        {activeTab === 'issues' && (
+          <div>
+            {issues.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                <div style={{ width: '4rem', height: '4rem', background: '#F1F5F9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                  <i className="ri-bug-line" style={{ fontSize: '1.875rem', color: '#94A3B8' }} />
+                </div>
+                <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#0F172A', marginBottom: '0.5rem' }}>No issues found</div>
+                <div style={{ color: '#64748B', fontSize: '0.875rem' }}>이 마일스톤에 등록된 이슈가 없습니다.</div>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
+                  REGISTERED ISSUES ({issues.length})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {issues.map((issue, index) => {
+                    const hasValidUrl = issue.url && issue.url.length > 0;
+                    const statusBg = issue.status?.toLowerCase() === 'open' || issue.status?.toLowerCase() === 'to do' ? '#FEE2E2' :
+                      issue.status?.toLowerCase() === 'in progress' ? '#FEF3C7' :
+                      issue.status?.toLowerCase() === 'done' || issue.status?.toLowerCase() === 'closed' ? '#DCFCE7' : '#F1F5F9';
+                    const statusColor = issue.status?.toLowerCase() === 'open' || issue.status?.toLowerCase() === 'to do' ? '#991B1B' :
+                      issue.status?.toLowerCase() === 'in progress' ? '#92400E' :
+                      issue.status?.toLowerCase() === 'done' || issue.status?.toLowerCase() === 'closed' ? '#166534' : '#475569';
+                    const inner = (
+                      <>
+                        <div style={{ width: '2.5rem', height: '2.5rem', background: '#FEE2E2', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <i className="ri-bug-line" style={{ color: '#DC2626', fontSize: '1.125rem' }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                            <span style={{ fontWeight: 500, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{issue.title}</span>
+                            {hasValidUrl && <i className="ri-external-link-line" style={{ fontSize: '0.875rem', color: '#94A3B8', flexShrink: 0 }} />}
+                            {issue.status && <span style={{ padding: '0.125rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 500, background: statusBg, color: statusColor, flexShrink: 0 }}>{issue.status}</span>}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.875rem', color: '#64748B', flexWrap: 'wrap' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><i className="ri-play-circle-line" style={{ fontSize: '0.75rem' }} />{issue.runName}</span>
+                            {issue.testCaseName && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><i className="ri-file-list-line" style={{ fontSize: '0.75rem' }} />{issue.testCaseName}</span>}
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><i className="ri-time-line" style={{ fontSize: '0.75rem' }} />{new Date(issue.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                          </div>
+                        </div>
+                      </>
+                    );
+                    const cardStyle = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '0.75rem 1rem', display: 'flex', alignItems: 'flex-start', gap: '1rem', transition: 'all 0.15s', fontSize: '0.8125rem' };
+                    return hasValidUrl ? (
+                      <a key={`${issue.id}-${index}`} href={issue.url} target="_blank" rel="noopener noreferrer" style={{ ...cardStyle, textDecoration: 'none', cursor: 'pointer' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#FECACA'; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(239,68,68,0.08)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
+                      >{inner}</a>
+                    ) : (
+                      <div key={`${issue.id}-${index}`} style={cardStyle}>{inner}</div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
       </div>
+      {/* ── /scrollable content ── */}
 
       {/* Edit Milestone Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Edit Milestone</h2>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div style={{ background: '#fff', borderRadius: '0.5rem', padding: '1.5rem', width: '100%', maxWidth: '28rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0F172A', marginBottom: '1rem' }}>Edit Milestone</h2>
             <form onSubmit={handleUpdateMilestone}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={editFormData.name}
-                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    value={editFormData.start_date}
-                    onChange={(e) => setEditFormData({ ...editFormData, start_date: e.target.value })}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    value={editFormData.end_date}
-                    onChange={(e) => setEditFormData({ ...editFormData, end_date: e.target.value })}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {[
+                  { label: 'Name', key: 'name', type: 'text' },
+                  { label: 'Start Date', key: 'start_date', type: 'date' },
+                  { label: 'End Date', key: 'end_date', type: 'date' },
+                ].map(field => (
+                  <div key={field.key}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#475569', marginBottom: '0.25rem' }}>{field.label}</label>
+                    <input
+                      type={field.type}
+                      value={editFormData[field.key as keyof typeof editFormData]}
+                      onChange={(e) => setEditFormData({ ...editFormData, [field.key]: e.target.value })}
+                      required={field.key === 'name'}
+                      style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #E2E8F0', borderRadius: '0.5rem', fontSize: '0.875rem', fontFamily: 'inherit', outline: 'none' }}
+                    />
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                >
-                  Save
-                </button>
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+                <button type="button" onClick={() => setShowEditModal(false)} style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.875rem', fontWeight: 500, color: '#475569', background: '#F1F5F9', border: 'none', borderRadius: '0.5rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>Cancel</button>
+                <button type="submit" style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.875rem', fontWeight: 600, color: '#fff', background: '#6366F1', border: 'none', borderRadius: '0.5rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>Save</button>
               </div>
             </form>
           </div>
