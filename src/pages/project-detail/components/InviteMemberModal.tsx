@@ -64,11 +64,12 @@ export default function InviteMemberModal({
       const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS];
       setMaxMembers(limits.maxMembers);
 
-      // Count current project members
+      // Count current project members (Viewer role excluded from seat limit)
       const { count } = await supabase
         .from('project_members')
         .select('*', { count: 'exact', head: true })
-        .eq('project_id', projectId);
+        .eq('project_id', projectId)
+        .neq('role', 'viewer');
 
       const memberCount = count || 0;
       setCurrentMemberCount(memberCount);
