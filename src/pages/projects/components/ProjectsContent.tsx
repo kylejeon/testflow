@@ -608,6 +608,8 @@ export default function ProjectsContent() {
                 onCreateProject={() => setShowCreateModal(true)}
                 onTrySample={handleTrySample}
                 isSampleLoading={sampleLoading}
+                onEditProject={setEditingProject}
+                onDeleteProject={setDeletingProject}
               />
             </div>
           </div>

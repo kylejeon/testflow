@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Project } from '../../../lib/supabase';
 import { Avatar } from '../../../components/Avatar';
@@ -12,6 +12,8 @@ interface SparseStateProps {
   onCreateProject: () => void;
   onTrySample: () => void;
   isSampleLoading?: boolean;
+  onEditProject?: (project: Project) => void;
+  onDeleteProject?: (project: Project) => void;
 }
 
 // ── Health helpers ────────────────────────────────────────────────────────────
@@ -125,6 +127,8 @@ function ProjectCard({
   passRate,
   members,
   animDelay,
+  onEdit,
+  onDelete,
 }: {
   project: Project;
   testCaseCount: number;
@@ -132,11 +136,24 @@ function ProjectCard({
   passRate?: number | null;
   members?: Array<{ initials: string; color: string; userId?: string; name?: string }>;
   animDelay: number;
+  onEdit?: (project: Project) => void;
+  onDelete?: (project: Project) => void;
 }) {
   const navigate = useNavigate();
   const health = getHealth(passRate ?? null);
   const visibleMembers = (members ?? []).slice(0, 4);
   const extraMembers = (members ?? []).length - visibleMembers.length;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
 
   return (
     <div
@@ -162,11 +179,50 @@ function ProjectCard({
             {project.name}
           </span>
         </div>
-        {/* Health badge */}
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ml-2 ${health.badge}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${health.dot}`}></span>
-          {health.label}
-        </span>
+        <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+          {/* Health badge */}
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${health.badge}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${health.dot}`}></span>
+            {health.label}
+          </span>
+          {/* 3-dot menu */}
+          {(onEdit || onDelete) && (
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(o => !o); }}
+                className="flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all cursor-pointer"
+                style={{ width: '1.75rem', height: '1.75rem' }}
+              >
+                <i className="ri-more-2-fill" style={{ fontSize: '1rem' }} />
+              </button>
+              {menuOpen && (
+                <div
+                  className="absolute right-0 bg-white rounded-lg shadow-lg z-10"
+                  style={{ top: 'calc(100% + 4px)', width: '11rem', border: '1px solid #E2E8F0' }}
+                >
+                  {onEdit && (
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(false); onEdit(project); }}
+                      className="w-full text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer"
+                      style={{ padding: '0.5rem 1rem' }}
+                    >
+                      <i className="ri-edit-line" /> Edit
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(false); onDelete(project); }}
+                      className="w-full text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
+                      style={{ padding: '0.5rem 1rem' }}
+                    >
+                      <i className="ri-delete-bin-line" /> Delete
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Description */}
@@ -317,6 +373,8 @@ export default function SparseState({
   onCreateProject,
   onTrySample,
   isSampleLoading,
+  onEditProject,
+  onDeleteProject,
 }: SparseStateProps) {
   const navigate = useNavigate();
   const count = projects.length as 1 | 2;
@@ -360,6 +418,8 @@ export default function SparseState({
             passRate={projectPassRates?.[project.id] ?? null}
             members={projectMembers?.[project.id] ?? []}
             animDelay={i * 50}
+            onEdit={onEditProject}
+            onDelete={onDeleteProject}
           />
         ))}
 

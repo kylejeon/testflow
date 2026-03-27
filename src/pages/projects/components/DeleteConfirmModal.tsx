@@ -16,12 +16,12 @@ export default function DeleteConfirmModal({ project, onClose, onDelete }: Delet
           </div>
           
           <h2 className="text-xl font-bold text-gray-900 text-center mb-2">
-            프로젝트 삭제
+            Delete Project
           </h2>
-          
+
           <p className="text-gray-600 text-center mb-6">
-            <strong className="text-gray-900">{project.name}</strong> 프로젝트를 삭제하시겠습니까?<br />
-            이 작업은 되돌릴 수 없습니다.
+            Are you sure you want to delete <strong className="text-gray-900">{project.name}</strong>?<br />
+            This action cannot be undone.
           </p>
 
           <div className="flex items-center gap-3">
@@ -29,13 +29,13 @@ export default function DeleteConfirmModal({ project, onClose, onDelete }: Delet
               onClick={onClose}
               className="flex-1 px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all cursor-pointer whitespace-nowrap"
             >
-              취소
+              Cancel
             </button>
             <button
               onClick={() => onDelete(project.id)}
               className="flex-1 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-all cursor-pointer whitespace-nowrap"
             >
-              삭제
+              Delete
             </button>
           </div>
         </div>
