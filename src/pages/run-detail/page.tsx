@@ -571,8 +571,42 @@ export default function RunDetail() {
         return;
       }
 
-      // Update local state only (do NOT insert a new test result here)
-      const updatedTestCases = testCases.map(tc => 
+      // Persist the status change as a test_result row so it survives page refresh
+      const { data: newResultData, error: insertError } = await supabase
+        .from('test_results')
+        .insert({
+          test_case_id: testCaseId,
+          run_id: runId,
+          status: newStatus,
+          author: currentUser.full_name || currentUser.email,
+          note: '',
+          elapsed: '00:00',
+          attachments: [],
+          step_statuses: {},
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Refresh results list if this is the currently selected test case
+      if (selectedTestCase?.id === testCaseId && newResultData) {
+        const newResult: TestResult = {
+          id: newResultData.id,
+          status: newResultData.status,
+          note: newResultData.note,
+          elapsed: newResultData.elapsed,
+          attachments: newResultData.attachments || [],
+          author: newResultData.author,
+          timestamp: new Date(newResultData.created_at),
+          stepStatuses: newResultData.step_statuses,
+          issues: newResultData.issues || [],
+        };
+        setTestResults([newResult, ...testResults]);
+      }
+
+      // Update local state
+      const updatedTestCases = testCases.map(tc =>
         tc.id === testCaseId ? { ...tc, runStatus: newStatus as any } : tc
       );
       setTestCases(updatedTestCases);
@@ -580,15 +614,15 @@ export default function RunDetail() {
       if (selectedTestCase?.id === testCaseId) {
         setSelectedTestCase({ ...selectedTestCase, runStatus: newStatus as any });
       }
-      
+
       // Calculate untested count
       const untestedCount = updatedTestCases.filter(tc => tc.runStatus === 'untested').length;
-      
+
       // Update run status based on untested count
       await updateRunStatus(runId!, {
         untested: untestedCount
       });
-      
+
       // Switch to Results tab
       setActiveTab('results');
     } catch (error) {

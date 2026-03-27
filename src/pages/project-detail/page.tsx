@@ -525,30 +525,38 @@ export default function ProjectDetail() {
     return groups;
   }, [recentActivity]);
 
-  // ── Trend Data (from test_runs counters + executed_at) ──
-  // Uses run-level counters (passed/failed/blocked on test_runs) aggregated by executed_at date.
-  // This is more reliable than test_results.created_at because:
-  //   1. test_runs counters are always populated (including sample projects)
-  //   2. executed_at reflects the actual run completion date
+  // ── Trend Data ──
+  // Primary: test_results rows aggregated by created_at (accurate for user-entered results).
+  // Fallback: allRunsRaw counters by executed_at (covers sample projects where test_results is empty).
   const trendData = useMemo(() => {
-    // Use allRunsRaw (original DB values) — testRuns has passed/failed/blocked
-    // recalculated from test_results rows, which overwrites the DB-stored counters.
-    const executedRuns = allRunsRaw.filter((r: any) => r.executed_at);
-    if (executedRuns.length === 0) return [];
-
     const days = trendPeriod === '7d' ? 7 : trendPeriod === '14d' ? 14 : 30;
-
-    // Aggregate runs by execution date (UTC date key)
     const dateMap = new Map<string, { passed: number; failed: number; blocked: number }>();
-    executedRuns.forEach((r: any) => {
-      const dateKey = (r.executed_at || '').slice(0, 10);
-      if (!dateKey) return;
-      if (!dateMap.has(dateKey)) dateMap.set(dateKey, { passed: 0, failed: 0, blocked: 0 });
-      const entry = dateMap.get(dateKey)!;
-      entry.passed  += (r.passed  || 0);
-      entry.failed  += (r.failed  || 0);
-      entry.blocked += (r.blocked || 0);
-    });
+
+    if (rawTestResults.length > 0) {
+      // Real test_results rows — most accurate source
+      rawTestResults.forEach((r: any) => {
+        const dateKey = (r.created_at || '').slice(0, 10);
+        if (!dateKey) return;
+        if (!dateMap.has(dateKey)) dateMap.set(dateKey, { passed: 0, failed: 0, blocked: 0 });
+        const entry = dateMap.get(dateKey)!;
+        if (r.status === 'passed') entry.passed++;
+        else if (r.status === 'failed') entry.failed++;
+        else if (r.status === 'blocked') entry.blocked++;
+      });
+    } else {
+      // Fallback: use run-level counters + executed_at (e.g. sample project)
+      allRunsRaw.filter((r: any) => r.executed_at).forEach((r: any) => {
+        const total = (r.passed || 0) + (r.failed || 0) + (r.blocked || 0);
+        if (total === 0) return;
+        const dateKey = (r.executed_at || '').slice(0, 10);
+        if (!dateKey) return;
+        if (!dateMap.has(dateKey)) dateMap.set(dateKey, { passed: 0, failed: 0, blocked: 0 });
+        const entry = dateMap.get(dateKey)!;
+        entry.passed  += (r.passed  || 0);
+        entry.failed  += (r.failed  || 0);
+        entry.blocked += (r.blocked || 0);
+      });
+    }
 
     if (dateMap.size === 0) return [];
 
@@ -573,7 +581,7 @@ export default function ProjectDetail() {
       }
       return points;
     } else {
-      // No data in the current window — show the last N execution dates that have data
+      // No data in the current window — show the last N dates that have data
       const allDates = Array.from(dateMap.keys()).sort();
       const recentDates = allDates.slice(-days);
       return recentDates.map((dateKey, idx) => {
@@ -585,7 +593,7 @@ export default function ProjectDetail() {
         return { label, ...entry };
       });
     }
-  }, [allRunsRaw, trendPeriod]);
+  }, [rawTestResults, allRunsRaw, trendPeriod]);
 
   // ── Loading / Not found states ──
   if (loading) {
