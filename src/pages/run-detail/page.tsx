@@ -1815,8 +1815,8 @@ export default function RunDetail() {
                           />
                         </div>
                         <div className="col-span-1 flex items-center">
-                          <span className="font-mono text-[0.75rem] text-[#94A3B8] bg-[#F1F5F9] px-1.5 py-0.5 rounded truncate max-w-full" title={testCase.id}>
-                            {(testCase as any).custom_id || testCase.id.substring(0, 8)}
+                          <span className="font-mono text-[0.8125rem] text-indigo-600 font-semibold whitespace-nowrap">
+                            {(testCase as any).custom_id || '-'}
                           </span>
                         </div>
                         <div className="col-span-4 flex items-center">

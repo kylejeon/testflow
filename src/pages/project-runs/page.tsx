@@ -1986,7 +1986,7 @@ export default function ProjectRunsPage() {
                                     onChange={() => {}}
                                   />
                                 </td>
-                                <td className="px-3 py-2.5 font-mono text-xs text-indigo-600 font-semibold">{(tc as any).custom_id || '-'}</td>
+                                <td className="px-3 py-2.5 font-mono text-[0.8125rem] text-indigo-600 font-semibold whitespace-nowrap">{(tc as any).custom_id || '-'}</td>
                                 <td className="px-3 py-2.5 text-xs font-medium text-gray-800">{tc.title}</td>
                                 <td className="px-3 py-2.5">
                                   <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
