@@ -847,587 +847,393 @@ export default function SessionDetail() {
     );
   }
 
+  const logTypeConfig: Record<string, { label: string; icon: string; color: string; border: string; bg: string }> = {
+    note:    { label: 'Note',        icon: 'ri-sticky-note-line',  color: '#6366F1', border: '#6366F1', bg: '#EEF2FF' },
+    failed:  { label: 'Bug',         icon: 'ri-bug-line',          color: '#DC2626', border: '#EF4444', bg: '#FEF2F2' },
+    blocked: { label: 'Observation', icon: 'ri-eye-line',          color: '#D97706', border: '#F59E0B', bg: '#FFFBEB' },
+    passed:  { label: 'Step',        icon: 'ri-test-tube-line',    color: '#7C3AED', border: '#7C3AED', bg: '#F5F3FF' },
+  };
+
+  const entryTypeButtons: Array<{ type: 'note' | 'passed' | 'failed' | 'blocked'; label: string; icon: string; hoverColor: string }> = [
+    { type: 'note',    label: 'Note', icon: 'ri-sticky-note-line', hoverColor: '#6366F1' },
+    { type: 'failed',  label: 'Bug',  icon: 'ri-bug-line',         hoverColor: '#DC2626' },
+    { type: 'blocked', label: 'Obs',  icon: 'ri-eye-line',         hoverColor: '#D97706' },
+    { type: 'passed',  label: 'Step', icon: 'ri-test-tube-line',   hoverColor: '#7C3AED' },
+  ];
+
+  const statusInfo = !session.started_at
+    ? { label: 'Not Started', pill: 'bg-[#F1F5F9] text-[#64748B]', dot: 'bg-[#94A3B8]' }
+    : session.status === 'closed'
+    ? { label: 'Completed', pill: 'bg-[#DCFCE7] text-[#15803D]', dot: 'bg-[#22C55E]' }
+    : session.paused_at
+    ? { label: 'Paused', pill: 'bg-[#FEF3C7] text-[#92400E]', dot: 'bg-[#F59E0B]' }
+    : { label: 'In Progress', pill: 'bg-[#EFF6FF] text-[#1D4ED8]', dot: 'bg-[#3B82F6]' };
+
   return (
     <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => navigate(`/projects/${projectId}/discovery-logs`)}
-                  className="text-gray-600 hover:text-gray-900 cursor-pointer"
-                >
-                  <i className="ri-arrow-left-line text-xl"></i>
-                </button>
-                <div>
-                  <h1 className="text-2xl font-semibold text-gray-900">{session.name}</h1>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-sm text-gray-500">
-                      Discovery Log
-                    </span>
-                    {milestone && (
+        {/* Breadcrumb Row */}
+        <div className="h-[2.625rem] bg-white border-b border-[#E2E8F0] flex items-center px-5 gap-3 flex-shrink-0 text-[0.8125rem]">
+          <button
+            onClick={() => navigate(`/projects/${projectId}/discovery-logs`)}
+            className="flex items-center gap-1 text-[#6366F1] font-semibold cursor-pointer hover:text-[#4F46E5] transition-colors"
+          >
+            <i className="ri-arrow-left-s-line" />
+            Back
+          </button>
+          <span className="text-[#CBD5E1]">/</span>
+          <button
+            onClick={() => navigate(`/projects/${projectId}/discovery-logs`)}
+            className="text-[#6366F1] font-medium cursor-pointer hover:underline"
+          >
+            Discovery Log
+          </button>
+          {milestone && (
+            <>
+              <span className="text-[#CBD5E1]">/</span>
+              <span className="text-[#64748B]">{milestone.name}</span>
+            </>
+          )}
+          <span className="text-[#CBD5E1]">/</span>
+          <span className="text-[#0F172A] font-medium truncate max-w-[240px]">{session.name}</span>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="flex items-center gap-1.5 px-3 py-[0.3125rem] border border-[#E2E8F0] rounded-[6px] text-[0.8125rem] text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer transition-colors"
+            >
+              <i className="ri-edit-line text-[0.875rem]" />
+              Edit
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* Detail Main */}
+          <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
+            {/* Name + Mission */}
+            <div className="bg-white border-b border-[#E2E8F0] px-5 py-4 flex-shrink-0">
+              <div className="text-[1.5rem] font-extrabold text-[#0F172A] leading-tight">{session.name}</div>
+              {session.mission && (
+                <div className="mt-3 p-3 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#64748B] leading-[1.5]">
+                  {session.mission}
+                </div>
+              )}
+            </div>
+
+            {/* Entries */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+              {logs.length === 0 && (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center text-[#94A3B8] py-12">
+                    <i className="ri-sticky-note-2-line text-4xl mb-3 block" />
+                    <p className="text-[0.8125rem]">No entries yet. Add your first note, bug, or observation.</p>
+                  </div>
+                </div>
+              )}
+              {logs.map((log) => {
+                const cfg = logTypeConfig[log.type] || logTypeConfig.note;
+                return (
+                  <div
+                    key={log.id}
+                    className="bg-white rounded-[6px] border border-[#E2E8F0]"
+                    style={{ borderLeft: `3px solid ${cfg.border}` }}
+                  >
+                    <div className="px-3 py-2.5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <i className={`${cfg.icon} text-[0.875rem]`} style={{ color: cfg.color }} />
+                        <span className="text-[0.8125rem] font-semibold text-[#0F172A]">{cfg.label}</span>
+                        <span className="text-[0.75rem] text-[#94A3B8] ml-auto">{formatTime(log.created_at)}</span>
+                        <div className="relative">
+                          <button
+                            onClick={() => setOpenLogMenuId(openLogMenuId === log.id ? null : log.id)}
+                            className="w-6 h-6 flex items-center justify-center text-[#94A3B8] hover:text-[#64748B] hover:bg-[#F1F5F9] rounded cursor-pointer"
+                          >
+                            <i className="ri-more-2-fill text-[0.8125rem]" />
+                          </button>
+                          {openLogMenuId === log.id && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setOpenLogMenuId(null)} />
+                              <div className="absolute right-0 mt-1 w-28 bg-white border border-[#E2E8F0] rounded-lg shadow-lg z-20">
+                                <button onClick={() => handleEditLog(log)} className="w-full px-3 py-2 text-[0.8125rem] text-left text-[#475569] hover:bg-[#F8FAFC] flex items-center gap-2 cursor-pointer rounded-t-lg">
+                                  <i className="ri-edit-line" />Edit
+                                </button>
+                                <button onClick={() => { setOpenLogMenuId(null); handleDeleteLog(log.id); }} className="w-full px-3 py-2 text-[0.8125rem] text-left text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer rounded-b-lg border-t border-[#F1F5F9]">
+                                  <i className="ri-delete-bin-line" />Delete
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-[0.8125rem] text-[#0F172A] leading-[1.5] prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: log.content }} />
+                      {log.issues && log.issues.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {parseIssues(log.issues).map((issueKey: string, idx: number) => (
+                            <a key={idx} href={getJiraIssueUrl(issueKey)} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-200 text-[0.6875rem] font-medium hover:bg-blue-100">
+                              <i className="ri-link text-xs" />{issueKey}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {log.attachments && log.attachments.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {log.attachments.map((url: string, idx: number) => {
+                            const fileName = url.split('/').pop() || 'file';
+                            const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                            return (
+                              <div key={idx} className="inline-flex items-center gap-1.5 px-2 py-1 bg-[#F8FAFC] text-[#475569] rounded border border-[#E2E8F0] text-[0.6875rem] font-medium">
+                                {isImage ? <img src={url} alt={fileName} className="w-6 h-6 object-cover rounded cursor-pointer" onClick={() => handleImagePreview(url)} /> : <i className="ri-file-line" />}
+                                <a href={url} target="_blank" rel="noopener noreferrer" className="max-w-[120px] truncate hover:underline">{fileName}</a>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Entry Bottom Bar */}
+            <div className="bg-white border-t border-[#E2E8F0] px-4 py-3 flex-shrink-0">
+              {/* Linked issues / attachments staging */}
+              {(linkedIssues.length > 0 || attachments.length > 0) && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {linkedIssues.map((k) => (
+                    <div key={k} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-200 text-[0.6875rem] font-medium">
+                      <i className="ri-link text-xs" />{k}
+                      <button onClick={() => handleRemoveLinkedIssue(k)} className="ml-0.5 cursor-pointer hover:text-blue-900"><i className="ri-close-line text-xs" /></button>
+                    </div>
+                  ))}
+                  {attachments.map((f, i) => (
+                    <div key={i} className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-[#F8FAFC] text-[#475569] rounded border border-[#E2E8F0] text-[0.6875rem] font-medium">
+                      {isImageFile(f.type) ? <img src={f.url} alt={f.name} className="w-5 h-5 object-cover rounded cursor-pointer" onClick={() => handleImagePreview(f.url)} /> : <i className="ri-file-line text-xs" />}
+                      <span className="max-w-[100px] truncate">{f.name}</span>
+                      <button onClick={() => handleRemoveAttachment(i)} className="cursor-pointer hover:text-gray-700"><i className="ri-close-line text-xs" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <QuillEditor value={logContent} onChange={setLogContent} placeholder="Write a note, bug, or observation..." />
+                <input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} className="hidden" />
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                {/* Type buttons */}
+                <div className="flex items-center gap-1">
+                  {entryTypeButtons.map(({ type, label, icon }) => (
+                    <button
+                      key={type}
+                      onClick={() => setLogType(type)}
+                      className={`flex items-center gap-1 px-[0.625rem] py-[0.3125rem] border rounded-[6px] text-[0.75rem] font-semibold cursor-pointer transition-colors ${
+                        logType === type
+                          ? type === 'note'    ? 'bg-[#EEF2FF] border-[#6366F1] text-[#4338CA]' :
+                            type === 'failed'  ? 'bg-[#FEF2F2] border-[#EF4444] text-[#DC2626]' :
+                            type === 'blocked' ? 'bg-[#FFFBEB] border-[#F59E0B] text-[#D97706]' :
+                                                 'bg-[#F5F3FF] border-[#7C3AED] text-[#7C3AED]'
+                          : 'bg-white border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]'
+                      }`}
+                    >
+                      <i className={`${icon} text-[0.75rem]`} />{label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1 ml-1">
+                  {/* Issues */}
+                  <div className="relative">
+                    <button onClick={() => setShowIssuesDropdown(!showIssuesDropdown)} className="flex items-center gap-1 px-2 py-[0.3125rem] border border-[#E2E8F0] rounded-[6px] text-[0.75rem] text-[#64748B] hover:bg-[#F8FAFC] cursor-pointer whitespace-nowrap">
+                      <i className="ri-link text-[0.75rem]" />Issues
+                    </button>
+                    {showIssuesDropdown && (
                       <>
-                        <span className="text-gray-300">•</span>
-                        <span className="text-sm text-gray-500">{milestone.name}</span>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowIssuesDropdown(false)} />
+                        <div className="absolute left-0 bottom-8 w-36 bg-white border border-[#E2E8F0] rounded-lg shadow-lg z-20">
+                          <button onClick={() => { setShowIssuesDropdown(false); setShowLinkIssueModal(true); }} className="w-full px-3 py-2 text-[0.8125rem] text-left hover:bg-[#F8FAFC] flex items-center gap-2 cursor-pointer">
+                            <i className="ri-link text-sm" />Link Issue
+                          </button>
+                          <button onClick={() => { setShowIssuesDropdown(false); if (!jiraSettings?.domain || !jiraSettings?.email || !jiraSettings?.api_token) { if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) navigate('/settings'); return; } setShowAddIssueModal(true); }} className="w-full px-3 py-2 text-[0.8125rem] text-left hover:bg-[#F8FAFC] flex items-center gap-2 cursor-pointer border-t border-[#F1F5F9]">
+                            <i className="ri-add-line text-sm" />Add Issue
+                          </button>
+                        </div>
                       </>
                     )}
                   </div>
+                  <button onClick={handleAttachClick} disabled={uploadingFiles} className="flex items-center gap-1 px-2 py-[0.3125rem] border border-[#E2E8F0] rounded-[6px] text-[0.75rem] text-[#64748B] hover:bg-[#F8FAFC] cursor-pointer whitespace-nowrap disabled:opacity-50">
+                    {uploadingFiles ? <><i className="ri-loader-4-line animate-spin text-[0.75rem]" />Uploading</> : <><i className="ri-attachment-2 text-[0.75rem]" />Attach</>}
+                  </button>
+                  <button onClick={handleScreenshot} disabled={uploadingFiles} className="flex items-center gap-1 px-2 py-[0.3125rem] border border-[#E2E8F0] rounded-[6px] text-[0.75rem] text-[#64748B] hover:bg-[#F8FAFC] cursor-pointer whitespace-nowrap disabled:opacity-50">
+                    <i className="ri-screenshot-2-line text-[0.75rem]" />Screenshot
+                  </button>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {!session?.started_at ? (
-                  /* Start 버튼: 세션 시작 전 */
-                  <button
-                    onClick={handleStartSession}
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-500 border border-indigo-500 rounded-lg hover:bg-indigo-600 cursor-pointer whitespace-nowrap flex items-center gap-2"
-                  >
-                    <i className="ri-play-fill"></i>
-                    Start
-                  </button>
-                ) : session?.status === 'closed' ? (
-                  /* closed 상태 */
-                  <button
-                    disabled
-                    className="px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg cursor-not-allowed whitespace-nowrap flex items-center gap-2"
-                  >
-                    <i className="ri-check-line"></i>
-                    Closed
-                  </button>
-                ) : session?.paused_at ? (
-                  /* 일시정지 상태: Resume + Close */
-                  <>
-                    <button
-                      onClick={handleResumeSession}
-                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-500 border border-indigo-500 rounded-lg hover:bg-indigo-600 cursor-pointer whitespace-nowrap flex items-center gap-2"
-                    >
-                      <i className="ri-play-fill"></i>
-                      Resume
-                    </button>
-                    <button
-                      onClick={() => setShowCloseConfirmModal(true)}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap flex items-center gap-2"
-                    >
-                      <i className="ri-save-line"></i>
-                      Close
-                    </button>
-                  </>
-                ) : (
-                  /* 활성 상태: Pause + Close */
-                  <>
-                    <button
-                      onClick={handlePauseSession}
-                      className="px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-300 rounded-lg hover:bg-amber-100 cursor-pointer whitespace-nowrap flex items-center gap-2"
-                    >
-                      <i className="ri-pause-fill"></i>
-                      Pause
-                    </button>
-                    <button
-                      onClick={() => setShowCloseConfirmModal(true)}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap flex items-center gap-2"
-                    >
-                      <i className="ri-save-line"></i>
-                      Close
-                    </button>
-                  </>
-                )}
                 <button
-                  onClick={() => setShowEditModal(true)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap"
+                  onClick={handleAddLog}
+                  disabled={!logContent.trim()}
+                  className="ml-auto px-4 py-[0.375rem] bg-[#6366F1] text-white text-[0.8125rem] font-semibold rounded-[6px] hover:bg-[#4F46E5] disabled:bg-[#C7D2FE] disabled:cursor-not-allowed cursor-pointer whitespace-nowrap transition-colors"
                 >
-                  Edit
+                  Add
                 </button>
               </div>
             </div>
           </div>
-        </header>
 
-        <div className="max-w-7xl mx-auto px-6 py-6 w-full overflow-y-auto">
-          <div className="grid grid-cols-3 gap-6">
-            {/* Left Column */}
-            <div className="col-span-2 space-y-6">
-              {/* Mission */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-sm font-semibold text-gray-900 mb-3">Mission</h2>
-                {session.mission ? (
-                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{session.mission}</p>
-                ) : (
-                  <p className="text-sm text-gray-400 italic">No mission description provided</p>
-                )}
-              </div>
-
-              {/* Session Log */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-sm font-semibold text-gray-900 mb-4">SESSION LOG</h2>
-                
-                {/* Quill Editor */}
-                <QuillEditor
-                  value={logContent}
-                  onChange={setLogContent}
-                  placeholder="Write your session log here..."
-                />
-
-                {/* Linked Issues Display */}
-                {linkedIssues.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {linkedIssues.map((issueKey) => (
-                      <div
-                        key={issueKey}
-                        className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200 text-xs font-medium"
-                      >
-                        <i className="ri-link text-sm"></i>
-                        <a
-                          href={getJiraIssueUrl(issueKey)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {issueKey}
-                        </a>
-                        <button
-                          onClick={() => handleRemoveLinkedIssue(issueKey)}
-                          className="ml-1 hover:text-blue-900 cursor-pointer"
-                        >
-                          <i className="ri-close-line text-sm"></i>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Attachments Display */}
-                {attachments.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {attachments.map((file, index) => (
-                      <div
-                        key={index}
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-gray-50 text-gray-700 rounded border border-gray-200 text-xs font-medium"
-                      >
-                        {isImageFile(file.type) ? (
-                          <img
-                            src={file.url}
-                            alt={file.name}
-                            className="w-8 h-8 object-cover rounded cursor-pointer"
-                            onClick={() => handleImagePreview(file.url)}
-                          />
-                        ) : (
-                          <i className="ri-file-line text-base"></i>
-                        )}
-                        <span className="max-w-[150px] truncate">{file.name}</span>
-                        <button
-                          onClick={() => handleRemoveAttachment(index)}
-                          className="ml-1 hover:text-gray-900 cursor-pointer"
-                        >
-                          <i className="ri-close-line text-sm"></i>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Hidden File Input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex items-center gap-2">
-                    {/* Issues Button with Dropdown */}
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowIssuesDropdown(!showIssuesDropdown)}
-                        className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded flex items-center gap-1 whitespace-nowrap cursor-pointer"
-                      >
-                        <i className="ri-link text-base"></i>
-                        Issues
-                        <i className="ri-arrow-down-s-line"></i>
-                      </button>
-
-                      {showIssuesDropdown && (
-                        <>
-                          <div 
-                            className="fixed inset-0 z-10" 
-                            onClick={() => setShowIssuesDropdown(false)}
-                          ></div>
-                          <div className="absolute left-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                            <button
-                              onClick={() => {
-                                setShowIssuesDropdown(false);
-                                setShowLinkIssueModal(true);
-                              }}
-                              className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                            >
-                              <i className="ri-link text-base"></i>
-                              Link Issue
-                            </button>
-                            <button
-                              onClick={() => {
-                                setShowIssuesDropdown(false);
-                                if (!jiraSettings || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.api_token) {
-                                  if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) {
-                                    navigate('/settings');
-                                  }
-                                  return;
-                                }
-                                setShowAddIssueModal(true);
-                              }}
-                              className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-100"
-                            >
-                              <i className="ri-add-line text-base"></i>
-                              Add Issue
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    <button 
-                      onClick={handleAttachClick}
-                      disabled={uploadingFiles}
-                      className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded flex items-center gap-1 whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {uploadingFiles ? (
-                        <>
-                          <i className="ri-loader-4-line animate-spin text-base"></i>
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <i className="ri-attachment-2 text-base"></i>
-                          Attach
-                        </>
-                      )}
-                    </button>
-                    <button 
-                      onClick={handleScreenshot}
-                      disabled={uploadingFiles}
-                      className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded flex items-center gap-1 whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <i className="ri-screenshot-2-line text-base"></i>
-                      Screenshot
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {/* Type Selector */}
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-                        className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap cursor-pointer"
-                      >
-                        <span className={`w-2 h-2 rounded-full ${
-                          logType === 'passed' ? 'bg-green-500' :
-                          logType === 'failed' ? 'bg-red-500' :
-                          logType === 'blocked' ? 'bg-orange-500' :
-                          'bg-blue-500'
-                        }`}></span>
-                        {getLogTypeLabel(logType)}
-                        <i className="ri-arrow-down-s-line"></i>
-                      </button>
-
-                      {showTypeDropdown && (
-                        <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                          {(['note', 'passed', 'failed', 'blocked'] as const).map((type) => (
-                            <button
-                              key={type}
-                              onClick={() => {
-                                setLogType(type);
-                                setShowTypeDropdown(false);
-                              }}
-                              className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                            >
-                              <span className={`w-2 h-2 rounded-full ${
-                                type === 'passed' ? 'bg-green-500' :
-                                type === 'failed' ? 'bg-red-500' :
-                                type === 'blocked' ? 'bg-orange-500' :
-                                'bg-blue-500'
-                              }`}></span>
-                              {getLogTypeLabel(type)}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={handleAddLog}
-                      disabled={!logContent.trim()}
-                      className="px-6 py-2 bg-indigo-500 text-white text-sm font-medium rounded hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
-                    >
-                      Add
-                    </button>
-                  </div>
+          {/* Detail Sidebar */}
+          <div className="w-[300px] flex-shrink-0 border-l border-[#E2E8F0] bg-white overflow-y-auto">
+            {/* About Panel */}
+            <div className="p-4 border-b border-[#E2E8F0]">
+              <div className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide mb-3">About</div>
+              <div className="space-y-3 text-[0.8125rem]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#94A3B8] font-medium">Status</span>
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[0.75rem] font-semibold ${statusInfo.pill}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />{statusInfo.label}
+                  </span>
                 </div>
-              </div>
-
-              {/* Activity Timeline */}
-              <div className="space-y-4">
-                {logs.map((log) => (
-                  <div key={log.id} className="flex gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                      <span className="text-sm font-medium text-white">{getUserInitial()}</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900">{getUserDisplayName()}</span>
-                          <span className="text-sm text-gray-500">{formatTime(log.created_at)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center px-3 py-1 text-xs font-medium text-white rounded-full ${getLogTypeColor(log.type)}`}>
-                            {getLogTypeLabel(log.type)}
-                          </span>
-                          <div className="relative">
-                            <button
-                              onClick={() => setOpenLogMenuId(openLogMenuId === log.id ? null : log.id)}
-                              className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-pointer"
-                            >
-                              <i className="ri-more-2-fill"></i>
-                            </button>
-                            {openLogMenuId === log.id && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-10"
-                                  onClick={() => setOpenLogMenuId(null)}
-                                ></div>
-                                <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                                  <button
-                                    onClick={() => handleEditLog(log)}
-                                    className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap rounded-t-lg"
-                                  >
-                                    <i className="ri-edit-line text-base"></i>
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setOpenLogMenuId(null);
-                                      handleDeleteLog(log.id);
-                                    }}
-                                    className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap rounded-b-lg border-t border-gray-100"
-                                  >
-                                    <i className="ri-delete-bin-line text-base"></i>
-                                    Delete
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white rounded-lg border border-gray-200 p-4">
-                        <div 
-                          className="text-sm text-gray-700 prose prose-sm max-w-none"
-                          dangerouslySetInnerHTML={{ __html: log.content }}
-                        />
-                        {log.issues && log.issues.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {parseIssues(log.issues).map((issueKey: string, idx: number) => (
-                              <a
-                                key={idx}
-                                href={getJiraIssueUrl(issueKey)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200 text-xs font-medium hover:bg-blue-100 transition-all"
-                              >
-                                <i className="ri-link text-sm"></i>
-                                {issueKey}
-                                <i className="ri-external-link-line text-xs"></i>
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                        {log.attachments && log.attachments.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {log.attachments.map((url: string, idx: number) => {
-                              const fileName = url.split('/').pop() || 'file';
-                              const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-                              
-                              return (
-                                <div
-                                  key={idx}
-                                  className="inline-flex items-center gap-2 px-2 py-1 bg-gray-50 text-gray-700 rounded border border-gray-200 text-xs font-medium hover:bg-gray-100 transition-all"
-                                >
-                                  {isImage ? (
-                                    <img
-                                      src={url}
-                                      alt={fileName}
-                                      className="w-8 h-8 object-cover rounded cursor-pointer"
-                                      onClick={() => handleImagePreview(url)}
-                                    />
-                                  ) : (
-                                    <i className="ri-file-line text-base"></i>
-                                  )}
-                                  <a
-                                    href={url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="max-w-[150px] truncate hover:underline"
-                                  >
-                                    {fileName}
-                                  </a>
-                                  <i className="ri-external-link-line text-xs"></i>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#94A3B8] font-medium">Created</span>
+                  <span className="text-[#0F172A]">{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+                {milestone && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#94A3B8] font-medium">Milestone</span>
+                    <span className="inline-flex items-center px-2 py-0.5 text-[0.75rem] font-medium bg-orange-100 text-orange-700 rounded">{milestone.name}</span>
+                  </div>
+                )}
+                {session.tags && session.tags.length > 0 && (
+                  <div>
+                    <div className="text-[#94A3B8] font-medium mb-1.5">Tags</div>
+                    <div className="flex flex-wrap gap-1">
+                      {session.tags.map((tag: string, i: number) => (
+                        <span key={i} className="px-1.5 py-0.5 bg-[#EEF2FF] text-[#4338CA] rounded-[3px] text-[0.6875rem] font-medium">{tag}</span>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
+                {assigneeProfiles.length > 0 && (
+                  <div>
+                    <div className="text-[#94A3B8] font-medium mb-1.5">Assignees</div>
+                    <div className="space-y-1.5">
+                      {assigneeProfiles.map((p) => (
+                        <div key={p.id} className="flex items-center gap-2">
+                          <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${getAvatarColor(p.id)} flex items-center justify-center flex-shrink-0`}>
+                            <span className="text-[0.5625rem] font-semibold text-white">{getProfileInitial(p)}</span>
+                          </div>
+                          <span className="text-[#0F172A]">{getProfileDisplayName(p)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {session.duration_minutes && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#94A3B8] font-medium">Time Box</span>
+                    <span className="text-[#0F172A]">{Math.floor(session.duration_minutes / 60) > 0 ? `${Math.floor(session.duration_minutes / 60)}h` : ''}{session.duration_minutes % 60 > 0 ? ` ${session.duration_minutes % 60}m` : ''} (goal)</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Right Column */}
-            <div className="space-y-6">
-              {/* About */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">ABOUT</h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <i className="ri-refresh-line text-gray-400"></i>
-                      <span className="text-sm font-medium text-gray-700">Active:</span>
-                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded ${
-                        !session.started_at
-                          ? 'bg-gray-100 text-gray-500'
-                          : session.status === 'closed'
-                          ? 'bg-gray-100 text-gray-700'
-                          : session.paused_at
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {!session.started_at
-                          ? 'Not started'
-                          : session.status === 'closed'
-                          ? 'Completed'
-                          : session.paused_at
-                          ? 'Paused'
-                          : 'In progress'}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 ml-6">
-                      Created {new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </div>
+            {/* Activity Panel */}
+            <div className="p-4">
+              <div className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide mb-3">Activity</div>
+
+              {/* Timer */}
+              <div className="mb-4 text-center py-3 bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0]">
+                <div className="text-[1.75rem] font-bold text-[#0F172A] font-mono tracking-tight">{elapsedTime}</div>
+                <div className="text-[0.6875rem] text-[#94A3B8] font-medium uppercase tracking-wide mt-1">Total Elapsed</div>
+                {session.duration_minutes && (
+                  <div className="mt-2 mx-3 h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#6366F1] rounded-full transition-all"
+                      style={{ width: `${Math.min(100, (parseInt(elapsedTime.split(':')[0]) * 60 + parseInt(elapsedTime.split(':')[1])) / session.duration_minutes * 100)}%` }}
+                    />
                   </div>
+                )}
+              </div>
 
-                  {milestone && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <i className="ri-flag-line text-gray-400"></i>
-                        <span className="text-sm font-medium text-gray-700">Milestone</span>
-                      </div>
-                      <div className="ml-6">
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded">
-                          {milestone.name}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {session.tags && session.tags.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <i className="ri-price-tag-3-line text-gray-400"></i>
-                        <span className="text-sm font-medium text-gray-700">Tags</span>
-                      </div>
-                      <div className="ml-6 flex flex-wrap gap-2">
-                        {session.tags.map((tag: string, idx: number) => (
-                          <span key={idx} className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <i className="ri-user-line text-gray-400"></i>
-                      <span className="text-sm font-medium text-gray-700">Assignees</span>
-                    </div>
-                    <div className="ml-6">
-                      {assigneeProfiles.length > 0 ? (
-                        <div className="space-y-2">
-                          {assigneeProfiles.map((profile) => (
-                            <div key={profile.id} className="flex items-center gap-2">
-                              <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${getAvatarColor(profile.id)} flex items-center justify-center`}>
-                                <span className="text-xs font-medium text-white">{getProfileInitial(profile)}</span>
-                              </div>
-                              <span className="text-sm text-gray-700">{getProfileDisplayName(profile)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-400">-</span>
-                      )}
-                    </div>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 gap-2 mb-4">
+                <div className="bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0] p-2.5">
+                  <div className="text-[0.6875rem] text-[#94A3B8] font-semibold uppercase">Entries</div>
+                  <div className="text-[0.875rem] font-bold text-[#0F172A] mt-0.5">{logs.length}</div>
+                  <div className="text-[0.6875rem] text-[#64748B] mt-0.5">
+                    {logs.filter(l => l.type === 'note').length} Note · {logs.filter(l => l.type === 'failed').length} Bug · {logs.filter(l => l.type === 'blocked').length} Obs · {logs.filter(l => l.type === 'passed').length} Step
                   </div>
+                </div>
+                <div className="bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0] p-2.5">
+                  <div className="text-[0.6875rem] text-[#94A3B8] font-semibold uppercase">Bugs</div>
+                  <div className="text-[0.875rem] font-bold text-[#0F172A] mt-0.5">{logs.filter(l => l.type === 'failed').length}</div>
+                  <div className="text-[0.6875rem] text-[#64748B] mt-0.5">Total reported</div>
                 </div>
               </div>
 
-              {/* Activity */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">ACTIVITY</h3>
-                
+              {/* Timeline dots */}
+              {logs.length > 0 && (
                 <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <i className="ri-time-line text-gray-400"></i>
-                    <span className="text-2xl font-semibold text-gray-900">{calculateElapsedTime()}</span>
+                  <div className="h-9 bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-[4px] border border-[#E2E8F0] relative overflow-hidden">
+                    {logs.map((log, i) => {
+                      const dotColor = log.type === 'note' ? '#6366F1' : log.type === 'failed' ? '#EF4444' : log.type === 'blocked' ? '#F59E0B' : '#7C3AED';
+                      const pos = logs.length > 1 ? (i / (logs.length - 1)) * 92 + 4 : 50;
+                      return (
+                        <div
+                          key={log.id}
+                          className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-[1.5px] border-white"
+                          style={{ left: `${pos}%`, background: dotColor, boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
+                          title={`${logTypeConfig[log.type]?.label || log.type} - ${new Date(log.created_at).toLocaleTimeString()}`}
+                        />
+                      );
+                    })}
                   </div>
-                  <div className="text-xs text-gray-500">TOTAL ELAPSED</div>
+                  <div className="flex justify-between text-[0.625rem] text-[#94A3B8] mt-1 px-1">
+                    <span>{logs.length > 0 ? formatTime(logs[0].created_at) : ''}</span>
+                    <span>{logs.length > 1 ? formatTime(logs[logs.length - 1].created_at) : ''}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                    {[
+                      { label: 'Note', color: '#6366F1' },
+                      { label: 'Bug', color: '#EF4444' },
+                      { label: 'Observation', color: '#F59E0B' },
+                      { label: 'Step', color: '#7C3AED' },
+                    ].map(l => (
+                      <div key={l.label} className="flex items-center gap-1 text-[0.6875rem] text-[#64748B]">
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: l.color }} />
+                        {l.label}
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              )}
 
-                {/* Activity Grid */}
-                <div className="space-y-2">
-                  {Array.from({ length: 4 }).map((_, rowIndex) => (
-                    <div key={rowIndex} className="flex gap-2">
-                      {Array.from({ length: 9 }).map((_, colIndex) => {
-                        const logIndex = rowIndex * 9 + colIndex;
-                        // 로그 배열을 역순으로 참조 (최신 로그가 왼쪽에 표시)
-                        const reversedIndex = logs.length - 1 - logIndex;
-                        const log = reversedIndex >= 0 ? logs[reversedIndex] : null;
-                        
-                        let bgColor = 'bg-gray-200'; // 로그가 없는 경우 회색
-                        
-                        if (log) {
-                          switch (log.type) {
-                            case 'note':
-                              bgColor = 'bg-blue-500';
-                              break;
-                            case 'passed':
-                              bgColor = 'bg-green-500';
-                              break;
-                            case 'failed':
-                              bgColor = 'bg-red-500';
-                              break;
-                            case 'blocked':
-                              bgColor = 'bg-orange-500';
-                              break;
-                            default:
-                              bgColor = 'bg-indigo-500';
-                          }
-                        }
-                        
-                        return (
-                          <div
-                            key={colIndex}
-                            className={`w-4 h-10 ${bgColor} rounded-sm`}
-                            title={log ? `${log.type} - ${new Date(log.created_at).toLocaleString()}` : 'No activity'}
-                          ></div>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
+              {/* Controls */}
+              <div className="flex gap-2 mt-2">
+                {!session.started_at ? (
+                  <button onClick={handleStartSession} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#22C55E] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#16A34A] cursor-pointer transition-colors">
+                    <i className="ri-play-fill" />Start
+                  </button>
+                ) : session.status === 'closed' ? (
+                  <button disabled className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#D1D5DB] text-[#6B7280] text-[0.75rem] font-semibold rounded-[6px] cursor-not-allowed">
+                    <i className="ri-check-line" />Completed
+                  </button>
+                ) : session.paused_at ? (
+                  <>
+                    <button onClick={handleResumeSession} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#3B82F6] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#2563EB] cursor-pointer transition-colors">
+                      <i className="ri-play-fill" />Resume
+                    </button>
+                    <button onClick={() => setShowCloseConfirmModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#EF4444] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#DC2626] cursor-pointer transition-colors">
+                      <i className="ri-stop-fill" />Close
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={handlePauseSession} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#F59E0B] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#D97706] cursor-pointer transition-colors">
+                      <i className="ri-pause-fill" />Pause
+                    </button>
+                    <button onClick={() => setShowCloseConfirmModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#EF4444] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#DC2626] cursor-pointer transition-colors">
+                      <i className="ri-stop-fill" />Close
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

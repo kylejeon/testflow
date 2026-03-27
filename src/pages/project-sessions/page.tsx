@@ -1,7 +1,6 @@
-import { LogoMark } from '../../components/Logo';
 import PageLoader from '../../components/PageLoader';
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar } from '../../components/Avatar';
@@ -77,6 +76,8 @@ export default function ProjectSessions() {
   const assigneeDropdownRef = useRef<HTMLDivElement>(null);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [assigneeSearch, setAssigneeSearch] = useState('');
+  const [sidebarMilestoneFilter, setSidebarMilestoneFilter] = useState<string | null>(null);
+  const [sidebarTagFilter, setSidebarTagFilter] = useState<string | null>(null);
 
   const handleMenuOpen = (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
@@ -507,26 +508,46 @@ export default function ProjectSessions() {
   const allTags = getAllTags();
 
   const filteredSessions = sessions.filter(session => {
-    // Tab filter
-    const matchesTab = activeTab === 'all'
-      ? true
-      : activeTab === 'active'
-      ? session.status === 'active'
-      : session.status === 'closed';
-    
-    // Search filter
+    const matchesTab = activeTab === 'all' ? true : activeTab === 'active' ? session.status === 'active' : session.status === 'closed';
     const matchesSearch = session.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (session.charter && session.charter.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    // Status filter
     const matchesStatus = statusFilters.length === 0 || statusFilters.includes(session.actualStatus || 'new');
-    
-    // Tags filter
-    const matchesTags = selectedTags.length === 0 || 
-      (session.tags && selectedTags.some(tag => session.tags.includes(tag)));
-    
-    return matchesTab && matchesSearch && matchesStatus && matchesTags;
+    const matchesTags = selectedTags.length === 0 || (session.tags && selectedTags.some(tag => session.tags.includes(tag)));
+    const matchesSidebarMilestone = !sidebarMilestoneFilter || session.milestone_id === sidebarMilestoneFilter;
+    const matchesSidebarTag = !sidebarTagFilter || (session.tags && session.tags.includes(sidebarTagFilter));
+    return matchesTab && matchesSearch && matchesStatus && matchesTags && matchesSidebarMilestone && matchesSidebarTag;
   });
+
+  const formatSessionDuration = (session: any) => {
+    if (session.started_at) {
+      const start = new Date(session.started_at).getTime();
+      const end = session.ended_at ? new Date(session.ended_at).getTime() : Date.now();
+      const paused = session.paused_duration || 0;
+      const ms = Math.max(0, end - start - paused);
+      const totalMin = Math.floor(ms / 60000);
+      if (totalMin === 0) return '-';
+      const h = Math.floor(totalMin / 60);
+      const m = totalMin % 60;
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+    if (session.duration_minutes) {
+      const h = Math.floor(session.duration_minutes / 60);
+      const m = session.duration_minutes % 60;
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+    return '-';
+  };
+
+  const formatRelativeTime = (dateString: string) => {
+    const diff = Date.now() - new Date(dateString).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
 
   const activeFilterCount = statusFilters.length + selectedTags.length;
 
@@ -577,24 +598,22 @@ export default function ProjectSessions() {
     <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={projectId || ''} projectName={project?.name || ''} />
-        
-        {/* Edge-to-edge subtab row */}
+
+        {/* Subtab Row */}
         <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
           {[
-            { key: 'all',    label: 'All',    icon: 'ri-list-check-3',         iconColor: '#6366F1', count: sessions.length },
-            { key: 'active', label: 'Open',   icon: 'ri-radar-fill',           iconColor: '#F59E0B', count: sessions.filter(s => s.status === 'active').length },
-            { key: 'closed', label: 'Closed', icon: 'ri-checkbox-circle-fill', iconColor: '#22C55E', count: sessions.filter(s => s.status === 'closed').length },
+            { key: 'all',    label: 'All',       icon: 'ri-list-check-3',         count: sessions.length },
+            { key: 'active', label: 'Active',    icon: 'ri-radar-fill',           count: sessions.filter(s => s.status === 'active').length },
+            { key: 'closed', label: 'Completed', icon: 'ri-checkbox-circle-fill', count: sessions.filter(s => s.status === 'closed').length },
           ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as typeof activeTab)}
               className={`flex items-center gap-[0.3125rem] h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
-                activeTab === tab.key
-                  ? 'text-[#6366F1] border-[#6366F1]'
-                  : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
+                activeTab === tab.key ? 'text-[#6366F1] border-[#6366F1]' : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
               }`}
             >
-              <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }} />
+              <i className={`${tab.icon} text-[0.875rem]`} />
               {tab.label}
               <span className={`px-1.5 py-0.5 rounded text-[0.6875rem] font-semibold ${
                 activeTab === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'
@@ -602,12 +621,9 @@ export default function ProjectSessions() {
             </button>
           ))}
           <div className="flex-1" />
+          <span className="text-[0.8125rem] text-[#64748B] px-3">{filteredSessions.length} entries</span>
           <button
-            onClick={() => {
-              setEditingSessionId(null);
-              setFormData({ name: '', milestone_id: '', charter: '', tags: '', assignees: [] });
-              setShowAddSessionModal(true);
-            }}
+            onClick={() => { setEditingSessionId(null); setFormData({ name: '', milestone_id: '', charter: '', tags: '', assignees: [] }); setShowAddSessionModal(true); }}
             className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap"
           >
             <i className="ri-add-line text-sm" />
@@ -615,610 +631,281 @@ export default function ProjectSessions() {
           </button>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-gray-50/30">
-          <div className="p-[1.75rem]">
-            {/* Stats Cards */}
-            <div className="mb-[1.3125rem]">
-
-              {/* Stats Cards */}
-              <div className="grid grid-cols-3 gap-[1.3125rem] mb-[1.3125rem]">
-                {/* Active Sessions */}
-                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="text-[0.8125rem] text-gray-500 mb-1">ACTIVE LOGS</div>
-                      <div className="text-[1.75rem] font-bold text-gray-900">{stats.activeSessions}</div>
-                      <div className="text-[0.8125rem] text-gray-500 mt-1">{stats.unstarted} unstarted</div>
-                    </div>
-                    <div className="w-16 h-16 bg-indigo-500 rounded-full flex items-center justify-center relative">
-                      <div className="absolute inset-0 bg-indigo-500 rounded-full opacity-20 animate-ping"></div>
-                      <span className="text-[1.75rem] font-bold text-white relative z-10">{stats.activeSessions}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2 text-[0.8125rem]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">3w estimated workload</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">{stats.contributors} contributors</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Latest Results */}
-                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
-                  <div className="text-[0.8125rem] text-gray-500 mb-3">LATEST RESULTS</div>
-                  <div className="h-[120px] flex flex-col gap-1">
-                    {[0, 1, 2].map((row) => (
-                      <div key={row} className="flex gap-1 flex-1">
-                        {globalActivityData.slice(row * 24, (row + 1) * 24).map((color, i) => (
-                          <div
-                            key={i}
-                            className="flex-1 rounded-sm"
-                            style={{ backgroundColor: color }}
-                            title={`Activity ${row * 24 + i + 1}`}
-                          ></div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-3">
-                    Jun 3rd - Today (5 days)
-                  </div>
-                </div>
-
-                {/* Recently Closed */}
-                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="text-[0.8125rem] text-gray-500 mb-1">RECENTLY CLOSED</div>
-                      <div className="text-[1.75rem] font-bold text-gray-900">{stats.closedSessions}</div>
-                    </div>
-                    <div className="w-20 h-12">
-                      <svg className="w-full h-full" viewBox="0 0 80 48">
-                        <polyline
-                          points="0,40 20,35 40,38 60,25 80,15"
-                          fill="none"
-                          stroke="#6366F1"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <polyline
-                          points="0,40 20,35 40,38 60,25 80,15 80,48 0,48"
-                          fill="url(#gradient2)"
-                          opacity="0.2"
-                        />
-                        <defs>
-                          <linearGradient id="gradient2" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="#6366F1" />
-                            <stop offset="100%" stopColor="#6366F1" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="text-[0.8125rem] text-indigo-600 font-semibold">
-                    +28 this month
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Search and Filter */}
-            <div className="flex items-center gap-3 mb-[1.3125rem]">
-              <div className="flex-1 relative">
-                <i className="ri-search-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.8125rem]"
-                />
-              </div>
-
-              {/* Filter Dropdown */}
-              <div className="relative" ref={filterDropdownRef}>
-                <button
-                  onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                  className="px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-[0.8125rem] text-gray-700 cursor-pointer whitespace-nowrap"
-                >
-                  <i className="ri-filter-3-line"></i>
-                  {activeFilterCount > 0 && (
-                    <span className="text-white bg-orange-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                  Filter
-                  {activeFilterCount > 0 && (
-                    <i 
-                      className="ri-close-line hover:bg-gray-200 rounded-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearAllFilters();
-                      }}
-                    ></i>
-                  )}
-                </button>
-
-                {showFilterDropdown && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-gray-700">Filters</h3>
-                        {selectedTags.length > 0 && (
-                          <button 
-                            onClick={() => setSelectedTags([])}
-                            className="text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-                      
-                      {allTags.length > 0 ? (
-                        <div className="space-y-2">
-                          {allTags.map((tag) => (
-                            <div
-                              key={tag}
-                              onClick={() => handleTagFilterToggle(tag)}
-                              className={`px-[0.875rem] py-[0.4375rem] text-[0.8125rem] cursor-pointer hover:bg-gray-50 rounded-lg flex items-center justify-between ${
-                                selectedTags.includes(tag) ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
-                              }`}
-                            >
-                              <span>{tag}</span>
-                              {selectedTags.includes(tag) && (
-                                <i className="ri-check-line text-indigo-600"></i>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-xs text-gray-500 italic text-center py-4">
-                          No tags available
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Tags Dropdown */}
-              <div className="relative" ref={tagsDropdownRef}>
-                <button 
-                  onClick={() => setShowTagsDropdown(!showTagsDropdown)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 cursor-pointer whitespace-nowrap"
-                >
-                  <i className="ri-heart-line"></i>
-                  {selectedTags.length > 0 ? `${selectedTags.length} tags` : 'All tags'}
-                  <i className="ri-arrow-down-s-line"></i>
-                </button>
-
-                {showTagsDropdown && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-gray-700">Tags</h3>
-                        {selectedTags.length > 0 && (
-                          <button 
-                            onClick={() => setSelectedTags([])}
-                            className="text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-                      
-                      {allTags.length > 0 ? (
-                        <div className="space-y-2">
-                          {allTags.map((tag) => (
-                            <div
-                              key={tag}
-                              onClick={() => handleTagFilterToggle(tag)}
-                              className={`px-[0.875rem] py-[0.4375rem] text-[0.8125rem] cursor-pointer hover:bg-gray-50 rounded-lg flex items-center justify-between ${
-                                selectedTags.includes(tag) ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
-                              }`}
-                            >
-                              <span>{tag}</span>
-                              {selectedTags.includes(tag) && (
-                                <i className="ri-check-line text-indigo-600"></i>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-xs text-gray-500 italic text-center py-4">
-                          No tags available
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left Sidebar */}
+          <div className="w-[220px] bg-white border-r border-[#E2E8F0] overflow-y-auto flex-shrink-0 py-3">
+            <div className="px-3 mb-3">
+              <div
+                onClick={() => { setSidebarMilestoneFilter(null); setSidebarTagFilter(null); }}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-[6px] cursor-pointer text-[0.8125rem] transition-colors ${
+                  !sidebarMilestoneFilter && !sidebarTagFilter ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold' : 'text-[#64748B] hover:bg-[#F1F5F9]'
+                }`}
+              >
+                <i className="ri-folder-line text-sm" />
+                All Sessions
+                <span className={`ml-auto text-[0.75rem] font-semibold ${!sidebarMilestoneFilter && !sidebarTagFilter ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
+                  ({sessions.length})
+                </span>
               </div>
             </div>
 
-            {/* Sessions List */}
-            {loading ? (
-              <PageLoader />
-            ) : filteredSessions.length === 0 ? (
-              <div className="text-center py-12">
-                <i className="ri-calendar-line text-6xl text-gray-300 mb-4"></i>
-                <p className="text-gray-500 text-lg">
-                  {searchQuery || activeFilterCount > 0 ? 'No discovery logs found' : 'No discovery logs yet'}
-                </p>
-                <p className="text-gray-400 text-[0.8125rem] mt-2">
-                  {searchQuery || activeFilterCount > 0
-                    ? 'Try adjusting your search or filters'
-                    : 'Create your first discovery log to get started'}
-                </p>
+            {milestones.length > 0 && (
+              <div className="px-3 mb-3">
+                <div className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide px-3 py-2 mb-1">Milestones</div>
+                {milestones.map(m => {
+                  const cnt = sessions.filter(s => s.milestone_id === m.id).length;
+                  if (cnt === 0) return null;
+                  return (
+                    <div
+                      key={m.id}
+                      onClick={() => { setSidebarMilestoneFilter(sidebarMilestoneFilter === m.id ? null : m.id); setSidebarTagFilter(null); }}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-[6px] cursor-pointer text-[0.8125rem] transition-colors overflow-hidden ${
+                        sidebarMilestoneFilter === m.id ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold' : 'text-[#64748B] hover:bg-[#F1F5F9]'
+                      }`}
+                    >
+                      <i className="ri-flag-line text-sm flex-shrink-0" />
+                      <span className="truncate">{m.name}</span>
+                      <span className={`ml-auto text-[0.75rem] font-semibold flex-shrink-0 ${sidebarMilestoneFilter === m.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>({cnt})</span>
+                    </div>
+                  );
+                })}
               </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Milestone-based Sessions */}
-                {milestones.length > 0 && (
-                  <div className="bg-white rounded-lg border border-gray-200">
-                    {milestones.map((milestone, index) => {
-                      const milestoneSessions = getSessionsByMilestone(milestone.id);
-                      const milestoneStatusInfo = getMilestoneStatus(milestone);
-                      
-                      if (milestoneSessions.length === 0) {
-                        return null;
-                      }
-                      
-                      return (
-                        <div key={milestone.id} className={index !== milestones.length - 1 ? 'border-b border-gray-200' : ''}>
-                          <div className="flex items-center justify-between p-[1.3125rem] bg-gray-50">
-                            <div className="flex items-center gap-3">
-                              <i className="ri-flag-line text-gray-400"></i>
-                              <span className="font-semibold text-gray-900">{milestone.name}</span>
-                              <span className={`px-2 py-1 text-xs font-semibold rounded ${milestoneStatusInfo.className}`}>
-                                {milestoneStatusInfo.label}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <span className="text-[0.8125rem] text-gray-500">{formatDateRange(milestone.start_date, milestone.end_date)}</span>
-                            </div>
-                          </div>
+            )}
 
-                          {/* Sessions Table */}
-                          <div className="overflow-x-auto">
-                            <table className="w-full">
-                              <thead className="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                  <th className="px-4 py-[0.6875rem] text-left">
-                                    <input type="checkbox" className="w-4 h-4 text-indigo-600 cursor-pointer" />
-                                  </th>
-                                  <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Discovery Log</th>
-                                  <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">State</th>
-                                  <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Tags</th>
-                                  <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Contributors</th>
-                                  <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Activity</th>
-                                  <th className="px-4 py-[0.6875rem]"></th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-100">
-                                {milestoneSessions.map((session) => {
-                                  return (
-                                    <tr key={session.id} className="hover:bg-gray-50">
-                                      <td className="px-4 py-[0.6875rem]">
-                                        <input type="checkbox" className="w-4 h-4 text-indigo-600 cursor-pointer" />
-                                      </td>
-                                      <td className="px-4 py-[0.6875rem]">
-                                        <div className="flex items-start gap-3">
-                                          <i className={`mt-0.5 ${
-                                            session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
-                                            session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' :
-                                            session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
-                                            'ri-check-line text-purple-500'
-                                          }`}></i>
-                                          <div>
-                                            <Link
-                                              to={`/projects/${projectId}/discovery-logs/${session.id}`}
-                                              className="font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
-                                            >
-                                              {session.name}
-                                            </Link>
-                                            <div className="flex items-center gap-1.5 text-[0.8125rem] text-gray-500 mt-0.5">
-                                              <i className="ri-calendar-line text-indigo-400 text-[0.9375rem]"></i>
-                                              <span>{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                              <span className="text-gray-300">·</span>
-                                              <span>{new Date(session.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
-                                              {session.actualStatus === 'in_progress' && (
-                                                <>
-                                                  <span className="text-gray-300">·</span>
-                                                  <span className="text-gray-400 text-[0.75rem]">In Progress</span>
-                                                </>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-[0.6875rem]">
-                                        <div className="flex items-center gap-2">
-                                          <i className={`${
-                                            session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
-                                            session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' :
-                                            session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
-                                            'ri-check-line text-purple-500'
-                                          }`}></i>
-                                          <span className="text-[0.8125rem] text-gray-700">
-                                            {session.actualStatus === 'new' ? 'New' :
-                                             session.actualStatus === 'in_progress' ? 'In progress' :
-                                             session.actualStatus === 'paused' ? 'Paused' :
-                                             'Completed'}
-                                          </span>
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-[0.6875rem]">
-                                        <div className="flex items-center gap-2">
-                                          {session.tags && session.tags.slice(0, 2).map((tag, idx) => (
-                                            <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                              {tag}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-[0.6875rem]">
-                                        {session.assignees && session.assignees.length > 0 ? (
-                                          <div className="flex -space-x-2">
-                                            {session.assignees.slice(0, 4).map((userId) => {
-                                              const member = projectMembers.find(m => m.user_id === userId);
-                                              return (
-                                                <Avatar
-                                                  key={userId}
-                                                  userId={userId}
-                                                  name={member?.full_name}
-                                                  size="sm"
-                                                  title={member?.full_name || userId}
-                                                  style={{ border: '2px solid #fff' }}
-                                                />
-                                              );
-                                            })}
-                                            {session.assignees.length > 4 && (
-                                              <div className="w-7 h-7 bg-gray-200 rounded-full border-2 border-white flex items-center justify-center text-gray-600 text-xs font-semibold">
-                                                +{session.assignees.length - 4}
-                                              </div>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <span className="text-xs text-gray-400">-</span>
-                                        )}
-                                      </td>
-                                      <td className="px-4 py-[0.6875rem]">
-                                        <div className="flex gap-1">
-                                          {session.activityData && session.activityData.map((color, i) => (
-                                            <div
-                                              key={i}
-                                              className="w-2 h-6 rounded-sm"
-                                              style={{ backgroundColor: color }}
-                                              title={`Log ${i + 1}`}
-                                            ></div>
-                                          ))}
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-[0.6875rem]">
-                                        <div className="relative" data-session-menu>
-                                          <button 
-                                            onClick={(e) => handleMenuOpen(e, session.id)}
-                                            className="text-gray-400 hover:text-gray-600 p-2 cursor-pointer"
-                                          >
-                                            <i className="ri-more-2-fill"></i>
-                                          </button>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      );
-                    }).filter(Boolean)}
-                  </div>
-                )}
-
-                {/* Sessions without Milestone */}
-                {getSessionsWithoutMilestone().length > 0 && (
-                  <div className="bg-white rounded-lg border border-gray-200">
-                    <div className="flex items-center justify-between p-[1.3125rem] bg-gray-50">
-                      <div className="flex items-center gap-3">
-                        <i className="ri-inbox-line text-gray-400"></i>
-                        <span className="font-semibold text-gray-900">Unassigned Milestones</span>
-                        <span className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-700">
-                          {getSessionsWithoutMilestone().length} sessions
-                        </span>
-                      </div>
+            {allTags.length > 0 && (
+              <div className="px-3">
+                <div className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide px-3 py-2 mb-1">Tags</div>
+                {allTags.map(tag => {
+                  const cnt = sessions.filter(s => s.tags && s.tags.includes(tag)).length;
+                  return (
+                    <div
+                      key={tag}
+                      onClick={() => { setSidebarTagFilter(sidebarTagFilter === tag ? null : tag); setSidebarMilestoneFilter(null); }}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-[6px] cursor-pointer text-[0.8125rem] transition-colors ${
+                        sidebarTagFilter === tag ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold' : 'text-[#64748B] hover:bg-[#F1F5F9]'
+                      }`}
+                    >
+                      <span className="truncate">{tag}</span>
+                      <span className={`ml-auto text-[0.75rem] font-semibold ${sidebarTagFilter === tag ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>({cnt})</span>
                     </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                          <tr>
-                            <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Session</th>
-                            <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">State</th>
-                            <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Tags</th>
-                            <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Contributors</th>
-                            <th className="px-4 py-[0.6875rem] text-left text-xs font-semibold text-gray-600 uppercase">Activity</th>
-                            <th className="px-4 py-[0.6875rem]"></th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {getSessionsWithoutMilestone().map((session) => {
-                            return (
-                              <tr key={session.id} className="hover:bg-gray-50">
-                                <td className="px-4 py-[0.6875rem]">
-                                  <div className="flex items-start gap-3">
-                                    <i className={`mt-0.5 ${
-                                      session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
-                                      session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' :
-                                      session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
-                                      'ri-check-line text-purple-500'
-                                    }`}></i>
-                                    <div>
-                                      <Link
-                                        to={`/projects/${projectId}/discovery-logs/${session.id}`}
-                                        className="font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
-                                      >
-                                        {session.name}
-                                      </Link>
-                                      <div className="flex items-center gap-1.5 text-[0.8125rem] text-gray-500 mt-0.5">
-                                        <i className="ri-calendar-line text-indigo-400 text-[0.9375rem]"></i>
-                                        <span>{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                        <span className="text-gray-300">·</span>
-                                        <span>{new Date(session.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
-                                        {session.actualStatus === 'in_progress' && (
-                                          <>
-                                            <span className="text-gray-300">·</span>
-                                            <span className="text-gray-400 text-[0.75rem]">In Progress</span>
-                                          </>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-[0.6875rem]">
-                                  <div className="flex items-center gap-2">
-                                    <i className={`${
-                                      session.actualStatus === 'new' ? 'ri-file-line text-green-500' :
-                                      session.actualStatus === 'in_progress' ? 'ri-loader-line text-blue-500' :
-                                      session.actualStatus === 'paused' ? 'ri-pause-circle-line text-amber-500' :
-                                      'ri-check-line text-purple-500'
-                                    }`}></i>
-                                    <span className="text-[0.8125rem] text-gray-700">
-                                      {session.actualStatus === 'new' ? 'New' :
-                                       session.actualStatus === 'in_progress' ? 'In progress' :
-                                       session.actualStatus === 'paused' ? 'Paused' :
-                                       'Completed'}
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-[0.6875rem]">
-                                  <div className="flex items-center gap-2">
-                                    {session.tags && session.tags.slice(0, 2).map((tag, idx) => (
-                                      <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                                        {tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-[0.6875rem]">
-                                  {session.assignees && session.assignees.length > 0 ? (
-                                    <div className="flex -space-x-2">
-                                      {session.assignees.slice(0, 4).map((userId) => {
-                                        const member = projectMembers.find(m => m.user_id === userId);
-                                        return (
-                                          <Avatar
-                                            key={userId}
-                                            userId={userId}
-                                            name={member?.full_name}
-                                            size="sm"
-                                            title={member?.full_name || userId}
-                                            style={{ border: '2px solid #fff' }}
-                                          />
-                                        );
-                                      })}
-                                      {session.assignees.length > 4 && (
-                                        <div className="w-7 h-7 bg-gray-200 rounded-full border-2 border-white flex items-center justify-center text-gray-600 text-xs font-semibold">
-                                          +{session.assignees.length - 4}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className="text-xs text-gray-400">-</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-[0.6875rem]">
-                                  <div className="flex gap-1">
-                                    {session.activityData && session.activityData.map((color, i) => (
-                                      <div
-                                        key={i}
-                                        className="w-2 h-6 rounded-sm"
-                                        style={{ backgroundColor: color }}
-                                        title={`Log ${i + 1}`}
-                                      ></div>
-                                    ))}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-[0.6875rem]">
-                                  <div className="relative" data-session-menu>
-                                    <button 
-                                      onClick={(e) => handleMenuOpen(e, session.id)}
-                                      className="text-gray-400 hover:text-gray-600 p-2 cursor-pointer"
-                                    >
-                                      <i className="ri-more-2-fill"></i>
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Empty State */}
-                {milestones.filter(m => getSessionsByMilestone(m.id).length > 0).length === 0 && getSessionsWithoutMilestone().length === 0 && (
-                  <div className="text-center py-12">
-                    <i className="ri-chat-3-line text-6xl text-gray-300 mb-4"></i>
-                    <p className="text-gray-500 text-lg">No {activeTab} sessions</p>
-                    <p className="text-gray-400 text-sm mt-2">Create discovery logs to track your findings</p>
-                  </div>
-                )}
+                  );
+                })}
               </div>
             )}
           </div>
-        </main>
+
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
+            {/* Stats Bar */}
+            <div className="flex items-center gap-4 px-5 py-3 bg-white border-b border-[#E2E8F0] flex-shrink-0">
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-[#F1F5F9] border border-[#E2E8F0] rounded-[6px]">
+                <i className="ri-radar-fill text-[1.125rem] text-[#6366F1]" />
+                <div>
+                  <div className="text-[0.6875rem] text-[#94A3B8] font-medium uppercase tracking-wide">Active Discoveries</div>
+                  <div className="text-[0.875rem] font-bold text-[#0F172A]">{stats.activeSessions}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-[#F1F5F9] border border-[#E2E8F0] rounded-[6px]">
+                <i className="ri-bug-line text-[1.125rem] text-[#EF4444]" />
+                <div>
+                  <div className="text-[0.6875rem] text-[#94A3B8] font-medium uppercase tracking-wide">Bugs Found</div>
+                  <div className="text-[0.875rem] font-bold text-[#0F172A]">
+                    {sessions.reduce((sum, s) => sum + ((s as any).session_logs?.filter((l: any) => l.type === 'failed').length || 0), 0)}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-[#F1F5F9] border border-[#E2E8F0] rounded-[6px]">
+                <i className="ri-time-line text-[1.125rem] text-[#8B5CF6]" />
+                <div>
+                  <div className="text-[0.6875rem] text-[#94A3B8] font-medium uppercase tracking-wide">Contributors</div>
+                  <div className="text-[0.875rem] font-bold text-[#0F172A]">{stats.contributors}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Toolbar */}
+            <div className="flex items-center gap-3 px-5 py-[0.625rem] bg-white border-b border-[#E2E8F0] flex-shrink-0">
+              <div className="relative flex-1">
+                <i className="ri-search-line absolute left-[0.625rem] top-1/2 -translate-y-1/2 text-[#94A3B8] text-[0.875rem]" />
+                <input
+                  type="text"
+                  placeholder="Search discoveries..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-[0.375rem] border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#64748B] placeholder-[#94A3B8] focus:outline-none focus:border-[#6366F1]"
+                />
+              </div>
+
+              <div className="relative" ref={filterDropdownRef}>
+                <button
+                  onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                  className="flex items-center gap-1.5 px-3 py-[0.375rem] border border-[#E2E8F0] rounded-[6px] bg-white text-[0.8125rem] font-semibold text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer whitespace-nowrap transition-colors"
+                >
+                  <i className="ri-filter-3-line" />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <span className="w-4 h-4 bg-orange-500 text-white rounded-full text-[0.625rem] flex items-center justify-center font-bold">{activeFilterCount}</span>
+                  )}
+                </button>
+                {showFilterDropdown && (
+                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-[#E2E8F0] z-50">
+                    <div className="p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[0.8125rem] font-semibold text-[#475569]">Status</span>
+                        {statusFilters.length > 0 && (
+                          <button onClick={() => setStatusFilters([])} className="text-[0.75rem] text-[#6366F1] cursor-pointer">Clear</button>
+                        )}
+                      </div>
+                      {(['new', 'in_progress', 'paused', 'completed'] as const).map(s => (
+                        <div key={s} onClick={() => handleStatusFilterToggle(s)} className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-[0.8125rem] transition-colors ${statusFilters.includes(s) ? 'bg-[#EEF2FF] text-[#4338CA]' : 'text-[#475569] hover:bg-[#F1F5F9]'}`}>
+                          <i className={`${statusFilters.includes(s) ? 'ri-checkbox-fill text-[#6366F1]' : 'ri-checkbox-blank-line text-[#CBD5E1]'}`} />
+                          {s === 'new' ? 'Not Started' : s === 'in_progress' ? 'In Progress' : s.charAt(0).toUpperCase() + s.slice(1)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Table */}
+            {loading ? (
+              <PageLoader />
+            ) : filteredSessions.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <i className="ri-search-line text-5xl text-[#CBD5E1] mb-3" />
+                  <p className="text-[#64748B] font-medium">No discovery logs found</p>
+                  <p className="text-[0.8125rem] text-[#94A3B8] mt-1">
+                    {searchQuery || activeFilterCount > 0 || sidebarMilestoneFilter || sidebarTagFilter
+                      ? 'Try adjusting your search or filters'
+                      : 'Create your first discovery log to get started'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto bg-white">
+                <table className="w-full border-collapse">
+                  <thead className="sticky top-0 bg-[#F8FAFC] border-b border-[#E2E8F0] z-10">
+                    <tr>
+                      <th className="w-[42px] px-4 py-3 text-left border-r border-[#E2E8F0]">
+                        <input type="checkbox" className="w-[1.125rem] h-[1.125rem] cursor-pointer accent-[#6366F1]" />
+                      </th>
+                      <th className="w-[130px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Status</th>
+                      <th className="w-[220px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Discovery Name</th>
+                      <th className="px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Description</th>
+                      <th className="w-[60px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Bugs</th>
+                      <th className="w-[140px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Tags</th>
+                      <th className="w-[80px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Assignee</th>
+                      <th className="w-[80px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide border-r border-[#E2E8F0]">Duration</th>
+                      <th className="w-[100px] px-4 py-3 text-left text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide">Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSessions.map((session) => {
+                      const bugCount = (session as any).session_logs?.filter((l: any) => l.type === 'failed').length || 0;
+                      const statusMap: Record<string, { label: string; pill: string; dot: string }> = {
+                        new:         { label: 'Not Started', pill: 'bg-[#F1F5F9] text-[#64748B]',   dot: 'bg-[#94A3B8]' },
+                        in_progress: { label: 'In Progress', pill: 'bg-[#EFF6FF] text-[#1D4ED8]',   dot: 'bg-[#3B82F6]' },
+                        paused:      { label: 'Paused',      pill: 'bg-[#FEF3C7] text-[#92400E]',   dot: 'bg-[#F59E0B]' },
+                        completed:   { label: 'Completed',   pill: 'bg-[#DCFCE7] text-[#15803D]',   dot: 'bg-[#22C55E]' },
+                      };
+                      const sc = statusMap[session.actualStatus || 'new'];
+                      return (
+                        <tr
+                          key={session.id}
+                          onClick={() => navigate(`/projects/${projectId}/discovery-logs/${session.id}`)}
+                          className="border-b border-[#E2E8F0] cursor-pointer hover:bg-[#F8FAFC] transition-colors"
+                        >
+                          <td className="px-4 py-3 border-r border-[#E2E8F0]" onClick={e => e.stopPropagation()}>
+                            <input type="checkbox" className="w-[1.125rem] h-[1.125rem] cursor-pointer accent-[#6366F1]" />
+                          </td>
+                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
+                            <span className={`inline-flex items-center gap-[5px] px-[10px] py-1 rounded-[4px] text-[0.75rem] font-semibold whitespace-nowrap ${sc.pill}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sc.dot}`} />
+                              {sc.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
+                            <span className="text-[0.8125rem] font-semibold text-[#0F172A]">{session.name}</span>
+                          </td>
+                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
+                            <span className="text-[0.8125rem] text-[#64748B] block max-w-[280px] truncate">{session.charter || ''}</span>
+                          </td>
+                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
+                            {bugCount > 0 ? (
+                              <span className="px-2 py-1 rounded-[4px] text-[0.75rem] font-semibold bg-[#FEF2F2] text-[#991B1B]">{bugCount}</span>
+                            ) : (
+                              <span className="text-[#94A3B8] text-[0.8125rem]">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {session.tags?.slice(0, 2).map((tag, idx) => (
+                                <span key={idx} className="bg-[#EEF2FF] text-[#4338CA] px-1.5 py-0.5 rounded-[3px] text-[0.6875rem] font-medium">{tag}</span>
+                              ))}
+                              {(session.tags?.length || 0) > 2 && (
+                                <span className="text-[#94A3B8] text-[0.6875rem]">+{session.tags!.length - 2}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
+                            {session.assignees && session.assignees.length > 0 ? (
+                              <div className="flex -space-x-1.5">
+                                {session.assignees.slice(0, 3).map((userId) => {
+                                  const member = projectMembers.find(m => m.user_id === userId);
+                                  return (
+                                    <Avatar key={userId} userId={userId} name={member?.full_name} size="xs" style={{ border: '1.5px solid #fff' }} title={member?.full_name || userId} />
+                                  );
+                                })}
+                                {session.assignees.length > 3 && (
+                                  <div className="w-5 h-5 bg-[#E2E8F0] rounded-full border-[1.5px] border-white flex items-center justify-center text-[#64748B] text-[0.625rem] font-semibold">
+                                    +{session.assignees.length - 3}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-[#94A3B8] text-[0.8125rem]">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 border-r border-[#E2E8F0]">
+                            <span className="text-[0.75rem] text-[#64748B] font-mono">{formatSessionDuration(session as any)}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-[0.75rem] text-[#94A3B8]">{formatRelativeTime(session.updated_at)}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Session Context Menu - Fixed Position */}
+      {/* Session Context Menu */}
       {openMenuId && menuPosition && (
         <>
           <div className="fixed inset-0 z-[998]" onClick={() => { setOpenMenuId(null); setMenuPosition(null); }}></div>
-          <div
-            className="fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-[999]"
-            style={{ top: menuPosition.top, right: menuPosition.right }}
-          >
+          <div className="fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-[999]"
+            style={{ top: menuPosition.top, right: menuPosition.right }}>
             {(() => {
-              const session = sessions.find(s => s.id === openMenuId);
-              if (!session) return null;
+              const s = sessions.find(s => s.id === openMenuId);
+              if (!s) return null;
               return (
                 <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditSession(session);
-                    }}
-                    className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                  >
-                    <i className="ri-edit-line"></i>
-                    <span>Edit</span>
+                  <button onClick={(e) => { e.stopPropagation(); handleEditSession(s); }} className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                    <i className="ri-edit-line" /><span>Edit</span>
                   </button>
-                  {session.status === 'active' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCloseSession(session.id);
-                      }}
-                      className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                    >
-                      <i className="ri-check-line"></i>
-                      <span>Close Session</span>
+                  {s.status === 'active' && (
+                    <button onClick={(e) => { e.stopPropagation(); handleCloseSession(s.id); }} className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                      <i className="ri-check-line" /><span>Close Session</span>
                     </button>
                   )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteSession(session.id);
-                    }}
-                    className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200"
-                  >
-                    <i className="ri-delete-bin-line"></i>
-                    <span>Delete</span>
+                  <button onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.id); }} className="w-full text-left px-[0.875rem] py-[0.4375rem] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer whitespace-nowrap border-t border-gray-200">
+                    <i className="ri-delete-bin-line" /><span>Delete</span>
                   </button>
                 </>
               );
@@ -1226,6 +913,7 @@ export default function ProjectSessions() {
           </div>
         </>
       )}
+
 
       {/* Add/Edit Session Modal */}
       {showAddSessionModal && (
