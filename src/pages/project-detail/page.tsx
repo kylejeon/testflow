@@ -1,5 +1,6 @@
 import { LogoMark } from '../../components/Logo';
 import PageLoader from '../../components/PageLoader';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -945,43 +946,43 @@ export default function ProjectDetail() {
                       </div>
                     </div>
                     {rawTestResults.length === 0 ? (
-                      <div className="text-center py-10 text-sm text-gray-400">
-                        <i className="ri-line-chart-line text-3xl block mb-2 text-gray-300" />
+                      <div className="text-center py-14 text-sm text-gray-400">
+                        <i className="ri-line-chart-line text-4xl block mb-2 text-gray-300" />
                         No test execution data yet
                       </div>
-                    ) : (() => {
-                      const maxVal = Math.max(...trendData.map(d => Math.max(d.passed, d.failed, d.blocked)), 1);
-                      const W = 600, H = 220, PL = 36, PT = 16, PB = 28, PR = 12;
-                      const chartW = W - PL - PR;
-                      const chartH = H - PT - PB;
-                      const n = trendData.length;
-                      const gx = (i: number) => PL + (n > 1 ? (i / (n - 1)) * chartW : chartW / 2);
-                      const gy = (v: number) => PT + chartH - (v / maxVal) * chartH;
-                      const mkLine = (key: 'passed'|'failed'|'blocked') =>
-                        trendData.map((d, i) => `${gx(i)},${gy(d[key])}`).join(' ');
-                      return (
-                        <div>
-                          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '200px' }}>
-                            {[0, 0.25, 0.5, 0.75, 1].map((t, i) => (
-                              <line key={i} x1={PL} y1={PT + t * chartH} x2={W - PR} y2={PT + t * chartH} stroke="#F1F5F9" strokeWidth="1" />
-                            ))}
-                            <polyline points={mkLine('passed')} stroke="#22C55E" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                            <polyline points={mkLine('failed')} stroke="#EF4444" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                            <polyline points={mkLine('blocked')} stroke="#F59E0B" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                            {trendData.map((d, i) => d.label ? (
-                              <text key={i} x={gx(i)} y={H - 6} textAnchor="middle" fill="#94A3B8" fontSize="9">{d.label}</text>
-                            ) : null)}
-                          </svg>
-                          <div className="flex justify-center gap-4 mt-2 text-xs text-gray-500">
-                            {[['#22C55E','Passed'],['#EF4444','Failed'],['#F59E0B','Blocked']].map(([c,l]) => (
-                              <span key={l} className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: c }} />{l}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    ) : (
+                      <ResponsiveContainer width="100%" height={240}>
+                        <LineChart data={trendData} margin={{ top: 8, right: 16, left: 0, bottom: 4 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                          <XAxis
+                            dataKey="label"
+                            tick={{ fontSize: 11, fill: '#94A3B8' }}
+                            axisLine={false}
+                            tickLine={false}
+                            interval="preserveStartEnd"
+                          />
+                          <YAxis
+                            tick={{ fontSize: 11, fill: '#94A3B8' }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={28}
+                            allowDecimals={false}
+                          />
+                          <Tooltip
+                            contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                            labelStyle={{ fontWeight: 600, color: '#0F172A', marginBottom: 4 }}
+                          />
+                          <Legend
+                            iconType="circle"
+                            iconSize={8}
+                            wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
+                          />
+                          <Line type="monotone" dataKey="passed" name="Passed" stroke="#22C55E" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                          <Line type="monotone" dataKey="failed" name="Failed" stroke="#EF4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                          <Line type="monotone" dataKey="blocked" name="Blocked" stroke="#F59E0B" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
 
                   {/* WIDGET 4: ATTENTION NEEDED */}
