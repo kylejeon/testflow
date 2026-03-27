@@ -30,6 +30,16 @@ interface Run {
   blocked_count?: number;
   retest_count?: number;
   untested_count?: number;
+  authors?: string[];
+}
+
+interface FailedBlockedTcItem {
+  tcId: string;
+  tcName: string;
+  status: 'failed' | 'blocked';
+  runName: string;
+  author: string;
+  createdAt: string;
 }
 
 interface Session {
@@ -92,6 +102,7 @@ export default function MilestoneDetail() {
   const [activityPage, setActivityPage] = useState(1);
   const [contributorProfiles, setContributorProfiles] = useState<Map<string, string | null>>(new Map());
   const [tcStats, setTcStats] = useState<TcStats>({ passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, total: 0, passRate: 0 });
+  const [failedBlockedTcs, setFailedBlockedTcs] = useState<FailedBlockedTcItem[]>([]);
   const activityPerPage = 10;
 
   useEffect(() => {
@@ -185,7 +196,7 @@ export default function MilestoneDetail() {
       let retestCount = 0;
 
       // For global TC stats
-      const allRawResults: Array<{ tcId: string; status: string; createdAt: string }> = [];
+      const allRawResults: Array<{ tcId: string; status: string; createdAt: string; runId: string; runName: string; author: string }> = [];
 
       const runsWithProgress = await Promise.all(
         (runsData || []).map(async (run) => {
@@ -196,10 +207,13 @@ export default function MilestoneDetail() {
             .order('created_at', { ascending: false });
 
           const statusMap = new Map<string, string>();
+          const runAuthors = new Set<string>();
 
           testResultsData?.forEach(result => {
             // Accumulate for global stats
-            allRawResults.push({ tcId: result.test_case_id, status: result.status, createdAt: result.created_at });
+            allRawResults.push({ tcId: result.test_case_id, status: result.status, createdAt: result.created_at, runId: run.id, runName: run.name, author: result.author || '' });
+            // Track authors per run
+            if (result.author && result.author.trim()) runAuthors.add(result.author);
 
             if (!statusMap.has(result.test_case_id)) {
               statusMap.set(result.test_case_id, result.status);
@@ -247,7 +261,7 @@ export default function MilestoneDetail() {
             }
           });
 
-          return { ...run, passed_count, failed_count, blocked_count, retest_count, untested_count };
+          return { ...run, passed_count, failed_count, blocked_count, retest_count, untested_count, authors: Array.from(runAuthors).slice(0, 4) };
         })
       );
 
@@ -274,6 +288,25 @@ export default function MilestoneDetail() {
       const aggUntested = aggTotal - Math.min(globalTcStatusMap.size, aggTotal);
       const aggPassRate = aggTested > 0 ? Math.round((aggPassed / aggTested) * 100) : 0;
       setTcStats({ passed: aggPassed, failed: aggFailed, blocked: aggBlocked, retest: aggRetest, untested: Math.max(0, aggUntested), total: aggTotal, passRate: aggPassRate });
+
+      // Build failed/blocked TCs list for Issues tab
+      const failedBlockedTcList: FailedBlockedTcItem[] = [];
+      globalTcStatusMap.forEach((status, tcId) => {
+        if (status === 'failed' || status === 'blocked') {
+          const latestResult = [...allRawResults]
+            .filter(r => r.tcId === tcId)
+            .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+          failedBlockedTcList.push({
+            tcId,
+            tcName: testCaseNameMap.get(tcId) || tcId,
+            status: status as 'failed' | 'blocked',
+            runName: latestResult?.runName || '',
+            author: latestResult?.author || '',
+            createdAt: latestResult?.createdAt || '',
+          });
+        }
+      });
+      setFailedBlockedTcs(failedBlockedTcList);
 
       fetchContributorProfiles(Array.from(new Set(allActivityLogs.map(l => l.author))));
 
@@ -630,7 +663,7 @@ export default function MilestoneDetail() {
           { key: 'results',  icon: 'ri-bar-chart-box-fill', iconColor: '#6366F1', label: 'Results',  badge: runs.length > 0 ? runs.length : null },
           { key: 'status',   icon: 'ri-pie-chart-2-fill',   iconColor: '#3B82F6', label: 'Status',   badge: null },
           { key: 'activity', icon: 'ri-history-fill',        iconColor: '#8B5CF6', label: 'Activity', badge: activityLogs.length > 0 ? activityLogs.length : null },
-          { key: 'issues',   icon: 'ri-bug-fill',            iconColor: '#EF4444', label: 'Issues',   badge: issues.length > 0 ? issues.length : null },
+          { key: 'issues',   icon: 'ri-bug-fill',            iconColor: '#EF4444', label: 'Issues',   badge: failedBlockedTcs.length > 0 ? failedBlockedTcs.length : null },
         ] as const).map(tab => {
           const isActive = activeTab === tab.key;
           return (
@@ -736,7 +769,7 @@ export default function MilestoneDetail() {
                           </div>
                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', minWidth: '2rem' }}>{completionRate}%</span>
                         </div>
-                        {/* Row 3: TC stats */}
+                        {/* Row 3: TC stats + avatars */}
                         <div style={{ marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                           {[
                             { dot: '#22C55E', n: run.passed_count || 0, label: 'passed' },
@@ -748,6 +781,18 @@ export default function MilestoneDetail() {
                               <span style={{ fontWeight: 600, color: '#334155' }}>{s.n}</span> {s.label}
                             </span>
                           ))}
+                          {run.authors && run.authors.length > 0 && (
+                            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                              {run.authors.map((author, idx) => {
+                                const avatarColors = ['#6366F1', '#EC4899', '#F59E0B', '#22C55E', '#3B82F6'];
+                                return (
+                                  <div key={idx} style={{ width: '1.375rem', height: '1.375rem', borderRadius: '50%', background: avatarColors[idx % avatarColors.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.4375rem', fontWeight: 700, color: '#fff', border: '2px solid #fff', marginLeft: idx > 0 ? '-0.375rem' : 0, flexShrink: 0 }}>
+                                    {getContributorInitials(author)}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       </Link>
                     );
@@ -886,25 +931,38 @@ export default function MilestoneDetail() {
               </div>
             )}
 
-            {/* Overview stats */}
-            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '1rem 1.25rem' }}>
-              <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <i className="ri-bar-chart-box-fill" style={{ fontSize: '0.9375rem', color: '#6366F1' }} /> Overview
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                {[
-                  { label: 'Runs', value: runs.length, icon: 'ri-play-circle-line', color: '#6366F1' },
-                  { label: 'Discovery Logs', value: sessions.length, icon: 'ri-search-eye-line', color: '#3B82F6' },
-                  { label: 'Pass Rate', value: `${tcStats.passRate}%`, icon: 'ri-percent-line', color: '#22C55E' },
-                ].map(stat => (
-                  <div key={stat.label} style={{ textAlign: 'center', padding: '0.75rem', background: '#F8FAFC', borderRadius: '0.5rem' }}>
-                    <i className={stat.icon} style={{ fontSize: '1.25rem', color: stat.color, display: 'block', marginBottom: '0.25rem' }} />
-                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0F172A', lineHeight: 1 }}>{stat.value}</div>
-                    <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.25rem' }}>{stat.label}</div>
+            {/* Contributors */}
+            {(() => {
+              const contributorMap = new Map<string, number>();
+              activityLogs.forEach(log => {
+                if (log.type !== 'note' && log.author && log.author !== 'Unknown') {
+                  contributorMap.set(log.author, (contributorMap.get(log.author) || 0) + 1);
+                }
+              });
+              const contributors = Array.from(contributorMap.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+              if (contributors.length === 0) return null;
+              const avatarColors = ['#6366F1', '#EC4899', '#F59E0B', '#22C55E', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
+              return (
+                <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '1rem 1.25rem' }}>
+                  <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                    <i className="ri-team-line" style={{ fontSize: '0.9375rem', color: '#6366F1' }} /> Contributors
                   </div>
-                ))}
-              </div>
-            </div>
+                  {contributors.map(([author, count], idx) => (
+                    <div key={author} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0', borderBottom: idx < contributors.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
+                      <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: avatarColors[idx % avatarColors.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                        {getContributorInitials(author)}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>{author}</div>
+                      </div>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>{count} TCs executed</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -1078,57 +1136,45 @@ export default function MilestoneDetail() {
         {/* ════ ISSUES TAB ════ */}
         {activeTab === 'issues' && (
           <div>
-            {issues.length === 0 ? (
+            {failedBlockedTcs.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '3rem 0' }}>
                 <div style={{ width: '4rem', height: '4rem', background: '#F1F5F9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                   <i className="ri-bug-line" style={{ fontSize: '1.875rem', color: '#94A3B8' }} />
                 </div>
-                <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#0F172A', marginBottom: '0.5rem' }}>No issues found</div>
-                <div style={{ color: '#64748B', fontSize: '0.875rem' }}>이 마일스톤에 등록된 이슈가 없습니다.</div>
+                <div style={{ fontSize: '1.125rem', fontWeight: 600, color: '#0F172A', marginBottom: '0.5rem' }}>No failed or blocked test cases</div>
+                <div style={{ color: '#64748B', fontSize: '0.875rem' }}>All test cases are passing or untested.</div>
               </div>
             ) : (
               <>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
-                  REGISTERED ISSUES ({issues.length})
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <i className="ri-bug-line" style={{ fontSize: '0.8125rem' }} /> Failed &amp; Blocked Test Cases
+                  <span style={{ fontSize: '0.625rem', fontWeight: 700, background: '#FEE2E2', color: '#991B1B', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>{failedBlockedTcs.length}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {issues.map((issue, index) => {
-                    const hasValidUrl = issue.url && issue.url.length > 0;
-                    const statusBg = issue.status?.toLowerCase() === 'open' || issue.status?.toLowerCase() === 'to do' ? '#FEE2E2' :
-                      issue.status?.toLowerCase() === 'in progress' ? '#FEF3C7' :
-                      issue.status?.toLowerCase() === 'done' || issue.status?.toLowerCase() === 'closed' ? '#DCFCE7' : '#F1F5F9';
-                    const statusColor = issue.status?.toLowerCase() === 'open' || issue.status?.toLowerCase() === 'to do' ? '#991B1B' :
-                      issue.status?.toLowerCase() === 'in progress' ? '#92400E' :
-                      issue.status?.toLowerCase() === 'done' || issue.status?.toLowerCase() === 'closed' ? '#166534' : '#475569';
-                    const inner = (
-                      <>
-                        <div style={{ width: '2.5rem', height: '2.5rem', background: '#FEE2E2', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <i className="ri-bug-line" style={{ color: '#DC2626', fontSize: '1.125rem' }} />
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                            <span style={{ fontWeight: 500, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{issue.title}</span>
-                            {hasValidUrl && <i className="ri-external-link-line" style={{ fontSize: '0.875rem', color: '#94A3B8', flexShrink: 0 }} />}
-                            {issue.status && <span style={{ padding: '0.125rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 500, background: statusBg, color: statusColor, flexShrink: 0 }}>{issue.status}</span>}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.875rem', color: '#64748B', flexWrap: 'wrap' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><i className="ri-play-circle-line" style={{ fontSize: '0.75rem' }} />{issue.runName}</span>
-                            {issue.testCaseName && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><i className="ri-file-list-line" style={{ fontSize: '0.75rem' }} />{issue.testCaseName}</span>}
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><i className="ri-time-line" style={{ fontSize: '0.75rem' }} />{new Date(issue.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                          </div>
-                        </div>
-                      </>
-                    );
-                    const cardStyle = { background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '0.75rem 1rem', display: 'flex', alignItems: 'flex-start', gap: '1rem', transition: 'all 0.15s', fontSize: '0.8125rem' };
-                    return hasValidUrl ? (
-                      <a key={`${issue.id}-${index}`} href={issue.url} target="_blank" rel="noopener noreferrer" style={{ ...cardStyle, textDecoration: 'none', cursor: 'pointer' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#FECACA'; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(239,68,68,0.08)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
-                      >{inner}</a>
-                    ) : (
-                      <div key={`${issue.id}-${index}`} style={cardStyle}>{inner}</div>
-                    );
-                  })}
+                  {failedBlockedTcs.map(tc => (
+                    <div
+                      key={tc.tcId}
+                      style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '0.625rem', padding: '0.75rem 1rem', transition: 'all 0.15s', cursor: 'default' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#FECACA'; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(239,68,68,0.08)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <i
+                          className={tc.status === 'failed' ? 'ri-close-circle-fill' : 'ri-error-warning-fill'}
+                          style={{ fontSize: '0.875rem', color: tc.status === 'failed' ? '#EF4444' : '#F59E0B', flexShrink: 0 }}
+                        />
+                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A', flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tc.tcName}</span>
+                        <span style={{ fontSize: '0.625rem', fontWeight: 600, padding: '0.125rem 0.4375rem', borderRadius: '9999px', whiteSpace: 'nowrap', flexShrink: 0, background: tc.status === 'failed' ? '#FEE2E2' : '#FEF3C7', color: tc.status === 'failed' ? '#991B1B' : '#92400E' }}>
+                          {tc.status === 'failed' ? 'Failed' : 'Blocked'}
+                        </span>
+                      </div>
+                      <div style={{ marginTop: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.6875rem', color: '#94A3B8', flexWrap: 'wrap' }}>
+                        {tc.runName && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.1875rem' }}><i className="ri-play-circle-line" style={{ fontSize: '0.75rem' }} />{tc.runName}</span>}
+                        {tc.author && tc.author !== 'Unknown' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.1875rem' }}><i className="ri-user-line" style={{ fontSize: '0.75rem' }} />{tc.author}</span>}
+                        {tc.createdAt && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.1875rem' }}><i className="ri-time-line" style={{ fontSize: '0.75rem' }} />{formatDate(tc.createdAt)}</span>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </>
             )}
