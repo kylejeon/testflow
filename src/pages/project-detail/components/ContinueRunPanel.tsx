@@ -65,13 +65,20 @@ export default function ContinueRunPanel({ isOpen, onClose, projectId }: Props) 
   const fetchRuns = async () => {
     setLoading(true);
     try {
-      const { data: runsData } = await supabase
+      const { data: runsData, error: runsError } = await supabase
         .from('test_runs')
         .select('*')
         .eq('project_id', projectId)
         .neq('status', 'completed')
-        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(10);
+
+      if (runsError) {
+        console.error('[ContinueRunPanel] fetchRuns error:', runsError);
+        setRuns([]);
+        setLoading(false);
+        return;
+      }
 
       if (!runsData || runsData.length === 0) {
         setRuns([]);
