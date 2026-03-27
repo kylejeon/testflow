@@ -6,6 +6,8 @@ import { WEBHOOK_EVENTS, WebhookEventType } from '../../hooks/useWebhooks';
 import SEOHead from '../../components/SEOHead';
 import NotificationSettingsPanel from './components/NotificationSettingsPanel';
 import ProfileSettingsPanel from './components/ProfileSettingsPanel';
+import ProjectMembersPanel from '../project-detail/components/ProjectMembersPanel';
+import InviteMemberModal from '../project-detail/components/InviteMemberModal';
 
 interface JiraSettings {
   domain: string;
@@ -86,7 +88,11 @@ const TIER_INFO = {
 };
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'general' | 'integrations' | 'notifications' | 'cicd' | 'profile'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'integrations' | 'notifications' | 'cicd' | 'profile' | 'members'>('general');
+  const [userProjects, setUserProjects] = useState<{ id: string; name: string }[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [showMembersInviteModal, setShowMembersInviteModal] = useState(false);
+  const [memberRefreshTrigger, setMemberRefreshTrigger] = useState(0);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [jiraSettings, setJiraSettings] = useState<JiraSettings>({
     domain: '',
@@ -133,11 +139,30 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchUserProfile();
     fetchJiraSettings();
+    fetchUserProjects();
     const tab = searchParams.get('tab');
-    if (tab === 'integrations' || tab === 'cicd' || tab === 'notifications' || tab === 'general' || tab === 'profile') {
+    if (tab === 'integrations' || tab === 'cicd' || tab === 'notifications' || tab === 'general' || tab === 'profile' || tab === 'members') {
       setActiveTab(tab as typeof activeTab);
     }
   }, []);
+
+  const fetchUserProjects = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('project_members')
+        .select('project_id, projects!inner(id, name)')
+        .eq('user_id', user.id);
+      if (data) {
+        const projects = data.map((row: any) => ({ id: row.projects.id, name: row.projects.name }));
+        setUserProjects(projects);
+        if (projects.length > 0 && !selectedProjectId) setSelectedProjectId(projects[0].id);
+      }
+    } catch (e) {
+      console.error('Failed to fetch user projects:', e);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === 'cicd') {
@@ -908,6 +933,17 @@ def pytest_sessionfinish(session, exitstatus):
                     General
                   </button>
                   <button
+                    onClick={() => setActiveTab('members')}
+                    className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      activeTab === 'members'
+                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <i className="ri-team-line mr-2"></i>
+                    Members
+                  </button>
+                  <button
                     onClick={() => setActiveTab('integrations')}
                     className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       activeTab === 'integrations'
@@ -952,6 +988,56 @@ def pytest_sessionfinish(session, exitstatus):
                         setUserProfile((prev) => prev ? { ...prev, full_name: name, avatar_emoji: emoji } : prev);
                       }}
                     />
+                  )}
+
+                  {activeTab === 'members' && (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-lg font-bold text-slate-900">Project Members</h2>
+                          <p className="text-sm text-slate-500 mt-1">Manage team members and their roles for each project.</p>
+                        </div>
+                        <button
+                          onClick={() => setShowMembersInviteModal(true)}
+                          disabled={!selectedProjectId}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        >
+                          <i className="ri-user-add-line"></i>
+                          Invite Member
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">Project</label>
+                        <select
+                          value={selectedProjectId}
+                          onChange={e => setSelectedProjectId(e.target.value)}
+                          className="h-10 px-3 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[240px]"
+                        >
+                          <option value="">Select a project...</option>
+                          {userProjects.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {selectedProjectId ? (
+                        <ProjectMembersPanel
+                          projectId={selectedProjectId}
+                          onInviteClick={() => setShowMembersInviteModal(true)}
+                          refreshTrigger={memberRefreshTrigger}
+                        />
+                      ) : (
+                        <div className="text-center py-16 text-sm text-gray-400">
+                          <i className="ri-team-line text-4xl text-gray-200 block mb-3"></i>
+                          Select a project to view and manage its members.
+                        </div>
+                      )}
+                      <InviteMemberModal
+                        isOpen={showMembersInviteModal}
+                        onClose={() => setShowMembersInviteModal(false)}
+                        projectId={selectedProjectId}
+                        onInvited={() => setMemberRefreshTrigger(prev => prev + 1)}
+                      />
+                    </div>
                   )}
 
                   {activeTab === 'general' && (

@@ -17,6 +17,8 @@ interface ProjectMembersPanelProps {
   projectId: string;
   onInviteClick: () => void;
   refreshTrigger: number;
+  /** compact=true: no outer wrapper/header, smaller avatars, read-only roles, for sidebar widgets */
+  compact?: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ export default function ProjectMembersPanel({
   projectId,
   onInviteClick,
   refreshTrigger,
+  compact = false,
 }: ProjectMembersPanelProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -219,6 +222,9 @@ export default function ProjectMembersPanel({
   };
 
   if (loading) {
+    if (compact) {
+      return <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-500"></div></div>;
+    }
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
@@ -231,6 +237,50 @@ export default function ProjectMembersPanel({
     );
   }
 
+  // ── COMPACT MODE (sidebar widget) ──────────────────────────────
+  if (compact) {
+    if (members.length === 0) {
+      return (
+        <div className="text-center py-4">
+          <p className="text-xs text-gray-400 mb-2">No members yet</p>
+          <button onClick={onInviteClick} className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer">
+            Invite first member →
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div>
+        {members.map((member, index) => {
+          const badge = getRoleBadge(member.role);
+          return (
+            <div key={member.id} className="flex items-center gap-2.5 py-2 border-b border-[#F1F5F9] last:border-0">
+              {member.profile.avatar_emoji ? (
+                <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-sm flex-shrink-0">
+                  {member.profile.avatar_emoji}
+                </div>
+              ) : (
+                <div className={`w-7 h-7 bg-gradient-to-br ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-bold text-[0.5rem] flex-shrink-0`}>
+                  {getInitials(member.profile.full_name, member.profile.email)}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-[0.8125rem] font-semibold text-[#0F172A] truncate">
+                  {member.profile.full_name || member.profile.email}
+                </div>
+                <div className="text-[0.6875rem] text-[#94A3B8] truncate">{member.profile.email}</div>
+              </div>
+              <span className={`text-[0.625rem] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 ${badge.className}`}>
+                {badge.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ── FULL MODE ──────────────────────────────────────────────────
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">

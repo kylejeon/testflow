@@ -1335,6 +1335,7 @@ export default function ProjectDetail() {
                       <button
                         onClick={() => setShowInviteModal(true)}
                         className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
+                        style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
                       >
                         <i className="ri-user-add-line text-xs" />
                         Invite
@@ -1344,7 +1345,13 @@ export default function ProjectDetail() {
                       projectId={id || ''}
                       onInviteClick={() => setShowInviteModal(true)}
                       refreshTrigger={memberRefreshTrigger}
+                      compact={true}
                     />
+                    <div className="mt-2 pt-2 border-t border-[#F1F5F9] text-center">
+                      <Link to="/settings?tab=members" className="text-xs font-medium text-indigo-600 hover:underline">
+                        Manage in Settings →
+                      </Link>
+                    </div>
                   </div>
 
                 </div>
