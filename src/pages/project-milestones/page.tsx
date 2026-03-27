@@ -158,6 +158,12 @@ export default function ProjectMilestones() {
           if (endDate < today) {
             currentStatus = 'past_due';
             supabase.from('milestones').update({ status: 'past_due' }).eq('id', milestone.id);
+          } else if (currentStatus === 'past_due') {
+            // end_date가 미래로 변경됐으면 past_due 해제 → started로 복구
+            currentStatus = 'started';
+            supabase.from('milestones').update({ status: 'started' }).eq('id', milestone.id);
+          }
+          if (endDate < today) {
             if (milestone.status !== 'past_due') {
               supabase.from('projects').select('name').eq('id', id!).maybeSingle().then(({ data: proj }) => {
                 triggerWebhook(id!, 'milestone_past_due', {
