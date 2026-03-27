@@ -200,7 +200,10 @@ export default function ProjectDetail() {
           return { ...milestone, status, progress: 0 };
         }
 
-        const runProgresses = milestoneRuns.map(run => {
+        let totalTestsSum = 0;
+        let completedTestsSum = 0;
+
+        milestoneRuns.forEach(run => {
           const runResults = allTestResultsData?.filter(r => r.run_id === run.id) || [];
           const statusMap = new Map<string, string>();
           runResults.forEach(r => {
@@ -208,18 +211,16 @@ export default function ProjectDetail() {
           });
 
           const totalTests = run.test_case_ids.length;
-          if (totalTests === 0) return 0;
+          totalTestsSum += totalTests;
+          if (totalTests === 0) return;
 
-          let completed = 0;
           run.test_case_ids.forEach((tcId: string) => {
             const s = statusMap.get(tcId);
-            if (s === 'passed' || s === 'failed' || s === 'blocked' || s === 'retest') completed++;
+            if (s === 'passed' || s === 'failed' || s === 'blocked' || s === 'retest') completedTestsSum++;
           });
-
-          return Math.round((completed / totalTests) * 100);
         });
 
-        const avg = Math.round(runProgresses.reduce((a, b) => a + b, 0) / runProgresses.length);
+        const avg = totalTestsSum > 0 ? Math.round((completedTestsSum / totalTestsSum) * 100) : 0;
 
         let status = milestone.status;
         if (status === 'upcoming' && milestone.start_date) {
