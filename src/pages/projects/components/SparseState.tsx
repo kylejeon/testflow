@@ -130,6 +130,7 @@ function ProjectCard({
   animDelay,
   onEdit,
   onDelete,
+  canDelete,
 }: {
   project: Project;
   testCaseCount: number;
