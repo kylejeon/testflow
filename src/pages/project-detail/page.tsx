@@ -1346,6 +1346,7 @@ export default function ProjectDetail() {
                       onInviteClick={() => setShowInviteModal(true)}
                       refreshTrigger={memberRefreshTrigger}
                       compact={true}
+                      ownerId={project?.owner_id}
                     />
                     <div className="mt-2 pt-2 border-t border-[#F1F5F9] text-center">
                       <Link to="/settings?tab=members" className="text-xs font-medium text-indigo-600 hover:underline">

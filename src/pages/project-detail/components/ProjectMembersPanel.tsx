@@ -18,6 +18,8 @@ interface ProjectMembersPanelProps {
   refreshTrigger: number;
   /** compact=true: no outer wrapper/header, smaller avatars, read-only roles, for sidebar widgets */
   compact?: boolean;
+  /** ownerId: project owner’s user_id, used for self-heal if project_members is empty */
+  ownerId?: string;
 }
 
 /**
@@ -36,6 +38,7 @@ export default function ProjectMembersPanel({
   onInviteClick,
   refreshTrigger,
   compact = false,
+  ownerId,
 }: ProjectMembersPanelProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,8 +82,36 @@ export default function ProjectMembersPanel({
       }
 
       if (!membersData || membersData.length === 0) {
-        setMembers([]);
-        return;
+        // Self-heal: if current user is the project owner but not in project_members, insert them
+        const { data: { user } } = await supabase.auth.getUser();
+        const healOwnerId = ownerId || (
+          // fallback: fetch owner_id from projects table
+          await supabase.from('projects').select('owner_id').eq('id', projectId).maybeSingle()
+            .then(r => r.data?.owner_id)
+        );
+        if (user && healOwnerId && user.id === healOwnerId) {
+          const { error: upsertErr } = await supabase.from('project_members').upsert({
+            project_id: projectId,
+            user_id: user.id,
+            role: 'owner',
+            invited_by: user.id,
+          }, { onConflict: 'project_id,user_id' });
+          if (!upsertErr) {
+            // Re-fetch after self-heal
+            const { data: reloaded } = await supabase
+              .from('project_members').select('id, user_id, role').eq('project_id', projectId);
+            if (reloaded && reloaded.length > 0) {
+              // Continue with reloaded data instead of returning empty
+              membersData.push(...reloaded);
+            }
+          } else {
+            console.error('Self-heal upsert failed:', upsertErr);
+          }
+        }
+        if (!membersData || membersData.length === 0) {
+          setMembers([]);
+          return;
+        }
       }
 
       // Get user IDs
