@@ -107,6 +107,16 @@ export default function ProjectDocumentation() {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [moveTarget, setMoveTarget] = useState<string>('');
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<DocumentItem | null>(null);
+  const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
+
+  const toggleCollapse = (catId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCollapsedFolders(prev => {
+      const next = new Set(prev);
+      next.has(catId) ? next.delete(catId) : next.add(catId);
+      return next;
+    });
+  };
 
   // Upload modal state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -443,49 +453,62 @@ export default function ProjectDocumentation() {
                 <i className="ri-add-line text-[0.8125rem]" />New Folder
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto py-1.5">
-              {CATEGORIES.map(cat => (
-                <div key={cat.id}>
-                  <button
-                    onClick={() => { setSelectedFolder(cat.id); setActiveTab(cat.id === 'link' ? 'all' : cat.id); }}
-                    className={`w-full flex items-center gap-1.5 px-[0.875rem] py-[0.4375rem] text-[0.8125rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left ${
-                      selectedFolder === cat.id
-                        ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
-                        : 'text-[#475569] hover:bg-[#F8FAFC]'
-                    }`}
-                  >
-                    <i className={`${cat.icon} text-base`} style={{ color: selectedFolder === cat.id ? '#6366F1' : cat.color }} />
-                    <span className="flex-1 min-w-0 truncate">{cat.label}</span>
-                    <span className={`text-[0.6875rem] font-medium ${selectedFolder === cat.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
-                      {folderCounts[cat.id] ?? 0}
-                    </span>
-                  </button>
-                  {/* Sub-folders under this category */}
-                  {customFolders
-                    .filter(f => f.folderParent === cat.id)
-                    .map(sub => (
-                      <div
-                        key={sub.id}
-                        className={`group relative w-full flex items-center gap-1.5 pl-[2rem] pr-[0.5rem] py-[0.375rem] text-[0.75rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left before:content-[''] before:absolute before:left-[1.25rem] before:top-0 before:bottom-0 before:w-px before:bg-[#E2E8F0] ${
-                          selectedFolder === sub.id
-                            ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
-                            : 'text-[#475569] hover:bg-[#F8FAFC]'
-                        }`}
-                        onClick={() => setSelectedFolder(sub.id)}
-                      >
-                        <i className="ri-folder-line text-sm text-[#94A3B8]" />
-                        <span className="flex-1 min-w-0 truncate">{sub.title}</span>
-                        <button
-                          onClick={e => { e.stopPropagation(); setDeleteFolderTarget(sub); }}
-                          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-[#94A3B8] hover:bg-red-50 hover:text-red-500 transition-all flex-shrink-0 cursor-pointer"
-                          title="Delete folder"
+            <div className="flex-1 overflow-y-auto py-[0.375rem]">
+              {CATEGORIES.map(cat => {
+                const subFolders = customFolders.filter(f => f.folderParent === cat.id);
+                const isCollapsed = collapsedFolders.has(cat.id);
+                return (
+                  <div key={cat.id}>
+                    <button
+                      onClick={() => { setSelectedFolder(cat.id); setActiveTab(cat.id === 'link' ? 'all' : cat.id); }}
+                      className={`w-full flex items-center gap-[0.375rem] px-[0.875rem] py-[0.4375rem] text-[0.8125rem] rounded-r-md mr-[0.375rem] transition-colors cursor-pointer text-left ${
+                        selectedFolder === cat.id
+                          ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
+                          : 'text-[#475569] hover:bg-[#F8FAFC]'
+                      }`}
+                    >
+                      <i className={`${cat.icon} text-base flex-shrink-0`} style={{ color: selectedFolder === cat.id ? '#6366F1' : cat.color }} />
+                      {subFolders.length > 0 && (
+                        <i
+                          className={`ri-arrow-right-s-line text-[0.6875rem] text-[#94A3B8] transition-transform duration-150 flex-shrink-0 ${!isCollapsed ? 'rotate-90' : ''}`}
+                          onClick={e => toggleCollapse(cat.id, e)}
+                        />
+                      )}
+                      <span className="flex-1 min-w-0 truncate">{cat.label}</span>
+                      <span className={`text-[0.6875rem] font-medium ${selectedFolder === cat.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
+                        {folderCounts[cat.id] ?? 0}
+                      </span>
+                    </button>
+                    {!isCollapsed && subFolders.map(sub => {
+                      const subCount = documents.filter(d => d.category === sub.id).length;
+                      return (
+                        <div
+                          key={sub.id}
+                          className={`group relative w-full flex items-center gap-[0.375rem] pl-[2rem] pr-[0.5rem] py-[0.375rem] text-[0.75rem] rounded-r-md mr-[0.375rem] transition-colors cursor-pointer text-left before:content-[''] before:absolute before:left-[1.25rem] before:top-0 before:bottom-0 before:w-px before:bg-[#E2E8F0] ${
+                            selectedFolder === sub.id
+                              ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
+                              : 'text-[#475569] hover:bg-[#F8FAFC]'
+                          }`}
+                          onClick={() => setSelectedFolder(sub.id)}
                         >
-                          <i className="ri-delete-bin-line text-[0.75rem]" />
-                        </button>
-                      </div>
-                    ))}
-                </div>
-              ))}
+                          <i className="ri-file-list-3-line text-base flex-shrink-0" style={{ color: selectedFolder === sub.id ? '#6366F1' : '#94A3B8' }} />
+                          <span className="flex-1 min-w-0 truncate">{sub.title}</span>
+                          <span className={`text-[0.6875rem] font-medium group-hover:hidden ${selectedFolder === sub.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
+                            {subCount}
+                          </span>
+                          <button
+                            onClick={e => { e.stopPropagation(); setDeleteFolderTarget(sub); }}
+                            className="hidden group-hover:flex w-5 h-5 items-center justify-center rounded text-[#94A3B8] hover:bg-red-50 hover:text-red-500 transition-all flex-shrink-0 cursor-pointer"
+                            title="Delete folder"
+                          >
+                            <i className="ri-delete-bin-line text-[0.75rem]" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
