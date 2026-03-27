@@ -1463,10 +1463,21 @@ export default function RunDetail() {
   return (
     <>
     {focusModeOpen && (() => {
-      const firstUntestedIndex = focusTests.findIndex(tc => tc.runStatus === 'untested');
+      // Sort by customId ascending (e.g. TC-001, TC-002, ...) using numeric suffix
+      const sortedFocusTests = [...focusTests].sort((a, b) => {
+        const aId = a.customId || '';
+        const bId = b.customId || '';
+        const aMatch = aId.match(/^(\D+?)(\d+)$/);
+        const bMatch = bId.match(/^(\D+?)(\d+)$/);
+        if (aMatch && bMatch && aMatch[1] === bMatch[1]) {
+          return parseInt(aMatch[2], 10) - parseInt(bMatch[2], 10);
+        }
+        return aId.localeCompare(bId);
+      });
+      const firstUntestedIndex = sortedFocusTests.findIndex(tc => tc.runStatus === 'untested');
       return (
         <FocusMode
-          tests={focusTests}
+          tests={sortedFocusTests}
           runName={run?.name || 'Test Run'}
           onStatusChange={handleFocusStatusChange}
           onExit={() => setFocusModeOpen(false)}
