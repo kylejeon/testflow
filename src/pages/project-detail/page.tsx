@@ -521,24 +521,32 @@ export default function ProjectDetail() {
     return groups;
   }, [recentActivity]);
 
-  // ── Trend Data (from rawTestResults) ──
+  // ── Trend Data (from test_runs counters + executed_at) ──
+  // Uses run-level counters (passed/failed/blocked on test_runs) aggregated by executed_at date.
+  // This is more reliable than test_results.created_at because:
+  //   1. test_runs counters are always populated (including sample projects)
+  //   2. executed_at reflects the actual run completion date
   const trendData = useMemo(() => {
-    if (rawTestResults.length === 0) return [];
+    const executedRuns = testRuns.filter((r: any) => r.executed_at);
+    if (executedRuns.length === 0) return [];
+
     const days = trendPeriod === '7d' ? 7 : trendPeriod === '14d' ? 14 : 30;
 
-    // Aggregate all results by UTC date key
+    // Aggregate runs by execution date (UTC date key)
     const dateMap = new Map<string, { passed: number; failed: number; blocked: number }>();
-    rawTestResults.forEach((r: any) => {
-      const dateKey = (r.created_at || '').slice(0, 10);
+    executedRuns.forEach((r: any) => {
+      const dateKey = (r.executed_at || '').slice(0, 10);
       if (!dateKey) return;
       if (!dateMap.has(dateKey)) dateMap.set(dateKey, { passed: 0, failed: 0, blocked: 0 });
       const entry = dateMap.get(dateKey)!;
-      if (r.status === 'passed') entry.passed++;
-      else if (r.status === 'failed') entry.failed++;
-      else if (r.status === 'blocked') entry.blocked++;
+      entry.passed  += (r.passed  || 0);
+      entry.failed  += (r.failed  || 0);
+      entry.blocked += (r.blocked || 0);
     });
 
-    // Check whether any data falls inside the current calendar window
+    if (dateMap.size === 0) return [];
+
+    // Check if any data falls inside the current calendar window
     const today = new Date();
     const windowStart = new Date(today);
     windowStart.setDate(windowStart.getDate() - (days - 1));
@@ -546,7 +554,7 @@ export default function ProjectDetail() {
     const hasDataInWindow = Array.from(dateMap.keys()).some(k => k >= windowStartKey);
 
     if (hasDataInWindow) {
-      // Calendar-based: one slot per day in the period
+      // Calendar-based: one slot per day in the selected period
       const points: { label: string; passed: number; failed: number; blocked: number }[] = [];
       for (let i = days - 1; i >= 0; i--) {
         const d = new Date(today); d.setDate(d.getDate() - i);
@@ -559,7 +567,7 @@ export default function ProjectDetail() {
       }
       return points;
     } else {
-      // No data in the current window — show the last N dates that actually have data
+      // No data in the current window — show the last N execution dates that have data
       const allDates = Array.from(dateMap.keys()).sort();
       const recentDates = allDates.slice(-days);
       return recentDates.map((dateKey, idx) => {
@@ -571,7 +579,7 @@ export default function ProjectDetail() {
         return { label, ...entry };
       });
     }
-  }, [rawTestResults, trendPeriod]);
+  }, [testRuns, trendPeriod]);
 
   // ── Loading / Not found states ──
   if (loading) {
@@ -974,7 +982,7 @@ export default function ProjectDetail() {
                         ))}
                       </div>
                     </div>
-                    {rawTestResults.length === 0 ? (
+                    {trendData.length === 0 ? (
                       <div className="text-center py-14 text-sm text-gray-400">
                         <i className="ri-line-chart-line text-4xl block mb-2 text-gray-300" />
                         No test execution data yet
