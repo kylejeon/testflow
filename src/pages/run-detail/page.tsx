@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
@@ -98,6 +98,7 @@ const TIER_INFO = {
 export default function RunDetail() {
   const { projectId, runId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation(['common']);
   const [project, setProject] = useState<any>(null);
   const [run, setRun] = useState<any>(null);
@@ -1436,6 +1437,13 @@ export default function RunDetail() {
     [handleStatusChange, runId]
   );
 
+  // Auto-open Focus Mode when ?focus=true is in the URL (e.g. from Continue button)
+  useEffect(() => {
+    if (!loading && testCases.length > 0 && searchParams.get('focus') === 'true') {
+      setFocusModeOpen(true);
+    }
+  }, [loading, testCases.length, searchParams]);
+
   const focusTests: FocusTestCase[] = testCases.map((tc) => ({
     id: tc.id,
     customId: (tc as any).custom_id,
@@ -1454,14 +1462,18 @@ export default function RunDetail() {
 
   return (
     <>
-    {focusModeOpen && (
-      <FocusMode
-        tests={focusTests}
-        runName={run?.name || 'Test Run'}
-        onStatusChange={handleFocusStatusChange}
-        onExit={() => setFocusModeOpen(false)}
-      />
-    )}
+    {focusModeOpen && (() => {
+      const firstUntestedIndex = focusTests.findIndex(tc => tc.runStatus === 'untested');
+      return (
+        <FocusMode
+          tests={focusTests}
+          runName={run?.name || 'Test Run'}
+          onStatusChange={handleFocusStatusChange}
+          onExit={() => setFocusModeOpen(false)}
+          initialIndex={firstUntestedIndex >= 0 ? firstUntestedIndex : 0}
+        />
+      );
+    })()}
     <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={projectId || ''} projectName={project?.name || ''} />

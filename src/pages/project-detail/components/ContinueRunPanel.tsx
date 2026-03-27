@@ -146,7 +146,7 @@ export default function ContinueRunPanel({ isOpen, onClose, projectId }: Props) 
 
   const handleEnterFocusMode = () => {
     if (!selectedRunId) return;
-    navigate(`/projects/${projectId}/runs/${selectedRunId}`);
+    navigate(`/projects/${projectId}/runs/${selectedRunId}?focus=true`);
     onClose();
   };
 

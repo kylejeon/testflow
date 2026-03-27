@@ -941,7 +941,7 @@ export default function ProjectDetail() {
                                             <span className="text-[9px] font-semibold bg-violet-100 text-violet-700 px-1 py-0.5 rounded flex-shrink-0">Manual</span>
                                           )}
                                           <Link
-                                            to={`/projects/${id}/runs/${run.id}`}
+                                            to={`/projects/${id}/runs/${run.id}?focus=true`}
                                             className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors flex-shrink-0"
                                             onClick={e => e.stopPropagation()}
                                           >
