@@ -523,25 +523,54 @@ export default function ProjectDetail() {
 
   // ── Trend Data (from rawTestResults) ──
   const trendData = useMemo(() => {
+    if (rawTestResults.length === 0) return [];
     const days = trendPeriod === '7d' ? 7 : trendPeriod === '14d' ? 14 : 30;
-    const points: { label: string; passed: number; failed: number; blocked: number }[] = [];
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      const dateKey = d.toISOString().slice(0, 10);
-      const label = days <= 7
-        ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        : i % 3 === 0 ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-      let passed = 0, failed = 0, blocked = 0;
-      rawTestResults.forEach((r: any) => {
-        if ((r.created_at || '').slice(0, 10) === dateKey) {
-          if (r.status === 'passed') passed++;
-          else if (r.status === 'failed') failed++;
-          else if (r.status === 'blocked') blocked++;
-        }
+
+    // Aggregate all results by UTC date key
+    const dateMap = new Map<string, { passed: number; failed: number; blocked: number }>();
+    rawTestResults.forEach((r: any) => {
+      const dateKey = (r.created_at || '').slice(0, 10);
+      if (!dateKey) return;
+      if (!dateMap.has(dateKey)) dateMap.set(dateKey, { passed: 0, failed: 0, blocked: 0 });
+      const entry = dateMap.get(dateKey)!;
+      if (r.status === 'passed') entry.passed++;
+      else if (r.status === 'failed') entry.failed++;
+      else if (r.status === 'blocked') entry.blocked++;
+    });
+
+    // Check whether any data falls inside the current calendar window
+    const today = new Date();
+    const windowStart = new Date(today);
+    windowStart.setDate(windowStart.getDate() - (days - 1));
+    const windowStartKey = windowStart.toISOString().slice(0, 10);
+    const hasDataInWindow = Array.from(dateMap.keys()).some(k => k >= windowStartKey);
+
+    if (hasDataInWindow) {
+      // Calendar-based: one slot per day in the period
+      const points: { label: string; passed: number; failed: number; blocked: number }[] = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today); d.setDate(d.getDate() - i);
+        const dateKey = d.toISOString().slice(0, 10);
+        const label = days <= 7
+          ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : i % 3 === 0 ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+        const entry = dateMap.get(dateKey) || { passed: 0, failed: 0, blocked: 0 };
+        points.push({ label, ...entry });
+      }
+      return points;
+    } else {
+      // No data in the current window — show the last N dates that actually have data
+      const allDates = Array.from(dateMap.keys()).sort();
+      const recentDates = allDates.slice(-days);
+      return recentDates.map((dateKey, idx) => {
+        const d = new Date(dateKey + 'T12:00:00Z');
+        const label = recentDates.length <= 7
+          ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : idx % 3 === 0 ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+        const entry = dateMap.get(dateKey)!;
+        return { label, ...entry };
       });
-      points.push({ label, passed, failed, blocked });
     }
-    return points;
   }, [rawTestResults, trendPeriod]);
 
   // ── Loading / Not found states ──
