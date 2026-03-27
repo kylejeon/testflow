@@ -84,7 +84,10 @@ export default function ProjectRunsPage() {
   const navigate = useNavigate();
   const { toasts, showToast, dismiss } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed' | 'failed'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all');
+  const [resultFilter, setResultFilter] = useState<'all' | 'has_failures' | 'all_passed' | 'has_blocked'>('all');
+  const [showResultFilter, setShowResultFilter] = useState(false);
+  const resultFilterRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [milestoneFilter, setMilestoneFilter] = useState('');
   const [sortBy, setSortBy] = useState<'priority' | 'created' | 'name' | 'progress'>('priority');
@@ -1045,11 +1048,16 @@ export default function ProjectRunsPage() {
         activeTab === 'all' ? true
         : activeTab === 'active' ? ['new', 'in_progress', 'paused', 'under_review'].includes(run.status)
         : activeTab === 'completed' ? run.status === 'completed'
-        : activeTab === 'failed' ? run.status === 'completed' && run.failed > 0
         : true;
       const searchMatch = !searchQuery.trim() || run.name.toLowerCase().includes(searchQuery.toLowerCase());
       const msMatch = !milestoneFilter || run.milestone_id === milestoneFilter;
-      return tabMatch && searchMatch && msMatch;
+      const resultMatch =
+        resultFilter === 'all' ? true
+        : resultFilter === 'has_failures' ? run.failed > 0
+        : resultFilter === 'all_passed' ? run.failed === 0 && run.blocked === 0
+        : resultFilter === 'has_blocked' ? run.blocked > 0
+        : true;
+      return tabMatch && searchMatch && msMatch && resultMatch;
     });
   };
 
@@ -1144,6 +1152,9 @@ export default function ProjectRunsPage() {
       }
       if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
         setShowSortMenu(false);
+      }
+      if (resultFilterRef.current && !resultFilterRef.current.contains(event.target as Node)) {
+        setShowResultFilter(false);
       }
     };
 
@@ -1448,7 +1459,6 @@ export default function ProjectRunsPage() {
               { key: 'all' as const, label: 'All', icon: 'ri-list-check-3', iconColor: '#6366F1', count: testRuns.length },
               { key: 'active' as const, label: 'Active', icon: 'ri-play-circle-fill', iconColor: '#3B82F6', count: testRuns.filter(r => ['new','in_progress','paused','under_review'].includes(r.status)).length },
               { key: 'completed' as const, label: 'Completed', icon: 'ri-checkbox-circle-fill', iconColor: '#22C55E', count: testRuns.filter(r => r.status === 'completed').length },
-              { key: 'failed' as const, label: 'Failed', icon: 'ri-close-circle-fill', iconColor: '#EF4444', count: testRuns.filter(r => r.status === 'completed' && r.failed > 0).length },
             ]).map(tab => (
               <button
                 key={tab.key}
@@ -1550,6 +1560,35 @@ export default function ProjectRunsPage() {
                 </div>
               )}
             </div>
+            <div className="relative" ref={resultFilterRef}>
+              <button
+                onClick={() => setShowResultFilter(p => !p)}
+                className={`flex items-center gap-1.5 px-3 py-[0.3125rem] border rounded-md text-[0.8125rem] cursor-pointer whitespace-nowrap transition-colors ${resultFilter !== 'all' ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC]'}`}
+              >
+                <i className="ri-filter-3-line text-sm"></i>
+                {resultFilter === 'all' ? 'Result Filter' : resultFilter === 'has_failures' ? 'Has Failures' : resultFilter === 'all_passed' ? 'All Passed' : 'Has Blocked'}
+                {resultFilter !== 'all' ? (
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setResultFilter('all'); }} className="ml-0.5 text-indigo-400 hover:text-indigo-700"><i className="ri-close-line text-xs"></i></button>
+                ) : (
+                  <i className="ri-arrow-down-s-line text-xs text-[#94A3B8]"></i>
+                )}
+              </button>
+              {showResultFilter && (
+                <div className="absolute top-full mt-1 left-0 bg-white rounded-lg border border-[#E2E8F0] shadow-lg z-30 py-1 min-w-[180px]">
+                  {([
+                    { key: 'all' as const, label: 'All Results' },
+                    { key: 'has_failures' as const, label: 'Has Failures' },
+                    { key: 'all_passed' as const, label: 'All Passed' },
+                    { key: 'has_blocked' as const, label: 'Has Blocked' },
+                  ]).map(opt => (
+                    <button key={opt.key} onClick={() => { setResultFilter(opt.key); setShowResultFilter(false); }} className={`w-full text-left px-3 py-2 text-[0.8125rem] hover:bg-indigo-50 flex items-center justify-between ${resultFilter === opt.key ? 'text-indigo-600 font-medium' : 'text-[#475569]'}`}>
+                      {opt.label}
+                      {resultFilter === opt.key && <i className="ri-check-line text-indigo-500"></i>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="relative" ref={sortMenuRef}>
               <button
                 onClick={() => setShowSortMenu(p => !p)}
@@ -1593,7 +1632,7 @@ export default function ProjectRunsPage() {
                   </div>
                 );
               }
-              const useGroups = activeTab === 'all' || activeTab === 'active';
+              const useGroups = activeTab !== 'completed';
               if (useGroups) {
                 const groups = PRIORITY_ORDER.map(p => ({ priority: p, runs: filteredRuns.filter(r => getRunPriority(r) === p) })).filter(g => g.runs.length > 0);
                 return (
