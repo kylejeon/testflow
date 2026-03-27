@@ -2460,14 +2460,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                           </div>
                           <div className="flex-1">
                             {/<[^>]+>/.test(s.step) ? (
-                              <div className="text-[0.75rem] text-[#334155] leading-[1.5] prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: s.step }} />
+                              <div className="text-[0.8rem] text-[#334155] leading-[1.5] prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: s.step }} />
                             ) : (
-                              <p className="text-[0.75rem] text-[#334155] whitespace-pre-wrap leading-[1.5]">{s.step}</p>
+                              <p className="text-[0.8rem] text-[#334155] whitespace-pre-wrap leading-[1.5]">{s.step}</p>
                             )}
                             {s.expectedResult && (
                               <div className="mt-[0.25rem] flex items-start gap-1 leading-[1.4]">
-                                <span className="text-[0.75rem] text-[#16A34A] flex-shrink-0 font-medium">✓</span>
-                                <span className="text-[0.75rem] text-[#16A34A]">{htmlToText(s.expectedResult)}</span>
+                                <span className="text-[0.8rem] text-[#16A34A] flex-shrink-0 font-medium">✓</span>
+                                <span className="text-[0.8rem] text-[#16A34A]">{htmlToText(s.expectedResult)}</span>
                               </div>
                             )}
                           </div>

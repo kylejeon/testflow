@@ -203,7 +203,7 @@ function StepRow({ step, expectedResult, index, result, showResultButtons, onSte
       <div className="flex-1 min-w-0">
         {isHtml ? (
           <div
-            className="text-xs text-gray-700 leading-relaxed prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+            className="text-[0.8rem] text-gray-700 leading-relaxed prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
             dangerouslySetInnerHTML={{ __html: step }}
             onClick={(e) => {
               const t = e.target as HTMLElement;
@@ -214,12 +214,12 @@ function StepRow({ step, expectedResult, index, result, showResultButtons, onSte
             }}
           />
         ) : (
-          <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{step}</p>
+          <p className="text-[0.8rem] text-gray-700 leading-relaxed whitespace-pre-wrap">{step}</p>
         )}
         {expectedResult && (
           <div className="mt-1 flex items-start gap-1">
-            <i className="ri-checkbox-circle-line text-green-500 text-xs flex-shrink-0 mt-[0.05rem]" />
-            <p className="text-xs text-green-600 leading-relaxed">
+            <i className="ri-checkbox-circle-line text-green-500 text-[0.8rem] flex-shrink-0 mt-[0.05rem]" />
+            <p className="text-[0.8rem] text-green-600 leading-relaxed">
               {expectedResult.replace(/<[^>]*>/g, '').trim()}
             </p>
           </div>
