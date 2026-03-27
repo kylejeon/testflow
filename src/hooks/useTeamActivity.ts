@@ -141,7 +141,7 @@ export function useTeamActivity() {
         runIds.length > 0
           ? supabase
               .from('test_results')
-              .select('id, run_id, test_case_id, status, executed_by, created_at')
+              .select('id, run_id, test_case_id, status, author, created_at')
               .in('run_id', runIds)
               .gte('created_at', oneYearAgo)
               .order('created_at', { ascending: false })
@@ -201,9 +201,13 @@ export function useTeamActivity() {
 
       const memberList = Object.values(memberMap);
 
-      // Build a map: profile UUID → name (for matching created_by in test_cases)
+      // Build lookup maps: email/name → userId (for matching author field in test_results)
       const profileByEmail: Record<string, string> = {};
-      memberList.forEach(m => { if (m.email) profileByEmail[m.email] = m.userId; });
+      const memberByName: Record<string, string> = {};
+      memberList.forEach(m => {
+        if (m.email) profileByEmail[m.email] = m.userId;
+        if (m.name) memberByName[m.name] = m.userId;
+      });
 
       // Per-member stats today
       const memberStatsToday: Record<string, { created: number; executed: number; failed: number; lastAction: string; lastTime: string }> = {};
@@ -224,11 +228,10 @@ export function useTeamActivity() {
         }
       });
 
-      // Test results today — match executed_by (user ID) to member
-      const resultsToday = (recentResults ?? []).filter(r => r.created_at >= todayISO);
-      resultsToday.forEach(r => {
-        // executed_by stores the user UUID directly
-        const uid = r.executed_by ?? null;
+      // Test results today — match author (name or email) to member
+      const resultsToday = (recentResults ?? []).filter((r: any) => r.created_at >= todayISO);
+      resultsToday.forEach((r: any) => {
+        const uid = r.author ? (profileByEmail[r.author] ?? memberByName[r.author] ?? null) : null;
         if (uid && memberStatsToday[uid]) {
           memberStatsToday[uid].executed++;
           if (r.status === 'failed') memberStatsToday[uid].failed++;
@@ -274,8 +277,18 @@ export function useTeamActivity() {
       const tcFailedToday = resultsToday.filter(r => r.status === 'failed').length;
       const tcBlockedToday = resultsToday.filter(r => r.status === 'blocked').length;
 
-      // resolved_at column not yet migrated — skip avg response time calc
-      const avgResponseTimeHours: number | null = null;
+      // Avg Response Time: average span (first result → last result) per run with results today
+      const todayRunIds = [...new Set(resultsToday.map((r: any) => r.run_id as string))];
+      let responseTotal = 0;
+      let responseCount = 0;
+      todayRunIds.forEach((runId: string) => {
+        const runResults = resultsToday.filter((r: any) => r.run_id === runId);
+        if (runResults.length < 2) return;
+        const times = runResults.map((r: any) => new Date(r.created_at).getTime());
+        const spanHours = (Math.max(...times) - Math.min(...times)) / 3600000;
+        if (spanHours > 0) { responseTotal += spanHours; responseCount++; }
+      });
+      const avgResponseTimeHours: number | null = responseCount > 0 ? parseFloat((responseTotal / responseCount).toFixed(1)) : null;
 
       // Heatmap: 52 weeks × 7 days (Sun–Sat), GitHub-style
       const now = new Date();
@@ -344,9 +357,9 @@ export function useTeamActivity() {
       });
 
       // From test_results (executed)
-      (recentResults ?? []).slice(0, 30).forEach((r, idx) => {
-        const authorUid = r.executed_by ?? null;
-        const memberIdx = memberList.findIndex(m => m.userId === authorUid);
+      (recentResults ?? []).slice(0, 30).forEach((r: any, idx: number) => {
+        const authorUid = r.author ? (profileByEmail[r.author] ?? memberByName[r.author] ?? null) : null;
+        const memberIdx = authorUid ? memberList.findIndex(m => m.userId === authorUid) : -1;
         const member = memberList[memberIdx];
         const actorName = member?.name || 'Someone';
         const projectId = runProjectMap[r.run_id];
