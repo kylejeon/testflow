@@ -117,6 +117,18 @@ export default function SessionDetail() {
   const [savingLog, setSavingLog] = useState(false);
   const [showCloseConfirmModal, setShowCloseConfirmModal] = useState(false);
 
+  // Entry form redesign state
+  const [activeForm, setActiveForm] = useState<'note' | 'passed' | 'failed' | 'blocked' | null>(null);
+  const [noteFormContent, setNoteFormContent] = useState('');
+  const [bugTitle, setBugTitle] = useState('');
+  const [bugDesc, setBugDesc] = useState('');
+  const [bugSeverity, setBugSeverity] = useState<'critical' | 'major' | 'minor' | 'trivial'>('major');
+  const [stepAction, setStepAction] = useState('');
+  const [stepExpected, setStepExpected] = useState('');
+  const [stepActual, setStepActual] = useState('');
+  // Timeline tooltip
+  const [tooltipInfo, setTooltipInfo] = useState<{ label: string; time: string; x: number; y: number } | null>(null);
+
   useEffect(() => {
     fetchCurrentUser();
     fetchSessionData();
@@ -320,28 +332,63 @@ export default function SessionDetail() {
   };
 
   const handleAddLog = async () => {
-    if (!logContent.trim()) return;
+    let content = '';
+    let type: 'note' | 'passed' | 'failed' | 'blocked';
+
+    if (!activeForm) {
+      if (!noteFormContent.trim()) return;
+      type = 'note';
+      content = noteFormContent;
+    } else if (activeForm === 'note' || activeForm === 'blocked') {
+      if (!noteFormContent.trim()) return;
+      type = activeForm;
+      content = noteFormContent;
+    } else if (activeForm === 'failed') {
+      if (!bugTitle.trim()) return;
+      const descHtml = bugDesc.trim() ? `<p>${bugDesc}</p>` : '';
+      content = `<div data-priority="${bugSeverity}"><strong>${bugTitle}</strong>${descHtml}</div>`;
+      type = 'failed';
+    } else {
+      if (!stepAction.trim()) return;
+      const parts: string[] = [`<strong>Step:</strong> ${stepAction}`];
+      if (stepExpected.trim()) parts.push(`<strong>Expected:</strong> ${stepExpected}`);
+      if (stepActual.trim()) parts.push(`<strong>Actual:</strong> ${stepActual}`);
+      content = parts.join('<br/>');
+      type = 'passed';
+    }
 
     try {
       const { error } = await supabase
         .from('session_logs')
         .insert({
           session_id: sessionId,
-          content: logContent,
-          type: logType,
+          content,
+          type,
           issues: linkedIssues.length > 0 ? linkedIssues : null,
           attachments: attachments.length > 0 ? attachments.map(a => a.url) : null,
         });
 
       if (error) throw error;
 
-      setLogContent('');
+      setNoteFormContent('');
+      setBugTitle('');
+      setBugDesc('');
+      setBugSeverity('major');
+      setStepAction('');
+      setStepExpected('');
+      setStepActual('');
+      setActiveForm(null);
       setLinkedIssues([]);
       setAttachments([]);
       fetchSessionData();
     } catch (error) {
       console.error('Error adding log:', error);
     }
+  };
+
+  const parseBugPriority = (content: string): string => {
+    const match = content.match(/data-priority="([^"]+)"/);
+    return match?.[1] || 'none';
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -997,42 +1044,148 @@ export default function SessionDetail() {
             </div>
 
             {/* Entry Bottom Bar */}
-            <div className="bg-white border-t border-[#E2E8F0] px-4 py-3 flex-shrink-0">
-              {/* Linked issues / attachments staging */}
-              {(linkedIssues.length > 0 || attachments.length > 0) && (
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {linkedIssues.map((k) => (
-                    <div key={k} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-200 text-[0.6875rem] font-medium">
-                      <i className="ri-link text-xs" />{k}
-                      <button onClick={() => handleRemoveLinkedIssue(k)} className="ml-0.5 cursor-pointer hover:text-blue-900"><i className="ri-close-line text-xs" /></button>
+            <div className="flex-shrink-0">
+              <input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} className="hidden" />
+
+              {/* Type-specific expanded form */}
+              {activeForm && (
+                <div className="bg-white border-t border-[#E2E8F0] px-5 py-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span
+                      className="text-[0.6875rem] font-bold uppercase tracking-wide flex items-center gap-1.5"
+                      style={{ color: logTypeConfig[activeForm]?.color }}
+                    >
+                      <i className={logTypeConfig[activeForm]?.icon} />
+                      {logTypeConfig[activeForm]?.label}
+                    </span>
+                    <button
+                      onClick={() => { setActiveForm(null); setNoteFormContent(''); }}
+                      className="w-6 h-6 bg-[#F1F5F9] hover:bg-[#E2E8F0] rounded-[4px] flex items-center justify-center text-[#64748B] cursor-pointer"
+                    >
+                      <i className="ri-close-line text-sm" />
+                    </button>
+                  </div>
+
+                  {/* Note / Observation: single-line input */}
+                  {(activeForm === 'note' || activeForm === 'blocked') && (
+                    <input
+                      value={noteFormContent}
+                      onChange={(e) => setNoteFormContent(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && noteFormContent.trim()) handleAddLog(); }}
+                      placeholder={activeForm === 'note' ? 'Add a note...' : 'Add an observation...'}
+                      autoFocus
+                      className="w-full px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#6366F1] focus:bg-white placeholder:text-[#94A3B8]"
+                    />
+                  )}
+
+                  {/* Bug: expanded form */}
+                  {activeForm === 'failed' && (
+                    <div className="flex flex-col gap-2">
+                      <input
+                        value={bugTitle}
+                        onChange={(e) => setBugTitle(e.target.value)}
+                        placeholder="Bug title..."
+                        autoFocus
+                        className="w-full px-2.5 py-2 border border-[#FECACA] rounded-[6px] bg-[#FEF2F2] text-[0.8125rem] text-[#0F172A] font-semibold focus:outline-none focus:border-[#EF4444] focus:bg-white placeholder:text-[#F87171]"
+                      />
+                      <textarea
+                        value={bugDesc}
+                        onChange={(e) => setBugDesc(e.target.value)}
+                        placeholder="Description (optional)"
+                        rows={2}
+                        className="w-full px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] resize-none focus:outline-none focus:border-[#EF4444] focus:bg-white placeholder:text-[#94A3B8]"
+                      />
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          {(['critical', 'major', 'minor', 'trivial'] as const).map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => setBugSeverity(s)}
+                              className={`px-2.5 py-[3px] text-[0.6875rem] font-semibold rounded-[4px] border transition-all cursor-pointer ${
+                                bugSeverity === s
+                                  ? s === 'critical' ? 'bg-[#DC2626] border-[#DC2626] text-white'
+                                  : s === 'major' ? 'bg-[#F59E0B] border-[#F59E0B] text-white'
+                                  : s === 'minor' ? 'bg-[#3B82F6] border-[#3B82F6] text-white'
+                                  : 'bg-[#94A3B8] border-[#94A3B8] text-white'
+                                  : 'bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#94A3B8]'
+                              }`}
+                            >
+                              {s.charAt(0).toUpperCase() + s.slice(1)}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex gap-1 ml-auto">
+                          <button onClick={handleAttachClick} disabled={uploadingFiles} className="flex items-center gap-1 px-2 py-[3px] border border-[#E2E8F0] rounded-[4px] text-[0.75rem] text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer disabled:opacity-50">
+                            {uploadingFiles ? <><i className="ri-loader-4-line animate-spin text-xs" />Uploading</> : <><i className="ri-attachment-2 text-xs" />Attach</>}
+                          </button>
+                          <button onClick={handleScreenshot} disabled={uploadingFiles} className="flex items-center gap-1 px-2 py-[3px] border border-[#E2E8F0] rounded-[4px] text-[0.75rem] text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer disabled:opacity-50">
+                            <i className="ri-screenshot-2-line text-xs" />Screenshot
+                          </button>
+                        </div>
+                      </div>
+                      {(linkedIssues.length > 0 || attachments.length > 0) && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {linkedIssues.map((k) => (
+                            <div key={k} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-200 text-[0.6875rem] font-medium">
+                              <i className="ri-link text-xs" />{k}
+                              <button onClick={() => handleRemoveLinkedIssue(k)} className="ml-0.5 cursor-pointer hover:text-blue-900"><i className="ri-close-line text-xs" /></button>
+                            </div>
+                          ))}
+                          {attachments.map((f, i) => (
+                            <div key={i} className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-[#F8FAFC] text-[#475569] rounded border border-[#E2E8F0] text-[0.6875rem] font-medium">
+                              {isImageFile(f.type) ? <img src={f.url} alt={f.name} className="w-5 h-5 object-cover rounded cursor-pointer" onClick={() => handleImagePreview(f.url)} /> : <i className="ri-file-line text-xs" />}
+                              <span className="max-w-[100px] truncate">{f.name}</span>
+                              <button onClick={() => handleRemoveAttachment(i)} className="cursor-pointer hover:text-gray-700"><i className="ri-close-line text-xs" /></button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                  {attachments.map((f, i) => (
-                    <div key={i} className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-[#F8FAFC] text-[#475569] rounded border border-[#E2E8F0] text-[0.6875rem] font-medium">
-                      {isImageFile(f.type) ? <img src={f.url} alt={f.name} className="w-5 h-5 object-cover rounded cursor-pointer" onClick={() => handleImagePreview(f.url)} /> : <i className="ri-file-line text-xs" />}
-                      <span className="max-w-[100px] truncate">{f.name}</span>
-                      <button onClick={() => handleRemoveAttachment(i)} className="cursor-pointer hover:text-gray-700"><i className="ri-close-line text-xs" /></button>
+                  )}
+
+                  {/* Test Step: 3-field form */}
+                  {activeForm === 'passed' && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-start gap-2">
+                        <span className="w-16 flex-shrink-0 text-[0.6875rem] font-bold text-[#7C3AED] uppercase tracking-wide pt-[9px]">Step</span>
+                        <input autoFocus value={stepAction} onChange={(e) => setStepAction(e.target.value)} placeholder="What was done..." className="flex-1 px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#7C3AED] focus:bg-white placeholder:text-[#94A3B8]" />
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="w-16 flex-shrink-0 text-[0.6875rem] font-bold text-[#7C3AED] uppercase tracking-wide pt-[9px]">Expected</span>
+                        <input value={stepExpected} onChange={(e) => setStepExpected(e.target.value)} placeholder="Expected result..." className="flex-1 px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#7C3AED] focus:bg-white placeholder:text-[#94A3B8]" />
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="w-16 flex-shrink-0 text-[0.6875rem] font-bold text-[#7C3AED] uppercase tracking-wide pt-[9px]">Actual</span>
+                        <input value={stepActual} onChange={(e) => setStepActual(e.target.value)} placeholder="Actual result..." className="flex-1 px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#7C3AED] focus:bg-white placeholder:text-[#94A3B8]" />
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
-              <div className="flex items-center gap-2">
-                <QuillEditor value={logContent} onChange={setLogContent} placeholder="Write a note, bug, or observation..." />
-                <input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} className="hidden" />
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                {/* Type buttons */}
-                <div className="flex items-center gap-1">
+
+              {/* Main bar */}
+              <div className="bg-white border-t border-[#E2E8F0] px-5 py-3 flex items-center gap-2">
+                {!activeForm && (
+                  <input
+                    value={noteFormContent}
+                    onChange={(e) => setNoteFormContent(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && noteFormContent.trim()) handleAddLog(); }}
+                    placeholder="Select a type or press N / B / O / T"
+                    className="flex-1 px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#6366F1] focus:bg-white placeholder:text-[#94A3B8]"
+                  />
+                )}
+                {activeForm && <div className="flex-1" />}
+                <div className="flex gap-1">
                   {entryTypeButtons.map(({ type, label, icon }) => (
                     <button
                       key={type}
-                      onClick={() => setLogType(type)}
-                      className={`flex items-center gap-1 px-[0.625rem] py-[0.3125rem] border rounded-[6px] text-[0.75rem] font-semibold cursor-pointer transition-colors ${
-                        logType === type
-                          ? type === 'note'    ? 'bg-[#EEF2FF] border-[#6366F1] text-[#4338CA]' :
-                            type === 'failed'  ? 'bg-[#FEF2F2] border-[#EF4444] text-[#DC2626]' :
-                            type === 'blocked' ? 'bg-[#FFFBEB] border-[#F59E0B] text-[#D97706]' :
-                                                 'bg-[#F5F3FF] border-[#7C3AED] text-[#7C3AED]'
+                      onClick={() => { setActiveForm(activeForm === type ? null : type); setNoteFormContent(''); }}
+                      className={`flex items-center gap-1 px-2.5 py-[5px] border rounded-[6px] text-[0.75rem] font-semibold cursor-pointer transition-colors ${
+                        activeForm === type
+                          ? type === 'note'    ? 'bg-[#EEF2FF] border-[#6366F1] text-[#4338CA]'
+                          : type === 'failed'  ? 'bg-[#FEF2F2] border-[#EF4444] text-[#DC2626]'
+                          : type === 'blocked' ? 'bg-[#FFFBEB] border-[#F59E0B] text-[#D97706]'
+                          :                      'bg-[#F5F3FF] border-[#7C3AED] text-[#7C3AED]'
                           : 'bg-white border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]'
                       }`}
                     >
@@ -1040,37 +1193,14 @@ export default function SessionDetail() {
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-1 ml-1">
-                  {/* Issues */}
-                  <div className="relative">
-                    <button onClick={() => setShowIssuesDropdown(!showIssuesDropdown)} className="flex items-center gap-1 px-2 py-[0.3125rem] border border-[#E2E8F0] rounded-[6px] text-[0.75rem] text-[#64748B] hover:bg-[#F8FAFC] cursor-pointer whitespace-nowrap">
-                      <i className="ri-link text-[0.75rem]" />Issues
-                    </button>
-                    {showIssuesDropdown && (
-                      <>
-                        <div className="fixed inset-0 z-10" onClick={() => setShowIssuesDropdown(false)} />
-                        <div className="absolute left-0 bottom-8 w-36 bg-white border border-[#E2E8F0] rounded-lg shadow-lg z-20">
-                          <button onClick={() => { setShowIssuesDropdown(false); setShowLinkIssueModal(true); }} className="w-full px-3 py-2 text-[0.8125rem] text-left hover:bg-[#F8FAFC] flex items-center gap-2 cursor-pointer">
-                            <i className="ri-link text-sm" />Link Issue
-                          </button>
-                          <button onClick={() => { setShowIssuesDropdown(false); if (!jiraSettings?.domain || !jiraSettings?.email || !jiraSettings?.api_token) { if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) navigate('/settings'); return; } setShowAddIssueModal(true); }} className="w-full px-3 py-2 text-[0.8125rem] text-left hover:bg-[#F8FAFC] flex items-center gap-2 cursor-pointer border-t border-[#F1F5F9]">
-                            <i className="ri-add-line text-sm" />Add Issue
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <button onClick={handleAttachClick} disabled={uploadingFiles} className="flex items-center gap-1 px-2 py-[0.3125rem] border border-[#E2E8F0] rounded-[6px] text-[0.75rem] text-[#64748B] hover:bg-[#F8FAFC] cursor-pointer whitespace-nowrap disabled:opacity-50">
-                    {uploadingFiles ? <><i className="ri-loader-4-line animate-spin text-[0.75rem]" />Uploading</> : <><i className="ri-attachment-2 text-[0.75rem]" />Attach</>}
-                  </button>
-                  <button onClick={handleScreenshot} disabled={uploadingFiles} className="flex items-center gap-1 px-2 py-[0.3125rem] border border-[#E2E8F0] rounded-[6px] text-[0.75rem] text-[#64748B] hover:bg-[#F8FAFC] cursor-pointer whitespace-nowrap disabled:opacity-50">
-                    <i className="ri-screenshot-2-line text-[0.75rem]" />Screenshot
-                  </button>
-                </div>
                 <button
                   onClick={handleAddLog}
-                  disabled={!logContent.trim()}
-                  className="ml-auto px-4 py-[0.375rem] bg-[#6366F1] text-white text-[0.8125rem] font-semibold rounded-[6px] hover:bg-[#4F46E5] disabled:bg-[#C7D2FE] disabled:cursor-not-allowed cursor-pointer whitespace-nowrap transition-colors"
+                  disabled={
+                    activeForm === 'failed' ? !bugTitle.trim() :
+                    activeForm === 'passed' ? !stepAction.trim() :
+                    !noteFormContent.trim()
+                  }
+                  className="px-4 py-[6px] bg-[#6366F1] text-white text-[0.8125rem] font-semibold rounded-[6px] hover:bg-[#4F46E5] disabled:bg-[#C7D2FE] disabled:cursor-not-allowed cursor-pointer whitespace-nowrap transition-colors"
                 >
                   Add
                 </button>
@@ -1082,13 +1212,17 @@ export default function SessionDetail() {
           <div className="w-[300px] flex-shrink-0 border-l border-[#E2E8F0] bg-white overflow-y-auto">
             {/* About Panel */}
             <div className="p-4 border-b border-[#E2E8F0]">
-              <div className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide mb-3">About</div>
+              <div className="text-[0.9375rem] font-semibold text-[#0F172A] mb-3">About</div>
               <div className="space-y-3 text-[0.8125rem]">
                 <div className="flex items-center justify-between">
                   <span className="text-[#94A3B8] font-medium">Status</span>
                   <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[0.75rem] font-semibold ${statusInfo.pill}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />{statusInfo.label}
                   </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#94A3B8] font-medium">Duration</span>
+                  <span className="text-[#0F172A] font-mono text-[0.75rem]">{elapsedTime}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#94A3B8] font-medium">Created</span>
@@ -1136,7 +1270,7 @@ export default function SessionDetail() {
 
             {/* Activity Panel */}
             <div className="p-4">
-              <div className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide mb-3">Activity</div>
+              <div className="text-[0.9375rem] font-semibold text-[#0F172A] mb-3">Activity</div>
 
               {/* Timer */}
               <div className="mb-4 text-center py-3 bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0]">
@@ -1164,7 +1298,20 @@ export default function SessionDetail() {
                 <div className="bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0] p-2.5">
                   <div className="text-[0.6875rem] text-[#94A3B8] font-semibold uppercase">Bugs</div>
                   <div className="text-[0.875rem] font-bold text-[#0F172A] mt-0.5">{logs.filter(l => l.type === 'failed').length}</div>
-                  <div className="text-[0.6875rem] text-[#64748B] mt-0.5">Total reported</div>
+                  <div className="text-[0.6875rem] text-[#64748B] mt-0.5">
+                    {(() => {
+                      const bugLogs = logs.filter(l => l.type === 'failed');
+                      const counts = { critical: 0, major: 0, minor: 0, trivial: 0 };
+                      bugLogs.forEach(l => {
+                        const p = parseBugPriority(l.content) as keyof typeof counts;
+                        if (p in counts) counts[p]++;
+                      });
+                      const parts = (['critical', 'major', 'minor'] as const)
+                        .filter(k => counts[k] > 0)
+                        .map(k => `${counts[k]} ${k.charAt(0).toUpperCase() + k.slice(1)}`);
+                      return parts.length > 0 ? parts.join(' · ') : 'Total reported';
+                    })()}
+                  </div>
                 </div>
               </div>
 
@@ -1178,9 +1325,10 @@ export default function SessionDetail() {
                       return (
                         <div
                           key={log.id}
-                          className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-[1.5px] border-white"
+                          className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-[1.5px] border-white cursor-pointer"
                           style={{ left: `${pos}%`, background: dotColor, boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
-                          title={`${logTypeConfig[log.type]?.label || log.type} - ${new Date(log.created_at).toLocaleTimeString()}`}
+                          onMouseEnter={(e) => setTooltipInfo({ label: logTypeConfig[log.type]?.label || log.type, time: formatTime(log.created_at), x: e.clientX, y: e.clientY })}
+                          onMouseLeave={() => setTooltipInfo(null)}
                         />
                       );
                     })}
@@ -1238,6 +1386,16 @@ export default function SessionDetail() {
             </div>
           </div>
         </div>
+
+        {/* Timeline Tooltip */}
+        {tooltipInfo && (
+          <div
+            className="fixed z-50 px-2 py-1 bg-[#1E293B] text-white text-[0.75rem] font-medium rounded-[4px] pointer-events-none shadow-lg"
+            style={{ left: tooltipInfo.x + 10, top: tooltipInfo.y - 34 }}
+          >
+            {tooltipInfo.label} · {tooltipInfo.time}
+          </div>
+        )}
 
         {/* Edit Modal */}
         {session && (
@@ -1615,9 +1773,9 @@ export default function SessionDetail() {
                 <div className="flex items-center justify-center w-12 h-12 bg-red-50 rounded-full mx-auto mb-4">
                   <i className="ri-close-circle-line text-2xl text-red-500"></i>
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900 text-center mb-2">세션 종료</h2>
+                <h2 className="text-lg font-semibold text-gray-900 text-center mb-2">Close Session</h2>
                 <p className="text-sm text-gray-500 text-center">
-                  이 세션을 종료하시겠습니까?<br />종료 후에는 다시 시작할 수 없습니다.
+                  Are you sure you want to close this session?<br />This action cannot be undone.
                 </p>
               </div>
               <div className="flex items-center gap-3 px-6 pb-6">
@@ -1625,13 +1783,13 @@ export default function SessionDetail() {
                   onClick={() => setShowCloseConfirmModal(false)}
                   className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer whitespace-nowrap"
                 >
-                  취소
+                  Cancel
                 </button>
                 <button
                   onClick={handleCloseSession}
                   className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 cursor-pointer whitespace-nowrap"
                 >
-                  종료하기
+                  Close Session
                 </button>
               </div>
             </div>
