@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { createNotification } from '../../../hooks/useNotifications';
 import { triggerWebhook } from '../../../hooks/useWebhooks';
+import { sendLoopsEvent } from '../../../lib/loops';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -158,8 +159,16 @@ export default function InviteMemberModal({
           role,
         });
 
+        // Send invitation email via Loops
+        sendLoopsEvent(email, 'team_invitation', {
+          projectName: projectData?.name ?? '',
+          role,
+          inviterName: inviterProfile?.full_name || inviterProfile?.email || 'Someone',
+          projectUrl: `${window.location.origin}/projects/${projectId}`,
+        });
+
         setInvitationType('existing');
-        setSuccess(`${email} has been added to the project.`);
+        setSuccess(`${email} has been added to the project and notified by email.`);
         
         setEmail('');
         setFullName('');
@@ -197,9 +206,18 @@ export default function InviteMemberModal({
           throw new Error(result.error || 'Failed to create invitation.');
         }
 
+        // Send invitation email with invite link via Loops
+        sendLoopsEvent(email, 'team_invitation', {
+          projectName: result.projectName ?? '',
+          role,
+          inviterName: result.inviterName ?? 'Someone',
+          inviteUrl: result.inviteUrl,
+          projectUrl: `${window.location.origin}/projects/${projectId}`,
+        });
+
         setInvitationType('new');
         setInviteLink(result.inviteUrl);
-        setSuccess('Invite link created! Copy the link below and share it with your teammate.');
+        setSuccess('Invitation sent! An email has been sent to your teammate. You can also copy the link below to share directly.');
       }
     } catch (err: any) {
       console.error('Invitation error:', err);
@@ -333,7 +351,7 @@ export default function InviteMemberModal({
                     <p className="text-sm text-indigo-800 font-semibold mb-2">{success}</p>
                     <p className="text-xs text-indigo-700 mb-3">
                       <i className="ri-information-line mr-1"></i>
-                      Auto email sending is disabled. Please copy the link below and share it directly.
+                      You can also copy the link below to share it directly.
                     </p>
                   </div>
                 </div>
