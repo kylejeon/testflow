@@ -1218,33 +1218,6 @@ def pytest_sessionfinish(session, exitstatus):
                         </div>
                       </div>
 
-                      {/* Profile Section */}
-                      <div className="pt-6 border-t border-gray-200">
-                        <h2 className="text-xl font-bold text-gray-900 mb-2">Profile Information</h2>
-                        <p className="text-gray-600 mb-4">View your account information</p>
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gray-50 border-2 border-gray-200 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-                            {userProfile?.avatar_emoji || '🐶'}
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-500 mb-1">Name</label>
-                              <p className="text-gray-900 font-medium">{userProfile?.full_name || '—'}</p>
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
-                              <p className="text-gray-900 font-medium">{userProfile?.email || '—'}</p>
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => setActiveTab('profile')}
-                          className="mt-4 px-4 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
-                        >
-                          <i className="ri-edit-line"></i>
-                          Edit Profile &amp; Password
-                        </button>
-                      </div>
                     </div>
                   )}
 
