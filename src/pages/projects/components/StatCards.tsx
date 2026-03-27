@@ -61,7 +61,7 @@ function Sparkline({ data, color }: { data: number[]; color: 'green' | 'amber' |
       width={W}
       height={H}
       preserveAspectRatio="none"
-      style={{ flexShrink: 0 }}
+      style={{ flexShrink: 0, display: 'block' }}
     >
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -163,7 +163,7 @@ function StatCard({
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.625rem',
+        gap: '0.5rem',
         boxShadow: hovered ? '0 4px 16px rgba(99,102,241,0.08)' : 'none',
         transform: hovered ? 'translateY(-1px)' : 'none',
         animation: `fadeInUp 0.3s ease-out ${delay}ms backwards`,
@@ -184,27 +184,6 @@ function StatCard({
   );
 }
 
-// ── Shared sub-components ─────────────────────────────────────────────────────
-function ScTop({ icon, label, iconClass }: { icon: string; label: string; iconClass: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-      <div className={`sc-icon ${iconClass}`} style={{
-        width: '2rem', height: '2rem', borderRadius: '0.5rem',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <i className={icon} style={{ fontSize: '1rem' }} />
-      </div>
-      <span style={{
-        fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase',
-        letterSpacing: '0.06em', color: '#94A3B8',
-      }}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
 // ── Props ─────────────────────────────────────────────────────────────────────
 export interface StatCardsData {
   totalTestCases: number;
@@ -217,6 +196,47 @@ export interface StatCardsData {
   passRateSparkline: number[];
   teamMemberCount: number;
   teamMembers: AvatarStackMember[];
+}
+
+// ── Shared row components ─────────────────────────────────────────────────────
+
+/** Row 1: icon + label — identical across all cards */
+function LabelRow({ icon, label, iconBg, iconColor }: { icon: string; label: string; iconBg: string; iconColor: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div style={{
+        background: iconBg, color: iconColor,
+        width: '2rem', height: '2rem', borderRadius: '0.5rem',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        <i className={icon} style={{ fontSize: '1rem' }} />
+      </div>
+      <span style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8' }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** Row 2: the big number — fixed height so all cards align */
+const NUMBER_ROW_HEIGHT = '2.25rem';
+
+function NumberRow({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ height: NUMBER_ROW_HEIGHT, display: 'flex', alignItems: 'center' }}>
+      {children}
+    </div>
+  );
+}
+
+/** Row 3: subtitle text (left) + optional accessory (right) */
+function SubRow({ left, right }: { left: React.ReactNode; right?: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '1.5rem' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>{left}</div>
+      {right && <div style={{ flexShrink: 0, marginLeft: '0.5rem', display: 'flex', alignItems: 'center' }}>{right}</div>}
+    </div>
+  );
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -232,14 +252,12 @@ export default function StatCards({ data }: { data: StatCardsData }) {
   const prCardAccent = pr >= 90 ? '#16A34A' : pr >= 70 ? '#F59E0B' : '#EF4444';
   const prDeltaUp = (data.passRateDelta ?? 0) >= 0;
 
-  // Icon bg/color classes injected via inline styles to match design
-  const iconStyle = {
-    indigo: { background: 'rgba(99,102,241,0.1)', color: '#6366F1' },
-    emerald: { background: 'rgba(16,185,129,0.1)', color: '#10B981' },
-    green: { background: 'rgba(22,163,74,0.1)', color: '#16A34A' },
-    amber: { background: 'rgba(245,158,11,0.1)', color: '#F59E0B' },
-    red: { background: 'rgba(239,68,68,0.1)', color: '#EF4444' },
-    violet: { background: 'rgba(139,92,246,0.1)', color: '#8B5CF6' },
+  const numStyle: React.CSSProperties = {
+    fontSize: '1.75rem', fontWeight: 800, color: '#0F172A',
+    lineHeight: 1, letterSpacing: '-0.025em',
+  };
+  const subTextStyle: React.CSSProperties = {
+    fontSize: '0.6875rem', color: '#94A3B8', fontWeight: 500,
   };
 
   return (
@@ -253,125 +271,92 @@ export default function StatCards({ data }: { data: StatCardsData }) {
     >
       {/* ── Card 1: Total Test Cases ── */}
       <StatCard accent="#6366F1" delay={0} onClick={() => navigate('/testcases-overview')}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{ ...iconStyle.indigo, width: '2rem', height: '2rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <i className="ri-file-list-3-line" style={{ fontSize: '1rem' }} />
-          </div>
-          <span style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8' }}>
-            Total Test Cases
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flex: 1 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-            <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', lineHeight: 1, letterSpacing: '-0.025em' }}>
-              {tcVal}
-            </span>
-            {data.testCasesDeltaThisWeek > 0 && (
+        <LabelRow icon="ri-file-list-3-line" label="Total Test Cases" iconBg="rgba(99,102,241,0.1)" iconColor="#6366F1" />
+        <NumberRow>
+          <span style={numStyle}>{tcVal}</span>
+        </NumberRow>
+        <SubRow
+          left={
+            data.testCasesDeltaThisWeek > 0 ? (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.6875rem', fontWeight: 600, borderRadius: '9999px', padding: '0.125rem 0.375rem', color: '#16A34A', background: '#F0FDF4' }}>
                 <i className="ri-arrow-up-s-line" />
                 +{data.testCasesDeltaThisWeek} this week
               </span>
-            )}
-          </div>
-        </div>
+            ) : (
+              <span style={subTextStyle}>test cases total</span>
+            )
+          }
+        />
       </StatCard>
 
       {/* ── Card 2: Active Runs ── */}
       <StatCard accent="#10B981" delay={50} onClick={() => navigate('/active-runs')}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{ ...iconStyle.emerald, width: '2rem', height: '2rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <i className="ri-play-circle-line" style={{ fontSize: '1rem' }} />
-          </div>
-          <span style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8' }}>
-            Active Runs
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flex: 1 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-            <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', lineHeight: 1, letterSpacing: '-0.025em' }}>
-              {runsVal}
+        <LabelRow icon="ri-play-circle-line" label="Active Runs" iconBg="rgba(16,185,129,0.1)" iconColor="#10B981" />
+        <NumberRow>
+          <span style={numStyle}>{runsVal}</span>
+        </NumberRow>
+        <SubRow
+          left={
+            <span style={subTextStyle}>
+              {data.untestedRemaining > 0 ? `${data.untestedRemaining} untested remaining` : 'active test runs'}
             </span>
-            {data.untestedRemaining > 0 ? (
-              <span style={{ fontSize: '0.6875rem', color: '#94A3B8', fontWeight: 500 }}>
-                {data.untestedRemaining} untested remaining
-              </span>
-            ) : (
-              <span style={{ fontSize: '0.6875rem', color: '#94A3B8', fontWeight: 500 }}>
-                active test runs
-              </span>
-            )}
-          </div>
-        </div>
+          }
+        />
       </StatCard>
 
-      {/* ── Card 3: Pass Rate 7d ── */}
+      {/* ── Card 3: Pass Rate ── */}
       <StatCard accent={prCardAccent} delay={100} onClick={() => navigate('/passrate-report')}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{ ...(pr >= 90 ? iconStyle.green : pr >= 70 ? iconStyle.amber : iconStyle.red), width: '2rem', height: '2rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <i className="ri-checkbox-circle-line" style={{ fontSize: '1rem' }} />
-          </div>
-          <span style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8' }}>
-            Pass Rate
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flex: 1 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-            {data.passRate !== null ? (
-              <>
-                <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', lineHeight: 1, letterSpacing: '-0.025em' }}>
-                  {prVal}%
-                </span>
-                {data.passRateDelta !== null && (
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
-                    fontSize: '0.6875rem', fontWeight: 600, borderRadius: '9999px',
-                    padding: '0.125rem 0.375rem',
-                    color: prDeltaUp ? '#16A34A' : '#DC2626',
-                    background: prDeltaUp ? '#F0FDF4' : '#FEF2F2',
-                  }}>
-                    <i className={`ri-arrow-${prDeltaUp ? 'up' : 'down'}-s-line`} />
-                    {prDeltaUp ? '+' : ''}{data.passRateDelta.toFixed(1)}% {data.deltaLabel ?? 'vs last week'}
-                  </span>
-                )}
-              </>
+        <LabelRow
+          icon="ri-checkbox-circle-line"
+          label="Pass Rate"
+          iconBg={pr >= 90 ? 'rgba(22,163,74,0.1)' : pr >= 70 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)'}
+          iconColor={pr >= 90 ? '#16A34A' : pr >= 70 ? '#F59E0B' : '#EF4444'}
+        />
+        <NumberRow>
+          {data.passRate !== null ? (
+            <span style={numStyle}>{prVal}%</span>
+          ) : (
+            <span style={{ ...numStyle, color: '#94A3B8' }}>—</span>
+          )}
+        </NumberRow>
+        <SubRow
+          left={
+            data.passRateDelta !== null ? (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                fontSize: '0.6875rem', fontWeight: 600, borderRadius: '9999px',
+                padding: '0.125rem 0.375rem',
+                color: prDeltaUp ? '#16A34A' : '#DC2626',
+                background: prDeltaUp ? '#F0FDF4' : '#FEF2F2',
+              }}>
+                <i className={`ri-arrow-${prDeltaUp ? 'up' : 'down'}-s-line`} />
+                {prDeltaUp ? '+' : ''}{data.passRateDelta.toFixed(1)}% {data.deltaLabel ?? 'vs last week'}
+              </span>
             ) : (
-              <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#94A3B8', lineHeight: 1 }}>—</span>
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-            {data.passRate !== null && data.passRateSparkline.length >= 2 ? (
-              <Sparkline data={data.passRateSparkline} color={prColor} />
-            ) : (
-              <ProgressRing pct={data.passRate ?? 0} />
-            )}
-          </div>
-        </div>
+              <span style={subTextStyle}>overall pass rate</span>
+            )
+          }
+          right={
+            data.passRate !== null && data.passRateSparkline.length >= 2
+              ? <Sparkline data={data.passRateSparkline} color={prColor} />
+              : <ProgressRing pct={data.passRate ?? 0} />
+          }
+        />
       </StatCard>
 
       {/* ── Card 4: Team Activity ── */}
       <StatCard accent="#8B5CF6" delay={150} onClick={() => navigate('/team-activity')}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{ ...iconStyle.violet, width: '2rem', height: '2rem', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <i className="ri-team-line" style={{ fontSize: '1rem' }} />
-          </div>
-          <span style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8' }}>
-            Team Activity
+        <LabelRow icon="ri-team-line" label="Team Activity" iconBg="rgba(139,92,246,0.1)" iconColor="#8B5CF6" />
+        <NumberRow>
+          <span style={numStyle}>
+            {teamVal}
+            <span style={{ fontSize: '1rem', fontWeight: 500, color: '#94A3B8' }}> members</span>
           </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flex: 1 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-            <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', lineHeight: 1, letterSpacing: '-0.025em' }}>
-              {teamVal}
-              <span style={{ fontSize: '1rem', fontWeight: 500, color: '#94A3B8' }}> members</span>
-            </span>
-            <span style={{ fontSize: '0.6875rem', color: '#94A3B8', fontWeight: 500 }}>
-              across all projects
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-            <AvatarStack members={data.teamMembers} size="sm" max={5} />
-          </div>
-        </div>
+        </NumberRow>
+        <SubRow
+          left={<span style={subTextStyle}>across all projects</span>}
+          right={<AvatarStack members={data.teamMembers} size="sm" max={5} />}
+        />
       </StatCard>
     </div>
   );
