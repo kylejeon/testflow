@@ -631,7 +631,7 @@ export default function ProjectSessions() {
             className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap"
           >
             <i className="ri-add-line text-sm" />
-            New Entry
+            New Session
           </button>
         </div>
 
