@@ -205,9 +205,10 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // avatar_url 컬럼은 환경에 따라 없을 수 있으므로 메인 쿼리에서 제외
       const { data, error } = await supabase
         .from('profiles')
-        .select('email, full_name, subscription_tier, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji, avatar_url')
+        .select('email, full_name, subscription_tier, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -263,8 +264,15 @@ export default function SettingsPage() {
           is_trial: isTrial,
           subscription_ends_at: subscriptionEndsAt,
           avatar_emoji: data.avatar_emoji || '🐶',
-          avatar_url: data.avatar_url || null,
+          avatar_url: null,
         });
+
+        // avatar_url은 별도 비중요 쿼리로 처리 (컬럼 없어도 메인 프로필에 영향 없음)
+        supabase.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle()
+          .then(({ data: av }) => {
+            if (av?.avatar_url) setUserProfile(prev => prev ? { ...prev, avatar_url: av.avatar_url } : prev);
+          })
+          .catch(() => {/* avatar_url 컬럼 없는 환경 — 무시 */});
       } else {
         // profiles 행이 없는 경우 — auth 사용자 데이터로 기본 프로필 생성
         const authName = user.user_metadata?.full_name || user.user_metadata?.name || '';
