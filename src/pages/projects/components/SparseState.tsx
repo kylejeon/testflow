@@ -161,7 +161,10 @@ function ProjectCard({
     <div
       className="bg-white border border-slate-200 rounded-xl p-5 cursor-pointer transition-all hover:-translate-y-px"
       style={{ animation: `fadeInUp 0.4s ease-out ${animDelay}ms backwards` }}
-      onClick={() => navigate(`/projects/${project.id}`)}
+      onClick={(e) => {
+        if (menuRef.current && menuRef.current.contains(e.target as Node)) return;
+        navigate(`/projects/${project.id}`);
+      }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.borderColor = '#C7D2FE';
         (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 16px rgba(99,102,241,0.08)';
@@ -187,8 +190,8 @@ function ProjectCard({
             <span className={`w-1.5 h-1.5 rounded-full ${health.dot}`}></span>
             {health.label}
           </span>
-          {/* 3-dot menu */}
-          {(onEdit || onDelete) && (
+          {/* 3-dot menu — only shown for owners/admins */}
+          {(onEdit || onDelete) && canDelete !== false && (
             <div className="relative" ref={menuRef}>
               <button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(o => !o); }}

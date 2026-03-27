@@ -731,8 +731,8 @@ export default function ProjectsContent() {
                           <span className={`rounded-full ${healthStyles.dot}`} style={{ width: '6px', height: '6px', display: 'inline-block' }} />
                           {health.label}
                         </span>
-                        {/* 3-dot menu */}
-                        <div
+                        {/* 3-dot menu — only shown for owners/admins */}
+                        {canDeleteProject(project) && <div
                           className="relative"
                           ref={openMenuId === project.id ? menuRef : null}
                         >
@@ -791,7 +791,7 @@ export default function ProjectsContent() {
                               )}
                             </div>
                           )}
-                        </div>
+                        </div>}
                       </div>
                     </div>
 
