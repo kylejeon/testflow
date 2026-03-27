@@ -44,6 +44,7 @@ export default function EditSessionModal({
   const [mission, setMission] = useState(session.charter || '');
   const [milestoneId, setMilestoneId] = useState(session.milestone_id || '');
   const [tags, setTags] = useState(session.tags?.join(', ') || '');
+  const [tagInput, setTagInput] = useState('');
   const [estimatedDuration, setEstimatedDuration] = useState(session.duration_minutes || 60);
   const [assignees, setAssignees] = useState<string[]>(session.assignees || []);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
@@ -56,6 +57,7 @@ export default function EditSessionModal({
       setMission(session.charter || '');
       setMilestoneId(session.milestone_id || '');
       setTags(session.tags?.join(', ') || '');
+      setTagInput('');
       setEstimatedDuration(session.duration_minutes || 60);
       setAssignees(session.assignees || []);
       setShowAssigneeDropdown(false);
@@ -281,16 +283,46 @@ export default function EditSessionModal({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tags
                 </label>
+                {tags && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {tags.split(',').map(t => t.trim()).filter(Boolean).map((tag, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-xs font-medium">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const list = tags.split(',').map(t => t.trim()).filter(Boolean);
+                            list.splice(i, 1);
+                            setTags(list.join(', '));
+                          }}
+                          className="cursor-pointer text-indigo-400 hover:text-indigo-700 ml-0.5"
+                        >
+                          <i className="ri-close-line text-xs" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <input
                   type="text"
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault();
+                      const trimmed = tagInput.trim().replace(/,$/, '');
+                      if (!trimmed) return;
+                      const existing = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+                      if (!existing.includes(trimmed)) {
+                        setTags([...existing, trimmed].join(', '));
+                      }
+                      setTagInput('');
+                    }
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                  placeholder="Enter tags separated by commas"
+                  placeholder="Type a tag and press Enter"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Separate multiple tags with commas
-                </p>
+                <p className="text-xs text-gray-500 mt-1">Press Enter or comma to add a tag</p>
               </div>
 
               {/* Estimated Duration */}

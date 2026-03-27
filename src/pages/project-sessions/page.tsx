@@ -70,6 +70,7 @@ export default function ProjectSessions() {
     assignees: [],
   });
   const [submitting, setSubmitting] = useState(false);
+  const [tagInput, setTagInput] = useState('');
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const tagsDropdownRef = useRef<HTMLDivElement>(null);
@@ -623,7 +624,7 @@ export default function ProjectSessions() {
           <div className="flex-1" />
           <span className="text-[0.8125rem] text-[#64748B] px-3">{filteredSessions.length} entries</span>
           <button
-            onClick={() => { setEditingSessionId(null); setFormData({ name: '', milestone_id: '', charter: '', tags: '', assignees: [] }); setShowAddSessionModal(true); }}
+            onClick={() => { setEditingSessionId(null); setFormData({ name: '', milestone_id: '', charter: '', tags: '', assignees: [] }); setTagInput(''); setShowAddSessionModal(true); }}
             className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap"
           >
             <i className="ri-add-line text-sm" />
@@ -1104,14 +1105,46 @@ export default function ProjectSessions() {
                     <label className="block text-[0.8125rem] font-medium text-gray-700 mb-2">
                       Tags
                     </label>
+                    {formData.tags && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {formData.tags.split(',').map(t => t.trim()).filter(Boolean).map((tag, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-xs font-medium">
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const list = formData.tags.split(',').map(t => t.trim()).filter(Boolean);
+                                list.splice(i, 1);
+                                setFormData(prev => ({ ...prev, tags: list.join(', ') }));
+                              }}
+                              className="cursor-pointer text-indigo-400 hover:text-indigo-700 ml-0.5"
+                            >
+                              <i className="ri-close-line text-xs" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <input
                       type="text"
-                      name="tags"
-                      value={formData.tags}
-                      onChange={handleInputChange}
-                      placeholder="Enter tags separated by commas"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                          e.preventDefault();
+                          const trimmed = tagInput.trim().replace(/,$/, '');
+                          if (!trimmed) return;
+                          const existing = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+                          if (!existing.includes(trimmed)) {
+                            setFormData(prev => ({ ...prev, tags: [...existing, trimmed].join(', ') }));
+                          }
+                          setTagInput('');
+                        }
+                      }}
+                      placeholder="Type a tag and press Enter"
                       className="w-full px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.8125rem]"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Press Enter or comma to add a tag</p>
                   </div>
                 </div>
               </div>

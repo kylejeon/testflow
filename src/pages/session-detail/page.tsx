@@ -137,6 +137,22 @@ export default function SessionDetail() {
     fetchJiraSettings();
   }, [sessionId]);
 
+  // N/B/O/T keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      switch (e.key.toLowerCase()) {
+        case 'n': setActiveForm('note'); break;
+        case 'b': setActiveForm('failed'); break;
+        case 'o': setActiveForm('blocked'); break;
+        case 't': setActiveForm('passed'); break;
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // 세션 데이터가 로드된 후 타이머 시작
   useEffect(() => {
     if (timerRef.current) {
@@ -1156,7 +1172,7 @@ export default function SessionDetail() {
                       </div>
                       <div className="flex items-start gap-2">
                         <span className="w-16 flex-shrink-0 text-[0.6875rem] font-bold text-[#7C3AED] uppercase tracking-wide pt-[9px]">Actual</span>
-                        <input value={stepActual} onChange={(e) => setStepActual(e.target.value)} placeholder="Actual result..." className="flex-1 px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#7C3AED] focus:bg-white placeholder:text-[#94A3B8]" />
+                        <input value={stepActual} onChange={(e) => setStepActual(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && stepAction.trim()) handleAddLog(); }} placeholder="Actual result..." className="flex-1 px-2.5 py-2 border border-[#E2E8F0] rounded-[6px] bg-[#F8FAFC] text-[0.8125rem] text-[#0F172A] focus:outline-none focus:border-[#7C3AED] focus:bg-white placeholder:text-[#94A3B8]" />
                       </div>
                     </div>
                   )}
@@ -1221,10 +1237,6 @@ export default function SessionDetail() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#94A3B8] font-medium">Duration</span>
-                  <span className="text-[#0F172A] font-mono text-[0.75rem]">{elapsedTime}</span>
-                </div>
-                <div className="flex items-center justify-between">
                   <span className="text-[#94A3B8] font-medium">Created</span>
                   <span className="text-[#0F172A]">{new Date(session.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 </div>
@@ -1259,7 +1271,7 @@ export default function SessionDetail() {
                     </div>
                   </div>
                 )}
-                {session.duration_minutes && (
+                {session.duration_minutes > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-[#94A3B8] font-medium">Time Box</span>
                     <span className="text-[#0F172A]">{Math.floor(session.duration_minutes / 60) > 0 ? `${Math.floor(session.duration_minutes / 60)}h` : ''}{session.duration_minutes % 60 > 0 ? ` ${session.duration_minutes % 60}m` : ''} (goal)</span>
@@ -1273,17 +1285,28 @@ export default function SessionDetail() {
               <div className="text-[0.9375rem] font-semibold text-[#0F172A] mb-3">Activity</div>
 
               {/* Timer */}
-              <div className="mb-4 text-center py-3 bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0]">
+              <div className="mb-3 text-center py-3 bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0]">
                 <div className="text-[1.75rem] font-bold text-[#0F172A] font-mono tracking-tight">{elapsedTime}</div>
                 <div className="text-[0.6875rem] text-[#94A3B8] font-medium uppercase tracking-wide mt-1">Total Elapsed</div>
-                {session.duration_minutes && (
-                  <div className="mt-2 mx-3 h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#6366F1] rounded-full transition-all"
-                      style={{ width: `${Math.min(100, (parseInt(elapsedTime.split(':')[0]) * 60 + parseInt(elapsedTime.split(':')[1])) / session.duration_minutes * 100)}%` }}
-                    />
-                  </div>
-                )}
+                <div className="mt-2 mx-3 h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#6366F1] rounded-full transition-all"
+                    style={{ width: session.duration_minutes > 0 ? `${Math.min(100, (parseInt(elapsedTime.split(':')[0]) * 60 + parseInt(elapsedTime.split(':')[1])) / session.duration_minutes * 100)}%` : '0%' }}
+                  />
+                </div>
+              </div>
+
+              {/* Duration card */}
+              <div className="mb-3 p-2.5 bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0]">
+                <div className="text-[0.6875rem] text-[#94A3B8] font-semibold uppercase mb-0.5">Duration</div>
+                <div className="text-[0.8125rem] font-semibold text-[#0F172A]">
+                  {elapsedTime}
+                  {session.duration_minutes > 0 && (
+                    <span className="text-[#94A3B8] font-normal text-[0.75rem]">
+                      {' / '}{Math.floor(session.duration_minutes / 60) > 0 ? `${Math.floor(session.duration_minutes / 60)}h` : ''}{session.duration_minutes % 60 > 0 ? ` ${session.duration_minutes % 60}m` : ''} of goal
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Summary Cards */}
@@ -1318,25 +1341,35 @@ export default function SessionDetail() {
               {/* Timeline dots */}
               {logs.length > 0 && (
                 <div className="mb-4">
-                  <div className="h-9 bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-[4px] border border-[#E2E8F0] relative overflow-hidden">
-                    {logs.map((log, i) => {
-                      const dotColor = log.type === 'note' ? '#6366F1' : log.type === 'failed' ? '#EF4444' : log.type === 'blocked' ? '#F59E0B' : '#7C3AED';
-                      const pos = logs.length > 1 ? (i / (logs.length - 1)) * 92 + 4 : 50;
-                      return (
-                        <div
-                          key={log.id}
-                          className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-[1.5px] border-white cursor-pointer"
-                          style={{ left: `${pos}%`, background: dotColor, boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
-                          onMouseEnter={(e) => setTooltipInfo({ label: logTypeConfig[log.type]?.label || log.type, time: formatTime(log.created_at), x: e.clientX, y: e.clientY })}
-                          onMouseLeave={() => setTooltipInfo(null)}
-                        />
-                      );
-                    })}
-                  </div>
-                  <div className="flex justify-between text-[0.625rem] text-[#94A3B8] mt-1 px-1">
-                    <span>{logs.length > 0 ? formatTime(logs[0].created_at) : ''}</span>
-                    <span>{logs.length > 1 ? formatTime(logs[logs.length - 1].created_at) : ''}</span>
-                  </div>
+                  {(() => {
+                    const tsStart = session.started_at ? new Date(session.started_at).getTime() : new Date(logs[0].created_at).getTime();
+                    const tsEnd = session.status === 'closed' && session.ended_at ? new Date(session.ended_at).getTime() : Date.now();
+                    const duration = tsEnd - tsStart;
+                    return (
+                      <>
+                        <div className="h-9 bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-[4px] border border-[#E2E8F0] relative overflow-hidden">
+                          {logs.map((log) => {
+                            const dotColor = log.type === 'note' ? '#6366F1' : log.type === 'failed' ? '#EF4444' : log.type === 'blocked' ? '#F59E0B' : '#7C3AED';
+                            const logTs = new Date(log.created_at).getTime();
+                            const pos = duration > 0 ? Math.min(96, Math.max(4, ((logTs - tsStart) / duration) * 92 + 4)) : 50;
+                            return (
+                              <div
+                                key={log.id}
+                                className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-[1.5px] border-white cursor-pointer"
+                                style={{ left: `${pos}%`, background: dotColor, boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
+                                onMouseEnter={(e) => setTooltipInfo({ label: logTypeConfig[log.type]?.label || log.type, time: formatTime(log.created_at), x: e.clientX, y: e.clientY })}
+                                onMouseLeave={() => setTooltipInfo(null)}
+                              />
+                            );
+                          })}
+                        </div>
+                        <div className="flex justify-between text-[0.625rem] text-[#94A3B8] mt-1 px-1">
+                          <span>{formatTime(new Date(tsStart).toISOString())}</span>
+                          <span>{session.status === 'closed' && session.ended_at ? formatTime(session.ended_at) : 'Now'}</span>
+                        </div>
+                      </>
+                    );
+                  })()}
                   <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
                     {[
                       { label: 'Note', color: '#6366F1' },
@@ -1391,7 +1424,7 @@ export default function SessionDetail() {
         {tooltipInfo && (
           <div
             className="fixed z-50 px-2 py-1 bg-[#1E293B] text-white text-[0.75rem] font-medium rounded-[4px] pointer-events-none shadow-lg"
-            style={{ left: tooltipInfo.x + 10, top: tooltipInfo.y - 34 }}
+            style={{ left: Math.min(tooltipInfo.x + 10, window.innerWidth - 140), top: Math.max(tooltipInfo.y - 34, 8) }}
           >
             {tooltipInfo.label} · {tooltipInfo.time}
           </div>
