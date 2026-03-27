@@ -406,13 +406,19 @@ export default function ProjectMilestones() {
             <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{ background: info.iconBg }}>
               <i className={`${info.icon} text-[0.75rem]`} style={{ color: info.iconColor }} />
             </div>
-            <Link
-              to={`/projects/${id}/milestones/${sub.id}`}
-              onClick={e => e.stopPropagation()}
-              className="text-[0.8125rem] font-semibold text-[#0F172A] flex-1 min-w-0 truncate hover:text-indigo-600 transition-colors"
-            >
-              {sub.name}
-            </Link>
+            <div className="flex-1 min-w-0">
+              <Link
+                to={`/projects/${id}/milestones/${sub.id}`}
+                onClick={e => e.stopPropagation()}
+                className="block text-[0.8125rem] font-semibold text-[#0F172A] truncate hover:text-indigo-600 transition-colors"
+              >
+                {sub.name}
+              </Link>
+              <div className="text-[0.6875rem] text-[#94A3B8] mt-[0.0625rem] flex items-center gap-1">
+                <i className="ri-calendar-line" style={{ fontSize: '0.5625rem', verticalAlign: '-1px' }} />
+                {formatDateRange(sub.start_date, sub.end_date)}
+              </div>
+            </div>
             <span className={`text-[0.625rem] font-semibold px-[0.4375rem] py-[0.125rem] rounded-full flex-shrink-0 ${info.badgeCls}`}>
               {info.label}
             </span>
