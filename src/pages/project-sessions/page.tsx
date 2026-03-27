@@ -50,7 +50,7 @@ export default function ProjectSessions() {
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [showTagsDropdown, setShowTagsDropdown] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'closed'>('all');
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
@@ -508,8 +508,10 @@ export default function ProjectSessions() {
 
   const filteredSessions = sessions.filter(session => {
     // Tab filter
-    const matchesTab = activeTab === 'active' 
-      ? session.status === 'active' 
+    const matchesTab = activeTab === 'all'
+      ? true
+      : activeTab === 'active'
+      ? session.status === 'active'
       : session.status === 'closed';
     
     // Search filter
@@ -576,32 +578,46 @@ export default function ProjectSessions() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={projectId || ''} projectName={project?.name || ''} />
         
+        {/* Edge-to-edge subtab row */}
+        <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+          {[
+            { key: 'all', label: 'All', count: sessions.length },
+            { key: 'active', label: 'Active', count: sessions.filter(s => s.status === 'active').length },
+            { key: 'closed', label: 'Closed', count: sessions.filter(s => s.status === 'closed').length },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as typeof activeTab)}
+              className={`flex items-center gap-1.5 h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
+                activeTab === tab.key
+                  ? 'text-[#6366F1] border-[#6366F1]'
+                  : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
+              }`}
+            >
+              {tab.label}
+              <span className={`px-1.5 py-0.5 rounded text-[0.6875rem] font-semibold ${
+                activeTab === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'
+              }`}>{tab.count}</span>
+            </button>
+          ))}
+          <div className="flex-1" />
+          <button
+            onClick={() => {
+              setEditingSessionId(null);
+              setFormData({ name: '', milestone_id: '', charter: '', tags: '', assignees: [] });
+              setShowAddSessionModal(true);
+            }}
+            className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap"
+          >
+            <i className="ri-add-line text-sm" />
+            New Entry
+          </button>
+        </div>
+
         <main className="flex-1 overflow-y-auto bg-gray-50/30">
           <div className="p-[1.75rem]">
-            {/* Header */}
+            {/* Stats Cards */}
             <div className="mb-[1.3125rem]">
-              <div className="flex items-center justify-between mb-[1.3125rem]">
-                <h1 className="text-[1.375rem] font-bold text-gray-900">Discovery Logs</h1>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => {
-                      setEditingSessionId(null);
-                      setFormData({
-                        name: '',
-                        milestone_id: '',
-                        charter: '',
-                        tags: '',
-                        assignees: [],
-                      });
-                      setShowAddSessionModal(true);
-                    }}
-                    className="px-[0.875rem] py-[0.4375rem] bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center gap-2 text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap"
-                  >
-                    <i className="ri-add-line"></i>
-                    New Log
-                  </button>
-                </div>
-              </div>
 
               {/* Stats Cards */}
               <div className="grid grid-cols-3 gap-[1.3125rem] mb-[1.3125rem]">
@@ -687,29 +703,6 @@ export default function ProjectSessions() {
                 </div>
               </div>
 
-              {/* Tabs */}
-              <div className="flex space-x-8 border-b border-gray-200">
-                <button
-                  onClick={() => setActiveTab('active')}
-                  className={`pb-4 px-1 border-b-2 font-medium text-[0.8125rem] cursor-pointer whitespace-nowrap ${
-                    activeTab === 'active'
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  ACTIVE ({sessions.filter(s => s.status === 'active').length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('closed')}
-                  className={`pb-4 px-1 border-b-2 font-medium text-[0.8125rem] cursor-pointer whitespace-nowrap ${
-                    activeTab === 'closed'
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  CLOSED ({sessions.filter(s => s.status === 'closed').length})
-                </button>
-              </div>
             </div>
 
             {/* Search and Filter */}

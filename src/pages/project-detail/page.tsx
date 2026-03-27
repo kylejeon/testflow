@@ -45,6 +45,7 @@ export default function ProjectDetail() {
   const [showQuickCreateTC, setShowQuickCreateTC] = useState(false);
   const [showContinueRun, setShowContinueRun] = useState(false);
   const [showAIAssist, setShowAIAssist] = useState(false);
+  const [dashboardTab, setDashboardTab] = useState<'overview' | 'analytics' | 'activity'>('overview');
   const [projectPassRateData, setProjectPassRateData] = useState<{ total: number; passed: number } | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -605,43 +606,55 @@ export default function ProjectDetail() {
           {/* Main content */}
           <main className="flex-1 overflow-y-auto flex flex-col bg-slate-50">
 
-            {/* Quick Actions Bar */}
-            <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 flex-shrink-0">
-              <div className="flex items-center gap-2 mr-auto">
-                <span className="text-sm font-bold text-gray-900">Dashboard</span>
-                {testRuns.length > 0 && (
-                  <span
-                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold"
-                    style={{ background: passRate >= 80 ? '#F0FDF4' : passRate >= 50 ? '#FFFBEB' : '#FEF2F2', color: healthColor }}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: healthColor }} />
-                    {passRate}%
-                  </span>
-                )}
+            {/* Subtab row */}
+            <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+              {[
+                { key: 'overview', label: 'Overview' },
+                { key: 'analytics', label: 'Analytics' },
+                { key: 'activity', label: 'Activity Feed' },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setDashboardTab(tab.key as typeof dashboardTab)}
+                  className={`flex items-center h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
+                    dashboardTab === tab.key
+                      ? 'text-[#6366F1] border-[#6366F1]'
+                      : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+              <div className="flex-1" />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowQuickCreateTC(true)}
+                  className="flex items-center gap-1.5 px-3 py-[5px] text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:border-gray-300 transition-all"
+                >
+                  <i className="ri-file-add-line"></i>
+                  <span>New TC</span>
+                  <kbd className="text-[9px] font-semibold px-1 py-0.5 rounded bg-black/5">N</kbd>
+                </button>
+                <button
+                  onClick={() => setShowContinueRun(true)}
+                  className="flex items-center gap-1.5 px-3 py-[5px] text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:border-gray-300 transition-all"
+                >
+                  <i className="ri-play-circle-line"></i>
+                  <span>Continue Run</span>
+                  <kbd className="text-[9px] font-semibold px-1 py-0.5 rounded bg-black/5">R</kbd>
+                </button>
+                <button
+                  onClick={() => setShowAIAssist(true)}
+                  className="flex items-center gap-1.5 px-3 py-[5px] text-xs font-medium text-white bg-violet-500 border border-violet-500 rounded-md hover:bg-violet-600 transition-all"
+                >
+                  <i className="ri-sparkling-line"></i>
+                  <span>AI Assist</span>
+                </button>
+                <button className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap">
+                  <i className="ri-download-line text-sm" />
+                  Export Report
+                </button>
               </div>
-              <button
-                onClick={() => setShowQuickCreateTC(true)}
-                className="flex items-center gap-1.5 px-3 py-[7px] text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all"
-              >
-                <i className="ri-file-add-line"></i>
-                <span>New Test Case</span>
-                <kbd className="text-[9px] font-semibold px-1 py-0.5 rounded bg-black/5">N</kbd>
-              </button>
-              <button
-                onClick={() => setShowContinueRun(true)}
-                className="flex items-center gap-1.5 px-3 py-[7px] text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all"
-              >
-                <i className="ri-play-circle-line"></i>
-                <span>Continue Run</span>
-                <kbd className="text-[9px] font-semibold px-1 py-0.5 rounded bg-black/5">R</kbd>
-              </button>
-              <button
-                onClick={() => setShowAIAssist(true)}
-                className="flex items-center gap-1.5 px-3 py-[7px] text-xs font-medium text-white bg-violet-500 border border-violet-500 rounded-full hover:bg-violet-600 transition-all"
-              >
-                <i className="ri-sparkling-line"></i>
-                <span>AI Assist</span>
-              </button>
             </div>
 
             {/* Dashboard Grid */}

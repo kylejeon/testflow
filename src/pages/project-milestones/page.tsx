@@ -41,7 +41,7 @@ export default function ProjectMilestones() {
   const [project, setProject] = useState<any>(null);
   const [milestones, setMilestones] = useState<MilestoneWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+  const [activeTab, setActiveTab] = useState<'all' | 'in-progress' | 'completed' | 'overdue'>('all');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<MilestoneWithProgress | null>(null);
@@ -310,7 +310,12 @@ export default function ProjectMilestones() {
     return 'bg-gray-300';
   };
 
-  const filteredMilestones = activeTab === 'active' ? milestones.filter(m => m.status !== 'completed') : milestones.filter(m => m.status === 'completed');
+  const filteredMilestones =
+    activeTab === 'all' ? milestones :
+    activeTab === 'in-progress' ? milestones.filter(m => m.status !== 'completed' && m.status !== 'past_due') :
+    activeTab === 'completed' ? milestones.filter(m => m.status === 'completed') :
+    activeTab === 'overdue' ? milestones.filter(m => m.status === 'past_due') :
+    milestones;
 
   const groupedMilestones = filteredMilestones.reduce((acc, milestone) => {
     const endDate = milestone.end_date ? (() => {
@@ -449,32 +454,45 @@ export default function ProjectMilestones() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
+        {/* Edge-to-edge subtab row */}
+        <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+          {[
+            { key: 'all', label: 'All', count: milestones.length },
+            { key: 'in-progress', label: 'In Progress', count: milestones.filter(m => m.status !== 'completed' && m.status !== 'past_due').length },
+            { key: 'completed', label: 'Completed', count: milestones.filter(m => m.status === 'completed').length },
+            { key: 'overdue', label: 'Overdue', count: milestones.filter(m => m.status === 'past_due').length },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as typeof activeTab)}
+              className={`flex items-center gap-1.5 h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
+                activeTab === tab.key
+                  ? 'text-[#6366F1] border-[#6366F1]'
+                  : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
+              }`}
+            >
+              {tab.label}
+              <span className={`px-1.5 py-0.5 rounded text-[0.6875rem] font-semibold ${
+                activeTab === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'
+              }`}>{tab.count}</span>
+            </button>
+          ))}
+          <div className="flex-1" />
+          <button
+            onClick={() => { setParentMilestoneId(null); setShowCreateModal(true); }}
+            className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap"
+          >
+            <i className="ri-add-line text-sm" />
+            New Milestone
+          </button>
+        </div>
+
         <main className="flex-1 overflow-y-auto bg-gray-50/30">
           <div className="p-[1.75rem]">
-            <div className="flex items-center justify-between mb-[1.75rem]">
-              <h1 className="text-[1.375rem] font-bold text-gray-900">Milestones</h1>
-              <button onClick={() => { setParentMilestoneId(null); setShowCreateModal(true); }} className="px-[0.875rem] py-[0.4375rem] bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 text-[0.8125rem]">
-                <i className="ri-add-line text-lg w-5 h-5 flex items-center justify-center"></i>Milestone
-              </button>
-            </div>
-
-            <div className="mb-6">
-              <div className="flex items-center gap-4 border-b border-gray-200">
-                <button onClick={() => setActiveTab('active')} className={`px-1 py-[0.4375rem] text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'active' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                  ACTIVE ({milestones.filter(m => m.status !== 'completed').length})
-                  {activeTab === 'active' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>}
-                </button>
-                <button onClick={() => setActiveTab('completed')} className={`px-1 py-[0.4375rem] text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap relative ${activeTab === 'completed' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>
-                  COMPLETED ({milestones.filter(m => m.status === 'completed').length})
-                  {activeTab === 'completed' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>}
-                </button>
-              </div>
-            </div>
-
             {filteredMilestones.length === 0 ? (
               <div className="text-center py-12">
                 <i className="ri-flag-line text-6xl text-gray-300 mb-4"></i>
-                <p className="text-gray-500 text-lg">No {activeTab} milestones</p>
+                <p className="text-gray-500 text-lg">No {activeTab === 'all' ? '' : activeTab + ' '}milestones</p>
                 <p className="text-gray-400 text-sm mt-2">Create your first milestone to get started</p>
               </div>
             ) : (

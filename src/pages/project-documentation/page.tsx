@@ -164,72 +164,41 @@ export default function ProjectDocumentation() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
+        {/* Edge-to-edge subtab row */}
+        <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+          {[
+            { key: 'all', label: t('all'), count: documents.length },
+            { key: 'link', label: t('link'), count: documents.filter(d => d.type === 'link').length },
+            { key: 'file', label: t('file'), count: documents.filter(d => d.type === 'file').length },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setFilterType(tab.key as typeof filterType)}
+              className={`flex items-center gap-1.5 h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
+                filterType === tab.key
+                  ? 'text-[#6366F1] border-[#6366F1]'
+                  : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
+              }`}
+            >
+              {tab.label}
+              <span className={`px-1.5 py-0.5 rounded text-[0.6875rem] font-semibold ${
+                filterType === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'
+              }`}>{tab.count}</span>
+            </button>
+          ))}
+          <div className="flex-1" />
+          <button
+            onClick={() => setShowUploadModal(true)}
+            className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap"
+          >
+            <i className="ri-upload-2-line text-sm" />
+            {t('uploadFile')}
+          </button>
+        </div>
+
         <main className="flex-1 overflow-y-auto bg-gray-50/30">
           <div className="p-[1.75rem]">
-            <div className="flex items-center justify-between mb-[1.75rem]">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                  <i className="ri-file-text-line text-white text-xl"></i>
-                </div>
-                <div>
-                  <h1 className="text-[1.375rem] font-bold text-gray-900">{t('title')}</h1>
-                  <p className="text-[0.8125rem] text-gray-500">{project?.name}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowAddLinkModal(true)}
-                  className="px-[0.875rem] py-[0.4375rem] bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 text-[0.8125rem]"
-                >
-                  <i className="ri-link text-lg w-5 h-5 flex items-center justify-center"></i>
-                  {t('addLink')}
-                </button>
-                <button
-                  onClick={() => setShowUploadModal(true)}
-                  className="px-[0.875rem] py-[0.4375rem] bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 text-[0.8125rem]"
-                >
-                  <i className="ri-upload-2-line text-lg w-5 h-5 flex items-center justify-center"></i>
-                  {t('uploadFile')}
-                </button>
-              </div>
-            </div>
-
             <div className="bg-white rounded-lg border border-gray-200">
-              <div className="p-[1.3125rem] border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setFilterType('all')}
-                    className={`px-[0.875rem] py-[0.4375rem] rounded-lg text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap ${
-                      filterType === 'all'
-                        ? 'bg-indigo-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {t('all')} ({documents.length})
-                  </button>
-                  <button
-                    onClick={() => setFilterType('link')}
-                    className={`px-[0.875rem] py-[0.4375rem] rounded-lg text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap ${
-                      filterType === 'link'
-                        ? 'bg-indigo-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {t('link')} ({documents.filter(d => d.type === 'link').length})
-                  </button>
-                  <button
-                    onClick={() => setFilterType('file')}
-                    className={`px-[0.875rem] py-[0.4375rem] rounded-lg text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap ${
-                      filterType === 'file'
-                        ? 'bg-indigo-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {t('file')} ({documents.filter(d => d.type === 'file').length})
-                  </button>
-                </div>
-              </div>
-
               <div className="p-[1.3125rem]">
                 {filteredDocuments.length === 0 ? (
                   <div className="text-center py-16">
