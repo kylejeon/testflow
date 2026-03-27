@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Avatar } from './Avatar';
 
 export type TestStatus = 'passed' | 'failed' | 'blocked' | 'retest' | 'untested';
@@ -283,7 +283,9 @@ export function DetailPanel({
 }: DetailPanelProps) {
   const [activeTab, setActiveTab] = useState<'comments' | 'results' | 'issues' | 'history'>('comments');
   const [stepsCollapsed, setStepsCollapsed] = useState(false);
+  const [stepsHeightPx, setStepsHeightPx] = useState<number | null>(null);
   const [localStepResults, setLocalStepResults] = useState<Record<number, 'passed' | 'failed'>>({});
+  const detailBodyRef = useRef<HTMLDivElement>(null);
 
   const isRun = context === 'run';
   const effectiveStepResults = Object.keys(stepResults).length > 0 ? stepResults : localStepResults;
@@ -581,9 +583,18 @@ export function DetailPanel({
         )}
       </button>
 
-      {/* ⑤ Steps Area — collapsible, max-height 40vh */}
+      {/* ── dp-split: steps + drag handle + tabs (flex-1) ── */}
+      <div ref={detailBodyRef} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+
+      {/* ⑤ Steps Area — collapsible, dynamic height */}
       {!stepsCollapsed && (
-        <div className="max-h-[40vh] overflow-y-auto px-5 py-3.5 border-b border-gray-200 flex-shrink-0 space-y-3">
+        <div
+          className="overflow-y-auto px-5 py-3.5 border-b border-gray-200 flex-shrink-0 space-y-3"
+          style={{
+            height: stepsHeightPx !== null ? `${stepsHeightPx}px` : undefined,
+            maxHeight: stepsHeightPx !== null ? undefined : '40vh',
+          }}
+        >
           {/* Precondition */}
           {testCase.precondition && (
             <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }} className="rounded-md px-3 py-2.5">
@@ -659,6 +670,32 @@ export function DetailPanel({
         </div>
       )}
 
+      {/* Drag resize handle */}
+      {!stepsCollapsed && (
+        <div
+          onMouseDown={(e) => {
+            e.preventDefault();
+            const startY = e.clientY;
+            const startHeight = stepsHeightPx !== null
+              ? stepsHeightPx
+              : (detailBodyRef.current ? Math.round(detailBodyRef.current.clientHeight * 0.4) : 200);
+            const onMove = (ev: MouseEvent) => {
+              const newH = Math.max(60, startHeight + (ev.clientY - startY));
+              setStepsHeightPx(newH);
+            };
+            const onUp = () => {
+              document.removeEventListener('mousemove', onMove);
+              document.removeEventListener('mouseup', onUp);
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+          }}
+          className="h-[6px] flex-shrink-0 cursor-row-resize bg-[#F8FAFC] border-b border-[#E2E8F0] flex items-center justify-center hover:bg-[#EEF2FF] transition-colors group"
+        >
+          <div className="w-8 h-[3px] bg-[#CBD5E1] rounded-full group-hover:bg-[#6366F1] transition-colors" />
+        </div>
+      )}
+
       {/* ⑥ Tab Bar */}
       <div className="flex border-b border-gray-200 flex-shrink-0">
         {(['comments', 'results', 'issues', 'history'] as const).map((tab) => {
@@ -693,8 +730,8 @@ export function DetailPanel({
         })}
       </div>
 
-      {/* ⑦ Tab Body — flex-1, scrollable */}
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      {/* ⑦ Tab Body — flex-1, scrollable, min 220px */}
+      <div className="flex-1 overflow-y-auto px-5 py-4" style={{ minHeight: '220px' }}>
 
         {/* Comments Tab */}
         {activeTab === 'comments' && (
@@ -969,6 +1006,7 @@ export function DetailPanel({
           </div>
         )}
       </div>
+      </div>{/* end dp-split */}
 
       {/* ⑧ Footer — TC Only */}
       {!isRun && (
