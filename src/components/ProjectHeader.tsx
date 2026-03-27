@@ -94,8 +94,16 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
         setUserProfile({
           id: user.id,
           email: data.email || user.email || '',
-          full_name: data.full_name || '',
+          full_name: data.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
           subscription_tier: data.subscription_tier || 1,
+        });
+      } else {
+        // profiles 행 없을 경우 auth 데이터로 폴백
+        setUserProfile({
+          id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+          subscription_tier: 1,
         });
       }
     } catch {}
@@ -332,7 +340,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
                 }}
               >
                 <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #F1F5F9' }}>
-                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0F172A' }}>{userProfile?.full_name || 'User'}</p>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0F172A' }}>{userProfile?.full_name || userProfile?.email || 'User'}</p>
                   <p style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{userProfile?.email}</p>
                   <div
                     className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded border ${tierInfo.color}`}

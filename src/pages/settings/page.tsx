@@ -256,7 +256,7 @@ export default function SettingsPage() {
 
         setUserProfile({
           email: data.email || user.email || '',
-          full_name: data.full_name || '',
+          full_name: data.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
           subscription_tier: tier,
           trial_started_at: data.trial_started_at || null,
           trial_ends_at: data.trial_ends_at || null,
@@ -265,6 +265,29 @@ export default function SettingsPage() {
           avatar_emoji: data.avatar_emoji || '🐶',
           avatar_url: data.avatar_url || null,
         });
+      } else {
+        // profiles 행이 없는 경우 — auth 사용자 데이터로 기본 프로필 생성
+        const authName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+        const authEmail = user.email || '';
+        setUserProfile({
+          email: authEmail,
+          full_name: authName,
+          subscription_tier: 1,
+          trial_started_at: null,
+          trial_ends_at: null,
+          is_trial: false,
+          subscription_ends_at: null,
+          avatar_emoji: '🐶',
+          avatar_url: null,
+        });
+        // profiles 행 생성 (이후 로드 시 정상 동작하도록)
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          email: authEmail,
+          full_name: authName,
+          subscription_tier: 1,
+          avatar_emoji: '🐶',
+        }, { onConflict: 'id' });
       }
     } catch (error) {
       console.error('Profile loading error:', error);
@@ -873,7 +896,7 @@ def pytest_sessionfinish(session, exitstatus):
                   {showProfileMenu && (
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                       <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || 'User'}</p>
+                        <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name || userProfile?.email || 'User'}</p>
                         <p className="text-xs text-gray-500">{userProfile?.email}</p>
                         <div className="mt-2">
                           <span className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${tierInfo.color}`}>
