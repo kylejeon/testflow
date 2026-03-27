@@ -361,32 +361,7 @@ export default function ProjectTestCases() {
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
 
         <main className="flex-1 overflow-hidden flex flex-col">
-          {/* ── Edge-to-edge page header ── */}
-          <div className="flex items-center gap-3 px-5 py-[0.875rem] bg-white border-b border-[#E2E8F0] flex-shrink-0">
-            <span className="text-[1.125rem] font-bold text-[#0F172A]">Test Cases</span>
-            <span className="text-[0.8125rem] text-[#94A3B8] font-medium">· {filteredTestCases.length} test cases</span>
-            <div className="ml-auto flex items-center gap-2">
-              {testCases.some(tc => !tc.custom_id) && project?.prefix && (
-                <button
-                  onClick={handleAssignMissingIds}
-                  className="px-[0.875rem] py-[0.4375rem] bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all font-semibold text-[0.8125rem] flex items-center gap-2 cursor-pointer whitespace-nowrap"
-                >
-                  <i className="ri-price-tag-3-line"></i>
-                  ID 없는 케이스에 ID 부여
-                </button>
-              )}
-              <button
-                onClick={() => setShowAIModal(true)}
-                className="px-[0.875rem] py-[0.4375rem] bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-[0.8125rem] flex items-center gap-2 cursor-pointer whitespace-nowrap shadow-sm"
-                style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
-              >
-                <i className="ri-sparkling-2-fill"></i>
-                Generate with AI
-              </button>
-            </div>
-          </div>
-
-          {/* ── Edge-to-edge lifecycle tabs ── */}
+          {/* ── Subtab row: lifecycle tabs + action button ── */}
           {(() => {
             const counts = {
               all: testCases.filter(tc => (tc.lifecycle_status || 'active') !== 'deprecated').length,
@@ -401,12 +376,12 @@ export default function ProjectTestCases() {
               { key: 'deprecated', label: 'Deprecated', icon: 'ri-forbid-line', iconCls: 'text-slate-400' },
             ];
             return (
-              <div className="flex border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+              <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
                 {tabs.map(tab => (
                   <button
                     key={tab.key}
                     onClick={() => setLifecycleFilter(tab.key)}
-                    className={`flex items-center gap-1.5 px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-2 transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
+                    className={`flex items-center gap-1.5 px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-[2.5px] transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
                       lifecycleFilter === tab.key
                         ? 'text-[#6366F1] border-[#6366F1] font-semibold'
                         : 'text-[#64748B] border-transparent hover:text-[#475569]'
@@ -419,6 +394,26 @@ export default function ProjectTestCases() {
                     }`}>{counts[tab.key]}</span>
                   </button>
                 ))}
+                <div className="flex-1" />
+                <div className="flex items-center gap-2">
+                  {testCases.some(tc => !tc.custom_id) && project?.prefix && (
+                    <button
+                      onClick={handleAssignMissingIds}
+                      className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-amber-500 text-white rounded-[0.375rem] hover:bg-amber-600 transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
+                    >
+                      <i className="ri-price-tag-3-line text-sm" />
+                      ID 없는 케이스에 ID 부여
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowAIModal(true)}
+                    className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-[0.375rem] hover:opacity-90 transition-opacity font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
+                    style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
+                  >
+                    <i className="ri-sparkling-2-fill text-sm" />
+                    Generate with AI
+                  </button>
+                </div>
               </div>
             );
           })()}

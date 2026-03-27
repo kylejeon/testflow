@@ -1232,41 +1232,11 @@ export default function ProjectRunsPage() {
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         
         <main className="flex-1 overflow-hidden flex flex-col">
-          {/* ── Edge-to-edge page header ── */}
-          <div className="flex items-center gap-3 px-5 py-[0.875rem] bg-white border-b border-[#E2E8F0] flex-shrink-0">
-            <span className="text-[1.125rem] font-bold text-[#0F172A]">Runs &amp; Results</span>
-            <span className="text-[0.8125rem] text-[#94A3B8] font-medium">· {testRuns.length} runs</span>
-            <div className="ml-auto">
-              <button
-                onClick={() => {
-                  setEditingRunId(null);
-                  setFormData({
-                    name: '',
-                    configuration: '',
-                    milestone_id: '',
-                    status: 'new',
-                    issues: '',
-                    tags: '',
-                    include_all_cases: true,
-                    is_ci_cd_run: false,
-                  });
-                  setSelectedTestCases([]);
-                  setShowAddRunModal(true);
-                }}
-                className="px-[0.875rem] py-[0.4375rem] bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white rounded-lg hover:opacity-90 transition-opacity font-semibold text-[0.8125rem] flex items-center gap-2 cursor-pointer whitespace-nowrap shadow-sm"
-                style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
-              >
-                <i className="ri-play-circle-line"></i>
-                Start New Run
-              </button>
-            </div>
-          </div>
-
-          {/* ── Edge-to-edge lifecycle tabs ── */}
-          <div className="flex border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
+          {/* ── Subtab row: lifecycle tabs + action button ── */}
+          <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
             <button
               onClick={() => setActiveTab('active')}
-              className={`flex items-center gap-[0.3125rem] px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-2 transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
+              className={`flex items-center gap-[0.3125rem] px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-[2.5px] transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
                 activeTab === 'active'
                   ? 'text-[#6366F1] border-[#6366F1] font-semibold'
                   : 'text-[#64748B] border-transparent hover:text-[#475569]'
@@ -1280,7 +1250,7 @@ export default function ProjectRunsPage() {
             </button>
             <button
               onClick={() => setActiveTab('closed')}
-              className={`flex items-center gap-[0.3125rem] px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-2 transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
+              className={`flex items-center gap-[0.3125rem] px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-[2.5px] transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
                 activeTab === 'closed'
                   ? 'text-[#6366F1] border-[#6366F1] font-semibold'
                   : 'text-[#64748B] border-transparent hover:text-[#475569]'
@@ -1291,6 +1261,29 @@ export default function ProjectRunsPage() {
               <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${activeTab === 'closed' ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
                 {testRuns.filter(r => r.status === 'completed').length}
               </span>
+            </button>
+            <div className="flex-1" />
+            <button
+              onClick={() => {
+                setEditingRunId(null);
+                setFormData({
+                  name: '',
+                  configuration: '',
+                  milestone_id: '',
+                  status: 'new',
+                  issues: '',
+                  tags: '',
+                  include_all_cases: true,
+                  is_ci_cd_run: false,
+                });
+                setSelectedTestCases([]);
+                setShowAddRunModal(true);
+              }}
+              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white rounded-[0.375rem] hover:opacity-90 transition-opacity font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap"
+              style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
+            >
+              <i className="ri-play-circle-line text-sm" />
+              Start New Run
             </button>
           </div>
 
