@@ -14,6 +14,7 @@ interface SparseStateProps {
   isSampleLoading?: boolean;
   onEditProject?: (project: Project) => void;
   onDeleteProject?: (project: Project) => void;
+  canDeleteProjectIds?: Set<string>;
 }
 
 // ── Health helpers ────────────────────────────────────────────────────────────
@@ -138,6 +139,7 @@ function ProjectCard({
   animDelay: number;
   onEdit?: (project: Project) => void;
   onDelete?: (project: Project) => void;
+  canDelete?: boolean;
 }) {
   const navigate = useNavigate();
   const health = getHealth(passRate ?? null);
@@ -210,13 +212,23 @@ function ProjectCard({
                     </button>
                   )}
                   {onDelete && (
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(false); onDelete(project); }}
-                      className="w-full text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
-                      style={{ padding: '0.5rem 1rem' }}
-                    >
-                      <i className="ri-delete-bin-line" /> Delete
-                    </button>
+                    canDelete !== false ? (
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(false); onDelete(project); }}
+                        className="w-full text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
+                        style={{ padding: '0.5rem 1rem' }}
+                      >
+                        <i className="ri-delete-bin-line" /> Delete
+                      </button>
+                    ) : (
+                      <div
+                        title="Only project owner can delete"
+                        className="w-full text-left text-sm text-gray-300 flex items-center gap-2"
+                        style={{ padding: '0.5rem 1rem', cursor: 'not-allowed' }}
+                      >
+                        <i className="ri-delete-bin-line" /> Delete
+                      </div>
+                    )
                   )}
                 </div>
               )}
@@ -375,6 +387,7 @@ export default function SparseState({
   isSampleLoading,
   onEditProject,
   onDeleteProject,
+  canDeleteProjectIds,
 }: SparseStateProps) {
   const navigate = useNavigate();
   const count = projects.length as 1 | 2;
@@ -420,6 +433,7 @@ export default function SparseState({
             animDelay={i * 50}
             onEdit={onEditProject}
             onDelete={onDeleteProject}
+            canDelete={canDeleteProjectIds ? canDeleteProjectIds.has(project.id) : true}
           />
         ))}
 

@@ -29,13 +29,13 @@ export function useSampleProject() {
     }]);
     if (projError) throw projError;
 
-    // 2. Add creator as admin member
-    const { error: memberError } = await supabase.from('project_members').insert([{
+    // 2. Add creator as admin member (upsert to avoid duplicate key if already exists)
+    const { error: memberError } = await supabase.from('project_members').upsert([{
       project_id: projectId,
       user_id: user.id,
       role: 'admin',
       invited_by: user.id,
-    }]);
+    }], { onConflict: 'project_id,user_id' });
     if (memberError) throw memberError;
 
     // 3. Fetch template

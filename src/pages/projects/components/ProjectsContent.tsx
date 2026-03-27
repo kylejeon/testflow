@@ -11,6 +11,7 @@ import StatCards, { type StatCardsData } from './StatCards';
 import { Avatar } from '../../../components/Avatar';
 import { useTranslation } from 'react-i18next';
 import { useSampleProject } from '../../../hooks/useSampleProject';
+import { useToast, ToastContainer } from '../../../components/Toast';
 
 // ── Health score helpers ────────────────────────────────────────────────────
 function getProjectHealth(passRate: number | null): { color: 'green' | 'yellow' | 'red' | 'gray'; label: string } {
@@ -64,6 +65,9 @@ export default function ProjectsContent() {
   const [sortBy, setSortBy] = useState<'activity' | 'name' | 'health' | 'created'>('activity');
   const [error, setError] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [userProjectRoles, setUserProjectRoles] = useState<Record<string, string>>({});
+  const { toasts, showToast, dismiss } = useToast();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -99,13 +103,18 @@ export default function ProjectsContent() {
       }
 
       const user = session.user;
+      setCurrentUserId(user.id);
 
       const { data: memberData, error: memberError } = await supabase
         .from('project_members')
-        .select('project_id')
+        .select('project_id, role')
         .eq('user_id', user.id);
 
       if (memberError) throw memberError;
+
+      const roles: Record<string, string> = {};
+      memberData?.forEach(m => { roles[m.project_id] = m.role; });
+      setUserProjectRoles(roles);
 
       const projectIds = memberData?.map(m => m.project_id) || [];
 
@@ -303,9 +312,9 @@ export default function ProjectsContent() {
       setSampleLoading(true);
       const projectId = await createSampleProject();
       navigate(`/projects/${projectId}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Sample project creation failed:', err);
-      alert('샘플 프로젝트 생성에 실패했습니다. 다시 시도해주세요.');
+      showToast(`Failed to create sample project: ${err?.message || 'Unknown error'}`, 'error');
     } finally {
       setSampleLoading(false);
     }
@@ -356,9 +365,9 @@ export default function ProjectsContent() {
 
       await fetchProjects();
       setShowCreateModal(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('프로젝트 생성 오류:', error);
-      alert('프로젝트 생성에 실패했습니다.');
+      showToast(`Failed to create project: ${error?.message || 'Unknown error'}`, 'error');
     }
   };
 
@@ -390,8 +399,9 @@ export default function ProjectsContent() {
       if (error) throw error;
       await fetchProjects();
       setDeletingProject(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('프로젝트 삭제 오류:', error);
+      showToast(`Failed to delete project: ${error?.message || 'Unknown error'}`, 'error');
     }
   };
 
@@ -416,6 +426,12 @@ export default function ProjectsContent() {
         default: return new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime();
       }
     });
+
+  // ── Permission helper ───────────────────────────────────────────────────────
+  const canDeleteProject = (project: Project) => {
+    const role = userProjectRoles[project.id];
+    return role === 'admin' || role === 'owner' || (project as any).owner_id === currentUserId;
+  };
 
   // ── Computed stat card data ─────────────────────────────────────────────────
   const totalTestCases = Object.values(testCaseCounts).reduce((a, b) => a + b, 0);
@@ -609,7 +625,8 @@ export default function ProjectsContent() {
                 onTrySample={handleTrySample}
                 isSampleLoading={sampleLoading}
                 onEditProject={setEditingProject}
-                onDeleteProject={setDeletingProject}
+                onDeleteProject={(p) => canDeleteProject(p) ? setDeletingProject(p) : showToast('Only project owner can delete', 'warning')}
+                canDeleteProjectIds={new Set(projects.filter(canDeleteProject).map(p => p.id))}
               />
             </div>
           </div>
@@ -623,6 +640,7 @@ export default function ProjectsContent() {
         {deletingProject && (
           <DeleteConfirmModal project={deletingProject} onClose={() => setDeletingProject(null)} onDelete={handleDeleteProject} />
         )}
+        <ToastContainer toasts={toasts} dismiss={dismiss} />
       </>
     );
   }
@@ -747,19 +765,30 @@ export default function ProjectsContent() {
                                 <i className="ri-edit-line" />
                                 {t('common:edit')}
                               </button>
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setDeletingProject(project);
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
-                                style={{ padding: '0.5rem 1rem' }}
-                              >
-                                <i className="ri-delete-bin-line" />
-                                {t('common:delete')}
-                              </button>
+                              {canDeleteProject(project) ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setDeletingProject(project);
+                                    setOpenMenuId(null);
+                                  }}
+                                  className="w-full text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
+                                  style={{ padding: '0.5rem 1rem' }}
+                                >
+                                  <i className="ri-delete-bin-line" />
+                                  {t('common:delete')}
+                                </button>
+                              ) : (
+                                <div
+                                  title="Only project owner can delete"
+                                  className="w-full text-left text-sm text-gray-300 flex items-center gap-2"
+                                  style={{ padding: '0.5rem 1rem', cursor: 'not-allowed' }}
+                                >
+                                  <i className="ri-delete-bin-line" />
+                                  {t('common:delete')}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -848,6 +877,7 @@ export default function ProjectsContent() {
       {deletingProject && (
         <DeleteConfirmModal project={deletingProject} onClose={() => setDeletingProject(null)} onDelete={handleDeleteProject} />
       )}
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </>
   );
 }
