@@ -105,6 +105,7 @@ export default function ProjectRunsPage() {
   const [editingRunId, setEditingRunId] = useState<string | null>(null);
   const [project, setProject] = useState<any>(null);
   const [contributors, setContributors] = useState<Contributor[]>([]);
+  const [assigneeProfiles, setAssigneeProfiles] = useState<Map<string, { full_name: string | null; email: string }>>(new Map());
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -795,6 +796,23 @@ export default function ProjectRunsPage() {
       });
 
       setTestRuns(runsWithStats);
+
+      // Fetch profiles for all unique assignee user IDs so avatars show real names
+      const allAssigneeIds = new Set<string>();
+      (testRunsData || []).forEach((run: any) => {
+        (run.assignees || []).forEach((uid: string) => allAssigneeIds.add(uid));
+      });
+      if (allAssigneeIds.size > 0) {
+        const { data: assigneeProfilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', Array.from(allAssigneeIds));
+        const profileMap = new Map<string, { full_name: string | null; email: string }>();
+        (assigneeProfilesData || []).forEach((p: any) => {
+          profileMap.set(p.id, { full_name: p.full_name ?? null, email: p.email || '' });
+        });
+        setAssigneeProfiles(profileMap);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -1414,9 +1432,19 @@ export default function ProjectRunsPage() {
           <div className="flex items-center gap-2 text-[0.75rem] text-[#64748B]">
             <span className="text-[#94A3B8]">Assigned to</span>
             <div className="flex gap-1">
-              {run.assignees && run.assignees.slice(0, 3).map((assignee) => (
-                <Avatar key={assignee} userId={assignee} name={assignee} size="sm" title={assignee} />
-              ))}
+              {run.assignees && run.assignees.slice(0, 3).map((assignee) => {
+                const p = assigneeProfiles.get(assignee);
+                return (
+                  <Avatar
+                    key={assignee}
+                    userId={assignee}
+                    name={p?.full_name ?? undefined}
+                    email={p?.email}
+                    size="sm"
+                    title={p?.full_name || p?.email || assignee}
+                  />
+                );
+              })}
             </div>
             {run.created_at && (
               <>

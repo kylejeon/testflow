@@ -57,7 +57,6 @@ interface ProjectMember {
   email: string;
   full_name: string | null;
   role: string;
-  avatar_emoji: string | null;
 }
 
 interface JiraSettings {
@@ -279,8 +278,7 @@ export default function RunDetail() {
           role,
           profiles:user_id (
             email,
-            full_name,
-            avatar_emoji
+            full_name
           )
         `)
         .eq('project_id', projectId);
@@ -293,7 +291,6 @@ export default function RunDetail() {
         email: item.profiles?.email || '',
         full_name: item.profiles?.full_name || null,
         role: item.role,
-        avatar_emoji: item.profiles?.avatar_emoji || null,
       }));
 
       setProjectMembers(members);
@@ -1790,7 +1787,7 @@ export default function RunDetail() {
                         <option value="">Unassigned</option>
                         {projectMembers.map((member) => (
                           <option key={member.id} value={member.full_name || member.email}>
-                            {member.avatar_emoji ? `${member.avatar_emoji} ` : ''}{member.full_name || member.email}
+                            {member.full_name || member.email}
                           </option>
                         ))}
                       </select>
@@ -1912,14 +1909,11 @@ export default function RunDetail() {
                                 >
                                   {assigneeName ? (
                                     <>
-                                      <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                        {assignedMember?.avatar_emoji ? (
-                                          <span className="text-base leading-none">{assignedMember.avatar_emoji}</span>
-                                        ) : (
-                                          <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                                            {assigneeName.substring(0, 2).toUpperCase()}
-                                          </div>
-                                        )}
+                                      <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                        {(assignedMember
+                                          ? (assignedMember.full_name || assignedMember.email)
+                                          : assigneeName
+                                        ).substring(0, 2).toUpperCase()}
                                       </div>
                                       <span className="text-sm font-medium text-gray-900 truncate">{assigneeName}</span>
                                     </>
@@ -1948,13 +1942,9 @@ export default function RunDetail() {
                                             className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center gap-2"
                                             onClick={(e) => { e.stopPropagation(); handleAssigneeChange(testCase.id, name); setOpenAssigneeDropdown(null); }}
                                           >
-                                            {member.avatar_emoji ? (
-                                              <span className="text-base leading-none">{member.avatar_emoji}</span>
-                                            ) : (
-                                              <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                                                {name.substring(0, 2).toUpperCase()}
-                                              </div>
-                                            )}
+                                            <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                              {name.substring(0, 2).toUpperCase()}
+                                            </div>
                                             <span className="truncate">{name}</span>
                                           </button>
                                         );
