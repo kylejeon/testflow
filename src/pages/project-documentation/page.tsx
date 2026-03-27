@@ -3,11 +3,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
+import { Avatar } from '../../components/Avatar';
+import { useToast, ToastContainer } from '../../components/Toast';
 
 interface DocumentItem {
   id: string;
   project_id: string;
-  type: 'link' | 'file' | 'folder';
+  type: 'link' | 'file';
   title: string;
   url?: string;
   file_name?: string;
@@ -80,12 +82,13 @@ const getFileExt = (doc: DocumentItem): string => {
 export default function ProjectDocumentation() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toasts, showToast, dismiss } = useToast();
 
   const [project, setProject] = useState<any>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [customFolders, setCustomFolders] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<{ full_name: string; avatar_emoji: string } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ full_name: string } | null>(null);
 
   // Tab & folder state
   const [activeTab, setActiveTab] = useState<string>('all');
@@ -130,10 +133,9 @@ export default function ProjectDocumentation() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase.from('profiles').select('full_name, avatar_emoji').eq('id', user.id).maybeSingle();
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
         setUserProfile({
           full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
-          avatar_emoji: profile?.avatar_emoji || '',
         });
       }
     } catch {}
@@ -159,8 +161,8 @@ export default function ProjectDocumentation() {
         return { ...doc, category, descText: text };
       });
 
-      setCustomFolders(allItems.filter(d => d.type === 'folder'));
-      setDocuments(allItems.filter(d => d.type !== 'folder'));
+      setCustomFolders(allItems.filter(d => d.category === '__folder__'));
+      setDocuments(allItems.filter(d => d.category !== '__folder__'));
     } catch (error) {
       console.error('데이터 로딩 오류:', error);
     } finally {
@@ -219,7 +221,7 @@ export default function ProjectDocumentation() {
       setSelectedDocs(prev => { const n = new Set(prev); n.delete(docId); return n; });
     } catch (e) {
       console.error('삭제 오류:', e);
-      alert('Delete failed.');
+      showToast('Failed to delete document.', 'error');
     }
   };
 
@@ -231,9 +233,10 @@ export default function ProjectDocumentation() {
       if (error) throw error;
       setDocuments(prev => prev.filter(d => !selectedDocs.has(d.id)));
       setSelectedDocs(new Set());
+      showToast(`${ids.length} document(s) deleted.`, 'success');
     } catch (e) {
       console.error('삭제 오류:', e);
-      alert('Delete failed.');
+      showToast('Failed to delete documents.', 'error');
     }
   };
 
@@ -255,14 +258,15 @@ export default function ProjectDocumentation() {
       setSelectedDocs(new Set());
       setShowMoveModal(false);
       setMoveTarget('');
+      showToast('Documents moved successfully.', 'success');
     } catch (e) {
       console.error('이동 오류:', e);
-      alert('Move failed.');
+      showToast('Failed to move documents.', 'error');
     }
   };
 
   const handleAddLink = async () => {
-    if (!linkTitle.trim() || !linkUrl.trim()) { alert('Title and URL are required.'); return; }
+    if (!linkTitle.trim() || !linkUrl.trim()) { showToast('Title and URL are required.', 'warning'); return; }
     try {
       setLinkSaving(true);
       const { error } = await supabase.from('project_documents').insert({
@@ -276,16 +280,17 @@ export default function ProjectDocumentation() {
       setLinkUrl(''); setLinkTitle(''); setLinkCategory('link');
       setShowAddLinkModal(false);
       fetchData();
+      showToast('Link added successfully.', 'success');
     } catch (e) {
       console.error('링크 추가 오류:', e);
-      alert('Failed to add link.');
+      showToast('Failed to add link.', 'error');
     } finally {
       setLinkSaving(false);
     }
   };
 
   const handleUpload = async () => {
-    if (!uploadTitle.trim() || !uploadFile) { alert('Title and file are required.'); return; }
+    if (!uploadTitle.trim() || !uploadFile) { showToast('Title and file are required.', 'warning'); return; }
     try {
       setUploading(true);
       setUploadProgress(20);
@@ -309,32 +314,35 @@ export default function ProjectDocumentation() {
       setUploadFile(null); setUploadTitle(''); setUploadCategory('file');
       setShowUploadModal(false);
       fetchData();
+      showToast('File uploaded successfully.', 'success');
     } catch (e) {
       console.error('업로드 오류:', e);
-      alert('Upload failed.');
+      showToast('Upload failed.', 'error');
     } finally {
       setUploading(false);
       setUploadProgress(0);
     }
   };
 
+  // Folders are stored as type:'file' with cat:'__folder__' to avoid DB type constraint
   const handleCreateFolder = async () => {
-    if (!newFolderName.trim()) { alert('Folder name is required.'); return; }
+    if (!newFolderName.trim()) { showToast('Folder name is required.', 'warning'); return; }
     try {
       setFolderSaving(true);
       const { error } = await supabase.from('project_documents').insert({
         project_id: id,
-        type: 'folder',
+        type: 'file',
         title: newFolderName.trim(),
-        description: JSON.stringify({ cat: newFolderParent || 'all', text: '' }),
+        description: JSON.stringify({ cat: '__folder__', parent: newFolderParent || '', text: '' }),
       });
       if (error) throw error;
       setNewFolderName(''); setNewFolderParent('');
       setShowNewFolderModal(false);
       fetchData();
+      showToast('Folder created successfully.', 'success');
     } catch (e) {
       console.error('폴더 생성 오류:', e);
-      alert('Failed to create folder.');
+      showToast('Failed to create folder.', 'error');
     } finally {
       setFolderSaving(false);
     }
@@ -343,7 +351,6 @@ export default function ProjectDocumentation() {
   if (loading) return <PageLoader fullScreen />;
 
   const catInfo = (cat: string) => CATEGORY_INFO[cat] || CATEGORY_INFO['file'];
-  const userInitials = userProfile?.full_name?.charAt(0).toUpperCase() || 'U';
 
   return (
     <div className="flex h-screen bg-white">
@@ -564,9 +571,7 @@ export default function ProjectDocumentation() {
                           </td>
                           <td className="px-3 py-[0.4375rem] border-b border-[#F1F5F9]">
                             <div className="flex items-center gap-1.5">
-                              <div className="w-[1.375rem] h-[1.375rem] rounded-full bg-[#6366F1] flex items-center justify-center text-white text-[0.4375rem] font-bold flex-shrink-0">
-                                {userProfile?.avatar_emoji || userInitials}
-                              </div>
+                              <Avatar name={userProfile?.full_name} size="xs" />
                               <span className="text-[0.75rem] text-[#64748B]">{userProfile?.full_name || 'User'}</span>
                             </div>
                           </td>
@@ -745,6 +750,7 @@ export default function ProjectDocumentation() {
                   <option value="test-plans">Test Plans</option>
                   <option value="reports">Reports</option>
                   <option value="specs">Specs</option>
+                  <option value="link">External Links</option>
                 </select>
               </div>
             </div>
@@ -800,6 +806,8 @@ export default function ProjectDocumentation() {
           </div>
         </div>
       )}
+
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </div>
   );
 }
