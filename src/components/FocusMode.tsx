@@ -65,18 +65,21 @@ const PRIORITY_TEXT_COLOR: Record<string, string> = {
 
 function parseSteps(raw?: string, expectedResultRaw?: string): { step: string; expectedResult: string }[] {
   if (!raw) return [];
+  const expectedArr = expectedResultRaw ? expectedResultRaw.split('\n').filter(Boolean) : [];
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      return parsed.map((s: any) => ({
+      return parsed.map((s: any, i: number) => ({
         step: s.step || s.action || '',
-        expectedResult: s.expectedResult || s.expected_result || '',
+        // Per-step expectedResult from JSON, with fallback to top-level expected_result line
+        expectedResult:
+          s.expectedResult || s.expected_result ||
+          (expectedArr[i] || '').replace(/^\d+\.\s*/, ''),
       }));
     }
   } catch {}
   // Plain-text steps: zip with lines from top-level expected_result field
   const stepsArr = raw.split('\n').filter(Boolean);
-  const expectedArr = expectedResultRaw ? expectedResultRaw.split('\n').filter(Boolean) : [];
   return stepsArr.map((s, i) => ({
     step: s.replace(/^\d+\.\s*/, ''),
     expectedResult: (expectedArr[i] || '').replace(/^\d+\.\s*/, ''),
@@ -812,8 +815,8 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                             )}
                             {s.expectedResult && (
                               <div className="flex items-start gap-1" style={{ marginTop: '0.375rem' }}>
-                                <i className="ri-checkbox-circle-line flex-shrink-0" style={{ fontSize: '0.75rem', color: '#22C55E', marginTop: '0.05rem' }} />
-                                <p style={{ fontSize: '0.6875rem', color: '#16A34A', lineHeight: 1.5 }}>
+                                <i className="ri-checkbox-circle-line flex-shrink-0" style={{ fontSize: '0.875rem', color: '#22C55E', marginTop: '0.125rem' }} />
+                                <p style={{ fontSize: '0.875rem', color: '#16A34A', lineHeight: 1.6 }}>
                                   {s.expectedResult.replace(/<[^>]*>/g, '').trim()}
                                 </p>
                               </div>
