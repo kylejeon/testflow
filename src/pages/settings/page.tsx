@@ -25,6 +25,7 @@ interface UserProfile {
   is_trial: boolean;
   subscription_ends_at: string | null;
   avatar_emoji: string;
+  avatar_url?: string | null;
 }
 
 interface CIToken {
@@ -203,7 +204,7 @@ export default function SettingsPage() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('email, full_name, subscription_tier, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji')
+        .select('email, full_name, subscription_tier, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji, avatar_url')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -259,6 +260,7 @@ export default function SettingsPage() {
           is_trial: isTrial,
           subscription_ends_at: subscriptionEndsAt,
           avatar_emoji: data.avatar_emoji || '🐶',
+          avatar_url: data.avatar_url || null,
         });
       }
     } catch (error) {
@@ -832,10 +834,6 @@ def pytest_sessionfinish(session, exitstatus):
     return `$${Number(price).toLocaleString()}`;
   };
 
-  // Header avatar: show emoji if set, otherwise initials
-  const headerAvatar = userProfile?.avatar_emoji
-    ? userProfile.avatar_emoji
-    : null;
   const headerInitial = userProfile?.full_name?.charAt(0) || 'U';
 
   return (
@@ -859,12 +857,12 @@ def pytest_sessionfinish(session, exitstatus):
               
               <div className="flex items-center gap-3">
                 <div className="relative" ref={profileMenuRef}>
-                  <div 
+                  <div
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
                     className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden"
                   >
-                    {headerAvatar ? (
-                      <span className="text-xl leading-none">{headerAvatar}</span>
+                    {userProfile?.avatar_url ? (
+                      <img src={userProfile.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <span>{headerInitial}</span>
                     )}
