@@ -1,6 +1,6 @@
 import { LogoMark } from '../../components/Logo';
 import PageLoader from '../../components/PageLoader';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
@@ -47,6 +47,9 @@ export default function ProjectDetail() {
   const [showAIAssist, setShowAIAssist] = useState(false);
   const [dashboardTab, setDashboardTab] = useState<'overview' | 'analytics' | 'activity'>('overview');
   const [projectPassRateData, setProjectPassRateData] = useState<{ total: number; passed: number } | null>(null);
+  const [rawTestResults, setRawTestResults] = useState<any[]>([]);
+  const [trendPeriod, setTrendPeriod] = useState<'7d' | '14d' | '30d'>('7d');
+  const [expandedPriorityGroups, setExpandedPriorityGroups] = useState<Set<string>>(new Set(['critical', 'high']));
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -174,6 +177,7 @@ export default function ProjectDetail() {
       const _prTotal = (allTestResultsData || []).filter((r: any) => r.status !== 'untested').length;
       const _prPassed = (allTestResultsData || []).filter((r: any) => r.status === 'passed').length;
       setProjectPassRateData({ total: _prTotal, passed: _prPassed });
+      setRawTestResults(allTestResultsData || []);
 
       // calculate milestone progress
       const milestonesWithProgress = (milestonesData || []).map((milestone) => {
@@ -497,6 +501,29 @@ export default function ProjectDetail() {
   const currentTier = userProfile?.subscription_tier || 1;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
 
+  // ── Trend Data (from rawTestResults) ──
+  const trendData = useMemo(() => {
+    const days = trendPeriod === '7d' ? 7 : trendPeriod === '14d' ? 14 : 30;
+    const points: { label: string; passed: number; failed: number; blocked: number }[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const dateKey = d.toISOString().slice(0, 10);
+      const label = days <= 7
+        ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : i % 3 === 0 ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      let passed = 0, failed = 0, blocked = 0;
+      rawTestResults.forEach((r: any) => {
+        if ((r.created_at || '').slice(0, 10) === dateKey) {
+          if (r.status === 'passed') passed++;
+          else if (r.status === 'failed') failed++;
+          else if (r.status === 'blocked') blocked++;
+        }
+      });
+      points.push({ label, passed, failed, blocked });
+    }
+    return points;
+  }, [rawTestResults, trendPeriod]);
+
   // ── Loading / Not found states ──
   if (loading) {
     return (
@@ -547,6 +574,43 @@ export default function ProjectDetail() {
     }
     return true;
   });
+
+  // ── Release Readiness ──
+  const failedTotal = testRuns.reduce((a, r) => a + (r.failed||0), 0);
+  const criticalBugScore = failedTotal === 0 ? 100 : Math.max(0, 100 - failedTotal * 8);
+  const untestedInRuns = testRuns.reduce((a, r) => a + (r.untested||0), 0);
+  const testedInRuns = testRuns.reduce((a, r) => a + (r.passed||0) + (r.failed||0) + (r.blocked||0) + (r.retest||0), 0);
+  const totalInRuns = testedInRuns + untestedInRuns;
+  const coverageScore = totalInRuns > 0 ? Math.round((testedInRuns / totalInRuns) * 100) : 0;
+  const avgMilestoneProgress = activeMilestones.length > 0
+    ? Math.round(activeMilestones.reduce((a: number, m: any) => a + m.progress, 0) / activeMilestones.length)
+    : 100;
+  const releaseScore = Math.round(passRate * 0.4 + criticalBugScore * 0.25 + coverageScore * 0.2 + avgMilestoneProgress * 0.15);
+  const releaseSignal: 'go' | 'conditional' | 'not-ready' = releaseScore >= 80 ? 'go' : releaseScore >= 60 ? 'conditional' : 'not-ready';
+
+  // ── Run Priority (milestone-based) ──
+  const milestoneEndDateMap = new Map<string, string>();
+  milestones.forEach((m: any) => {
+    if (m.end_date) milestoneEndDateMap.set(m.id, m.end_date);
+    (m.subMilestones || []).forEach((sub: any) => {
+      if (sub.end_date) milestoneEndDateMap.set(sub.id, sub.end_date);
+    });
+  });
+  const getRunPriority = (run: any): { level: 'critical'|'high'|'medium'|'low'; daysLeft: number|null } => {
+    if (run.priority_override) return { level: run.priority_override, daysLeft: null };
+    if (!run.milestone_id) return { level: 'low', daysLeft: null };
+    const endDate = milestoneEndDateMap.get(run.milestone_id);
+    if (!endDate) return { level: 'low', daysLeft: null };
+    const daysLeft = Math.ceil((new Date(endDate).getTime() - Date.now()) / 86400000);
+    const level = daysLeft <= 3 ? 'critical' : daysLeft <= 7 ? 'high' : daysLeft <= 14 ? 'medium' : 'low';
+    return { level, daysLeft };
+  };
+  const incompleteRuns = testRuns.filter((r: any) => r.status !== 'completed');
+  const runsWithPriority = incompleteRuns.map((run: any) => ({ ...run, _priority: getRunPriority(run) }));
+  const myRunsPriorityGroups = (['critical','high','medium','low'] as const).map(level => ({
+    level,
+    runs: runsWithPriority.filter((r: any) => r._priority.level === level),
+  })).filter(g => g.runs.length > 0);
 
   const renderMilestone = (milestone: any, isSub = false) => {
     const badge = getStatusBadge(milestone.status);
@@ -658,120 +722,280 @@ export default function ProjectDetail() {
               </div>
             </div>
 
-            {/* Dashboard Grid */}
-            <div className="flex-1 p-6 overflow-y-auto">
-              <div className="grid grid-cols-5 gap-4 max-w-screen-xl mx-auto">
+            {/* Dashboard — Overview tab */}
+            {dashboardTab === 'overview' && (
+              <div className="flex flex-1 overflow-hidden">
 
-                {/* LEFT COLUMN — 60% */}
-                <div className="col-span-3 flex flex-col gap-4">
+                {/* ── MAIN CONTENT ── */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-5 min-w-0" style={{ scrollbarWidth: 'thin' }}>
 
-                  {/* Widget 1: My Tasks */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5" style={{ animation: 'fadeInUp 0.4s ease-out 0ms backwards' }}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                        <i className="ri-checkbox-circle-line text-lg text-indigo-500"></i>
-                        My Tasks
-                        {testRuns.reduce((a, r) => a + (r.untested||0) + (r.failed||0) + (r.retest||0), 0) > 0 && (
-                          <span className="min-w-5 h-5 px-1.5 rounded-full bg-indigo-50 text-indigo-600 text-[11px] font-bold flex items-center justify-center">
-                            {Math.min(testRuns.reduce((a, r) => a + (r.untested||0) + (r.failed||0) + (r.retest||0), 0), 99)}
-                          </span>
-                        )}
+                  {/* WIDGET 1: RELEASE READINESS */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <i className="ri-shield-check-line text-lg" style={{ color: releaseSignal === 'go' ? '#16A34A' : releaseSignal === 'conditional' ? '#D97706' : '#DC2626' }} />
+                      <span className="text-sm font-bold text-gray-900">Release Readiness</span>
+                      <span className="ml-auto text-xs text-gray-400">Updated just now</span>
+                    </div>
+                    <div className="flex flex-wrap gap-5 items-start">
+                      {/* Score circle */}
+                      <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                        <div className="relative w-20 h-20 flex items-center justify-center">
+                          <svg width="80" height="80" viewBox="0 0 80 80" style={{ transform: 'rotate(-90deg)', position: 'absolute' }}>
+                            <circle cx="40" cy="40" r="35" fill="none" stroke="#E2E8F0" strokeWidth="6" />
+                            <circle cx="40" cy="40" r="35" fill="none"
+                              stroke={releaseSignal === 'go' ? '#16A34A' : releaseSignal === 'conditional' ? '#F59E0B' : '#EF4444'}
+                              strokeWidth="6"
+                              strokeDasharray={`${(releaseScore / 100) * 219.9} 219.9`}
+                              strokeLinecap="round" />
+                          </svg>
+                          <span className="text-2xl font-extrabold text-gray-900 relative z-10">{releaseScore}</span>
+                        </div>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                          releaseSignal === 'go' ? 'bg-green-100 text-green-800' :
+                          releaseSignal === 'conditional' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {releaseSignal === 'go' ? '🟢 Go' : releaseSignal === 'conditional' ? '🟡 Conditional' : '🔴 Not Ready'}
+                        </span>
                       </div>
-                      <Link to={`/projects/${id}/runs`} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-0.5">
-                        View all runs <i className="ri-arrow-right-s-line"></i>
+
+                      {/* Formula */}
+                      <div className="flex flex-col gap-1.5 min-w-[160px] flex-shrink-0">
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Score Formula</p>
+                        {[
+                          { label: 'Pass Rate', weight: '40%' },
+                          { label: 'Critical Bug Resolution', weight: '25%' },
+                          { label: 'Coverage', weight: '20%' },
+                          { label: 'Milestone Progress', weight: '15%' },
+                        ].map(({ label, weight }) => (
+                          <div key={label} className="flex items-center justify-between text-[11px]">
+                            <span className="text-gray-500">{label}</span>
+                            <span className="font-bold text-indigo-600 ml-4">{weight}</span>
+                          </div>
+                        ))}
+                        <div className="h-px bg-gray-100 my-1" />
+                        <div className="flex gap-3 text-[10px] font-semibold flex-wrap">
+                          <span className="text-green-700">● ≥80 Go</span>
+                          <span className="text-amber-700">● 60-79 Conditional</span>
+                          <span className="text-red-700">● &lt;60 Not Ready</span>
+                        </div>
+                      </div>
+
+                      {/* Metric cards */}
+                      <div className="flex gap-3 flex-wrap flex-1 min-w-0">
+                        {[
+                          { label: 'Pass Rate', value: `${passRate}%`, sub: 'Target: 80%', gap: passRate < 80 ? `gap ${80 - passRate}%` : null, bar: passRate, critical: passRate < 60 },
+                          { label: 'Critical Bugs', value: `${failedTotal}`, sub: failedTotal > 0 ? 'open failures' : 'clean', bar: null, critical: failedTotal > 0 },
+                          { label: 'Coverage', value: `${coverageScore}%`, sub: `${untestedInRuns} untested`, bar: coverageScore, critical: coverageScore < 50 },
+                          { label: 'Milestone', value: `${avgMilestoneProgress}%`, sub: activeMilestones[0]?.name || 'No active', bar: avgMilestoneProgress, critical: false },
+                        ].map(({ label, value, sub, gap, bar, critical }) => (
+                          <div key={label} className="flex-1 min-w-[100px] bg-slate-50 border border-slate-100 rounded-lg p-3">
+                            <p className="text-[11px] text-gray-400 font-medium mb-1">{label}</p>
+                            <p className={`text-xl font-extrabold mb-1 ${critical ? 'text-red-500' : 'text-gray-900'}`}>{value}</p>
+                            <p className="text-[11px] text-gray-500 mb-2">{sub}</p>
+                            {bar !== null && (
+                              <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 rounded-full" style={{ width: `${bar}%` }} />
+                              </div>
+                            )}
+                            {gap && <p className="text-[10px] text-red-500 font-semibold mt-1">{gap}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* WIDGET 2: MY RUNS */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-4 flex-wrap">
+                      <i className="ri-play-circle-line text-lg text-indigo-500" />
+                      <span className="text-sm font-bold text-gray-900">My Runs</span>
+                      <span className="text-sm font-extrabold text-gray-900">{incompleteRuns.length}</span>
+                      <span className="text-sm text-gray-400">active</span>
+                      <Link to={`/projects/${id}/runs`} className="ml-auto text-xs text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-0.5">
+                        View all runs <i className="ri-arrow-right-s-line" />
                       </Link>
                     </div>
-                    {testRuns.filter(r => (r.untested||0) + (r.failed||0) + (r.retest||0) > 0).length === 0 ? (
-                      <div className="text-center py-8">
-                        <i className="ri-checkbox-circle-line text-4xl text-green-400 block mb-2"></i>
-                        <p className="text-sm text-gray-500">All caught up! No pending tasks.</p>
+
+                    {myRunsPriorityGroups.length === 0 ? (
+                      <div className="text-center py-10">
+                        <i className="ri-checkbox-circle-line text-4xl text-green-400 block mb-2" />
+                        <p className="text-sm text-gray-500">All runs completed. Great work!</p>
                       </div>
                     ) : (
-                      <div className="space-y-0.5">
-                        {testRuns.filter(r => (r.untested||0) + (r.failed||0) + (r.retest||0) > 0).slice(0, 4).map(run => {
-                          const needsAttention = (run.failed||0) + (run.retest||0);
-                          const urgency = run.status === 'in_progress' ? 'today' : needsAttention > 0 ? 'overdue' : 'week';
+                      <div className="space-y-3">
+                        {myRunsPriorityGroups.map(({ level, runs }) => {
+                          const isExpanded = expandedPriorityGroups.has(level);
+                          const PRIORITY_STYLE = {
+                            critical: { bg: 'bg-red-50', border: 'border-red-400', text: 'text-red-900', dot: '#EF4444', badge: 'bg-red-100 text-red-800', desc: 'milestone ≤3d' },
+                            high:     { bg: 'bg-amber-50', border: 'border-amber-400', text: 'text-amber-900', dot: '#F59E0B', badge: 'bg-amber-100 text-amber-800', desc: 'milestone 4~7d' },
+                            medium:   { bg: 'bg-yellow-50', border: 'border-yellow-300', text: 'text-yellow-900', dot: '#FBBF24', badge: 'bg-yellow-100 text-yellow-800', desc: 'milestone 8~14d' },
+                            low:      { bg: 'bg-green-50', border: 'border-green-400', text: 'text-green-900', dot: '#22C55E', badge: 'bg-green-100 text-green-800', desc: 'milestone >14d' },
+                          }[level];
                           return (
-                            <Link
-                              key={run.id}
-                              to={`/projects/${id}/runs/${run.id}`}
-                              className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
-                            >
-                              <div className="w-[18px] h-[18px] border-2 border-gray-300 rounded group-hover:border-indigo-500 flex-shrink-0 mt-0.5 transition-colors" />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">{run.name}</p>
-                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                  {needsAttention > 0 && (
-                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600">
-                                      {needsAttention} failed/retest
-                                    </span>
-                                  )}
-                                  {(run.untested||0) > 0 && (
-                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600">
-                                      {run.untested} untested
-                                    </span>
-                                  )}
-                                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                                    urgency === 'overdue' ? 'bg-red-50 text-red-600' :
-                                    urgency === 'today' ? 'bg-orange-50 text-orange-600' :
-                                    'bg-indigo-50 text-indigo-600'
-                                  }`}>
-                                    {urgency === 'overdue' ? 'Needs attention' : urgency === 'today' ? 'In progress' : 'This week'}
-                                  </span>
+                            <div key={level}>
+                              <button
+                                onClick={() => {
+                                  const s = new Set(expandedPriorityGroups);
+                                  if (s.has(level)) s.delete(level); else s.add(level);
+                                  setExpandedPriorityGroups(s);
+                                }}
+                                className={`w-full flex items-center justify-between px-3.5 py-2 rounded-lg border-l-[3px] text-xs font-bold uppercase tracking-wide transition-opacity hover:opacity-80 ${PRIORITY_STYLE.bg} ${PRIORITY_STYLE.border} ${PRIORITY_STYLE.text}`}
+                              >
+                                <span className="flex items-center gap-1.5">
+                                  <span style={{ color: PRIORITY_STYLE.dot }}>●</span>
+                                  {level.charAt(0).toUpperCase() + level.slice(1)} ({runs.length})
+                                  <span className="font-normal opacity-70 normal-case">— {PRIORITY_STYLE.desc}</span>
+                                </span>
+                                <i className={`ri-arrow-${isExpanded ? 'down' : 'right'}-s-line text-base`} />
+                              </button>
+
+                              {isExpanded && (
+                                <div className="divide-y divide-gray-50 border border-t-0 border-gray-100 rounded-b-lg overflow-hidden">
+                                  {runs.map((run: any) => {
+                                    const total = (run.passed||0) + (run.failed||0) + (run.blocked||0) + (run.retest||0) + (run.untested||0);
+                                    const pPct = total ? Math.round(((run.passed||0)/total)*100) : 0;
+                                    const fPct = total ? Math.round(((run.failed||0)/total)*100) : 0;
+                                    const daysLeft = run._priority.daysLeft;
+                                    const dueDate = run.milestone_id ? milestoneEndDateMap.get(run.milestone_id) : null;
+                                    return (
+                                      <div key={run.id} className="px-3.5 py-3 hover:bg-slate-50 transition-colors">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <span className="text-[13px] font-semibold text-gray-900 flex-1 min-w-0 truncate">{run.name}</span>
+                                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${PRIORITY_STYLE.badge}`}>
+                                            {level.charAt(0).toUpperCase() + level.slice(1)}
+                                            {daysLeft !== null && <span className="font-normal opacity-70"> · {daysLeft}d left</span>}
+                                          </span>
+                                          {run.priority_override && (
+                                            <span className="text-[9px] font-semibold bg-violet-100 text-violet-700 px-1 py-0.5 rounded flex-shrink-0">Manual</span>
+                                          )}
+                                          <Link
+                                            to={`/projects/${id}/runs/${run.id}`}
+                                            className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors flex-shrink-0"
+                                            onClick={e => e.stopPropagation()}
+                                          >
+                                            <i className="ri-play-fill text-xs" />Continue
+                                          </Link>
+                                        </div>
+                                        {/* 3-color progress bar */}
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                          <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden flex">
+                                            <div className="h-full bg-green-500 transition-all" style={{ width: `${pPct}%` }} />
+                                            <div className="h-full bg-red-500 transition-all" style={{ width: `${fPct}%` }} />
+                                          </div>
+                                          <span className="text-[11px] font-bold text-gray-700 min-w-[32px] text-right">{pPct}%</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-[11px] text-gray-500 flex-wrap">
+                                          {run.milestoneName && <span><i className="ri-flag-line mr-0.5" />{run.milestoneName}</span>}
+                                          {dueDate && (
+                                            <span className={daysLeft !== null && daysLeft <= 3 ? 'text-red-500 font-semibold' : ''}>
+                                              <i className="ri-calendar-line mr-0.5" />Due {formatDate(dueDate)}
+                                            </span>
+                                          )}
+                                          <span>{run.passed||0}/{total} passed · {run.failed||0} failed · {run.untested||0} remaining</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              </div>
-                            </Link>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
                     )}
                   </div>
 
-                  {/* Widget 2: Attention Needed */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5" style={{ animation: 'fadeInUp 0.4s ease-out 50ms backwards' }}>
+                  {/* WIDGET 3: TEST EXECUTION TREND */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-5">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                        <i className="ri-error-warning-line text-lg text-red-500"></i>
-                        Attention Needed
-                        {testRuns.filter(r => (r.failed||0) + (r.blocked||0) > 0).length > 0 && (
-                          <span className="min-w-5 h-5 px-1.5 rounded-full bg-red-50 text-red-600 text-[11px] font-bold flex items-center justify-center">
-                            {testRuns.filter(r => (r.failed||0) + (r.blocked||0) > 0).length}
-                          </span>
-                        )}
+                      <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                        <i className="ri-line-chart-line text-lg text-indigo-500" />
+                        Test Execution Trend
                       </div>
-                      <Link to={`/projects/${id}/runs`} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-0.5">
-                        View failures <i className="ri-arrow-right-s-line"></i>
+                      <div className="flex gap-1.5">
+                        {(['7d','14d','30d'] as const).map(p => (
+                          <button
+                            key={p}
+                            onClick={() => setTrendPeriod(p)}
+                            className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${
+                              trendPeriod === p ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                            }`}
+                          >{p}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {rawTestResults.length === 0 ? (
+                      <div className="text-center py-10 text-sm text-gray-400">
+                        <i className="ri-line-chart-line text-3xl block mb-2 text-gray-300" />
+                        No test execution data yet
+                      </div>
+                    ) : (() => {
+                      const maxVal = Math.max(...trendData.map(d => Math.max(d.passed, d.failed, d.blocked)), 1);
+                      const W = 600, H = 160, PL = 36, PT = 12, PB = 24, PR = 12;
+                      const chartW = W - PL - PR;
+                      const chartH = H - PT - PB;
+                      const n = trendData.length;
+                      const gx = (i: number) => PL + (n > 1 ? (i / (n - 1)) * chartW : chartW / 2);
+                      const gy = (v: number) => PT + chartH - (v / maxVal) * chartH;
+                      const mkLine = (key: 'passed'|'failed'|'blocked') =>
+                        trendData.map((d, i) => `${gx(i)},${gy(d[key])}`).join(' ');
+                      return (
+                        <div>
+                          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '140px' }}>
+                            {[0, 0.25, 0.5, 0.75, 1].map((t, i) => (
+                              <line key={i} x1={PL} y1={PT + t * chartH} x2={W - PR} y2={PT + t * chartH} stroke="#F1F5F9" strokeWidth="1" />
+                            ))}
+                            <polyline points={mkLine('passed')} stroke="#22C55E" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                            <polyline points={mkLine('failed')} stroke="#EF4444" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                            <polyline points={mkLine('blocked')} stroke="#F59E0B" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                            {trendData.map((d, i) => d.label ? (
+                              <text key={i} x={gx(i)} y={H - 6} textAnchor="middle" fill="#94A3B8" fontSize="9">{d.label}</text>
+                            ) : null)}
+                          </svg>
+                          <div className="flex justify-center gap-4 mt-2 text-xs text-gray-500">
+                            {[['#22C55E','Passed'],['#EF4444','Failed'],['#F59E0B','Blocked']].map(([c,l]) => (
+                              <span key={l} className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: c }} />{l}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* WIDGET 4: ATTENTION NEEDED */}
+                  <div className="bg-white border-l-4 border-red-400 border border-gray-200 rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <i className="ri-error-warning-fill text-lg text-red-500" />
+                      <span className="text-sm font-bold text-gray-900">Attention Needed</span>
+                      {testRuns.filter((r: any) => (r.failed||0) + (r.blocked||0) > 0).length > 0 && (
+                        <span className="text-[10px] font-bold bg-red-100 text-red-800 px-1.5 py-0.5 rounded">
+                          {testRuns.filter((r: any) => (r.failed||0) + (r.blocked||0) > 0).length}
+                        </span>
+                      )}
+                      <Link to={`/projects/${id}/runs`} className="ml-auto text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-0.5">
+                        View failures <i className="ri-arrow-right-s-line" />
                       </Link>
                     </div>
-                    {testRuns.filter(r => (r.failed||0) + (r.blocked||0) > 0).length === 0 ? (
+                    {testRuns.filter((r: any) => (r.failed||0) + (r.blocked||0) > 0).length === 0 ? (
                       <div className="text-center py-8">
-                        <i className="ri-shield-check-line text-4xl text-green-400 block mb-2"></i>
+                        <i className="ri-shield-check-line text-4xl text-green-400 block mb-2" />
                         <p className="text-sm text-gray-500">No failures or blockers. Looking good!</p>
                       </div>
                     ) : (
-                      <div className="space-y-0.5">
-                        {testRuns.filter(r => (r.failed||0) + (r.blocked||0) > 0).slice(0, 4).map(run => (
-                          <Link
-                            key={run.id}
-                            to={`/projects/${id}/runs/${run.id}`}
-                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-red-50/50 transition-colors"
-                          >
+                      <div className="divide-y divide-gray-50">
+                        {testRuns.filter((r: any) => (r.failed||0) + (r.blocked||0) > 0).slice(0, 5).map((run: any) => (
+                          <Link key={run.id} to={`/projects/${id}/runs/${run.id}`} className="flex items-start gap-3 py-2.5 hover:bg-red-50/40 rounded-lg px-2 -mx-2 transition-colors">
                             <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${(run.failed||0) > 0 ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
-                              <i className={`text-sm ${(run.failed||0) > 0 ? 'ri-close-line' : 'ri-forbid-line'}`}></i>
+                              <i className={`text-sm ${(run.failed||0) > 0 ? 'ri-close-line' : 'ri-forbid-line'}`} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-900 truncate">{run.name}</p>
                               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                {(run.failed||0) > 0 && (
-                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 uppercase tracking-wide">
-                                    {run.failed} Failed
-                                  </span>
-                                )}
-                                {(run.blocked||0) > 0 && (
-                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600 uppercase tracking-wide">
-                                    {run.blocked} Blocked
-                                  </span>
-                                )}
+                                {(run.failed||0) > 0 && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600">{run.failed} Failed</span>}
+                                {(run.blocked||0) > 0 && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600">{run.blocked} Blocked</span>}
                               </div>
                             </div>
                           </Link>
@@ -780,19 +1004,19 @@ export default function ProjectDetail() {
                     )}
                   </div>
 
-                  {/* Widget 5: Recent Activity */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5" style={{ animation: 'fadeInUp 0.4s ease-out 100ms backwards' }}>
-                    <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-gray-900">
-                      <i className="ri-time-line text-lg text-gray-500"></i>
+                  {/* WIDGET 5: RECENT ACTIVITY */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-5">
+                    <div className="flex items-center gap-2 mb-4 text-sm font-bold text-gray-900">
+                      <i className="ri-time-line text-lg text-gray-500" />
                       Recent Activity
                     </div>
                     {recentActivity.length === 0 ? (
                       <div className="text-center py-10">
-                        <i className="ri-time-line text-4xl text-gray-300 block mb-2"></i>
+                        <i className="ri-time-line text-4xl text-gray-300 block mb-2" />
                         <p className="text-sm text-gray-500">No activity yet</p>
                       </div>
                     ) : (
-                      <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded">
+                      <div className="space-y-0.5">
                         {recentActivity.slice(0, 10).map((event, idx) => {
                           const iconMap: Record<string, { icon: string; dot: string }> = {
                             'milestone-created': { icon: 'ri-flag-line', dot: '#6366F1' },
@@ -809,7 +1033,7 @@ export default function ProjectDetail() {
                             <div key={idx} className="flex items-start gap-2.5 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50/60 px-2 rounded-lg transition-colors">
                               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-2" style={{ background: info.dot }} />
                               <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 text-gray-500">
-                                <i className={`${info.icon} text-xs`}></i>
+                                <i className={`${info.icon} text-xs`} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs text-gray-700 leading-snug truncate font-medium">{event.name}</p>
@@ -827,99 +1051,61 @@ export default function ProjectDetail() {
                       </div>
                     )}
                   </div>
+
                 </div>
 
-                {/* RIGHT COLUMN — 40% */}
-                <div className="col-span-2 flex flex-col gap-4">
+                {/* ── RIGHT SIDEBAR ── */}
+                <div className="w-[320px] border-l border-gray-200 bg-white overflow-y-auto p-5 space-y-5 flex-shrink-0" style={{ scrollbarWidth: 'thin' }}>
 
-                  {/* Widget 3: Summary Stats */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5" style={{ animation: 'fadeInUp 0.4s ease-out 30ms backwards' }}>
-                    <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-gray-900">
-                      <i className="ri-bar-chart-2-line text-lg text-indigo-500"></i>
+                  {/* Sidebar: Summary */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-gray-900 mb-3">
+                      <i className="ri-layout-grid-line text-indigo-500" />
                       Summary
                     </div>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <Link to={`/projects/${id}/testcases`} className="flex items-center gap-3 p-3 border border-gray-100 rounded-lg hover:border-indigo-200 hover:scale-[1.02] hover:shadow-sm transition-all">
-                        <div className="w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0">
-                          <i className="ri-file-text-line text-indigo-600"></i>
-                        </div>
+                    {[
+                      { label: 'Test Cases', value: testCaseCount, link: `/projects/${id}/testcases`, color: '#6366F1' },
+                      { label: 'Pass Rate', value: prTotal > 0 ? `${passRate}%` : '—', link: `/projects/${id}/runs`, color: healthColor },
+                      { label: 'Active Runs', value: activeRunsCount, link: `/projects/${id}/runs`, color: '#6366F1' },
+                      { label: 'Discovery Logs', value: sessions.length, link: `/projects/${id}/discovery-logs`, color: '#8B5CF6' },
+                    ].map(({ label, value, link, color }) => (
+                      <Link key={label} to={link} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0 hover:bg-slate-50 rounded-lg px-2 -mx-2 transition-colors">
                         <div>
-                          <p className="text-xl font-bold text-gray-900 leading-none">{testCaseCount}</p>
-                          <p className="text-[11px] text-gray-400 mt-0.5">Test Cases</p>
+                          <p className="text-xs text-gray-400 font-medium">{label}</p>
+                          <p className="text-lg font-extrabold" style={{ color }}>{value}</p>
                         </div>
+                        <i className="ri-arrow-right-s-line text-gray-300" />
                       </Link>
-                      <Link to={`/projects/${id}/runs`} className="flex items-center gap-3 p-3 border border-gray-100 rounded-lg hover:border-indigo-200 hover:scale-[1.02] hover:shadow-sm transition-all">
-                        <div className="w-9 h-9 bg-green-50 rounded-full flex items-center justify-center flex-shrink-0">
-                          <i className="ri-checkbox-circle-line text-green-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-xl font-bold leading-none" style={{ color: prTotal > 0 ? healthColor : '#9CA3AF' }}>
-                            {prTotal > 0 ? `${passRate}%` : '—'}
-                          </p>
-                          <p className="text-[11px] text-gray-400 mt-0.5">Pass Rate</p>
-                        </div>
-                      </Link>
-                      <Link to={`/projects/${id}/runs`} className="flex items-center gap-3 p-3 border border-gray-100 rounded-lg hover:border-indigo-200 hover:scale-[1.02] hover:shadow-sm transition-all">
-                        <div className="w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0">
-                          <i className="ri-play-circle-line text-indigo-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-xl font-bold text-gray-900 leading-none">{activeRunsCount}</p>
-                          <p className="text-[11px] text-gray-400 mt-0.5">Active Runs</p>
-                        </div>
-                      </Link>
-                      <Link to={`/projects/${id}/discovery-logs`} className="flex items-center gap-3 p-3 border border-gray-100 rounded-lg hover:border-indigo-200 hover:scale-[1.02] hover:shadow-sm transition-all">
-                        <div className="w-9 h-9 bg-violet-50 rounded-full flex items-center justify-center flex-shrink-0">
-                          <i className="ri-search-eye-line text-violet-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-xl font-bold text-gray-900 leading-none">{sessions.length}</p>
-                          <p className="text-[11px] text-gray-400 mt-0.5">Discovery Logs</p>
-                        </div>
-                      </Link>
-                    </div>
+                    ))}
                   </div>
 
-                  {/* Widget 4: Milestone Progress */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5" style={{ animation: 'fadeInUp 0.4s ease-out 80ms backwards' }}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                        <i className="ri-flag-line text-lg text-amber-500"></i>
-                        Milestones
-                      </div>
-                      <Link to={`/projects/${id}/milestones`} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-0.5">
-                        View all <i className="ri-arrow-right-s-line"></i>
-                      </Link>
+                  {/* Sidebar: Run Progress */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-gray-900 mb-3">
+                      <i className="ri-play-circle-line text-indigo-500" />
+                      Run Progress
+                      {incompleteRuns.length > 0 && (
+                        <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full">{incompleteRuns.length} active</span>
+                      )}
                     </div>
-                    {activeMilestones.length === 0 ? (
-                      <div className="text-center py-8">
-                        <i className="ri-flag-line text-4xl text-gray-300 block mb-2"></i>
-                        <p className="text-sm text-gray-500">No active milestones</p>
-                        <Link to={`/projects/${id}/milestones`} className="text-xs text-indigo-600 font-medium mt-1 inline-block">Create one →</Link>
-                      </div>
+                    {incompleteRuns.length === 0 ? (
+                      <p className="text-xs text-gray-400 py-4 text-center">No active runs</p>
                     ) : (
-                      <div>
-                        {activeMilestones.slice(0, 3).map((m, idx) => {
-                          const daysLeft = m.end_date ? Math.ceil((new Date(m.end_date).getTime() - Date.now()) / 86400000) : null;
-                          const barColor = m.status === 'past_due' ? '#EF4444' : m.progress >= 80 ? '#16A34A' : '#6366F1';
+                      <div className="space-y-3">
+                        {incompleteRuns.slice(0, 5).map((run: any) => {
+                          const total = (run.passed||0) + (run.failed||0) + (run.blocked||0) + (run.retest||0) + (run.untested||0);
+                          const pPct = total ? Math.round(((run.passed||0)/total)*100) : 0;
+                          const fPct = total ? Math.round(((run.failed||0)/total)*100) : 0;
                           return (
-                            <div key={m.id} className={`py-3 px-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer ${idx > 0 ? 'border-t border-gray-100' : ''}`}>
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-sm font-semibold text-gray-900 truncate flex-1 mr-2">{m.name}</span>
-                                {daysLeft !== null && (
-                                  <span className={`text-[11px] font-semibold flex items-center gap-0.5 flex-shrink-0 ${daysLeft <= 3 ? 'text-red-600' : 'text-gray-400'}`}>
-                                    <i className="ri-time-line text-xs"></i>
-                                    {daysLeft <= 0 ? 'Overdue' : `${daysLeft}d left`}
-                                  </span>
-                                )}
+                            <div key={run.id} className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-gray-700 truncate" style={{ minWidth: 0, maxWidth: '100px' }}>{run.name}</span>
+                              <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden flex min-w-0">
+                                <div className="h-full bg-green-500" style={{ width: `${pPct}%` }} />
+                                <div className="h-full bg-red-500" style={{ width: `${fPct}%` }} />
                               </div>
-                              <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                                <div className="h-full rounded-full transition-all" style={{ width: `${m.progress}%`, background: barColor }} />
-                              </div>
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="text-[11px] text-gray-400">{formatDate(m.end_date) || 'No due date'}</span>
-                                <span className="text-[11px] font-semibold" style={{ color: barColor }}>{m.progress}%</span>
-                              </div>
+                              <span className="text-xs font-bold text-gray-700 min-w-[32px] text-right">
+                                {pPct === 100 ? <><i className="ri-check-line text-green-500" />100%</> : `${pPct}%`}
+                              </span>
                             </div>
                           );
                         })}
@@ -927,33 +1113,66 @@ export default function ProjectDetail() {
                     )}
                   </div>
 
-                  {/* Widget 7: AI Usage */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5" style={{ animation: 'fadeInUp 0.4s ease-out 130ms backwards' }}>
-                    <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-gray-900">
-                      <i className="ri-sparkling-line text-lg text-violet-500"></i>
+                  {/* Sidebar: Milestones */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-gray-900 mb-3">
+                      <i className="ri-flag-line text-amber-500" />
+                      Milestones
+                      <Link to={`/projects/${id}/milestones`} className="ml-auto text-xs text-indigo-600 font-semibold hover:text-indigo-700">View all</Link>
+                    </div>
+                    {activeMilestones.length === 0 ? (
+                      <p className="text-xs text-gray-400 py-4 text-center">No active milestones</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {activeMilestones.slice(0, 3).map((m: any) => {
+                          const daysLeft = m.end_date ? Math.ceil((new Date(m.end_date).getTime() - Date.now()) / 86400000) : null;
+                          const barColor = m.status === 'past_due' ? '#EF4444' : m.progress >= 80 ? '#16A34A' : '#6366F1';
+                          const isUrgent = daysLeft !== null && daysLeft <= 9;
+                          return (
+                            <div key={m.id}>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-xs font-semibold text-gray-900 truncate flex-1 mr-2">{m.name}</span>
+                                <span className="text-xs font-bold" style={{ color: barColor }}>{m.progress}%</span>
+                              </div>
+                              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-1">
+                                <div className="h-full rounded-full transition-all" style={{ width: `${m.progress}%`, background: barColor }} />
+                              </div>
+                              <p className={`text-[11px] font-medium ${isUrgent ? 'text-red-600' : 'text-gray-400'}`}>
+                                {m.end_date ? `Due: ${formatDate(m.end_date)}${daysLeft !== null ? ` (${daysLeft <= 0 ? 'Overdue' : `${daysLeft}d left`})` : ''}` : 'No due date'}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sidebar: AI Usage */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-gray-900 mb-3">
+                      <i className="ri-sparkling-line text-violet-500" />
                       AI Usage
+                      <span className="ml-auto text-xs text-gray-400 font-normal">This month</span>
                     </div>
                     {aiLimit < 0 ? (
-                      <div className="flex items-center gap-3 py-2">
+                      <div className="flex items-center gap-3 py-1">
                         <div className="flex-1">
-                          <p className="text-xl font-bold text-gray-900 leading-none">Unlimited</p>
-                          <p className="text-[11px] text-gray-400 mt-1">AI generations</p>
+                          <p className="text-xl font-bold text-gray-900">Unlimited</p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">AI generations</p>
                         </div>
                         <span className="text-xs font-semibold text-violet-700 bg-violet-50 px-2 py-1 rounded-full">Enterprise</span>
                       </div>
                     ) : (
                       <>
-                        <div className="flex items-baseline justify-between mb-2">
-                          <span className="text-xl font-bold text-gray-900">—<span className="text-sm font-normal text-gray-400 ml-1">/ {aiLimit}</span></span>
-                          <span className="text-[11px] text-gray-400">generations this month</span>
-                        </div>
-                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-                          <div className="h-full rounded-full bg-indigo-500 transition-all" style={{ width: '0%' }} />
+                        <p className="text-xl font-bold text-gray-900 mb-0.5">—<span className="text-sm font-normal text-gray-400 ml-1">/ {aiLimit}</span></p>
+                        <p className="text-[11px] text-gray-400 mb-3">generations this month</p>
+                        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
+                          <div className="h-full rounded-full bg-indigo-500" style={{ width: '0%' }} />
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] text-gray-400">Plan: <strong className="text-gray-600">{tierInfo?.name || 'Free'}</strong></span>
-                          <Link to="/settings?tab=billing" className="text-[11px] text-indigo-600 font-medium flex items-center gap-0.5 hover:text-indigo-700">
-                            Upgrade <i className="ri-arrow-right-up-line text-xs"></i>
+                          <Link to="/settings?tab=billing" className="text-[11px] text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-0.5">
+                            Upgrade <i className="ri-arrow-right-up-line text-xs" />
                           </Link>
                         </div>
                       </>
@@ -962,7 +1181,17 @@ export default function ProjectDetail() {
 
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Analytics & Activity tabs (unchanged placeholder) */}
+            {dashboardTab !== 'overview' && (
+              <div className="flex-1 flex items-center justify-center text-sm text-gray-400 py-20">
+                <div className="text-center">
+                  <i className={`${dashboardTab === 'analytics' ? 'ri-bar-chart-2-fill' : 'ri-time-fill'} text-4xl text-gray-300 block mb-3`} />
+                  <p>{dashboardTab === 'analytics' ? 'Analytics' : 'Activity Feed'} coming soon</p>
+                </div>
+              </div>
+            )}
           </main>
 
         </div>
