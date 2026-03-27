@@ -123,7 +123,7 @@ export default function ProjectDocumentation() {
 
   // New folder modal state
   const [newFolderName, setNewFolderName] = useState('');
-  const [newFolderParent, setNewFolderParent] = useState('');
+  const [newFolderParent, setNewFolderParent] = useState('requirements');
   const [folderSaving, setFolderSaving] = useState(false);
 
   useEffect(() => {
@@ -158,8 +158,8 @@ export default function ProjectDocumentation() {
       if (docsError) throw docsError;
 
       const allItems = (docsData || []).map(doc => {
-        const { category, text } = parseDescription(doc.description, doc.type);
-        return { ...doc, category, descText: text, folderParent: parent };
+        const { category, text, parent: fp } = parseDescription(doc.description, doc.type);
+        return { ...doc, category, descText: text, folderParent: fp };
       });
 
       setCustomFolders(allItems.filter(d => d.category === '__folder__'));
@@ -328,16 +328,17 @@ export default function ProjectDocumentation() {
   // Folders are stored as type:'file' with cat:'__folder__' to avoid DB type constraint
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) { showToast('Folder name is required.', 'warning'); return; }
+    if (!newFolderParent) { showToast('Please select a parent folder.', 'warning'); return; }
     try {
       setFolderSaving(true);
       const { error } = await supabase.from('project_documents').insert({
         project_id: id,
         type: 'file',
         title: newFolderName.trim(),
-        description: JSON.stringify({ cat: '__folder__', parent: newFolderParent || '', text: '' }),
+        description: JSON.stringify({ cat: '__folder__', parent: newFolderParent, text: '' }),
       });
       if (error) throw error;
-      setNewFolderName(''); setNewFolderParent('');
+      setNewFolderName(''); setNewFolderParent('requirements');
       setShowNewFolderModal(false);
       fetchData();
       showToast('Folder created successfully.', 'success');
@@ -447,23 +448,6 @@ export default function ProjectDocumentation() {
                     ))}
                 </div>
               ))}
-              {/* Root-level custom folders (no parent or parent='all') */}
-              {customFolders
-                .filter(f => !f.folderParent || f.folderParent === 'all' || f.folderParent === '')
-                .map(folder => (
-                  <button
-                    key={folder.id}
-                    onClick={() => setSelectedFolder(folder.id)}
-                    className={`w-full flex items-center gap-1.5 px-[0.875rem] py-[0.4375rem] text-[0.8125rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left ${
-                      selectedFolder === folder.id
-                        ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
-                        : 'text-[#475569] hover:bg-[#F8FAFC]'
-                    }`}
-                  >
-                    <i className="ri-folder-line text-base text-[#94A3B8]" />
-                    <span className="flex-1 min-w-0 truncate">{folder.title}</span>
-                  </button>
-                ))}
             </div>
           </div>
 
@@ -763,21 +747,14 @@ export default function ProjectDocumentation() {
                   className="w-full text-[0.8125rem] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] outline-none focus:border-[#6366F1] focus:bg-white focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-all placeholder-[#94A3B8] font-[inherit]" />
               </div>
               <div>
-                <label className="block text-[0.75rem] font-semibold text-[#475569] mb-1.5">Parent Folder (optional)</label>
+                <label className="block text-[0.75rem] font-semibold text-[#475569] mb-1.5">Parent Folder <span className="text-red-500">*</span></label>
                 <select value={newFolderParent} onChange={e => setNewFolderParent(e.target.value)}
                   className="w-full text-[0.8125rem] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] outline-none focus:border-[#6366F1] cursor-pointer font-[inherit] text-[#1E293B]">
-                  <option value="">— Root level —</option>
                   <option value="requirements">Requirements</option>
                   <option value="test-plans">Test Plans</option>
                   <option value="reports">Reports</option>
                   <option value="specs">Specs</option>
                   <option value="link">External Links</option>
-                  {/* Dynamically show custom root-level folders */}
-                  {customFolders
-                    .filter(f => !f.folderParent || f.folderParent === 'all' || f.folderParent === '')
-                    .map(f => (
-                      <option key={f.id} value={f.id}>{f.title}</option>
-                    ))}
                 </select>
               </div>
             </div>
