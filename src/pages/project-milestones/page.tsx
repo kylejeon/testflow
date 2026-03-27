@@ -24,6 +24,8 @@ interface Milestone {
 interface MilestoneWithProgress extends Milestone {
   totalTests: number;
   completedTests: number;
+  passedTests: number;
+  failedTests: number;
   actualProgress: number;
   subMilestones?: MilestoneWithProgress[];
 }
@@ -35,6 +37,19 @@ const TIER_INFO = {
   4: { name: 'Enterprise', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: 'ri-vip-diamond-line' },
 };
 
+const getStatusInfo = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return { label: 'Completed', badgeCls: 'bg-[#F0FDF4] text-[#16A34A]', iconBg: '#F0FDF4', iconColor: '#16A34A', icon: 'ri-checkbox-circle-fill' };
+    case 'past_due':
+      return { label: 'Overdue', badgeCls: 'bg-[#FEF2F2] text-[#DC2626]', iconBg: '#FEF2F2', iconColor: '#EF4444', icon: 'ri-flag-fill' };
+    case 'started':
+      return { label: 'In Progress', badgeCls: 'bg-[#DBEAFE] text-[#2563EB]', iconBg: '#EEF2FF', iconColor: '#6366F1', icon: 'ri-flag-fill' };
+    default:
+      return { label: 'Upcoming', badgeCls: 'bg-[#DBEAFE] text-[#2563EB]', iconBg: '#EEF2FF', iconColor: '#6366F1', icon: 'ri-flag-fill' };
+  }
+};
+
 export default function ProjectMilestones() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -42,6 +57,7 @@ export default function ProjectMilestones() {
   const [milestones, setMilestones] = useState<MilestoneWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'in-progress' | 'completed' | 'overdue'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<MilestoneWithProgress | null>(null);
@@ -71,7 +87,7 @@ export default function ProjectMilestones() {
           .select('full_name, email, subscription_tier, avatar_emoji')
           .eq('id', user.id)
           .maybeSingle();
-        
+
         setUserProfile({
           full_name: profile?.full_name || user.email?.split('@')[0] || 'User',
           email: profile?.email || user.email || '',
@@ -87,7 +103,7 @@ export default function ProjectMilestones() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .select('*')
@@ -143,7 +159,6 @@ export default function ProjectMilestones() {
             currentStatus = 'past_due';
             supabase.from('milestones').update({ status: 'past_due' }).eq('id', milestone.id);
             if (milestone.status !== 'past_due') {
-              // Fire webhook only when status transitions to past_due for the first time
               supabase.from('projects').select('name').eq('id', id!).maybeSingle().then(({ data: proj }) => {
                 triggerWebhook(id!, 'milestone_past_due', {
                   project_id: id!,
@@ -156,15 +171,17 @@ export default function ProjectMilestones() {
             }
           }
         }
-        
+
         const milestoneRuns = allRunsData?.filter(run => run.milestone_id === milestone.id) || [];
 
         if (milestoneRuns.length === 0) {
-          return { ...milestone, status: currentStatus, totalTests: 0, completedTests: 0, actualProgress: 0 };
+          return { ...milestone, status: currentStatus, totalTests: 0, completedTests: 0, passedTests: 0, failedTests: 0, actualProgress: 0 };
         }
 
         let totalTestsSum = 0;
         let completedTestsSum = 0;
+        let passedTestsSum = 0;
+        let failedTestsSum = 0;
 
         milestoneRuns.forEach(run => {
           const runResults = allTestResultsData?.filter(r => r.run_id === run.id) || [];
@@ -175,16 +192,20 @@ export default function ProjectMilestones() {
           const totalTests = run.test_case_ids.length;
           totalTestsSum += totalTests;
           if (totalTests === 0) return;
-          let completedTests = 0;
           run.test_case_ids.forEach((tcId: string) => {
             const status = statusMap.get(tcId);
-            if (status === 'passed' || status === 'failed' || status === 'blocked' || status === 'retest') completedTests++;
+            if (status === 'passed') {
+              passedTestsSum++;
+              completedTestsSum++;
+            } else if (status === 'failed' || status === 'blocked' || status === 'retest') {
+              failedTestsSum++;
+              completedTestsSum++;
+            }
           });
-          completedTestsSum += completedTests;
         });
 
         const averageProgress = totalTestsSum > 0 ? Math.round((completedTestsSum / totalTestsSum) * 100) : 0;
-        return { ...milestone, status: currentStatus, totalTests: totalTestsSum, completedTests: completedTestsSum, actualProgress: averageProgress };
+        return { ...milestone, status: currentStatus, totalTests: totalTestsSum, completedTests: completedTestsSum, passedTests: passedTestsSum, failedTests: failedTestsSum, actualProgress: averageProgress };
       });
 
       const parentMilestones = milestonesWithProgress.filter(m => !m.parent_milestone_id);
@@ -286,118 +307,30 @@ export default function ProjectMilestones() {
     setExpandedMilestones(newExpanded);
   };
 
-  const formatMonthDay = (dateStr: string | null) => {
-    if (!dateStr) return { month: '', day: '' };
-    const [year, month, day] = dateStr.split('T')[0].split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    return { month: date.toLocaleDateString('en-US', { month: 'short' }), day: parseInt(day) };
-  };
-
-  const getStatusBadge = (status: string) => {
-    const badges = {
-      upcoming: { label: 'Upcoming', className: 'bg-blue-500 text-white' },
-      started: { label: 'Started', className: 'bg-green-500 text-white' },
-      past_due: { label: 'Past due', className: 'bg-orange-500 text-white' },
-      completed: { label: 'Completed', className: 'bg-gray-100 text-gray-700' }
+  const formatDateRange = (startDate: string | null, endDate: string | null) => {
+    const fmt = (d: string | null) => {
+      if (!d) return '';
+      const [y, m, day] = d.split('T')[0].split('-');
+      const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(day));
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
-    return badges[status as keyof typeof badges] || badges.upcoming;
+    if (startDate && endDate) return `${fmt(startDate)} – ${fmt(endDate)}`;
+    if (endDate) return `Due ${fmt(endDate)}`;
+    return 'No date set';
   };
 
-  const getProgressBarColor = (status: string) => {
-    if (status === 'completed') return 'bg-gray-400';
-    if (status === 'past_due') return 'bg-orange-500';
-    if (status === 'started') return 'bg-green-500';
-    return 'bg-gray-300';
-  };
-
-  const filteredMilestones =
-    activeTab === 'all' ? milestones :
-    activeTab === 'in-progress' ? milestones.filter(m => m.status !== 'completed' && m.status !== 'past_due') :
-    activeTab === 'completed' ? milestones.filter(m => m.status === 'completed') :
-    activeTab === 'overdue' ? milestones.filter(m => m.status === 'past_due') :
-    milestones;
-
-  const groupedMilestones = filteredMilestones.reduce((acc, milestone) => {
-    const endDate = milestone.end_date ? (() => {
-      const [year, month, day] = milestone.end_date.split('T')[0].split('-');
-      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    })() : null;
-    const monthKey = endDate ? endDate.toLocaleDateString('en-US', { month: 'short' }) : 'No Date';
-    if (!acc[monthKey]) acc[monthKey] = [];
-    acc[monthKey].push(milestone);
-    return acc;
-  }, {} as Record<string, MilestoneWithProgress[]>);
-
-  const isMonthPastDue = (monthMilestones: MilestoneWithProgress[]) => {
-    if (monthMilestones.length === 0) return false;
-    const firstMilestone = monthMilestones[0];
-    if (!firstMilestone.end_date) return false;
-    const [year, month, day] = firstMilestone.end_date.split('T')[0].split('-');
-    const endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return endDate < today;
-  };
-
-  const renderMilestone = (milestone: MilestoneWithProgress, isSubMilestone: boolean = false) => {
-    const endDateInfo = formatMonthDay(milestone.end_date);
-    const badge = getStatusBadge(milestone.status);
-    const hasSubMilestones = milestone.subMilestones && milestone.subMilestones.length > 0;
-    const isExpanded = expandedMilestones.has(milestone.id);
-
-    return (
-      <div key={milestone.id}>
-        <div className="block bg-white rounded-lg border border-gray-200 p-[1.3125rem] hover:border-indigo-500 transition-all">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3 flex-1">
-              {hasSubMilestones && (
-                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleExpanded(milestone.id); }} className="w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded cursor-pointer">
-                  <i className={`ri-arrow-${isExpanded ? 'down' : 'right'}-s-line text-lg`}></i>
-                </button>
-              )}
-              <div className={`w-8 h-8 ${isSubMilestone ? 'bg-gray-50' : 'bg-gray-100'} rounded flex items-center justify-center`}>
-                <i className={`${isSubMilestone ? 'ri-run-line' : 'ri-flag-line'} text-gray-600`}></i>
-              </div>
-              <Link to={`/projects/${id}/milestones/${milestone.id}`} className="font-semibold text-indigo-600 hover:text-indigo-700 transition-colors cursor-pointer">
-                {milestone.name}
-              </Link>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[0.8125rem] text-gray-600">{formatMonthDay(milestone.start_date).month} {formatMonthDay(milestone.start_date).day} - {endDateInfo.month} {endDateInfo.day}</span>
-              <span className={`px-3 py-1 rounded text-[0.6875rem] font-semibold ${badge.className}`}>{badge.label}</span>
-              {!isSubMilestone && (
-                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setParentMilestoneId(milestone.id); setShowCreateModal(true); }} className="px-3 py-[0.4375rem] text-[0.8125rem] font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5">
-                  <i className="ri-add-line text-base w-4 h-4 flex items-center justify-center"></i>Sub
-                </button>
-              )}
-              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditFormData({ name: milestone.name, start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '', end_date: milestone.end_date ? milestone.end_date.split('T')[0] : '', status: milestone.status }); setEditingMilestone(milestone); }} className="px-3 py-[0.4375rem] text-[0.8125rem] font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5">
-                <i className="ri-edit-line text-base w-4 h-4 flex items-center justify-center"></i>Edit
-              </button>
-              {milestone.status === 'upcoming' && (
-                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleStartMilestone(milestone.id); }} className="px-[0.875rem] py-[0.4375rem] text-[0.8125rem] font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap">Start</button>
-              )}
-              {(milestone.status === 'started' || milestone.status === 'past_due') && (
-                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleMarkAsComplete(milestone.id); }} className="px-[0.875rem] py-[0.4375rem] text-[0.8125rem] font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-all cursor-pointer whitespace-nowrap">Complete</button>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
-              <div className={`h-full rounded-full transition-all ${getProgressBarColor(milestone.status)}`} style={{ width: `${milestone.actualProgress}%` }}></div>
-            </div>
-            <span className="text-[0.8125rem] font-semibold text-gray-900 min-w-[50px] text-right">{milestone.actualProgress}%</span>
-          </div>
-        </div>
-        {hasSubMilestones && isExpanded && (
-          <div className="ml-12 mt-4 space-y-4">
-            {milestone.subMilestones!.map(subMilestone => (
-              <div key={subMilestone.id}>{renderMilestone(subMilestone, true)}</div>
-            ))}
-          </div>
-        )}
-      </div>
+  const filteredMilestones = milestones
+    .filter(m =>
+      activeTab === 'all' ? true :
+      activeTab === 'in-progress' ? (m.status !== 'completed' && m.status !== 'past_due') :
+      activeTab === 'completed' ? m.status === 'completed' :
+      activeTab === 'overdue' ? m.status === 'past_due' :
+      true
+    )
+    .filter(m =>
+      searchQuery.trim() === '' ? true :
+      m.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  };
 
   const handleLogout = async () => {
     try {
@@ -447,13 +380,215 @@ export default function ProjectMilestones() {
     </>
   );
 
+  /* ── Compact card renderers ── */
+  const renderSubMilestone = (sub: MilestoneWithProgress) => {
+    const info = getStatusInfo(sub.status);
+    const remaining = sub.totalTests - sub.passedTests - sub.failedTests;
+    const passedPct = sub.totalTests > 0 ? (sub.passedTests / sub.totalTests) * 100 : 0;
+    const failedPct = sub.totalTests > 0 ? (sub.failedTests / sub.totalTests) * 100 : 0;
+
+    return (
+      <div
+        key={sub.id}
+        className="relative mb-1.5 last:mb-0"
+      >
+        {/* horizontal branch */}
+        <div className="absolute left-[-0.625rem] top-1/2 w-[0.625rem] h-[1.5px] bg-[#E2E8F0]" />
+        <div className="bg-[#FAFAFF] border border-[#EEF2FF] rounded-md px-[0.8125rem] py-[0.6875rem] hover:border-[#C7D2FE] hover:bg-[#F5F3FF] transition-all cursor-pointer">
+          {/* sub top row */}
+          <div className="flex items-center gap-2 mb-[0.375rem]">
+            <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{ background: info.iconBg }}>
+              <i className={`${info.icon} text-[0.75rem]`} style={{ color: info.iconColor }} />
+            </div>
+            <Link
+              to={`/projects/${id}/milestones/${sub.id}`}
+              onClick={e => e.stopPropagation()}
+              className="text-[0.8125rem] font-semibold text-[#0F172A] flex-1 min-w-0 truncate hover:text-indigo-600 transition-colors"
+            >
+              {sub.name}
+            </Link>
+            <span className={`text-[0.625rem] font-semibold px-[0.4375rem] py-[0.125rem] rounded-full flex-shrink-0 ${info.badgeCls}`}>
+              {info.label}
+            </span>
+          </div>
+          {/* sub progress */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-[4.5px] bg-[#F1F5F9] rounded-full overflow-hidden flex">
+              <div className="h-full bg-[#10B981] transition-all" style={{ width: `${passedPct}%` }} />
+              <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }} />
+            </div>
+            <div className="flex items-center gap-2 text-[0.6875rem] text-[#64748B] whitespace-nowrap flex-shrink-0">
+              <span className="text-[#10B981] font-semibold">{sub.passedTests} passed</span>
+              <span className="text-[#EF4444] font-semibold">{sub.failedTests} failed</span>
+              {sub.totalTests > 0 && <span>{remaining} remaining</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderMilestone = (milestone: MilestoneWithProgress) => {
+    const info = getStatusInfo(milestone.status);
+    const hasSubMilestones = milestone.subMilestones && milestone.subMilestones.length > 0;
+    const isExpanded = expandedMilestones.has(milestone.id);
+    const remaining = milestone.totalTests - milestone.passedTests - milestone.failedTests;
+    const passedPct = milestone.totalTests > 0 ? (milestone.passedTests / milestone.totalTests) * 100 : 0;
+    const failedPct = milestone.totalTests > 0 ? (milestone.failedTests / milestone.totalTests) * 100 : 0;
+    const isDone = milestone.status === 'completed';
+
+    return (
+      <div key={milestone.id} className="ms-wrapper">
+        {/* Parent card */}
+        <div
+          className={`bg-white border rounded-lg px-[1.125rem] py-[0.9375rem] transition-all cursor-pointer ${
+            isDone
+              ? 'border-[#E2E8F0] opacity-70 hover:opacity-85'
+              : isExpanded
+              ? 'border-[#C7D2FE] shadow-[0_1px_6px_rgba(99,102,241,0.1)]'
+              : 'border-[#E2E8F0] hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:border-[#C7D2FE]'
+          }`}
+          onClick={() => hasSubMilestones && toggleExpanded(milestone.id)}
+        >
+          {/* Top row */}
+          <div className="flex items-center gap-[0.625rem] mb-[0.5625rem]">
+            {/* expand chevron */}
+            {hasSubMilestones ? (
+              <button
+                onClick={e => { e.stopPropagation(); toggleExpanded(milestone.id); }}
+                className={`w-[1.375rem] h-[1.375rem] rounded flex items-center justify-center flex-shrink-0 text-base transition-all hover:bg-[#F1F5F9] ${isExpanded ? 'text-[#6366F1] rotate-90' : 'text-[#94A3B8]'}`}
+              >
+                <i className="ri-arrow-right-s-line" />
+              </button>
+            ) : (
+              <div className="w-[1.375rem] flex-shrink-0" />
+            )}
+
+            {/* icon */}
+            <div className="w-9 h-9 rounded-[0.4375rem] flex items-center justify-center flex-shrink-0" style={{ background: info.iconBg }}>
+              <i className={`${info.icon} text-[1.125rem]`} style={{ color: info.iconColor }} />
+            </div>
+
+            {/* name + date */}
+            <div className="flex-1 min-w-0">
+              <Link
+                to={`/projects/${id}/milestones/${milestone.id}`}
+                onClick={e => e.stopPropagation()}
+                className={`block text-[0.875rem] font-semibold truncate hover:text-indigo-600 transition-colors ${isDone ? 'text-[#64748B]' : 'text-[#0F172A]'}`}
+              >
+                {milestone.name}
+              </Link>
+              <div className="text-[0.75rem] text-[#94A3B8] mt-[0.0625rem] flex items-center gap-1">
+                <i className="ri-calendar-line" style={{ fontSize: '0.625rem', verticalAlign: '-1px' }} />
+                {formatDateRange(milestone.start_date, milestone.end_date)}
+              </div>
+            </div>
+
+            {/* sub count */}
+            {hasSubMilestones && (
+              <span className="text-[0.6875rem] font-semibold text-[#6366F1] flex items-center gap-[0.1875rem] flex-shrink-0">
+                <i className="ri-git-branch-line text-[0.8125rem]" />
+                {milestone.subMilestones!.length} subs
+              </span>
+            )}
+
+            {/* status badge */}
+            <span className={`text-[0.6875rem] font-semibold px-2 py-[0.1875rem] rounded-full flex-shrink-0 ${info.badgeCls}`}>
+              {info.label}
+            </span>
+
+            {/* action buttons */}
+            <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => { setParentMilestoneId(milestone.id); setShowCreateModal(true); }}
+                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F1F5F9] transition-all whitespace-nowrap cursor-pointer"
+              >
+                <i className="ri-git-branch-line text-[0.8125rem]" />+Sub
+              </button>
+              <button
+                onClick={() => { setEditFormData({ name: milestone.name, start_date: milestone.start_date ? milestone.start_date.split('T')[0] : '', end_date: milestone.end_date ? milestone.end_date.split('T')[0] : '', status: milestone.status }); setEditingMilestone(milestone); }}
+                className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F1F5F9] transition-all whitespace-nowrap cursor-pointer"
+              >
+                <i className="ri-edit-line text-[0.8125rem]" />Edit
+              </button>
+              {milestone.status === 'upcoming' && (
+                <button
+                  onClick={() => handleStartMilestone(milestone.id)}
+                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F1F5F9] transition-all whitespace-nowrap cursor-pointer"
+                >
+                  Start
+                </button>
+              )}
+              {(milestone.status === 'started' || milestone.status === 'past_due') && (
+                <button
+                  onClick={() => handleMarkAsComplete(milestone.id)}
+                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#86EFAC] bg-white text-[#16A34A] hover:bg-[#F0FDF4] transition-all whitespace-nowrap cursor-pointer"
+                >
+                  <i className="ri-check-line text-[0.8125rem]" />Complete
+                </button>
+              )}
+              {isDone && (
+                <Link
+                  to={`/projects/${id}/milestones/${milestone.id}`}
+                  onClick={e => e.stopPropagation()}
+                  className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F1F5F9] transition-all whitespace-nowrap cursor-pointer"
+                >
+                  <i className="ri-eye-line text-[0.8125rem]" />View
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="mb-[0.4375rem]">
+            <div className="h-[6px] bg-[#F1F5F9] rounded-full overflow-hidden flex mb-[0.3125rem]">
+              <div className="h-full bg-[#10B981] transition-all" style={{ width: `${passedPct}%` }} />
+              <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }} />
+            </div>
+            <div className="flex justify-between text-[0.75rem]">
+              <span className="font-semibold text-[#0F172A]">{milestone.actualProgress}% complete</span>
+              <span className="text-[#94A3B8]">{milestone.completedTests} / {milestone.totalTests} cases</span>
+            </div>
+          </div>
+
+          {/* Bottom: counts */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-[0.75rem]">
+              <span className="flex items-center gap-[0.1875rem]">
+                <span className="w-[6px] h-[6px] rounded-full bg-[#10B981] flex-shrink-0" />
+                <span className="text-[#64748B]">{milestone.passedTests} passed</span>
+              </span>
+              <span className="flex items-center gap-[0.1875rem]">
+                <span className="w-[6px] h-[6px] rounded-full bg-[#EF4444] flex-shrink-0" />
+                <span className="text-[#64748B]">{milestone.failedTests} failed</span>
+              </span>
+              <span className="flex items-center gap-[0.1875rem]">
+                <span className="w-[6px] h-[6px] rounded-full bg-[#94A3B8] flex-shrink-0" />
+                <span className="text-[#64748B]">{remaining} remaining</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Sub-milestones */}
+        {hasSubMilestones && isExpanded && (
+          <div className="mt-1.5 pl-[1.125rem] relative">
+            {/* vertical connector line */}
+            <div className="absolute left-2 top-0 bottom-3 w-[1.5px] bg-[#E2E8F0] rounded" />
+            {milestone.subMilestones!.map(sub => renderSubMilestone(sub))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (loading) return <PageLoader fullScreen />;
 
   return (
     <div className="flex h-screen bg-white">
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
-        
+
         {/* Edge-to-edge subtab row */}
         <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
           {[
@@ -481,50 +616,46 @@ export default function ProjectMilestones() {
           <div className="flex-1" />
           <button
             onClick={() => { setParentMilestoneId(null); setShowCreateModal(true); }}
-            className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-1 px-[0.75rem] py-[0.3125rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.75rem] font-semibold hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap shadow-[0_1px_3px_rgba(99,102,241,0.3)]"
           >
             <i className="ri-add-line text-sm" />
             New Milestone
           </button>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-gray-50/30">
-          <div className="p-[1.75rem]">
+        {/* Search + Filter + Sort toolbar */}
+        <div className="flex items-center gap-2 px-6 py-[0.625rem] bg-white border-b border-[#E2E8F0] flex-shrink-0">
+          <div className="flex-1 flex items-center gap-[0.375rem] bg-[#F8FAFC] border border-[#E2E8F0] rounded-md px-[0.625rem] py-[0.375rem] focus-within:border-[#C7D2FE] focus-within:bg-white transition-colors">
+            <i className="ri-search-line text-[0.875rem] text-[#94A3B8] flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="Search milestones..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="border-none bg-transparent outline-none text-[0.8125rem] text-[#1E293B] placeholder-[#94A3B8] flex-1 min-w-0 font-[inherit]"
+            />
+          </div>
+          <button className="flex items-center gap-1 text-[0.75rem] font-medium px-[0.625rem] py-[0.375rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-all cursor-pointer whitespace-nowrap">
+            <i className="ri-filter-3-line text-[0.875rem] text-[#94A3B8]" />Filters
+          </button>
+          <button className="flex items-center gap-1 text-[0.75rem] font-medium px-[0.625rem] py-[0.375rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-all cursor-pointer whitespace-nowrap">
+            <i className="ri-sort-desc text-[0.875rem] text-[#94A3B8]" />Sort
+          </button>
+        </div>
+
+        <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+          <div className="p-5">
             {filteredMilestones.length === 0 ? (
               <div className="text-center py-12">
-                <i className="ri-flag-line text-6xl text-gray-300 mb-4"></i>
-                <p className="text-gray-500 text-lg">No {activeTab === 'all' ? '' : activeTab + ' '}milestones</p>
-                <p className="text-gray-400 text-sm mt-2">Create your first milestone to get started</p>
+                <i className="ri-flag-line text-5xl text-[#CBD5E1] block mb-3"></i>
+                <p className="text-[0.875rem] font-semibold text-[#64748B] mb-1">No {activeTab === 'all' ? '' : activeTab + ' '}milestones</p>
+                <p className="text-[0.75rem] text-[#94A3B8]">
+                  {searchQuery ? 'No milestones match your search' : 'Create your first milestone to get started'}
+                </p>
               </div>
             ) : (
-              <div className="space-y-0">
-                {Object.entries(groupedMilestones).map(([month, monthMilestones]) => (
-                  <div key={month}>
-                    {monthMilestones.map((milestone, index) => {
-                      const endDateInfo = formatMonthDay(milestone.end_date);
-                      const isLastInMonth = index === monthMilestones.length - 1;
-                      const isLastOverall = month === Object.keys(groupedMilestones)[Object.keys(groupedMilestones).length - 1] && isLastInMonth;
-                      const isPastDue = isMonthPastDue(monthMilestones);
-                      return (
-                        <div key={milestone.id} className="flex gap-[1.3125rem]">
-                          <div className="flex flex-col items-center w-16 flex-shrink-0">
-                            {index === 0 && (
-                              <div className={`${isPastDue ? 'bg-orange-500' : 'bg-gray-400'} text-white text-sm font-bold px-3 py-1.5 rounded mb-2`}>{month}</div>
-                            )}
-                            <div className="text-center">
-                              <div className="text-[1.375rem] font-bold text-gray-900">{endDateInfo.day}</div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-center flex-shrink-0">
-                            <div className="w-3 h-3 bg-gray-300 rounded-full mt-1"></div>
-                            {!isLastOverall && <div className="w-0.5 bg-gray-300 flex-1 min-h-[80px]"></div>}
-                          </div>
-                          <div className="flex-1 pb-8">{renderMilestone(milestone)}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
+              <div className="flex flex-col gap-[0.625rem]">
+                {filteredMilestones.map(milestone => renderMilestone(milestone))}
               </div>
             )}
           </div>
