@@ -33,7 +33,7 @@ export function useSampleProject() {
     const { error: memberError } = await supabase.from('project_members').upsert([{
       project_id: projectId,
       user_id: user.id,
-      role: 'admin',
+      role: 'owner',
       invited_by: user.id,
     }], { onConflict: 'project_id,user_id' });
     if (memberError) throw memberError;
@@ -124,7 +124,7 @@ export function useSampleProject() {
       charter: 'Explored checkout flow, found cart persistence issue when switching browsers.',
       tags: ['checkout', 'cart'],
       assignees: [user.id],
-      status: 'completed',
+      status: 'closed',
     }]);
     if (sessError) throw sessError;
 
