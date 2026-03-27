@@ -8,7 +8,6 @@ interface Member {
   profile: {
     email: string;
     full_name: string | null;
-    avatar_url: string | null;
   };
 }
 
@@ -117,15 +116,16 @@ export default function ProjectMembersPanel({
       // Get user IDs
       const userIds = membersData.map((m) => m.user_id);
 
-      // Get profiles separately
+      // Get profiles separately — avatar_url may not exist in all environments,
+      // so we fetch only guaranteed columns and treat profile errors as non-fatal
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, email, full_name, avatar_url')
+        .select('id, email, full_name')
         .in('id', userIds);
 
       if (profilesError) {
-        console.error('Profiles query error:', profilesError);
-        throw profilesError;
+        console.error('Profiles query error (non-fatal):', profilesError);
+        // Continue with empty profile data rather than failing the whole widget
       }
 
       // Create a map of profiles by user_id
@@ -143,7 +143,6 @@ export default function ProjectMembersPanel({
           profile: {
             email: profile?.email ?? '',
             full_name: profile?.full_name ?? null,
-            avatar_url: profile?.avatar_url ?? null,
           },
         };
       });
@@ -287,13 +286,9 @@ export default function ProjectMembersPanel({
           const badge = getRoleBadge(member.role);
           return (
             <div key={member.id} className="flex items-center gap-2.5 py-2 border-b border-[#F1F5F9] last:border-0">
-              {member.profile.avatar_url ? (
-                <img src={member.profile.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-              ) : (
-                <div className={`w-7 h-7 bg-gradient-to-br ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-bold text-[0.5rem] flex-shrink-0`}>
-                  {getInitials(member.profile.full_name, member.profile.email)}
-                </div>
-              )}
+              <div className={`w-7 h-7 bg-gradient-to-br ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-bold text-[0.5rem] flex-shrink-0`}>
+                {getInitials(member.profile.full_name, member.profile.email)}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[0.8125rem] font-semibold text-[#0F172A] truncate">
                   {member.profile.full_name || member.profile.email}
@@ -346,17 +341,13 @@ export default function ProjectMembersPanel({
                 key={member.id}
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
               >
-                {member.profile.avatar_url ? (
-                  <img src={member.profile.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-                ) : (
-                  <div
-                    className={`w-10 h-10 bg-gradient-to-br ${getAvatarColor(
-                      index
-                    )} rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0`}
-                  >
-                    {getInitials(member.profile.full_name, member.profile.email)}
-                  </div>
-                )}
+                <div
+                  className={`w-10 h-10 bg-gradient-to-br ${getAvatarColor(
+                    index
+                  )} rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0`}
+                >
+                  {getInitials(member.profile.full_name, member.profile.email)}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-gray-900 text-sm truncate">
                     {member.profile.full_name || member.profile.email}
