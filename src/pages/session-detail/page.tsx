@@ -1296,18 +1296,6 @@ export default function SessionDetail() {
                 </div>
               </div>
 
-              {/* Duration card */}
-              <div className="mb-3 p-2.5 bg-[#F8FAFC] rounded-[6px] border border-[#E2E8F0]">
-                <div className="text-[0.6875rem] text-[#94A3B8] font-semibold uppercase mb-0.5">Duration</div>
-                <div className="text-[0.8125rem] font-semibold text-[#0F172A]">
-                  {elapsedTime}
-                  {session.duration_minutes > 0 && (
-                    <span className="text-[#94A3B8] font-normal text-[0.75rem]">
-                      {' / '}{Math.floor(session.duration_minutes / 60) > 0 ? `${Math.floor(session.duration_minutes / 60)}h` : ''}{session.duration_minutes % 60 > 0 ? ` ${session.duration_minutes % 60}m` : ''} of goal
-                    </span>
-                  )}
-                </div>
-              </div>
 
               {/* Summary Cards */}
               <div className="grid grid-cols-1 gap-2 mb-4">

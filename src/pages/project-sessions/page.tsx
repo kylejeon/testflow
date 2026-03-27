@@ -62,12 +62,14 @@ export default function ProjectSessions() {
     charter: string;
     tags: string;
     assignees: string[];
+    estimated_hours: number;
   }>({
     name: '',
     milestone_id: '',
     charter: '',
     tags: '',
     assignees: [],
+    estimated_hours: 1,
   });
   const [submitting, setSubmitting] = useState(false);
   const [tagInput, setTagInput] = useState('');
@@ -375,6 +377,7 @@ export default function ProjectSessions() {
         tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
         assignees: formData.assignees,
         status: 'active',
+        duration_minutes: formData.estimated_hours > 0 ? Math.round(formData.estimated_hours * 60) : null,
       };
 
       if (editingSessionId) {
@@ -624,7 +627,7 @@ export default function ProjectSessions() {
           <div className="flex-1" />
           <span className="text-[0.8125rem] text-[#64748B] px-3">{filteredSessions.length} entries</span>
           <button
-            onClick={() => { setEditingSessionId(null); setFormData({ name: '', milestone_id: '', charter: '', tags: '', assignees: [] }); setTagInput(''); setShowAddSessionModal(true); }}
+            onClick={() => { setEditingSessionId(null); setFormData({ name: '', milestone_id: '', charter: '', tags: '', assignees: [], estimated_hours: 1 }); setTagInput(''); setShowAddSessionModal(true); }}
             className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap"
           >
             <i className="ri-add-line text-sm" />
@@ -1145,6 +1148,26 @@ export default function ProjectSessions() {
                       className="w-full px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.8125rem]"
                     />
                     <p className="text-xs text-gray-500 mt-1">Press Enter or comma to add a tag</p>
+                  </div>
+
+                  {/* Estimated Duration */}
+                  <div>
+                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-2">
+                      Estimated Duration
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={formData.estimated_hours}
+                        onChange={(e) => setFormData(prev => ({ ...prev, estimated_hours: parseFloat(e.target.value) || 0 }))}
+                        min="0"
+                        step="0.5"
+                        className="w-full px-[0.875rem] py-[0.4375rem] pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.8125rem]"
+                        placeholder="2"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[0.8125rem] text-gray-400 font-medium pointer-events-none">h</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Enter duration in hours (e.g. 2 = 2h, 1.5 = 1h 30m)</p>
                   </div>
                 </div>
               </div>

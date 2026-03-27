@@ -45,7 +45,7 @@ export default function EditSessionModal({
   const [milestoneId, setMilestoneId] = useState(session.milestone_id || '');
   const [tags, setTags] = useState(session.tags?.join(', ') || '');
   const [tagInput, setTagInput] = useState('');
-  const [estimatedDuration, setEstimatedDuration] = useState(session.duration_minutes || 60);
+  const [estimatedHours, setEstimatedHours] = useState<number>((session.duration_minutes || 60) / 60);
   const [assignees, setAssignees] = useState<string[]>(session.assignees || []);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [assigneeSearch, setAssigneeSearch] = useState('');
@@ -58,7 +58,7 @@ export default function EditSessionModal({
       setMilestoneId(session.milestone_id || '');
       setTags(session.tags?.join(', ') || '');
       setTagInput('');
-      setEstimatedDuration(session.duration_minutes || 60);
+      setEstimatedHours((session.duration_minutes || 60) / 60);
       setAssignees(session.assignees || []);
       setShowAssigneeDropdown(false);
       setAssigneeSearch('');
@@ -88,7 +88,7 @@ export default function EditSessionModal({
       mission,
       milestone_id: milestoneId || null,
       tags: tags.split(',').map(t => t.trim()).filter(t => t),
-      estimated_duration: estimatedDuration,
+      estimated_duration: Math.round(estimatedHours * 60),
       assignees,
     });
   };
@@ -328,16 +328,21 @@ export default function EditSessionModal({
               {/* Estimated Duration */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estimated Duration (minutes)
+                  Estimated Duration
                 </label>
-                <input
-                  type="number"
-                  value={estimatedDuration}
-                  onChange={(e) => setEstimatedDuration(parseInt(e.target.value) || 0)}
-                  min="0"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                  placeholder="60"
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={estimatedHours}
+                    onChange={(e) => setEstimatedHours(parseFloat(e.target.value) || 0)}
+                    min="0"
+                    step="0.5"
+                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                    placeholder="2"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium pointer-events-none">h</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Enter duration in hours (e.g. 2 = 2h, 1.5 = 1h 30m)</p>
               </div>
             </div>
           </div>
