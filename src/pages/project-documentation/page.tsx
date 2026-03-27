@@ -167,19 +167,20 @@ export default function ProjectDocumentation() {
         {/* Edge-to-edge subtab row */}
         <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
           {[
-            { key: 'all', label: t('all'), count: documents.length },
-            { key: 'link', label: t('link'), count: documents.filter(d => d.type === 'link').length },
-            { key: 'file', label: t('file'), count: documents.filter(d => d.type === 'file').length },
+            { key: 'all',  label: t('all'),  icon: 'ri-file-list-3-line',   iconColor: '#6366F1', count: documents.length },
+            { key: 'link', label: t('link'), icon: 'ri-links-line',          iconColor: '#F59E0B', count: documents.filter(d => d.type === 'link').length },
+            { key: 'file', label: t('file'), icon: 'ri-file-3-fill',         iconColor: '#3B82F6', count: documents.filter(d => d.type === 'file').length },
           ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setFilterType(tab.key as typeof filterType)}
-              className={`flex items-center gap-1.5 h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-[0.3125rem] h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
                 filterType === tab.key
                   ? 'text-[#6366F1] border-[#6366F1]'
                   : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
               }`}
             >
+              <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }} />
               {tab.label}
               <span className={`px-1.5 py-0.5 rounded text-[0.6875rem] font-semibold ${
                 filterType === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'

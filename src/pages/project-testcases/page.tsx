@@ -369,11 +369,11 @@ export default function ProjectTestCases() {
               active: testCases.filter(tc => (tc.lifecycle_status || 'active') === 'active').length,
               deprecated: testCases.filter(tc => (tc.lifecycle_status || 'active') === 'deprecated').length,
             };
-            const tabs: { key: 'all' | 'draft' | 'active' | 'deprecated'; label: string; icon?: string; iconCls?: string }[] = [
-              { key: 'all', label: 'All' },
-              { key: 'draft', label: 'Draft', icon: 'ri-draft-line', iconCls: 'text-amber-500' },
-              { key: 'active', label: 'Active', icon: 'ri-checkbox-circle-line', iconCls: 'text-green-500' },
-              { key: 'deprecated', label: 'Deprecated', icon: 'ri-forbid-line', iconCls: 'text-slate-400' },
+            const tabs: { key: 'all' | 'draft' | 'active' | 'deprecated'; label: string; icon: string; iconColor: string }[] = [
+              { key: 'all',        label: 'All',        icon: 'ri-list-check-3',          iconColor: '#6366F1' },
+              { key: 'draft',      label: 'Draft',      icon: 'ri-draft-fill',            iconColor: '#94A3B8' },
+              { key: 'active',     label: 'Active',     icon: 'ri-checkbox-circle-fill',  iconColor: '#22C55E' },
+              { key: 'deprecated', label: 'Deprecated', icon: 'ri-forbid-line',           iconColor: '#94A3B8' },
             ];
             return (
               <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
@@ -381,13 +381,13 @@ export default function ProjectTestCases() {
                   <button
                     key={tab.key}
                     onClick={() => setLifecycleFilter(tab.key)}
-                    className={`flex items-center gap-1.5 px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-[2.5px] transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
+                    className={`flex items-center gap-[0.3125rem] px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-[2.5px] transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
                       lifecycleFilter === tab.key
                         ? 'text-[#6366F1] border-[#6366F1] font-semibold'
                         : 'text-[#64748B] border-transparent hover:text-[#475569]'
                     }`}
                   >
-                    {tab.icon && <i className={`${tab.icon} text-[0.875rem] ${lifecycleFilter === tab.key ? 'text-[#6366F1]' : tab.iconCls}`} />}
+                    <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }} />
                     {tab.label}
                     <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${
                       lifecycleFilter === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'

@@ -609,19 +609,20 @@ export default function ProjectDetail() {
             {/* Subtab row */}
             <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
               {[
-                { key: 'overview', label: 'Overview' },
-                { key: 'analytics', label: 'Analytics' },
-                { key: 'activity', label: 'Activity Feed' },
+                { key: 'overview',  label: 'Overview',      icon: 'ri-eye-line',          iconColor: '#6366F1' },
+                { key: 'analytics', label: 'Analytics',     icon: 'ri-bar-chart-2-fill',  iconColor: '#8B5CF6' },
+                { key: 'activity',  label: 'Activity Feed', icon: 'ri-time-fill',         iconColor: '#F59E0B' },
               ].map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setDashboardTab(tab.key as typeof dashboardTab)}
-                  className={`flex items-center h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
+                  className={`flex items-center gap-[0.3125rem] h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
                     dashboardTab === tab.key
                       ? 'text-[#6366F1] border-[#6366F1]'
                       : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
                   }`}
                 >
+                  <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }} />
                   {tab.label}
                 </button>
               ))}

@@ -581,19 +581,20 @@ export default function ProjectSessions() {
         {/* Edge-to-edge subtab row */}
         <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
           {[
-            { key: 'all', label: 'All', count: sessions.length },
-            { key: 'active', label: 'Active', count: sessions.filter(s => s.status === 'active').length },
-            { key: 'closed', label: 'Closed', count: sessions.filter(s => s.status === 'closed').length },
+            { key: 'all',    label: 'All',    icon: 'ri-list-check-3',         iconColor: '#6366F1', count: sessions.length },
+            { key: 'active', label: 'Open',   icon: 'ri-radar-fill',           iconColor: '#F59E0B', count: sessions.filter(s => s.status === 'active').length },
+            { key: 'closed', label: 'Closed', icon: 'ri-checkbox-circle-fill', iconColor: '#22C55E', count: sessions.filter(s => s.status === 'closed').length },
           ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as typeof activeTab)}
-              className={`flex items-center gap-1.5 h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-[0.3125rem] h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'text-[#6366F1] border-[#6366F1]'
                   : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
               }`}
             >
+              <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }} />
               {tab.label}
               <span className={`px-1.5 py-0.5 rounded text-[0.6875rem] font-semibold ${
                 activeTab === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'

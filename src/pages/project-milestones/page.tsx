@@ -457,20 +457,21 @@ export default function ProjectMilestones() {
         {/* Edge-to-edge subtab row */}
         <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
           {[
-            { key: 'all', label: 'All', count: milestones.length },
-            { key: 'in-progress', label: 'In Progress', count: milestones.filter(m => m.status !== 'completed' && m.status !== 'past_due').length },
-            { key: 'completed', label: 'Completed', count: milestones.filter(m => m.status === 'completed').length },
-            { key: 'overdue', label: 'Overdue', count: milestones.filter(m => m.status === 'past_due').length },
+            { key: 'all',         label: 'All',         icon: 'ri-list-check-3',         iconColor: '#6366F1', count: milestones.length },
+            { key: 'in-progress', label: 'In Progress', icon: 'ri-loader-4-fill',        iconColor: '#3B82F6', count: milestones.filter(m => m.status !== 'completed' && m.status !== 'past_due').length },
+            { key: 'completed',   label: 'Completed',   icon: 'ri-checkbox-circle-fill', iconColor: '#22C55E', count: milestones.filter(m => m.status === 'completed').length },
+            { key: 'overdue',     label: 'Overdue',     icon: 'ri-error-warning-fill',   iconColor: '#EF4444', count: milestones.filter(m => m.status === 'past_due').length },
           ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as typeof activeTab)}
-              className={`flex items-center gap-1.5 h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-[0.3125rem] h-full px-[0.875rem] text-[0.8125rem] font-medium relative border-b-[2.5px] transition-colors cursor-pointer whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'text-[#6366F1] border-[#6366F1]'
                   : 'text-[#64748B] border-transparent hover:text-[#1E293B]'
               }`}
             >
+              <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }} />
               {tab.label}
               <span className={`px-1.5 py-0.5 rounded text-[0.6875rem] font-semibold ${
                 activeTab === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'

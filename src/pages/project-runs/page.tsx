@@ -1242,7 +1242,7 @@ export default function ProjectRunsPage() {
                   : 'text-[#64748B] border-transparent hover:text-[#475569]'
               }`}
             >
-              <i className="ri-play-circle-line text-[0.875rem]"></i>
+              <i className="ri-play-circle-fill text-[0.875rem]" style={{ color: '#3B82F6' }}></i>
               Active
               <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${activeTab === 'active' ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
                 {testRuns.filter(r => r.status !== 'completed').length}
@@ -1256,7 +1256,7 @@ export default function ProjectRunsPage() {
                   : 'text-[#64748B] border-transparent hover:text-[#475569]'
               }`}
             >
-              <i className="ri-checkbox-circle-line text-[0.875rem]"></i>
+              <i className="ri-checkbox-circle-fill text-[0.875rem]" style={{ color: '#22C55E' }}></i>
               Completed
               <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${activeTab === 'closed' ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
                 {testRuns.filter(r => r.status === 'completed').length}
