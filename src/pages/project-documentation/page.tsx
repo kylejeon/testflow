@@ -106,6 +106,7 @@ export default function ProjectDocumentation() {
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [moveTarget, setMoveTarget] = useState<string>('');
+  const [deleteFolderTarget, setDeleteFolderTarget] = useState<DocumentItem | null>(null);
 
   // Upload modal state
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -263,6 +264,33 @@ export default function ProjectDocumentation() {
     } catch (e) {
       console.error('이동 오류:', e);
       showToast('Failed to move documents.', 'error');
+    }
+  };
+
+  const handleDeleteFolder = async () => {
+    if (!deleteFolderTarget) return;
+    const folder = deleteFolderTarget;
+    const parentCat = folder.folderParent || 'file';
+    try {
+      // Move all documents in this folder up to the parent category
+      const docsInFolder = documents.filter(d => d.category === folder.id);
+      if (docsInFolder.length > 0) {
+        await Promise.all(docsInFolder.map(doc =>
+          supabase.from('project_documents').update({
+            description: encodeDescription(parentCat, doc.descText),
+          }).eq('id', doc.id)
+        ));
+      }
+      // Delete the folder record
+      const { error } = await supabase.from('project_documents').delete().eq('id', folder.id);
+      if (error) throw error;
+      setDeleteFolderTarget(null);
+      if (selectedFolder === folder.id) setSelectedFolder(parentCat);
+      fetchData();
+      showToast('Folder deleted. Documents moved to parent folder.', 'success');
+    } catch (e) {
+      console.error('폴더 삭제 오류:', e);
+      showToast('Failed to delete folder.', 'error');
     }
   };
 
@@ -433,18 +461,25 @@ export default function ProjectDocumentation() {
                   {customFolders
                     .filter(f => f.folderParent === cat.id)
                     .map(sub => (
-                      <button
+                      <div
                         key={sub.id}
-                        onClick={() => setSelectedFolder(sub.id)}
-                        className={`w-full flex items-center gap-1.5 pl-[2rem] pr-[0.875rem] py-[0.375rem] text-[0.75rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left ${
+                        className={`group w-full flex items-center gap-1.5 pl-[2rem] pr-[0.5rem] py-[0.375rem] text-[0.75rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left ${
                           selectedFolder === sub.id
                             ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
                             : 'text-[#475569] hover:bg-[#F8FAFC]'
                         }`}
+                        onClick={() => setSelectedFolder(sub.id)}
                       >
                         <i className="ri-folder-line text-sm text-[#94A3B8]" />
                         <span className="flex-1 min-w-0 truncate">{sub.title}</span>
-                      </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); setDeleteFolderTarget(sub); }}
+                          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-[#94A3B8] hover:bg-red-50 hover:text-red-500 transition-all flex-shrink-0 cursor-pointer"
+                          title="Delete folder"
+                        >
+                          <i className="ri-delete-bin-line text-[0.75rem]" />
+                        </button>
+                      </div>
                     ))}
                 </div>
               ))}
@@ -821,6 +856,37 @@ export default function ProjectDocumentation() {
               <button onClick={() => { setShowMoveModal(false); setMoveTarget(''); }} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] cursor-pointer">Cancel</button>
               <button onClick={handleMoveSelected} disabled={!moveTarget} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] shadow-[0_1px_3px_rgba(99,102,241,0.3)] cursor-pointer disabled:opacity-50">
                 Move Here
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Folder Confirmation Modal */}
+      {deleteFolderTarget && (
+        <div className="fixed inset-0 bg-[rgba(15,23,42,0.4)] backdrop-blur-[2px] flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-96 max-w-[90vw] shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0]">
+              <span className="text-[0.9375rem] font-bold text-[#0F172A]">Delete Folder</span>
+              <button onClick={() => setDeleteFolderTarget(null)} className="w-7 h-7 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#475569] cursor-pointer">
+                <i className="ri-close-line text-lg" />
+              </button>
+            </div>
+            <div className="px-5 py-5">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <i className="ri-delete-bin-line text-red-500 text-lg" />
+                </div>
+                <div>
+                  <p className="text-[0.875rem] font-semibold text-[#0F172A] mb-1">"{deleteFolderTarget.title}" 폴더를 삭제하시겠습니까?</p>
+                  <p className="text-[0.8125rem] text-[#64748B]">폴더 내 문서는 상위 폴더로 이동됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[#E2E8F0] bg-[#FAFAFA]">
+              <button onClick={() => setDeleteFolderTarget(null)} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] cursor-pointer">Cancel</button>
+              <button onClick={handleDeleteFolder} className="text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-red-500 text-white hover:bg-red-600 cursor-pointer">
+                Delete Folder
               </button>
             </div>
           </div>
