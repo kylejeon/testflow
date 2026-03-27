@@ -49,6 +49,7 @@ export default function ProjectDetail() {
   const [dashboardTab, setDashboardTab] = useState<'overview' | 'analytics' | 'activity'>('overview');
   const [projectPassRateData, setProjectPassRateData] = useState<{ total: number; passed: number } | null>(null);
   const [rawTestResults, setRawTestResults] = useState<any[]>([]);
+  const [allRunsRaw, setAllRunsRaw] = useState<any[]>([]);
   const [trendPeriod, setTrendPeriod] = useState<'7d' | '14d' | '30d'>('7d');
   const [expandedPriorityGroups, setExpandedPriorityGroups] = useState<Set<string>>(new Set(['critical', 'high']));
   const [activityFilter, setActivityFilter] = useState<string>('all');
@@ -150,6 +151,9 @@ export default function ProjectDetail() {
 
       setProject(projectData);
       setTestCaseCount(tcCount || 0);
+      // Store raw run data (original DB counters) for trend chart — before they get
+      // overwritten by the test_results-based recalculation below.
+      setAllRunsRaw(allRunsData || []);
 
       // ── test_results를 모든 run에 대해 한 번에 fetch (N+1 제거) ──
       const runIds = (allRunsData || []).map(r => r.id);
@@ -527,7 +531,9 @@ export default function ProjectDetail() {
   //   1. test_runs counters are always populated (including sample projects)
   //   2. executed_at reflects the actual run completion date
   const trendData = useMemo(() => {
-    const executedRuns = testRuns.filter((r: any) => r.executed_at);
+    // Use allRunsRaw (original DB values) — testRuns has passed/failed/blocked
+    // recalculated from test_results rows, which overwrites the DB-stored counters.
+    const executedRuns = allRunsRaw.filter((r: any) => r.executed_at);
     if (executedRuns.length === 0) return [];
 
     const days = trendPeriod === '7d' ? 7 : trendPeriod === '14d' ? 14 : 30;
@@ -579,7 +585,7 @@ export default function ProjectDetail() {
         return { label, ...entry };
       });
     }
-  }, [testRuns, trendPeriod]);
+  }, [allRunsRaw, trendPeriod]);
 
   // ── Loading / Not found states ──
   if (loading) {
