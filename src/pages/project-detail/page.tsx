@@ -1325,6 +1325,28 @@ export default function ProjectDetail() {
                     )}
                   </div>
 
+                  {/* Sidebar: Team Members */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                        <i className="ri-team-line text-indigo-500" />
+                        Team Members
+                      </div>
+                      <button
+                        onClick={() => setShowInviteModal(true)}
+                        className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
+                      >
+                        <i className="ri-user-add-line text-xs" />
+                        Invite
+                      </button>
+                    </div>
+                    <ProjectMembersPanel
+                      projectId={id || ''}
+                      onInviteClick={() => setShowInviteModal(true)}
+                      refreshTrigger={memberRefreshTrigger}
+                    />
+                  </div>
+
                 </div>
               </div>
             )}
