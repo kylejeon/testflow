@@ -1113,7 +1113,7 @@ def pytest_sessionfinish(session, exitstatus):
                               }`}
                             >
                               Annual
-                              <span className="px-1.5 py-0.5 bg-indigo-500 text-white text-xs rounded-full">20% off</span>
+                              <span className="px-1.5 py-0.5 bg-indigo-500 text-white text-xs rounded-full">15% off</span>
                             </button>
                           </div>
                         </div>
@@ -1202,14 +1202,14 @@ def pytest_sessionfinish(session, exitstatus):
                                 </ul>
                                 {!isCurrentTier && tierNum > currentTier && (
                                   <a
-                                    href={tierNum >= 4 ? 'mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry' : 'mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry'}
+                                    href={tierNum >= 6 ? 'mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry' : 'mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry'}
                                     className={`w-full mt-4 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap block text-center ${
-                                      tierNum >= 4
+                                      tierNum >= 6
                                         ? 'border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
                                         : 'bg-indigo-500 text-white hover:bg-indigo-600'
                                     }`}
                                   >
-                                    {tierNum >= 4 ? 'Contact Sales' : 'Contact Us to Upgrade'}
+                                    {tierNum >= 6 ? 'Contact Sales' : 'Contact Us to Upgrade'}
                                   </a>
                                 )}
                               </div>
