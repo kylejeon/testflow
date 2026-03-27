@@ -1404,6 +1404,7 @@ export default function RunDetail() {
 
   const focusTests: FocusTestCase[] = testCases.map((tc) => ({
     id: tc.id,
+    customId: (tc as any).custom_id,
     title: tc.title,
     description: tc.description,
     steps: tc.steps,
@@ -1414,6 +1415,7 @@ export default function RunDetail() {
     tags: tc.tags,
     assignee: tc.assignee,
     runStatus: tc.runStatus,
+    attachments: tc.attachments,
   }));
 
   return (

@@ -467,7 +467,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
       </div>
 
       {/* ④ Focus layout: Sidebar + Body */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
 
         {/* ── SIDEBAR (280px collapsible) ── */}
         <div
@@ -627,6 +627,26 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
             />
           </button>
         </div>
+
+        {/* Collapsed-tab: appears when sidebar is closed, at left edge of body */}
+        {!sidebarOpen && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            style={{
+              position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
+              width: 16, height: 56, borderRadius: '0 8px 8px 0',
+              background: '#fff', border: '1px solid #E2E8F0', borderLeft: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', zIndex: 20,
+              boxShadow: '2px 0 8px rgba(0,0,0,0.06)',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EEF2FF'; (e.currentTarget as HTMLElement).style.width = '20px'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.width = '16px'; }}
+            title="Open sidebar ([)"
+          >
+            <i className="ri-arrow-right-s-line" style={{ fontSize: '0.875rem', color: '#6366F1' }} />
+          </button>
+        )}
 
         {/* ── Body + Footer (flex column, fills remaining space) ── */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
