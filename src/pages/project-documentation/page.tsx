@@ -21,6 +21,7 @@ interface DocumentItem {
   // Derived from description JSON parsing:
   category: string;
   descText: string;
+  folderParent?: string; // populated for __folder__ items
 }
 
 // ── Category helpers ─────────────────────────────────────────────
@@ -42,13 +43,13 @@ const CATEGORY_INFO: Record<string, { bg: string; color: string; icon: string; l
   file:          { bg: '#F1F5F9', color: '#64748B', icon: 'ri-file-fill',        label: 'File',        badgeBg: '#F1F5F9', badgeColor: '#475569' },
 };
 
-const parseDescription = (description?: string | null, type?: string): { category: string; text: string } => {
+const parseDescription = (description?: string | null, type?: string): { category: string; text: string; parent?: string } => {
   const defaultCat = type === 'link' ? 'link' : 'file';
   if (!description) return { category: defaultCat, text: '' };
   try {
     const p = JSON.parse(description);
     if (typeof p === 'object' && p !== null && 'cat' in p) {
-      return { category: p.cat || defaultCat, text: p.text || '' };
+      return { category: p.cat || defaultCat, text: p.text || '', parent: p.parent };
     }
   } catch {}
   return { category: defaultCat, text: description };
@@ -158,7 +159,7 @@ export default function ProjectDocumentation() {
 
       const allItems = (docsData || []).map(doc => {
         const { category, text } = parseDescription(doc.description, doc.type);
-        return { ...doc, category, descText: text };
+        return { ...doc, category, descText: text, folderParent: parent };
       });
 
       setCustomFolders(allItems.filter(d => d.category === '__folder__'));
@@ -412,37 +413,57 @@ export default function ProjectDocumentation() {
             </div>
             <div className="flex-1 overflow-y-auto py-1.5">
               {CATEGORIES.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => { setSelectedFolder(cat.id); setActiveTab(cat.id === 'link' ? 'all' : cat.id); }}
-                  className={`w-full flex items-center gap-1.5 px-[0.875rem] py-[0.4375rem] text-[0.8125rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left ${
-                    selectedFolder === cat.id
-                      ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
-                      : 'text-[#475569] hover:bg-[#F8FAFC]'
-                  }`}
-                >
-                  <i className={`${cat.icon} text-base`} style={{ color: selectedFolder === cat.id ? '#6366F1' : cat.color }} />
-                  <span className="flex-1 min-w-0 truncate">{cat.label}</span>
-                  <span className={`text-[0.6875rem] font-medium ${selectedFolder === cat.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
-                    {folderCounts[cat.id] ?? 0}
-                  </span>
-                </button>
+                <div key={cat.id}>
+                  <button
+                    onClick={() => { setSelectedFolder(cat.id); setActiveTab(cat.id === 'link' ? 'all' : cat.id); }}
+                    className={`w-full flex items-center gap-1.5 px-[0.875rem] py-[0.4375rem] text-[0.8125rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left ${
+                      selectedFolder === cat.id
+                        ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
+                        : 'text-[#475569] hover:bg-[#F8FAFC]'
+                    }`}
+                  >
+                    <i className={`${cat.icon} text-base`} style={{ color: selectedFolder === cat.id ? '#6366F1' : cat.color }} />
+                    <span className="flex-1 min-w-0 truncate">{cat.label}</span>
+                    <span className={`text-[0.6875rem] font-medium ${selectedFolder === cat.id ? 'text-[#6366F1]' : 'text-[#94A3B8]'}`}>
+                      {folderCounts[cat.id] ?? 0}
+                    </span>
+                  </button>
+                  {/* Sub-folders under this category */}
+                  {customFolders
+                    .filter(f => f.folderParent === cat.id)
+                    .map(sub => (
+                      <button
+                        key={sub.id}
+                        onClick={() => setSelectedFolder(sub.id)}
+                        className={`w-full flex items-center gap-1.5 pl-[2rem] pr-[0.875rem] py-[0.375rem] text-[0.75rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left ${
+                          selectedFolder === sub.id
+                            ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
+                            : 'text-[#475569] hover:bg-[#F8FAFC]'
+                        }`}
+                      >
+                        <i className="ri-folder-line text-sm text-[#94A3B8]" />
+                        <span className="flex-1 min-w-0 truncate">{sub.title}</span>
+                      </button>
+                    ))}
+                </div>
               ))}
-              {/* Custom folders */}
-              {customFolders.map(folder => (
-                <button
-                  key={folder.id}
-                  onClick={() => setSelectedFolder(folder.id)}
-                  className={`w-full flex items-center gap-1.5 px-[0.875rem] py-[0.4375rem] pl-8 text-[0.75rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left ${
-                    selectedFolder === folder.id
-                      ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
-                      : 'text-[#475569] hover:bg-[#F8FAFC]'
-                  }`}
-                >
-                  <i className="ri-folder-line text-sm text-[#94A3B8]" />
-                  <span className="flex-1 min-w-0 truncate">{folder.title}</span>
-                </button>
-              ))}
+              {/* Root-level custom folders (no parent or parent='all') */}
+              {customFolders
+                .filter(f => !f.folderParent || f.folderParent === 'all' || f.folderParent === '')
+                .map(folder => (
+                  <button
+                    key={folder.id}
+                    onClick={() => setSelectedFolder(folder.id)}
+                    className={`w-full flex items-center gap-1.5 px-[0.875rem] py-[0.4375rem] text-[0.8125rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left ${
+                      selectedFolder === folder.id
+                        ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
+                        : 'text-[#475569] hover:bg-[#F8FAFC]'
+                    }`}
+                  >
+                    <i className="ri-folder-line text-base text-[#94A3B8]" />
+                    <span className="flex-1 min-w-0 truncate">{folder.title}</span>
+                  </button>
+                ))}
             </div>
           </div>
 
@@ -751,6 +772,12 @@ export default function ProjectDocumentation() {
                   <option value="reports">Reports</option>
                   <option value="specs">Specs</option>
                   <option value="link">External Links</option>
+                  {/* Dynamically show custom root-level folders */}
+                  {customFolders
+                    .filter(f => !f.folderParent || f.folderParent === 'all' || f.folderParent === '')
+                    .map(f => (
+                      <option key={f.id} value={f.id}>{f.title}</option>
+                    ))}
                 </select>
               </div>
             </div>
