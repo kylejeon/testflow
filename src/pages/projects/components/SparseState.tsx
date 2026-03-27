@@ -15,6 +15,10 @@ interface SparseStateProps {
   onEditProject?: (project: Project) => void;
   onDeleteProject?: (project: Project) => void;
   canDeleteProjectIds?: Set<string>;
+  /** TipsBanner button handlers */
+  onTipCreateTC?: () => void;
+  onTipExploreSample?: () => void;
+  isTipsSampleLoading?: boolean;
 }
 
 // ── Health helpers ────────────────────────────────────────────────────────────
@@ -338,9 +342,15 @@ function ActionCard({
 function TipsBanner({
   count,
   onDismiss,
+  onPrimary,
+  onSecondary,
+  isSecondaryLoading,
 }: {
   count: 1 | 2;
   onDismiss: () => void;
+  onPrimary?: () => void;
+  onSecondary?: () => void;
+  isSecondaryLoading?: boolean;
 }) {
   const tip = TIPS[count];
 
@@ -361,11 +371,19 @@ function TipsBanner({
         <div className="text-xs text-indigo-600 leading-snug">{tip.desc}</div>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button className="text-[0.6875rem] px-3 py-1.5 rounded-full font-semibold bg-indigo-500 text-white hover:bg-indigo-600 transition-all cursor-pointer whitespace-nowrap">
+        <button
+          onClick={onPrimary}
+          className="text-[0.6875rem] px-3 py-1.5 rounded-full font-semibold bg-indigo-500 text-white hover:bg-indigo-600 transition-all cursor-pointer whitespace-nowrap"
+        >
           {tip.primary}
         </button>
-        <button className="text-[0.6875rem] px-3 py-1.5 rounded-full font-semibold text-indigo-600 hover:bg-indigo-100/60 transition-all cursor-pointer whitespace-nowrap">
-          {tip.secondary}
+        <button
+          onClick={isSecondaryLoading ? undefined : onSecondary}
+          disabled={isSecondaryLoading}
+          className="text-[0.6875rem] px-3 py-1.5 rounded-full font-semibold text-indigo-600 hover:bg-indigo-100/60 transition-all cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1"
+        >
+          {isSecondaryLoading && <i className="ri-loader-4-line animate-spin text-xs"></i>}
+          {isSecondaryLoading ? 'Creating...' : tip.secondary}
         </button>
       </div>
       <button
@@ -392,6 +410,9 @@ export default function SparseState({
   onEditProject,
   onDeleteProject,
   canDeleteProjectIds,
+  onTipCreateTC,
+  onTipExploreSample,
+  isTipsSampleLoading,
 }: SparseStateProps) {
   const navigate = useNavigate();
   const count = projects.length as 1 | 2;
@@ -414,7 +435,13 @@ export default function SparseState({
     <div>
       {/* Tips banner */}
       {!tipsDismissed && (
-        <TipsBanner count={count} onDismiss={handleDismiss} />
+        <TipsBanner
+          count={count}
+          onDismiss={handleDismiss}
+          onPrimary={count === 1 ? onTipCreateTC : undefined}
+          onSecondary={count === 1 ? onTipExploreSample : undefined}
+          isSecondaryLoading={count === 1 ? isTipsSampleLoading : false}
+        />
       )}
 
       {/* Unified grid: projects + action cards */}

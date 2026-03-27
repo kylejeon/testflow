@@ -7,6 +7,7 @@ import EditProjectModal from './EditProjectModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import EmptyState from './EmptyState';
 import SparseState from './SparseState';
+import QuickCreateTCModal from './QuickCreateTCModal';
 import StatCards, { type StatCardsData } from './StatCards';
 import { Avatar } from '../../../components/Avatar';
 import { useTranslation } from 'react-i18next';
@@ -58,6 +59,9 @@ export default function ProjectsContent() {
   const [projectMembers, setProjectMembers] = useState<Record<string, Array<{ initials: string; color: string; userId?: string; name?: string }>>>({});
   const [loading, setLoading] = useState(true);
   const [sampleLoading, setSampleLoading] = useState(false);
+  const [tipsSampleLoading, setTipsSampleLoading] = useState(false);
+  const [showQuickCreateTCModal, setShowQuickCreateTCModal] = useState(false);
+  const [quickCreateProject, setQuickCreateProject] = useState<{ id: string; name: string } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
@@ -315,10 +319,28 @@ export default function ProjectsContent() {
     }
   };
 
+  /** Check if a sample project already exists for the current user */
+  const findExistingSample = async (): Promise<string | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('name', 'Sample E-commerce App')
+      .eq('owner_id', user.id)
+      .maybeSingle();
+    return data?.id ?? null;
+  };
+
   const handleTrySample = async () => {
     if (sampleLoading) return;
     try {
       setSampleLoading(true);
+      const existing = await findExistingSample();
+      if (existing) {
+        navigate(`/projects/${existing}`);
+        return;
+      }
       const projectId = await createSampleProject();
       navigate(`/projects/${projectId}`);
     } catch (err: any) {
@@ -326,6 +348,43 @@ export default function ProjectsContent() {
       showToast(`Failed to create sample project: ${err?.message || 'Unknown error'}`, 'error');
     } finally {
       setSampleLoading(false);
+    }
+  };
+
+  /** TipsBanner "Create Test Case" — picks most recent project (or only project) */
+  const handleTipCreateTC = () => {
+    if (projects.length === 0) {
+      setShowCreateModal(true);
+      return;
+    }
+    // Sort by created_at descending, pick the most recent
+    const sorted = [...projects].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    const target = sorted[0];
+    setQuickCreateProject({ id: target.id, name: target.name });
+    setShowQuickCreateTCModal(true);
+  };
+
+  /** TipsBanner "Explore Sample" */
+  const handleTipExploreSample = async () => {
+    if (tipsSampleLoading) return;
+    try {
+      setTipsSampleLoading(true);
+      const existing = await findExistingSample();
+      if (existing) {
+        showToast('Opening your sample project...', 'success');
+        navigate(`/projects/${existing}`);
+        return;
+      }
+      const projectId = await createSampleProject();
+      showToast("Sample project created! Explore the pre-configured test cases, runs, and milestones.", 'success');
+      navigate(`/projects/${projectId}`);
+    } catch (err: any) {
+      console.error('Sample project creation failed:', err);
+      showToast('Failed to create sample project. Please try again later.', 'error');
+    } finally {
+      setTipsSampleLoading(false);
     }
   };
 
@@ -636,6 +695,9 @@ export default function ProjectsContent() {
                 onEditProject={setEditingProject}
                 onDeleteProject={(p) => canDeleteProject(p) ? setDeletingProject(p) : showToast('Only project owner can delete', 'warning')}
                 canDeleteProjectIds={new Set(projects.filter(canDeleteProject).map(p => p.id))}
+                onTipCreateTC={handleTipCreateTC}
+                onTipExploreSample={handleTipExploreSample}
+                isTipsSampleLoading={tipsSampleLoading}
               />
             </div>
           </div>
@@ -648,6 +710,19 @@ export default function ProjectsContent() {
         )}
         {deletingProject && (
           <DeleteConfirmModal project={deletingProject} onClose={() => setDeletingProject(null)} onDelete={handleDeleteProject} />
+        )}
+        {showQuickCreateTCModal && quickCreateProject && (
+          <QuickCreateTCModal
+            projectId={quickCreateProject.id}
+            projectName={quickCreateProject.name}
+            onClose={() => { setShowQuickCreateTCModal(false); setQuickCreateProject(null); }}
+            onCreated={(projectId, title) => {
+              setShowQuickCreateTCModal(false);
+              setQuickCreateProject(null);
+              showToast(`Test case "${title}" created successfully`, 'success');
+              navigate(`/projects/${projectId}/testcases`);
+            }}
+          />
         )}
         <ToastContainer toasts={toasts} dismiss={dismiss} />
       </>
