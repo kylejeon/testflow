@@ -359,7 +359,7 @@ export default function ProjectsContent() {
       if (!existingMember) {
         const { error: memberError } = await supabase
           .from('project_members')
-          .insert([{ project_id: projectId, user_id: user.id, role: 'admin', invited_by: user.id }]);
+          .insert([{ project_id: projectId, user_id: user.id, role: 'owner', invited_by: user.id }]);
         if (memberError) throw memberError;
       }
 

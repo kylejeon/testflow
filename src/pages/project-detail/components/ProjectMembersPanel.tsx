@@ -5,7 +5,6 @@ interface Member {
   id: string;
   user_id: string;
   role: string;
-  invited_at: string;
   profile: {
     email: string;
     full_name: string | null;
@@ -71,7 +70,7 @@ export default function ProjectMembersPanel({
       // Get project members first
       const { data: membersData, error: membersError } = await supabase
         .from('project_members')
-        .select('id, user_id, role, invited_at')
+        .select('id, user_id, role')
         .eq('project_id', projectId);
 
       if (membersError) {
@@ -110,7 +109,6 @@ export default function ProjectMembersPanel({
           id: m.id,
           user_id: m.user_id,
           role: m.role,
-          invited_at: m.invited_at,
           profile: {
             email: profile?.email ?? '',
             full_name: profile?.full_name ?? null,
@@ -118,6 +116,9 @@ export default function ProjectMembersPanel({
           },
         };
       });
+
+      const ROLE_ORDER: Record<string, number> = { owner: 0, admin: 1, member: 2, viewer: 3 };
+      formattedMembers.sort((a, b) => (ROLE_ORDER[a.role] ?? 4) - (ROLE_ORDER[b.role] ?? 4));
 
       setMembers(formattedMembers);
 
