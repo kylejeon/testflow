@@ -218,8 +218,8 @@ function StepRow({ step, expectedResult, index, result, showResultButtons, onSte
         )}
         {expectedResult && (
           <div className="mt-1 flex items-start gap-1">
-            <i className="ri-checkbox-circle-line text-green-500 text-[0.75rem] flex-shrink-0 mt-[0.05rem]" />
-            <p className="text-[0.6875rem] text-green-600 leading-relaxed">
+            <i className="ri-checkbox-circle-line text-green-500 text-xs flex-shrink-0 mt-[0.05rem]" />
+            <p className="text-xs text-green-600 leading-relaxed">
               {expectedResult.replace(/<[^>]*>/g, '').trim()}
             </p>
           </div>
