@@ -780,24 +780,40 @@ export default function ProjectDocumentation() {
             </div>
             <div className="px-5 py-5">
               <p className="text-[0.75rem] text-[#64748B] mb-3">Select a destination folder:</p>
-              <div className="max-h-48 overflow-y-auto border border-[#E2E8F0] rounded-md">
+              <div className="max-h-60 overflow-y-auto border border-[#E2E8F0] rounded-md">
                 {[
                   { id: 'requirements', label: 'Requirements', color: '#D97706' },
                   { id: 'test-plans',   label: 'Test Plans',   color: '#2563EB' },
                   { id: 'reports',      label: 'Reports',      color: '#7C3AED' },
                   { id: 'specs',        label: 'Specs',        color: '#16A34A' },
                   { id: 'link',         label: 'External Links', color: '#64748B' },
-                ].map(folder => (
-                  <button
-                    key={folder.id}
-                    onClick={() => setMoveTarget(folder.id)}
-                    className={`w-full flex items-center gap-1.5 px-3 py-2 text-[0.8125rem] text-[#334155] cursor-pointer transition-colors text-left ${
-                      moveTarget === folder.id ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold' : 'hover:bg-[#EEF2FF]'
-                    }`}
-                  >
-                    <i className="ri-folder-fill text-[0.9375rem]" style={{ color: moveTarget === folder.id ? '#6366F1' : folder.color }} />
-                    {folder.label}
-                  </button>
+                ].map(cat => (
+                  <div key={cat.id}>
+                    <button
+                      onClick={() => setMoveTarget(cat.id)}
+                      className={`w-full flex items-center gap-1.5 px-3 py-2 text-[0.8125rem] text-[#334155] cursor-pointer transition-colors text-left ${
+                        moveTarget === cat.id ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold' : 'hover:bg-[#F8FAFC]'
+                      }`}
+                    >
+                      <i className="ri-folder-fill text-[0.9375rem]" style={{ color: moveTarget === cat.id ? '#6366F1' : cat.color }} />
+                      {cat.label}
+                    </button>
+                    {customFolders
+                      .filter(f => f.folderParent === cat.id)
+                      .map(sub => (
+                        <button
+                          key={sub.id}
+                          onClick={() => setMoveTarget(sub.id)}
+                          className={`w-full flex items-center gap-1.5 pl-7 pr-3 py-[0.375rem] text-[0.75rem] cursor-pointer transition-colors text-left ${
+                            moveTarget === sub.id ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold' : 'text-[#475569] hover:bg-[#F8FAFC]'
+                          }`}
+                        >
+                          <i className="ri-corner-down-right-line text-[0.75rem] text-[#CBD5E1]" />
+                          <i className="ri-folder-line text-[0.875rem]" style={{ color: moveTarget === sub.id ? '#6366F1' : '#94A3B8' }} />
+                          {sub.title}
+                        </button>
+                      ))}
+                  </div>
                 ))}
               </div>
             </div>
