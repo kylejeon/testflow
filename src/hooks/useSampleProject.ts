@@ -49,6 +49,9 @@ export function useSampleProject() {
     const testCasesTemplate: SampleTestCase[] = template.test_cases as SampleTestCase[];
 
     // 4. Insert test cases
+    const VALID_TC_STATUSES = new Set(['untested', 'passed', 'failed', 'blocked', 'retest']);
+    const normalizeStatus = (s: string) => VALID_TC_STATUSES.has(s) ? s : 'untested';
+
     const testCaseRows = testCasesTemplate.map((tc, idx) => ({
       id: crypto.randomUUID(),
       project_id: projectId,
@@ -57,7 +60,7 @@ export function useSampleProject() {
       precondition: null,
       folder: tc.module,
       priority: tc.priority,
-      status: tc.status === 'not_run' ? 'untested' : tc.status,
+      status: normalizeStatus(tc.status),
       is_automated: false,
       steps: tc.steps,
       expected_result: tc.expected_result,
