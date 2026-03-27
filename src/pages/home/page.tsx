@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import SEOHead from '../../components/SEOHead';
 import Logo from '../../components/Logo';
 import { useLanguage } from '../../hooks/useLanguage';
-import { openPaddleCheckout } from '../../lib/paddle';
+import { openPaddleCheckout, registerPaddleErrorHandler } from '../../lib/paddle';
+import { useToast, ToastContainer } from '../../components/Toast';
 
 const content = {
   en: {
@@ -681,6 +682,13 @@ export default function HomePage() {
 
   const lang = currentLanguage === 'ko' ? 'ko' : 'en';
   const t = content[lang];
+
+  const { toasts, showToast, dismiss } = useToast();
+
+  // Register Paddle error handler so checkout errors surface as toasts
+  useEffect(() => {
+    registerPaddleErrorHandler((msg) => showToast(msg, 'error'));
+  }, [showToast]);
 
   const handlePlanClick = async (planName: string) => {
     if (planName === 'Free') { navigate('/auth'); return; }
@@ -1635,6 +1643,7 @@ export default function HomePage() {
           </div>
         </footer>
       </div>
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </>
   );
 }

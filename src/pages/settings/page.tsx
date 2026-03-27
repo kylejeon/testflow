@@ -1104,7 +1104,17 @@ def pytest_sessionfinish(session, exitstatus):
                       {/* Subscription Tier Section */}
                       <div>
                         <h2 className="text-xl font-bold text-gray-900 mb-2">Subscription Plan</h2>
-                        <p className="text-gray-600 mb-6">View and manage your current subscription plan</p>
+                        <p className="text-gray-600 mb-4">View and manage your current subscription plan</p>
+
+                        {/* Payment system notice — remove once Paddle verification is complete */}
+                        <div className="flex items-start gap-3 p-3 mb-6 bg-amber-50 border border-amber-200 rounded-lg">
+                          <i className="ri-time-line text-amber-500 mt-0.5 flex-shrink-0"></i>
+                          <p className="text-sm text-amber-700">
+                            <span className="font-semibold">Payment system setup in progress.</span>{' '}
+                            Online checkout will be available shortly. To upgrade now, contact us at{' '}
+                            <a href="mailto:hello@testably.app" className="underline hover:text-amber-800">hello@testably.app</a>.
+                          </p>
+                        </div>
 
                         {/* Current Plan Card */}
                         <div className={`p-6 rounded-xl border-2 ${tierInfo.color} mb-6`}>

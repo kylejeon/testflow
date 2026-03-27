@@ -2,13 +2,30 @@ import { initializePaddle, type Paddle } from '@paddle/paddle-js';
 
 let paddleInstance: Paddle | null = null;
 
+// Module-level error handler — set once per page via registerPaddleErrorHandler()
+let _onError: ((message: string) => void) | null = null;
+
+export function registerPaddleErrorHandler(cb: (message: string) => void) {
+  _onError = cb;
+}
+
 export async function getPaddle(): Promise<Paddle | null> {
   if (paddleInstance) return paddleInstance;
   const token = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
   if (!token) return null;
   // Determine environment from token prefix: 'live_' = production, 'test_' = sandbox
   const environment = token.startsWith('live_') ? 'production' : 'sandbox';
-  paddleInstance = await initializePaddle({ token, environment });
+  paddleInstance = await initializePaddle({
+    token,
+    environment,
+    eventCallback(event) {
+      if (event.name === 'checkout.error') {
+        const msg = 'Payment processing is temporarily unavailable. Please try again later or contact support.';
+        _onError?.(msg);
+        console.error('[Paddle] checkout.error event:', event);
+      }
+    },
+  });
   return paddleInstance;
 }
 
@@ -37,11 +54,29 @@ export async function openPaddleCheckout(
   billingPeriod: 'monthly' | 'annual',
 ): Promise<boolean> {
   const priceId = PADDLE_PRICE_IDS[planName]?.[billingPeriod];
-  if (!priceId) return false;
+  if (!priceId) {
+    _onError?.('This plan is not available for direct purchase. Please contact support.');
+    return false;
+  }
 
-  const paddle = await getPaddle();
-  if (!paddle) return false;
+  let paddle: Paddle | null;
+  try {
+    paddle = await getPaddle();
+  } catch {
+    _onError?.('Payment system is currently unavailable. Please try again later.');
+    return false;
+  }
 
-  paddle.Checkout.open({ items: [{ priceId, quantity: 1 }] });
-  return true;
+  if (!paddle) {
+    _onError?.('Payment system is currently unavailable. Please try again later.');
+    return false;
+  }
+
+  try {
+    paddle.Checkout.open({ items: [{ priceId, quantity: 1 }] });
+    return true;
+  } catch {
+    _onError?.('Payment processing is temporarily unavailable. Please try again later.');
+    return false;
+  }
 }
