@@ -6,7 +6,9 @@ export async function getPaddle(): Promise<Paddle | null> {
   if (paddleInstance) return paddleInstance;
   const token = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
   if (!token) return null;
-  paddleInstance = await initializePaddle({ token });
+  // Determine environment from token prefix: 'live_' = production, 'test_' = sandbox
+  const environment = token.startsWith('live_') ? 'production' : 'sandbox';
+  paddleInstance = await initializePaddle({ token, environment });
   return paddleInstance;
 }
 
