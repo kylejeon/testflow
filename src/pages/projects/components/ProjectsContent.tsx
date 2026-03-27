@@ -105,18 +105,27 @@ export default function ProjectsContent() {
       const user = session.user;
       setCurrentUserId(user.id);
 
+      // Critical path: get project IDs (must succeed)
       const { data: memberData, error: memberError } = await supabase
         .from('project_members')
-        .select('project_id, role')
+        .select('project_id')
         .eq('user_id', user.id);
 
       if (memberError) throw memberError;
 
-      const roles: Record<string, string> = {};
-      memberData?.forEach(m => { roles[m.project_id] = m.role; });
-      setUserProjectRoles(roles);
-
       const projectIds = memberData?.map(m => m.project_id) || [];
+
+      // Optional: get roles for permission check (failure won't block project list)
+      supabase
+        .from('project_members')
+        .select('project_id, role')
+        .eq('user_id', user.id)
+        .then(({ data: roleData }) => {
+          const roles: Record<string, string> = {};
+          roleData?.forEach((m: { project_id: string; role: string }) => { roles[m.project_id] = m.role; });
+          setUserProjectRoles(roles);
+        })
+        .catch(() => { /* role check failed, menu permissions won't be available */ });
 
       if (projectIds.length === 0) {
         setProjects([]);
