@@ -411,15 +411,18 @@ export default function ProjectDocumentation() {
           ))}
           <div className="flex-1" />
           <div className="flex items-center gap-2">
+            <span className="text-[0.6875rem] font-semibold text-[#94A3B8] px-[0.625rem] py-[0.1875rem] border border-[#E2E8F0] rounded-full bg-[#F8FAFC] whitespace-nowrap">
+              {filteredDocs.length} documents
+            </span>
             <button
               onClick={() => setShowAddLinkModal(true)}
-              className="flex items-center gap-[0.3125rem] px-[0.75rem] py-[0.3125rem] bg-white border border-[#E2E8F0] text-[#475569] rounded-[0.375rem] text-[0.75rem] font-semibold hover:bg-[#F8FAFC] transition-all cursor-pointer whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-white border border-[#E2E8F0] text-[#475569] rounded-[0.375rem] text-[0.8125rem] font-semibold hover:bg-[#F8FAFC] transition-all cursor-pointer whitespace-nowrap shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
             >
               <i className="ri-link text-[0.875rem]" />Add Link
             </button>
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-[0.3125rem] px-[0.75rem] py-[0.3125rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.75rem] font-semibold hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap shadow-[0_1px_3px_rgba(99,102,241,0.3)]"
+              className="flex items-center gap-[0.3125rem] px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-semibold hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap shadow-[0_1px_3px_rgba(99,102,241,0.3)]"
             >
               <i className="ri-upload-2-line text-[0.875rem]" />Upload
             </button>
@@ -463,7 +466,7 @@ export default function ProjectDocumentation() {
                     .map(sub => (
                       <div
                         key={sub.id}
-                        className={`group w-full flex items-center gap-1.5 pl-[2rem] pr-[0.5rem] py-[0.375rem] text-[0.75rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left ${
+                        className={`group relative w-full flex items-center gap-1.5 pl-[2rem] pr-[0.5rem] py-[0.375rem] text-[0.75rem] rounded-r-md mr-1.5 transition-colors cursor-pointer text-left before:content-[''] before:absolute before:left-[1.25rem] before:top-0 before:bottom-0 before:w-px before:bg-[#E2E8F0] ${
                           selectedFolder === sub.id
                             ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
                             : 'text-[#475569] hover:bg-[#F8FAFC]'
