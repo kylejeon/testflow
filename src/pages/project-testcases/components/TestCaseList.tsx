@@ -388,6 +388,20 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     setDeprecateDialog(null);
   };
 
+  const handleBulkAssign = async (assigneeName: string) => {
+    const ids = Array.from(selectedTestCaseIds);
+    const { error } = await supabase
+      .from('test_cases')
+      .update({ assignee: assigneeName || null, updated_at: new Date().toISOString() })
+      .in('id', ids);
+    if (error) return;
+    ids.forEach(tcId => {
+      const tc = testCases.find(t => t.id === tcId);
+      if (tc) onUpdate({ ...tc, assignee: assigneeName || undefined });
+    });
+    setSelectedTestCaseIds(new Set());
+  };
+
   const handleBulkLifecycleChange = (newStatus: LifecycleStatus) => {
     const ids = Array.from(selectedTestCaseIds);
     if (newStatus === 'deprecated') {
@@ -3883,6 +3897,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     <BulkActionBar
       selectedIds={selectedTestCaseIds}
       onClear={() => setSelectedTestCaseIds(new Set())}
+      onAssign={handleBulkAssign}
+      assignees={projectMembers.map(m => ({ id: m.user_id, name: m.profile.full_name || m.profile.email }))}
       onMove={() => setShowBulkFolderModal(true)}
       onDelete={() => setShowBulkDeleteModal(true)}
       onSetLifecycleStatus={handleBulkLifecycleChange}

@@ -8,7 +8,8 @@ interface BulkActionBarProps {
   onClear: () => void;
   onSetStatus?: (status: TestStatus) => void;
   onSetLifecycleStatus?: (status: LifecycleStatus) => void;
-  onAssign?: () => void;
+  onAssign?: (assigneeName: string) => void;
+  assignees?: Array<{ id: string; name: string }>;
   onTag?: () => void;
   onMove?: () => void;
   onDelete?: () => void;
@@ -27,6 +28,7 @@ export function BulkActionBar({
   onSetStatus,
   onSetLifecycleStatus,
   onAssign,
+  assignees = [],
   onTag,
   onMove,
   onDelete,
@@ -34,11 +36,13 @@ export function BulkActionBar({
 }: BulkActionBarProps) {
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [lifecycleMenuOpen, setLifecycleMenuOpen] = useState(false);
+  const [assignMenuOpen, setAssignMenuOpen] = useState(false);
+  const [assignSearch, setAssignSearch] = useState('');
   const count = selectedIds.size;
 
   // Close menus when selection clears
   useEffect(() => {
-    if (count === 0) { setStatusMenuOpen(false); setLifecycleMenuOpen(false); }
+    if (count === 0) { setStatusMenuOpen(false); setLifecycleMenuOpen(false); setAssignMenuOpen(false); }
   }, [count]);
 
   // Escape to clear selection
@@ -80,7 +84,55 @@ export function BulkActionBar({
           {/* Actions */}
           <div className="flex items-center gap-1">
             {onAssign && (
-              <BulkButton icon="ri-user-add-line" label="Assign" onClick={onAssign} />
+              <div className="relative">
+                <BulkButton
+                  icon="ri-user-add-line"
+                  label="Assign"
+                  onClick={() => { setAssignMenuOpen(p => !p); setAssignSearch(''); }}
+                  active={assignMenuOpen}
+                />
+                {assignMenuOpen && (
+                  <div className="absolute bottom-full mb-2 left-0 bg-white rounded-lg shadow-lg border border-gray-200 z-50 w-52 overflow-hidden">
+                    <div className="p-2 border-b border-gray-100">
+                      <input
+                        type="text"
+                        value={assignSearch}
+                        onChange={e => setAssignSearch(e.target.value)}
+                        placeholder="Search member..."
+                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto py-1">
+                      <button
+                        onClick={() => { onAssign(''); setAssignMenuOpen(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 text-gray-500 transition-colors"
+                      >
+                        <i className="ri-user-unfollow-line text-gray-400" />
+                        Unassign
+                      </button>
+                      {assignees
+                        .filter(a => a.name.toLowerCase().includes(assignSearch.toLowerCase()))
+                        .map(a => (
+                          <button
+                            key={a.id}
+                            onClick={() => { onAssign(a.name); setAssignMenuOpen(false); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-indigo-50 transition-colors"
+                          >
+                            <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 text-xs font-semibold flex-shrink-0">
+                              {a.name.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="truncate">{a.name}</span>
+                          </button>
+                        ))
+                      }
+                      {assignees.filter(a => a.name.toLowerCase().includes(assignSearch.toLowerCase())).length === 0 && assignSearch && (
+                        <p className="text-xs text-gray-400 text-center py-3">No members found</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             {onTag && (
               <BulkButton icon="ri-price-tag-3-line" label="Tag" onClick={onTag} />

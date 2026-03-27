@@ -84,7 +84,15 @@ export default function ProjectRunsPage() {
   const navigate = useNavigate();
   const { toasts, showToast, dismiss } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed' | 'failed'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [milestoneFilter, setMilestoneFilter] = useState('');
+  const [sortBy, setSortBy] = useState<'priority' | 'created' | 'name' | 'progress'>('priority');
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [showMilestoneDropdown, setShowMilestoneDropdown] = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const milestoneDropdownRef = useRef<HTMLDivElement>(null);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [testRuns, setTestRuns] = useState<TestRun[]>([]);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
@@ -1010,6 +1018,76 @@ export default function ProjectRunsPage() {
     });
   };
 
+  // ─── Priority helpers ────────────────────────────────────────────
+  type RunPriority = 'critical' | 'high' | 'medium' | 'low';
+  const PRIORITY_ORDER: RunPriority[] = ['critical', 'high', 'medium', 'low'];
+  const PRIORITY_CONFIG: Record<RunPriority, { label: string; dotColor: string; badgeClass: string; icon: string }> = {
+    critical: { label: 'Critical', dotColor: '#EF4444', badgeClass: 'bg-red-50 text-red-700', icon: 'ri-alarm-warning-fill' },
+    high:     { label: 'High',     dotColor: '#F59E0B', badgeClass: 'bg-amber-50 text-amber-700', icon: 'ri-arrow-up-line' },
+    medium:   { label: 'Medium',   dotColor: '#3B82F6', badgeClass: 'bg-blue-50 text-blue-700', icon: 'ri-subtract-line' },
+    low:      { label: 'Low',      dotColor: '#22C55E', badgeClass: 'bg-green-50 text-green-700', icon: 'ri-arrow-down-line' },
+  };
+
+  const getRunPriority = (run: TestRun): RunPriority => {
+    if ((run as any).priority_override) return (run as any).priority_override as RunPriority;
+    const milestone = milestones.find(m => m.id === run.milestone_id);
+    if (!milestone?.end_date) return 'low';
+    const daysUntilDue = Math.ceil((new Date(milestone.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (daysUntilDue <= 3) return 'critical';
+    if (daysUntilDue <= 7) return 'high';
+    if (daysUntilDue <= 14) return 'medium';
+    return 'low';
+  };
+
+  const getFilteredRuns = (): TestRun[] => {
+    return testRuns.filter(run => {
+      const tabMatch =
+        activeTab === 'all' ? true
+        : activeTab === 'active' ? ['new', 'in_progress', 'paused', 'under_review'].includes(run.status)
+        : activeTab === 'completed' ? run.status === 'completed'
+        : activeTab === 'failed' ? run.status === 'completed' && run.failed > 0
+        : true;
+      const searchMatch = !searchQuery.trim() || run.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const msMatch = !milestoneFilter || run.milestone_id === milestoneFilter;
+      return tabMatch && searchMatch && msMatch;
+    });
+  };
+
+  const getSortedRuns = (runs: TestRun[]): TestRun[] => {
+    return [...runs].sort((a, b) => {
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'progress') return b.progress - a.progress;
+      if (sortBy === 'created') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      // priority: sort by priority then milestone due date
+      const pa = PRIORITY_ORDER.indexOf(getRunPriority(a));
+      const pb = PRIORITY_ORDER.indexOf(getRunPriority(b));
+      if (pa !== pb) return pa - pb;
+      const ma = milestones.find(m => m.id === a.milestone_id);
+      const mb = milestones.find(m => m.id === b.milestone_id);
+      const da = ma?.end_date ? new Date(ma.end_date).getTime() : Infinity;
+      const db = mb?.end_date ? new Date(mb.end_date).getTime() : Infinity;
+      return da - db;
+    });
+  };
+
+  const getCalculateStats = () => {
+    const activeRuns = testRuns.filter(run => ['new', 'in_progress', 'paused', 'under_review'].includes(run.status)).length;
+    const totalRuns = testRuns.length;
+    const totalTests = testRuns.reduce((sum, run) => sum + run.passed + run.failed + run.blocked + run.retest + run.untested, 0);
+    const passedTests = testRuns.reduce((sum, run) => sum + run.passed, 0);
+    const passRate = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
+    // Avg duration: use executed_at - created_at for completed runs
+    const completedWithDates = testRuns.filter(r => r.status === 'completed' && r.executed_at && r.created_at);
+    const avgDurationMs = completedWithDates.length > 0
+      ? completedWithDates.reduce((sum, r) => sum + (new Date(r.executed_at).getTime() - new Date(r.created_at).getTime()), 0) / completedWithDates.length
+      : 0;
+    const avgDurationMin = Math.round(avgDurationMs / 60000);
+    const avgDurationH = Math.floor(avgDurationMin / 60);
+    const avgDurationM = avgDurationMin % 60;
+    const avgDurationStr = avgDurationMin > 0 ? (avgDurationH > 0 ? `${avgDurationH}h ${avgDurationM}m` : `${avgDurationM}m`) : '—';
+    return { activeRuns, totalRuns, passRate, avgDurationStr };
+  };
+
   const calculateStats = () => {
     const activeRuns = testRuns.filter(run => run.status !== 'completed').length;
     const totalTests = testRuns.reduce((sum, run) => sum + run.passed + run.failed + run.blocked + run.retest + run.untested, 0);
@@ -1060,6 +1138,12 @@ export default function ProjectRunsPage() {
       }
       if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
         setShowTagDropdown(false);
+      }
+      if (milestoneDropdownRef.current && !milestoneDropdownRef.current.contains(event.target as Node)) {
+        setShowMilestoneDropdown(false);
+      }
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
+        setShowSortMenu(false);
       }
     };
 
@@ -1225,6 +1309,132 @@ export default function ProjectRunsPage() {
 
   const allTags = getAllTags();
 
+  const renderRunCard = (run: TestRun, priority: RunPriority) => {
+    const total = run.passed + run.failed + run.blocked + run.retest + run.untested;
+    const passedPct = total > 0 ? (run.passed / total) * 100 : 0;
+    const failedPct = total > 0 ? (run.failed / total) * 100 : 0;
+    const blockedPct = total > 0 ? (run.blocked / total) * 100 : 0;
+    const retestPct = total > 0 ? (run.retest / total) * 100 : 0;
+    const milestone = milestones.find(m => m.id === run.milestone_id);
+    const pConfig = PRIORITY_CONFIG[priority];
+    const isInProgress = run.status === 'in_progress';
+    const isCompleted = run.status === 'completed';
+    const hasManualOverride = !!(run as any).priority_override;
+    return (
+      <div
+        key={run.id}
+        className="bg-white border border-[#E2E8F0] rounded-xl p-4 cursor-pointer hover:shadow-[0_4px_16px_rgba(15,23,42,0.08)] hover:border-[#CBD5E1] transition-all"
+        onClick={() => handleRunClick(run.id)}
+      >
+        {/* Row 1: Name + Status Badge + Priority Badge + ⋯ menu */}
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="font-semibold text-[0.9375rem] text-[#0F172A] hover:text-indigo-600 transition-colors truncate min-w-0">{run.name}</span>
+          <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-[0.6875rem] font-semibold rounded-full ${getStatusBadge(run.status).className}`}>
+            {isInProgress && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"></span>}
+            {getStatusBadge(run.status).label}
+          </span>
+          <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-[0.6875rem] font-semibold rounded-full ${pConfig.badgeClass}`}>
+            <i className={`${pConfig.icon} text-[0.625rem]`}></i>
+            {pConfig.label}
+            {hasManualOverride && <i className="ri-pushpin-fill text-[0.5625rem] ml-0.5 opacity-60"></i>}
+          </span>
+          {run.is_automated && (
+            <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-[#F0F9FF] text-[#0284C7] rounded-full text-[0.6875rem] font-semibold">
+              <i className="ri-robot-line text-[0.6875rem]"></i>Auto
+            </span>
+          )}
+          <div className="ml-auto relative flex-shrink-0" ref={openMenuId === run.id ? menuRef : null}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === run.id ? null : run.id); }}
+              className="text-gray-400 hover:text-gray-600 p-1.5 rounded cursor-pointer"
+            >
+              <i className="ri-more-2-fill"></i>
+            </button>
+            {openMenuId === run.id && (
+              <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                <button onClick={(e) => { e.stopPropagation(); handleEditRun(run); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
+                  <i className="ri-edit-line"></i><span>Edit</span>
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); handlePauseResumeRun(run); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
+                  <i className={run.status === 'in_progress' ? 'ri-pause-line' : 'ri-play-line'}></i>
+                  <span>{run.status === 'in_progress' ? 'Pause' : 'Resume'}</span>
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); handleDeleteRun(run.id); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer border-t border-gray-200">
+                  <i className="ri-delete-bin-line"></i><span>Delete</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Row 2: Milestone + Due date */}
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <i className="ri-flag-line text-[0.8125rem] text-[#94A3B8]"></i>
+          {milestone ? (
+            <>
+              <span className="text-[0.75rem] text-[#64748B]">{milestone.name}</span>
+              {milestone.end_date && (
+                <span className="text-[0.75rem] text-[#94A3B8]">· Due {new Date(milestone.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              )}
+            </>
+          ) : (
+            <span className="text-[0.75rem] text-[#CBD5E1] italic">No Milestone</span>
+          )}
+        </div>
+        {/* Row 3: Progress bar */}
+        <div className="flex items-center gap-2 mb-2">
+          <div className="flex-1 h-[6px] bg-[#F1F5F9] rounded-full overflow-hidden flex gap-px">
+            {run.passed > 0 && <div className="h-full bg-[#22C55E] transition-all" style={{ width: `${passedPct}%` }}></div>}
+            {run.failed > 0 && <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }}></div>}
+            {run.blocked > 0 && <div className="h-full bg-[#94A3B8] transition-all" style={{ width: `${blockedPct}%` }}></div>}
+            {run.retest > 0 && <div className="h-full bg-[#FACC15] transition-all" style={{ width: `${retestPct}%` }}></div>}
+          </div>
+          <span className="text-[0.8125rem] font-semibold text-[#0F172A] min-w-[2.5rem] text-right">{run.progress}%</span>
+        </div>
+        {/* Row 4: Stats */}
+        <div className="flex items-center gap-3.5 text-[0.75rem] text-[#64748B] mb-2.5">
+          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] inline-block"></span>{run.passed} passed</span>
+          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] inline-block"></span>{run.failed} failed</span>
+          {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#94A3B8] inline-block"></span>{run.blocked} blocked</span>}
+          {run.retest > 0 && <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#FACC15] inline-block"></span>{run.retest} retest</span>}
+          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#E2E8F0] inline-block"></span>{run.untested} untested</span>
+        </div>
+        {/* Row 5: Assignees + Continue/Start button */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[0.75rem] text-[#64748B]">
+            <span className="text-[#94A3B8]">Assigned to</span>
+            <div className="flex gap-1">
+              {run.assignees && run.assignees.slice(0, 3).map((assignee) => (
+                <Avatar key={assignee} userId={assignee} name={assignee} size="sm" title={assignee} />
+              ))}
+            </div>
+            {run.created_at && (
+              <>
+                <span className="text-[#CBD5E1]">·</span>
+                <span>{new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              </>
+            )}
+          </div>
+          {isCompleted ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleRunClick(run.id); }}
+              className="text-[0.75rem] font-medium text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+            >
+              View Report →
+            </button>
+          ) : (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleRunClick(run.id); }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-[0.75rem] font-semibold text-white shadow-sm cursor-pointer transition-all hover:opacity-90 hover:-translate-y-px ${isInProgress ? 'bg-[#6366F1]' : 'bg-[#22C55E]'}`}
+            >
+              <i className="ri-play-line text-[0.75rem]"></i>
+              {isInProgress ? 'Continue' : 'Start'}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex h-screen bg-white">
       <ToastContainer toasts={toasts} dismiss={dismiss} />
@@ -1234,34 +1444,28 @@ export default function ProjectRunsPage() {
         <main className="flex-1 overflow-hidden flex flex-col">
           {/* ── Subtab row: lifecycle tabs + action button ── */}
           <div className="flex items-center border-b border-[#E2E8F0] bg-white flex-shrink-0 h-[2.625rem] px-5">
-            <button
-              onClick={() => setActiveTab('active')}
-              className={`flex items-center gap-[0.3125rem] px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-[2.5px] transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
-                activeTab === 'active'
-                  ? 'text-[#6366F1] border-[#6366F1] font-semibold'
-                  : 'text-[#64748B] border-transparent hover:text-[#475569]'
-              }`}
-            >
-              <i className="ri-play-circle-fill text-[0.875rem]" style={{ color: '#3B82F6' }}></i>
-              Active
-              <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${activeTab === 'active' ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
-                {testRuns.filter(r => r.status !== 'completed').length}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('closed')}
-              className={`flex items-center gap-[0.3125rem] px-[0.875rem] h-full text-[0.8125rem] font-medium border-b-[2.5px] transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
-                activeTab === 'closed'
-                  ? 'text-[#6366F1] border-[#6366F1] font-semibold'
-                  : 'text-[#64748B] border-transparent hover:text-[#475569]'
-              }`}
-            >
-              <i className="ri-checkbox-circle-fill text-[0.875rem]" style={{ color: '#22C55E' }}></i>
-              Completed
-              <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${activeTab === 'closed' ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
-                {testRuns.filter(r => r.status === 'completed').length}
-              </span>
-            </button>
+            {([
+              { key: 'all' as const, label: 'All', icon: 'ri-list-check-3', iconColor: '#6366F1', count: testRuns.length },
+              { key: 'active' as const, label: 'Active', icon: 'ri-play-circle-fill', iconColor: '#3B82F6', count: testRuns.filter(r => ['new','in_progress','paused','under_review'].includes(r.status)).length },
+              { key: 'completed' as const, label: 'Completed', icon: 'ri-checkbox-circle-fill', iconColor: '#22C55E', count: testRuns.filter(r => r.status === 'completed').length },
+              { key: 'failed' as const, label: 'Failed', icon: 'ri-close-circle-fill', iconColor: '#EF4444', count: testRuns.filter(r => r.status === 'completed' && r.failed > 0).length },
+            ]).map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-[0.3125rem] px-[0.75rem] h-full text-[0.8125rem] font-medium border-b-[2.5px] transition-colors cursor-pointer bg-transparent border-l-0 border-r-0 border-t-0 whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? 'text-[#6366F1] border-[#6366F1] font-semibold'
+                    : 'text-[#64748B] border-transparent hover:text-[#475569]'
+                }`}
+              >
+                <i className={`${tab.icon} text-[0.875rem]`} style={{ color: tab.iconColor }}></i>
+                {tab.label}
+                <span className={`text-[0.625rem] px-[0.375rem] py-[0.0625rem] rounded-full font-bold min-w-[1.25rem] text-center ${activeTab === tab.key ? 'bg-[#EEF2FF] text-[#6366F1]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
             <div className="flex-1" />
             <button
               onClick={() => {
@@ -1287,374 +1491,177 @@ export default function ProjectRunsPage() {
             </button>
           </div>
 
+          {/* ── Compact Stats Bar (40px, fixed) ── */}
+          {(() => {
+            const cs = getCalculateStats();
+            return (
+              <div className="flex items-center bg-white border-b border-[#E2E8F0] flex-shrink-0 h-10 px-5 gap-6">
+                <div className="flex items-center gap-2 pr-6 border-r border-[#E2E8F0]">
+                  <i className="ri-play-circle-line text-base text-[#3B82F6]"></i>
+                  <span className="text-[0.75rem] text-[#94A3B8]">Active Runs</span>
+                  <span className="text-[0.8125rem] font-bold text-[#0F172A]">{cs.activeRuns}</span>
+                  <span className="text-[0.75rem] text-[#64748B]">of {cs.totalRuns}</span>
+                </div>
+                <div className="flex items-center gap-2 pr-6 border-r border-[#E2E8F0]">
+                  <i className="ri-checkbox-circle-line text-base text-[#22C55E]"></i>
+                  <span className="text-[0.75rem] text-[#94A3B8]">Pass Rate</span>
+                  <span className="text-[0.8125rem] font-bold text-[#0F172A]">{cs.passRate}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <i className="ri-time-line text-base text-[#8B5CF6]"></i>
+                  <span className="text-[0.75rem] text-[#94A3B8]">Avg Duration</span>
+                  <span className="text-[0.8125rem] font-bold text-[#0F172A]">{cs.avgDurationStr}</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── Toolbar ── */}
+          <div className="flex items-center bg-white border-b border-[#E2E8F0] flex-shrink-0 h-11 px-5 gap-3">
+            <div className="flex-1 relative">
+              <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-sm"></i>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search runs..."
+                className="w-full pl-9 pr-3 py-[0.3125rem] bg-[#F8FAFC] border border-[#E2E8F0] rounded-md text-[0.8125rem] focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+              />
+            </div>
+            <div className="relative" ref={milestoneDropdownRef}>
+              <button
+                onClick={() => setShowMilestoneDropdown(p => !p)}
+                className={`flex items-center gap-1.5 px-3 py-[0.3125rem] border rounded-md text-[0.8125rem] cursor-pointer whitespace-nowrap transition-colors ${milestoneFilter ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC]'}`}
+              >
+                <i className="ri-flag-line text-sm"></i>
+                {milestoneFilter ? (milestones.find(m => m.id === milestoneFilter)?.name || 'Milestone') : 'Milestone'}
+                {milestoneFilter ? (
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setMilestoneFilter(''); }} className="ml-0.5 text-indigo-400 hover:text-indigo-700"><i className="ri-close-line text-xs"></i></button>
+                ) : (
+                  <i className="ri-arrow-down-s-line text-xs text-[#94A3B8]"></i>
+                )}
+              </button>
+              {showMilestoneDropdown && (
+                <div className="absolute top-full mt-1 left-0 bg-white rounded-lg border border-[#E2E8F0] shadow-lg z-30 py-1 min-w-[180px]">
+                  <button onClick={() => { setMilestoneFilter(''); setShowMilestoneDropdown(false); }} className="w-full text-left px-3 py-2 text-[0.8125rem] text-[#475569] hover:bg-[#F8FAFC]">All Milestones</button>
+                  {milestones.map(m => (
+                    <button key={m.id} onClick={() => { setMilestoneFilter(m.id); setShowMilestoneDropdown(false); }} className={`w-full text-left px-3 py-2 text-[0.8125rem] hover:bg-indigo-50 ${milestoneFilter === m.id ? 'text-indigo-600 font-medium' : 'text-[#475569]'}`}>{m.name}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="relative" ref={sortMenuRef}>
+              <button
+                onClick={() => setShowSortMenu(p => !p)}
+                className="flex items-center gap-1.5 px-3 py-[0.3125rem] border border-[#E2E8F0] bg-white text-[#475569] rounded-md text-[0.8125rem] cursor-pointer whitespace-nowrap hover:bg-[#F8FAFC] transition-colors"
+              >
+                <i className="ri-sort-desc text-sm"></i>
+                Sort
+                <i className="ri-arrow-down-s-line text-xs text-[#94A3B8]"></i>
+              </button>
+              {showSortMenu && (
+                <div className="absolute top-full mt-1 right-0 bg-white rounded-lg border border-[#E2E8F0] shadow-lg z-30 py-1 min-w-[160px]">
+                  {([
+                    { key: 'priority' as const, label: 'Priority' },
+                    { key: 'created' as const, label: 'Created Date' },
+                    { key: 'name' as const, label: 'Name' },
+                    { key: 'progress' as const, label: 'Progress' },
+                  ]).map(opt => (
+                    <button key={opt.key} onClick={() => { setSortBy(opt.key); setShowSortMenu(false); }} className={`w-full text-left px-3 py-2 text-[0.8125rem] hover:bg-indigo-50 flex items-center justify-between ${sortBy === opt.key ? 'text-indigo-600 font-medium' : 'text-[#475569]'}`}>
+                      {opt.label}
+                      {sortBy === opt.key && <i className="ri-check-line text-indigo-500"></i>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* ── Scrollable content ── */}
           <div className="flex-1 overflow-y-auto bg-[#F8FAFC]">
-          <div className="p-[1.75rem]">
-            <div className="mb-[1.3125rem]">
-
-              <div className="grid grid-cols-3 gap-[1.3125rem] mb-[1.3125rem]">
-                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="text-[0.8125rem] text-gray-500 mb-1">Active Runs</div>
-                      <div className="text-[1.75rem] font-bold text-gray-900">{stats.activeRuns}</div>
-                    </div>
-                    <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                      <i className="ri-play-circle-line text-indigo-600 text-xl"></i>
-                    </div>
-                  </div>
-                  <div className="space-y-2 text-[0.8125rem]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Est. workload</span>
-                      <span className="font-semibold text-gray-900">{testRuns.length * 45}h</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Contributors</span>
-                      <div className="flex -space-x-2">
-                        {contributors.length > 0 ? (
-                          <>
-                            {contributors.slice(0, 3).map((contributor) => (
-                              <Avatar
-                                key={contributor.id}
-                                userId={contributor.id}
-                                name={contributor.name}
-                                size="sm"
-                                title={contributor.name}
-                                style={{ border: '2px solid #fff' }}
-                              />
-                            ))}
-                            {contributors.length > 3 && (
-                              <div className="w-6 h-6 bg-gray-200 rounded-full border-2 border-white flex items-center justify-center text-gray-600 text-xs font-semibold">
-                                +{contributors.length - 3}
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-gray-400 text-xs">No contributors yet</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="text-[0.8125rem] text-gray-500 mb-1">Latest Results</div>
-                      <div className="text-[1.75rem] font-bold text-green-600">{stats.successRate}%</div>
-                    </div>
-                    <div className="relative w-16 h-16">
-                      <svg className="w-16 h-16 transform -rotate-90">
-                        <circle cx="32" cy="32" r="28" stroke="#e5e7eb" strokeWidth="6" fill="none" />
-                        <circle cx="32" cy="32" r="28" stroke="#10b981" strokeWidth="6" fill="none"
-                          strokeDasharray={`${stats.successRate * 1.76} 176`} strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <i className="ri-check-line text-green-600 text-xl"></i>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-[0.8125rem] text-gray-600">{stats.dateRangeText}</div>
-                </div>
-
-                <div className="bg-white rounded-lg border border-gray-200 p-[1.3125rem]">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="text-[0.8125rem] text-gray-500 mb-1">Recently Closed</div>
-                      <div className="text-[1.75rem] font-bold text-gray-900">{stats.closedRuns}</div>
-                    </div>
-                    <div className="w-20 h-12">
-                      <svg className="w-full h-full" viewBox="0 0 80 48">
-                        <polyline points="0,40 20,35 40,30 60,20 80,10" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <polyline points="0,40 20,35 40,30 60,20 80,10 80,48 0,48" fill="url(#gradient)" opacity="0.2" />
-                        <defs>
-                          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="#10b981" />
-                            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="text-[0.8125rem] text-green-600 font-semibold">+{stats.closedThisMonth} this month</div>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="flex items-center gap-3 mb-[1.3125rem]">
-              <div className="flex-1 relative">
-                <i className="ri-search-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <input
-                  type="text"
-                  placeholder="Search runs..."
-                  className="w-full pl-10 pr-4 py-[0.4375rem] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[0.8125rem]"
-                />
-              </div>
-              <button className="px-[0.875rem] py-[0.4375rem] border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-[0.8125rem] text-gray-700 cursor-pointer whitespace-nowrap">
-                <i className="ri-filter-3-line"></i>
-                Filter
-                <i className="ri-close-line"></i>
-              </button>
-            </div>
-
+          <div className="p-5">
             {loading ? (
               <PageLoader />
-            ) : (
-              <div className="space-y-[1.3125rem]">
-                {milestones.length > 0 && (
-                  <div className="bg-white rounded-lg border border-gray-200">
-                    {milestones.map((milestone, index) => {
-                      const milestoneRuns = getRunsByMilestone(milestone.id);
-                      const milestoneStatusInfo = getMilestoneStatus(milestone);
-                      
-                      if (milestoneRuns.length === 0) {
-                        return null;
-                      }
-                      
+            ) : (() => {
+              const filteredRuns = getSortedRuns(getFilteredRuns());
+              if (filteredRuns.length === 0) {
+                return (
+                  <div className="text-center py-16">
+                    <i className="ri-play-circle-line text-5xl text-gray-200 mb-3 block"></i>
+                    <p className="text-gray-500 text-sm">No runs found</p>
+                    <p className="text-gray-400 text-xs mt-1">Try adjusting your filters or create a new run</p>
+                  </div>
+                );
+              }
+              const useGroups = activeTab === 'all' || activeTab === 'active';
+              if (useGroups) {
+                const groups = PRIORITY_ORDER.map(p => ({ priority: p, runs: filteredRuns.filter(r => getRunPriority(r) === p) })).filter(g => g.runs.length > 0);
+                return (
+                  <div className="space-y-5">
+                    {groups.map(({ priority, runs: groupRuns }) => {
+                      const config = PRIORITY_CONFIG[priority];
+                      const isCollapsed = collapsedGroups.has(priority);
                       return (
-                        <div key={milestone.id} className={index !== milestones.length - 1 ? 'border-b border-gray-200' : ''}>
-                          <div className="flex items-center justify-between p-[1.3125rem] bg-gray-50">
-                            <div className="flex items-center gap-3">
-                              <i className="ri-flag-line text-gray-400"></i>
-                              <span className="font-semibold text-gray-900">{milestone.name}</span>
-                              <span className={`px-2 py-1 text-xs font-semibold rounded ${milestoneStatusInfo.className}`}>
-                                {milestoneStatusInfo.label}
-                              </span>
+                        <div key={priority}>
+                          <button
+                            onClick={() => setCollapsedGroups(prev => { const s = new Set(prev); s.has(priority) ? s.delete(priority) : s.add(priority); return s; })}
+                            className="flex items-center gap-2 w-full text-left mb-3"
+                          >
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: config.dotColor }}></span>
+                            <span className="text-[0.8125rem] font-semibold text-[#0F172A]">{config.label.toUpperCase()}</span>
+                            <span className="w-5 h-5 bg-[#F1F5F9] text-[#64748B] rounded-full text-[0.6875rem] font-semibold flex items-center justify-center">{groupRuns.length}</span>
+                            <span className="flex-1 h-px bg-[#E2E8F0] ml-1"></span>
+                            <i className={`ri-arrow-down-s-line text-[#94A3B8] transition-transform ${isCollapsed ? '-rotate-90' : ''}`}></i>
+                          </button>
+                          {!isCollapsed && (
+                            <div className="space-y-3">
+                              {groupRuns.map(run => renderRunCard(run, priority))}
                             </div>
-                            <div className="flex items-center gap-4">
-                              <span className="text-[0.8125rem] text-gray-500">{formatDateRange(milestone.start_date, milestone.end_date)}</span>
-                              {activeTab === 'closed' && (
-                                <button
-                                  onClick={(e) => handleExportPdfClick(e, milestone, milestoneRuns)}
-                                  disabled={generatingPdf === milestone.id}
-                                  className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                  {generatingPdf === milestone.id ? (
-                                    <>
-                                      <i className="ri-loader-4-line animate-spin"></i>
-                                      <span>Generating...</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <i className="ri-file-pdf-line"></i>
-                                      <span>Export PDF</span>
-                                    </>
-                                  )}
-                                </button>
-                              )}
-                              <button className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                                <i className="ri-arrow-down-s-line"></i>
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col gap-[0.75rem] p-[1.3125rem]">
-                            {milestoneRuns.map((run) => {
-                              const total = run.passed + run.failed + run.blocked + run.retest + run.untested;
-                              const passedPct = total > 0 ? (run.passed / total) * 100 : 0;
-                              const failedPct = total > 0 ? (run.failed / total) * 100 : 0;
-                              const blockedPct = total > 0 ? (run.blocked / total) * 100 : 0;
-                              const retestPct = total > 0 ? (run.retest / total) * 100 : 0;
-                              return (
-                              <div
-                                key={run.id}
-                                className="bg-white border border-[#E2E8F0] rounded-lg p-[1.3125rem] cursor-pointer hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-shadow"
-                                onClick={() => handleRunClick(run.id)}
-                              >
-                                {/* Row 1: Name + badges + menu */}
-                                <div className="flex items-center justify-between mb-[0.625rem]">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span className="font-semibold text-[0.9375rem] text-[#0F172A] hover:text-indigo-600 transition-colors truncate">{run.name}</span>
-                                    <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-[0.6875rem] font-semibold rounded-full ${getStatusBadge(run.status).className}`}>
-                                      {run.status === 'in_progress' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"></span>}
-                                      {getStatusBadge(run.status).label}
-                                    </span>
-                                    {run.is_automated && (
-                                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-[#F0F9FF] text-[#0284C7] rounded-full text-[0.6875rem] font-semibold">
-                                        <i className="ri-robot-line text-[0.75rem]"></i>Automated
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="relative flex-shrink-0" ref={openMenuId === run.id ? menuRef : null}>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === run.id ? null : run.id); }}
-                                      className="text-gray-400 hover:text-gray-600 p-1.5 rounded cursor-pointer"
-                                    >
-                                      <i className="ri-more-2-fill"></i>
-                                    </button>
-                                    {openMenuId === run.id && (
-                                      <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                                        <button onClick={(e) => { e.stopPropagation(); handleEditRun(run); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
-                                          <i className="ri-edit-line"></i><span>Edit</span>
-                                        </button>
-                                        <button onClick={(e) => { e.stopPropagation(); handlePauseResumeRun(run); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
-                                          <i className={run.status === 'in_progress' ? 'ri-pause-line' : 'ri-play-line'}></i>
-                                          <span>{run.status === 'in_progress' ? 'Pause' : 'Resume'}</span>
-                                        </button>
-                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteRun(run.id); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer border-t border-gray-200">
-                                          <i className="ri-delete-bin-line"></i><span>Delete</span>
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                {/* Row 2: Progress bar */}
-                                <div className="flex items-center gap-2 mb-[0.5rem]">
-                                  <div className="flex-1 h-[6px] bg-[#F1F5F9] rounded-full overflow-hidden flex gap-px">
-                                    {run.passed > 0 && <div className="h-full bg-[#22C55E] transition-all" style={{ width: `${passedPct}%` }}></div>}
-                                    {run.failed > 0 && <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }}></div>}
-                                    {run.blocked > 0 && <div className="h-full bg-[#94A3B8] transition-all" style={{ width: `${blockedPct}%` }}></div>}
-                                    {run.retest > 0 && <div className="h-full bg-[#FACC15] transition-all" style={{ width: `${retestPct}%` }}></div>}
-                                  </div>
-                                  <span className="text-[0.8125rem] font-semibold text-[#0F172A] min-w-[2.5rem] text-right">{run.progress}%</span>
-                                </div>
-                                {/* Row 3: Stats */}
-                                <div className="flex items-center gap-4 text-[0.8125rem] text-[#64748B] mb-[0.5rem]">
-                                  <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#22C55E] inline-block"></span>{run.passed} passed</span>
-                                  <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#EF4444] inline-block"></span>{run.failed} failed</span>
-                                  {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#94A3B8] inline-block"></span>{run.blocked} blocked</span>}
-                                  {run.retest > 0 && <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#FACC15] inline-block"></span>{run.retest} retest</span>}
-                                  <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#E2E8F0] inline-block"></span>{run.untested} untested</span>
-                                </div>
-                                {/* Row 4: Assignees + timestamp */}
-                                <div className="flex items-center gap-[0.875rem] text-[0.8125rem] text-[#64748B]">
-                                  <div className="flex items-center gap-[0.375rem]">
-                                    <span className="text-[0.75rem] text-[#94A3B8] font-medium whitespace-nowrap">Assigned to</span>
-                                    <div className="flex gap-1">
-                                      {run.assignees && run.assignees.slice(0, 3).map((assignee) => (
-                                        <Avatar key={assignee} userId={assignee} name={assignee} size="sm" title={assignee} />
-                                      ))}
-                                    </div>
-                                  </div>
-                                  <span className="text-[#CBD5E1]">·</span>
-                                  <span className="text-[0.75rem]">{run.created_at ? `Started ${new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
-                                </div>
-                              </div>
-                              );
-                            })}
-                          </div>
+                          )}
                         </div>
                       );
-                    }).filter(Boolean)}
+                    })}
                   </div>
-                )}
-
-                {getRunsWithoutMilestone().length > 0 && (
-                  <div className="bg-white rounded-lg border border-gray-200">
-                    <div className="flex items-center justify-between p-[1.3125rem] bg-gray-50">
-                      <div className="flex items-center gap-3">
-                        <i className="ri-inbox-line text-gray-400"></i>
-                        <span className="font-semibold text-gray-900">Unassigned Milestones</span>
-                        <span className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-700">
-                          {getRunsWithoutMilestone().length} runs
-                        </span>
-                      </div>
-                      <button className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                        <i className="ri-arrow-down-s-line"></i>
-                      </button>
-                    </div>
-
-                    <div className="flex flex-col gap-[0.75rem] p-[1.3125rem]">
-                      {getRunsWithoutMilestone().map((run) => {
-                        const total = run.passed + run.failed + run.blocked + run.retest + run.untested;
-                        const passedPct = total > 0 ? (run.passed / total) * 100 : 0;
-                        const failedPct = total > 0 ? (run.failed / total) * 100 : 0;
-                        const blockedPct = total > 0 ? (run.blocked / total) * 100 : 0;
-                        const retestPct = total > 0 ? (run.retest / total) * 100 : 0;
-                        return (
-                        <div
-                          key={run.id}
-                          className="bg-white border border-[#E2E8F0] rounded-lg p-[1.3125rem] cursor-pointer hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-shadow"
-                          onClick={() => handleRunClick(run.id)}
-                        >
-                          {/* Row 1: Name + badges + menu */}
-                          <div className="flex items-center justify-between mb-[0.625rem]">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="font-semibold text-[0.9375rem] text-[#0F172A] hover:text-indigo-600 transition-colors truncate">{run.name}</span>
-                              <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-[0.6875rem] font-semibold rounded-full ${getStatusBadge(run.status).className}`}>
-                                {run.status === 'in_progress' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse inline-block"></span>}
-                                {getStatusBadge(run.status).label}
-                              </span>
-                              {run.is_automated && (
-                                <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-[#F0F9FF] text-[#0284C7] rounded-full text-[0.6875rem] font-semibold">
-                                  <i className="ri-robot-line text-[0.75rem]"></i>Automated
-                                </span>
-                              )}
-                            </div>
-                            <div className="relative flex-shrink-0" ref={openMenuId === run.id ? menuRef : null}>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === run.id ? null : run.id); }}
-                                className="text-gray-400 hover:text-gray-600 p-1.5 rounded cursor-pointer"
-                              >
-                                <i className="ri-more-2-fill"></i>
-                              </button>
-                              {openMenuId === run.id && (
-                                <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                                  <button onClick={(e) => { e.stopPropagation(); handleEditRun(run); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
-                                    <i className="ri-edit-line"></i><span>Edit</span>
-                                  </button>
-                                  <button onClick={(e) => { e.stopPropagation(); handlePauseResumeRun(run); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
-                                    <i className={run.status === 'in_progress' ? 'ri-pause-line' : 'ri-play-line'}></i>
-                                    <span>{run.status === 'in_progress' ? 'Pause' : 'Resume'}</span>
-                                  </button>
-                                  <button onClick={(e) => { e.stopPropagation(); handleDeleteRun(run.id); }} className="w-full text-left px-3.5 py-[7px] text-[0.8125rem] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer border-t border-gray-200">
-                                    <i className="ri-delete-bin-line"></i>
-                                    <span>Delete</span>
-                                  </button>
-                                </div>
-                              )}
-                            </div>
+                );
+              } else {
+                const grouped = milestones
+                  .map(m => ({ milestone: m, runs: filteredRuns.filter(r => r.milestone_id === m.id) }))
+                  .filter(g => g.runs.length > 0);
+                const unassigned = filteredRuns.filter(r => !r.milestone_id);
+                return (
+                  <div className="space-y-4">
+                    {grouped.map(({ milestone, runs: mRuns }) => (
+                      <div key={milestone.id} className="bg-white rounded-lg border border-[#E2E8F0]">
+                        <div className="flex items-center justify-between px-5 py-3 bg-gray-50 rounded-t-lg border-b border-[#E2E8F0]">
+                          <div className="flex items-center gap-2">
+                            <i className="ri-flag-line text-[#94A3B8] text-sm"></i>
+                            <span className="font-semibold text-[0.875rem] text-[#0F172A]">{milestone.name}</span>
+                            <span className="text-[0.6875rem] px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full font-medium">{mRuns.length} runs</span>
                           </div>
-                          {/* Row 2: Progress bar */}
-                          <div className="flex items-center gap-2 mb-[0.5rem]">
-                            <div className="flex-1 h-[6px] bg-[#F1F5F9] rounded-full overflow-hidden flex gap-px">
-                              {run.passed > 0 && <div className="h-full bg-[#22C55E] transition-all" style={{ width: `${passedPct}%` }}></div>}
-                              {run.failed > 0 && <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }}></div>}
-                              {run.blocked > 0 && <div className="h-full bg-[#94A3B8] transition-all" style={{ width: `${blockedPct}%` }}></div>}
-                              {run.retest > 0 && <div className="h-full bg-[#FACC15] transition-all" style={{ width: `${retestPct}%` }}></div>}
-                            </div>
-                            <span className="text-[0.8125rem] font-semibold text-[#0F172A] min-w-[2.5rem] text-right">{run.progress}%</span>
-                          </div>
-                          {/* Row 3: Stats */}
-                          <div className="flex items-center gap-4 text-[0.8125rem] text-[#64748B] mb-[0.5rem]">
-                            <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#22C55E] inline-block"></span>{run.passed} passed</span>
-                            <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#EF4444] inline-block"></span>{run.failed} failed</span>
-                            {run.blocked > 0 && <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#94A3B8] inline-block"></span>{run.blocked} blocked</span>}
-                            {run.retest > 0 && <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#FACC15] inline-block"></span>{run.retest} retest</span>}
-                            <span className="flex items-center gap-1"><span className="w-[6px] h-[6px] rounded-full bg-[#E2E8F0] inline-block"></span>{run.untested} untested</span>
-                          </div>
-                          {/* Row 4: Assignees + timestamp */}
-                          <div className="flex items-center gap-[0.875rem] text-[0.8125rem] text-[#64748B]">
-                            <div className="flex items-center gap-[0.375rem]">
-                              <span className="text-[0.75rem] text-[#94A3B8] font-medium whitespace-nowrap">Assigned to</span>
-                              <div className="flex gap-1">
-                                {run.assignees && run.assignees.slice(0, 3).map((assignee) => (
-                                  <Avatar key={assignee} userId={assignee} name={assignee} size="sm" title={assignee} />
-                                ))}
-                              </div>
-                            </div>
-                            <span className="text-[#CBD5E1]">·</span>
-                            <span className="text-[0.75rem]">{run.created_at ? `Started ${new Date(run.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
-                          </div>
+                          <button
+                            onClick={(e) => handleExportPdfClick(e, milestone, mRuns)}
+                            disabled={generatingPdf === milestone.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-[0.75rem] font-medium cursor-pointer disabled:opacity-50 transition-colors"
+                          >
+                            {generatingPdf === milestone.id ? <><i className="ri-loader-4-line animate-spin"></i> Generating...</> : <><i className="ri-file-pdf-line"></i> Export PDF</>}
+                          </button>
                         </div>
-                        );
-                      })}
-                    </div>
+                        <div className="p-4 space-y-3">
+                          {mRuns.map(run => renderRunCard(run, getRunPriority(run)))}
+                        </div>
+                      </div>
+                    ))}
+                    {unassigned.length > 0 && (
+                      <div className="space-y-3">
+                        {unassigned.map(run => renderRunCard(run, getRunPriority(run)))}
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {milestones.filter(m => getRunsByMilestone(m.id).length > 0).length === 0 && getRunsWithoutMilestone().length === 0 && (
-                  <div className="text-center py-12">
-                    <i className="ri-flag-line text-6xl text-gray-300 mb-4"></i>
-                    <p className="text-gray-500 text-lg">No {activeTab} test runs</p>
-                    <p className="text-gray-400 text-sm mt-2">Create test runs to track your testing progress</p>
-                  </div>
-                )}
-              </div>
-            )}
+                );
+              }
+            })()}
           </div>
-          {/* ── /scrollable content ── */}
+          {/* ── /scrollable content ── */}}
           </div>
         </main>
       </div>
