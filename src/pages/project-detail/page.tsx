@@ -1349,7 +1349,7 @@ export default function ProjectDetail() {
                       ownerId={project?.owner_id}
                     />
                     <div className="mt-2 pt-2 border-t border-[#F1F5F9] text-center">
-                      <Link to="/settings?tab=members" className="text-xs font-medium text-indigo-600 hover:underline">
+                      <Link to={`/settings?tab=members&projectId=${id}`} className="text-xs font-medium text-indigo-600 hover:underline">
                         Manage in Settings →
                       </Link>
                     </div>

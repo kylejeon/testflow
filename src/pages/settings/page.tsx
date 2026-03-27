@@ -158,7 +158,10 @@ export default function SettingsPage() {
       if (data) {
         const projects = data.map((row: any) => ({ id: row.projects.id, name: row.projects.name }));
         setUserProjects(projects);
-        if (projects.length > 0 && !selectedProjectId) setSelectedProjectId(projects[0].id);
+        // Prefer projectId from URL param, then fall back to first project
+        const paramProjectId = searchParams.get('projectId');
+        const initial = paramProjectId && projects.find(p => p.id === paramProjectId) ? paramProjectId : projects[0]?.id;
+        if (initial && !selectedProjectId) setSelectedProjectId(initial);
       }
     } catch (e) {
       console.error('Failed to fetch user projects:', e);
