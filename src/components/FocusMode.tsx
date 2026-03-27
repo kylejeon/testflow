@@ -63,7 +63,7 @@ const PRIORITY_TEXT_COLOR: Record<string, string> = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function parseSteps(raw?: string): { step: string; expectedResult: string }[] {
+function parseSteps(raw?: string, expectedResultRaw?: string): { step: string; expectedResult: string }[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -74,9 +74,12 @@ function parseSteps(raw?: string): { step: string; expectedResult: string }[] {
       }));
     }
   } catch {}
-  return raw.split('\n').filter(Boolean).map((s) => ({
+  // Plain-text steps: zip with lines from top-level expected_result field
+  const stepsArr = raw.split('\n').filter(Boolean);
+  const expectedArr = expectedResultRaw ? expectedResultRaw.split('\n').filter(Boolean) : [];
+  return stepsArr.map((s, i) => ({
     step: s.replace(/^\d+\.\s*/, ''),
-    expectedResult: '',
+    expectedResult: (expectedArr[i] || '').replace(/^\d+\.\s*/, ''),
   }));
 }
 
@@ -129,8 +132,8 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   const test = tests[index];
   const progress = (index / tests.length) * 100;
 
-  // Parse steps
-  const steps = parseSteps(test?.steps);
+  // Parse steps — pass top-level expected_result to zip with plain-text steps
+  const steps = parseSteps(test?.steps, test?.expected_result);
   const currentStepResults = stepResults[test?.id] || {};
   const passedStepCount = Object.values(currentStepResults).filter((v) => v === 'passed').length;
 
@@ -808,9 +811,11 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                               <p style={{ fontSize: '0.875rem', color: '#334155', lineHeight: 1.6 }}>{s.step}</p>
                             )}
                             {s.expectedResult && (
-                              <div className="flex items-start gap-1.5" style={{ marginTop: '0.375rem', fontSize: '0.8125rem', color: '#16A34A', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '0.375rem', padding: '0.375rem 0.625rem', lineHeight: 1.5 }}>
-                                <i className="ri-checkbox-circle-line shrink-0" style={{ fontSize: '0.875rem', marginTop: '0.125rem' }} />
-                                {s.expectedResult}
+                              <div className="flex items-start gap-1" style={{ marginTop: '0.375rem' }}>
+                                <i className="ri-checkbox-circle-line flex-shrink-0" style={{ fontSize: '0.75rem', color: '#22C55E', marginTop: '0.05rem' }} />
+                                <p style={{ fontSize: '0.6875rem', color: '#16A34A', lineHeight: 1.5 }}>
+                                  {s.expectedResult.replace(/<[^>]*>/g, '').trim()}
+                                </p>
                               </div>
                             )}
                           </div>
