@@ -904,8 +904,8 @@ export default function ProjectDocumentation() {
                   <i className="ri-delete-bin-line text-red-500 text-lg" />
                 </div>
                 <div>
-                  <p className="text-[0.875rem] font-semibold text-[#0F172A] mb-1">"{deleteFolderTarget.title}" 폴더를 삭제하시겠습니까?</p>
-                  <p className="text-[0.8125rem] text-[#64748B]">폴더 내 문서는 상위 폴더로 이동됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+                  <p className="text-[0.875rem] font-semibold text-[#0F172A] mb-1">Are you sure you want to delete "{deleteFolderTarget.title}"?</p>
+                  <p className="text-[0.8125rem] text-[#64748B]">Documents inside will be moved to the parent folder. This action cannot be undone.</p>
                 </div>
               </div>
             </div>
