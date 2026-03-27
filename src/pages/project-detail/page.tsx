@@ -50,6 +50,8 @@ export default function ProjectDetail() {
   const [rawTestResults, setRawTestResults] = useState<any[]>([]);
   const [trendPeriod, setTrendPeriod] = useState<'7d' | '14d' | '30d'>('7d');
   const [expandedPriorityGroups, setExpandedPriorityGroups] = useState<Set<string>>(new Set(['critical', 'high']));
+  const [activityFilter, setActivityFilter] = useState<string>('all');
+  const [showAllActivity, setShowAllActivity] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -501,6 +503,23 @@ export default function ProjectDetail() {
   const currentTier = userProfile?.subscription_tier || 1;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO];
 
+  // ── Grouped Activity (by date) ──
+  const groupedActivity = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+    const groups: { label: string; items: typeof recentActivity }[] = [];
+    recentActivity.forEach(event => {
+      const d = new Date(event.created_at); d.setHours(0, 0, 0, 0);
+      const label = d.getTime() === today.getTime() ? 'Today'
+        : d.getTime() === yesterday.getTime() ? 'Yesterday'
+        : new Date(event.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const group = groups.find(g => g.label === label);
+      if (group) group.items.push(event);
+      else groups.push({ label, items: [event] });
+    });
+    return groups;
+  }, [recentActivity]);
+
   // ── Trend Data (from rawTestResults) ──
   const trendData = useMemo(() => {
     const days = trendPeriod === '7d' ? 7 : trendPeriod === '14d' ? 14 : 30;
@@ -932,7 +951,7 @@ export default function ProjectDetail() {
                       </div>
                     ) : (() => {
                       const maxVal = Math.max(...trendData.map(d => Math.max(d.passed, d.failed, d.blocked)), 1);
-                      const W = 600, H = 160, PL = 36, PT = 12, PB = 24, PR = 12;
+                      const W = 600, H = 220, PL = 36, PT = 16, PB = 28, PR = 12;
                       const chartW = W - PL - PR;
                       const chartH = H - PT - PB;
                       const n = trendData.length;
@@ -942,7 +961,7 @@ export default function ProjectDetail() {
                         trendData.map((d, i) => `${gx(i)},${gy(d[key])}`).join(' ');
                       return (
                         <div>
-                          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '140px' }}>
+                          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '200px' }}>
                             {[0, 0.25, 0.5, 0.75, 1].map((t, i) => (
                               <line key={i} x1={PL} y1={PT + t * chartH} x2={W - PR} y2={PT + t * chartH} stroke="#F1F5F9" strokeWidth="1" />
                             ))}
@@ -966,90 +985,164 @@ export default function ProjectDetail() {
                   </div>
 
                   {/* WIDGET 4: ATTENTION NEEDED */}
-                  <div className="bg-white border-l-4 border-red-400 border border-gray-200 rounded-xl p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                      <i className="ri-error-warning-fill text-lg text-red-500" />
-                      <span className="text-sm font-bold text-gray-900">Attention Needed</span>
-                      {testRuns.filter((r: any) => (r.failed||0) + (r.blocked||0) > 0).length > 0 && (
-                        <span className="text-[10px] font-bold bg-red-100 text-red-800 px-1.5 py-0.5 rounded">
-                          {testRuns.filter((r: any) => (r.failed||0) + (r.blocked||0) > 0).length}
-                        </span>
-                      )}
-                      <Link to={`/projects/${id}/runs`} className="ml-auto text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-0.5">
-                        View failures <i className="ri-arrow-right-s-line" />
-                      </Link>
-                    </div>
-                    {testRuns.filter((r: any) => (r.failed||0) + (r.blocked||0) > 0).length === 0 ? (
-                      <div className="text-center py-8">
-                        <i className="ri-shield-check-line text-4xl text-green-400 block mb-2" />
-                        <p className="text-sm text-gray-500">No failures or blockers. Looking good!</p>
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-gray-50">
-                        {testRuns.filter((r: any) => (r.failed||0) + (r.blocked||0) > 0).slice(0, 5).map((run: any) => (
-                          <Link key={run.id} to={`/projects/${id}/runs/${run.id}`} className="flex items-start gap-3 py-2.5 hover:bg-red-50/40 rounded-lg px-2 -mx-2 transition-colors">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${(run.failed||0) > 0 ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
-                              <i className={`text-sm ${(run.failed||0) > 0 ? 'ri-close-line' : 'ri-forbid-line'}`} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">{run.name}</p>
-                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                {(run.failed||0) > 0 && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600">{run.failed} Failed</span>}
-                                {(run.blocked||0) > 0 && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600">{run.blocked} Blocked</span>}
+                  {(() => {
+                    const attentionItems: { icon: string; iconColor: string; text: string; link: string; linkText: string }[] = [];
+                    testRuns.filter((r: any) => (r.failed||0) > 0).forEach((run: any) => {
+                      attentionItems.push({
+                        icon: 'ri-error-warning-fill', iconColor: '#EF4444',
+                        text: `${run.name} — ${run.failed} failed test${(run.failed||0) > 1 ? 's' : ''}`,
+                        link: `/projects/${id}/runs/${run.id}`, linkText: 'View run',
+                      });
+                    });
+                    testRuns.filter((r: any) => (r.blocked||0) > 0).forEach((run: any) => {
+                      attentionItems.push({
+                        icon: 'ri-pause-circle-fill', iconColor: '#F59E0B',
+                        text: `${run.name} — ${run.blocked} blocked`,
+                        link: `/projects/${id}/runs/${run.id}`, linkText: 'View run',
+                      });
+                    });
+                    activeMilestones.filter((m: any) => {
+                      const d = m.end_date ? Math.ceil((new Date(m.end_date).getTime() - Date.now()) / 86400000) : null;
+                      return d !== null && d <= 9;
+                    }).forEach((m: any) => {
+                      const daysLeft = Math.ceil((new Date(m.end_date).getTime() - Date.now()) / 86400000);
+                      attentionItems.push({
+                        icon: 'ri-alarm-warning-fill', iconColor: '#EF4444',
+                        text: `${m.name} — ${daysLeft <= 0 ? 'Overdue' : `${daysLeft} days left`}, ${m.progress}% complete`,
+                        link: `/projects/${id}/milestones`, linkText: 'View Milestone',
+                      });
+                    });
+                    const totalUntested = testRuns.reduce((a: number, r: any) => a + (r.untested||0), 0);
+                    if (totalUntested > 0) {
+                      attentionItems.push({
+                        icon: 'ri-time-line', iconColor: '#94A3B8',
+                        text: `${totalUntested} test case${totalUntested > 1 ? 's' : ''} untested`,
+                        link: `/projects/${id}/testcases`, linkText: 'View Untested',
+                      });
+                    }
+                    return (
+                      <div className="bg-white border border-gray-200 rounded-xl p-5" style={{ borderLeft: '3px solid #EF4444' }}>
+                        <div className="flex items-center gap-2 mb-4">
+                          <i className="ri-error-warning-fill text-[18px] text-red-500" />
+                          <span className="text-sm font-bold text-gray-900">Attention Needed</span>
+                          {attentionItems.length > 0 && (
+                            <span className="text-[10px] font-bold bg-red-100 text-red-800 px-1.5 py-0.5 rounded ml-0.5">({attentionItems.length})</span>
+                          )}
+                        </div>
+                        {attentionItems.length === 0 ? (
+                          <div className="text-center py-8">
+                            <i className="ri-shield-check-line text-4xl text-green-400 block mb-2" />
+                            <p className="text-sm text-gray-500">No issues detected. Looking good!</p>
+                          </div>
+                        ) : (
+                          <div>
+                            {attentionItems.map((item, i) => (
+                              <div key={i} className="flex gap-2.5 items-start py-2.5 border-b border-[#F1F5F9] last:border-0">
+                                <i className={`${item.icon} text-[18px] flex-shrink-0 mt-0.5`} style={{ color: item.iconColor }} />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[13px] text-[#334155] mb-1">{item.text}</p>
+                                  <Link to={item.link} className="text-xs font-semibold text-indigo-600 hover:underline">{item.linkText}</Link>
+                                </div>
                               </div>
-                            </div>
-                          </Link>
-                        ))}
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()}
 
                   {/* WIDGET 5: RECENT ACTIVITY */}
                   <div className="bg-white border border-gray-200 rounded-xl p-5">
-                    <div className="flex items-center gap-2 mb-4 text-sm font-bold text-gray-900">
-                      <i className="ri-time-line text-lg text-gray-500" />
-                      Recent Activity
+                    {/* Header with filter */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                        <i className="ri-time-line text-[18px] text-gray-500" />
+                        Recent Activity
+                      </div>
+                      <select
+                        value={activityFilter}
+                        onChange={e => setActivityFilter(e.target.value)}
+                        className="bg-[#F1F5F9] border border-[#E2E8F0] text-[11px] text-[#64748B] px-2.5 py-1 rounded-md cursor-pointer focus:outline-none"
+                      >
+                        <option value="all">All Types ▾</option>
+                        <option value="run">Runs</option>
+                        <option value="milestone">Milestones</option>
+                        <option value="session">Discovery</option>
+                        <option value="test_activity">Test Results</option>
+                      </select>
                     </div>
+
                     {recentActivity.length === 0 ? (
                       <div className="text-center py-10">
                         <i className="ri-time-line text-4xl text-gray-300 block mb-2" />
                         <p className="text-sm text-gray-500">No activity yet</p>
                       </div>
-                    ) : (
-                      <div className="space-y-0.5">
-                        {recentActivity.slice(0, 10).map((event, idx) => {
-                          const iconMap: Record<string, { icon: string; dot: string }> = {
-                            'milestone-created': { icon: 'ri-flag-line', dot: '#6366F1' },
-                            'milestone-completed': { icon: 'ri-flag-fill', dot: '#16A34A' },
-                            'run-created': { icon: 'ri-play-circle-line', dot: '#6366F1' },
-                            'run-completed': { icon: 'ri-checkbox-circle-line', dot: '#16A34A' },
-                            'session-created': { icon: 'ri-search-eye-line', dot: '#8B5CF6' },
-                            'session-completed': { icon: 'ri-check-double-line', dot: '#16A34A' },
-                            'test_activity-tested': { icon: 'ri-test-tube-line', dot: '#6366F1' },
-                          };
-                          const key = `${event.type}-${event.action}`;
-                          const info = iconMap[key] || { icon: 'ri-information-line', dot: '#94A3B8' };
-                          return (
-                            <div key={idx} className="flex items-start gap-2.5 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50/60 px-2 rounded-lg transition-colors">
-                              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-2" style={{ background: info.dot }} />
-                              <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 text-gray-500">
-                                <i className={`${info.icon} text-xs`} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-700 leading-snug truncate font-medium">{event.name}</p>
-                                <p className="text-[11px] text-gray-400 mt-0.5">{getRelativeTime(event.created_at)}</p>
-                              </div>
-                              {event.type === 'test_activity' && (
-                                <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-                                  {(event.meta?.passed||0) > 0 && <span className="text-[10px] font-semibold text-green-600">{event.meta.passed}✓</span>}
-                                  {(event.meta?.failed||0) > 0 && <span className="text-[10px] font-semibold text-red-600">{event.meta.failed}✗</span>}
-                                </div>
-                              )}
+                    ) : (() => {
+                      const ICON_MAP: Record<string, { icon: string; color: string; action: string }> = {
+                        'milestone-created':    { icon: 'ri-flag-line',             color: '#6366F1', action: 'created milestone' },
+                        'milestone-completed':  { icon: 'ri-flag-fill',             color: '#16A34A', action: 'completed milestone' },
+                        'run-created':          { icon: 'ri-play-circle-line',      color: '#6366F1', action: 'created run' },
+                        'run-completed':        { icon: 'ri-checkbox-circle-fill',  color: '#16A34A', action: 'completed run' },
+                        'session-created':      { icon: 'ri-search-eye-line',       color: '#8B5CF6', action: 'started session' },
+                        'session-completed':    { icon: 'ri-check-double-line',     color: '#16A34A', action: 'closed session' },
+                        'test_activity-tested': { icon: 'ri-test-tube-line',        color: '#3B82F6', action: 'executed tests in' },
+                      };
+
+                      const filtered = activityFilter === 'all'
+                        ? recentActivity
+                        : recentActivity.filter(e => e.type === activityFilter);
+
+                      const visibleGroups = groupedActivity
+                        .map(g => ({
+                          ...g,
+                          items: activityFilter === 'all' ? g.items : g.items.filter(e => e.type === activityFilter),
+                        }))
+                        .filter(g => g.items.length > 0);
+
+                      const MAX_ITEMS = 7;
+                      let shownCount = 0;
+
+                      return (
+                        <div>
+                          {visibleGroups.map((group, gi) => (
+                            <div key={gi}>
+                              <p className="text-[11px] font-bold uppercase text-[#94A3B8] tracking-[0.5px] mt-3 mb-2 first:mt-0">{group.label}</p>
+                              {group.items.map((event, idx) => {
+                                if (!showAllActivity && shownCount >= MAX_ITEMS) return null;
+                                shownCount++;
+                                const key = `${event.type}-${event.action}`;
+                                const info = ICON_MAP[key] || { icon: 'ri-information-line', color: '#94A3B8', action: event.action };
+                                return (
+                                  <div key={idx} className="flex items-start gap-2.5 py-2 border-b border-[#F1F5F9] last:border-0">
+                                    <i className={`${info.icon} text-[16px] flex-shrink-0 mt-0.5`} style={{ color: info.color }} />
+                                    <div className="flex-1 min-w-0 text-[13px]">
+                                      <span className="font-semibold text-[#0F172A]">{info.action} </span>
+                                      <span className="font-medium text-[#0F172A]">{event.name}</span>
+                                      {event.type === 'test_activity' && (
+                                        <span className="text-[#64748B]">
+                                          {(event.meta?.passed||0) > 0 && <span className="text-green-600 font-semibold ml-1">{event.meta.passed}✓</span>}
+                                          {(event.meta?.failed||0) > 0 && <span className="text-red-600 font-semibold ml-1">{event.meta.failed}✗</span>}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-[12px] text-[#94A3B8] whitespace-nowrap flex-shrink-0 ml-auto">{getRelativeTime(event.created_at)}</div>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                          ))}
+
+                          {filtered.length > MAX_ITEMS && (
+                            <button
+                              onClick={() => setShowAllActivity(v => !v)}
+                              className="w-full text-center py-2.5 text-xs font-semibold text-indigo-600 hover:underline mt-2 cursor-pointer bg-none border-none"
+                            >
+                              {showAllActivity ? 'Show less' : 'Show more'}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                 </div>
