@@ -176,6 +176,8 @@ export default function SettingsPage() {
   const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
   const [timeFormat, setTimeFormat] = useState<'24h' | '12h'>('24h');
   const [preferencesSaved, setPreferencesSaved] = useState(false);
+  const [savingPreferences, setSavingPreferences] = useState(false);
+  const [showAllPlansModal, setShowAllPlansModal] = useState(false);
 
   // Slack / Teams webhook management
   const [webhooks, setWebhooks] = useState<any[]>([]);
@@ -896,6 +898,28 @@ def pytest_sessionfinish(session, exitstatus):
     print(f"\\n[Testably] Uploaded: {response.status_code} — {len(_results)} results")`;
   };
 
+  const handleSavePreferences = async () => {
+    try {
+      setSavingPreferences(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from('profiles').update({
+        language,
+        timezone: autoDetectTz ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone,
+        date_format: dateFormat,
+        time_format: timeFormat,
+      } as Record<string, string>).eq('id', user.id);
+      setPreferencesSaved(true);
+      setTimeout(() => setPreferencesSaved(false), 3000);
+    } catch (e) {
+      console.error('Preferences save error:', e);
+      setPreferencesSaved(true);
+      setTimeout(() => setPreferencesSaved(false), 3000);
+    } finally {
+      setSavingPreferences(false);
+    }
+  };
+
   const currentTier = userProfile?.subscription_tier || 1;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO] || TIER_INFO[1];
   const isProfessionalOrHigher = currentTier >= 3;
@@ -1132,7 +1156,7 @@ def pytest_sessionfinish(session, exitstatus):
                             Upgrade
                           </a>
                           <button
-                            onClick={() => {}}
+                            onClick={() => setShowAllPlansModal(true)}
                             className="inline-flex items-center gap-1.5 text-[0.8125rem] font-medium px-[0.875rem] py-[0.4375rem] rounded-[0.375rem] border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-colors cursor-pointer"
                           >
                             View All Plans
@@ -1181,6 +1205,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   <td className="px-3 py-[0.625rem] text-right border-b border-[#F1F5F9]">
                                     <button
                                       title="Download PDF"
+                                      onClick={() => alert('Invoice PDF export is coming soon. Contact hello@testably.app for manual invoice requests.')}
                                       className="w-7 h-7 rounded flex items-center justify-center border border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#475569] transition-colors cursor-pointer text-sm"
                                     >
                                       <i className="ri-download-2-line"></i>
@@ -1895,11 +1920,14 @@ def pytest_sessionfinish(session, exitstatus):
 
                       <div className="flex items-center gap-3 pt-2">
                         <button
-                          onClick={() => { setPreferencesSaved(true); setTimeout(() => setPreferencesSaved(false), 3000); }}
-                          className="px-5 py-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2"
+                          onClick={handleSavePreferences}
+                          disabled={savingPreferences}
+                          className="px-5 py-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          <i className="ri-save-line"></i>
-                          Save Preferences
+                          {savingPreferences
+                            ? <><i className="ri-loader-4-line animate-spin"></i>Saving...</>
+                            : <><i className="ri-save-line"></i>Save Preferences</>
+                          }
                         </button>
                         {preferencesSaved && (
                           <span className="text-sm text-[#6366F1] font-medium flex items-center gap-1">
@@ -2063,6 +2091,75 @@ def pytest_sessionfinish(session, exitstatus):
                 <button onClick={handleSaveWebhook} disabled={savingWebhook} className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2">
                   {savingWebhook ? <><i className="ri-loader-4-line animate-spin"></i> Saving…</> : <><i className="ri-save-line"></i> {editingWebhookId ? 'Save Changes' : 'Add Integration'}</>}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── All Plans Modal ── */}
+      {showAllPlansModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAllPlansModal(false)}>
+          <div className="bg-white rounded-xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Compare All Plans</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Choose the plan that fits your team size and needs.</p>
+              </div>
+              <button onClick={() => setShowAllPlansModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                <i className="ri-close-line text-xl text-gray-500"></i>
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(TIER_INFO).map(([tier, info]) => {
+                  const tierNum = parseInt(tier);
+                  const isCurrentTier = tierNum === currentTier;
+                  return (
+                    <div
+                      key={tier}
+                      className={`p-5 rounded-xl border-2 flex flex-col transition-all ${isCurrentTier ? info.color : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                          tierNum === 1 ? 'bg-gray-200' : tierNum === 2 ? 'bg-yellow-100' : tierNum === 3 ? 'bg-indigo-100' : tierNum === 4 ? 'bg-amber-100' : tierNum === 5 ? 'bg-orange-100' : 'bg-rose-100'
+                        }`}>
+                          <i className={`${info.icon} text-xl ${
+                            tierNum === 1 ? 'text-gray-500' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : tierNum === 4 ? 'text-amber-500' : tierNum === 5 ? 'text-orange-500' : 'text-rose-500'
+                          }`}></i>
+                        </div>
+                        <h4 className="font-bold text-gray-900">{info.name}</h4>
+                        {isCurrentTier && <span className="ml-auto px-2 py-0.5 bg-indigo-500 text-white text-xs rounded-full">Current</span>}
+                      </div>
+                      <div className="mb-4 pb-4 border-b border-gray-200/70">
+                        <span className={`text-2xl font-bold ${tierNum === 1 ? 'text-gray-700' : tierNum === 2 ? 'text-yellow-700' : tierNum === 3 ? 'text-indigo-700' : 'text-amber-700'}`}>
+                          {info.monthlyPrice === 0 ? '$0' : info.monthlyPrice < 0 ? 'Custom' : `$${info.monthlyPrice}`}
+                        </span>
+                        {info.monthlyPrice >= 0 && <span className="text-sm text-gray-500 ml-1">{info.priceDesc}</span>}
+                      </div>
+                      <ul className="space-y-1.5 flex-1 mb-4">
+                        {info.features.map((feature, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                            <i className={`ri-check-line mt-0.5 ${
+                              tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : tierNum === 4 ? 'text-amber-500' : tierNum === 5 ? 'text-orange-500' : 'text-rose-500'
+                            }`}></i>
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {!isCurrentTier && tierNum > currentTier && (
+                        <a
+                          href={tierNum >= 6 ? 'mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry' : 'mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry'}
+                          className={`w-full px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer block text-center ${
+                            tierNum >= 6 ? 'border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white' : 'bg-indigo-500 text-white hover:bg-indigo-600'
+                          }`}
+                        >
+                          {tierNum >= 6 ? 'Contact Sales' : 'Contact Us to Upgrade'}
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
