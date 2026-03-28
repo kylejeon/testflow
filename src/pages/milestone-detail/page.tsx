@@ -368,20 +368,27 @@ export default function MilestoneDetail() {
     try {
       const validAuthors = authors.filter(a => a && a !== 'Unknown');
       if (validAuthors.length === 0) return;
-      const orClause = validAuthors.map(a => `full_name.eq.${a}`).join(',') + ',' + validAuthors.map(a => `email.eq.${a}`).join(',');
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name, email, avatar_url')
-        .or(orClause);
-      // fallback without avatar_url if column doesn't exist
-      const rows = error
-        ? ((await supabase.from('profiles').select('full_name, email').or(orClause)).data || [])
-        : (data || []);
+
+      // Use .in() instead of .or() — .or('full_name.eq.Kyle Jeon') breaks on spaces
+      const fields = 'full_name, email, avatar_url';
+      const [byName, byEmail] = await Promise.all([
+        supabase.from('profiles').select(fields).in('full_name', validAuthors),
+        supabase.from('profiles').select(fields).in('email', validAuthors),
+      ]);
+
+      // Fallback without avatar_url if column doesn't exist
+      const nameRows = byName.error
+        ? ((await supabase.from('profiles').select('full_name, email').in('full_name', validAuthors)).data || [])
+        : (byName.data || []);
+      const emailRows = byEmail.error
+        ? ((await supabase.from('profiles').select('full_name, email').in('email', validAuthors)).data || [])
+        : (byEmail.data || []);
+
       const profileMap = new Map<string, { name: string | null; url: string | null }>();
-      rows.forEach((p: any) => {
+      [...nameRows, ...emailRows].forEach((p: any) => {
         const info = { name: p.full_name || null, url: p.avatar_url || null };
-        if (p.full_name && validAuthors.includes(p.full_name)) profileMap.set(p.full_name, info);
-        if (p.email && validAuthors.includes(p.email)) profileMap.set(p.email, info);
+        if (p.full_name) profileMap.set(p.full_name, info);
+        if (p.email) profileMap.set(p.email, info);
       });
       setContributorProfiles(profileMap);
     } catch (e) {
