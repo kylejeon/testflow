@@ -330,19 +330,22 @@ export default function MilestoneDetail() {
       });
 
       const generateActivityData = (logs: any[]) => {
-        const blockCount = 24;
-        const activityData: string[] = new Array(blockCount).fill('#e5e7eb');
-        if (!logs || logs.length === 0) return activityData;
-        logs.slice(0, blockCount).forEach((log, index) => {
-          switch (log.type) {
-            case 'note': activityData[index] = '#3b82f6'; break;
-            case 'passed': activityData[index] = '#10b981'; break;
-            case 'failed': activityData[index] = '#ef4444'; break;
-            case 'blocked': activityData[index] = '#f59e0b'; break;
-            default: activityData[index] = '#6366F1';
-          }
-        });
-        return activityData;
+        if (!logs || logs.length === 0) return [{ color: '#E2E8F0', pct: 100 }];
+        const counts: Record<string, number> = { note: 0, passed: 0, failed: 0, blocked: 0 };
+        logs.forEach(log => { if (log.type in counts) counts[log.type]++; });
+        const total = logs.length;
+        const segments = [
+          { color: '#3B82F6', count: counts.note },
+          { color: '#22C55E', count: counts.passed },
+          { color: '#EF4444', count: counts.failed },
+          { color: '#F59E0B', count: counts.blocked },
+        ].filter(s => s.count > 0);
+        if (segments.length === 0) return [{ color: '#E2E8F0', pct: 100 }];
+        const result = segments.map(s => ({ color: s.color, pct: Math.round((s.count / total) * 100) }));
+        // fix rounding so total = 100
+        const sum = result.reduce((a, s) => a + s.pct, 0);
+        if (sum < 100) result[result.length - 1].pct += 100 - sum;
+        return result;
       };
 
       const sessionsWithActivity = (sessionsData || []).map((session: any) => {
@@ -743,7 +746,8 @@ export default function MilestoneDetail() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {runs.map(run => {
                     const rp = calculateRunProgress(run);
-                    const completionRate = 100 - rp.untested;
+                    const completionRate = rp.passed + rp.failed + rp.blocked + rp.retest;
+                    const untestedPct = Math.max(0, 100 - completionRate);
                     const runStyle = getRunStatusStyle(run.status);
                     return (
                       <Link
@@ -765,7 +769,7 @@ export default function MilestoneDetail() {
                             {rp.failed > 0 && <div style={{ width: `${rp.failed}%`, background: '#EF4444', height: '100%' }} />}
                             {rp.blocked > 0 && <div style={{ width: `${rp.blocked}%`, background: '#F59E0B', height: '100%' }} />}
                             {rp.retest > 0 && <div style={{ width: `${rp.retest}%`, background: '#FBBF24', height: '100%' }} />}
-                            {rp.untested > 0 && <div style={{ width: `${rp.untested}%`, background: '#E2E8F0', height: '100%' }} />}
+                            {untestedPct > 0 && <div style={{ width: `${untestedPct}%`, background: '#E2E8F0', height: '100%' }} />}
                           </div>
                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', minWidth: '2rem' }}>{completionRate}%</span>
                         </div>
@@ -774,6 +778,7 @@ export default function MilestoneDetail() {
                           {[
                             { dot: '#22C55E', n: run.passed_count || 0, label: 'passed' },
                             { dot: '#EF4444', n: run.failed_count || 0, label: 'failed' },
+                            { dot: '#F59E0B', n: run.blocked_count || 0, label: 'blocked' },
                             { dot: '#CBD5E1', n: run.untested_count || 0, label: 'untested' },
                           ].map(s => (
                             <span key={s.label} style={{ fontSize: '0.6875rem', display: 'inline-flex', alignItems: 'center', gap: '0.1875rem', color: '#64748B' }}>
@@ -832,9 +837,9 @@ export default function MilestoneDetail() {
                       }}>
                         {session.actualStatus === 'in_progress' ? 'In Progress' : session.actualStatus === 'done' ? 'Done' : 'New'}
                       </span>
-                      <div style={{ width: 80, display: 'flex', gap: 2, flexShrink: 0 }}>
-                        {session.activityData && session.activityData.slice(0, 20).map((color: string, i: number) => (
-                          <div key={i} style={{ flex: 1, height: 6, borderRadius: 1.5, background: color }} />
+                      <div style={{ width: 80, height: 8, display: 'flex', borderRadius: 4, overflow: 'hidden', flexShrink: 0 }}>
+                        {session.activityData && session.activityData.map((seg: { color: string; pct: number }, i: number) => (
+                          <div key={i} style={{ width: `${seg.pct}%`, height: '100%', background: seg.color }} />
                         ))}
                       </div>
                     </Link>
