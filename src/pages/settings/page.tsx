@@ -941,19 +941,80 @@ def pytest_sessionfinish(session, exitstatus):
     }
   };
 
+  const formatExportDate = (isoString: string | null | undefined): string => {
+    if (!isoString) return '';
+    try {
+      const tz = autoDetectTz ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone;
+      const date = new Date(isoString);
+      const opts: Intl.DateTimeFormatOptions = { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: timeFormat === '12h' };
+      const parts = new Intl.DateTimeFormat('en-US', opts).formatToParts(date);
+      const get = (type: string) => parts.find(p => p.type === type)?.value ?? '';
+      const year = get('year'), month = get('month'), day = get('day');
+      const hour = get('hour'), minute = get('minute'), dayPeriod = get('dayPeriod');
+      let datePart = '';
+      if (dateFormat === 'MM/DD/YYYY') datePart = `${month}/${day}/${year}`;
+      else if (dateFormat === 'DD/MM/YYYY') datePart = `${day}/${month}/${year}`;
+      else datePart = `${year}-${month}-${day}`;
+      const timePart = timeFormat === '12h' ? `${hour}:${minute} ${dayPeriod}` : `${hour}:${minute}`;
+      return `${datePart} ${timePart}`;
+    } catch {
+      return isoString;
+    }
+  };
+
+  const buildExportHelpers = async (projectIds: string[]) => {
+    const { data: projectsData } = await supabase
+      .from('projects')
+      .select('id, name, prefix')
+      .in('id', projectIds);
+    const projectNameMap: Record<string, string> = {};
+    const projectPrefixMap: Record<string, string> = {};
+    (projectsData ?? []).forEach((p: any) => {
+      projectNameMap[p.id] = p.name;
+      projectPrefixMap[p.id] = p.prefix || 'TC';
+    });
+
+    const { data: allTcs } = await supabase
+      .from('test_cases')
+      .select('id, custom_id, project_id')
+      .in('project_id', projectIds)
+      .order('created_at', { ascending: true });
+    const tcIdLabelMap: Record<string, string> = {};
+    const projectTcCounter: Record<string, number> = {};
+    (allTcs ?? []).forEach((tc: any) => {
+      if (tc.custom_id) {
+        tcIdLabelMap[tc.id] = tc.custom_id;
+      } else {
+        const prefix = projectPrefixMap[tc.project_id] || 'TC';
+        projectTcCounter[prefix] = (projectTcCounter[prefix] || 0) + 1;
+        tcIdLabelMap[tc.id] = `${prefix}-${projectTcCounter[prefix].toString().padStart(3, '0')}`;
+      }
+    });
+
+    return { projectNameMap, tcIdLabelMap };
+  };
+
   const handleExportJSON = async () => {
     try {
       if (!userProjects.length) { alert('No projects found to export.'); return; }
       const projectIds = userProjects.map(p => p.id);
-      const [tcRes, runRes] = await Promise.all([
-        supabase.from('test_cases').select('*').in('project_id', projectIds),
+      const [{ projectNameMap, tcIdLabelMap }, tcRes, runRes] = await Promise.all([
+        buildExportHelpers(projectIds),
+        supabase.from('test_cases').select('*').in('project_id', projectIds).order('created_at', { ascending: true }),
         supabase.from('runs').select('*').in('project_id', projectIds),
       ]);
+      const testCases = (tcRes.data || []).map((tc: any) => ({
+        ...tc,
+        tc_id: tcIdLabelMap[tc.id] ?? tc.id,
+        project_name: projectNameMap[tc.project_id] ?? tc.project_id,
+        created_at: formatExportDate(tc.created_at),
+        updated_at: formatExportDate(tc.updated_at),
+      }));
       const exportData = {
-        exported_at: new Date().toISOString(),
+        exported_at: formatExportDate(new Date().toISOString()),
         user: { email: userProfile?.email, name: userProfile?.full_name },
         projects: userProjects,
-        test_cases: tcRes.data || [],
+        test_cases: testCases,
         runs: runRes.data || [],
       };
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -975,16 +1036,23 @@ def pytest_sessionfinish(session, exitstatus):
     try {
       if (!userProjects.length) { alert('No projects found to export.'); return; }
       const projectIds = userProjects.map(p => p.id);
-      const { data: testCases, error } = await supabase
-        .from('test_cases')
-        .select('id, title, status, priority, project_id, created_at, updated_at')
-        .in('project_id', projectIds);
-      if (error) throw error;
-      if (!testCases || testCases.length === 0) { alert('No test cases found to export.'); return; }
-      const headers = ['ID', 'Title', 'Status', 'Priority', 'Project ID', 'Created At', 'Updated At'];
-      const rows = testCases.map((tc: any) =>
-        [tc.id, tc.title, tc.status, tc.priority, tc.project_id, tc.created_at, tc.updated_at]
-          .map((v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`)
+      const [{ projectNameMap, tcIdLabelMap }, tcResult] = await Promise.all([
+        buildExportHelpers(projectIds),
+        supabase.from('test_cases').select('id, title, status, priority, project_id, created_at, updated_at').in('project_id', projectIds).order('created_at', { ascending: true }),
+      ]);
+      if (tcResult.error) throw tcResult.error;
+      if (!tcResult.data || tcResult.data.length === 0) { alert('No test cases found to export.'); return; }
+      const headers = ['TC ID', 'Title', 'Status', 'Priority', 'Project Name', 'Created At', 'Updated At'];
+      const rows = tcResult.data.map((tc: any) =>
+        [
+          tcIdLabelMap[tc.id] ?? tc.id,
+          tc.title,
+          tc.status,
+          tc.priority,
+          projectNameMap[tc.project_id] ?? tc.project_id,
+          formatExportDate(tc.created_at),
+          formatExportDate(tc.updated_at),
+        ].map((v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`)
       );
       const csv = [headers.join(','), ...rows.map((r: string[]) => r.join(','))].join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
