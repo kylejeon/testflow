@@ -123,7 +123,7 @@ function DangerZoneSection({ email }: { email: string }) {
           value={confirmText}
           onChange={(e) => setConfirmText(e.target.value)}
           placeholder={email}
-          className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm mb-3 focus:outline-none focus:border-red-400 bg-white"
+          className="w-full px-3 py-2 border border-red-200 rounded-md text-[0.8125rem] mb-3 focus:outline-none focus:border-red-400 bg-white"
         />
         <button
           onClick={handleDeleteAccount}
@@ -1018,25 +1018,25 @@ def pytest_sessionfinish(session, exitstatus):
             {/* Row 2: Settings Tab Nav */}
             <div className="flex items-center gap-0 border-t border-[#E2E8F0] overflow-x-auto" style={{ height: '2.625rem' }}>
               {([
-                { key: 'profile', label: 'Profile', icon: 'ri-user-settings-fill' },
-                { key: 'billing', label: 'Billing', icon: 'ri-bank-card-fill' },
-                { key: 'preferences', label: 'Preferences', icon: 'ri-equalizer-fill' },
-                { key: 'members', label: 'Members', icon: 'ri-team-fill' },
-                { key: 'integrations', label: 'Integrations', icon: 'ri-plug-fill' },
-                { key: 'api', label: 'API & Tokens', icon: 'ri-key-2-fill' },
-                { key: 'notifications', label: 'Notifications', icon: 'ri-notification-3-fill' },
-              ] as const).map(tab => (
+                { key: 'profile',       label: 'Profile',       icon: 'ri-user-settings-fill',  iconColor: '#8B5CF6' },
+                { key: 'billing',       label: 'Billing',       icon: 'ri-bank-card-fill',       iconColor: '#3B82F6' },
+                { key: 'preferences',   label: 'Preferences',   icon: 'ri-equalizer-fill',       iconColor: '#6366F1' },
+                { key: 'members',       label: 'Members',       icon: 'ri-team-fill',            iconColor: '#22C55E' },
+                { key: 'integrations',  label: 'Integrations',  icon: 'ri-plug-fill',            iconColor: '#F59E0B' },
+                { key: 'api',           label: 'API & Tokens',  icon: 'ri-key-2-fill',           iconColor: '#0EA5E9' },
+                { key: 'notifications', label: 'Notifications', icon: 'ri-notification-3-fill',  iconColor: '#EF4444' },
+              ] as { key: 'profile' | 'billing' | 'preferences' | 'members' | 'integrations' | 'api' | 'notifications'; label: string; icon: string; iconColor: string }[]).map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className="flex items-center gap-1.5 px-4 h-full text-[0.8125rem] font-medium whitespace-nowrap cursor-pointer transition-colors flex-shrink-0 border-b-2"
+                  className="flex items-center gap-[5px] px-3 h-full text-[0.8125rem] whitespace-nowrap cursor-pointer transition-colors flex-shrink-0 border-b-2"
                   style={{
                     color: activeTab === tab.key ? '#6366F1' : '#64748B',
                     borderColor: activeTab === tab.key ? '#6366F1' : 'transparent',
                     fontWeight: activeTab === tab.key ? 600 : 500,
                   }}
                 >
-                  <i className={`${tab.icon} text-sm`}></i>
+                  <i className={tab.icon} style={{ color: tab.iconColor, fontSize: '0.875rem' }}></i>
                   {tab.label}
                 </button>
               ))}
@@ -1044,7 +1044,7 @@ def pytest_sessionfinish(session, exitstatus):
           </header>
 
           <main className="flex-1 overflow-y-auto" style={{ background: '#F8FAFC' }}>
-            <div className="max-w-3xl mx-auto px-6 py-6">
+            <div className="max-w-[800px] mx-auto px-8 pt-6 pb-12">
                 <div>
                   {activeTab === 'profile' && userProfile && (
                     <>
@@ -1291,7 +1291,7 @@ def pytest_sessionfinish(session, exitstatus):
                           <div className={`space-y-6 ${!isStarterOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
                             {/* Jira Domain */}
                             <div>
-                              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
                                 Jira Domain <span className="text-red-500">*</span>
                               </label>
                               <div className="flex items-center gap-2">
@@ -1301,7 +1301,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   value={jiraSettings.domain}
                                   onChange={(e) => setJiraSettings({ ...jiraSettings, domain: e.target.value })}
                                   placeholder="your-domain.atlassian.net"
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                  className="flex-1 px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
                                   disabled={!isStarterOrHigher}
                                 />
                               </div>
@@ -1310,7 +1310,7 @@ def pytest_sessionfinish(session, exitstatus):
 
                             {/* Jira Email */}
                             <div>
-                              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
                                 Jira Email <span className="text-red-500">*</span>
                               </label>
                               <input
@@ -1318,7 +1318,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 value={jiraSettings.email}
                                 onChange={(e) => setJiraSettings({ ...jiraSettings, email: e.target.value })}
                                 placeholder="your-email@example.com"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
                                 disabled={!isStarterOrHigher}
                               />
                               <p className="text-xs text-gray-500 mt-1">Your Jira account email address</p>
@@ -1326,7 +1326,7 @@ def pytest_sessionfinish(session, exitstatus):
 
                             {/* Jira API Token */}
                             <div>
-                              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
                                 Jira API Token <span className="text-red-500">*</span>
                               </label>
                               <div className="relative">
@@ -1335,7 +1335,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   value={jiraSettings.apiToken}
                                   onChange={(e) => setJiraSettings({ ...jiraSettings, apiToken: e.target.value })}
                                   placeholder="Enter your Jira API token"
-                                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                  className="w-full px-3 py-2 pr-10 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
                                   disabled={!isStarterOrHigher}
                                 />
                                 <button
@@ -1361,13 +1361,13 @@ def pytest_sessionfinish(session, exitstatus):
 
                             {/* Default Issue Type */}
                             <div>
-                              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
                                 Default Issue Type
                               </label>
                               <select
                                 value={jiraSettings.issueType}
                                 onChange={(e) => setJiraSettings({ ...jiraSettings, issueType: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
+                                className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem] cursor-pointer"
                                 disabled={!isStarterOrHigher}
                               >
                                 <option value="Bug">Bug</option>
@@ -1397,7 +1397,7 @@ def pytest_sessionfinish(session, exitstatus):
                               <button
                                 onClick={handleTestConnection}
                                 disabled={testing || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher}
-                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="inline-flex items-center gap-1.5 px-4 py-[0.4375rem] bg-white border border-[#E2E8F0] text-[#475569] rounded-md hover:bg-[#F8FAFC] transition-all font-medium text-[0.8125rem] cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {testing ? (
                                   <>
@@ -1414,7 +1414,7 @@ def pytest_sessionfinish(session, exitstatus):
                               <button
                                 onClick={handleSaveJiraSettings}
                                 disabled={saving || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher}
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="inline-flex items-center gap-1.5 px-4 py-[0.4375rem] bg-[#6366F1] text-white rounded-md hover:bg-[#4F46E5] transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {saving ? (
                                   <>
@@ -1813,11 +1813,11 @@ def pytest_sessionfinish(session, exitstatus):
                                         type="text"
                                         value={token.token}
                                         readOnly
-                                        className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-mono text-gray-600"
+                                        className="flex-1 px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-md text-[0.75rem] font-mono text-[#475569]"
                                       />
                                       <button
                                         onClick={() => handleCopyToken(token.token)}
-                                        className="flex-shrink-0 px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all cursor-pointer whitespace-nowrap"
+                                        className="flex-shrink-0 w-8 h-8 bg-white border border-[#E2E8F0] rounded-md hover:bg-[#F8FAFC] transition-all cursor-pointer flex items-center justify-center"
                                       >
                                         {copiedToken === token.token ? (
                                           <i className="ri-check-line text-green-600"></i>
@@ -2059,7 +2059,7 @@ def pytest_sessionfinish(session, exitstatus):
               <p className="text-sm text-gray-600 mt-1">Generate a token for your CI/CD pipeline</p>
             </div>
             <div className="p-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
                 Token Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -2067,7 +2067,7 @@ def pytest_sessionfinish(session, exitstatus):
                 value={newTokenName}
                 onChange={(e) => setNewTokenName(e.target.value)}
                 placeholder="e.g. GitHub Actions Token"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
                 autoFocus
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -2081,14 +2081,14 @@ def pytest_sessionfinish(session, exitstatus):
                   setShowNewTokenModal(false);
                   setNewTokenName('');
                 }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap"
+                className="px-4 py-[0.4375rem] text-[#475569] border border-[#E2E8F0] hover:bg-[#F8FAFC] rounded-md text-[0.8125rem] font-medium transition-all cursor-pointer whitespace-nowrap"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateToken}
                 disabled={creatingToken || !newTokenName.trim()}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-[0.4375rem] bg-[#6366F1] text-white rounded-md text-[0.8125rem] font-semibold hover:bg-[#4F46E5] transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creatingToken ? (
                   <>
@@ -2129,11 +2129,11 @@ def pytest_sessionfinish(session, exitstatus):
             <div className="p-6 space-y-5">
               {/* Project selector */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Project <span className="text-red-500">*</span></label>
+                <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">Project <span className="text-red-500">*</span></label>
                 <select
                   value={webhookForm.project_id}
                   onChange={e => setWebhookForm(prev => ({ ...prev, project_id: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm cursor-pointer"
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem] cursor-pointer"
                 >
                   <option value="">Select a project...</option>
                   {webhookProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -2142,7 +2142,7 @@ def pytest_sessionfinish(session, exitstatus):
 
               {/* Platform */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Platform</label>
+                <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">Platform</label>
                 <div className="grid grid-cols-2 gap-3">
                   {(['slack', 'teams'] as const).map(t => {
                     const m = WEBHOOK_TYPE_META[t];
@@ -2159,20 +2159,20 @@ def pytest_sessionfinish(session, exitstatus):
 
               {/* Webhook URL */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Webhook URL <span className="text-red-500">*</span></label>
-                <input type="url" value={webhookForm.webhook_url} onChange={e => setWebhookForm(prev => ({ ...prev, webhook_url: e.target.value }))} placeholder={WEBHOOK_TYPE_META[webhookForm.type].placeholder} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+                <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">Webhook URL <span className="text-red-500">*</span></label>
+                <input type="url" value={webhookForm.webhook_url} onChange={e => setWebhookForm(prev => ({ ...prev, webhook_url: e.target.value }))} placeholder={WEBHOOK_TYPE_META[webhookForm.type].placeholder} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]" />
               </div>
 
               {/* Channel name */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Channel Name <span className="text-gray-400 font-normal">(optional)</span></label>
-                <input type="text" value={webhookForm.channel_name} onChange={e => setWebhookForm(prev => ({ ...prev, channel_name: e.target.value }))} placeholder={webhookForm.type === 'slack' ? 'e.g. qa-alerts' : 'e.g. QA Notifications'} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" />
+                <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">Channel Name <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input type="text" value={webhookForm.channel_name} onChange={e => setWebhookForm(prev => ({ ...prev, channel_name: e.target.value }))} placeholder={webhookForm.type === 'slack' ? 'e.g. qa-alerts' : 'e.g. QA Notifications'} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]" />
                 <p className="text-xs text-gray-500 mt-1">Display label only — does not affect delivery.</p>
               </div>
 
               {/* Events */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Notify on <span className="text-red-500">*</span></label>
+                <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">Notify on <span className="text-red-500">*</span></label>
                 <div className="space-y-2">
                   {WEBHOOK_EVENTS.map(ev => (
                     <label key={ev.type} className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
@@ -2193,8 +2193,8 @@ def pytest_sessionfinish(session, exitstatus):
               )}
 
               <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowWebhookModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold text-sm cursor-pointer">Cancel</button>
-                <button onClick={handleSaveWebhook} disabled={savingWebhook} className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-semibold text-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2">
+                <button onClick={() => setShowWebhookModal(false)} className="flex-1 py-2.5 bg-white border border-[#E2E8F0] text-[#475569] rounded-md hover:bg-[#F8FAFC] transition-all font-medium text-[0.8125rem] cursor-pointer">Cancel</button>
+                <button onClick={handleSaveWebhook} disabled={savingWebhook} className="flex-1 py-2.5 bg-[#6366F1] text-white rounded-md hover:bg-[#4F46E5] transition-all font-semibold text-[0.8125rem] cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2">
                   {savingWebhook ? <><i className="ri-loader-4-line animate-spin"></i> Saving…</> : <><i className="ri-save-line"></i> {editingWebhookId ? 'Save Changes' : 'Add Integration'}</>}
                 </button>
               </div>
