@@ -326,7 +326,12 @@ export default function MilestoneDetail() {
       });
       setFailedBlockedTcs(failedBlockedTcList);
 
-      fetchContributorProfiles(Array.from(new Set(allActivityLogs.map(l => l.author))));
+      // Include ALL run authors so Run card avatars always resolve correctly
+      const allAuthorsSet = new Set([
+        ...allActivityLogs.map(l => l.author),
+        ...runsWithProgress.flatMap(r => r.authors || []),
+      ]);
+      fetchContributorProfiles(Array.from(allAuthorsSet));
 
       const { data: sessionsData } = await supabase
         .from('sessions')
