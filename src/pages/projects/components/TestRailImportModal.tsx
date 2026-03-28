@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { parseCSV } from '../../../utils/testRailExport';
 import { supabase } from '../../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -34,9 +35,18 @@ interface TestRailImportModalProps {
 }
 
 // ── Sidebar step definitions ─────────────────────────────────────────────────
-const STEPS = [
+const API_STEPS = [
   { num: 1, label: 'Method' },
   { num: 2, label: 'Authentication' },
+  { num: 3, label: 'Data Selection' },
+  { num: 4, label: 'Field Mapping' },
+  { num: 5, label: 'Import' },
+  { num: 6, label: 'Complete' },
+] as const;
+
+const CSV_STEPS = [
+  { num: 1, label: 'Method' },
+  { num: 2, label: 'Upload File' },
   { num: 3, label: 'Data Selection' },
   { num: 4, label: 'Field Mapping' },
   { num: 5, label: 'Import' },
@@ -62,6 +72,9 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
   const [progress, setProgress] = useState(0);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [importing, setImporting] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvRows, setCsvRows] = useState<Record<string, string>[]>([]);
+  const [csvProjectName, setCsvProjectName] = useState('');
 
   // ESC to close (with confirm if past step 1)
   useEffect(() => {
@@ -151,35 +164,31 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
     setStep(5);
     setProgress(0);
 
-    // Simulate or actually import
-    const selected = trProjects.filter(p => p.selected);
-    if (selected.length === 0) { setImporting(false); return; }
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Animate progress while creating project + test cases in Supabase
       let prog = 0;
       const tick = setInterval(() => {
         prog = Math.min(prog + Math.random() * 12 + 3, 95);
         setProgress(Math.round(prog));
       }, 400);
 
-      // Create a project in Supabase for each selected TestRail project
       let lastProjectId: string | undefined;
       let totalCases = 0;
       let totalRuns = 0;
+      let totalFolders = 0;
 
-      for (const trp of selected) {
+      if (method === 'csv') {
+        // ── CSV import ──────────────────────────────────────────
+        const projectName = csvProjectName.trim() || 'Imported from CSV';
         const { data: proj, error: projErr } = await supabase.from('projects').insert([{
-          name: trp.name,
-          description: `Imported from TestRail`,
+          name: projectName,
+          description: 'Imported from TestRail CSV export',
           status: 'active',
-          prefix: trp.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 3),
+          prefix: projectName.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 3),
           owner_id: user.id,
         }]).select('id').single();
-
         if (projErr) throw projErr;
         lastProjectId = proj.id;
 
@@ -187,31 +196,72 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
           project_id: proj.id, user_id: user.id, role: 'owner', invited_by: user.id,
         }], { onConflict: 'project_id,user_id' });
 
-        totalCases += trp.caseCount || 0;
-        totalRuns += trp.runCount || 0;
+        const priorityMap: Record<string, string> = {
+          'Critical': 'critical', 'High': 'high', 'Medium': 'medium', 'Low': 'low',
+          '4': 'critical', '3': 'high', '2': 'medium', '1': 'low',
+        };
+        const folders = new Set<string>();
+        const tcs = csvRows.map(row => {
+          const folder = row['Section'] || row['Suite'] || null;
+          if (folder) folders.add(folder);
+          return {
+            project_id: proj.id,
+            title: (row['Title'] || '').trim() || 'Untitled',
+            priority: priorityMap[row['Priority']] || 'medium',
+            folder: folder || null,
+            status: 'untested',
+            lifecycle_status: 'draft',
+            is_automated: (row['Automation Type'] || '').toLowerCase() !== 'none' && (row['Automation Type'] || '').trim() !== '',
+            created_by: user.id,
+          };
+        });
+
+        for (let i = 0; i < tcs.length; i += 50) {
+          const { error: tcErr } = await supabase.from('test_cases').insert(tcs.slice(i, i + 50));
+          if (tcErr) console.error('TC insert error:', tcErr);
+        }
+        totalCases = tcs.length;
+        totalFolders = folders.size;
+      } else {
+        // ── API import ──────────────────────────────────────────
+        const selected = trProjects.filter(p => p.selected);
+        if (selected.length === 0) { setImporting(false); return; }
+
+        for (const trp of selected) {
+          const { data: proj, error: projErr } = await supabase.from('projects').insert([{
+            name: trp.name,
+            description: 'Imported from TestRail',
+            status: 'active',
+            prefix: trp.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 3),
+            owner_id: user.id,
+          }]).select('id').single();
+          if (projErr) throw projErr;
+          lastProjectId = proj.id;
+
+          await supabase.from('project_members').upsert([{
+            project_id: proj.id, user_id: user.id, role: 'owner', invited_by: user.id,
+          }], { onConflict: 'project_id,user_id' });
+
+          totalCases += trp.caseCount || 0;
+          totalRuns += trp.runCount || 0;
+        }
+        totalFolders = Math.ceil(totalCases / 10);
       }
 
       clearInterval(tick);
       setProgress(100);
-
       setSummary({
         cases: totalCases,
-        folders: Math.ceil(totalCases / 10),
+        folders: totalFolders,
         runs: includeRuns ? totalRuns : 0,
         results: includeResults ? totalRuns * 20 : 0,
         projectId: lastProjectId,
       });
-
       setTimeout(() => { setImporting(false); setStep(6); }, 600);
     } catch (e) {
       console.error('Import error:', e);
       setImporting(false);
     }
-  };
-
-  const handleCSV = () => {
-    onClose();
-    onOpenCSV?.();
   };
 
   // ── Layout helpers ────────────────────────────────────────────────────────────
@@ -266,9 +316,9 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
           {isWizard && (
             <div
               className="flex-shrink-0 py-4"
-              style={{ width: '160px', background: '#F8FAFC', borderRight: '1px solid #E2E8F0' }}
+              style={{ width: '164px', background: '#F8FAFC', borderRight: '1px solid #E2E8F0' }}
             >
-              {STEPS.map(s => {
+              {(method === 'csv' ? CSV_STEPS : API_STEPS).map(s => {
                 const done = s.num < step;
                 const active = s.num === step;
                 return (
@@ -305,8 +355,8 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
 
           {/* Main content */}
           <div className="flex-1 overflow-y-auto" style={{ padding: '1.25rem' }}>
-            {step === 1 && <Step1 method={method} setMethod={setMethod} onCSV={handleCSV} onNext={() => setStep(2)} onClose={onClose} />}
-            {step === 2 && <Step2 creds={creds} setCreds={setCreds} showKey={showKey} setShowKey={setShowKey} connecting={connecting} error={connError} onBack={() => setStep(1)} onConnect={handleConnect} />}
+            {step === 1 && <Step1 method={method} setMethod={setMethod} onNext={() => setStep(2)} onClose={onClose} />}
+            {step === 2 && <Step2 method={method} creds={creds} setCreds={setCreds} showKey={showKey} setShowKey={setShowKey} connecting={connecting} error={connError} onBack={() => setStep(1)} onConnect={handleConnect} csvFile={csvFile} setCsvFile={setCsvFile} csvRows={csvRows} setCsvRows={setCsvRows} csvProjectName={csvProjectName} setCsvProjectName={setCsvProjectName} onContinueCSV={handleStartImport} />}
             {step === 3 && <Step3 projects={trProjects} toggle={toggleProject} includeRuns={includeRuns} setIncludeRuns={setIncludeRuns} includeResults={includeResults} setIncludeResults={setIncludeResults} onBack={() => setStep(2)} onNext={() => setStep(4)} />}
             {step === 4 && <Step4 onBack={() => setStep(3)} onImport={handleStartImport} />}
             {step === 5 && <Step5 progress={progress} />}
@@ -319,9 +369,9 @@ export default function TestRailImportModal({ onClose, onOpenCSV }: TestRailImpo
 }
 
 // ── Step 1: Method Selection ─────────────────────────────────────────────────
-function Step1({ method, setMethod, onCSV, onNext, onClose }: {
+function Step1({ method, setMethod, onNext, onClose }: {
   method: Method; setMethod: (m: Method) => void;
-  onCSV: () => void; onNext: () => void; onClose: () => void;
+  onNext: () => void; onClose: () => void;
 }) {
   return (
     <div>
@@ -355,7 +405,7 @@ function Step1({ method, setMethod, onCSV, onNext, onClose }: {
       </div>
       <div className="flex justify-end gap-2">
         <button onClick={onClose} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">Cancel</button>
-        <button onClick={method === 'csv' ? onCSV : onNext} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
+        <button onClick={onNext} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
           Continue <i className="ri-arrow-right-line text-sm"></i>
         </button>
       </div>
@@ -363,13 +413,141 @@ function Step1({ method, setMethod, onCSV, onNext, onClose }: {
   );
 }
 
-// ── Step 2: Authentication ────────────────────────────────────────────────────
-function Step2({ creds, setCreds, showKey, setShowKey, connecting, error, onBack, onConnect }: {
+// ── Step 2: Authentication (API) or File Upload (CSV) ────────────────────────
+function Step2({ method, creds, setCreds, showKey, setShowKey, connecting, error, onBack, onConnect,
+  csvFile, setCsvFile, csvRows, setCsvRows, csvProjectName, setCsvProjectName, onContinueCSV,
+}: {
+  method: Method;
   creds: CredentialsState; setCreds: (c: CredentialsState) => void;
   showKey: boolean; setShowKey: (v: boolean) => void;
   connecting: boolean; error: string;
   onBack: () => void; onConnect: () => void;
+  csvFile: File | null; setCsvFile: (f: File | null) => void;
+  csvRows: Record<string, string>[]; setCsvRows: (r: Record<string, string>[]) => void;
+  csvProjectName: string; setCsvProjectName: (n: string) => void;
+  onContinueCSV: () => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [parseError, setParseError] = useState('');
+
+  const handleFileSelect = (file: File) => {
+    setParseError('');
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      setParseError('Please select a .csv file');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const rows = parseCSV(text);
+      if (rows.length === 0) {
+        setParseError('The file appears to be empty or has no data rows.');
+        return;
+      }
+      setCsvFile(file);
+      setCsvRows(rows);
+      if (!csvProjectName) setCsvProjectName(file.name.replace(/\.csv$/i, ''));
+    };
+    reader.readAsText(file);
+  };
+
+  // ── CSV upload UI ──────────────────────────────────────────────────────────
+  if (method === 'csv') {
+    return (
+      <div>
+        <h4 className="text-[0.875rem] font-bold text-[#0F172A] mb-1">Upload TestRail CSV Export</h4>
+        <p className="text-[0.75rem] text-[#64748B] mb-3">Export your test cases from TestRail (CSV format) and upload the file here.</p>
+
+        {/* Hidden native file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileSelect(file);
+            e.target.value = '';
+          }}
+        />
+
+        {/* Drop zone */}
+        <div
+          className="rounded-[10px] border-2 border-dashed flex flex-col items-center justify-center text-center cursor-pointer transition-all mb-3"
+          style={{
+            borderColor: dragOver ? '#6366F1' : csvFile ? '#22C55E' : '#CBD5E1',
+            background: dragOver ? '#EEF2FF' : csvFile ? '#F0FDF4' : '#F8FAFC',
+            padding: '2rem 1rem',
+            minHeight: '140px',
+          }}
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) handleFileSelect(file);
+          }}
+        >
+          {csvFile ? (
+            <>
+              <i className="ri-file-check-2-line text-2xl text-[#22C55E] mb-2"></i>
+              <p className="text-[0.8125rem] font-semibold text-[#0F172A] mb-0.5">{csvFile.name}</p>
+              <p className="text-[0.75rem] font-semibold text-[#22C55E]">{csvRows.length} test case{csvRows.length !== 1 ? 's' : ''} found</p>
+              <p className="text-[0.6875rem] text-[#94A3B8] mt-1">Click to choose a different file</p>
+            </>
+          ) : (
+            <>
+              <i className="ri-upload-2-line text-2xl text-[#94A3B8] mb-2"></i>
+              <p className="text-[0.8125rem] font-semibold text-[#374151] mb-0.5">Drop CSV file here or click to browse</p>
+              <p className="text-[0.6875rem] text-[#94A3B8]">Accepts TestRail CSV export format (.csv)</p>
+            </>
+          )}
+        </div>
+
+        {parseError && (
+          <div className="flex items-start gap-2 mb-3 p-[0.5rem_0.75rem] rounded-[7px] bg-red-50 border border-red-200 text-[0.6875rem] text-red-700">
+            <i className="ri-error-warning-line flex-shrink-0 mt-px"></i>
+            <span>{parseError}</span>
+          </div>
+        )}
+
+        {csvFile && (
+          <div className="mb-3">
+            <label className={labelCls}>Project Name</label>
+            <input
+              className={fieldCls}
+              placeholder="Enter project name"
+              value={csvProjectName}
+              onChange={(e) => setCsvProjectName(e.target.value)}
+            />
+          </div>
+        )}
+
+        <div className={`${helpBoxCls} mb-4`}>
+          <i className="ri-information-line flex-shrink-0 mt-px"></i>
+          <div>In TestRail: <strong className="text-[#374151]">Test Cases → Export → CSV</strong>. Ensure the file includes Title, Section, and Priority columns.</div>
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <button onClick={onBack} className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px]">
+            <i className="ri-arrow-left-line text-sm"></i> Back
+          </button>
+          <button
+            onClick={onContinueCSV}
+            disabled={!csvFile || csvRows.length === 0}
+            className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer transition-colors px-[0.875rem] py-[0.4375rem] rounded-[7px] disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <i className="ri-download-2-line text-sm"></i> Start Import
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── API auth UI ────────────────────────────────────────────────────────────
   return (
     <div>
       <h4 className="text-[0.875rem] font-bold text-[#0F172A] mb-1">Connect to TestRail</h4>
