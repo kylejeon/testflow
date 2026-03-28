@@ -89,14 +89,13 @@ const TIER_INFO = {
 };
 
 function DangerZoneSection({ email }: { email: string }) {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
-  const confirmed = confirmText === email;
 
   const handleDeleteAccount = async () => {
-    if (!confirmed) return;
-    if (!window.confirm(`Permanently delete your account (${email})? This cannot be undone.`)) return;
+    if (confirmText !== email) return;
     try {
       setDeleting(true);
       await supabase.auth.signOut();
@@ -108,32 +107,55 @@ function DangerZoneSection({ email }: { email: string }) {
   };
 
   return (
-    <div className="mt-6 bg-white border border-red-200 rounded-[0.625rem] p-6">
-      <h3 className="text-[0.9375rem] font-bold text-red-600 mb-1 flex items-center gap-2">
-        <i className="ri-error-warning-line"></i>
-        Danger Zone
-      </h3>
-      <p className="text-[0.8125rem] text-[#64748B] mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
-      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-        <p className="text-[0.8125rem] font-semibold text-[#1E293B] mb-2">
-          Type your email address to confirm: <span className="font-mono text-red-600">{email}</span>
-        </p>
-        <input
-          type="text"
-          value={confirmText}
-          onChange={(e) => setConfirmText(e.target.value)}
-          placeholder={email}
-          className="w-full px-3 py-2 border border-red-200 rounded-md text-[0.8125rem] mb-3 focus:outline-none focus:border-red-400 bg-white"
-        />
+    <>
+      <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-[0.625rem] p-6 mb-5">
+        <h3 className="text-[0.9375rem] font-bold text-[#DC2626] mb-1 flex items-center gap-2">
+          <i className="ri-error-warning-fill"></i>
+          Danger Zone
+        </h3>
+        <p className="text-[0.8125rem] text-[#991B1B] mb-4">Once you delete your account, there is no going back. Please be certain.</p>
         <button
-          onClick={handleDeleteAccount}
-          disabled={!confirmed || deleting}
-          className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+          onClick={() => setShowConfirmModal(true)}
+          className="inline-flex items-center gap-[0.3125rem] text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#EF4444] text-white hover:bg-[#DC2626] transition-colors cursor-pointer"
         >
-          {deleting ? <><i className="ri-loader-4-line animate-spin"></i>Deleting...</> : <><i className="ri-delete-bin-line"></i>Delete Account</>}
+          <i className="ri-delete-bin-line"></i>
+          Delete Account
         </button>
       </div>
-    </div>
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-[0.75rem] p-6 w-[420px] shadow-xl">
+            <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-1">Delete Account</h3>
+            <p className="text-[0.8125rem] text-[#64748B] mb-4">
+              This action cannot be undone. Type your email <span className="font-mono font-semibold text-[#DC2626]">{email}</span> to confirm.
+            </p>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={email}
+              className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md text-[0.8125rem] mb-4 focus:outline-none focus:border-[#EF4444] bg-[#F8FAFC]"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => { setShowConfirmModal(false); setConfirmText(''); }}
+                className="px-4 py-[0.4375rem] rounded-md text-[0.8125rem] font-semibold text-[#64748B] border border-[#E2E8F0] hover:bg-[#F8FAFC] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={confirmText !== email || deleting}
+                className="inline-flex items-center gap-[0.3125rem] px-4 py-[0.4375rem] rounded-md text-[0.8125rem] font-semibold bg-[#EF4444] text-white hover:bg-[#DC2626] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {deleting ? <><i className="ri-loader-4-line animate-spin"></i>Deleting...</> : <><i className="ri-delete-bin-line"></i>Delete Account</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -1019,11 +1041,11 @@ def pytest_sessionfinish(session, exitstatus):
             <div className="flex items-center gap-0 border-t border-[#E2E8F0] overflow-x-auto" style={{ height: '2.625rem' }}>
               {([
                 { key: 'profile',       label: 'Profile',       icon: 'ri-user-settings-fill',  iconColor: '#8B5CF6' },
-                { key: 'billing',       label: 'Billing',       icon: 'ri-bank-card-fill',       iconColor: '#3B82F6' },
-                { key: 'preferences',   label: 'Preferences',   icon: 'ri-equalizer-fill',       iconColor: '#6366F1' },
+                { key: 'billing',       label: 'Billing',       icon: 'ri-bank-card-fill',       iconColor: '#6366F1' },
+                { key: 'preferences',   label: 'Preferences',   icon: 'ri-equalizer-fill',       iconColor: '#3B82F6' },
                 { key: 'members',       label: 'Members',       icon: 'ri-team-fill',            iconColor: '#22C55E' },
                 { key: 'integrations',  label: 'Integrations',  icon: 'ri-plug-fill',            iconColor: '#F59E0B' },
-                { key: 'api',           label: 'API & Tokens',  icon: 'ri-key-2-fill',           iconColor: '#0EA5E9' },
+                { key: 'api',           label: 'API & Tokens',  icon: 'ri-key-2-fill',           iconColor: '#EC4899' },
                 { key: 'notifications', label: 'Notifications', icon: 'ri-notification-3-fill',  iconColor: '#EF4444' },
               ] as { key: 'profile' | 'billing' | 'preferences' | 'members' | 'integrations' | 'api' | 'notifications'; label: string; icon: string; iconColor: string }[]).map(tab => (
                 <button
