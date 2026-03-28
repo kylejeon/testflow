@@ -100,7 +100,7 @@ export default function MilestoneDetail() {
   const [activityStats, setActivityStats] = useState({ notes: 0, passed: 0, failed: 0, retest: 0 });
   const [activityStatusFilter, setActivityStatusFilter] = useState<string>('all');
   const [activityPage, setActivityPage] = useState(1);
-  const [contributorProfiles, setContributorProfiles] = useState<Map<string, string | null>>(new Map());
+  const [contributorProfiles, setContributorProfiles] = useState<Map<string, { name: string | null; url: string | null }>>(new Map());
   const [tcStats, setTcStats] = useState<TcStats>({ passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, total: 0, passRate: 0 });
   const [failedBlockedTcs, setFailedBlockedTcs] = useState<FailedBlockedTcItem[]>([]);
   const activityPerPage = 10;
@@ -368,18 +368,20 @@ export default function MilestoneDetail() {
     try {
       const validAuthors = authors.filter(a => a && a !== 'Unknown');
       if (validAuthors.length === 0) return;
-      const { data } = await supabase
+      const orClause = validAuthors.map(a => `full_name.eq.${a}`).join(',') + ',' + validAuthors.map(a => `email.eq.${a}`).join(',');
+      const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, email, avatar_emoji')
-        .or(
-          validAuthors.map(a => `full_name.eq.${a}`).join(',') +
-          ',' +
-          validAuthors.map(a => `email.eq.${a}`).join(',')
-        );
-      const profileMap = new Map<string, string | null>();
-      (data || []).forEach(p => {
-        if (p.full_name && validAuthors.includes(p.full_name)) profileMap.set(p.full_name, p.avatar_emoji || null);
-        if (p.email && validAuthors.includes(p.email)) profileMap.set(p.email, p.avatar_emoji || null);
+        .select('full_name, email, avatar_url')
+        .or(orClause);
+      // fallback without avatar_url if column doesn't exist
+      const rows = error
+        ? ((await supabase.from('profiles').select('full_name, email').or(orClause)).data || [])
+        : (data || []);
+      const profileMap = new Map<string, { name: string | null; url: string | null }>();
+      rows.forEach((p: any) => {
+        const info = { name: p.full_name || null, url: p.avatar_url || null };
+        if (p.full_name && validAuthors.includes(p.full_name)) profileMap.set(p.full_name, info);
+        if (p.email && validAuthors.includes(p.email)) profileMap.set(p.email, info);
       });
       setContributorProfiles(profileMap);
     } catch (e) {
@@ -798,11 +800,14 @@ export default function MilestoneDetail() {
                           {run.authors && run.authors.length > 0 && (
                             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                               {run.authors.map((author, idx) => {
-                                const emoji = contributorProfiles.get(author);
+                                const profile = contributorProfiles.get(author);
+                                const initials = profile?.name ? getContributorInitials(profile.name) : getContributorInitials(author);
                                 const bg = getAuthorColor(author);
-                                return (
-                                  <div key={idx} title={author} style={{ width: '1.375rem', height: '1.375rem', borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: emoji ? '0.625rem' : '0.4375rem', fontWeight: 700, color: '#fff', border: '2px solid #fff', marginLeft: idx > 0 ? '-0.375rem' : 0, flexShrink: 0 }}>
-                                    {emoji || getContributorInitials(author)}
+                                return profile?.url ? (
+                                  <img key={idx} src={profile.url} title={profile.name || author} alt={initials} style={{ width: '1.375rem', height: '1.375rem', borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff', marginLeft: idx > 0 ? '-0.375rem' : 0, flexShrink: 0 }} />
+                                ) : (
+                                  <div key={idx} title={profile?.name || author} style={{ width: '1.375rem', height: '1.375rem', borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.4375rem', fontWeight: 700, color: '#fff', border: '2px solid #fff', marginLeft: idx > 0 ? '-0.375rem' : 0, flexShrink: 0 }}>
+                                    {initials}
                                   </div>
                                 );
                               })}
@@ -966,9 +971,13 @@ export default function MilestoneDetail() {
                   </div>
                   {contributors.map(([author, count], idx) => (
                     <div key={author} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0', borderBottom: idx < contributors.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
-                      <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: getAuthorColor(author), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: contributorProfiles.get(author) ? '0.875rem' : '0.5625rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                        {contributorProfiles.get(author) || getContributorInitials(author)}
-                      </div>
+                      {contributorProfiles.get(author)?.url ? (
+                        <img src={contributorProfiles.get(author)!.url!} alt={author} style={{ width: '2rem', height: '2rem', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: getAuthorColor(author), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                          {contributorProfiles.get(author)?.name ? getContributorInitials(contributorProfiles.get(author)!.name!) : getContributorInitials(author)}
+                        </div>
+                      )}
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>{author}</div>
                       </div>
