@@ -1,33 +1,40 @@
-Deno.serve(async (req: Request) => {
-  try {
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
-    }
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-    const body = await req.json().catch(() => null);
-    if (!body || !body.url) {
-      return new Response(JSON.stringify({ error: 'Invalid payload: missing "url"' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    }
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
-    const webhookUrl = body.url;
-    const payload = body.payload ?? {};
-    const method = (body.method ?? 'POST').toUpperCase();
-    const headers = Object.assign({ 'Content-Type': 'application/json' }, body.headers ?? {});
-
-    const resp = await fetch(webhookUrl, {
-      method,
-      headers,
-      body: method === 'GET' || method === 'HEAD' ? undefined : JSON.stringify(payload),
-    });
-
-    const text = await resp.text();
-
-    return new Response(JSON.stringify({ status: resp.status, body: text }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (err) {
-    console.error('send-webhook error', err);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
   }
-});
+
+  try {
+    const { url, payload } = await req.json()
+
+    if (!url || !payload) {
+      return new Response(JSON.stringify({ error: 'url and payload are required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    const status = res.status
+    return new Response(JSON.stringify({ status, ok: res.ok }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+})

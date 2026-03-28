@@ -600,14 +600,22 @@ export default function SettingsPage() {
     setWebhookTestResult(null);
     try {
       const project = webhookProjects.find(p => p.id === wh.project_id);
+      const projectName = project?.name ?? 'your project';
       const projectLink = `https://www.testably.app/projects/${wh.project_id}`;
+      // Slack Incoming Webhooks accept simple {"text": "..."} — use that to maximise compatibility
       const testPayload = wh.type === 'slack'
-        ? { blocks: [{ type: 'header', text: { type: 'plain_text', text: '🧪 Testably Test Message', emoji: true } }, { type: 'section', text: { type: 'mrkdwn', text: `Webhook connection verified for *${project?.name ?? 'your project'}*.` } }] }
-        : { type: 'message', attachments: [{ contentType: 'application/vnd.microsoft.card.adaptive', contentUrl: null, content: { $schema: 'http://adaptivecards.io/schemas/adaptive-card.json', type: 'AdaptiveCard', version: '1.4', body: [{ type: 'TextBlock', size: 'Medium', weight: 'Bolder', text: '🧪 Testably Test Message' }, { type: 'TextBlock', text: `Webhook connection verified for ${project?.name ?? 'your project'}.`, wrap: true }], actions: [{ type: 'Action.OpenUrl', title: 'View in Testably', url: projectLink }] } }] };
-      const res = await fetch(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/send-webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: wh.webhook_url, payload: testPayload }) });
-      const json = await res.json();
-      const ok = res.ok && json.status >= 200 && json.status < 300;
-      setWebhookTestResult({ id: wh.id, ok, msg: ok ? 'Test message sent successfully!' : `Delivery failed (HTTP ${json.status ?? '?'})` });
+        ? { text: `🧪 *Testably Test Message*\nWebhook connection verified for *${projectName}*. <${projectLink}|View in Testably>` }
+        : { type: 'message', attachments: [{ contentType: 'application/vnd.microsoft.card.adaptive', contentUrl: null, content: { $schema: 'http://adaptivecards.io/schemas/adaptive-card.json', type: 'AdaptiveCard', version: '1.4', body: [{ type: 'TextBlock', size: 'Medium', weight: 'Bolder', text: '🧪 Testably Test Message' }, { type: 'TextBlock', text: `Webhook connection verified for ${projectName}.`, wrap: true }], actions: [{ type: 'Action.OpenUrl', title: 'View in Testably', url: projectLink }] } }] };
+      const edgeFnUrl = `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/send-webhook`;
+      const res = await fetch(edgeFnUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: wh.webhook_url, payload: testPayload }),
+      });
+      const json = await res.json().catch(() => ({}));
+      const httpStatus = typeof json.status === 'number' ? json.status : (res.ok ? 200 : 500);
+      const ok = res.ok && httpStatus >= 200 && httpStatus < 300;
+      setWebhookTestResult({ id: wh.id, ok, msg: ok ? 'Test message sent successfully!' : `Delivery failed (HTTP ${httpStatus})` });
     } catch (err: any) {
       setWebhookTestResult({ id: wh.id, ok: false, msg: err.message ?? 'Network error' });
     } finally {
@@ -1424,7 +1432,8 @@ def pytest_sessionfinish(session, exitstatus):
 
                   {activeTab === 'integrations' && (
                     <div className="space-y-5">
-                      {/* ── Jira Integration ── */}
+
+                      {/* ════════ Jira Integration ════════ */}
                       <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
                         <div className="flex items-center justify-between mb-0.5">
                           <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-1.5">
@@ -1439,28 +1448,23 @@ def pytest_sessionfinish(session, exitstatus):
                         <p className="text-[0.8125rem] text-[#64748B] mb-5">Connect your Jira account to create issues directly from test results.</p>
 
                         {!isStarterOrHigher && (
-                          <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl">
-                            <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <i className="ri-lock-line text-yellow-600 text-xl"></i>
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900 mb-1">Jira Integration is available on Starter and above</h3>
-                                <p className="text-sm text-gray-600 mb-3">
-                                  Create Jira issues directly from test results and enhance team collaboration.
-                                </p>
-                                <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-block px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all cursor-pointer whitespace-nowrap">
-                                  <i className="ri-arrow-up-circle-line mr-2"></i>
-                                  Contact Us to Upgrade
-                                </a>
-                              </div>
+                          <div className="mb-4 p-4 border border-[#FDE68A] rounded-[0.75rem] flex items-start gap-3" style={{ background: 'linear-gradient(to right,#FEF9C3,#FEF3C7)' }}>
+                            <div className="w-10 h-10 bg-[#FEF08A] rounded-[0.5rem] flex items-center justify-center flex-shrink-0">
+                              <i className="ri-lock-line text-[#CA8A04]" style={{ fontSize: '1.25rem' }}></i>
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-1">Jira Integration is available on Starter and above</div>
+                              <div className="text-[0.75rem] text-[#64748B] mb-2.5">Create Jira issues directly from test results and enhance team collaboration.</div>
+                              <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#CA8A04' }}>
+                                <i className="ri-arrow-up-circle-line"></i> Contact Us to Upgrade
+                              </a>
                             </div>
                           </div>
                         )}
 
                         {loading ? (
                           <div className="flex justify-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6366F1]"></div>
                           </div>
                         ) : (
                           <div className={`${!isStarterOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -1625,18 +1629,16 @@ def pytest_sessionfinish(session, exitstatus):
                         <p className="text-[0.8125rem] text-[#64748B] mb-5">Send real-time notifications to Slack or Microsoft Teams when events occur in your projects.</p>
 
                         {!isStarterOrHigher && (
-                          <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl">
-                            <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <i className="ri-lock-line text-yellow-600 text-xl"></i>
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900 mb-1">Slack &amp; Teams Integration is available on Starter and above</h3>
-                                <p className="text-sm text-gray-600 mb-3">Get real-time notifications in Slack or Microsoft Teams when test runs complete, milestones change, and more.</p>
-                                <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-block px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-all cursor-pointer whitespace-nowrap">
-                                  <i className="ri-arrow-up-circle-line mr-2"></i>Contact Us to Upgrade
-                                </a>
-                              </div>
+                          <div className="mb-4 p-4 border border-[#FDE68A] rounded-[0.75rem] flex items-start gap-3" style={{ background: 'linear-gradient(to right,#FEF9C3,#FEF3C7)' }}>
+                            <div className="w-10 h-10 bg-[#FEF08A] rounded-[0.5rem] flex items-center justify-center flex-shrink-0">
+                              <i className="ri-lock-line text-[#CA8A04]" style={{ fontSize: '1.25rem' }}></i>
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-1">Slack &amp; Teams Integration is available on Starter and above</div>
+                              <div className="text-[0.75rem] text-[#64748B] mb-2.5">Get real-time notifications in Slack or Microsoft Teams when test runs complete, milestones change, and more.</div>
+                              <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#CA8A04' }}>
+                                <i className="ri-arrow-up-circle-line"></i> Contact Us to Upgrade
+                              </a>
                             </div>
                           </div>
                         )}
@@ -1797,30 +1799,27 @@ def pytest_sessionfinish(session, exitstatus):
                         <p className="text-[0.8125rem] text-[#64748B] mb-5">Connect your CI/CD pipeline to automatically report test results.</p>
 
                         {!isProfessionalOrHigher && (
-                          <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 rounded-xl">
-                            <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <i className="ri-lock-line text-indigo-600 text-xl"></i>
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900 mb-1">CI/CD Integration is available on Professional and above</h3>
-                                <p className="text-sm text-gray-600 mb-3">Upload results directly from your automated test pipelines.</p>
-                                <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap">
-                                  <i className="ri-arrow-up-circle-line mr-2"></i>
-                                  Contact Us to Upgrade
-                                </a>
-                              </div>
+                          <div className="mb-4 p-4 border border-[#C7D2FE] rounded-[0.75rem] flex items-start gap-3" style={{ background: 'linear-gradient(to right,#EEF2FF,#F5F3FF)' }}>
+                            <div className="w-10 h-10 bg-[#C7D2FE] rounded-[0.5rem] flex items-center justify-center flex-shrink-0">
+                              <i className="ri-lock-line text-[#4F46E5]" style={{ fontSize: '1.25rem' }}></i>
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-1">CI/CD Integration is available on Professional and above</div>
+                              <div className="text-[0.75rem] text-[#64748B] mb-2.5">Upload results directly from your automated test pipelines.</div>
+                              <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#6366F1' }}>
+                                <i className="ri-arrow-up-circle-line"></i> Contact Us to Upgrade
+                              </a>
                             </div>
                           </div>
                         )}
 
                         <div className={`space-y-6 ${!isProfessionalOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
                           {ciTokens.length === 0 ? (
-                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-                              <i className="ri-information-line text-amber-500 text-lg flex-shrink-0 mt-0.5"></i>
+                            <div className="p-4 bg-[#FFFBEB] border border-[#FDE68A] rounded-[0.75rem] flex items-start gap-3">
+                              <i className="ri-information-line text-[#D97706] text-lg flex-shrink-0 mt-0.5"></i>
                               <div>
-                                <p className="text-sm font-semibold text-amber-800 mb-1">Create an API token first</p>
-                                <p className="text-sm text-amber-700">
+                                <p className="text-[0.8125rem] font-semibold text-[#92400E] mb-1">Create an API token first</p>
+                                <p className="text-[0.8125rem] text-[#A16207]">
                                   Go to the{' '}
                                   <button onClick={() => setActiveTab('api')} className="font-semibold underline cursor-pointer">API &amp; Tokens</button>
                                   {' '}tab to create a token before setting up CI/CD integration.
@@ -1872,18 +1871,56 @@ def pytest_sessionfinish(session, exitstatus):
                               </div>
 
                               {selectedPlatform === 'python' ? (
-                                <div className="bg-gray-900 rounded-lg p-4 relative">
-                                  <button onClick={() => handleCopyToken(getPythonFunctionSnippet())} className="absolute top-4 right-4 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap">
-                                    {copiedToken === getPythonFunctionSnippet() ? <><i className="ri-check-line mr-1"></i>Copied</> : <><i className="ri-file-copy-line mr-1"></i>Copy</>}
+                                <div className="relative mt-3">
+                                  <button
+                                    onClick={() => handleCopyToken(getPythonFunctionSnippet())}
+                                    className="absolute top-2 right-2 flex items-center gap-1 px-2.5 py-[0.3125rem] rounded-[0.375rem] text-[0.6875rem] cursor-pointer transition-all z-10"
+                                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: copiedToken === getPythonFunctionSnippet() ? '#86EFAC' : '#94A3B8' }}
+                                  >
+                                    <i className={copiedToken === getPythonFunctionSnippet() ? 'ri-check-line' : 'ri-file-copy-line'}></i>
+                                    {copiedToken === getPythonFunctionSnippet() ? 'Copied' : 'Copy'}
                                   </button>
-                                  <pre className="text-sm text-gray-100 overflow-x-auto font-mono whitespace-pre"><code>{getPythonFunctionSnippet()}</code></pre>
+                                  <pre className="overflow-x-auto font-mono whitespace-pre p-4 rounded-[0.5rem]" style={{ background: '#1E293B', color: '#E2E8F0', fontSize: '0.75rem', lineHeight: '1.6' }}><code>{getPythonFunctionSnippet()}</code></pre>
+                                  <div className="mt-3 p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[0.5rem]">
+                                    <div className="flex items-start gap-2">
+                                      <i className="ri-information-line text-[#64748B] flex-shrink-0 mt-0.5"></i>
+                                      <div className="text-[0.75rem] text-[#475569]">
+                                        <div className="font-semibold mb-1.5">How to use:</div>
+                                        <div className="text-[#64748B] leading-relaxed">
+                                          1. Register your token in the <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">TESTABLY_TOKEN</code> environment variable<br />
+                                          2. Pass the test case ID and result to <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">report_result()</code><br />
+                                          3. Replace <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">run_id</code> with the Run ID from Testably<br />
+                                          4. Status values: <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">passed</code> / <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">failed</code> / <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">blocked</code> / <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">retest</code>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               ) : (
-                                <div className="bg-gray-900 rounded-lg p-4 relative">
-                                  <button onClick={() => handleCopyToken(getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token))} className="absolute top-4 right-4 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap">
-                                    {copiedToken === getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token) ? <><i className="ri-check-line mr-1"></i>Copied</> : <><i className="ri-file-copy-line mr-1"></i>Copy</>}
+                                <div className="relative mt-3">
+                                  <button
+                                    onClick={() => handleCopyToken(getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token))}
+                                    className="absolute top-2 right-2 flex items-center gap-1 px-2.5 py-[0.3125rem] rounded-[0.375rem] text-[0.6875rem] cursor-pointer transition-all z-10"
+                                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: copiedToken === getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token) ? '#86EFAC' : '#94A3B8' }}
+                                  >
+                                    <i className={copiedToken === getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token) ? 'ri-check-line' : 'ri-file-copy-line'}></i>
+                                    {copiedToken === getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token) ? 'Copied' : 'Copy'}
                                   </button>
-                                  <pre className="text-sm text-gray-100 overflow-x-auto font-mono"><code>{getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token)}</code></pre>
+                                  <pre className="overflow-x-auto font-mono p-4 rounded-[0.5rem]" style={{ background: '#1E293B', color: '#E2E8F0', fontSize: '0.75rem', lineHeight: '1.6' }}><code>{getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token)}</code></pre>
+                                  <div className="mt-3 p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[0.5rem]">
+                                    <div className="flex items-start gap-2">
+                                      <i className="ri-information-line text-[#64748B] flex-shrink-0 mt-0.5"></i>
+                                      <div className="text-[0.75rem] text-[#475569]">
+                                        <div className="font-semibold mb-1.5">How to use:</div>
+                                        <div className="text-[#64748B] leading-relaxed">
+                                          1. Register the environment variables in {selectedPlatform === 'github' ? 'GitHub Secrets' : 'GitLab CI/CD Variables'}<br />
+                                          2. Copy the YAML code and add to your {selectedPlatform === 'github' ? '.github/workflows/*.yml' : '.gitlab-ci.yml'}<br />
+                                          3. Set <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">test_case_id</code> to your test case ID (e.g. SUI-1)<br />
+                                          4. Set status to passed/failed/blocked based on test outcome
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               )}
                             </div>
