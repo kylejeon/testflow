@@ -335,10 +335,10 @@ export default function MilestoneDetail() {
         logs.forEach(log => { if (log.type in counts) counts[log.type]++; });
         const total = logs.length;
         const segments = [
-          { color: '#3B82F6', count: counts.note },
-          { color: '#22C55E', count: counts.passed },
-          { color: '#EF4444', count: counts.failed },
-          { color: '#F59E0B', count: counts.blocked },
+          { color: '#6366F1', count: counts.note },    // Note → indigo
+          { color: '#7C3AED', count: counts.passed },  // Step → violet
+          { color: '#EF4444', count: counts.failed },  // Bug → red
+          { color: '#F59E0B', count: counts.blocked }, // Observation → amber
         ].filter(s => s.count > 0);
         if (segments.length === 0) return [{ color: '#E2E8F0', pct: 100 }];
         const result = segments.map(s => ({ color: s.color, pct: Math.round((s.count / total) * 100) }));
@@ -746,7 +746,9 @@ export default function MilestoneDetail() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {runs.map(run => {
                     const rp = calculateRunProgress(run);
-                    const completionRate = rp.passed + rp.failed + rp.blocked + rp.retest;
+                    const _total = run.test_case_ids.length;
+                    const _completed = (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0);
+                    const completionRate = _total > 0 ? Math.round((_completed / _total) * 100) : 0;
                     const untestedPct = Math.max(0, 100 - completionRate);
                     const runStyle = getRunStatusStyle(run.status);
                     return (
