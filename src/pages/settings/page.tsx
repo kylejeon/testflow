@@ -88,8 +88,57 @@ const TIER_INFO = {
   },
 };
 
+function DangerZoneSection({ email }: { email: string }) {
+  const [confirmText, setConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const navigate = useNavigate();
+  const confirmed = confirmText === email;
+
+  const handleDeleteAccount = async () => {
+    if (!confirmed) return;
+    if (!window.confirm(`Permanently delete your account (${email})? This cannot be undone.`)) return;
+    try {
+      setDeleting(true);
+      await supabase.auth.signOut();
+      navigate('/auth');
+    } catch (e) {
+      console.error('Account deletion error:', e);
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 bg-white border border-red-200 rounded-[0.625rem] p-6">
+      <h3 className="text-[0.9375rem] font-bold text-red-600 mb-1 flex items-center gap-2">
+        <i className="ri-error-warning-line"></i>
+        Danger Zone
+      </h3>
+      <p className="text-[0.8125rem] text-[#64748B] mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
+      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <p className="text-[0.8125rem] font-semibold text-[#1E293B] mb-2">
+          Type your email address to confirm: <span className="font-mono text-red-600">{email}</span>
+        </p>
+        <input
+          type="text"
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          placeholder={email}
+          className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm mb-3 focus:outline-none focus:border-red-400 bg-white"
+        />
+        <button
+          onClick={handleDeleteAccount}
+          disabled={!confirmed || deleting}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {deleting ? <><i className="ri-loader-4-line animate-spin"></i>Deleting...</> : <><i className="ri-delete-bin-line"></i>Delete Account</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'general' | 'integrations' | 'notifications' | 'cicd' | 'profile' | 'members'>('general');
+  const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'preferences' | 'members' | 'integrations' | 'api' | 'notifications'>('profile');
   const [userProjects, setUserProjects] = useState<{ id: string; name: string }[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [showMembersInviteModal, setShowMembersInviteModal] = useState(false);
@@ -120,6 +169,14 @@ export default function SettingsPage() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<'github' | 'gitlab' | 'python'>('github');
 
+  // Preferences state
+  const [language, setLanguage] = useState<'en' | 'ko'>('en');
+  const [timezone, setTimezone] = useState('UTC');
+  const [autoDetectTz, setAutoDetectTz] = useState(true);
+  const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
+  const [timeFormat, setTimeFormat] = useState<'24h' | '12h'>('24h');
+  const [preferencesSaved, setPreferencesSaved] = useState(false);
+
   // Slack / Teams webhook management
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [webhookProjects, setWebhookProjects] = useState<any[]>([]);
@@ -142,9 +199,10 @@ export default function SettingsPage() {
     fetchJiraSettings();
     fetchUserProjects();
     const tab = searchParams.get('tab');
-    if (tab === 'integrations' || tab === 'cicd' || tab === 'notifications' || tab === 'general' || tab === 'profile' || tab === 'members') {
-      setActiveTab(tab as typeof activeTab);
-    }
+    const VALID_TABS = ['profile', 'billing', 'preferences', 'members', 'integrations', 'api', 'notifications'];
+    const TAB_ALIAS: Record<string, typeof activeTab> = { general: 'billing', cicd: 'api' };
+    const resolved = (TAB_ALIAS[tab ?? ''] ?? tab) as typeof activeTab;
+    if (resolved && VALID_TABS.includes(resolved)) setActiveTab(resolved);
   }, []);
 
   const fetchUserProjects = async () => {
@@ -169,7 +227,7 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    if (activeTab === 'cicd') {
+    if (activeTab === 'api' || activeTab === 'integrations') {
       fetchCITokens();
     }
     if (activeTab === 'integrations') {
@@ -879,21 +937,22 @@ def pytest_sessionfinish(session, exitstatus):
       />
       <div className="flex h-screen bg-white">
         <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Link to="/projects" className="flex items-center cursor-pointer">
+          {/* ── 2-Row Unified Header ── */}
+          <header className="bg-white border-b border-[#E2E8F0] flex-shrink-0">
+            {/* Row 1: top bar */}
+            <div className="flex items-center justify-between px-6" style={{ height: '3.25rem' }}>
+              <div className="flex items-center gap-2">
+                <Link to="/projects" className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
                   <LogoMark />
                 </Link>
-                <div className="w-px h-5 bg-gray-300" />
-                <span className="text-sm text-gray-500">Settings</span>
+                <span className="text-[#CBD5E1] text-sm">/</span>
+                <span className="text-[0.875rem] font-semibold text-[#0F172A]">Settings</span>
               </div>
-              
               <div className="flex items-center gap-3">
                 <div className="relative" ref={profileMenuRef}>
                   <div
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden"
+                    className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer overflow-hidden"
                   >
                     {userProfile?.avatar_url ? (
                       <img src={userProfile.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -931,95 +990,50 @@ def pytest_sessionfinish(session, exitstatus):
                 </div>
               </div>
             </div>
+
+            {/* Row 2: Settings Tab Nav */}
+            <div className="flex items-center gap-0 border-t border-[#E2E8F0] overflow-x-auto" style={{ height: '2.625rem' }}>
+              {([
+                { key: 'profile', label: 'Profile', icon: 'ri-user-settings-fill' },
+                { key: 'billing', label: 'Billing', icon: 'ri-bank-card-fill' },
+                { key: 'preferences', label: 'Preferences', icon: 'ri-equalizer-fill' },
+                { key: 'members', label: 'Members', icon: 'ri-team-fill' },
+                { key: 'integrations', label: 'Integrations', icon: 'ri-plug-fill' },
+                { key: 'api', label: 'API & Tokens', icon: 'ri-key-2-fill' },
+                { key: 'notifications', label: 'Notifications', icon: 'ri-notification-3-fill' },
+              ] as const).map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className="flex items-center gap-1.5 px-4 h-full text-[0.8125rem] font-medium whitespace-nowrap cursor-pointer transition-colors flex-shrink-0 border-b-2"
+                  style={{
+                    color: activeTab === tab.key ? '#6366F1' : '#64748B',
+                    borderColor: activeTab === tab.key ? '#6366F1' : 'transparent',
+                    fontWeight: activeTab === tab.key ? 600 : 500,
+                  }}
+                >
+                  <i className={`${tab.icon} text-sm`}></i>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </header>
-          
-          <main className="flex-1 overflow-y-auto bg-gray-50/30">
-            <div className="p-8">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-                <p className="text-gray-600">Manage your application settings and integrations</p>
-              </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="flex border-b border-gray-200">
-                  <button
-                    onClick={() => setActiveTab('profile')}
-                    className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                      activeTab === 'profile'
-                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    <i className="ri-user-settings-line mr-2"></i>
-                    Profile
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('general')}
-                    className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                      activeTab === 'general'
-                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    <i className="ri-settings-3-line mr-2"></i>
-                    General
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('members')}
-                    className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                      activeTab === 'members'
-                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    <i className="ri-team-line mr-2"></i>
-                    Members
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('integrations')}
-                    className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                      activeTab === 'integrations'
-                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    <i className="ri-plug-line mr-2"></i>
-                    Integrations
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('cicd')}
-                    className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                      activeTab === 'cicd'
-                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    <i className="ri-git-branch-line mr-2"></i>
-                    CI/CD
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('notifications')}
-                    className={`px-6 py-4 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                      activeTab === 'notifications'
-                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    <i className="ri-notification-3-line mr-2"></i>
-                    Notifications
-                  </button>
-                </div>
-
-                <div className="p-8">
+          <main className="flex-1 overflow-y-auto" style={{ background: '#F8FAFC' }}>
+            <div className="max-w-3xl mx-auto px-6 py-6">
+                <div>
                   {activeTab === 'profile' && userProfile && (
-                    <ProfileSettingsPanel
-                      fullName={userProfile.full_name}
-                      email={userProfile.email}
-                      avatarEmoji={userProfile.avatar_emoji}
-                      onProfileUpdated={(name, emoji) => {
-                        setUserProfile((prev) => prev ? { ...prev, full_name: name, avatar_emoji: emoji } : prev);
-                      }}
-                    />
+                    <>
+                      <ProfileSettingsPanel
+                        fullName={userProfile.full_name}
+                        email={userProfile.email}
+                        avatarEmoji={userProfile.avatar_emoji}
+                        onProfileUpdated={(name, emoji) => {
+                          setUserProfile((prev) => prev ? { ...prev, full_name: name, avatar_emoji: emoji } : prev);
+                        }}
+                      />
+                      <DangerZoneSection email={userProfile.email} />
+                    </>
                   )}
 
                   {activeTab === 'members' && (
@@ -1072,7 +1086,7 @@ def pytest_sessionfinish(session, exitstatus):
                     </div>
                   )}
 
-                  {activeTab === 'general' && (
+                  {activeTab === 'billing' && (
                     <div className="space-y-8">
                       {/* Trial Banner */}
                       {userProfile?.is_trial && trialDaysLeft !== null && (
@@ -1704,12 +1718,9 @@ def pytest_sessionfinish(session, exitstatus):
                           </div>
                         )}
                       </div>
-                    </div>
-                  )}
 
-                  {activeTab === 'cicd' && (
-                    <div className="space-y-8">
-                      <div>
+                      {/* ── CI/CD Integration ── */}
+                      <div className="pt-4 border-t border-gray-200">
                         <div className="flex items-center justify-between mb-2">
                           <h2 className="text-xl font-bold text-gray-900">CI/CD Integration</h2>
                           {!isProfessionalOrHigher && (
@@ -1719,7 +1730,114 @@ def pytest_sessionfinish(session, exitstatus):
                             </span>
                           )}
                         </div>
-                        <p className="text-gray-600 mb-6">Automatically upload test results from GitHub Actions, GitLab CI, and other CI/CD pipelines</p>
+                        <p className="text-gray-600 mb-6">Automatically upload test results from GitHub Actions, GitLab CI, and Python test suites.</p>
+
+                        {!isProfessionalOrHigher && (
+                          <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 rounded-xl">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i className="ri-lock-line text-indigo-600 text-xl"></i>
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-gray-900 mb-1">CI/CD Integration is available on Professional and above</h3>
+                                <p className="text-sm text-gray-600 mb-3">Upload results directly from your automated test pipelines.</p>
+                                <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap">
+                                  <i className="ri-arrow-up-circle-line mr-2"></i>
+                                  Contact Us to Upgrade
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className={`space-y-6 ${!isProfessionalOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
+                          {ciTokens.length === 0 ? (
+                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                              <i className="ri-information-line text-amber-500 text-lg flex-shrink-0 mt-0.5"></i>
+                              <div>
+                                <p className="text-sm font-semibold text-amber-800 mb-1">Create an API token first</p>
+                                <p className="text-sm text-amber-700">
+                                  Go to the{' '}
+                                  <button onClick={() => setActiveTab('api')} className="font-semibold underline cursor-pointer">API &amp; Tokens</button>
+                                  {' '}tab to create a token before setting up CI/CD integration.
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="flex items-center gap-2 mb-4">
+                                <button onClick={() => setSelectedPlatform('github')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${selectedPlatform === 'github' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                                  <i className="ri-github-fill mr-2"></i>GitHub Actions
+                                </button>
+                                <button onClick={() => setSelectedPlatform('gitlab')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${selectedPlatform === 'gitlab' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                                  <i className="ri-gitlab-fill mr-2"></i>GitLab CI
+                                </button>
+                                <button onClick={() => setSelectedPlatform('python')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${selectedPlatform === 'python' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                                  <i className="ri-code-s-slash-line mr-2"></i>Python
+                                </button>
+                              </div>
+
+                              <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <i className="ri-settings-4-line text-indigo-600 text-lg"></i>
+                                  <p className="text-sm font-bold text-indigo-800">
+                                    Register the following values in your{' '}
+                                    {selectedPlatform === 'github' ? 'GitHub Secrets' : selectedPlatform === 'gitlab' ? 'GitLab CI/CD Variables' : 'environment variables'}
+                                  </p>
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2 bg-white rounded-lg border border-indigo-200 px-3 py-2">
+                                    <span className="text-xs font-bold font-mono text-indigo-700 w-36 flex-shrink-0">TESTABLY_URL</span>
+                                    <span className="text-xs text-gray-400 font-mono flex-1 truncate">{`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results`}</span>
+                                    <button onClick={() => handleCopyToken(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results`)} className="flex-shrink-0 px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap">
+                                      {copiedToken === `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results` ? <><i className="ri-check-line mr-1"></i>Copied</> : <><i className="ri-file-copy-line mr-1"></i>Copy</>}
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-2 bg-white rounded-lg border border-indigo-200 px-3 py-2">
+                                    <span className="text-xs font-bold font-mono text-indigo-700 w-36 flex-shrink-0">TESTABLY_TOKEN</span>
+                                    <span className="text-xs text-gray-400 font-mono flex-1 truncate">{ciTokens[0].token}</span>
+                                    <button onClick={() => handleCopyToken(ciTokens[0].token)} className="flex-shrink-0 px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap">
+                                      {copiedToken === ciTokens[0].token ? <><i className="ri-check-line mr-1"></i>Copied</> : <><i className="ri-file-copy-line mr-1"></i>Copy</>}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {selectedPlatform === 'python' ? (
+                                <div className="bg-gray-900 rounded-lg p-4 relative">
+                                  <button onClick={() => handleCopyToken(getPythonFunctionSnippet())} className="absolute top-4 right-4 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap">
+                                    {copiedToken === getPythonFunctionSnippet() ? <><i className="ri-check-line mr-1"></i>Copied</> : <><i className="ri-file-copy-line mr-1"></i>Copy</>}
+                                  </button>
+                                  <pre className="text-sm text-gray-100 overflow-x-auto font-mono whitespace-pre"><code>{getPythonFunctionSnippet()}</code></pre>
+                                </div>
+                              ) : (
+                                <div className="bg-gray-900 rounded-lg p-4 relative">
+                                  <button onClick={() => handleCopyToken(getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token))} className="absolute top-4 right-4 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap">
+                                    {copiedToken === getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token) ? <><i className="ri-check-line mr-1"></i>Copied</> : <><i className="ri-file-copy-line mr-1"></i>Copy</>}
+                                  </button>
+                                  <pre className="text-sm text-gray-100 overflow-x-auto font-mono"><code>{getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token)}</code></pre>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'api' && (
+                    <div className="space-y-8">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h2 className="text-xl font-bold text-gray-900">API & Tokens</h2>
+                          {!isProfessionalOrHigher && (
+                            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-300 rounded-full text-xs font-semibold flex items-center gap-1">
+                              <i className="ri-vip-crown-line"></i>
+                              Requires Professional or above
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-gray-600 mb-6">Create and manage API tokens for authenticating CI/CD pipelines and external integrations. For integration setup guides, visit the <button onClick={() => setActiveTab('integrations')} className="text-indigo-600 hover:underline font-semibold cursor-pointer">Integrations</button> tab.</p>
 
                         {!isProfessionalOrHigher && (
                           <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 rounded-xl">
@@ -1826,338 +1944,6 @@ def pytest_sessionfinish(session, exitstatus):
                               </div>
                             )}
                           </div>
-
-                          {/* Integration Guide */}
-                          {ciTokens.length > 0 && (
-                            <div className="pt-6 border-t border-gray-200">
-                              <h3 className="text-lg font-semibold text-gray-900 mb-4">Integration Guide</h3>
-                              
-                              <div className="flex items-center gap-2 mb-4">
-                                <button
-                                  onClick={() => setSelectedPlatform('github')}
-                                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                                    selectedPlatform === 'github'
-                                      ? 'bg-gray-900 text-white'
-                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                  }`}
-                                >
-                                  <i className="ri-github-fill mr-2"></i>
-                                  GitHub Actions
-                                </button>
-                                <button
-                                  onClick={() => setSelectedPlatform('gitlab')}
-                                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                                    selectedPlatform === 'gitlab'
-                                      ? 'bg-orange-500 text-white'
-                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                  }`}
-                                >
-                                  <i className="ri-gitlab-fill mr-2"></i>
-                                  GitLab CI
-                                </button>
-                                <button
-                                  onClick={() => setSelectedPlatform('python')}
-                                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                                    selectedPlatform === 'python'
-                                      ? 'bg-indigo-600 text-white'
-                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                  }`}
-                                >
-                                  <i className="ri-code-s-slash-line mr-2"></i>
-                                  Python
-                                </button>
-                              </div>
-
-                              {/* Environment Variables Guide */}
-                              <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <i className="ri-settings-4-line text-indigo-600 text-lg"></i>
-                                  <p className="text-sm font-bold text-indigo-800">
-                                    Register the following values in your{' '}
-                                    {selectedPlatform === 'github'
-                                      ? 'GitHub Secrets'
-                                      : selectedPlatform === 'gitlab'
-                                      ? 'GitLab CI/CD Variables'
-                                      : 'environment variables'}
-                                  </p>
-                                </div>
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-2 bg-white rounded-lg border border-indigo-200 px-3 py-2">
-                                    <span className="text-xs font-bold font-mono text-indigo-700 w-36 flex-shrink-0">TESTABLY_URL</span>
-                                    <span className="text-xs text-gray-400 font-mono flex-1 truncate">
-                                      {`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results`}
-                                    </span>
-                                    <button
-                                      onClick={() => handleCopyToken(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results`)}
-                                      className="flex-shrink-0 px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
-                                    >
-                                      {copiedToken === `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results` ? (
-                                        <><i className="ri-check-line mr-1"></i>Copied</>
-                                      ) : (
-                                        <><i className="ri-file-copy-line mr-1"></i>Copy</>
-                                      )}
-                                    </button>
-                                  </div>
-                                  <div className="flex items-center gap-2 bg-white rounded-lg border border-indigo-200 px-3 py-2">
-                                    <span className="text-xs font-bold font-mono text-indigo-700 w-36 flex-shrink-0">TESTABLY_TOKEN</span>
-                                    <span className="text-xs text-gray-400 font-mono flex-1 truncate">{ciTokens[0].token}</span>
-                                    <button
-                                      onClick={() => handleCopyToken(ciTokens[0].token)}
-                                      className="flex-shrink-0 px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
-                                    >
-                                      {copiedToken === ciTokens[0].token ? (
-                                        <><i className="ri-check-line mr-1"></i>Copied</>
-                                      ) : (
-                                        <><i className="ri-file-copy-line mr-1"></i>Copy</>
-                                      )}
-                                    </button>
-                                  </div>
-                                </div>
-                                <p className="text-xs text-indigo-700 mt-2">
-                                  <i className="ri-information-line mr-1"></i>
-                                  Registering both values as environment variables keeps them secure without modifying your code.
-                                </p>
-                              </div>
-
-                              {/* Python Guide */}
-                              {selectedPlatform === 'python' && (
-                                <div className="space-y-6">
-                                  <div>
-                                    <div className="flex items-center gap-2 mb-3">
-                                      <span className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
-                                      <h4 className="font-bold text-gray-900">Function-based approach <span className="text-sm font-normal text-gray-500 ml-1">— suitable for simple scripts</span></h4>
-                                    </div>
-                                    <p className="text-sm text-gray-600 mb-3 ml-8">
-                                      Collect results using the <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">report_result()</code> function and upload them all at once at the end.
-                                    </p>
-                                    <div className="bg-gray-900 rounded-lg p-4 relative">
-                                      <button
-                                        onClick={() => handleCopyToken(getPythonFunctionSnippet())}
-                                        className="absolute top-4 right-4 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap"
-                                      >
-                                        {copiedToken === getPythonFunctionSnippet() ? (
-                                          <><i className="ri-check-line mr-1"></i>Copied</>
-                                        ) : (
-                                          <><i className="ri-file-copy-line mr-1"></i>Copy</>
-                                        )}
-                                      </button>
-                                      <pre className="text-sm text-gray-100 overflow-x-auto font-mono whitespace-pre">
-                                        <code>{getPythonFunctionSnippet()}</code>
-                                      </pre>
-                                    </div>
-                                  </div>
-
-                                  <div>
-                                    <div className="flex items-center gap-2 mb-3">
-                                      <span className="w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
-                                      <h4 className="font-bold text-gray-900">conftest.py approach <span className="text-sm font-normal text-gray-500 ml-1">— suitable for pytest projects</span></h4>
-                                    </div>
-                                    <p className="text-sm text-gray-600 mb-3 ml-8">
-                                      Uses pytest hooks to automatically collect and upload results without modifying test code.
-                                    </p>
-                                    <div className="bg-gray-900 rounded-lg p-4 relative">
-                                      <button
-                                        onClick={() => handleCopyToken(getPythonConftestSnippet())}
-                                        className="absolute top-4 right-4 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap"
-                                      >
-                                        {copiedToken === getPythonConftestSnippet() ? (
-                                          <><i className="ri-check-line mr-1"></i>Copied</>
-                                        ) : (
-                                          <><i className="ri-file-copy-line mr-1"></i>Copy</>
-                                        )}
-                                      </button>
-                                      <pre className="text-sm text-gray-100 overflow-x-auto font-mono whitespace-pre">
-                                        <code>{getPythonConftestSnippet()}</code>
-                                      </pre>
-                                    </div>
-                                  </div>
-
-                                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                                    <div className="flex items-start gap-3">
-                                      <i className="ri-information-line text-gray-500 text-xl flex-shrink-0 mt-0.5"></i>
-                                      <div className="text-sm text-gray-700">
-                                        <p className="font-semibold mb-2">How to use:</p>
-                                        <ol className="list-decimal list-inside space-y-1.5 text-gray-600">
-                                          <li>Register your token in the <code className="bg-gray-200 px-1 rounded text-xs">TESTABLY_TOKEN</code> environment variable</li>
-                                          <li><strong>Method 1</strong>: Pass the test case ID and result to <code className="bg-gray-200 px-1 rounded text-xs">report_result()</code></li>
-                                          <li><strong>Method 2</strong>: Save <code className="bg-gray-200 px-1 rounded text-xs">conftest.py</code> to your project root and map function names to IDs in <code className="bg-gray-200 px-1 rounded text-xs">TEST_CASE_MAP</code></li>
-                                          <li>Replace <code className="bg-gray-200 px-1 rounded text-xs">run_id</code> with the Run ID from Testably</li>
-                                          <li>Status values: <code className="bg-gray-200 px-1 rounded text-xs">passed</code> / <code className="bg-gray-200 px-1 rounded text-xs">failed</code> / <code className="bg-gray-200 px-1 rounded text-xs">blocked</code> / <code className="bg-gray-200 px-1 rounded text-xs">retest</code></li>
-                                        </ol>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* GitHub / GitLab YAML */}
-                              {selectedPlatform !== 'python' && (
-                                <>
-                                  <div className="bg-gray-900 rounded-lg p-4 relative">
-                                    <button
-                                      onClick={() => handleCopyToken(getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token))}
-                                      className="absolute top-4 right-4 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap"
-                                    >
-                                      {copiedToken === getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token) ? (
-                                        <><i className="ri-check-line mr-1"></i>Copied</>
-                                      ) : (
-                                        <><i className="ri-file-copy-line mr-1"></i>Copy</>
-                                      )}
-                                    </button>
-                                    <pre className="text-sm text-gray-100 overflow-x-auto font-mono">
-                                      <code>{getYAMLSnippet(selectedPlatform as 'github' | 'gitlab', ciTokens[0].token)}</code>
-                                    </pre>
-                                  </div>
-
-                                  <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                                    <div className="flex items-start gap-3">
-                                      <i className="ri-information-line text-gray-500 text-xl flex-shrink-0 mt-0.5"></i>
-                                      <div className="text-sm text-gray-700">
-                                        <p className="font-semibold mb-2">How to use:</p>
-                                        <ol className="list-decimal list-inside space-y-1 text-gray-600">
-                                          <li>Register the environment variables above in {selectedPlatform === 'github' ? 'GitHub Secrets' : 'GitLab CI/CD Variables'}</li>
-                                          <li>Copy the YAML code and add it to your CI/CD configuration file</li>
-                                          <li>Set <code className="bg-gray-200 px-1 rounded text-xs">test_case_id</code> to your test case ID (e.g. SUI-1)</li>
-                                          <li>Set status to passed/failed/blocked based on test outcome</li>
-                                        </ol>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          )}
-
-                          {/* API Token Scope Guide */}
-                          <div className="pt-6 border-t border-gray-200">
-                            <div className="flex items-center gap-2 mb-4">
-                              <button
-                                onClick={() => setSelectedPlatform('github')}
-                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                                  selectedPlatform === 'github'
-                                    ? 'bg-gray-900 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                              >
-                                <i className="ri-github-fill mr-2"></i>
-                                GitHub Actions
-                              </button>
-                              <button
-                                onClick={() => setSelectedPlatform('gitlab')}
-                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                                  selectedPlatform === 'gitlab'
-                                    ? 'bg-orange-500 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                              >
-                                <i className="ri-gitlab-fill mr-2"></i>
-                                GitLab CI
-                              </button>
-                            </div>
-
-                            <div className="p-5 bg-white border border-gray-200 rounded-xl">
-                              <div className="flex items-center gap-2 mb-4">
-                                <div className="w-8 h-8 flex items-center justify-center bg-indigo-50 rounded-lg">
-                                  <i className="ri-shield-keyhole-line text-indigo-600 text-lg"></i>
-                                </div>
-                                <h4 className="font-bold text-gray-900 text-sm">API Token Scope Configuration Guide</h4>
-                              </div>
-
-                              {selectedPlatform === 'github' ? (
-                                <div className="space-y-4">
-                                  <p className="text-sm text-gray-600">
-                                    When using a Personal Access Token (PAT) or Fine-grained Token in GitHub, only the following permissions are needed.
-                                  </p>
-                                  <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Minimum Required Scopes</p>
-                                    <div className="space-y-2">
-                                      {[
-                                        { scope: 'repo', desc: 'Repository read access (required for private repos)', required: true },
-                                        { scope: 'workflow', desc: 'GitHub Actions workflow execution permission', required: true },
-                                        { scope: 'read:org', desc: 'Read organization info (for org repositories)', required: false },
-                                      ].map((item) => (
-                                        <div key={item.scope} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                                          <span className={`mt-0.5 px-2 py-0.5 rounded text-xs font-bold font-mono whitespace-nowrap ${item.required ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-600'}`}>
-                                            {item.scope}
-                                          </span>
-                                          <div className="flex-1">
-                                            <p className="text-sm text-gray-700">{item.desc}</p>
-                                            {!item.required && (
-                                              <p className="text-xs text-gray-400 mt-0.5">Optional</p>
-                                            )}
-                                          </div>
-                                          {item.required && (
-                                            <span className="text-xs font-semibold text-indigo-600 whitespace-nowrap">Required</span>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
-                                    <i className="ri-error-warning-line text-amber-500 flex-shrink-0 mt-0.5"></i>
-                                    <p className="text-xs text-amber-800">
-                                      <strong>Recommended:</strong> Using the automatically provided <code className="bg-amber-100 px-1 rounded">GITHUB_TOKEN</code> within GitHub Actions workflows is the safest approach — no separate PAT creation needed.
-                                    </p>
-                                  </div>
-                                  <a
-                                    href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
-                                  >
-                                    <i className="ri-external-link-line"></i>
-                                    GitHub Token Official Documentation
-                                  </a>
-                                </div>
-                              ) : (
-                                <div className="space-y-4">
-                                  <p className="text-sm text-gray-600">
-                                    When creating a Personal Access Token or Project Access Token in GitLab, select only the following scopes.
-                                  </p>
-                                  <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Minimum Required Scopes</p>
-                                    <div className="space-y-2">
-                                      {[
-                                        { scope: 'api', desc: 'Full API access (pipeline triggers and result uploads)', required: true },
-                                        { scope: 'read_repository', desc: 'Repository read access', required: true },
-                                        { scope: 'write_repository', desc: 'Repository write access (required for committing results)', required: false },
-                                      ].map((item) => (
-                                        <div key={item.scope} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                                          <span className={`mt-0.5 px-2 py-0.5 rounded text-xs font-bold font-mono whitespace-nowrap ${item.required ? 'bg-orange-100 text-orange-700' : 'bg-gray-200 text-gray-600'}`}>
-                                            {item.scope}
-                                          </span>
-                                          <div className="flex-1">
-                                            <p className="text-sm text-gray-700">{item.desc}</p>
-                                            {!item.required && (
-                                              <p className="text-xs text-gray-400 mt-0.5">Optional</p>
-                                            )}
-                                          </div>
-                                          {item.required && (
-                                            <span className="text-xs font-semibold text-orange-600 whitespace-nowrap">Required</span>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
-                                    <i className="ri-error-warning-line text-amber-500 flex-shrink-0 mt-0.5"></i>
-                                    <p className="text-xs text-amber-800">
-                                      <strong>Recommended:</strong> Using the automatically provided <code className="bg-amber-100 px-1 rounded">CI_JOB_TOKEN</code> within GitLab CI pipelines is the safest approach — no separate token creation needed.
-                                    </p>
-                                  </div>
-                                  <a
-                                    href="https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
-                                  >
-                                    <i className="ri-external-link-line"></i>
-                                    GitLab Token Official Documentation
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -2166,8 +1952,132 @@ def pytest_sessionfinish(session, exitstatus):
                   {activeTab === 'notifications' && (
                     <NotificationSettingsPanel />
                   )}
+
+                  {activeTab === 'preferences' && (
+                    <div className="space-y-6">
+                      {/* Language */}
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-4">Language & Region</h3>
+                        <div className="grid gap-4">
+                          <div>
+                            <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">Language</label>
+                            <select
+                              value={language}
+                              onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
+                              className="w-full max-w-xs px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] cursor-pointer"
+                            >
+                              <option value="en">English</option>
+                              <option value="ko">한국어</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">Timezone</label>
+                            <div className="flex items-center gap-3 mb-2">
+                              <input
+                                type="checkbox"
+                                id="autoDetectTz"
+                                checked={autoDetectTz}
+                                onChange={(e) => setAutoDetectTz(e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-300 text-indigo-600 cursor-pointer"
+                              />
+                              <label htmlFor="autoDetectTz" className="text-sm text-[#64748B] cursor-pointer select-none">Auto-detect from browser</label>
+                            </div>
+                            <select
+                              value={timezone}
+                              onChange={(e) => setTimezone(e.target.value)}
+                              disabled={autoDetectTz}
+                              className="w-full max-w-xs px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] cursor-pointer disabled:opacity-50 disabled:cursor-default"
+                            >
+                              <option value="UTC">UTC (Coordinated Universal Time)</option>
+                              <option value="America/New_York">Eastern Time (UTC-5/4)</option>
+                              <option value="America/Los_Angeles">Pacific Time (UTC-8/7)</option>
+                              <option value="Europe/London">London (UTC+0/1)</option>
+                              <option value="Europe/Berlin">Berlin (UTC+1/2)</option>
+                              <option value="Asia/Seoul">Seoul (UTC+9)</option>
+                              <option value="Asia/Tokyo">Tokyo (UTC+9)</option>
+                              <option value="Asia/Shanghai">Shanghai (UTC+8)</option>
+                              <option value="Australia/Sydney">Sydney (UTC+10/11)</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Date & Time Format */}
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-4">Date & Time Format</h3>
+                        <div className="grid gap-4">
+                          <div>
+                            <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-2">Date Format</label>
+                            <div className="flex flex-col gap-2">
+                              {[
+                                { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD', example: '2024-03-15' },
+                                { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY', example: '03/15/2024' },
+                                { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY', example: '15/03/2024' },
+                              ].map(opt => (
+                                <label key={opt.value} className="flex items-center gap-3 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="dateFormat"
+                                    value={opt.value}
+                                    checked={dateFormat === opt.value}
+                                    onChange={() => setDateFormat(opt.value)}
+                                    className="w-4 h-4 text-indigo-600"
+                                  />
+                                  <span className="text-sm font-semibold text-[#1E293B]">{opt.label}</span>
+                                  <span className="text-xs text-[#94A3B8]">{opt.example}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-2">Time Format</label>
+                            <div className="flex gap-4">
+                              {[
+                                { value: '24h', label: '24-hour', example: '14:30' },
+                                { value: '12h', label: '12-hour', example: '2:30 PM' },
+                              ].map(opt => (
+                                <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="timeFormat"
+                                    value={opt.value}
+                                    checked={timeFormat === opt.value}
+                                    onChange={() => setTimeFormat(opt.value as '24h' | '12h')}
+                                    className="w-4 h-4 text-indigo-600"
+                                  />
+                                  <span className="text-sm font-semibold text-[#1E293B]">{opt.label}</span>
+                                  <span className="text-xs text-[#94A3B8]">{opt.example}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Preview */}
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-[7px] text-[0.8125rem]" style={{ background: '#EEF2FF', color: '#6366F1' }}>
+                        <i className="ri-eye-line"></i>
+                        <span>Preview: {new Date().toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US')} · {timeFormat === '24h' ? new Date().toLocaleTimeString('en-US', { hour12: false }) : new Date().toLocaleTimeString('en-US', { hour12: true })}</span>
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-2">
+                        <button
+                          onClick={() => { setPreferencesSaved(true); setTimeout(() => setPreferencesSaved(false), 3000); }}
+                          className="px-5 py-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2"
+                        >
+                          <i className="ri-save-line"></i>
+                          Save Preferences
+                        </button>
+                        {preferencesSaved && (
+                          <span className="text-sm text-[#6366F1] font-medium flex items-center gap-1">
+                            <i className="ri-checkbox-circle-fill"></i>
+                            Saved successfully
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
             </div>
           </main>
         </div>
