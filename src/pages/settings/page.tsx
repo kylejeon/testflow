@@ -356,6 +356,23 @@ export default function SettingsPage() {
             if (av?.avatar_url) setUserProfile(prev => prev ? { ...prev, avatar_url: av.avatar_url } : prev);
           })
           .catch(() => {/* avatar_url 컬럼 없는 환경 — 무시 */});
+
+        // Preferences 컬럼 로드 (migration으로 추가된 컬럼 — 없는 환경 대비 별도 쿼리)
+        supabase.from('profiles')
+          .select('timezone, date_format, time_format, default_project_id')
+          .eq('id', user.id)
+          .maybeSingle()
+          .then(({ data: prefs }) => {
+            if (!prefs) return;
+            if (prefs.timezone) {
+              setTimezone(prefs.timezone);
+              setAutoDetectTz(false);
+            }
+            if (prefs.date_format) setDateFormat(prefs.date_format);
+            if (prefs.time_format) setTimeFormat(prefs.time_format as '24h' | '12h');
+            if (prefs.default_project_id) setDefaultProjectId(prefs.default_project_id);
+          })
+          .catch(() => {/* preferences 컬럼 없는 환경 — 무시 */});
       } else {
         // profiles 행이 없는 경우 — auth 사용자 데이터로 기본 프로필 생성
         const authName = user.user_metadata?.full_name || user.user_metadata?.name || '';
