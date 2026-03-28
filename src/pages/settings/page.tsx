@@ -192,11 +192,12 @@ export default function SettingsPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<'github' | 'gitlab' | 'python'>('github');
 
   // Preferences state
-  const [language, setLanguage] = useState<'en' | 'ko'>('en');
+  const [language, setLanguage] = useState<'en'>('en');
   const [timezone, setTimezone] = useState('UTC');
   const [autoDetectTz, setAutoDetectTz] = useState(true);
   const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
   const [timeFormat, setTimeFormat] = useState<'24h' | '12h'>('24h');
+  const [defaultProjectId, setDefaultProjectId] = useState('');
   const [preferencesSaved, setPreferencesSaved] = useState(false);
   const [savingPreferences, setSavingPreferences] = useState(false);
   const [showAllPlansModal, setShowAllPlansModal] = useState(false);
@@ -926,19 +927,78 @@ def pytest_sessionfinish(session, exitstatus):
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       await supabase.from('profiles').update({
-        language,
         timezone: autoDetectTz ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone,
         date_format: dateFormat,
         time_format: timeFormat,
-      } as Record<string, string>).eq('id', user.id);
+        default_project_id: defaultProjectId || null,
+      } as Record<string, unknown>).eq('id', user.id);
       setPreferencesSaved(true);
       setTimeout(() => setPreferencesSaved(false), 3000);
     } catch (e) {
       console.error('Preferences save error:', e);
-      setPreferencesSaved(true);
-      setTimeout(() => setPreferencesSaved(false), 3000);
     } finally {
       setSavingPreferences(false);
+    }
+  };
+
+  const handleExportJSON = async () => {
+    try {
+      if (!userProjects.length) { alert('No projects found to export.'); return; }
+      const projectIds = userProjects.map(p => p.id);
+      const [tcRes, runRes] = await Promise.all([
+        supabase.from('test_cases').select('*').in('project_id', projectIds),
+        supabase.from('runs').select('*').in('project_id', projectIds),
+      ]);
+      const exportData = {
+        exported_at: new Date().toISOString(),
+        user: { email: userProfile?.email, name: userProfile?.full_name },
+        projects: userProjects,
+        test_cases: tcRes.data || [],
+        runs: runRes.data || [],
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `testably-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('JSON export error:', e);
+      alert('Export failed. Please try again.');
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      if (!userProjects.length) { alert('No projects found to export.'); return; }
+      const projectIds = userProjects.map(p => p.id);
+      const { data: testCases, error } = await supabase
+        .from('test_cases')
+        .select('id, title, status, priority, project_id, created_at, updated_at')
+        .in('project_id', projectIds);
+      if (error) throw error;
+      if (!testCases || testCases.length === 0) { alert('No test cases found to export.'); return; }
+      const headers = ['ID', 'Title', 'Status', 'Priority', 'Project ID', 'Created At', 'Updated At'];
+      const rows = testCases.map((tc: any) =>
+        [tc.id, tc.title, tc.status, tc.priority, tc.project_id, tc.created_at, tc.updated_at]
+          .map((v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`)
+      );
+      const csv = [headers.join(','), ...rows.map((r: string[]) => r.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `testably-testcases-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('CSV export error:', e);
+      alert('Export failed. Please try again.');
     }
   };
 
@@ -1079,7 +1139,7 @@ def pytest_sessionfinish(session, exitstatus):
                         }}
                       />
                       {/* ── Data Export ── */}
-                      <div className="mt-6 bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6 mb-5">
                         <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5 flex items-center gap-2">
                           <i className="ri-download-2-line text-[#3B82F6]"></i>
                           Data Export
@@ -1087,13 +1147,13 @@ def pytest_sessionfinish(session, exitstatus):
                         <p className="text-[0.8125rem] text-[#64748B] mb-4">Download all your data including test cases, runs, and results. Available in JSON or CSV format.</p>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => alert('JSON export is coming soon. Contact hello@testably.app for data requests.')}
+                            onClick={handleExportJSON}
                             className="inline-flex items-center gap-1.5 px-4 py-[0.4375rem] rounded-[0.375rem] border border-[#E2E8F0] bg-white text-[0.8125rem] font-medium text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-colors cursor-pointer"
                           >
                             <i className="ri-file-code-line"></i> Export as JSON
                           </button>
                           <button
-                            onClick={() => alert('CSV export is coming soon. Contact hello@testably.app for data requests.')}
+                            onClick={handleExportCSV}
                             className="inline-flex items-center gap-1.5 px-4 py-[0.4375rem] rounded-[0.375rem] border border-[#E2E8F0] bg-white text-[0.8125rem] font-medium text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-colors cursor-pointer"
                           >
                             <i className="ri-file-excel-2-line"></i> Export as CSV
@@ -1310,14 +1370,14 @@ def pytest_sessionfinish(session, exitstatus):
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
                           </div>
                         ) : (
-                          <div className={`space-y-6 ${!isStarterOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
+                          <div className={`${!isStarterOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
                             {/* Jira Domain */}
-                            <div>
+                            <div className="mb-4">
                               <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
-                                Jira Domain <span className="text-red-500">*</span>
+                                Jira Domain <span className="text-[#EF4444]">*</span>
                               </label>
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-500">https://</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[0.8125rem] text-[#94A3B8]">https://</span>
                                 <input
                                   type="text"
                                   value={jiraSettings.domain}
@@ -1327,130 +1387,105 @@ def pytest_sessionfinish(session, exitstatus):
                                   disabled={!isStarterOrHigher}
                                 />
                               </div>
-                              <p className="text-xs text-gray-500 mt-1">e.g. your-domain.atlassian.net</p>
+                              <p className="text-[0.6875rem] text-[#94A3B8] mt-1">e.g. your-domain.atlassian.net</p>
                             </div>
 
-                            {/* Jira Email */}
-                            <div>
-                              <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
-                                Jira Email <span className="text-red-500">*</span>
-                              </label>
-                              <input
-                                type="email"
-                                value={jiraSettings.email}
-                                onChange={(e) => setJiraSettings({ ...jiraSettings, email: e.target.value })}
-                                placeholder="your-email@example.com"
-                                className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
-                                disabled={!isStarterOrHigher}
-                              />
-                              <p className="text-xs text-gray-500 mt-1">Your Jira account email address</p>
-                            </div>
-
-                            {/* Jira API Token */}
-                            <div>
-                              <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
-                                Jira API Token <span className="text-red-500">*</span>
-                              </label>
-                              <div className="relative">
+                            {/* Jira Email + API Token (2-col) */}
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
+                                  Jira Email <span className="text-[#EF4444]">*</span>
+                                </label>
                                 <input
-                                  type={showApiToken ? 'text' : 'password'}
-                                  value={jiraSettings.apiToken}
-                                  onChange={(e) => setJiraSettings({ ...jiraSettings, apiToken: e.target.value })}
-                                  placeholder="Enter your Jira API token"
-                                  className="w-full px-3 py-2 pr-10 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
+                                  type="email"
+                                  value={jiraSettings.email}
+                                  onChange={(e) => setJiraSettings({ ...jiraSettings, email: e.target.value })}
+                                  placeholder="your-email@example.com"
+                                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
                                   disabled={!isStarterOrHigher}
                                 />
-                                <button
-                                  type="button"
-                                  onClick={() => setShowApiToken(!showApiToken)}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
-                                  disabled={!isStarterOrHigher}
-                                >
-                                  <i className={`${showApiToken ? 'ri-eye-off-line' : 'ri-eye-line'} text-lg`}></i>
-                                </button>
+                                <p className="text-[0.6875rem] text-[#94A3B8] mt-1">Your Jira account email address</p>
                               </div>
-                              <p className="text-xs text-gray-500 mt-1">
-                                <a 
-                                  href="https://id.atlassian.com/manage-profile/security/api-tokens" 
-                                  target="_blank" 
+                              <div>
+                                <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
+                                  Jira API Token <span className="text-[#EF4444]">*</span>
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type={showApiToken ? 'text' : 'password'}
+                                    value={jiraSettings.apiToken}
+                                    onChange={(e) => setJiraSettings({ ...jiraSettings, apiToken: e.target.value })}
+                                    placeholder="Enter your Jira API token"
+                                    className="w-full px-3 py-2 pr-9 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
+                                    disabled={!isStarterOrHigher}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowApiToken(!showApiToken)}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] cursor-pointer"
+                                    disabled={!isStarterOrHigher}
+                                  >
+                                    <i className={`${showApiToken ? 'ri-eye-off-line' : 'ri-eye-line'} text-base`}></i>
+                                  </button>
+                                </div>
+                                <a
+                                  href="https://id.atlassian.com/manage-profile/security/api-tokens"
+                                  target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-indigo-600 hover:underline"
+                                  className="text-[0.6875rem] text-[#6366F1] hover:underline mt-1 inline-block"
                                 >
-                                  Generate API token here
+                                  Generate API token here ↗
                                 </a>
-                              </p>
+                              </div>
                             </div>
 
-                            {/* Default Issue Type */}
-                            <div>
+                            {/* Default Issue Type + buttons (same row) */}
+                            <div className="mb-3">
                               <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
                                 Default Issue Type
                               </label>
-                              <select
-                                value={jiraSettings.issueType}
-                                onChange={(e) => setJiraSettings({ ...jiraSettings, issueType: e.target.value })}
-                                className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem] cursor-pointer"
-                                disabled={!isStarterOrHigher}
-                              >
-                                <option value="Bug">Bug</option>
-                                <option value="Task">Task</option>
-                                <option value="Story">Story</option>
-                                <option value="Epic">Epic</option>
-                              </select>
-                              <p className="text-xs text-gray-500 mt-1">Default issue type when creating new issues</p>
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={jiraSettings.issueType}
+                                  onChange={(e) => setJiraSettings({ ...jiraSettings, issueType: e.target.value })}
+                                  className="w-[200px] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem] cursor-pointer"
+                                  disabled={!isStarterOrHigher}
+                                >
+                                  <option value="Bug">Bug</option>
+                                  <option value="Task">Task</option>
+                                  <option value="Story">Story</option>
+                                  <option value="Epic">Epic</option>
+                                </select>
+                                <button
+                                  onClick={handleTestConnection}
+                                  disabled={testing || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher}
+                                  className="inline-flex items-center gap-[0.3125rem] px-4 py-[0.4375rem] border border-[#E2E8F0] bg-white text-[#475569] rounded-md hover:bg-[#F8FAFC] transition-colors text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {testing ? <><i className="ri-loader-4-line animate-spin"></i>Testing...</> : <><i className="ri-link"></i>Test Connection</>}
+                                </button>
+                                <button
+                                  onClick={handleSaveJiraSettings}
+                                  disabled={saving || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher}
+                                  className="inline-flex items-center gap-[0.3125rem] px-4 py-[0.4375rem] bg-[#6366F1] text-white rounded-md hover:bg-[#4F46E5] transition-colors text-[0.8125rem] font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                  style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
+                                >
+                                  {saving ? <><i className="ri-loader-4-line animate-spin"></i>Saving...</> : <><i className="ri-save-line"></i>Save Settings</>}
+                                </button>
+                              </div>
+                              <p className="text-[0.6875rem] text-[#94A3B8] mt-1">Default issue type when creating new issues</p>
                             </div>
 
                             {/* Test Result Message */}
                             {testResult && (
-                              <div className={`p-4 rounded-lg border ${
-                                testResult.success 
-                                  ? 'bg-green-50 border-green-200 text-green-800' 
-                                  : 'bg-red-50 border-red-200 text-red-800'
+                              <div className={`px-3 py-2.5 rounded-[0.5rem] border flex items-center gap-1.5 text-[0.8125rem] mt-2 ${
+                                testResult.success
+                                  ? 'bg-[#F0FDF4] border-[#BBF7D0] text-[#166534]'
+                                  : 'bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]'
                               }`}>
-                                <div className="flex items-center gap-2">
-                                  <i className={`${testResult.success ? 'ri-checkbox-circle-line' : 'ri-error-warning-line'} text-lg`}></i>
-                                  <span className="text-sm font-medium">{testResult.message}</span>
-                                </div>
+                                <i className={testResult.success ? 'ri-checkbox-circle-line' : 'ri-error-warning-line'}></i>
+                                {testResult.message}
                               </div>
                             )}
-
-                            {/* Action Buttons */}
-                            <div className="flex items-center gap-3 pt-4">
-                              <button
-                                onClick={handleTestConnection}
-                                disabled={testing || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher}
-                                className="inline-flex items-center gap-1.5 px-4 py-[0.4375rem] bg-white border border-[#E2E8F0] text-[#475569] rounded-md hover:bg-[#F8FAFC] transition-all font-medium text-[0.8125rem] cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {testing ? (
-                                  <>
-                                    <i className="ri-loader-4-line animate-spin mr-2"></i>
-                                    Testing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <i className="ri-link mr-2"></i>
-                                    Test Connection
-                                  </>
-                                )}
-                              </button>
-                              <button
-                                onClick={handleSaveJiraSettings}
-                                disabled={saving || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher}
-                                className="inline-flex items-center gap-1.5 px-4 py-[0.4375rem] bg-[#6366F1] text-white rounded-md hover:bg-[#4F46E5] transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {saving ? (
-                                  <>
-                                    <i className="ri-loader-4-line animate-spin mr-2"></i>
-                                    Saving...
-                                  </>
-                                ) : (
-                                  <>
-                                    <i className="ri-save-line mr-2"></i>
-                                    Save Settings
-                                  </>
-                                )}
-                              </button>
-                            </div>
                           </div>
                         )}
                       </div>
@@ -1735,99 +1770,80 @@ def pytest_sessionfinish(session, exitstatus):
                   )}
 
                   {activeTab === 'api' && (
-                    <div className="space-y-8">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h2 className="text-xl font-bold text-gray-900">API & Tokens</h2>
-                          {!isProfessionalOrHigher && (
-                            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-300 rounded-full text-xs font-semibold flex items-center gap-1">
-                              <i className="ri-vip-crown-line"></i>
-                              Requires Professional or above
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-gray-600 mb-6">Create and manage API tokens for authenticating CI/CD pipelines and external integrations. For integration setup guides, visit the <button onClick={() => setActiveTab('integrations')} className="text-indigo-600 hover:underline font-semibold cursor-pointer">Integrations</button> tab.</p>
-
-                        {!isProfessionalOrHigher && (
-                          <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 rounded-xl">
-                            <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <i className="ri-lock-line text-indigo-600 text-xl"></i>
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900 mb-1">CI/CD Integration is available on Professional and above</h3>
-                                <p className="text-sm text-gray-600 mb-3">
-                                  Upload results directly from your automated test pipelines and enhance team collaboration.
-                                </p>
-                                <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap">
-                                  <i className="ri-arrow-up-circle-line mr-2"></i>
-                                  Contact Us to Upgrade
-                                </a>
-                              </div>
-                            </div>
+                    <div className="space-y-5">
+                      {/* Tier gate banner */}
+                      {!isProfessionalOrHigher && (
+                        <div className="p-4 bg-gradient-to-r from-[#EEF2FF] to-[#F5F3FF] border border-[#C7D2FE] rounded-[0.75rem] flex items-start gap-3">
+                          <div className="w-10 h-10 bg-[#C7D2FE] rounded-[0.5rem] flex items-center justify-center flex-shrink-0">
+                            <i className="ri-lock-line text-[#4F46E5] text-xl"></i>
                           </div>
-                        )}
-
-                        <div className={`space-y-6 ${!isProfessionalOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
-                          {/* API Tokens Section */}
-                          <div>
-                            <div className="flex items-center justify-between mb-4">
-                              <div>
-                                <h3 className="text-lg font-semibold text-gray-900">API Tokens</h3>
-                                <p className="text-sm text-gray-600">Manage API tokens for your CI/CD pipeline</p>
-                              </div>
-                              <button
-                                onClick={() => setShowNewTokenModal(true)}
-                                disabled={!isProfessionalOrHigher}
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2"
-                              >
-                                <i className="ri-add-line"></i>
-                                New Token
-                              </button>
+                          <div className="flex-1">
+                            <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-0.5">CI/CD Integration is available on Professional and above</div>
+                            <div className="text-[0.75rem] text-[#64748B] mb-3">Upload results directly from your automated test pipelines and enhance team collaboration.</div>
+                            <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-flex items-center gap-[0.3125rem] text-[0.75rem] font-semibold px-3 py-[0.375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors">
+                              <i className="ri-arrow-up-circle-line"></i> Contact Us to Upgrade
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {/* API Tokens card */}
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6 mb-5">
+                          <div className="flex items-start justify-between mb-4">
+                            <div>
+                              <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">API Tokens</h3>
+                              <p className="text-[0.8125rem] text-[#64748B]">Manage API tokens for your CI/CD pipeline.</p>
                             </div>
+                            <button
+                              onClick={() => setShowNewTokenModal(true)}
+                              disabled={!isProfessionalOrHigher}
+                              className="inline-flex items-center gap-[0.3125rem] text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                              style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
+                            >
+                              <i className="ri-add-line"></i> New Token
+                            </button>
+                          </div>
 
+                          <div className={!isProfessionalOrHigher ? 'opacity-50 pointer-events-none' : ''}>
                             {loadingTokens ? (
                               <div className="flex justify-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                                <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-[#6366F1]"></div>
                               </div>
                             ) : ciTokens.length === 0 ? (
-                              <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                  <i className="ri-key-2-line text-3xl text-gray-400"></i>
+                              <div className="text-center py-12 bg-[#F8FAFC] rounded-[0.75rem] border-2 border-dashed border-[#E2E8F0]">
+                                <div className="w-16 h-16 bg-[#F1F5F9] rounded-full flex items-center justify-center mx-auto mb-4">
+                                  <i className="ri-key-2-line text-[#94A3B8]" style={{ fontSize: '1.75rem' }}></i>
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">No tokens created yet</h3>
-                                <p className="text-sm text-gray-600 mb-4">Create an API token to start integrating with your CI/CD pipeline</p>
+                                <div className="text-[1rem] font-semibold text-[#0F172A] mb-1">No tokens created yet</div>
+                                <p className="text-[0.8125rem] text-[#64748B] mb-4">Create an API token to start integrating with your CI/CD pipeline</p>
                                 <button
                                   onClick={() => setShowNewTokenModal(true)}
-                                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all cursor-pointer whitespace-nowrap"
+                                  className="inline-flex items-center gap-[0.3125rem] text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer"
                                 >
-                                  <i className="ri-add-line mr-2"></i>
-                                  Create First Token
+                                  <i className="ri-add-line"></i> Create First Token
                                 </button>
                               </div>
                             ) : (
-                              <div className="space-y-3">
+                              <div className="flex flex-col gap-3">
                                 {ciTokens.map((token) => (
-                                  <div key={token.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                  <div key={token.id} className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[0.5rem]">
                                     <div className="flex items-center justify-between mb-3">
                                       <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                                          <i className="ri-key-2-line text-indigo-600 text-lg"></i>
+                                        <div className="w-10 h-10 bg-[#EEF2FF] rounded-[0.5rem] flex items-center justify-center flex-shrink-0">
+                                          <i className="ri-key-2-line text-[#4F46E5]" style={{ fontSize: '1.125rem' }}></i>
                                         </div>
                                         <div>
-                                          <h4 className="font-semibold text-gray-900">{token.name}</h4>
-                                          <p className="text-xs text-gray-500">
-                                            Created: {new Date(token.created_at).toLocaleDateString('en-US')}
-                                            {token.last_used_at && ` • Last used: ${new Date(token.last_used_at).toLocaleDateString('en-US')}`}
-                                          </p>
+                                          <div className="text-[0.8125rem] font-semibold text-[#0F172A]">{token.name}</div>
+                                          <div className="text-[0.6875rem] text-[#94A3B8]">
+                                            Created: {new Date(token.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            {token.last_used_at ? ` · Last used: ${new Date(token.last_used_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ' · Never used'}
+                                          </div>
                                         </div>
                                       </div>
                                       <button
                                         onClick={() => handleDeleteToken(token.id)}
-                                        className="px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap"
+                                        className="px-2.5 py-[0.25rem] text-[#DC2626] bg-transparent hover:bg-[#FEF2F2] rounded-[0.375rem] text-[0.8125rem] font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1"
                                       >
-                                        <i className="ri-delete-bin-line mr-1"></i>
-                                        Delete
+                                        <i className="ri-delete-bin-line"></i> Delete
                                       </button>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -1835,16 +1851,17 @@ def pytest_sessionfinish(session, exitstatus):
                                         type="text"
                                         value={token.token}
                                         readOnly
-                                        className="flex-1 px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-md text-[0.75rem] font-mono text-[#475569]"
+                                        className="flex-1 px-3 py-2 bg-white border border-[#E2E8F0] rounded-[0.375rem] text-[0.75rem] font-mono text-[#475569]"
                                       />
                                       <button
                                         onClick={() => handleCopyToken(token.token)}
-                                        className="flex-shrink-0 w-8 h-8 bg-white border border-[#E2E8F0] rounded-md hover:bg-[#F8FAFC] transition-all cursor-pointer flex items-center justify-center"
+                                        title="Copy"
+                                        className="w-7 h-7 rounded-[0.25rem] border border-[#E2E8F0] bg-white hover:bg-[#F1F5F9] text-[#64748B] cursor-pointer flex items-center justify-center flex-shrink-0 transition-colors"
                                       >
                                         {copiedToken === token.token ? (
-                                          <i className="ri-check-line text-green-600"></i>
+                                          <i className="ri-check-line text-[#6366F1]" style={{ fontSize: '0.875rem' }}></i>
                                         ) : (
-                                          <i className="ri-file-copy-line text-gray-600"></i>
+                                          <i className="ri-file-copy-line" style={{ fontSize: '0.875rem' }}></i>
                                         )}
                                       </button>
                                     </div>
@@ -1853,7 +1870,6 @@ def pytest_sessionfinish(session, exitstatus):
                               </div>
                             )}
                           </div>
-                        </div>
                       </div>
 
                       {/* ── API Token Scope Configuration Guide ── */}
@@ -1952,11 +1968,10 @@ def pytest_sessionfinish(session, exitstatus):
                         <p className="text-[0.8125rem] text-[#64748B] mb-3">Choose your preferred language for the Testably interface.</p>
                         <select
                           value={language}
-                          onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
+                          onChange={(e) => setLanguage(e.target.value as 'en')}
                           className="w-full max-w-xs px-3 py-2 border border-[#E2E8F0] rounded-lg text-[0.8125rem] bg-white focus:outline-none focus:border-[#C7D2FE] cursor-pointer"
                         >
                           <option value="en">English</option>
-                          <option value="ko">한국어</option>
                         </select>
 
                         <div className="border-t border-[#E2E8F0] my-6"></div>
@@ -2034,8 +2049,9 @@ def pytest_sessionfinish(session, exitstatus):
                         <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">Default Project</h3>
                         <p className="text-[0.8125rem] text-[#64748B] mb-3">Open this project automatically when you log in.</p>
                         <select
+                          value={defaultProjectId}
+                          onChange={(e) => setDefaultProjectId(e.target.value)}
                           className="w-full max-w-xs px-3 py-2 border border-[#E2E8F0] rounded-lg text-[0.8125rem] bg-white focus:outline-none focus:border-[#C7D2FE] cursor-pointer"
-                          defaultValue=""
                         >
                           <option value="">None (show project list)</option>
                           {userProjects.map(p => (
