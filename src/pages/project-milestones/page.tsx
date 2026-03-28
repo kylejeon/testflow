@@ -7,7 +7,7 @@ import NotificationBell from '../../components/feature/NotificationBell';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
 import ProjectHeader from '../../components/ProjectHeader';
-import { Avatar } from '../../components/Avatar';
+import { Avatar, AvatarStack } from '../../components/Avatar';
 
 interface Milestone {
   id: string;
@@ -72,6 +72,7 @@ export default function ProjectMilestones() {
     status: '' as Milestone['status']
   });
   const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number; avatar_emoji: string } | null>(null);
+  const [milestoneRunAssignees, setMilestoneRunAssignees] = useState<Map<string, string[]>>(new Map());
   const [milestoneAssigneeProfiles, setMilestoneAssigneeProfiles] = useState<Map<string, { name: string | null; email: string; url: string | null }>>(new Map());
 
   useEffect(() => {
@@ -230,14 +231,24 @@ export default function ProjectMilestones() {
       setExpandedMilestones(initialExpanded);
       setMilestones(organizedMilestones);
 
-      // Fetch profiles for milestone assignees (UUID-based, if assigned_to column exists)
-      const allMilestoneIds = new Set<string>();
-      milestonesWithProgress.forEach(m => { if (m.assigned_to) allMilestoneIds.add(m.assigned_to); });
-      if (allMilestoneIds.size > 0) {
+      // Build milestone_id → assignee UUIDs map from run data (no DB schema change needed)
+      const milestoneAssigneeMap = new Map<string, Set<string>>();
+      (allRunsData || []).forEach(run => {
+        if (run.milestone_id && run.assignees?.length > 0) {
+          if (!milestoneAssigneeMap.has(run.milestone_id)) milestoneAssigneeMap.set(run.milestone_id, new Set());
+          run.assignees.forEach((uid: string) => milestoneAssigneeMap.get(run.milestone_id)!.add(uid));
+        }
+      });
+      setMilestoneRunAssignees(new Map(Array.from(milestoneAssigneeMap.entries()).map(([k, v]) => [k, Array.from(v)])));
+
+      // Fetch profiles for all unique run assignee UUIDs (same pattern as project-runs page)
+      const allRunAssigneeIds = new Set<string>();
+      milestoneAssigneeMap.forEach(uids => uids.forEach(uid => allRunAssigneeIds.add(uid)));
+      if (allRunAssigneeIds.size > 0) {
         const { data: apData } = await supabase
           .from('profiles')
           .select('id, full_name, email, avatar_url')
-          .in('id', Array.from(allMilestoneIds));
+          .in('id', Array.from(allRunAssigneeIds));
         const apMap = new Map<string, { name: string | null; email: string; url: string | null }>();
         (apData || []).forEach((p: any) => apMap.set(p.id, { name: p.full_name || null, email: p.email || '', url: p.avatar_url || null }));
         setMilestoneAssigneeProfiles(apMap);
@@ -438,16 +449,17 @@ export default function ProjectMilestones() {
             <span className={`text-[0.625rem] font-semibold px-[0.4375rem] py-[0.125rem] rounded-full flex-shrink-0 ${info.badgeCls}`}>
               {info.label}
             </span>
-            {sub.assigned_to && (() => {
-              const p = milestoneAssigneeProfiles.get(sub.assigned_to!);
+            {(() => {
+              const assigneeIds = milestoneRunAssignees.get(sub.id) || [];
+              if (assigneeIds.length === 0) return null;
               return (
-                <Avatar
-                  userId={sub.assigned_to}
-                  name={p?.name ?? undefined}
-                  email={p?.email}
-                  photoUrl={p?.url ?? undefined}
+                <AvatarStack
                   size="xs"
-                  title={p?.name || p?.email || ''}
+                  max={3}
+                  members={assigneeIds.map(uid => {
+                    const p = milestoneAssigneeProfiles.get(uid);
+                    return { userId: uid, name: p?.name ?? undefined, email: p?.email, photoUrl: p?.url ?? undefined };
+                  })}
                 />
               );
             })()}

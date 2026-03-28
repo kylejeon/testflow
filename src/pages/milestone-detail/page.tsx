@@ -827,25 +827,19 @@ export default function MilestoneDetail() {
                               <span style={{ fontWeight: 600, color: '#334155' }}>{s.n}</span> {s.label}
                             </span>
                           ))}
-                          {(() => {
-                            const hasAssignees = run.assignees && run.assignees.length > 0;
-                            const hasAuthors = run.authors && run.authors.length > 0;
-                            if (!hasAssignees && !hasAuthors) return null;
-                            const members = hasAssignees
-                              ? run.assignees!.map((uid: string) => {
+                          {run.assignees && run.assignees.length > 0 && (
+                            <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                              <AvatarStack
+                                size="xs"
+                                max={4}
+                                members={run.assignees.map((uid: string) => {
                                   const p = assigneeProfiles.get(uid);
                                   return { userId: uid, name: p?.name ?? undefined, email: p?.email, photoUrl: p?.url ?? undefined };
-                                })
-                              : run.authors!.map((author: string) => {
-                                  const p = contributorProfiles.get(author);
-                                  return { name: p?.name || author, photoUrl: p?.url ?? undefined };
-                                });
-                            return (
-                              <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                                <AvatarStack size="xs" max={4} members={members} style={{ gap: 0 }} />
-                              </div>
-                            );
-                          })()}
+                                })}
+                                style={{ gap: 0 }}
+                              />
+                            </div>
+                          )}
                         </div>
                       </Link>
                     );
