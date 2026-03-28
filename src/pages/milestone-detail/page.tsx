@@ -532,6 +532,13 @@ export default function MilestoneDetail() {
     return author.substring(0, 2).toUpperCase();
   };
 
+  const getAuthorColor = (author: string): string => {
+    const colors = ['#6366F1', '#EC4899', '#F59E0B', '#22C55E', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
+    let hash = 0;
+    for (let i = 0; i < author.length; i++) hash = (hash * 31 + author.charCodeAt(i)) & 0xFFFF;
+    return colors[hash % colors.length];
+  };
+
   if (loading) return <PageLoader fullScreen />;
 
   if (!milestone) {
@@ -766,12 +773,12 @@ export default function MilestoneDetail() {
                         </div>
                         {/* Row 2: Progress bar */}
                         <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                          <div style={{ flex: 1, height: 6, background: '#F1F5F9', borderRadius: 3, overflow: 'hidden', display: 'flex' }}>
-                            {rp.passed > 0 && <div style={{ width: `${rp.passed}%`, background: '#22C55E', height: '100%' }} />}
-                            {rp.failed > 0 && <div style={{ width: `${rp.failed}%`, background: '#EF4444', height: '100%' }} />}
-                            {rp.blocked > 0 && <div style={{ width: `${rp.blocked}%`, background: '#F59E0B', height: '100%' }} />}
-                            {rp.retest > 0 && <div style={{ width: `${rp.retest}%`, background: '#FBBF24', height: '100%' }} />}
-                            {untestedPct > 0 && <div style={{ width: `${untestedPct}%`, background: '#E2E8F0', height: '100%' }} />}
+                          <div style={{ flex: 1, height: 6, background: (run.untested_count || 0) > 0 ? '#F1F5F9' : 'transparent', borderRadius: 3, overflow: 'hidden', display: 'flex' }}>
+                            {(run.passed_count || 0) > 0 && <div style={{ flex: run.passed_count, background: '#22C55E', height: '100%' }} />}
+                            {(run.failed_count || 0) > 0 && <div style={{ flex: run.failed_count, background: '#EF4444', height: '100%' }} />}
+                            {(run.blocked_count || 0) > 0 && <div style={{ flex: run.blocked_count, background: '#F59E0B', height: '100%' }} />}
+                            {(run.retest_count || 0) > 0 && <div style={{ flex: run.retest_count, background: '#FBBF24', height: '100%' }} />}
+                            {(run.untested_count || 0) > 0 && <div style={{ flex: run.untested_count, background: '#E2E8F0', height: '100%' }} />}
                           </div>
                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', minWidth: '2rem' }}>{completionRate}%</span>
                         </div>
@@ -791,10 +798,11 @@ export default function MilestoneDetail() {
                           {run.authors && run.authors.length > 0 && (
                             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                               {run.authors.map((author, idx) => {
-                                const avatarColors = ['#6366F1', '#EC4899', '#F59E0B', '#22C55E', '#3B82F6'];
+                                const emoji = contributorProfiles.get(author);
+                                const bg = getAuthorColor(author);
                                 return (
-                                  <div key={idx} style={{ width: '1.375rem', height: '1.375rem', borderRadius: '50%', background: avatarColors[idx % avatarColors.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.4375rem', fontWeight: 700, color: '#fff', border: '2px solid #fff', marginLeft: idx > 0 ? '-0.375rem' : 0, flexShrink: 0 }}>
-                                    {getContributorInitials(author)}
+                                  <div key={idx} title={author} style={{ width: '1.375rem', height: '1.375rem', borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: emoji ? '0.625rem' : '0.4375rem', fontWeight: 700, color: '#fff', border: '2px solid #fff', marginLeft: idx > 0 ? '-0.375rem' : 0, flexShrink: 0 }}>
+                                    {emoji || getContributorInitials(author)}
                                   </div>
                                 );
                               })}
@@ -958,8 +966,8 @@ export default function MilestoneDetail() {
                   </div>
                   {contributors.map(([author, count], idx) => (
                     <div key={author} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0', borderBottom: idx < contributors.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
-                      <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: avatarColors[idx % avatarColors.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5625rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                        {getContributorInitials(author)}
+                      <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: getAuthorColor(author), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: contributorProfiles.get(author) ? '0.875rem' : '0.5625rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                        {contributorProfiles.get(author) || getContributorInitials(author)}
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>{author}</div>
