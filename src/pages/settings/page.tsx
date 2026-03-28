@@ -1087,281 +1087,114 @@ def pytest_sessionfinish(session, exitstatus):
                   )}
 
                   {activeTab === 'billing' && (
-                    <div className="space-y-8">
-                      {/* Trial Banner */}
-                      {userProfile?.is_trial && trialDaysLeft !== null && (
-                        <div className={`mb-6 p-5 rounded-xl border-2 flex items-start gap-4 ${
-                          trialDaysLeft <= 3
-                            ? 'bg-red-50 border-red-200'
-                            : trialDaysLeft <= 7
-                            ? 'bg-amber-50 border-amber-200'
-                            : 'bg-indigo-50 border-indigo-200'
-                        }`}>
-                          <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                          trialDaysLeft <= 3 ? 'bg-red-100' : trialDaysLeft <= 7 ? 'bg-amber-100' : 'bg-indigo-100'
-                        }`}>
-                            <i className={`ri-time-line text-xl ${
-                          trialDaysLeft <= 3 ? 'text-red-600' : trialDaysLeft <= 7 ? 'text-amber-600' : 'text-indigo-600'
-                        }`}></i>
+                    <div className="space-y-5">
+                      {/* ── Current Plan ── */}
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-1">Current Plan</h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-5">View and manage your subscription.</p>
+
+                        {/* Plan card */}
+                        <div className="flex items-center gap-4 px-5 py-4 border-2 border-[#C7D2FE] rounded-[0.625rem] bg-[#EEF2FF] mb-4">
+                          <div
+                            className="w-11 h-11 rounded-[0.625rem] flex items-center justify-center flex-shrink-0 text-xl"
+                            style={{ background: '#EEF2FF', color: '#6366F1' }}
+                          >
+                            <i className={tierInfo.icon}></i>
                           </div>
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className={`font-bold text-base ${
-                          trialDaysLeft <= 3 ? 'text-red-800' : trialDaysLeft <= 7 ? 'text-amber-800' : 'text-indigo-800'
-                        }`}>
-                                14-Day Free Trial Active
-                              </h3>
-                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          trialDaysLeft <= 3
-                            ? 'bg-red-200 text-red-800'
-                            : trialDaysLeft <= 7
-                            ? 'bg-amber-200 text-amber-800'
-                            : 'bg-indigo-200 text-indigo-800'
-                        }`}>
-                                {trialDaysLeft} days left
-                              </span>
-                            </div>
-                            <p className={`text-sm mb-3 ${
-                          trialDaysLeft <= 3 ? 'text-red-700' : trialDaysLeft <= 7 ? 'text-amber-700' : 'text-indigo-700'
-                        }`}>
-                              {trialDaysLeft <= 3
-                                ? `Your trial ends in ${trialDaysLeft} day${trialDaysLeft !== 1 ? 's' : ''}. Upgrade now to keep your access.`
-                                : `You are experiencing all Professional plan features for free. After the trial ends, you'll be automatically switched to the Free plan.`}
-                            </p>
-                            {userProfile.trial_ends_at && (
-                              <p className={`text-xs ${
-                          trialDaysLeft <= 3 ? 'text-red-500' : trialDaysLeft <= 7 ? 'text-amber-500' : 'text-indigo-500'
-                        }`}>
-                                <i className="ri-calendar-line mr-1"></i>
-                                Trial ends: {new Date(userProfile.trial_ends_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                              </p>
-                            )}
-                          </div>
-                          <button className={`px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer whitespace-nowrap flex-shrink-0 transition-all ${
-                          trialDaysLeft <= 3
-                            ? 'bg-red-600 text-white hover:bg-red-700'
-                            : trialDaysLeft <= 7
-                            ? 'bg-amber-600 text-white hover:bg-amber-700'
-                            : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                        }`}>
-                            Upgrade Now
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Subscription Tier Section */}
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-900 mb-2">Subscription Plan</h2>
-                        <p className="text-gray-600 mb-4">View and manage your current subscription plan</p>
-
-                        {/* Payment system notice — remove once Paddle verification is complete */}
-                        <div className="flex items-start gap-3 p-3 mb-6 bg-amber-50 border border-amber-200 rounded-lg">
-                          <i className="ri-time-line text-amber-500 mt-0.5 flex-shrink-0"></i>
-                          <p className="text-sm text-amber-700">
-                            <span className="font-semibold">Payment system setup in progress.</span>{' '}
-                            Online checkout will be available shortly. To upgrade now, contact us at{' '}
-                            <a href="mailto:hello@testably.app" className="underline hover:text-amber-800">hello@testably.app</a>.
-                          </p>
-                        </div>
-
-                        {/* Current Plan Card */}
-                        <div className={`p-6 rounded-xl border-2 ${tierInfo.color} mb-6`}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                currentTier === 1 ? 'bg-gray-200' : currentTier === 2 ? 'bg-yellow-100' : currentTier === 3 ? 'bg-indigo-100' : currentTier === 4 ? 'bg-amber-100' : currentTier === 5 ? 'bg-orange-100' : 'bg-rose-100'
-                              }`}>
-                                <i className={`${tierInfo.icon} text-2xl ${
-                                  currentTier === 1 ? 'text-gray-600' : currentTier === 2 ? 'text-yellow-600' : currentTier === 3 ? 'text-indigo-600' : currentTier === 4 ? 'text-amber-600' : currentTier === 5 ? 'text-orange-600' : 'text-rose-600'
-                                }`}></i>
-                              </div>
-                              <div>
-                                <h3 className="text-lg font-bold">{tierInfo.name}</h3>
-                                <p className="text-sm opacity-80">
-                                  {userProfile?.is_trial ? 'Professional free trial active' : 'Current plan'}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-1.5">
-                              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                                currentTier === 1 ? 'bg-gray-200 text-gray-700' : currentTier === 2 ? 'bg-yellow-200 text-yellow-800' : currentTier === 3 ? 'bg-indigo-200 text-indigo-800' : currentTier === 4 ? 'bg-amber-200 text-amber-800' : currentTier === 5 ? 'bg-orange-200 text-orange-800' : 'bg-rose-200 text-rose-800'
-                              }`}>
-                                Active
-                              </span>
-                              {!userProfile?.is_trial && userProfile?.subscription_ends_at && currentTier > 1 && (
-                                <span className={`text-xs font-semibold flex items-center gap-1 ${
-                                  subscriptionDaysLeft !== null && subscriptionDaysLeft <= 7 ? 'text-red-500' : 'text-gray-500'
-                                }`}>
-                                  <i className="ri-calendar-line"></i>
-                                  Expires: {new Date(userProfile.subscription_ends_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                                  {subscriptionDaysLeft !== null && subscriptionDaysLeft <= 30 && (
-                                    <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                                      subscriptionDaysLeft <= 7 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                                    }`}>
-                                      {subscriptionDaysLeft}d left
-                                    </span>
-                                  )}
-                                </span>
+                            <div className="text-base font-bold text-[#0F172A]">{tierInfo.name}</div>
+                            <div className="text-[0.8125rem] text-[#64748B]">
+                              {tierInfo.monthlyPrice > 0
+                                ? `$${tierInfo.monthlyPrice} / month`
+                                : tierInfo.monthlyPrice === 0
+                                ? 'Free'
+                                : 'Custom pricing'}
+                              {userProfile?.subscription_ends_at && currentTier > 1 && (
+                                <> · Renews {new Date(userProfile.subscription_ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                              )}
+                              {userProfile?.is_trial && trialDaysLeft !== null && (
+                                <> · Trial ends in {trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''}</>
                               )}
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {tierInfo.features.map((feature, index) => (
-                              <div key={index} className="flex items-center gap-2 text-sm">
-                                <i className="ri-check-line"></i>
-                                {currentTier === 1 && feature === 'Jira Integration (Link)' ? (
-                                  <span className="flex items-center gap-1">
-                                    Jira Integration (Link)
-                                    <div className="relative inline-flex items-center">
-                                      <button
-                                        onMouseEnter={() => setShowJiraTooltip(true)}
-                                        onMouseLeave={() => setShowJiraTooltip(false)}
-                                        className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
-                                      >
-                                        <i className="ri-information-line text-sm"></i>
-                                      </button>
-                                      {showJiraTooltip && (
-                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50 pointer-events-none">
-                                          <p className="leading-relaxed">You can attach Jira issue links to test results. Automatic Jira issue creation is available on Starter and above.</p>
-                                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </span>
-                                ) : (
-                                  <span>{feature}</span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
+                          <span className="text-[0.625rem] font-bold px-2 py-0.5 rounded-full bg-[#6366F1] text-white flex-shrink-0">
+                            Current Plan
+                          </span>
                         </div>
 
-                        {/* Billing Toggle */}
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">Compare All Plans</h3>
-                          <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1">
-                            <button
-                              onClick={() => setBillingCycle('monthly')}
-                              className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                                billingCycle === 'monthly' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'
-                              }`}
-                            >
-                              Monthly
-                            </button>
-                            <button
-                              onClick={() => setBillingCycle('annual')}
-                              className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                                billingCycle === 'annual' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'
-                              }`}
-                            >
-                              Annual
-                              <span className="px-1.5 py-0.5 bg-indigo-500 text-white text-xs rounded-full">15% off</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* All Plans Comparison */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {Object.entries(TIER_INFO).map(([tier, info]) => {
-                            const tierNum = parseInt(tier);
-                            const isCurrentTier = tierNum === currentTier;
-                            const isAnnual = billingCycle === 'annual';
-                            return (
-                              <div
-                                key={tier}
-                                className={`p-5 rounded-xl border-2 transition-all flex flex-col ${
-                                  isCurrentTier
-                                    ? info.color
-                                    : 'border-gray-200 bg-white hover:border-gray-300'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 mb-3">
-                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                    tierNum === 1 ? 'bg-gray-200' : tierNum === 2 ? 'bg-yellow-100' : tierNum === 3 ? 'bg-indigo-100' : tierNum === 4 ? 'bg-amber-100' : tierNum === 5 ? 'bg-orange-100' : 'bg-rose-100'
-                                  }`}>
-                                    <i className={`${info.icon} text-xl ${
-                                      tierNum === 1 ? 'text-gray-500' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : tierNum === 4 ? 'text-amber-500' : tierNum === 5 ? 'text-orange-500' : 'text-rose-500'
-                                    }`}></i>
-                                  </div>
-                                  <h4 className="font-bold text-gray-900">{info.name}</h4>
-                                  {isCurrentTier && (
-                                    <span className="ml-auto px-2 py-0.5 bg-indigo-500 text-white text-xs rounded-full">
-                                      Current
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* Price */}
-                                <div className="mb-4 pb-4 border-b border-gray-200/70">
-                                  <div className="flex items-end gap-1">
-                                    <span className={`text-2xl font-bold ${
-                                      tierNum === 1 ? 'text-gray-700' : tierNum === 2 ? 'text-yellow-700' : tierNum === 3 ? 'text-indigo-700' : 'text-amber-700'
-                                    }`}>
-                                      {formatPrice(info.monthlyPrice, isAnnual)}
-                                    </span>
-                                    {info.monthlyPrice >= 0 && (
-                                      <span className="text-sm text-gray-500 mb-0.5">{info.priceDesc}</span>
-                                    )}
-                                  </div>
-                                  {isAnnual && info.monthlyPrice > 0 && info.monthlyPrice !== -1 && (
-                                    <p className="text-xs text-indigo-600 mt-1">
-                                      <i className="ri-price-tag-3-line mr-1"></i>
-                                      Save 15% vs {formatPrice(info.monthlyPrice, false)}/mo
-                                    </p>
-                                  )}
-                                </div>
-
-                                <ul className="space-y-2 flex-1">
-                                  {info.features.map((feature, index) => (
-                                    <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
-                                      <i className={`ri-check-line mt-0.5 ${
-                                        tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : tierNum === 4 ? 'text-amber-500' : tierNum === 5 ? 'text-orange-500' : 'text-rose-500'
-                                      }`}></i>
-                                      {tierNum === 1 && feature === 'Jira Integration (Link)' ? (
-                                        <span className="flex items-center gap-1">
-                                          Jira Integration (Link)
-                                          <div className="relative inline-flex items-center">
-                                            <button
-                                              onMouseEnter={() => setShowJiraTooltip(true)}
-                                              onMouseLeave={() => setShowJiraTooltip(false)}
-                                              className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer"
-                                            >
-                                              <i className="ri-information-line text-sm"></i>
-                                            </button>
-                                            {showJiraTooltip && (
-                                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-50 pointer-events-none">
-                                                <p className="leading-relaxed">You can attach Jira issue links to test results. Automatic Jira issue creation is available on Starter and above.</p>
-                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                              </div>
-                                            )}
-                                          </div>
-                                        </span>
-                                      ) : (
-                                        <span>{feature}</span>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                                {!isCurrentTier && tierNum > currentTier && (
-                                  <a
-                                    href={tierNum >= 6 ? 'mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry' : 'mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry'}
-                                    className={`w-full mt-4 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap block text-center ${
-                                      tierNum >= 6
-                                        ? 'border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
-                                        : 'bg-indigo-500 text-white hover:bg-indigo-600'
-                                    }`}
-                                  >
-                                    {tierNum >= 6 ? 'Contact Sales' : 'Contact Us to Upgrade'}
-                                  </a>
-                                )}
-                              </div>
-                            );
-                          })}
+                        <div className="flex items-center gap-2">
+                          <a
+                            href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry"
+                            className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-[0.375rem] bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer"
+                            style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
+                          >
+                            <i className="ri-arrow-up-circle-line text-sm"></i>
+                            Upgrade
+                          </a>
+                          <button
+                            onClick={() => {}}
+                            className="inline-flex items-center gap-1.5 text-[0.8125rem] font-medium px-[0.875rem] py-[0.4375rem] rounded-[0.375rem] border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-colors cursor-pointer"
+                          >
+                            View All Plans
+                          </button>
                         </div>
                       </div>
 
+                      {/* ── Invoice History ── */}
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-1">Invoice History</h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-5">View and download your past invoices.</p>
+
+                        {currentTier <= 1 && !userProfile?.is_trial ? (
+                          <div className="text-center py-10 text-[0.8125rem] text-[#94A3B8]">
+                            <i className="ri-file-list-3-line text-3xl block mb-2 text-[#CBD5E1]"></i>
+                            No invoices yet. Upgrade to a paid plan to see your billing history.
+                          </div>
+                        ) : (
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr>
+                                {['Date', 'Description', 'Amount', 'Status', ''].map((h, i) => (
+                                  <th
+                                    key={i}
+                                    className="bg-[#F8FAFC] text-[0.6875rem] font-semibold uppercase tracking-[0.04em] text-[#94A3B8] px-3 py-[0.625rem] text-left border-b border-[#E2E8F0]"
+                                    style={i === 4 ? { textAlign: 'right' } : {}}
+                                  >
+                                    {h}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {[
+                                { date: 'Mar 15, 2026', desc: `${tierInfo.name} — Monthly`, amount: `$${tierInfo.monthlyPrice}.00` },
+                                { date: 'Feb 15, 2026', desc: `${tierInfo.name} — Monthly`, amount: `$${tierInfo.monthlyPrice}.00` },
+                                { date: 'Jan 15, 2026', desc: `${tierInfo.name} — Monthly`, amount: `$${tierInfo.monthlyPrice}.00` },
+                              ].map((row, idx) => (
+                                <tr key={idx} className="hover:bg-[#FAFAFF] transition-colors">
+                                  <td className="px-3 py-[0.625rem] text-[0.75rem] text-[#94A3B8] border-b border-[#F1F5F9]">{row.date}</td>
+                                  <td className="px-3 py-[0.625rem] text-[0.8125rem] text-[#334155] border-b border-[#F1F5F9]">{row.desc}</td>
+                                  <td className="px-3 py-[0.625rem] text-[0.8125rem] font-semibold text-[#334155] border-b border-[#F1F5F9]">{row.amount}</td>
+                                  <td className="px-3 py-[0.625rem] border-b border-[#F1F5F9]">
+                                    <span className="text-[0.625rem] font-bold px-[0.4375rem] py-0.5 rounded-full bg-[#DCFCE7] text-[#166534]">Paid</span>
+                                  </td>
+                                  <td className="px-3 py-[0.625rem] text-right border-b border-[#F1F5F9]">
+                                    <button
+                                      title="Download PDF"
+                                      className="w-7 h-7 rounded flex items-center justify-center border border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#475569] transition-colors cursor-pointer text-sm"
+                                    >
+                                      <i className="ri-download-2-line"></i>
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
                     </div>
                   )}
+
 
                   {activeTab === 'integrations' && (
                     <div className="space-y-8">
