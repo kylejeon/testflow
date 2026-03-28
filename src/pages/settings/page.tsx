@@ -177,6 +177,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [jiraSaveResult, setJiraSaveResult] = useState<{ success: boolean; message: string } | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showApiToken, setShowApiToken] = useState(false);
   const [showJiraTooltip, setShowJiraTooltip] = useState(false);
@@ -497,11 +498,12 @@ export default function SettingsPage() {
         if (error) throw error;
       }
 
-      alert('Jira settings saved successfully.');
+      setJiraSaveResult({ success: true, message: 'Jira settings saved successfully!' });
+      setTimeout(() => setJiraSaveResult(null), 4000);
       setTestResult(null);
     } catch (error) {
       console.error('Jira settings save error:', error);
-      alert('Failed to save Jira settings.');
+      setJiraSaveResult({ success: false, message: 'Failed to save Jira settings. Please try again.' });
     } finally {
       setSaving(false);
     }
@@ -510,16 +512,22 @@ export default function SettingsPage() {
   // ── Webhook helpers ───────────────────────────────────────────────────────
 
   const WEBHOOK_TYPE_META = {
-    slack: { label: 'Slack', icon: 'ri-slack-line', color: 'bg-purple-100 text-purple-700', placeholder: 'https://hooks.slack.com/services/...' },
-    teams: { label: 'Microsoft Teams', icon: 'ri-microsoft-line', color: 'bg-blue-100 text-blue-700', placeholder: 'https://prod-xx.westus.logic.azure.com/workflows/...' },
+    slack: { label: 'Slack', icon: 'ri-slack-line', iconBg: '#F3E8FF', iconColor: '#7C3AED', placeholder: 'https://hooks.slack.com/services/...' },
+    teams: { label: 'Microsoft Teams', icon: 'ri-microsoft-line', iconBg: '#DBEAFE', iconColor: '#1D4ED8', placeholder: 'https://prod-xx.westus.logic.azure.com/workflows/...' },
   };
 
   const fetchWebhooks = async () => {
     setLoadingWebhooks(true);
     try {
-      const { data: projects } = await supabase.from('projects').select('id, name').order('name');
-      setWebhookProjects(projects ?? []);
-      if (projects && projects.length > 0) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: memberRows } = await supabase
+        .from('project_members')
+        .select('project_id, projects!inner(id, name)')
+        .eq('user_id', user.id);
+      const projects = (memberRows ?? []).map((r: any) => ({ id: r.projects.id, name: r.projects.name }));
+      setWebhookProjects(projects);
+      if (projects.length > 0) {
         const { data: integrations } = await supabase
           .from('integrations')
           .select('*')
@@ -1456,6 +1464,22 @@ def pytest_sessionfinish(session, exitstatus):
                           </div>
                         ) : (
                           <div className={`${!isStarterOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {/* Connected status card */}
+                            {jiraSettings.domain && (
+                              <div className="flex items-center gap-3 p-3 mb-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-[0.625rem]">
+                                <div className="w-9 h-9 bg-[#DBEAFE] rounded-[0.5rem] flex items-center justify-center flex-shrink-0">
+                                  <i className="ri-links-fill text-[#1E40AF]" style={{ fontSize: '1.125rem' }}></i>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[0.8125rem] font-semibold text-[#0F172A] truncate">{jiraSettings.domain}</div>
+                                  <div className="text-[0.6875rem] text-[#64748B]">Issue type: {jiraSettings.issueType} · Linked issue creation enabled</div>
+                                </div>
+                                <span className="px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded-full text-[0.625rem] font-semibold flex items-center gap-1 flex-shrink-0">
+                                  <i className="ri-checkbox-circle-fill"></i> Connected
+                                </span>
+                              </div>
+                            )}
+
                             {/* Jira Domain */}
                             <div className="mb-4">
                               <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
@@ -1571,6 +1595,17 @@ def pytest_sessionfinish(session, exitstatus):
                                 {testResult.message}
                               </div>
                             )}
+                            {/* Save Result Message */}
+                            {jiraSaveResult && (
+                              <div className={`px-3 py-2.5 rounded-[0.5rem] border flex items-center gap-1.5 text-[0.8125rem] mt-2 ${
+                                jiraSaveResult.success
+                                  ? 'bg-[#F0FDF4] border-[#BBF7D0] text-[#166534]'
+                                  : 'bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]'
+                              }`}>
+                                <i className={jiraSaveResult.success ? 'ri-checkbox-circle-fill' : 'ri-error-warning-line'}></i>
+                                {jiraSaveResult.message}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1609,10 +1644,11 @@ def pytest_sessionfinish(session, exitstatus):
                         {isStarterOrHigher && (
                           <div className={loadingWebhooks ? 'opacity-50 pointer-events-none' : ''}>
                             <div className="flex items-center justify-between mb-4">
-                              <span className="text-sm text-gray-600">{webhooks.length} webhook{webhooks.length !== 1 ? 's' : ''} configured across all projects</span>
+                              <span className="text-[0.8125rem] text-[#64748B]">{webhooks.length} webhook{webhooks.length !== 1 ? 's' : ''} configured across all projects</span>
                               <button
                                 onClick={openAddWebhookModal}
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm cursor-pointer whitespace-nowrap"
+                                className="inline-flex items-center gap-[0.3125rem] text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer"
+                                style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
                               >
                                 <i className="ri-add-line"></i>Add Integration
                               </button>
@@ -1620,21 +1656,21 @@ def pytest_sessionfinish(session, exitstatus):
 
                             {loadingWebhooks ? (
                               <div className="flex justify-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                                <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-[#6366F1]"></div>
                               </div>
                             ) : webhooks.length === 0 ? (
-                              <div className="bg-gray-50 rounded-xl border border-gray-200 p-10 text-center">
-                                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                  <i className="ri-plug-line text-2xl text-gray-400"></i>
+                              <div className="bg-[#F8FAFC] rounded-[0.75rem] border border-dashed border-[#E2E8F0] p-10 text-center">
+                                <div className="w-12 h-12 bg-[#F1F5F9] rounded-full flex items-center justify-center mx-auto mb-3">
+                                  <i className="ri-plug-line text-[#94A3B8]" style={{ fontSize: '1.5rem' }}></i>
                                 </div>
-                                <h3 className="text-base font-semibold text-gray-900 mb-1">No webhooks yet</h3>
-                                <p className="text-sm text-gray-500 mb-4">Connect Slack or Microsoft Teams to receive real-time alerts about test runs and milestones.</p>
-                                <button onClick={openAddWebhookModal} className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold text-sm cursor-pointer">
+                                <div className="text-[0.9375rem] font-semibold text-[#0F172A] mb-1">No webhooks yet</div>
+                                <p className="text-[0.8125rem] text-[#64748B] mb-4">Connect Slack or Microsoft Teams to receive real-time alerts about test runs and milestones.</p>
+                                <button onClick={openAddWebhookModal} className="inline-flex items-center gap-[0.3125rem] text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer">
                                   <i className="ri-add-line"></i>Add your first integration
                                 </button>
                               </div>
                             ) : (
-                              <div className="space-y-3">
+                              <div className="flex flex-col gap-3">
                                 {webhooks.map(wh => {
                                   const meta = WEBHOOK_TYPE_META[wh.type as 'slack' | 'teams'];
                                   const project = webhookProjects.find(p => p.id === wh.project_id);
@@ -1642,31 +1678,31 @@ def pytest_sessionfinish(session, exitstatus):
                                   const thisTestResult = webhookTestResult?.id === wh.id ? webhookTestResult : null;
                                   const showingLogs = webhookLogsId === wh.id;
                                   return (
-                                    <div key={wh.id} className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                                    <div key={wh.id} className="bg-[#F8FAFC] rounded-[0.75rem] border border-[#E2E8F0] p-4">
                                       <div className="flex items-start justify-between gap-4">
                                         <div className="flex items-start gap-3 flex-1 min-w-0">
-                                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${meta.color}`}>
-                                            <i className={`${meta.icon} text-lg`}></i>
+                                          <div className="w-9 h-9 rounded-[0.5rem] flex items-center justify-center flex-shrink-0" style={{ background: meta.iconBg, color: meta.iconColor }}>
+                                            <i className={meta.icon} style={{ fontSize: '1.125rem' }}></i>
                                           </div>
                                           <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                              <span className="font-semibold text-gray-900 text-sm">{meta.label}</span>
-                                              {wh.channel_name && <span className="text-sm text-gray-500">#{wh.channel_name}</span>}
-                                              <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${wh.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                              <span className="text-[0.8125rem] font-semibold text-[#0F172A]">{meta.label}</span>
+                                              {wh.channel_name && <span className="text-[0.8125rem] text-[#64748B]">#{wh.channel_name}</span>}
+                                              <span className={`px-1.5 py-0.5 text-[0.625rem] font-semibold rounded-full ${wh.is_active ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
                                                 {wh.is_active ? 'Active' : 'Paused'}
                                               </span>
                                               {project && (
-                                                <span className="px-2 py-0.5 text-xs font-semibold bg-orange-50 text-orange-700 rounded-full border border-orange-100 truncate max-w-[160px]">
-                                                  <i className="ri-folder-line mr-1"></i>{project.name}
+                                                <span className="px-1.5 py-0.5 text-[0.625rem] font-semibold bg-[#FFF7ED] text-[#C2410C] rounded-full border border-[#FFEDD5] truncate max-w-[160px]">
+                                                  <i className="ri-folder-line mr-0.5"></i>{project.name}
                                                 </span>
                                               )}
                                             </div>
-                                            <p className="text-xs text-gray-400 mt-0.5 truncate">{wh.webhook_url}</p>
+                                            <p className="text-[0.6875rem] text-[#94A3B8] mt-0.5 truncate">{wh.webhook_url}</p>
                                             <div className="flex flex-wrap gap-1 mt-1.5">
                                               {(wh.events as string[]).map((ev: string) => {
                                                 const evMeta = WEBHOOK_EVENTS.find(e => e.type === ev);
                                                 return (
-                                                  <span key={ev} className="px-1.5 py-0.5 text-xs bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
+                                                  <span key={ev} className="px-1.5 py-0.5 text-[0.625rem] bg-[#EEF2FF] text-[#4338CA] rounded-full border border-[#C7D2FE]">
                                                     {evMeta?.label ?? ev}
                                                   </span>
                                                 );
@@ -1674,45 +1710,44 @@ def pytest_sessionfinish(session, exitstatus):
                                             </div>
                                           </div>
                                         </div>
-                                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                                          <button onClick={() => handleTestWebhook(wh)} disabled={isTestingThis} className="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1 whitespace-nowrap">
-                                            {isTestingThis ? <><i className="ri-loader-4-line animate-spin"></i> Sending…</> : <><i className="ri-send-plane-line"></i> Test</>}
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                          <button onClick={() => handleTestWebhook(wh)} disabled={isTestingThis} title="Test" className="w-7 h-7 flex items-center justify-center text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] rounded-[0.375rem] transition-colors cursor-pointer disabled:opacity-50">
+                                            {isTestingThis ? <i className="ri-loader-4-line animate-spin" style={{ fontSize: '0.875rem' }}></i> : <i className="ri-send-plane-line" style={{ fontSize: '0.875rem' }}></i>}
                                           </button>
-                                          <button onClick={() => showingLogs ? setWebhookLogsId(null) : openWebhookLogs(wh.id)} className="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap">
-                                            <i className="ri-history-line"></i> Logs
+                                          <button onClick={() => showingLogs ? setWebhookLogsId(null) : openWebhookLogs(wh.id)} title="Logs" className="w-7 h-7 flex items-center justify-center text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] rounded-[0.375rem] transition-colors cursor-pointer">
+                                            <i className="ri-history-line" style={{ fontSize: '0.875rem' }}></i>
                                           </button>
-                                          <button onClick={() => handleToggleWebhookActive(wh)} className="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1 whitespace-nowrap">
-                                            <i className={wh.is_active ? 'ri-pause-line' : 'ri-play-line'}></i>
-                                            {wh.is_active ? 'Pause' : 'Resume'}
+                                          <button onClick={() => handleToggleWebhookActive(wh)} title={wh.is_active ? 'Pause' : 'Resume'} className="w-7 h-7 flex items-center justify-center text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] rounded-[0.375rem] transition-colors cursor-pointer">
+                                            <i className={wh.is_active ? 'ri-pause-line' : 'ri-play-line'} style={{ fontSize: '0.875rem' }}></i>
                                           </button>
-                                          <button onClick={() => openEditWebhookModal(wh)} className="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-colors cursor-pointer">
-                                            <i className="ri-edit-line text-sm"></i>
+                                          <button onClick={() => openEditWebhookModal(wh)} title="Edit" className="w-7 h-7 flex items-center justify-center text-[#64748B] bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] rounded-[0.375rem] transition-colors cursor-pointer">
+                                            <i className="ri-edit-line" style={{ fontSize: '0.875rem' }}></i>
                                           </button>
-                                          <button onClick={() => handleDeleteWebhook(wh.id)} className="w-7 h-7 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-lg transition-colors cursor-pointer">
-                                            <i className="ri-delete-bin-line text-sm"></i>
+                                          <button onClick={() => handleDeleteWebhook(wh.id)} title="Delete" className="w-7 h-7 flex items-center justify-center text-[#DC2626] bg-white border border-[#E2E8F0] hover:bg-[#FEF2F2] rounded-[0.375rem] transition-colors cursor-pointer">
+                                            <i className="ri-delete-bin-line" style={{ fontSize: '0.875rem' }}></i>
                                           </button>
                                         </div>
                                       </div>
 
                                       {thisTestResult && (
-                                        <div className={`mt-3 px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${thisTestResult.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                        <div className={`mt-3 px-3 py-2 rounded-[0.5rem] text-[0.8125rem] flex items-center gap-2 ${thisTestResult.ok ? 'bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]' : 'bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA]'}`}>
                                           <i className={thisTestResult.ok ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill'}></i>
                                           {thisTestResult.msg}
                                         </div>
                                       )}
 
                                       {showingLogs && (
-                                        <div className="mt-3 border-t border-gray-200 pt-3">
-                                          <h4 className="text-sm font-semibold text-gray-700 mb-2">Delivery Logs (last 50)</h4>
+                                        <div className="mt-3 border-t border-[#E2E8F0] pt-3">
+                                          <div className="text-[0.8125rem] font-semibold text-[#334155] mb-2">Delivery Logs (last 50)</div>
                                           {webhookLogsLoading ? (
-                                            <div className="flex items-center gap-2 text-sm text-gray-500"><i className="ri-loader-4-line animate-spin"></i> Loading…</div>
+                                            <div className="flex items-center gap-2 text-[0.8125rem] text-[#64748B]"><i className="ri-loader-4-line animate-spin"></i> Loading…</div>
                                           ) : webhookLogs.length === 0 ? (
-                                            <p className="text-sm text-gray-400">No deliveries yet.</p>
+                                            <p className="text-[0.8125rem] text-[#94A3B8]">No deliveries yet.</p>
                                           ) : (
                                             <div className="overflow-x-auto">
-                                              <table className="w-full text-sm">
+                                              <table className="w-full">
                                                 <thead>
-                                                  <tr className="text-xs text-gray-500 border-b border-gray-100">
+                                                  <tr className="text-[0.6875rem] text-[#94A3B8] border-b border-[#F1F5F9]">
                                                     <th className="text-left py-1.5 pr-4 font-semibold">Event</th>
                                                     <th className="text-left py-1.5 pr-4 font-semibold">Status</th>
                                                     <th className="text-left py-1.5 pr-4 font-semibold">Code</th>
@@ -1721,15 +1756,15 @@ def pytest_sessionfinish(session, exitstatus):
                                                 </thead>
                                                 <tbody>
                                                   {webhookLogs.map(log => (
-                                                    <tr key={log.id} className="border-b border-gray-50">
-                                                      <td className="py-1.5 pr-4 font-mono text-xs text-gray-600">{log.event_type}</td>
+                                                    <tr key={log.id} className="border-b border-[#F8FAFC]">
+                                                      <td className="py-1.5 pr-4 font-mono text-[0.6875rem] text-[#64748B]">{log.event_type}</td>
                                                       <td className="py-1.5 pr-4">
-                                                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${log.status === 'success' ? 'bg-green-100 text-green-700' : log.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                        <span className={`px-1.5 py-0.5 text-[0.625rem] font-semibold rounded-full ${log.status === 'success' ? 'bg-[#DCFCE7] text-[#166534]' : log.status === 'failed' ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#FEF3C7] text-[#92400E]'}`}>
                                                           {log.status}
                                                         </span>
                                                       </td>
-                                                      <td className="py-1.5 pr-4 text-gray-500">{log.response_code ?? '—'}</td>
-                                                      <td className="py-1.5 text-gray-400 text-xs whitespace-nowrap">{new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                                                      <td className="py-1.5 pr-4 text-[0.6875rem] text-[#94A3B8]">{log.response_code ?? '—'}</td>
+                                                      <td className="py-1.5 text-[0.6875rem] text-[#94A3B8] whitespace-nowrap">{new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                                                     </tr>
                                                   ))}
                                                 </tbody>
@@ -1794,41 +1829,45 @@ def pytest_sessionfinish(session, exitstatus):
                             </div>
                           ) : (
                             <div>
-                              <div className="flex items-center gap-2 mb-4">
-                                <button onClick={() => setSelectedPlatform('github')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${selectedPlatform === 'github' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                                  <i className="ri-github-fill mr-2"></i>GitHub Actions
-                                </button>
-                                <button onClick={() => setSelectedPlatform('gitlab')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${selectedPlatform === 'gitlab' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                                  <i className="ri-gitlab-fill mr-2"></i>GitLab CI
-                                </button>
-                                <button onClick={() => setSelectedPlatform('python')} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${selectedPlatform === 'python' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                                  <i className="ri-code-s-slash-line mr-2"></i>Python
-                                </button>
+                              <div className="flex items-center gap-1.5 mb-4">
+                                {(['github', 'gitlab', 'python'] as const).map(p => (
+                                  <button
+                                    key={p}
+                                    onClick={() => setSelectedPlatform(p)}
+                                    className={`inline-flex items-center gap-1.5 px-3.5 py-[0.4375rem] rounded-[0.375rem] text-[0.75rem] font-medium border transition-all cursor-pointer ${selectedPlatform === p ? 'bg-[#6366F1] text-white border-[#6366F1]' : 'bg-[#F1F5F9] text-[#475569] border-[#E2E8F0] hover:bg-[#E2E8F0]'}`}
+                                  >
+                                    <i className={p === 'github' ? 'ri-github-fill' : p === 'gitlab' ? 'ri-gitlab-fill' : 'ri-code-s-slash-line'}></i>
+                                    {p === 'github' ? 'GitHub Actions' : p === 'gitlab' ? 'GitLab CI' : 'Python'}
+                                  </button>
+                                ))}
                               </div>
 
-                              <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <i className="ri-settings-4-line text-indigo-600 text-lg"></i>
-                                  <p className="text-sm font-bold text-indigo-800">
-                                    Register the following values in your{' '}
+                              <div className="mb-4 p-4 bg-[#EEF2FF] border border-[#C7D2FE] rounded-[0.75rem]">
+                                <div className="flex items-center gap-1.5 mb-3">
+                                  <i className="ri-settings-4-line text-[#4F46E5]"></i>
+                                  <span className="text-[0.8125rem] font-bold text-[#3730A3]">
+                                    Register in your{' '}
                                     {selectedPlatform === 'github' ? 'GitHub Secrets' : selectedPlatform === 'gitlab' ? 'GitLab CI/CD Variables' : 'environment variables'}
-                                  </p>
+                                  </span>
                                 </div>
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-2 bg-white rounded-lg border border-indigo-200 px-3 py-2">
-                                    <span className="text-xs font-bold font-mono text-indigo-700 w-36 flex-shrink-0">TESTABLY_URL</span>
-                                    <span className="text-xs text-gray-400 font-mono flex-1 truncate">{`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results`}</span>
-                                    <button onClick={() => handleCopyToken(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results`)} className="flex-shrink-0 px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap">
-                                      {copiedToken === `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results` ? <><i className="ri-check-line mr-1"></i>Copied</> : <><i className="ri-file-copy-line mr-1"></i>Copy</>}
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2 bg-white border border-[#C7D2FE] rounded-[0.375rem] px-3 py-2">
+                                    <span className="text-[0.6875rem] font-bold font-mono text-[#4338CA] w-32 flex-shrink-0">TESTABLY_URL</span>
+                                    <span className="text-[0.6875rem] text-[#94A3B8] font-mono flex-1 truncate">{`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results`}</span>
+                                    <button onClick={() => handleCopyToken(`${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results`)} title="Copy" className="w-6 h-6 flex items-center justify-center bg-[#EEF2FF] hover:bg-[#C7D2FE] text-[#4338CA] rounded flex-shrink-0 transition-colors cursor-pointer">
+                                      {copiedToken === `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results` ? <i className="ri-check-line" style={{ fontSize: '0.75rem' }}></i> : <i className="ri-file-copy-line" style={{ fontSize: '0.75rem' }}></i>}
                                     </button>
                                   </div>
-                                  <div className="flex items-center gap-2 bg-white rounded-lg border border-indigo-200 px-3 py-2">
-                                    <span className="text-xs font-bold font-mono text-indigo-700 w-36 flex-shrink-0">TESTABLY_TOKEN</span>
-                                    <span className="text-xs text-gray-400 font-mono flex-1 truncate">{ciTokens[0].token}</span>
-                                    <button onClick={() => handleCopyToken(ciTokens[0].token)} className="flex-shrink-0 px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-xs font-semibold transition-all cursor-pointer whitespace-nowrap">
-                                      {copiedToken === ciTokens[0].token ? <><i className="ri-check-line mr-1"></i>Copied</> : <><i className="ri-file-copy-line mr-1"></i>Copy</>}
+                                  <div className="flex items-center gap-2 bg-white border border-[#C7D2FE] rounded-[0.375rem] px-3 py-2">
+                                    <span className="text-[0.6875rem] font-bold font-mono text-[#4338CA] w-32 flex-shrink-0">TESTABLY_TOKEN</span>
+                                    <span className="text-[0.6875rem] text-[#94A3B8] font-mono flex-1 truncate">{ciTokens[0].token}</span>
+                                    <button onClick={() => handleCopyToken(ciTokens[0].token)} title="Copy" className="w-6 h-6 flex items-center justify-center bg-[#EEF2FF] hover:bg-[#C7D2FE] text-[#4338CA] rounded flex-shrink-0 transition-colors cursor-pointer">
+                                      {copiedToken === ciTokens[0].token ? <i className="ri-check-line" style={{ fontSize: '0.75rem' }}></i> : <i className="ri-file-copy-line" style={{ fontSize: '0.75rem' }}></i>}
                                     </button>
                                   </div>
+                                </div>
+                                <div className="text-[0.6875rem] text-[#4338CA] mt-2 flex items-center gap-1">
+                                  <i className="ri-information-line"></i> Registering both values as environment variables keeps them secure without modifying your code.
                                 </div>
                               </div>
 
