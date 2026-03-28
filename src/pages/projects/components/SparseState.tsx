@@ -19,6 +19,8 @@ interface SparseStateProps {
   onTipCreateTC?: () => void;
   onTipExploreSample?: () => void;
   isTipsSampleLoading?: boolean;
+  /** ActionCard "Import from TestRail" handler */
+  onImport?: () => void;
 }
 
 // ── Health helpers ────────────────────────────────────────────────────────────
@@ -78,6 +80,7 @@ function buildActionCards(
   onCreateProject: () => void,
   onTrySample: () => void,
   navigate: ReturnType<typeof useNavigate>,
+  onImport?: () => void,
 ): ActionCard[] {
   const all: ActionCard[] = [
     {
@@ -118,7 +121,7 @@ function buildActionCards(
       iconBg: 'bg-amber-50',
       iconColor: 'text-amber-500',
       showWhen: (c) => c <= 1,
-      onClick: () => {},
+      onClick: onImport,
     },
   ];
   return all.filter((c) => c.showWhen(count));
@@ -413,6 +416,7 @@ export default function SparseState({
   onTipCreateTC,
   onTipExploreSample,
   isTipsSampleLoading,
+  onImport,
 }: SparseStateProps) {
   const navigate = useNavigate();
   const count = projects.length as 1 | 2;
@@ -426,7 +430,7 @@ export default function SparseState({
     setTipsDismissed(true);
   };
 
-  const actionCards = buildActionCards(count, onCreateProject, onTrySample, navigate);
+  const actionCards = buildActionCards(count, onCreateProject, onTrySample, navigate, onImport);
 
   // All cards in one grid: project cards first, then action cards
   const totalProjectCards = projects.length;

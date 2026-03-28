@@ -8,6 +8,7 @@ import DeleteConfirmModal from './DeleteConfirmModal';
 import EmptyState from './EmptyState';
 import SparseState from './SparseState';
 import QuickCreateTCModal from './QuickCreateTCModal';
+import TestRailImportModal from './TestRailImportModal';
 import StatCards, { type StatCardsData } from './StatCards';
 import { Avatar } from '../../../components/Avatar';
 import { useTranslation } from 'react-i18next';
@@ -60,6 +61,7 @@ export default function ProjectsContent() {
   const [loading, setLoading] = useState(true);
   const [sampleLoading, setSampleLoading] = useState(false);
   const [tipsSampleLoading, setTipsSampleLoading] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [showQuickCreateTCModal, setShowQuickCreateTCModal] = useState(false);
   const [quickCreateProject, setQuickCreateProject] = useState<{ id: string; name: string } | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -700,6 +702,7 @@ export default function ProjectsContent() {
                 onTipCreateTC={handleTipCreateTC}
                 onTipExploreSample={handleTipExploreSample}
                 isTipsSampleLoading={tipsSampleLoading}
+                onImport={() => setShowImportModal(true)}
               />
             </div>
           </div>
@@ -729,6 +732,12 @@ export default function ProjectsContent() {
               setQuickCreateProject(null);
               setShowCreateModal(true);
             }}
+          />
+        )}
+        {showImportModal && (
+          <TestRailImportModal
+            onClose={() => { setShowImportModal(false); fetchProjects(); }}
+            onOpenCSV={() => { /* CSV import is project-specific; guide to a project first */ showToast('Select a project first to use CSV import', 'info'); }}
           />
         )}
         <ToastContainer toasts={toasts} dismiss={dismiss} />
