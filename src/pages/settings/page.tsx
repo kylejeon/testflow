@@ -1056,51 +1056,77 @@ def pytest_sessionfinish(session, exitstatus):
                           setUserProfile((prev) => prev ? { ...prev, full_name: name, avatar_emoji: emoji } : prev);
                         }}
                       />
+                      {/* ── Data Export ── */}
+                      <div className="mt-6 bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5 flex items-center gap-2">
+                          <i className="ri-download-2-line text-[#3B82F6]"></i>
+                          Data Export
+                        </h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-4">Download all your data including test cases, runs, and results. Available in JSON or CSV format.</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => alert('JSON export is coming soon. Contact hello@testably.app for data requests.')}
+                            className="inline-flex items-center gap-1.5 px-4 py-[0.4375rem] rounded-[0.375rem] border border-[#E2E8F0] bg-white text-[0.8125rem] font-medium text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-colors cursor-pointer"
+                          >
+                            <i className="ri-file-code-line"></i> Export as JSON
+                          </button>
+                          <button
+                            onClick={() => alert('CSV export is coming soon. Contact hello@testably.app for data requests.')}
+                            className="inline-flex items-center gap-1.5 px-4 py-[0.4375rem] rounded-[0.375rem] border border-[#E2E8F0] bg-white text-[0.8125rem] font-medium text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-colors cursor-pointer"
+                          >
+                            <i className="ri-file-excel-2-line"></i> Export as CSV
+                          </button>
+                        </div>
+                      </div>
                       <DangerZoneSection email={userProfile.email} />
                     </>
                   )}
 
                   {activeTab === 'members' && (
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h2 className="text-lg font-bold text-slate-900">Project Members</h2>
-                          <p className="text-sm text-slate-500 mt-1">Manage team members and their roles for each project.</p>
+                    <div>
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <div className="flex items-start justify-between mb-5">
+                          <div>
+                            <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">Project Members</h3>
+                            <p className="text-[0.8125rem] text-[#64748B]">Manage team members and their roles for each project.</p>
+                          </div>
+                          <button
+                            onClick={() => setShowMembersInviteModal(true)}
+                            disabled={!selectedProjectId}
+                            className="flex items-center gap-1.5 px-4 py-[0.4375rem] bg-[#6366F1] text-white text-[0.8125rem] font-semibold rounded-lg hover:bg-[#4F46E5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer flex-shrink-0 ml-4"
+                          >
+                            <i className="ri-user-add-line"></i>
+                            Invite Member
+                          </button>
                         </div>
-                        <button
-                          onClick={() => setShowMembersInviteModal(true)}
-                          disabled={!selectedProjectId}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                        >
-                          <i className="ri-user-add-line"></i>
-                          Invite Member
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">Project</label>
-                        <select
-                          value={selectedProjectId}
-                          onChange={e => setSelectedProjectId(e.target.value)}
-                          className="h-10 px-3 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[240px]"
-                        >
-                          <option value="">Select a project...</option>
-                          {userProjects.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      {selectedProjectId ? (
-                        <ProjectMembersPanel
-                          projectId={selectedProjectId}
-                          onInviteClick={() => setShowMembersInviteModal(true)}
-                          refreshTrigger={memberRefreshTrigger}
-                        />
-                      ) : (
-                        <div className="text-center py-16 text-sm text-gray-400">
-                          <i className="ri-team-line text-4xl text-gray-200 block mb-3"></i>
-                          Select a project to view and manage its members.
+                        <div className="mb-5">
+                          <select
+                            value={selectedProjectId}
+                            onChange={e => setSelectedProjectId(e.target.value)}
+                            className="h-9 px-3 border border-[#E2E8F0] rounded-[0.375rem] text-[0.8125rem] bg-white focus:outline-none focus:border-[#6366F1] max-w-xs w-full cursor-pointer"
+                          >
+                            <option value="">Select a project...</option>
+                            {userProjects.map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
                         </div>
-                      )}
+                        {selectedProjectId ? (
+                          <ProjectMembersPanel
+                            projectId={selectedProjectId}
+                            onInviteClick={() => setShowMembersInviteModal(true)}
+                            refreshTrigger={memberRefreshTrigger}
+                          />
+                        ) : (
+                          <div className="text-center py-12 text-[0.8125rem] text-[#94A3B8]">
+                            <div className="w-12 h-12 bg-[#F1F5F9] rounded-full flex items-center justify-center mx-auto mb-3">
+                              <i className="ri-team-line text-2xl text-[#94A3B8]"></i>
+                            </div>
+                            <div className="text-[0.9375rem] font-semibold text-[#0F172A] mb-1">Select a project</div>
+                            <div>Select a project to view and manage its members.</div>
+                          </div>
+                        )}
+                      </div>
                       <InviteMemberModal
                         isOpen={showMembersInviteModal}
                         onClose={() => setShowMembersInviteModal(false)}
@@ -1222,19 +1248,20 @@ def pytest_sessionfinish(session, exitstatus):
 
 
                   {activeTab === 'integrations' && (
-                    <div className="space-y-8">
+                    <div className="space-y-5">
                       {/* ── Jira Integration ── */}
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h2 className="text-xl font-bold text-gray-900">Jira Integration</h2>
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-1.5">
+                            <i className="ri-links-fill text-[#1E40AF]"></i> Jira Integration
+                          </h3>
                           {!isStarterOrHigher && (
-                            <span className="px-3 py-1 bg-yellow-50 text-yellow-700 border border-yellow-300 rounded-full text-xs font-semibold flex items-center gap-1">
-                              <i className="ri-star-line"></i>
-                              Requires Starter or above
+                            <span className="px-2.5 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold flex items-center gap-1">
+                              <i className="ri-star-line"></i> Requires Starter or above
                             </span>
                           )}
                         </div>
-                        <p className="text-gray-600 mb-6">Connect your Jira account to create issues directly from test results</p>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-5">Connect your Jira account to create issues directly from test results.</p>
 
                         {!isStarterOrHigher && (
                           <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl">
@@ -1407,17 +1434,18 @@ def pytest_sessionfinish(session, exitstatus):
                       </div>
 
                       {/* ── Slack & Teams Webhooks ── */}
-                      <div className="pt-4 border-t border-gray-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <h2 className="text-xl font-bold text-gray-900">Slack &amp; Teams Webhooks</h2>
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-1.5">
+                            <i className="ri-webhook-fill text-[#F59E0B]"></i> Slack &amp; Teams Webhooks
+                          </h3>
                           {!isStarterOrHigher && (
-                            <span className="px-3 py-1 bg-yellow-50 text-yellow-700 border border-yellow-300 rounded-full text-xs font-semibold flex items-center gap-1">
-                              <i className="ri-star-line"></i>
-                              Requires Starter or above
+                            <span className="px-2.5 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold flex items-center gap-1">
+                              <i className="ri-star-line"></i> Requires Starter or above
                             </span>
                           )}
                         </div>
-                        <p className="text-gray-600 mb-6">Send real-time notifications to Slack or Microsoft Teams when events occur in your projects.</p>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-5">Send real-time notifications to Slack or Microsoft Teams when events occur in your projects.</p>
 
                         {!isStarterOrHigher && (
                           <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl">
@@ -1578,17 +1606,18 @@ def pytest_sessionfinish(session, exitstatus):
                       </div>
 
                       {/* ── CI/CD Integration ── */}
-                      <div className="pt-4 border-t border-gray-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <h2 className="text-xl font-bold text-gray-900">CI/CD Integration</h2>
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-1.5">
+                            <i className="ri-git-branch-fill text-[#22C55E]"></i> CI/CD Pipelines
+                          </h3>
                           {!isProfessionalOrHigher && (
-                            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-300 rounded-full text-xs font-semibold flex items-center gap-1">
-                              <i className="ri-vip-crown-line"></i>
-                              Requires Professional or above
+                            <span className="px-2.5 py-0.5 bg-[#EEF2FF] text-[#4338CA] border border-[#C7D2FE] rounded-full text-[0.625rem] font-semibold flex items-center gap-1">
+                              <i className="ri-vip-crown-line"></i> Requires Professional or above
                             </span>
                           )}
                         </div>
-                        <p className="text-gray-600 mb-6">Automatically upload test results from GitHub Actions, GitLab CI, and Python test suites.</p>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-5">Connect your CI/CD pipeline to automatically report test results.</p>
 
                         {!isProfessionalOrHigher && (
                           <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 rounded-xl">
@@ -1804,136 +1833,213 @@ def pytest_sessionfinish(session, exitstatus):
                           </div>
                         </div>
                       </div>
+
+                      {/* ── API Token Scope Configuration Guide ── */}
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5 flex items-center gap-2">
+                          <i className="ri-shield-keyhole-line text-[#6366F1]"></i>
+                          API Token Scope Configuration Guide
+                        </h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-4">When using a Personal Access Token (PAT) or Fine-grained Token in GitHub, only the following permissions are needed.</p>
+                        <div className="flex gap-2 mb-4">
+                          <button className="inline-flex items-center gap-1.5 px-3 py-[0.3125rem] rounded-[0.375rem] text-[0.75rem] font-semibold bg-[#0F172A] text-white border border-[#0F172A] cursor-pointer">
+                            <i className="ri-github-fill"></i> GitHub
+                          </button>
+                          <button className="inline-flex items-center gap-1.5 px-3 py-[0.3125rem] rounded-[0.375rem] text-[0.75rem] font-medium border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] cursor-pointer">
+                            <i className="ri-gitlab-fill"></i> GitLab
+                          </button>
+                        </div>
+                        <div className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em] mb-2">Minimum Required Scopes</div>
+                        <div className="flex flex-col gap-2 mb-4">
+                          {[
+                            { scope: 'repo', desc: 'Repository read access (required for private repos)', required: true },
+                            { scope: 'workflow', desc: 'GitHub Actions workflow execution permission', required: true },
+                            { scope: 'read:org', desc: 'Read organization info (for org repositories)', required: false },
+                          ].map(item => (
+                            <div key={item.scope} className="flex items-start gap-3 px-3 py-2.5 bg-[#F8FAFC] rounded-[0.5rem]">
+                              <span className="px-2 py-0.5 text-[0.6875rem] font-bold font-mono bg-[#EEF2FF] text-[#4338CA] rounded whitespace-nowrap">{item.scope}</span>
+                              <div className="flex-1 text-[0.8125rem] text-[#334155]">{item.desc}</div>
+                              {item.required && <span className="text-[0.6875rem] font-semibold text-[#4F46E5] whitespace-nowrap">Required</span>}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-start gap-2 px-3 py-2.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-[0.5rem] mb-3">
+                          <i className="ri-error-warning-line text-[#F59E0B] flex-shrink-0 mt-0.5"></i>
+                          <div className="text-[0.6875rem] text-[#92400E]">
+                            <strong>Recommended:</strong> Using the automatically provided <code className="bg-[#FEF3C7] px-1 rounded text-[0.6875rem]">GITHUB_TOKEN</code> within GitHub Actions workflows is the safest approach — no separate PAT creation needed.
+                          </div>
+                        </div>
+                        <a
+                          href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[0.6875rem] text-[#6366F1] hover:underline"
+                        >
+                          <i className="ri-external-link-line"></i> GitHub Token Official Documentation
+                        </a>
+                      </div>
+
+                      {/* ── API Documentation ── */}
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">API Documentation</h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-3">Explore the full REST API reference for building custom integrations.</p>
+                        <a
+                          href="https://testably.app/docs"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#6366F1] hover:underline"
+                        >
+                          <i className="ri-external-link-line"></i> View full API reference →
+                        </a>
+                      </div>
                     </div>
                   )}
 
                   {activeTab === 'notifications' && (
-                    <NotificationSettingsPanel />
+                    <div>
+                      <NotificationSettingsPanel />
+                      {/* ── Coming Soon: Email Notifications ── */}
+                      <div className="relative mt-5">
+                        <div className="absolute top-3 right-3 px-2.5 py-0.5 bg-[#F59E0B] text-white text-[0.625rem] font-bold rounded-full z-10">COMING SOON</div>
+                        <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6 opacity-60">
+                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5 flex items-center gap-2">
+                            <i className="ri-mail-line text-[#6366F1]"></i> Email Notifications
+                          </h3>
+                          <p className="text-[0.8125rem] text-[#64748B]">Email notification delivery — planned for a future release.</p>
+                        </div>
+                      </div>
+                      {/* ── Coming Soon: Desktop Push Notifications ── */}
+                      <div className="relative mt-5">
+                        <div className="absolute top-3 right-3 px-2.5 py-0.5 bg-[#F59E0B] text-white text-[0.625rem] font-bold rounded-full z-10">COMING SOON</div>
+                        <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6 opacity-60">
+                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5 flex items-center gap-2">
+                            <i className="ri-computer-line text-[#F59E0B]"></i> Desktop Push Notifications
+                          </h3>
+                          <p className="text-[0.8125rem] text-[#64748B]">Browser push notifications for critical events — planned for a future release.</p>
+                        </div>
+                      </div>
+                    </div>
                   )}
 
                   {activeTab === 'preferences' && (
-                    <div className="space-y-6">
-                      {/* Language */}
+                    <div>
                       <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
-                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-4">Language & Region</h3>
-                        <div className="grid gap-4">
-                          <div>
-                            <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">Language</label>
-                            <select
-                              value={language}
-                              onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
-                              className="w-full max-w-xs px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] cursor-pointer"
-                            >
-                              <option value="en">English</option>
-                              <option value="ko">한국어</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">Timezone</label>
-                            <div className="flex items-center gap-3 mb-2">
-                              <input
-                                type="checkbox"
-                                id="autoDetectTz"
-                                checked={autoDetectTz}
-                                onChange={(e) => setAutoDetectTz(e.target.checked)}
-                                className="w-4 h-4 rounded border-gray-300 text-indigo-600 cursor-pointer"
-                              />
-                              <label htmlFor="autoDetectTz" className="text-sm text-[#64748B] cursor-pointer select-none">Auto-detect from browser</label>
-                            </div>
-                            <select
-                              value={timezone}
-                              onChange={(e) => setTimezone(e.target.value)}
-                              disabled={autoDetectTz}
-                              className="w-full max-w-xs px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] cursor-pointer disabled:opacity-50 disabled:cursor-default"
-                            >
-                              <option value="UTC">UTC (Coordinated Universal Time)</option>
-                              <option value="America/New_York">Eastern Time (UTC-5/4)</option>
-                              <option value="America/Los_Angeles">Pacific Time (UTC-8/7)</option>
-                              <option value="Europe/London">London (UTC+0/1)</option>
-                              <option value="Europe/Berlin">Berlin (UTC+1/2)</option>
-                              <option value="Asia/Seoul">Seoul (UTC+9)</option>
-                              <option value="Asia/Tokyo">Tokyo (UTC+9)</option>
-                              <option value="Asia/Shanghai">Shanghai (UTC+8)</option>
-                              <option value="Australia/Sydney">Sydney (UTC+10/11)</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* Date & Time Format */}
-                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
-                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-4">Date & Time Format</h3>
-                        <div className="grid gap-4">
-                          <div>
-                            <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-2">Date Format</label>
-                            <div className="flex flex-col gap-2">
-                              {[
-                                { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD', example: '2024-03-15' },
-                                { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY', example: '03/15/2024' },
-                                { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY', example: '15/03/2024' },
-                              ].map(opt => (
-                                <label key={opt.value} className="flex items-center gap-3 cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name="dateFormat"
-                                    value={opt.value}
-                                    checked={dateFormat === opt.value}
-                                    onChange={() => setDateFormat(opt.value)}
-                                    className="w-4 h-4 text-indigo-600"
-                                  />
-                                  <span className="text-sm font-semibold text-[#1E293B]">{opt.label}</span>
-                                  <span className="text-xs text-[#94A3B8]">{opt.example}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-2">Time Format</label>
-                            <div className="flex gap-4">
-                              {[
-                                { value: '24h', label: '24-hour', example: '14:30' },
-                                { value: '12h', label: '12-hour', example: '2:30 PM' },
-                              ].map(opt => (
-                                <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name="timeFormat"
-                                    value={opt.value}
-                                    checked={timeFormat === opt.value}
-                                    onChange={() => setTimeFormat(opt.value as '24h' | '12h')}
-                                    className="w-4 h-4 text-indigo-600"
-                                  />
-                                  <span className="text-sm font-semibold text-[#1E293B]">{opt.label}</span>
-                                  <span className="text-xs text-[#94A3B8]">{opt.example}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Preview */}
-                      <div className="flex items-center gap-2 px-4 py-3 rounded-[7px] text-[0.8125rem]" style={{ background: '#EEF2FF', color: '#6366F1' }}>
-                        <i className="ri-eye-line"></i>
-                        <span>Preview: {new Date().toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US')} · {timeFormat === '24h' ? new Date().toLocaleTimeString('en-US', { hour12: false }) : new Date().toLocaleTimeString('en-US', { hour12: true })}</span>
-                      </div>
-
-                      <div className="flex items-center gap-3 pt-2">
-                        <button
-                          onClick={handleSavePreferences}
-                          disabled={savingPreferences}
-                          className="px-5 py-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                        {/* Language */}
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">Language</h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-3">Choose your preferred language for the Testably interface.</p>
+                        <select
+                          value={language}
+                          onChange={(e) => setLanguage(e.target.value as 'en' | 'ko')}
+                          className="w-full max-w-xs px-3 py-2 border border-[#E2E8F0] rounded-lg text-[0.8125rem] bg-white focus:outline-none focus:border-[#C7D2FE] cursor-pointer"
                         >
-                          {savingPreferences
-                            ? <><i className="ri-loader-4-line animate-spin"></i>Saving...</>
-                            : <><i className="ri-save-line"></i>Save Preferences</>
-                          }
-                        </button>
+                          <option value="en">English</option>
+                          <option value="ko">한국어</option>
+                        </select>
+
+                        <div className="border-t border-[#E2E8F0] my-6"></div>
+
+                        {/* Timezone */}
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">Timezone</h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-3">Set your timezone for accurate timestamps in activity logs and reports.</p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <input
+                            type="checkbox"
+                            id="autoDetectTz"
+                            checked={autoDetectTz}
+                            onChange={(e) => setAutoDetectTz(e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 cursor-pointer"
+                          />
+                          <label htmlFor="autoDetectTz" className="text-[0.8125rem] text-[#64748B] cursor-pointer select-none">
+                            Use browser timezone <span className="text-[#94A3B8]">({Intl.DateTimeFormat().resolvedOptions().timeZone} detected)</span>
+                          </label>
+                        </div>
+                        <select
+                          value={timezone}
+                          onChange={(e) => setTimezone(e.target.value)}
+                          disabled={autoDetectTz}
+                          className="w-full max-w-xs px-3 py-2 border border-[#E2E8F0] rounded-lg text-[0.8125rem] bg-white focus:outline-none focus:border-[#C7D2FE] cursor-pointer disabled:opacity-50 disabled:cursor-default"
+                        >
+                          <option value="UTC">UTC (Coordinated Universal Time)</option>
+                          <option value="America/New_York">Eastern Time (UTC-5/4)</option>
+                          <option value="America/Los_Angeles">Pacific Time (UTC-8/7)</option>
+                          <option value="Europe/London">London (UTC+0/1)</option>
+                          <option value="Europe/Berlin">Berlin (UTC+1/2)</option>
+                          <option value="Asia/Seoul">Asia/Seoul (UTC+9)</option>
+                          <option value="Asia/Tokyo">Tokyo (UTC+9)</option>
+                          <option value="Asia/Shanghai">Shanghai (UTC+8)</option>
+                          <option value="Australia/Sydney">Sydney (UTC+10/11)</option>
+                        </select>
+
+                        <div className="border-t border-[#E2E8F0] my-6"></div>
+
+                        {/* Date & Time Format */}
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">Date &amp; Time Format</h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-3">Choose how dates and times are displayed throughout the app.</p>
+                        <div className="grid grid-cols-2 gap-4 max-w-sm mb-3">
+                          <div>
+                            <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">Date Format</label>
+                            <select
+                              value={dateFormat}
+                              onChange={(e) => setDateFormat(e.target.value)}
+                              className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg text-[0.8125rem] bg-white focus:outline-none focus:border-[#C7D2FE] cursor-pointer"
+                            >
+                              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">Time Format</label>
+                            <select
+                              value={timeFormat}
+                              onChange={(e) => setTimeFormat(e.target.value as '24h' | '12h')}
+                              className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg text-[0.8125rem] bg-white focus:outline-none focus:border-[#C7D2FE] cursor-pointer"
+                            >
+                              <option value="24h">24-hour</option>
+                              <option value="12h">12-hour (AM/PM)</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-[7px] text-[0.8125rem] bg-[#EEF2FF] text-[#6366F1] max-w-xs">
+                          <i className="ri-eye-line"></i>
+                          <span>Preview: {new Date().toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US')} {timeFormat === '24h' ? new Date().toLocaleTimeString('en-US', { hour12: false }) : new Date().toLocaleTimeString('en-US', { hour12: true })}</span>
+                        </div>
+
+                        <div className="border-t border-[#E2E8F0] my-6"></div>
+
+                        {/* Default Project */}
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">Default Project</h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-3">Open this project automatically when you log in.</p>
+                        <select
+                          className="w-full max-w-xs px-3 py-2 border border-[#E2E8F0] rounded-lg text-[0.8125rem] bg-white focus:outline-none focus:border-[#C7D2FE] cursor-pointer"
+                          defaultValue=""
+                        >
+                          <option value="">None (show project list)</option>
+                          {userProjects.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+
+                        <div className="flex justify-end mt-6">
+                          <button
+                            onClick={handleSavePreferences}
+                            disabled={savingPreferences}
+                            className="px-5 py-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-[0.8125rem] font-semibold cursor-pointer transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            {savingPreferences
+                              ? <><i className="ri-loader-4-line animate-spin"></i>Saving...</>
+                              : <><i className="ri-save-line"></i>Save Preferences</>
+                            }
+                          </button>
+                        </div>
                         {preferencesSaved && (
-                          <span className="text-sm text-[#6366F1] font-medium flex items-center gap-1">
-                            <i className="ri-checkbox-circle-fill"></i>
-                            Saved successfully
-                          </span>
+                          <div className="flex justify-end mt-2">
+                            <span className="text-[0.8125rem] text-[#6366F1] font-medium flex items-center gap-1">
+                              <i className="ri-checkbox-circle-fill"></i>
+                              Saved successfully
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>
