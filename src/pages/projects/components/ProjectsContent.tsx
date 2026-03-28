@@ -351,10 +351,12 @@ export default function ProjectsContent() {
     }
   };
 
-  /** TipsBanner "Create Test Case" — picks most recent project (or only project) */
+  /** TipsBanner "Create Test Case" — picks most recent project, or shows no-project state */
   const handleTipCreateTC = () => {
     if (projects.length === 0) {
-      setShowCreateModal(true);
+      // Show modal in no-project state (amber warning + Create Project CTA)
+      setQuickCreateProject(null);
+      setShowQuickCreateTCModal(true);
       return;
     }
     // Sort by created_at descending, pick the most recent
@@ -711,16 +713,21 @@ export default function ProjectsContent() {
         {deletingProject && (
           <DeleteConfirmModal project={deletingProject} onClose={() => setDeletingProject(null)} onDelete={handleDeleteProject} />
         )}
-        {showQuickCreateTCModal && quickCreateProject && (
+        {showQuickCreateTCModal && (
           <QuickCreateTCModal
-            projectId={quickCreateProject.id}
-            projectName={quickCreateProject.name}
+            projectId={quickCreateProject?.id}
+            projectName={quickCreateProject?.name}
             onClose={() => { setShowQuickCreateTCModal(false); setQuickCreateProject(null); }}
             onCreated={(projectId, title) => {
               setShowQuickCreateTCModal(false);
               setQuickCreateProject(null);
               showToast(`Test case "${title}" created successfully`, 'success');
               navigate(`/projects/${projectId}/testcases`);
+            }}
+            onCreateProject={() => {
+              setShowQuickCreateTCModal(false);
+              setQuickCreateProject(null);
+              setShowCreateModal(true);
             }}
           />
         )}

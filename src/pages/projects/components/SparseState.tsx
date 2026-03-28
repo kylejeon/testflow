@@ -444,6 +444,35 @@ export default function SparseState({
         />
       )}
 
+      {/* Explore Sample loading card */}
+      {isTipsSampleLoading && (
+        <div
+          className="flex flex-col items-center justify-center text-center"
+          style={{
+            background: '#fff',
+            border: '1px solid #E2E8F0',
+            borderRadius: '0.625rem',
+            padding: '2.5rem 1.5rem',
+            marginBottom: '1rem',
+          }}
+        >
+          <div
+            className="animate-spin"
+            style={{
+              width: '2rem', height: '2rem',
+              border: '3px solid #E2E8F0',
+              borderTopColor: '#6366F1',
+              borderRadius: '50%',
+              marginBottom: '0.75rem',
+            }}
+          />
+          <p className="text-[0.875rem] font-semibold text-[#0F172A] mb-1">Creating sample project...</p>
+          <p className="text-[0.75rem] text-[#94A3B8] max-w-xs leading-snug">
+            Setting up 'Sample E-commerce App' with test cases, milestones, and test runs.
+          </p>
+        </div>
+      )}
+
       {/* Unified grid: projects + action cards */}
       <div
         style={{
