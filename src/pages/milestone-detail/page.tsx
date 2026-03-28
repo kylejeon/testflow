@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
+import { AvatarStack } from '../../components/Avatar';
 
 interface Milestone {
   id: string;
@@ -24,6 +25,7 @@ interface Run {
   status: string;
   milestone_id: string;
   test_case_ids: string[];
+  assignees?: string[];
   created_at: string;
   passed_count?: number;
   failed_count?: number;
@@ -101,6 +103,7 @@ export default function MilestoneDetail() {
   const [activityStatusFilter, setActivityStatusFilter] = useState<string>('all');
   const [activityPage, setActivityPage] = useState(1);
   const [contributorProfiles, setContributorProfiles] = useState<Map<string, { name: string | null; url: string | null }>>(new Map());
+  const [assigneeProfiles, setAssigneeProfiles] = useState<Map<string, { name: string | null; email: string; url: string | null }>>(new Map());
   const [tcStats, setTcStats] = useState<TcStats>({ passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, total: 0, passRate: 0 });
   const [failedBlockedTcs, setFailedBlockedTcs] = useState<FailedBlockedTcItem[]>([]);
   const activityPerPage = 10;
@@ -269,6 +272,21 @@ export default function MilestoneDetail() {
       setIssues(allIssues.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       setActivityLogs(allActivityLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
       setActivityStats({ notes: notesCount, passed: passedCount, failed: failedCount, retest: retestCount });
+
+      // Fetch assignee profiles by UUID (reliable — no name/email string-matching)
+      const allAssigneeIds = new Set<string>();
+      runsWithProgress.forEach(r => (r.assignees || []).forEach((id: string) => allAssigneeIds.add(id)));
+      if (allAssigneeIds.size > 0) {
+        const { data: apData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, avatar_url')
+          .in('id', Array.from(allAssigneeIds));
+        const apMap = new Map<string, { name: string | null; email: string; url: string | null }>();
+        (apData || []).forEach((p: any) => {
+          apMap.set(p.id, { name: p.full_name || null, email: p.email || '', url: p.avatar_url || null });
+        });
+        setAssigneeProfiles(apMap);
+      }
 
       // Compute global TC stats (unique TCs, latest result wins)
       const globalTcStatusMap = new Map<string, string>();
@@ -804,20 +822,17 @@ export default function MilestoneDetail() {
                               <span style={{ fontWeight: 600, color: '#334155' }}>{s.n}</span> {s.label}
                             </span>
                           ))}
-                          {run.authors && run.authors.length > 0 && (
-                            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                              {run.authors.map((author, idx) => {
-                                const profile = contributorProfiles.get(author);
-                                const initials = profile?.name ? getContributorInitials(profile.name) : getContributorInitials(author);
-                                const bg = getAuthorColor(author);
-                                return profile?.url ? (
-                                  <img key={idx} src={profile.url} title={profile.name || author} alt={initials} style={{ width: '1.375rem', height: '1.375rem', borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff', marginLeft: idx > 0 ? '-0.375rem' : 0, flexShrink: 0 }} />
-                                ) : (
-                                  <div key={idx} title={profile?.name || author} style={{ width: '1.375rem', height: '1.375rem', borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.4375rem', fontWeight: 700, color: '#fff', border: '2px solid #fff', marginLeft: idx > 0 ? '-0.375rem' : 0, flexShrink: 0 }}>
-                                    {initials}
-                                  </div>
-                                );
-                              })}
+                          {run.assignees && run.assignees.length > 0 && (
+                            <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                              <AvatarStack
+                                size="xs"
+                                max={4}
+                                members={run.assignees.map((uid: string) => {
+                                  const p = assigneeProfiles.get(uid);
+                                  return { userId: uid, name: p?.name ?? undefined, email: p?.email, photoUrl: p?.url ?? undefined };
+                                })}
+                                style={{ gap: 0 }}
+                              />
                             </div>
                           )}
                         </div>
