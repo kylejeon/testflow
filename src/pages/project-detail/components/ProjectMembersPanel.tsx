@@ -5,6 +5,7 @@ interface Member {
   id: string;
   user_id: string;
   role: string;
+  joined_at: string | null;
   profile: {
     email: string;
     full_name: string | null;
@@ -17,21 +18,12 @@ interface ProjectMembersPanelProps {
   refreshTrigger: number;
   /** compact=true: no outer wrapper/header, smaller avatars, read-only roles, for sidebar widgets */
   compact?: boolean;
-  /** ownerId: project owner’s user_id, used for self-heal if project_members is empty */
+  /** ownerId: project owner's user_id, used for self-heal if project_members is empty */
   ownerId?: string;
 }
 
-/**
- * ProjectMembersPanel
- *
- * Displays the list of members for a given project and allows
- * inviting, role‑changing and removal of members.
- *
- * The component is defensive:
- *  - All async calls are wrapped in try/catch.
- *  - Errors are logged and a fallback UI is shown if data can’t be loaded.
- *  - Confirmation dialogs guard destructive actions.
- */
+const AVATAR_COLORS = ['#6366F1', '#EC4899', '#F59E0B', '#22C55E', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
+
 export default function ProjectMembersPanel({
   projectId,
   onInviteClick,
@@ -44,16 +36,13 @@ export default function ProjectMembersPanel({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
-  /** Load current user and members whenever the projectId or a manual refresh occurs */
   useEffect(() => {
-    // Fire both async calls in parallel to reduce waiting time
     Promise.all([getCurrentUser(), loadMembers()]).catch((e) => {
       console.error('Initial data loading failed:', e);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, refreshTrigger]);
 
-  /** Retrieve the logged‑in user's id */
   const getCurrentUser = async () => {
     try {
       const { data, error } = await supabase.auth.getUser();
@@ -69,10 +58,9 @@ export default function ProjectMembersPanel({
     if (!projectId) return;
     setLoading(true);
     try {
-      // Get project members first
       const { data: membersData, error: membersError } = await supabase
         .from('project_members')
-        .select('id, user_id, role')
+        .select('id, user_id, role, created_at')
         .eq('project_id', projectId);
 
       if (membersError) {
@@ -81,10 +69,8 @@ export default function ProjectMembersPanel({
       }
 
       if (!membersData || membersData.length === 0) {
-        // Self-heal: if current user is the project owner but not in project_members, insert them
         const { data: { user } } = await supabase.auth.getUser();
         const healOwnerId = ownerId || (
-          // fallback: fetch owner_id from projects table
           await supabase.from('projects').select('owner_id').eq('id', projectId).maybeSingle()
             .then(r => r.data?.owner_id)
         );
@@ -96,11 +82,9 @@ export default function ProjectMembersPanel({
             invited_by: user.id,
           }, { onConflict: 'project_id,user_id' });
           if (!upsertErr) {
-            // Re-fetch after self-heal
             const { data: reloaded } = await supabase
-              .from('project_members').select('id, user_id, role').eq('project_id', projectId);
+              .from('project_members').select('id, user_id, role, created_at').eq('project_id', projectId);
             if (reloaded && reloaded.length > 0) {
-              // Continue with reloaded data instead of returning empty
               membersData.push(...reloaded);
             }
           } else {
@@ -113,11 +97,8 @@ export default function ProjectMembersPanel({
         }
       }
 
-      // Get user IDs
       const userIds = membersData.map((m) => m.user_id);
 
-      // Get profiles separately — avatar_url may not exist in all environments,
-      // so we fetch only guaranteed columns and treat profile errors as non-fatal
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, full_name')
@@ -125,21 +106,19 @@ export default function ProjectMembersPanel({
 
       if (profilesError) {
         console.error('Profiles query error (non-fatal):', profilesError);
-        // Continue with empty profile data rather than failing the whole widget
       }
 
-      // Create a map of profiles by user_id
       const profilesMap = new Map(
         (profilesData || []).map((p) => [p.id, p])
       );
 
-      // Format the data
       const formattedMembers = membersData.map((m) => {
         const profile = profilesMap.get(m.user_id);
         return {
           id: m.id,
           user_id: m.user_id,
           role: m.role,
+          joined_at: m.created_at ?? null,
           profile: {
             email: profile?.email ?? '',
             full_name: profile?.full_name ?? null,
@@ -152,7 +131,6 @@ export default function ProjectMembersPanel({
 
       setMembers(formattedMembers);
 
-      // Get current user's role in this project
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const currentMember = formattedMembers.find((m) => m.user_id === user.id);
@@ -166,7 +144,6 @@ export default function ProjectMembersPanel({
     }
   };
 
-  /** Remove a member (or let the current user leave) */
   const handleRemoveMember = async (memberId: string, memberUserId: string) => {
     const isSelf = memberUserId === currentUserId;
     const confirmMsg = isSelf
@@ -181,15 +158,12 @@ export default function ProjectMembersPanel({
         .eq('id', memberId);
 
       if (error) throw error;
-
-      // Optimistically update UI without re‑fetching all data
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
     } catch (e) {
       console.error('멤버 제거 오류:', e);
     }
   };
 
-  /** Change a member's role */
   const handleRoleChange = async (memberId: string, newRole: string) => {
     try {
       const { error } = await supabase
@@ -198,8 +172,6 @@ export default function ProjectMembersPanel({
         .eq('id', memberId);
 
       if (error) throw error;
-
-      // Update the role locally for snappy UI
       setMembers((prev) =>
         prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m))
       );
@@ -208,62 +180,42 @@ export default function ProjectMembersPanel({
     }
   };
 
-  /** Helper to create initials for avatar */
   const getInitials = (name: string | null, email: string) => {
     if (name) {
-      return name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
+      return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
     }
     return email.slice(0, 2).toUpperCase();
   };
 
-  /** Mapping role → badge appearance */
+  const formatJoinedDate = (iso: string | null) => {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'owner':
-        return { label: 'Owner', className: 'bg-purple-100 text-purple-700' };
-      case 'admin':
-        return { label: 'Admin', className: 'bg-orange-100 text-orange-700' };
-      case 'member':
-        return { label: 'Member', className: 'bg-indigo-100 text-indigo-700' };
-      case 'viewer':
-        return { label: 'Viewer', className: 'bg-gray-100 text-gray-700' };
-      default:
-        return { label: role, className: 'bg-gray-100 text-gray-700' };
+      case 'owner': return { label: 'Owner', className: 'bg-[#F5F3FF] text-[#7C3AED]' };
+      case 'admin': return { label: 'Admin', className: 'bg-[#FFF7ED] text-[#C2410C]' };
+      case 'member': return { label: 'Member', className: 'bg-[#EEF2FF] text-[#4338CA]' };
+      case 'viewer': return { label: 'Viewer', className: 'bg-[#F1F5F9] text-[#64748B]' };
+      default: return { label: role, className: 'bg-[#F1F5F9] text-[#64748B]' };
     }
   };
 
   const isAdminOrOwner = currentUserRole === 'admin' || currentUserRole === 'owner';
 
-  /** Simple deterministic color picker for avatars */
-  const getAvatarColor = (index: number) => {
-    const colors = [
-      'from-indigo-400 to-indigo-600',
-      'from-blue-400 to-blue-600',
-      'from-purple-400 to-purple-600',
-      'from-pink-400 to-pink-600',
-      'from-orange-400 to-orange-600',
-      'from-green-400 to-green-600',
-    ];
-    return colors[index % colors.length];
-  };
-
+  // ── LOADING ─────────────────────────────────────────────────────
   if (loading) {
     if (compact) {
-      return <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-500"></div></div>;
+      return (
+        <div className="flex justify-center py-4">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#6366F1]"></div>
+        </div>
+      );
     }
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900">Team Members</h2>
-        </div>
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-        </div>
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-[#6366F1]"></div>
       </div>
     );
   }
@@ -273,8 +225,8 @@ export default function ProjectMembersPanel({
     if (members.length === 0) {
       return (
         <div className="text-center py-4">
-          <p className="text-xs text-gray-400 mb-2">No members yet</p>
-          <button onClick={onInviteClick} className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer">
+          <p className="text-[0.75rem] text-[#94A3B8] mb-2">No members yet</p>
+          <button onClick={onInviteClick} className="text-[0.75rem] font-semibold text-[#6366F1] hover:text-[#4F46E5] cursor-pointer">
             Invite first member →
           </button>
         </div>
@@ -286,7 +238,10 @@ export default function ProjectMembersPanel({
           const badge = getRoleBadge(member.role);
           return (
             <div key={member.id} className="flex items-center gap-2.5 py-2 border-b border-[#F1F5F9] last:border-0">
-              <div className={`w-7 h-7 bg-gradient-to-br ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-bold text-[0.5rem] flex-shrink-0`}>
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                style={{ background: AVATAR_COLORS[index % AVATAR_COLORS.length], fontSize: '0.5rem' }}
+              >
                 {getInitials(member.profile.full_name, member.profile.email)}
               </div>
               <div className="flex-1 min-w-0">
@@ -305,111 +260,152 @@ export default function ProjectMembersPanel({
     );
   }
 
-  // ── FULL MODE ──────────────────────────────────────────────────
-  return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-gray-900">Team Members</h2>
+  // ── FULL MODE (table) ───────────────────────────────────────────
+  if (members.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-12 h-12 bg-[#F1F5F9] rounded-full flex items-center justify-center mx-auto mb-3">
+          <i className="ri-team-line text-[#94A3B8]" style={{ fontSize: '1.5rem' }}></i>
+        </div>
+        <div className="text-[0.9375rem] font-semibold text-[#0F172A] mb-1">No members yet</div>
+        <p className="text-[0.8125rem] text-[#94A3B8] mb-4">Invite your first team member to get started.</p>
         <button
           onClick={onInviteClick}
-          className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm font-semibold cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+          className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-[0.375rem] bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer"
         >
-          <i className="ri-user-add-line"></i>
-          Invite
+          <i className="ri-user-add-line"></i> Invite Member
         </button>
       </div>
+    );
+  }
 
-      {members.length === 0 ? (
-        <div className="text-center py-8">
-          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i className="ri-team-line text-gray-400 text-xl"></i>
-          </div>
-          <p className="text-sm text-gray-500 mb-3">아직 팀원이 없습니다</p>
-          <button
-            onClick={onInviteClick}
-            className="text-indigo-600 hover:text-indigo-700 text-sm font-semibold cursor-pointer"
-          >
-            첫 번째 멤버 초대하기 →
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {members.map((member, index) => {
-            const badge = getRoleBadge(member.role);
-            return (
-              <div
-                key={member.id}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
-              >
-                <div
-                  className={`w-10 h-10 bg-gradient-to-br ${getAvatarColor(
-                    index
-                  )} rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0`}
-                >
-                  {getInitials(member.profile.full_name, member.profile.email)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900 text-sm truncate">
-                    {member.profile.full_name || member.profile.email}
-                    {member.user_id === currentUserId && (
-                      <span className="ml-2 text-xs text-gray-500">(나)</span>
-                    )}
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <thead>
+        <tr>
+          {[
+            { label: 'Member', width: '38%' },
+            { label: 'Role', width: '14%' },
+            { label: 'Joined', width: '18%' },
+            { label: 'Last Active', width: '16%' },
+            { label: 'Actions', width: '14%', right: true },
+          ].map(col => (
+            <th
+              key={col.label}
+              style={{
+                width: col.width,
+                background: '#F8FAFC',
+                fontSize: '0.6875rem',
+                fontWeight: 600,
+                textTransform: 'uppercase' as const,
+                letterSpacing: '0.04em',
+                color: '#94A3B8',
+                padding: '0.625rem 0.75rem',
+                textAlign: col.right ? 'right' as const : 'left' as const,
+                borderBottom: '1px solid #E2E8F0',
+              }}
+            >
+              {col.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {members.map((member, index) => {
+          const isOwner = member.role === 'owner';
+          const isSelf = member.user_id === currentUserId;
+          const canEdit = isAdminOrOwner && !isOwner;
+          const isLast = index === members.length - 1;
+
+          return (
+            <tr
+              key={member.id}
+              style={{ background: 'transparent' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#FAFAFF')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {/* Member */}
+              <td style={{ padding: '0.625rem 0.75rem', fontSize: '0.8125rem', color: '#334155', borderBottom: isLast ? 'none' : '1px solid #F1F5F9', verticalAlign: 'middle' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                  <div
+                    style={{
+                      width: '1.75rem', height: '1.75rem', borderRadius: '50%',
+                      background: AVATAR_COLORS[index % AVATAR_COLORS.length],
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '0.5rem', fontWeight: 700, color: '#fff', flexShrink: 0,
+                    }}
+                  >
+                    {getInitials(member.profile.full_name, member.profile.email)}
                   </div>
-                  <div className="text-xs text-gray-500 truncate">
-                    {member.profile.email}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isAdminOrOwner && member.role !== 'owner' ? (
-                    <select
-                      value={member.role}
-                      onChange={(e) =>
-                        handleRoleChange(member.id, e.target.value)
-                      }
-                      className={`min-w-[80px] px-2 py-1 rounded-full text-xs font-semibold ${badge.className} border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500`}
-                    >
-                      <option value="admin">Admin</option>
-                      <option value="member">Member</option>
-                      <option value="viewer">Viewer</option>
-                    </select>
-                  ) : (
-                    <span
-                      className={`min-w-[80px] px-2 py-1 rounded-full text-xs font-semibold text-center ${badge.className}`}
-                    >
-                      {badge.label}
-                    </span>
-                  )}
-                  {/* X 버튼 영역 - 항상 공간 확보 */}
-                  <div className="w-8 h-8 flex items-center justify-center">
-                    {isAdminOrOwner && member.user_id !== currentUserId && member.role !== 'owner' && (
-                      <button
-                        onClick={() =>
-                          handleRemoveMember(member.id, member.user_id)
-                        }
-                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
-                        title="멤버 제거"
-                      >
-                        <i className="ri-close-line text-lg"></i>
-                      </button>
-                    )}
-                    {member.user_id === currentUserId && (
-                      <button
-                        onClick={() =>
-                          handleRemoveMember(member.id, member.user_id)
-                        }
-                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
-                        title="프로젝트 나가기"
-                      >
-                        <i className="ri-close-line text-lg"></i>
-                      </button>
-                    )}
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#0F172A' }}>
+                      {member.profile.full_name || member.profile.email}
+                      {isSelf && <span style={{ marginLeft: '0.375rem', fontSize: '0.6875rem', color: '#94A3B8' }}>(나)</span>}
+                    </div>
+                    <div style={{ fontSize: '0.6875rem', color: '#94A3B8' }}>{member.profile.email}</div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+              </td>
+
+              {/* Role */}
+              <td style={{ padding: '0.625rem 0.75rem', borderBottom: isLast ? 'none' : '1px solid #F1F5F9', verticalAlign: 'middle' }}>
+                {canEdit ? (
+                  <select
+                    value={member.role}
+                    onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                    style={{
+                      fontSize: '0.75rem', fontWeight: 500, padding: '0.25rem 0.5rem',
+                      border: '1px solid #E2E8F0', borderRadius: '0.375rem',
+                      background: '#fff', color: '#475569', cursor: 'pointer', outline: 'none',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="member">Member</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                ) : (
+                  <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                    {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                  </span>
+                )}
+              </td>
+
+              {/* Joined */}
+              <td style={{ padding: '0.625rem 0.75rem', fontSize: '0.75rem', color: '#94A3B8', borderBottom: isLast ? 'none' : '1px solid #F1F5F9', verticalAlign: 'middle' }}>
+                {formatJoinedDate(member.joined_at)}
+              </td>
+
+              {/* Last Active */}
+              <td style={{ padding: '0.625rem 0.75rem', fontSize: '0.75rem', color: '#94A3B8', borderBottom: isLast ? 'none' : '1px solid #F1F5F9', verticalAlign: 'middle' }}>
+                —
+              </td>
+
+              {/* Actions */}
+              <td style={{ padding: '0.625rem 0.75rem', textAlign: 'right', borderBottom: isLast ? 'none' : '1px solid #F1F5F9', verticalAlign: 'middle' }}>
+                {isOwner ? (
+                  <span style={{ fontSize: '0.625rem', color: '#CBD5E1' }}>Owner</span>
+                ) : canEdit || isSelf ? (
+                  <button
+                    onClick={() => handleRemoveMember(member.id, member.user_id)}
+                    title={isSelf ? 'Leave project' : 'Remove member'}
+                    style={{
+                      width: '1.5rem', height: '1.5rem', borderRadius: '0.25rem',
+                      border: 'none', background: 'none', color: '#CBD5E1',
+                      cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
+                      justifyContent: 'center', fontSize: '0.875rem', transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEE2E2'; (e.currentTarget as HTMLButtonElement).style.color = '#EF4444'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#CBD5E1'; }}
+                  >
+                    <i className="ri-delete-bin-line"></i>
+                  </button>
+                ) : null}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
