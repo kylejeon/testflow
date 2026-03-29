@@ -360,7 +360,7 @@ export default function SettingsPage() {
 
         // Preferences 컬럼 로드 (migration으로 추가된 컬럼 — 없는 환경 대비 별도 쿼리)
         supabase.from('profiles')
-          .select('timezone, date_format, time_format, default_project_id')
+          .select('timezone, date_format, time_format, default_project_id, language')
           .eq('id', user.id)
           .maybeSingle()
           .then(({ data: prefs }) => {
@@ -372,6 +372,7 @@ export default function SettingsPage() {
             if (prefs.date_format) setDateFormat(prefs.date_format);
             if (prefs.time_format) setTimeFormat(prefs.time_format as '24h' | '12h');
             if (prefs.default_project_id) setDefaultProjectId(prefs.default_project_id);
+            if (prefs.language) setLanguage(prefs.language as 'en');
           })
           .catch(() => {/* preferences 컬럼 없는 환경 — 무시 */});
       } else {
@@ -959,12 +960,14 @@ def pytest_sessionfinish(session, exitstatus):
       setSavingPreferences(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await supabase.from('profiles').update({
+      const { error } = await supabase.from('profiles').update({
         timezone: autoDetectTz ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone,
         date_format: dateFormat,
         time_format: timeFormat,
         default_project_id: defaultProjectId || null,
+        language,
       } as Record<string, unknown>).eq('id', user.id);
+      if (error) throw error;
       setPreferencesSaved(true);
       setTimeout(() => setPreferencesSaved(false), 3000);
     } catch (e) {
