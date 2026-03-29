@@ -259,10 +259,10 @@ export default function ProjectMilestones() {
       if (allRunAssigneeIds.size > 0) {
         const { data: apData } = await supabase
           .from('profiles')
-          .select('id, full_name, email')
+          .select('id, full_name, email, avatar_url')
           .in('id', Array.from(allRunAssigneeIds));
         const apMap = new Map<string, { name: string | null; email: string; url: string | null }>();
-        (apData || []).forEach((p: any) => apMap.set(p.id, { name: p.full_name || null, email: p.email || '', url: null }));
+        (apData || []).forEach((p: any) => apMap.set(p.id, { name: p.full_name || null, email: p.email || '', url: p.avatar_url || null }));
         setMilestoneAssigneeProfiles(apMap);
       }
     } catch (error) {

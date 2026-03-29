@@ -341,11 +341,11 @@ export default function MilestoneDetail() {
       if (allAssigneeIds.size > 0) {
         const { data: apData } = await supabase
           .from('profiles')
-          .select('id, full_name, email')
+          .select('id, full_name, email, avatar_url')
           .in('id', Array.from(allAssigneeIds));
         const apMap = new Map<string, { name: string | null; email: string; url: string | null }>();
         (apData || []).forEach((p: any) => {
-          apMap.set(p.id, { name: p.full_name || null, email: p.email || '', url: null });
+          apMap.set(p.id, { name: p.full_name || null, email: p.email || '', url: p.avatar_url || null });
         });
         setAssigneeProfiles(apMap);
       }
@@ -456,8 +456,8 @@ export default function MilestoneDetail() {
 
       // Use .in() instead of .or() — .or('full_name.eq.Kyle Jeon') breaks on spaces
       const [byName, byEmail] = await Promise.all([
-        supabase.from('profiles').select('full_name, email').in('full_name', validAuthors),
-        supabase.from('profiles').select('full_name, email').in('email', validAuthors),
+        supabase.from('profiles').select('full_name, email, avatar_url').in('full_name', validAuthors),
+        supabase.from('profiles').select('full_name, email, avatar_url').in('email', validAuthors),
       ]);
 
       const nameRows = byName.data || [];
@@ -465,7 +465,7 @@ export default function MilestoneDetail() {
 
       const profileMap = new Map<string, { name: string | null; url: string | null }>();
       [...nameRows, ...emailRows].forEach((p: any) => {
-        const info = { name: p.full_name || null, url: null };
+        const info = { name: p.full_name || null, url: p.avatar_url || null };
         if (p.full_name) profileMap.set(p.full_name, info);
         if (p.email) profileMap.set(p.email, info);
       });

@@ -105,7 +105,7 @@ export default function ProjectRunsPage() {
   const [editingRunId, setEditingRunId] = useState<string | null>(null);
   const [project, setProject] = useState<any>(null);
   const [contributors, setContributors] = useState<Contributor[]>([]);
-  const [assigneeProfiles, setAssigneeProfiles] = useState<Map<string, { full_name: string | null; email: string }>>(new Map());
+  const [assigneeProfiles, setAssigneeProfiles] = useState<Map<string, { full_name: string | null; email: string; avatar_url: string | null }>>(new Map());
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -807,11 +807,11 @@ export default function ProjectRunsPage() {
       if (allAssigneeIds.size > 0) {
         const { data: assigneeProfilesData } = await supabase
           .from('profiles')
-          .select('id, full_name, email')
+          .select('id, full_name, email, avatar_url')
           .in('id', Array.from(allAssigneeIds));
-        const profileMap = new Map<string, { full_name: string | null; email: string }>();
+        const profileMap = new Map<string, { full_name: string | null; email: string; avatar_url: string | null }>();
         (assigneeProfilesData || []).forEach((p: any) => {
-          profileMap.set(p.id, { full_name: p.full_name ?? null, email: p.email || '' });
+          profileMap.set(p.id, { full_name: p.full_name ?? null, email: p.email || '', avatar_url: p.avatar_url || null });
         });
         setAssigneeProfiles(profileMap);
       }
@@ -1443,6 +1443,7 @@ export default function ProjectRunsPage() {
                     userId={assignee}
                     name={p?.full_name ?? undefined}
                     email={p?.email}
+                    photoUrl={p?.avatar_url ?? undefined}
                     size="sm"
                     title={p?.full_name || p?.email || assignee}
                   />
