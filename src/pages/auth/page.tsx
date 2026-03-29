@@ -30,6 +30,23 @@ export default function AuthPage() {
   const [checkingInvitation, setCheckingInvitation] = useState(false);
   const [isOAuthRedirect, setIsOAuthRedirect] = useState(false);
 
+  const navigateToDefaultOrProjects = async (userId: string) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('default_project_id')
+        .eq('id', userId)
+        .maybeSingle();
+      if (profile?.default_project_id) {
+        navigate(`/projects/${profile.default_project_id}`);
+        return;
+      }
+    } catch {
+      // fallback to /projects
+    }
+    navigate('/projects');
+  };
+
   useEffect(() => {
     const inviteToken = searchParams.get('invite');
 
@@ -117,7 +134,7 @@ export default function AuthPage() {
         if (invite) {
           await acceptInvitation(invite);
         } else if (!window.location.hash) {
-          navigate('/projects');
+          await navigateToDefaultOrProjects(session.user.id);
         }
       }
     });
@@ -246,7 +263,11 @@ export default function AuthPage() {
         navigate(`/accept-invitation?token=${invitationToken}`);
         return;
       }
-      navigate('/projects');
+      if (data.user) {
+        await navigateToDefaultOrProjects(data.user.id);
+      } else {
+        navigate('/projects');
+      }
     } catch (error: any) {
       setError(error.message || 'Login failed. Please try again.');
       setLoading(false);
