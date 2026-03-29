@@ -87,7 +87,7 @@ export function useSampleProject() {
       project_id: projectId,
       name: 'MVP Testing Complete',
       status: 'started',
-      progress: 80,
+      progress: 0,
       start_date: now.toISOString().slice(0, 10),
       end_date: targetDate.toISOString().slice(0, 10),
     }]);
@@ -100,13 +100,13 @@ export function useSampleProject() {
       project_id: projectId,
       milestone_id: milestoneId,
       name: 'Sprint 1 Regression',
-      status: 'completed',
-      progress: 80,
-      passed: 12,
+      status: 'in_progress',
+      progress: 0,
+      passed: 10,
       failed: 2,
       blocked: 0,
       retest: 0,
-      untested: 1,
+      untested: 3,
       tags: [],
       assignees: [],
       test_case_ids: testCaseIds,
@@ -124,7 +124,7 @@ export function useSampleProject() {
       charter: 'Explored checkout flow, found cart persistence issue when switching browsers.',
       tags: ['checkout', 'cart'],
       assignees: [user.id],
-      status: 'closed',
+      status: 'active',
     }]);
     if (sessError) throw sessError;
 

@@ -119,7 +119,7 @@ VALUES (
     {"name":"Sprint 1 Regression","status":"completed","total":15,"passed":12,"failed":2,"skipped":1,"duration_minutes":45}
   ]'::jsonb,
   '[
-    {"name":"Checkout Flow Exploration","duration_minutes":5,"status":"completed","notes":"Explored checkout flow, found cart persistence issue when switching browsers."}
+    {"name":"Checkout Flow Exploration","duration_minutes":5,"status":"active","notes":"Explored checkout flow, found cart persistence issue when switching browsers."}
   ]'::jsonb,
   '[
     {"name":"MVP Testing Complete","progress":80}
