@@ -65,6 +65,9 @@ const DocsTestRunsPage = lazy(() => import('../pages/docs/test-runs'));
 const DocsMilestonesPage = lazy(() => import('../pages/docs/milestones'));
 const DocsDiscoveryLogsPage = lazy(() => import('../pages/docs/discovery-logs'));
 const DocsTeamPermissionsPage = lazy(() => import('../pages/docs/team-permissions'));
+const DocsAccountBillingPage = lazy(() => import('../pages/docs/account-billing'));
+const DocsKeyboardShortcutsPage = lazy(() => import('../pages/docs/keyboard-shortcuts'));
+const DocsFaqPage = lazy(() => import('../pages/docs/faq'));
 
 const routes: RouteObject[] = [
   {
@@ -279,6 +282,18 @@ const routes: RouteObject[] = [
   {
     path: '/docs/team-permissions',
     element: <DocsTeamPermissionsPage />,
+  },
+  {
+    path: '/docs/account-billing',
+    element: <DocsAccountBillingPage />,
+  },
+  {
+    path: '/docs/keyboard-shortcuts',
+    element: <DocsKeyboardShortcutsPage />,
+  },
+  {
+    path: '/docs/faq',
+    element: <DocsFaqPage />,
   },
   {
     path: '*',
