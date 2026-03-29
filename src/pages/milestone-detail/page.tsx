@@ -279,11 +279,11 @@ export default function MilestoneDetail() {
       if (allAssigneeIds.size > 0) {
         const { data: apData } = await supabase
           .from('profiles')
-          .select('id, full_name, email, avatar_url')
+          .select('id, full_name, email')
           .in('id', Array.from(allAssigneeIds));
         const apMap = new Map<string, { name: string | null; email: string; url: string | null }>();
         (apData || []).forEach((p: any) => {
-          apMap.set(p.id, { name: p.full_name || null, email: p.email || '', url: p.avatar_url || null });
+          apMap.set(p.id, { name: p.full_name || null, email: p.email || '', url: null });
         });
         setAssigneeProfiles(apMap);
       }
@@ -393,23 +393,17 @@ export default function MilestoneDetail() {
       if (validAuthors.length === 0) return;
 
       // Use .in() instead of .or() — .or('full_name.eq.Kyle Jeon') breaks on spaces
-      const fields = 'full_name, email, avatar_url';
       const [byName, byEmail] = await Promise.all([
-        supabase.from('profiles').select(fields).in('full_name', validAuthors),
-        supabase.from('profiles').select(fields).in('email', validAuthors),
+        supabase.from('profiles').select('full_name, email').in('full_name', validAuthors),
+        supabase.from('profiles').select('full_name, email').in('email', validAuthors),
       ]);
 
-      // Fallback without avatar_url if column doesn't exist
-      const nameRows = byName.error
-        ? ((await supabase.from('profiles').select('full_name, email').in('full_name', validAuthors)).data || [])
-        : (byName.data || []);
-      const emailRows = byEmail.error
-        ? ((await supabase.from('profiles').select('full_name, email').in('email', validAuthors)).data || [])
-        : (byEmail.data || []);
+      const nameRows = byName.data || [];
+      const emailRows = byEmail.data || [];
 
       const profileMap = new Map<string, { name: string | null; url: string | null }>();
       [...nameRows, ...emailRows].forEach((p: any) => {
-        const info = { name: p.full_name || null, url: p.avatar_url || null };
+        const info = { name: p.full_name || null, url: null };
         if (p.full_name) profileMap.set(p.full_name, info);
         if (p.email) profileMap.set(p.email, info);
       });
