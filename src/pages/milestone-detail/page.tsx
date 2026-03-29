@@ -106,6 +106,7 @@ export default function MilestoneDetail() {
   const [assigneeProfiles, setAssigneeProfiles] = useState<Map<string, { name: string | null; email: string; url: string | null }>>(new Map());
   const [tcStats, setTcStats] = useState<TcStats>({ passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, total: 0, passRate: 0 });
   const [failedBlockedTcs, setFailedBlockedTcs] = useState<FailedBlockedTcItem[]>([]);
+  const [subMilestoneProgress, setSubMilestoneProgress] = useState<Map<string, number>>(new Map());
   const activityPerPage = 10;
 
   useEffect(() => {
@@ -167,6 +168,54 @@ export default function MilestoneDetail() {
         .order('start_date', { ascending: true });
 
       setSubMilestones(subMilestonesData || []);
+
+      // Dynamically calculate sub milestone progress from their runs' test results
+      const subMilestoneIds = (subMilestonesData || []).map((s: any) => s.id);
+      if (subMilestoneIds.length > 0) {
+        const { data: subRunsData } = await supabase
+          .from('test_runs')
+          .select('id, milestone_id, test_case_ids')
+          .in('milestone_id', subMilestoneIds);
+
+        if (subRunsData && subRunsData.length > 0) {
+          const subRunIds = subRunsData.map((r: any) => r.id);
+          const { data: subResultsData } = await supabase
+            .from('test_results')
+            .select('run_id, test_case_id, status, created_at')
+            .in('run_id', subRunIds)
+            .order('created_at', { ascending: false });
+
+          // Build per-run status maps (latest result per TC wins — DESC order)
+          const runStatusMaps = new Map<string, Map<string, string>>();
+          (subResultsData || []).forEach((r: any) => {
+            if (!runStatusMaps.has(r.run_id)) runStatusMaps.set(r.run_id, new Map());
+            const sm = runStatusMaps.get(r.run_id)!;
+            if (!sm.has(r.test_case_id)) sm.set(r.test_case_id, r.status);
+          });
+
+          // Accumulate tested/total per sub milestone
+          const subProgressAccum = new Map<string, { tested: number; total: number }>();
+          subRunsData.forEach((run: any) => {
+            const statusMap = runStatusMaps.get(run.id) || new Map();
+            const total = (run.test_case_ids || []).length;
+            if (total === 0) return;
+            let tested = 0;
+            (run.test_case_ids || []).forEach((tcId: string) => {
+              const s = statusMap.get(tcId);
+              if (s && s !== 'untested') tested++;
+            });
+            const mid = run.milestone_id;
+            const existing = subProgressAccum.get(mid) || { tested: 0, total: 0 };
+            subProgressAccum.set(mid, { tested: existing.tested + tested, total: existing.total + total });
+          });
+
+          const newSubProgressMap = new Map<string, number>();
+          subProgressAccum.forEach((v, k) => {
+            newSubProgressMap.set(k, v.total > 0 ? Math.round((v.tested / v.total) * 100) : 0);
+          });
+          setSubMilestoneProgress(newSubProgressMap);
+        }
+      }
 
       const { data: runsData, error: runsError } = await supabase
         .from('test_runs')
@@ -973,9 +1022,9 @@ export default function MilestoneDetail() {
                         <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#0F172A', minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</span>
                         <span style={{ fontSize: '0.625rem', fontWeight: 600, padding: '0.125rem 0.4375rem', borderRadius: '9999px', background: subBadge.bg, color: subBadge.color, whiteSpace: 'nowrap', flexShrink: 0 }}>{subBadge.label}</span>
                         <div style={{ width: 100, height: 6, background: '#F1F5F9', borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
-                          <div style={{ height: '100%', width: `${sub.progress || 0}%`, background: '#22C55E', borderRadius: 3 }} />
+                          <div style={{ height: '100%', width: `${subMilestoneProgress.get(sub.id) ?? 0}%`, background: '#22C55E', borderRadius: 3 }} />
                         </div>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', flexShrink: 0 }}>{sub.progress || 0}%</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', flexShrink: 0 }}>{subMilestoneProgress.get(sub.id) ?? 0}%</span>
                       </div>
                     );
                   })}
