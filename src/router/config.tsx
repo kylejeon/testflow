@@ -60,6 +60,11 @@ const DocsApiTestResultsPage = lazy(() => import('../pages/docs/api/test-results
 const DocsApiMilestonesPage = lazy(() => import('../pages/docs/api/milestones/page'));
 const DocsApiDiscoveryLogsPage = lazy(() => import('../pages/docs/api/discovery-logs/page'));
 const DocsApiMembersPage = lazy(() => import('../pages/docs/api/members/page'));
+const DocsTestCasesPage = lazy(() => import('../pages/docs/test-cases'));
+const DocsTestRunsPage = lazy(() => import('../pages/docs/test-runs'));
+const DocsMilestonesPage = lazy(() => import('../pages/docs/milestones'));
+const DocsDiscoveryLogsPage = lazy(() => import('../pages/docs/discovery-logs'));
+const DocsTeamPermissionsPage = lazy(() => import('../pages/docs/team-permissions'));
 
 const routes: RouteObject[] = [
   {
@@ -254,6 +259,26 @@ const routes: RouteObject[] = [
   {
     path: '/docs/api/members',
     element: <DocsApiMembersPage />,
+  },
+  {
+    path: '/docs/test-cases',
+    element: <DocsTestCasesPage />,
+  },
+  {
+    path: '/docs/test-runs',
+    element: <DocsTestRunsPage />,
+  },
+  {
+    path: '/docs/milestones',
+    element: <DocsMilestonesPage />,
+  },
+  {
+    path: '/docs/discovery-logs',
+    element: <DocsDiscoveryLogsPage />,
+  },
+  {
+    path: '/docs/team-permissions',
+    element: <DocsTeamPermissionsPage />,
   },
   {
     path: '*',
