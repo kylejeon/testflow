@@ -118,9 +118,10 @@ export default function ProjectDetail() {
 
   const fetchIntegrationStatus = async () => {
     if (!id) return;
+    const { data: { user } } = await supabase.auth.getUser();
     const [intRes, jiraRes] = await Promise.all([
       supabase.from('integrations').select('id, type, channel_name, is_active').eq('project_id', id),
-      supabase.from('jira_settings').select('id, domain').maybeSingle(),
+      supabase.from('jira_settings').select('id, domain').eq('user_id', user?.id ?? '').maybeSingle(),
     ]);
     setProjectIntegrations(intRes.data ?? []);
     setJiraConfigured(!!(jiraRes.data?.domain));

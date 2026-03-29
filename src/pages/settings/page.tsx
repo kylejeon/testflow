@@ -409,9 +409,12 @@ export default function SettingsPage() {
   const fetchJiraSettings = async () => {
     try {
       setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       const { data, error } = await supabase
         .from('jira_settings')
         .select('*')
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
@@ -469,10 +472,13 @@ export default function SettingsPage() {
   const handleSaveJiraSettings = async () => {
     try {
       setSaving(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
       const { data: existingData } = await supabase
         .from('jira_settings')
         .select('id')
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (existingData) {
@@ -492,6 +498,7 @@ export default function SettingsPage() {
         const { error } = await supabase
           .from('jira_settings')
           .insert({
+            user_id: user.id,
             domain: jiraSettings.domain,
             email: jiraSettings.email,
             api_token: jiraSettings.apiToken,

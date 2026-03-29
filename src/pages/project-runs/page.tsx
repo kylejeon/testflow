@@ -191,9 +191,11 @@ export default function ProjectRunsPage() {
         .in('test_case_id', allTestCaseIds)
         .order('created_at', { ascending: false });
 
+      const { data: { user: authUser } } = await supabase.auth.getUser();
       const { data: jiraSettingsData } = await supabase
         .from('jira_settings')
         .select('domain')
+        .eq('user_id', authUser?.id ?? '')
         .maybeSingle();
       const jiraDomain = jiraSettingsData?.domain || '';
 

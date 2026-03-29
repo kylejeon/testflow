@@ -815,9 +815,12 @@ export default function SessionDetail() {
 
   const fetchJiraSettings = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       const { data, error } = await supabase
         .from('jira_settings')
         .select('domain, email, api_token, issue_type')
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
