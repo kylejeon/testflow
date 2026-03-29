@@ -191,6 +191,7 @@ export default function SettingsPage() {
   const [showNewTokenModal, setShowNewTokenModal] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<'github' | 'gitlab' | 'python'>('github');
+  const [scopeGuideTab, setScopeGuideTab] = useState<'github' | 'gitlab'>('github');
 
   // Preferences state
   const [language, setLanguage] = useState<'en'>('en');
@@ -201,6 +202,7 @@ export default function SettingsPage() {
   const [defaultProjectId, setDefaultProjectId] = useState('');
   const [preferencesSaved, setPreferencesSaved] = useState(false);
   const [savingPreferences, setSavingPreferences] = useState(false);
+  const [prefsError, setPrefsError] = useState<string | null>(null);
   const [showAllPlansModal, setShowAllPlansModal] = useState(false);
 
   // Slack / Teams webhook management
@@ -958,20 +960,29 @@ def pytest_sessionfinish(session, exitstatus):
   const handleSavePreferences = async () => {
     try {
       setSavingPreferences(true);
+      setPrefsError(null);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { error } = await supabase.from('profiles').update({
+      const payload = {
+        id: user.id,
+        email: user.email,
         timezone: autoDetectTz ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone,
         date_format: dateFormat,
         time_format: timeFormat,
         default_project_id: defaultProjectId || null,
         language,
-      } as Record<string, unknown>).eq('id', user.id);
+      };
+      const { error } = await supabase.from('profiles').upsert(
+        payload as Record<string, unknown>,
+        { onConflict: 'id' }
+      );
       if (error) throw error;
       setPreferencesSaved(true);
       setTimeout(() => setPreferencesSaved(false), 3000);
     } catch (e) {
       console.error('Preferences save error:', e);
+      const msg = e instanceof Error ? e.message : (e as { message?: string })?.message ?? String(e);
+      setPrefsError(msg);
     } finally {
       setSavingPreferences(false);
     }
@@ -2075,42 +2086,64 @@ def pytest_sessionfinish(session, exitstatus):
                           <i className="ri-shield-keyhole-line text-[#6366F1]"></i>
                           API Token Scope Configuration Guide
                         </h3>
-                        <p className="text-[0.8125rem] text-[#64748B] mb-4">When using a Personal Access Token (PAT) or Fine-grained Token in GitHub, only the following permissions are needed.</p>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-4">
+                          {scopeGuideTab === 'github'
+                            ? 'When using a Personal Access Token (PAT) or Fine-grained Token in GitHub, only the following permissions are needed.'
+                            : 'When using a Personal Access Token (PAT) in GitLab, only the following scopes are needed.'}
+                        </p>
                         <div className="flex gap-2 mb-4">
-                          <button className="inline-flex items-center gap-1.5 px-3 py-[0.3125rem] rounded-[0.375rem] text-[0.75rem] font-semibold bg-[#0F172A] text-white border border-[#0F172A] cursor-pointer">
+                          <button
+                            onClick={() => setScopeGuideTab('github')}
+                            className={`inline-flex items-center gap-1.5 px-3 py-[0.3125rem] rounded-[0.375rem] text-[0.75rem] font-semibold cursor-pointer ${scopeGuideTab === 'github' ? 'bg-[#0F172A] text-white border border-[#0F172A]' : 'border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC]'}`}
+                          >
                             <i className="ri-github-fill"></i> GitHub
                           </button>
-                          <button className="inline-flex items-center gap-1.5 px-3 py-[0.3125rem] rounded-[0.375rem] text-[0.75rem] font-medium border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] cursor-pointer">
+                          <button
+                            onClick={() => setScopeGuideTab('gitlab')}
+                            className={`inline-flex items-center gap-1.5 px-3 py-[0.3125rem] rounded-[0.375rem] text-[0.75rem] font-semibold cursor-pointer ${scopeGuideTab === 'gitlab' ? 'bg-[#FC6D26] text-white border border-[#FC6D26]' : 'border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC]'}`}
+                          >
                             <i className="ri-gitlab-fill"></i> GitLab
                           </button>
                         </div>
                         <div className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em] mb-2">Minimum Required Scopes</div>
                         <div className="flex flex-col gap-2 mb-4">
-                          {[
-                            { scope: 'repo', desc: 'Repository read access (required for private repos)', required: true },
-                            { scope: 'workflow', desc: 'GitHub Actions workflow execution permission', required: true },
-                            { scope: 'read:org', desc: 'Read organization info (for org repositories)', required: false },
-                          ].map(item => (
+                          {(scopeGuideTab === 'github'
+                            ? [
+                                { scope: 'repo', desc: 'Repository read access (required for private repos)', badge: 'Required' },
+                                { scope: 'workflow', desc: 'GitHub Actions workflow execution permission', badge: 'Required' },
+                                { scope: 'read:org', desc: 'Read organization info (for org repositories)', badge: '' },
+                              ]
+                            : [
+                                { scope: 'api', desc: 'Full API access — read/write projects, issues, and CI/CD', badge: 'Required' },
+                                { scope: 'read_api', desc: 'Read-only API access (minimum for result uploads)', badge: 'Minimum' },
+                                { scope: 'read_repository', desc: 'Repository read access (for private repos)', badge: '' },
+                              ]
+                          ).map(item => (
                             <div key={item.scope} className="flex items-start gap-3 px-3 py-2.5 bg-[#F8FAFC] rounded-[0.5rem]">
-                              <span className="px-2 py-0.5 text-[0.6875rem] font-bold font-mono bg-[#EEF2FF] text-[#4338CA] rounded whitespace-nowrap">{item.scope}</span>
+                              <span className={`px-2 py-0.5 text-[0.6875rem] font-bold font-mono rounded whitespace-nowrap ${scopeGuideTab === 'github' ? 'bg-[#EEF2FF] text-[#4338CA]' : 'bg-[#FFF7ED] text-[#C2410C]'}`}>{item.scope}</span>
                               <div className="flex-1 text-[0.8125rem] text-[#334155]">{item.desc}</div>
-                              {item.required && <span className="text-[0.6875rem] font-semibold text-[#4F46E5] whitespace-nowrap">Required</span>}
+                              {item.badge && <span className={`text-[0.6875rem] font-semibold whitespace-nowrap ${scopeGuideTab === 'github' ? 'text-[#4F46E5]' : 'text-[#EA580C]'}`}>{item.badge}</span>}
                             </div>
                           ))}
                         </div>
                         <div className="flex items-start gap-2 px-3 py-2.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-[0.5rem] mb-3">
                           <i className="ri-error-warning-line text-[#F59E0B] flex-shrink-0 mt-0.5"></i>
                           <div className="text-[0.6875rem] text-[#92400E]">
-                            <strong>Recommended:</strong> Using the automatically provided <code className="bg-[#FEF3C7] px-1 rounded text-[0.6875rem]">GITHUB_TOKEN</code> within GitHub Actions workflows is the safest approach — no separate PAT creation needed.
+                            {scopeGuideTab === 'github'
+                              ? <><strong>Recommended:</strong> Using the automatically provided <code className="bg-[#FEF3C7] px-1 rounded text-[0.6875rem]">GITHUB_TOKEN</code> within GitHub Actions workflows is the safest approach — no separate PAT creation needed.</>
+                              : <><strong>Recommended:</strong> Using the automatically provided <code className="bg-[#FEF3C7] px-1 rounded text-[0.6875rem]">CI_JOB_TOKEN</code> within GitLab CI/CD pipelines is the safest approach — no separate PAT creation needed.</>
+                            }
                           </div>
                         </div>
                         <a
-                          href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens"
+                          href={scopeGuideTab === 'github'
+                            ? 'https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens'
+                            : 'https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html'}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-[0.6875rem] text-[#6366F1] hover:underline"
                         >
-                          <i className="ri-external-link-line"></i> GitHub Token Official Documentation
+                          <i className="ri-external-link-line"></i> {scopeGuideTab === 'github' ? 'GitHub Token Official Documentation' : 'GitLab Personal Access Tokens Documentation'}
                         </a>
                       </div>
 
@@ -2119,12 +2152,10 @@ def pytest_sessionfinish(session, exitstatus):
                         <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">API Documentation</h3>
                         <p className="text-[0.8125rem] text-[#64748B] mb-3">Explore the full REST API reference for building custom integrations.</p>
                         <a
-                          href="https://testably.app/docs"
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          href="/docs/api"
                           className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#6366F1] hover:underline"
                         >
-                          <i className="ri-external-link-line"></i> View full API reference →
+                          <i className="ri-book-open-line"></i> View full API reference →
                         </a>
                       </div>
                     </div>
@@ -2274,6 +2305,15 @@ def pytest_sessionfinish(session, exitstatus):
                               <i className="ri-checkbox-circle-fill"></i>
                               Saved successfully
                             </span>
+                          </div>
+                        )}
+                        {prefsError && (
+                          <div className="mt-3 p-3 bg-[#FEF2F2] border border-[#FECACA] rounded-lg flex items-start gap-2">
+                            <i className="ri-error-warning-line text-[#EF4444] mt-0.5" style={{ fontSize: '0.9rem' }}></i>
+                            <div>
+                              <p className="text-[0.8125rem] font-semibold text-[#EF4444]">Save failed</p>
+                              <p className="text-[0.75rem] text-[#B91C1C] mt-0.5 font-mono break-all">{prefsError}</p>
+                            </div>
                           </div>
                         )}
                       </div>

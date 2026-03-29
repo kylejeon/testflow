@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import MarketingLayout from '../../../components/marketing/MarketingLayout';
 
 const endpoints = [
@@ -7,6 +8,7 @@ const endpoints = [
     badge: 'POST',
     badgeColor: 'bg-blue-100 text-blue-700',
     desc: 'Generate and manage API tokens. Create project-scoped tokens for secure CI/CD access.',
+    href: '/docs/api/authentication',
   },
   {
     icon: 'ri-file-list-3-line',
@@ -14,6 +16,7 @@ const endpoints = [
     badge: 'CRUD',
     badgeColor: 'bg-green-100 text-green-700',
     desc: 'Create, read, update, delete test cases. List with filters, manage folders and tags.',
+    href: '/docs/api/test-cases',
   },
   {
     icon: 'ri-play-circle-line',
@@ -21,6 +24,7 @@ const endpoints = [
     badge: 'POST',
     badgeColor: 'bg-blue-100 text-blue-700',
     desc: 'Create test runs, upload results, and query run status. Bulk result upload for CI/CD.',
+    href: '/docs/api/test-runs',
   },
   {
     icon: 'ri-check-double-line',
@@ -28,6 +32,7 @@ const endpoints = [
     badge: 'PUT',
     badgeColor: 'bg-amber-100 text-amber-700',
     desc: 'Update individual results or bulk upload from automated test suites.',
+    href: '/docs/api/test-results',
   },
   {
     icon: 'ri-folder-line',
@@ -35,6 +40,7 @@ const endpoints = [
     badge: 'GET',
     badgeColor: 'bg-green-100 text-green-700',
     desc: 'List projects and retrieve project settings and configuration.',
+    href: '/docs/api/projects',
   },
   {
     icon: 'ri-flag-line',
@@ -42,6 +48,7 @@ const endpoints = [
     badge: 'CRUD',
     badgeColor: 'bg-green-100 text-green-700',
     desc: 'Create, read, and update milestones. Link test runs to release targets.',
+    href: '/docs/api/milestones',
   },
   {
     icon: 'ri-webhook-line',
@@ -49,6 +56,7 @@ const endpoints = [
     badge: 'POST',
     badgeColor: 'bg-blue-100 text-blue-700',
     desc: 'Subscribe to events (run completed, test failed, etc.). Configure payload schemas.',
+    href: '/docs/webhooks',
   },
 ];
 
@@ -149,9 +157,9 @@ export default function ApiReferencePage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {endpoints.map((ep) => (
-              <a
+              <Link
                 key={ep.title}
-                href="#"
+                to={ep.href}
                 className="bg-white border border-gray-100 rounded-2xl p-6 flex items-start gap-4 hover:border-indigo-200 hover:shadow-sm transition-all group"
               >
                 <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -164,7 +172,7 @@ export default function ApiReferencePage() {
                   </div>
                   <p className="text-xs text-gray-500 leading-relaxed">{ep.desc}</p>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -190,7 +198,7 @@ export default function ApiReferencePage() {
           </div>
           <p className="text-sm text-gray-400 mt-6 bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-center">
             <i className="ri-information-line text-indigo-400 mr-1.5"></i>
-            Full API documentation will be hosted on a dedicated Swagger/Redoc instance. This page provides an overview and quick-start examples.
+            Browse the full API reference by clicking any category above, or visit the <Link to="/docs/api/authentication" className="text-indigo-500 hover:underline">Authentication guide</Link> to get started.
           </p>
         </div>
       </section>

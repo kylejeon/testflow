@@ -47,6 +47,19 @@ const CompareIndexPage = lazy(() => import('../pages/compare/index'));
 const ContactPage = lazy(() => import('../pages/contact/page'));
 const DocsPage = lazy(() => import('../pages/docs/page'));
 const ApiReferencePage = lazy(() => import('../pages/docs/api/page'));
+const DocsGettingStartedPage = lazy(() => import('../pages/docs/getting-started/page'));
+const DocsCICDPage = lazy(() => import('../pages/docs/cicd/page'));
+const DocsImportExportPage = lazy(() => import('../pages/docs/import-export/page'));
+const DocsWebhooksPage = lazy(() => import('../pages/docs/webhooks/page'));
+const DocsIntegrationsPage = lazy(() => import('../pages/docs/integrations/page'));
+const DocsApiAuthPage = lazy(() => import('../pages/docs/api/authentication/page'));
+const DocsApiProjectsPage = lazy(() => import('../pages/docs/api/projects/page'));
+const DocsApiTestCasesPage = lazy(() => import('../pages/docs/api/test-cases/page'));
+const DocsApiTestRunsPage = lazy(() => import('../pages/docs/api/test-runs/page'));
+const DocsApiTestResultsPage = lazy(() => import('../pages/docs/api/test-results/page'));
+const DocsApiMilestonesPage = lazy(() => import('../pages/docs/api/milestones/page'));
+const DocsApiDiscoveryLogsPage = lazy(() => import('../pages/docs/api/discovery-logs/page'));
+const DocsApiMembersPage = lazy(() => import('../pages/docs/api/members/page'));
 
 const routes: RouteObject[] = [
   {
@@ -189,6 +202,58 @@ const routes: RouteObject[] = [
   {
     path: '/docs/api',
     element: <ApiReferencePage />,
+  },
+  {
+    path: '/docs/getting-started',
+    element: <DocsGettingStartedPage />,
+  },
+  {
+    path: '/docs/cicd',
+    element: <DocsCICDPage />,
+  },
+  {
+    path: '/docs/import-export',
+    element: <DocsImportExportPage />,
+  },
+  {
+    path: '/docs/webhooks',
+    element: <DocsWebhooksPage />,
+  },
+  {
+    path: '/docs/integrations',
+    element: <DocsIntegrationsPage />,
+  },
+  {
+    path: '/docs/api/authentication',
+    element: <DocsApiAuthPage />,
+  },
+  {
+    path: '/docs/api/projects',
+    element: <DocsApiProjectsPage />,
+  },
+  {
+    path: '/docs/api/test-cases',
+    element: <DocsApiTestCasesPage />,
+  },
+  {
+    path: '/docs/api/test-runs',
+    element: <DocsApiTestRunsPage />,
+  },
+  {
+    path: '/docs/api/test-results',
+    element: <DocsApiTestResultsPage />,
+  },
+  {
+    path: '/docs/api/milestones',
+    element: <DocsApiMilestonesPage />,
+  },
+  {
+    path: '/docs/api/discovery-logs',
+    element: <DocsApiDiscoveryLogsPage />,
+  },
+  {
+    path: '/docs/api/members',
+    element: <DocsApiMembersPage />,
   },
   {
     path: '*',

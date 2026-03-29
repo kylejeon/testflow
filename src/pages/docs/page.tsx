@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
 
 const quickStart = [
@@ -5,33 +6,33 @@ const quickStart = [
     icon: 'ri-play-circle-line',
     title: 'Getting Started',
     desc: 'Create your first project and run your first test in under 5 minutes.',
-    href: '#',
+    href: '/docs/getting-started',
   },
   {
     icon: 'ri-file-edit-line',
     title: 'Writing Test Cases',
     desc: 'Learn how to write effective test cases and leverage AI generation.',
-    href: '#',
+    href: '/docs/api/test-cases',
   },
   {
     icon: 'ri-focus-3-line',
     title: 'Running Your First Test',
     desc: 'Create a test run, assign cases, and execute in Focus Mode.',
-    href: '#',
+    href: '/docs/api/test-runs',
   },
 ];
 
 const categories = [
-  { icon: 'ri-rocket-line', title: 'Getting Started', desc: 'Sign up, create projects, invite team, first test' },
-  { icon: 'ri-file-list-3-line', title: 'Test Cases', desc: 'Create, edit, folders, tags, priority, bulk ops, AI generation' },
-  { icon: 'ri-play-circle-line', title: 'Test Runs', desc: 'Create runs, assign cases, results, Focus Mode, statuses' },
-  { icon: 'ri-flag-line', title: 'Milestones', desc: 'Create milestones, link runs, progress tracking, releases' },
-  { icon: 'ri-search-eye-line', title: 'Discovery Logs', desc: 'Start sessions, record observations, screenshots, TC conversion' },
-  { icon: 'ri-team-line', title: 'Team & Permissions', desc: 'Invite members, roles (Admin/Member/Viewer), access control' },
-  { icon: 'ri-plug-line', title: 'Integrations', desc: 'Jira setup, CI/CD API, Slack & Teams notifications' },
-  { icon: 'ri-bank-card-line', title: 'Account & Billing', desc: 'Plan changes, payment management, invoices' },
-  { icon: 'ri-keyboard-line', title: 'Keyboard Shortcuts', desc: 'Complete shortcut reference, Cmd+K, G-chords, Focus Mode keys' },
-  { icon: 'ri-question-line', title: 'FAQ & Troubleshooting', desc: 'Common questions and error resolution' },
+  { icon: 'ri-rocket-line', title: 'Getting Started', desc: 'Sign up, create projects, invite team, first test', href: '/docs/getting-started' },
+  { icon: 'ri-file-list-3-line', title: 'Test Cases', desc: 'Create, edit, folders, tags, priority, bulk ops, AI generation', href: '/docs/api/test-cases' },
+  { icon: 'ri-play-circle-line', title: 'Test Runs', desc: 'Create runs, assign cases, results, Focus Mode, statuses', href: '/docs/api/test-runs' },
+  { icon: 'ri-flag-line', title: 'Milestones', desc: 'Create milestones, link runs, progress tracking, releases', href: '/docs/api/milestones' },
+  { icon: 'ri-search-eye-line', title: 'Discovery Logs', desc: 'Start sessions, record observations, screenshots, TC conversion', href: '/docs/api/discovery-logs' },
+  { icon: 'ri-team-line', title: 'Team & Permissions', desc: 'Invite members, roles (Admin/Member/Viewer), access control', href: '/docs/api/members' },
+  { icon: 'ri-plug-line', title: 'Integrations', desc: 'Jira setup, CI/CD API, Slack & Teams notifications', href: '/docs/integrations' },
+  { icon: 'ri-bank-card-line', title: 'Account & Billing', desc: 'Plan changes, payment management, invoices', href: '#' },
+  { icon: 'ri-keyboard-line', title: 'Keyboard Shortcuts', desc: 'Complete shortcut reference, Cmd+K, G-chords, Focus Mode keys', href: '#' },
+  { icon: 'ri-question-line', title: 'FAQ & Troubleshooting', desc: 'Common questions and error resolution', href: '#' },
 ];
 
 export default function DocsPage() {
@@ -79,15 +80,15 @@ export default function DocsPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {quickStart.map((item) => (
-              <a
+              <Link
                 key={item.title}
-                href={item.href}
+                to={item.href}
                 className="bg-gray-50 border border-gray-100 rounded-2xl p-7 hover:border-indigo-200 hover:shadow-md transition-all block group"
               >
                 <i className={`${item.icon} text-3xl text-indigo-500 mb-4 block`}></i>
                 <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">{item.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -105,9 +106,9 @@ export default function DocsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {categories.map((cat) => (
-              <a
+              <Link
                 key={cat.title}
-                href="#"
+                to={cat.href}
                 className="bg-white border border-gray-100 rounded-2xl p-5 flex items-center gap-4 hover:border-indigo-200 hover:shadow-sm transition-all group"
               >
                 <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -117,13 +118,9 @@ export default function DocsPage() {
                   <h3 className="font-bold text-gray-900 text-sm group-hover:text-indigo-600 transition-colors">{cat.title}</h3>
                   <p className="text-xs text-gray-500 leading-relaxed mt-0.5">{cat.desc}</p>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
-          <p className="text-center text-sm text-gray-400 mt-8 bg-white border border-gray-100 rounded-xl py-3 px-4">
-            <i className="ri-information-line text-indigo-400 mr-1.5"></i>
-            Full documentation content is being built. This page serves as the documentation hub.
-          </p>
         </div>
       </section>
     </MarketingLayout>
