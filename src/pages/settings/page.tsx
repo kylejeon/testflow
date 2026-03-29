@@ -1871,26 +1871,59 @@ def pytest_sessionfinish(session, exitstatus):
                               </div>
 
                               {selectedPlatform === 'python' ? (
-                                <div className="relative mt-3">
-                                  <button
-                                    onClick={() => handleCopyToken(getPythonFunctionSnippet())}
-                                    className="absolute top-2 right-2 flex items-center gap-1 px-2.5 py-[0.3125rem] rounded-[0.375rem] text-[0.6875rem] cursor-pointer transition-all z-10"
-                                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: copiedToken === getPythonFunctionSnippet() ? '#86EFAC' : '#94A3B8' }}
-                                  >
-                                    <i className={copiedToken === getPythonFunctionSnippet() ? 'ri-check-line' : 'ri-file-copy-line'}></i>
-                                    {copiedToken === getPythonFunctionSnippet() ? 'Copied' : 'Copy'}
-                                  </button>
-                                  <pre className="overflow-x-auto font-mono whitespace-pre p-4 rounded-[0.5rem]" style={{ background: '#1E293B', color: '#E2E8F0', fontSize: '0.75rem', lineHeight: '1.6' }}><code>{getPythonFunctionSnippet()}</code></pre>
-                                  <div className="mt-3 p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[0.5rem]">
+                                <div className="space-y-4 mt-3">
+                                  {/* Method 1: Function-based */}
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="w-5 h-5 bg-[#6366F1] text-white rounded-full flex items-center justify-center flex-shrink-0" style={{ fontSize: '0.6875rem', fontWeight: 700 }}>1</span>
+                                      <div className="text-[0.8125rem] font-bold text-[#0F172A]">Function-based approach <span className="font-normal text-[#94A3B8]">— suitable for simple scripts</span></div>
+                                    </div>
+                                    <div className="text-[0.75rem] text-[#64748B] mb-2 ml-7">Collect results using the <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">report_result()</code> function and upload them all at once at the end.</div>
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => handleCopyToken(getPythonFunctionSnippet())}
+                                        className="absolute top-2 right-2 flex items-center gap-1 px-2.5 py-[0.3125rem] rounded-[0.375rem] text-[0.6875rem] cursor-pointer transition-all z-10"
+                                        style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: copiedToken === getPythonFunctionSnippet() ? '#86EFAC' : '#94A3B8' }}
+                                      >
+                                        <i className={copiedToken === getPythonFunctionSnippet() ? 'ri-check-line' : 'ri-file-copy-line'}></i>
+                                        {copiedToken === getPythonFunctionSnippet() ? 'Copied' : 'Copy'}
+                                      </button>
+                                      <pre className="overflow-x-auto font-mono whitespace-pre p-4 rounded-[0.5rem]" style={{ background: '#1E293B', color: '#E2E8F0', fontSize: '0.75rem', lineHeight: '1.6' }}><code>{getPythonFunctionSnippet()}</code></pre>
+                                    </div>
+                                  </div>
+
+                                  {/* Method 2: conftest.py */}
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="w-5 h-5 bg-[#6366F1] text-white rounded-full flex items-center justify-center flex-shrink-0" style={{ fontSize: '0.6875rem', fontWeight: 700 }}>2</span>
+                                      <div className="text-[0.8125rem] font-bold text-[#0F172A]">conftest.py approach <span className="font-normal text-[#94A3B8]">— suitable for pytest projects</span></div>
+                                    </div>
+                                    <div className="text-[0.75rem] text-[#64748B] mb-2 ml-7">Uses pytest hooks to automatically collect and upload results without modifying test code.</div>
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => handleCopyToken(getPythonConftestSnippet())}
+                                        className="absolute top-2 right-2 flex items-center gap-1 px-2.5 py-[0.3125rem] rounded-[0.375rem] text-[0.6875rem] cursor-pointer transition-all z-10"
+                                        style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: copiedToken === getPythonConftestSnippet() ? '#86EFAC' : '#94A3B8' }}
+                                      >
+                                        <i className={copiedToken === getPythonConftestSnippet() ? 'ri-check-line' : 'ri-file-copy-line'}></i>
+                                        {copiedToken === getPythonConftestSnippet() ? 'Copied' : 'Copy'}
+                                      </button>
+                                      <pre className="overflow-x-auto font-mono whitespace-pre p-4 rounded-[0.5rem]" style={{ background: '#1E293B', color: '#E2E8F0', fontSize: '0.75rem', lineHeight: '1.6' }}><code>{getPythonConftestSnippet()}</code></pre>
+                                    </div>
+                                  </div>
+
+                                  {/* How to use */}
+                                  <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[0.5rem]">
                                     <div className="flex items-start gap-2">
                                       <i className="ri-information-line text-[#64748B] flex-shrink-0 mt-0.5"></i>
                                       <div className="text-[0.75rem] text-[#475569]">
                                         <div className="font-semibold mb-1.5">How to use:</div>
                                         <div className="text-[#64748B] leading-relaxed">
                                           1. Register your token in the <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">TESTABLY_TOKEN</code> environment variable<br />
-                                          2. Pass the test case ID and result to <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">report_result()</code><br />
-                                          3. Replace <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">run_id</code> with the Run ID from Testably<br />
-                                          4. Status values: <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">passed</code> / <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">failed</code> / <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">blocked</code> / <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">retest</code>
+                                          2. <b>Method 1</b>: Pass the test case ID and result to <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">report_result()</code><br />
+                                          3. <b>Method 2</b>: Save <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">conftest.py</code> to your project root and map function names to IDs<br />
+                                          4. Replace <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">run_id</code> with the Run ID from Testably<br />
+                                          5. Status values: <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">passed</code> / <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">failed</code> / <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">blocked</code> / <code className="bg-[#F1F5F9] px-1 rounded text-[0.6875rem]">retest</code>
                                         </div>
                                       </div>
                                     </div>
