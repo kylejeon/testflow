@@ -362,14 +362,16 @@ export default function SettingsPage() {
 
         // Preferences 컬럼 로드 (migration으로 추가된 컬럼 — 없는 환경 대비 별도 쿼리)
         supabase.from('profiles')
-          .select('timezone, date_format, time_format, default_project_id, language')
+          .select('timezone, date_format, time_format, default_project_id, language, auto_detect_tz')
           .eq('id', user.id)
           .maybeSingle()
           .then(({ data: prefs }) => {
             if (!prefs) return;
+            if (prefs.auto_detect_tz !== null && prefs.auto_detect_tz !== undefined) {
+              setAutoDetectTz(prefs.auto_detect_tz);
+            }
             if (prefs.timezone) {
               setTimezone(prefs.timezone);
-              setAutoDetectTz(false);
             }
             if (prefs.date_format) setDateFormat(prefs.date_format);
             if (prefs.time_format) setTimeFormat(prefs.time_format as '24h' | '12h');
@@ -978,6 +980,7 @@ def pytest_sessionfinish(session, exitstatus):
         time_format: timeFormat,
         default_project_id: defaultProjectId || null,
         language,
+        auto_detect_tz: autoDetectTz,
       };
       const { error } = await supabase.from('profiles').upsert(
         payload as Record<string, unknown>,
