@@ -218,10 +218,22 @@ export default function ProjectMilestones() {
         return { ...milestone, status: currentStatus, totalTests: totalTestsSum, completedTests: completedTestsSum, passedTests: passedTestsSum, failedTests: failedTestsSum, actualProgress: averageProgress };
       });
 
-      const parentMilestones = milestonesWithProgress.filter(m => !m.parent_milestone_id);
+      // Sub milestones with no dedicated runs → inherit parent milestone's progress
+      const milestoneProgressMap = new Map(milestonesWithProgress.map(m => [m.id, m]));
+      const milestonesWithFallback = milestonesWithProgress.map(m => {
+        if (m.parent_milestone_id && m.totalTests === 0) {
+          const parent = milestoneProgressMap.get(m.parent_milestone_id);
+          if (parent && parent.totalTests > 0) {
+            return { ...m, totalTests: parent.totalTests, completedTests: parent.completedTests, passedTests: parent.passedTests, failedTests: parent.failedTests, actualProgress: parent.actualProgress };
+          }
+        }
+        return m;
+      });
+
+      const parentMilestones = milestonesWithFallback.filter(m => !m.parent_milestone_id);
       const organizedMilestones = parentMilestones.map(parent => ({
         ...parent,
-        subMilestones: milestonesWithProgress.filter(m => m.parent_milestone_id === parent.id)
+        subMilestones: milestonesWithFallback.filter(m => m.parent_milestone_id === parent.id)
       }));
 
       const initialExpanded = new Set<string>();
