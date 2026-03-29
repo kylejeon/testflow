@@ -461,7 +461,7 @@ export default function ProjectsContent() {
       setEditingProject(null);
     } catch (error) {
       console.error('Error updating project:', error);
-      alert('프로젝트 수정에 실패했습니다.');
+      alert('Failed to update project.');
     }
   };
 

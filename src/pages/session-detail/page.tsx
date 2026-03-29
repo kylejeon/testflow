@@ -445,7 +445,7 @@ export default function SessionDetail() {
       setAttachments([...attachments, ...uploadedFiles]);
     } catch (error) {
       console.error('파일 업로드 오류:', error);
-      alert('파일 업로드에 실패했습니다.');
+      alert('Failed to upload file.');
     } finally {
       setUploadingFiles(false);
       if (fileInputRef.current) {
@@ -537,7 +537,7 @@ export default function SessionDetail() {
             }]);
           } catch (error: any) {
             console.error('스크린샷 업로드 오류:', error);
-            alert(`스크린샷 업로드에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+            alert(`Failed to upload screenshot: ${error.message || 'Unknown error'}`);
           } finally {
             setUploadingFiles(false);
           }
@@ -548,7 +548,7 @@ export default function SessionDetail() {
         return;
       }
       console.error('스크린샷 캡처 오류:', error);
-      alert('스크린샷 캡처에 실패했습니다.');
+      alert('Failed to capture screenshot.');
     }
   };
 
@@ -618,7 +618,7 @@ export default function SessionDetail() {
       if (data.success && data.issue && data.issue.key) {
         const newIssueKey = data.issue.key;
         setLinkedIssues([...linkedIssues, newIssueKey]);
-        alert(`Jira 이슈가 생성되었습니다: ${newIssueKey}`);
+        alert(`Jira issue created: ${newIssueKey}`);
         setShowAddIssueModal(false);
         setIssueFormData({
           summary: '',
@@ -630,11 +630,11 @@ export default function SessionDetail() {
           components: '',
         });
       } else {
-        throw new Error(data.error || data.message || 'Jira 이슈 생성에 실패했습니다.');
+        throw new Error(data.error || data.message || 'Failed to create Jira issue.');
       }
     } catch (error: any) {
       console.error('Jira 이슈 생성 오류:', error);
-      alert(`Jira 이슈 생성에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      alert(`Failed to create Jira issue: ${error.message || 'Unknown error'}`);
     } finally {
       setCreatingIssue(false);
     }
@@ -676,7 +676,7 @@ export default function SessionDetail() {
       setSession((prev: any) => ({ ...prev, started_at: now, status: 'active', paused_duration: 0 }));
     } catch (error) {
       console.error('세션 시작 오류:', error);
-      alert('세션 시작에 실패했습니다.');
+      alert('Failed to start session.');
     }
   };
 
@@ -694,7 +694,7 @@ export default function SessionDetail() {
       setSession((prev: any) => ({ ...prev, paused_at: now }));
     } catch (error) {
       console.error('세션 일시정지 오류:', error);
-      alert('세션 일시정지에 실패했습니다.');
+      alert('Failed to pause session.');
     }
   };
 
@@ -722,7 +722,7 @@ export default function SessionDetail() {
       }));
     } catch (error) {
       console.error('세션 재개 오류:', error);
-      alert('세션 재개에 실패했습니다.');
+      alert('Failed to resume session.');
     }
   };
 
@@ -854,7 +854,7 @@ export default function SessionDetail() {
   };
 
   const handleDeleteLog = async (logId: string) => {
-    if (!confirm('이 로그를 삭제하시겠습니까?')) return;
+    if (!confirm('Are you sure you want to delete this log?')) return;
     try {
       const { error } = await supabase
         .from('session_logs')
@@ -864,7 +864,7 @@ export default function SessionDetail() {
       setLogs(prev => prev.filter(l => l.id !== logId));
     } catch (error) {
       console.error('로그 삭제 오류:', error);
-      alert('로그 삭제에 실패했습니다.');
+      alert('Failed to delete log.');
     }
   };
 
@@ -894,7 +894,7 @@ export default function SessionDetail() {
       setEditingLog(null);
     } catch (error) {
       console.error('로그 수정 오류:', error);
-      alert('로그 수정에 실패했습니다.');
+      alert('Failed to update log.');
     } finally {
       setSavingLog(false);
     }

@@ -104,7 +104,7 @@ export default function AcceptInvitationPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || '초대 수락에 실패했습니다.');
+        throw new Error(result.error || 'Failed to accept invitation.');
       }
 
       // Notify other project members that a new member has joined

@@ -147,7 +147,7 @@ export default function AuthPage() {
         await new Promise(resolve => setTimeout(resolve, 1500));
         const { data: verifyProfile, error: verifyError } = await supabase
           .from('profiles').select('id').eq('id', user.id).maybeSingle();
-        if (verifyError || !verifyProfile) throw new Error('프로필 생성에 실패했습니다. 다시 시도해주세요.');
+        if (verifyError || !verifyProfile) throw new Error('Failed to create profile. Please try again.');
       }
     } catch (err) {
       console.error('Failed to ensure profile exists:', err);
@@ -203,7 +203,7 @@ export default function AuthPage() {
         throw new Error(result.error);
       }
     } catch (err: any) {
-      setError(err.message || '초대 수락에 실패했습니다.');
+      setError(err.message || 'Failed to accept invitation.');
     }
   };
 

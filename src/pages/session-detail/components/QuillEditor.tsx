@@ -94,7 +94,7 @@ export default function TipTapEditor({ value, onChange, placeholder = 'Enter tex
       }
     } catch (error) {
       console.error('이미지 업로드 오류:', error);
-      alert('이미지 업로드에 실패했습니다.');
+      alert('Failed to upload image.');
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

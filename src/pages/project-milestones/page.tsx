@@ -281,7 +281,7 @@ export default function ProjectMilestones() {
       fetchData();
     } catch (error) {
       console.error('마일스톤 생성 오류:', error);
-      alert('마일스톤 생성에 실패했습니다.');
+      alert('Failed to create milestone.');
     }
   };
 
@@ -293,19 +293,19 @@ export default function ProjectMilestones() {
       fetchData();
     } catch (error) {
       console.error('마일스톤 수정 오류:', error);
-      alert('마일스톤 수정에 실패했습니다.');
+      alert('Failed to update milestone.');
     }
   };
 
   const handleDeleteMilestone = async (milestoneId: string) => {
-    if (!confirm('이 마일스톤을 삭제하시겠습니까?')) return;
+    if (!confirm('Are you sure you want to delete this milestone?')) return;
     try {
       const { error } = await supabase.from('milestones').delete().eq('id', milestoneId);
       if (error) throw error;
       fetchData();
     } catch (error) {
       console.error('마일스톤 삭제 오류:', error);
-      alert('마일스톤 삭제에 실패했습니다.');
+      alert('Failed to delete milestone.');
     }
   };
 
@@ -333,7 +333,7 @@ export default function ProjectMilestones() {
       const milestoneName = milestone?.id === milestoneId ? milestone?.name : milestone?.subMilestones?.find((s: any) => s.id === milestoneId)?.name || 'Milestone';
       const { data: { user } } = await supabase.auth.getUser();
       const { data: projectData } = await supabase.from('projects').select('name').eq('id', id!).maybeSingle();
-      await notifyProjectMembers({ projectId: id!, excludeUserId: user?.id, type: 'milestone_completed', title: '마일스톤이 완료되었습니다', message: `"${milestoneName}" 마일스톤이 완료 처리되었습니다.`, link: `/projects/${id}/milestones` });
+      await notifyProjectMembers({ projectId: id!, excludeUserId: user?.id, type: 'milestone_completed', title: 'Milestone completed', message: `"${milestoneName}" milestone has been completed.`, link: `/projects/${id}/milestones` });
       triggerWebhook(id!, 'milestone_completed', {
         project_id: id!,
         project_name: projectData?.name ?? '',
@@ -341,7 +341,7 @@ export default function ProjectMilestones() {
         milestone_name: milestoneName,
       });
     } catch (err) {
-      console.error('마일스톤 완료 알림 오류:', err);
+      console.error('Milestone completion notification error:', err);
     }
   };
 

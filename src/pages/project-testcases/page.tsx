@@ -285,7 +285,7 @@ export default function ProjectTestCases() {
       alert(`${casesWithoutId.length}개의 테스트 케이스에 ID가 부여되었습니다.`);
     } catch (error) {
       console.error('ID 일괄 부여 오류:', error);
-      alert('ID 부여에 실패했습니다.');
+      alert('Failed to assign ID.');
     }
   };
 

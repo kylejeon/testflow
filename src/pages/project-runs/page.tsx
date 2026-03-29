@@ -586,7 +586,7 @@ export default function ProjectRunsPage() {
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
-      showToast('PDF 생성에 실패했습니다.', 'error');
+      showToast('Failed to generate PDF.', 'error');
     } finally {
       setGeneratingPdf(null);
     }
@@ -864,8 +864,8 @@ export default function ProjectRunsPage() {
             projectId: id!,
             excludeUserId: user?.id,
             type: 'run_completed',
-            title: '테스트 런이 완료되었습니다',
-            message: `"${formData.name}" 런이 완료되었습니다.`,
+            title: 'Test run completed',
+            message: `"${formData.name}" run has been completed.`,
             link: `/projects/${id}/runs/${editingRunId}`,
           });
           const prevRunData = testRuns.find(r => r.id === editingRunId);
@@ -911,8 +911,8 @@ export default function ProjectRunsPage() {
           projectId: id!,
           excludeUserId: user?.id,
           type: 'run_created',
-          title: '새 테스트 런이 생성되었습니다',
-          message: `"${formData.name}" 런이 생성되었습니다. (${testCaseIds.length}개 테스트)`,
+          title: 'New test run created',
+          message: `"${formData.name}" run has been created. (${testCaseIds.length} test cases)`,
           link: `/projects/${id}/runs${insertedData?.[0]?.id ? `/${insertedData[0].id}` : ''}`,
         });
         triggerWebhook(id!, 'run_created', {
@@ -927,8 +927,8 @@ export default function ProjectRunsPage() {
             projectId: id!,
             excludeUserId: user?.id,
             type: 'run_completed',
-            title: '테스트 런이 완료되었습니다',
-            message: `"${formData.name}" 런이 완료되었습니다.`,
+            title: 'Test run completed',
+            message: `"${formData.name}" run has been completed.`,
             link: `/projects/${id}/runs`,
           });
           triggerWebhook(id!, 'run_completed', {
@@ -1184,7 +1184,7 @@ export default function ProjectRunsPage() {
   }, []);
 
   const handleDeleteRun = async (runId: string) => {
-    if (!confirm('이 테스트 런을 삭제하시겠습니까?')) {
+    if (!confirm('Are you sure you want to delete this test run?')) {
       return;
     }
 
@@ -1200,7 +1200,7 @@ export default function ProjectRunsPage() {
       setOpenMenuId(null);
     } catch (error) {
       console.error('Error deleting test run:', error);
-      showToast('테스트 런 삭제에 실패했습니다.', 'error');
+      showToast('Failed to delete test run.', 'error');
     }
   };
 
@@ -1219,7 +1219,7 @@ export default function ProjectRunsPage() {
       setOpenMenuId(null);
     } catch (error) {
       console.error('Error updating test run status:', error);
-      showToast('상태 변경에 실패했습니다.', 'error');
+      showToast('Failed to change status.', 'error');
     }
   };
 

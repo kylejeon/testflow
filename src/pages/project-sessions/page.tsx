@@ -449,12 +449,12 @@ export default function ProjectSessions() {
       setOpenMenuId(null);
     } catch (error) {
       console.error('Error closing session:', error);
-      alert('세션 종료에 실패했습니다.');
+      alert('Failed to end session.');
     }
   };
 
   const handleDeleteSession = async (sessionId: string) => {
-    if (!confirm('이 세션을 삭제하시겠습니까?')) return;
+    if (!confirm('Are you sure you want to delete this session?')) return;
 
     try {
       const { error } = await supabase
@@ -468,7 +468,7 @@ export default function ProjectSessions() {
       setOpenMenuId(null);
     } catch (error) {
       console.error('Error deleting session:', error);
-      alert('세션 삭제에 실패했습니다.');
+      alert('Failed to delete session.');
     }
   };
 

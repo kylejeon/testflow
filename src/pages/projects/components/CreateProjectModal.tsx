@@ -96,7 +96,7 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
 
         if (insertError && insertError.code !== '23505') {
           console.error('Failed to create profile:', insertError);
-          throw new Error('프로필 생성에 실패했습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+          throw new Error('Failed to create profile. Please refresh the page and try again.');
         }
 
         // Wait for profile to be created

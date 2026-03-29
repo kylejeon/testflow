@@ -560,7 +560,7 @@ export default function MilestoneDetail() {
       fetchData();
     } catch (error) {
       console.error('마일스톤 수정 오류:', error);
-      alert('마일스톤 수정에 실패했습니다.');
+      alert('Failed to update milestone.');
     }
   };
 

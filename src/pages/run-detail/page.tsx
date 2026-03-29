@@ -516,7 +516,7 @@ export default function RunDetail() {
       setCommentText('');
     } catch (error) {
       console.error('코멘트 저장 오류:', error);
-      alert('코멘트 저장에 실패했습니다.');
+      alert('Failed to save comment.');
     }
   };
 
@@ -532,7 +532,7 @@ export default function RunDetail() {
       setComments(comments.filter(c => c.id !== commentId));
     } catch (error) {
       console.error('코멘트 삭제 오류:', error);
-      alert('코멘트 삭제에 실패했습니다.');
+      alert('Failed to delete comment.');
     }
   };
 
@@ -625,7 +625,7 @@ export default function RunDetail() {
       setActiveTab('results');
     } catch (error) {
       console.error('상태 업데이트 오류:', error);
-      alert('상태 업데이트에 실패했습니다.');
+      alert('Failed to update status.');
     }
   };
 
@@ -718,7 +718,7 @@ export default function RunDetail() {
       }, 500);
     } catch (error) {
       console.error('상태 업데이트 오류:', error);
-      alert('상태 업데이트에 실패했습니다.');
+      alert('Failed to update status.');
     }
   };
 
@@ -908,7 +908,7 @@ export default function RunDetail() {
       setActiveTab('results');
     } catch (error) {
       console.error('결과 저장 오류:', error);
-      alert('결과 저장에 실패했습니다.');
+      alert('Failed to save result.');
     }
   };
 
@@ -1040,7 +1040,7 @@ export default function RunDetail() {
       });
     } catch (error: any) {
       console.error('파일 업로드 오류:', error);
-      alert(`파일 업로드에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      alert(`Failed to upload file: ${error.message || 'Unknown error'}`);
     } finally {
       setUploadingFile(false);
       e.target.value = '';
@@ -1136,14 +1136,14 @@ export default function RunDetail() {
           });
         } catch (error: any) {
           console.error('스크린샷 업로드 오류:', error);
-          alert(`스크린샷 업로드에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+          alert(`Failed to upload screenshot: ${error.message || 'Unknown error'}`);
         } finally {
           setUploadingFile(false);
         }
       }, 'image/png');
     } catch (error) {
       console.error('스크린샷 캡처 오류:', error);
-      alert('스크린샷 캡처에 실패했습니다.');
+      alert('Failed to capture screenshot.');
     }
   };
 
@@ -1312,7 +1312,7 @@ export default function RunDetail() {
           await updateRunStatus(runId!, { untested: untestedCount });
         }
 
-        alert(`Jira 이슈가 생성되었습니다: ${newIssueKey}`);
+        alert(`Jira issue created: ${newIssueKey}`);
         setShowAddIssueModal(false);
         setIssueFormData({
           summary: '',
@@ -1330,11 +1330,11 @@ export default function RunDetail() {
         // 최신 결과 다시 로드
         await fetchTestResults();
       } else {
-        throw new Error(data.error || data.message || 'Jira 이슈 생성에 실패했습니다.');
+        throw new Error(data.error || data.message || 'Failed to create Jira issue.');
       }
     } catch (error: any) {
       console.error('Jira 이슈 생성 오류:', error);
-      alert(`Jira 이슈 생성에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      alert(`Failed to create Jira issue: ${error.message || 'Unknown error'}`);
     } finally {
       setCreatingIssue(false);
     }

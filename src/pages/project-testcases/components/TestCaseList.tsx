@@ -628,13 +628,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         setShowNewFolderModal(false);
 
         // 토스트 메시지 표시
-        setToastMessage(`"${folder.name}" 폴더가 생성되었습니다.`);
+        setToastMessage(`Folder "${folder.name}" has been created.`);
         setToastType('success');
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       } catch (error) {
         console.error('폴더 생성 오류:', error);
-        setToastMessage('폴더 생성에 실패했습니다.');
+        setToastMessage('Failed to create folder.');
         setToastType('error');
         setShowToast(true);
         setTimeout(() => {
@@ -694,13 +694,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       await onRefresh();
 
       // 토스트 메시지 표시
-      setToastMessage(`"${folderToDelete.name}" 폴더가 삭제되었습니다. ${testCasesInFolder.length}개의 테스트 케이스가 폴더 미지정 상태로 변경되었습니다.`);
+      setToastMessage(`Folder "${folderToDelete.name}" has been deleted. ${testCasesInFolder.length} test case(s) moved to unassigned.`);
       setToastType('success');
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
       console.error('폴더 삭제 오류:', error);
-      setToastMessage('폴더 삭제에 실패했습니다.');
+      setToastMessage('Failed to delete folder.');
       setToastType('error');
       setShowToast(true);
       setTimeout(() => {
@@ -756,7 +756,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setCommentText('');
     } catch (error: any) {
       console.error('Failed to add comment:', error);
-      alert('코멘트 추가에 실패했습니다.');
+      alert('Failed to add comment.');
     }
   };
 
@@ -803,12 +803,12 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setNewComment('');
     } catch (error: any) {
       console.error('Failed to add comment:', error);
-      alert('코멘트 추가에 실패했습니다.');
+      alert('Failed to add comment.');
     }
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm('이 코멘트를 삭제하시겠습니까?')) return;
+    if (!confirm('Are you sure you want to delete this comment?')) return;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -830,7 +830,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setComments(comments.filter(c => c.id !== commentId));
     } catch (error) {
       console.error('Failed to delete comment:', error);
-      alert('코멘트 삭제에 실패했습니다.');
+      alert('Failed to delete comment.');
     }
   };
 
@@ -1232,7 +1232,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       }
     } catch (error: any) {
       console.error('파일 업로드 오류:', error);
-      alert(`파일 업로드에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      alert(`Failed to upload file: ${error.message || 'Unknown error'}`);
     } finally {
       setUploadingFile(false);
       e.target.value = '';
@@ -1536,7 +1536,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       alert('이전 버전으로 복원되었습니다.');
     } catch (error) {
       console.error('복원 오류:', error);
-      alert('복원에 실패했습니다.');
+      alert('Failed to restore.');
     } finally {
       setRestoringHistory(false);
     }
@@ -1769,7 +1769,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       }, 3000);
     } catch (error) {
       console.error('폴더 일괄 추가 오류:', error);
-      setToastMessage('폴더 추가에 실패했습니다.');
+      setToastMessage('Failed to assign folder.');
       setToastType('error');
       setShowToast(true);
       setTimeout(() => {
@@ -1811,7 +1811,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       }, 3000);
     } catch (error) {
       console.error('폴더 제거 오류:', error);
-      setToastMessage('폴더 제거에 실패했습니다.');
+      setToastMessage('Failed to remove folder.');
       setToastType('error');
       setShowToast(true);
       setTimeout(() => {
@@ -1849,13 +1849,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
       await onRefresh();
 
-      setToastMessage(`${deletedCount}개의 테스트 케이스가 삭제되었습니다.`);
+      setToastMessage(`${deletedCount} test case(s) have been deleted.`);
       setToastType('success');
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
       console.error('일괄 삭제 오류:', error);
-      setToastMessage('테스트 케이스 삭제에 실패했습니다.');
+      setToastMessage('Failed to delete test cases.');
       setToastType('error');
       setShowToast(true);
       setTimeout(() => {
@@ -1996,7 +1996,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setTimeout(() => setShowToast(false), 4000);
     } catch (error) {
       console.error('복사 오류:', error);
-      setToastMessage('테스트 케이스 복사에 실패했습니다.');
+      setToastMessage('Failed to copy test cases.');
       setToastType('error');
       setShowToast(true);
       setTimeout(() => {
@@ -3596,7 +3596,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 </div>
               </div>
               <p className="text-sm text-gray-600">
-                정말로 "<span className="font-semibold">{folderToDelete.name}</span>" 폴더를 삭제하시겠습니까?
+                Are you sure you want to delete folder "<span className="font-semibold">{folderToDelete.name}</span>"?
               </p>
             </div>
             <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">

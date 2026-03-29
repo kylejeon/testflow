@@ -36,7 +36,7 @@ export function useNotifications() {
       setNotifications(data || []);
       setUnreadCount((data || []).filter((n) => !n.is_read).length);
     } catch (err) {
-      console.error('알림 조회 오류:', err);
+      console.error('Notification fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -56,7 +56,7 @@ export function useNotifications() {
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
-      console.error('알림 읽음 처리 오류:', err);
+      console.error('Notification mark-read error:', err);
     }
   }, []);
 
@@ -97,7 +97,7 @@ export function useNotifications() {
         return prev.filter((n) => n.id !== notificationId);
       });
     } catch (err) {
-      console.error('알림 삭제 오류:', err);
+      console.error('Notification delete error:', err);
     }
   }, []);
 
@@ -169,7 +169,7 @@ export async function createNotification(params: {
     ]);
     if (error) throw error;
   } catch (err) {
-    console.error('알림 생성 오류:', err);
+    console.error('Notification create error:', err);
   }
 }
 
@@ -229,6 +229,6 @@ export async function notifyProjectMembers(params: {
 
     if (insertError) throw insertError;
   } catch (err) {
-    console.error('프로젝트 멤버 알림 오류:', err);
+    console.error('Project member notification error:', err);
   }
 }
