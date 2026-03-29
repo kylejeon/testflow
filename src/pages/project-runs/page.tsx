@@ -825,7 +825,7 @@ export default function ProjectRunsPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAddRun = async () => {
+  const handleAddRun = async (forceUseSelected = false) => {
     if (!formData.name.trim()) {
       showToast('Please enter a run name', 'error');
       return;
@@ -834,7 +834,8 @@ export default function ProjectRunsPage() {
     try {
       setSubmitting(true);
 
-      const testCaseIds = formData.include_all_cases 
+      // forceUseSelected=true skips include_all_cases (avoids React batched-state race condition)
+      const testCaseIds = (!forceUseSelected && formData.include_all_cases)
         ? testCases.map(tc => tc.id)
         : selectedTestCases;
 
@@ -2132,7 +2133,7 @@ export default function ProjectRunsPage() {
                         <i className="ri-arrow-left-line" /> Back
                       </button>
                       <button
-                        onClick={() => { setFormData(prev => ({ ...prev, include_all_cases: false })); handleAddRun(); }}
+                        onClick={() => handleAddRun(true)}
                         disabled={submitting}
                         className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold cursor-pointer disabled:opacity-50"
                       >

@@ -168,54 +168,7 @@ export default function MilestoneDetail() {
         .order('start_date', { ascending: true });
 
       setSubMilestones(subMilestonesData || []);
-
-      // Dynamically calculate sub milestone progress from their runs' test results
       const subMilestoneIds = (subMilestonesData || []).map((s: any) => s.id);
-      if (subMilestoneIds.length > 0) {
-        const { data: subRunsData } = await supabase
-          .from('test_runs')
-          .select('id, milestone_id, test_case_ids')
-          .in('milestone_id', subMilestoneIds);
-
-        if (subRunsData && subRunsData.length > 0) {
-          const subRunIds = subRunsData.map((r: any) => r.id);
-          const { data: subResultsData } = await supabase
-            .from('test_results')
-            .select('run_id, test_case_id, status, created_at')
-            .in('run_id', subRunIds)
-            .order('created_at', { ascending: false });
-
-          // Build per-run status maps (latest result per TC wins — DESC order)
-          const runStatusMaps = new Map<string, Map<string, string>>();
-          (subResultsData || []).forEach((r: any) => {
-            if (!runStatusMaps.has(r.run_id)) runStatusMaps.set(r.run_id, new Map());
-            const sm = runStatusMaps.get(r.run_id)!;
-            if (!sm.has(r.test_case_id)) sm.set(r.test_case_id, r.status);
-          });
-
-          // Accumulate tested/total per sub milestone
-          const subProgressAccum = new Map<string, { tested: number; total: number }>();
-          subRunsData.forEach((run: any) => {
-            const statusMap = runStatusMaps.get(run.id) || new Map();
-            const total = (run.test_case_ids || []).length;
-            if (total === 0) return;
-            let tested = 0;
-            (run.test_case_ids || []).forEach((tcId: string) => {
-              const s = statusMap.get(tcId);
-              if (s && s !== 'untested') tested++;
-            });
-            const mid = run.milestone_id;
-            const existing = subProgressAccum.get(mid) || { tested: 0, total: 0 };
-            subProgressAccum.set(mid, { tested: existing.tested + tested, total: existing.total + total });
-          });
-
-          const newSubProgressMap = new Map<string, number>();
-          subProgressAccum.forEach((v, k) => {
-            newSubProgressMap.set(k, v.total > 0 ? Math.round((v.tested / v.total) * 100) : 0);
-          });
-          setSubMilestoneProgress(newSubProgressMap);
-        }
-      }
 
       const { data: runsData, error: runsError } = await supabase
         .from('test_runs')
@@ -321,6 +274,66 @@ export default function MilestoneDetail() {
       setIssues(allIssues.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       setActivityLogs(allActivityLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
       setActivityStats({ notes: notesCount, passed: passedCount, failed: failedCount, retest: retestCount });
+
+      // Calculate parent milestone progress for sub milestone fallback
+      let parentTotal = 0, parentTested = 0;
+      runsWithProgress.forEach(run => {
+        parentTotal += run.test_case_ids.length;
+        parentTested += (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0);
+      });
+      const parentProgressPct = parentTotal > 0 ? Math.round((parentTested / parentTotal) * 100) : 0;
+
+      // Calculate sub milestone progress: own runs first, fallback to parent progress
+      if (subMilestoneIds.length > 0) {
+        const { data: subRunsData } = await supabase
+          .from('test_runs')
+          .select('id, milestone_id, test_case_ids')
+          .in('milestone_id', subMilestoneIds);
+
+        const newSubProgressMap = new Map<string, number>();
+
+        if (subRunsData && subRunsData.length > 0) {
+          const subRunIds = subRunsData.map((r: any) => r.id);
+          const { data: subResultsData } = await supabase
+            .from('test_results')
+            .select('run_id, test_case_id, status, created_at')
+            .in('run_id', subRunIds)
+            .order('created_at', { ascending: false });
+
+          const runStatusMaps = new Map<string, Map<string, string>>();
+          (subResultsData || []).forEach((r: any) => {
+            if (!runStatusMaps.has(r.run_id)) runStatusMaps.set(r.run_id, new Map());
+            const sm = runStatusMaps.get(r.run_id)!;
+            if (!sm.has(r.test_case_id)) sm.set(r.test_case_id, r.status);
+          });
+
+          const subProgressAccum = new Map<string, { tested: number; total: number }>();
+          subRunsData.forEach((run: any) => {
+            const statusMap = runStatusMaps.get(run.id) || new Map();
+            const total = (run.test_case_ids || []).length;
+            if (total === 0) return;
+            let tested = 0;
+            (run.test_case_ids || []).forEach((tcId: string) => {
+              const s = statusMap.get(tcId);
+              if (s && s !== 'untested') tested++;
+            });
+            const mid = run.milestone_id;
+            const existing = subProgressAccum.get(mid) || { tested: 0, total: 0 };
+            subProgressAccum.set(mid, { tested: existing.tested + tested, total: existing.total + total });
+          });
+
+          subProgressAccum.forEach((v, k) => {
+            newSubProgressMap.set(k, v.total > 0 ? Math.round((v.tested / v.total) * 100) : parentProgressPct);
+          });
+        }
+
+        // Sub milestones with no dedicated runs → fallback to parent progress
+        subMilestoneIds.forEach(id => {
+          if (!newSubProgressMap.has(id)) newSubProgressMap.set(id, parentProgressPct);
+        });
+
+        setSubMilestoneProgress(newSubProgressMap);
+      }
 
       // Fetch assignee profiles by UUID (reliable — no name/email string-matching)
       const allAssigneeIds = new Set<string>();
