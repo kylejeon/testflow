@@ -949,7 +949,7 @@ export default function MilestoneDetail() {
                             });
                             return (
                               <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                                <AvatarStack size="xs" max={4} members={members} style={{ gap: 0 }} />
+                                <AvatarStack size="sm" max={4} members={members} style={{ gap: 0 }} />
                               </div>
                             );
                           })()}

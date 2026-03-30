@@ -7,7 +7,7 @@ import NotificationBell from '../../components/feature/NotificationBell';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
 import ProjectHeader from '../../components/ProjectHeader';
-import { Avatar, AvatarStack } from '../../components/Avatar';
+import { Avatar } from '../../components/Avatar';
 
 interface Milestone {
   id: string;
@@ -461,20 +461,6 @@ export default function ProjectMilestones() {
             <span className={`text-[0.625rem] font-semibold px-[0.4375rem] py-[0.125rem] rounded-full flex-shrink-0 ${info.badgeCls}`}>
               {info.label}
             </span>
-            {(() => {
-              const assigneeIds = milestoneRunAssignees.get(sub.id) || [];
-              if (assigneeIds.length === 0) return null;
-              return (
-                <AvatarStack
-                  size="xs"
-                  max={3}
-                  members={assigneeIds.map(uid => {
-                    const p = milestoneAssigneeProfiles.get(uid);
-                    return { userId: uid, name: p?.name ?? undefined, email: p?.email, photoUrl: p?.url ?? undefined };
-                  })}
-                />
-              );
-            })()}
           </div>
           {/* sub progress */}
           <div className="flex items-center gap-2">
@@ -634,20 +620,6 @@ export default function ProjectMilestones() {
                 <span className="text-[#64748B]">{remaining} remaining</span>
               </span>
             </div>
-            {(() => {
-              const assigneeIds = milestoneRunAssignees.get(milestone.id) || [];
-              if (assigneeIds.length === 0) return null;
-              return (
-                <AvatarStack
-                  size="xs"
-                  max={3}
-                  members={assigneeIds.map(uid => {
-                    const p = milestoneAssigneeProfiles.get(uid);
-                    return { userId: uid, name: p?.name ?? undefined, email: p?.email, photoUrl: p?.url ?? undefined };
-                  })}
-                />
-              );
-            })()}
           </div>
         </div>
 
