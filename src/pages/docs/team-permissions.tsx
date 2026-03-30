@@ -131,7 +131,7 @@ export default function DocsTeamPermissionsPage() {
             <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
               <p className="text-sm font-semibold text-gray-800 mb-1">Admin</p>
               <p className="text-sm text-gray-500 leading-relaxed">
-                Full access to all features. Can manage team membership, project settings, integrations, and billing. The project creator is automatically the first Admin.
+                Full access to all features. Can manage team membership, project settings, integrations, and billing. The project creator automatically receives full Admin permissions.
               </p>
             </div>
             <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
