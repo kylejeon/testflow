@@ -758,7 +758,7 @@ export default function ProjectMilestones() {
                   <select name="status" defaultValue={editFormData.status} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm">
                     <option value="upcoming">Upcoming</option>
                     <option value="started">In Progress</option>
-                    <option value="past_due">Past Due</option>
+                    <option value="past_due">Overdue</option>
                     <option value="completed">Completed</option>
                   </select>
                 </div>

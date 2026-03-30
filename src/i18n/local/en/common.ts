@@ -37,8 +37,8 @@ export const common = {
   completed: 'Completed',
   archived: 'Archived',
   upcoming: 'Upcoming',
-  started: 'Started',
-  pastDue: 'Past due',
+  started: 'In Progress',
+  pastDue: 'Overdue',
   new: 'New',
   inProgress: 'In progress',
   

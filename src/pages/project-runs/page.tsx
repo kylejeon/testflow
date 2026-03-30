@@ -1033,10 +1033,10 @@ export default function ProjectRunsPage() {
     }
     
     if (endDate < now) {
-      return { label: 'Past due', className: 'bg-orange-100 text-orange-700' };
+      return { label: 'Overdue', className: 'bg-orange-100 text-orange-700' };
     }
-    
-    return { label: 'Started', className: 'bg-green-100 text-green-700' };
+
+    return { label: 'In Progress', className: 'bg-blue-100 text-blue-700' };
   };
 
   const getStatusBadge = (status: string) => {

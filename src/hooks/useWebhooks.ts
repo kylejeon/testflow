@@ -176,7 +176,7 @@ export const WEBHOOK_EVENTS: { type: WebhookEventType; label: string; descriptio
   { type: 'member_joined',        label: 'New Member Joined',     description: 'When a new member joins the project' },
   { type: 'run_created',          label: 'New Run Created',       description: 'When a new test run is created' },
   { type: 'run_completed',        label: 'Run Completed',         description: 'When a test run is marked as completed (includes pass/fail counts)' },
-  { type: 'milestone_started',    label: 'Milestone Started',     description: 'When a milestone is started' },
+  { type: 'milestone_started',    label: 'Milestone In Progress', description: 'When a milestone begins' },
   { type: 'milestone_completed',  label: 'Milestone Completed',   description: 'When a milestone is marked as completed' },
-  { type: 'milestone_past_due',   label: 'Milestone Past Due',    description: 'When a milestone passes its due date' },
+  { type: 'milestone_past_due',   label: 'Milestone Overdue',     description: 'When a milestone passes its due date' },
 ];
