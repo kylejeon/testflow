@@ -2340,21 +2340,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               {/* Priority */}
               <div>
                 <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-[#94A3B8] mb-[0.1875rem]">Priority</div>
-                {(() => {
-                  const pStyle: Record<string, { bg: string; color: string }> = {
-                    critical: { bg: '#FEE2E2', color: '#991B1B' },
-                    high:     { bg: '#FEE2E2', color: '#991B1B' },
-                    medium:   { bg: '#FEF3C7', color: '#92400E' },
-                    low:      { bg: '#F1F5F9', color: '#64748B' },
-                  };
-                  const s = pStyle[selectedTestCase.priority] || pStyle.low;
-                  return (
-                    <span className="inline-flex items-center gap-1 px-2 py-[0.125rem] rounded-full text-[0.625rem] font-semibold" style={{ background: s.bg, color: s.color }}>
-                      <i className="ri-flag-fill" />
-                      {selectedTestCase.priority.charAt(0).toUpperCase() + selectedTestCase.priority.slice(1)}
-                    </span>
-                  );
-                })()}
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ background: PRIORITY_DOT_COLORS[selectedTestCase.priority] || '#94A3B8' }}
+                  />
+                  <span className="text-[0.8125rem] text-[#475569] capitalize">{selectedTestCase.priority}</span>
+                </span>
               </div>
 
               {/* Folder */}

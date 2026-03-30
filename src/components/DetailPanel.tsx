@@ -113,11 +113,11 @@ const STATUS_COLORS: Record<string, string> = {
   untested: 'bg-gray-50 text-gray-500 border border-gray-200',
 };
 
-const PRIORITY_STYLE: Record<string, { bg: string; color: string }> = {
-  critical: { bg: '#FEE2E2', color: '#991B1B' },
-  high:     { bg: '#FEE2E2', color: '#991B1B' },
-  medium:   { bg: '#FEF3C7', color: '#D97706' },
-  low:      { bg: '#F1F5F9', color: '#64748B' },
+const PRIORITY_DOT_COLORS: Record<string, string> = {
+  critical: '#EF4444',
+  high:     '#F59E0B',
+  medium:   '#6366F1',
+  low:      '#94A3B8',
 };
 
 function formatDate(iso: string) {
@@ -409,18 +409,13 @@ export function DetailPanel({
           {/* Priority */}
           <div>
             <div className="text-[0.625rem] font-semibold uppercase tracking-[0.05em] text-gray-400 mb-0.5">Priority</div>
-            {(() => {
-              const style = PRIORITY_STYLE[testCase.priority] || PRIORITY_STYLE.low;
-              return (
-                <span
-                  className="inline-flex items-center gap-1 px-2 py-[0.125rem] rounded-full text-[0.625rem] font-semibold"
-                  style={{ background: style.bg, color: style.color }}
-                >
-                  <i className="ri-flag-fill" />
-                  {testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1)}
-                </span>
-              );
-            })()}
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                style={{ background: PRIORITY_DOT_COLORS[testCase.priority] || '#94A3B8' }}
+              />
+              <span className="text-[0.8125rem] text-[#475569] capitalize">{testCase.priority}</span>
+            </span>
           </div>
 
           {/* Folder */}
