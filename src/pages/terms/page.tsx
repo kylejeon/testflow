@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
 import { useLanguage } from '../../hooks/useLanguage';
 
@@ -263,6 +264,12 @@ export default function TermsPage() {
                         </li>
                       ))}
                     </ul>
+                    <p className="text-gray-600 mt-3 flex items-center gap-2">
+                      <i className="ri-file-text-line text-indigo-500 flex-shrink-0"></i>
+                      {lang === 'ko'
+                        ? <>자세한 환불 조건은 <Link to="/refund" className="text-indigo-600 font-semibold hover:underline">환불 정책</Link>을 참조하세요.</>
+                        : <>For full details, please see our <Link to="/refund" className="text-indigo-600 font-semibold hover:underline">Refund Policy</Link>.</>}
+                    </p>
                   </div>
                 )}
                 {'intro' in section && section.intro && <p className="mb-3">{section.intro}</p>}

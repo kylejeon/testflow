@@ -31,6 +31,8 @@ const NotFound = lazy(() => import('../pages/NotFound'));
 const AcceptInvitationPage = lazy(() => import('../pages/accept-invitation/page'));
 const PrivacyPage = lazy(() => import('../pages/privacy/page'));
 const TermsPage = lazy(() => import('../pages/terms/page'));
+const RefundPolicyPage = lazy(() => import('../pages/refund/page'));
+const CookiePolicyPage = lazy(() => import('../pages/cookies/page'));
 const AdminPage = lazy(() => import('../pages/admin/page'));
 const ProjectIntegrations = lazy(() => import('../pages/project-integrations/page'));
 const TestCasesOverviewPage = lazy(() => import('../pages/stats/TestCasesOverviewPage'));
@@ -166,6 +168,14 @@ const routes: RouteObject[] = [
   {
     path: '/terms',
     element: <TermsPage />,
+  },
+  {
+    path: '/refund',
+    element: <RefundPolicyPage />,
+  },
+  {
+    path: '/cookies',
+    element: <CookiePolicyPage />,
   },
   {
     path: '/admin',

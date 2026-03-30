@@ -371,6 +371,8 @@ const content = {
       legal: 'Legal',
       privacy: 'Privacy Policy',
       terms: 'Terms of Service',
+      refund: 'Refund Policy',
+      cookies: 'Cookie Policy',
       copyright: `© ${new Date().getFullYear()} Testably. All rights reserved.`,
     },
     scrollIndicator: 'Scroll',
@@ -739,6 +741,8 @@ const content = {
       legal: '법적 정보',
       privacy: '개인정보처리방침',
       terms: '이용약관',
+      refund: '환불 정책',
+      cookies: '쿠키 정책',
       copyright: `© ${new Date().getFullYear()} Testably. All rights reserved.`,
     },
     scrollIndicator: '스크롤',
@@ -1762,6 +1766,12 @@ export default function HomePage() {
                   </li>
                   <li>
                     <Link to="/terms" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.terms}</Link>
+                  </li>
+                  <li>
+                    <Link to="/refund" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.refund}</Link>
+                  </li>
+                  <li>
+                    <Link to="/cookies" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">{t.footer.cookies}</Link>
                   </li>
                 </ul>
               </nav>

@@ -22,6 +22,8 @@ const footerLinks = {
   Legal: [
     { label: 'Privacy Policy', to: '/privacy' },
     { label: 'Terms of Service', to: '/terms' },
+    { label: 'Refund Policy', to: '/refund' },
+    { label: 'Cookie Policy', to: '/cookies' },
   ],
 };
 
