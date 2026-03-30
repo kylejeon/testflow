@@ -529,9 +529,7 @@ export default function ProjectMilestones() {
               >
                 <i className="ri-arrow-right-s-line" />
               </button>
-            ) : (
-              <div className="w-[1.375rem] flex-shrink-0" />
-            )}
+            ) : null}
 
             {/* icon */}
             <div className="w-9 h-9 rounded-[0.4375rem] flex items-center justify-center flex-shrink-0" style={{ background: info.iconBg }}>

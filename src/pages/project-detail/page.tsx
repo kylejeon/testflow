@@ -436,8 +436,8 @@ export default function ProjectDetail() {
   const getStatusBadge = (status: string) => {
     const badges = {
       upcoming: { label: 'Upcoming', className: 'bg-blue-100 text-blue-700' },
-      started: { label: 'Started', className: 'bg-green-100 text-green-700' },
-      past_due: { label: 'Past due', className: 'bg-orange-100 text-orange-700' },
+      started: { label: 'In Progress', className: 'bg-blue-100 text-blue-700' },
+      past_due: { label: 'Overdue', className: 'bg-orange-100 text-orange-700' },
       completed: { label: 'Completed', className: 'bg-gray-100 text-gray-700' },
     };
     return badges[status as keyof typeof badges] || badges.upcoming;

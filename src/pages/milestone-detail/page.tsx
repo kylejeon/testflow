@@ -104,6 +104,7 @@ export default function MilestoneDetail() {
   const [activityPage, setActivityPage] = useState(1);
   const [contributorProfiles, setContributorProfiles] = useState<Map<string, { name: string | null; url: string | null }>>(new Map());
   const [assigneeProfiles, setAssigneeProfiles] = useState<Map<string, { name: string | null; email: string; url: string | null }>>(new Map());
+  const [runAssigneeMap, setRunAssigneeMap] = useState<Map<string, string[]>>(new Map());
   const [tcStats, setTcStats] = useState<TcStats>({ passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, total: 0, passRate: 0 });
   const [failedBlockedTcs, setFailedBlockedTcs] = useState<FailedBlockedTcItem[]>([]);
   const [subMilestoneProgress, setSubMilestoneProgress] = useState<Map<string, number>>(new Map());
@@ -335,9 +336,47 @@ export default function MilestoneDetail() {
         setSubMilestoneProgress(newSubProgressMap);
       }
 
-      // Fetch assignee profiles by UUID (reliable — no name/email string-matching)
+      // Fetch per-run TC assignees from run_testcase_assignees table
+      const runIds = runsWithProgress.map(r => r.id);
+      const newRunAssigneeMap = new Map<string, string[]>();
       const allAssigneeIds = new Set<string>();
-      runsWithProgress.forEach(r => (r.assignees || []).forEach((id: string) => allAssigneeIds.add(id)));
+      if (runIds.length > 0) {
+        const { data: rtaData } = await supabase
+          .from('run_testcase_assignees')
+          .select('run_id, assignee')
+          .in('run_id', runIds);
+        (rtaData || []).forEach((row: any) => {
+          if (!row.assignee) return;
+          const existing = newRunAssigneeMap.get(row.run_id) || [];
+          if (!existing.includes(row.assignee)) existing.push(row.assignee);
+          newRunAssigneeMap.set(row.run_id, existing);
+          allAssigneeIds.add(row.assignee);
+        });
+      }
+      // Also collect assignees from test_cases directly for runs without run_testcase_assignees
+      if (allTestCaseIds.size > 0) {
+        const { data: tcAssigneeData } = await supabase
+          .from('test_cases')
+          .select('id, assignee')
+          .in('id', Array.from(allTestCaseIds))
+          .not('assignee', 'is', null);
+        const tcAssigneeMap = new Map<string, string>();
+        (tcAssigneeData || []).forEach((tc: any) => { if (tc.assignee) tcAssigneeMap.set(tc.id, tc.assignee); });
+        runsWithProgress.forEach(r => {
+          if (!newRunAssigneeMap.has(r.id)) {
+            const assignees = new Set<string>();
+            r.test_case_ids.forEach((tcId: string) => {
+              const a = tcAssigneeMap.get(tcId);
+              if (a) assignees.add(a);
+            });
+            if (assignees.size > 0) {
+              newRunAssigneeMap.set(r.id, Array.from(assignees));
+              assignees.forEach(id => allAssigneeIds.add(id));
+            }
+          }
+        });
+      }
+      setRunAssigneeMap(newRunAssigneeMap);
       if (allAssigneeIds.size > 0) {
         const { data: apData } = await supabase
           .from('profiles')
@@ -528,8 +567,8 @@ export default function MilestoneDetail() {
   const getStatusBadgeStyle = (status: string) => {
     const map: Record<string, { bg: string; color: string; dot: string; label: string }> = {
       upcoming: { bg: '#DBEAFE', color: '#1E40AF', dot: '#3B82F6', label: 'Upcoming' },
-      started:  { bg: '#DCFCE7', color: '#166534', dot: '#22C55E', label: 'Started' },
-      past_due: { bg: '#F97316', color: '#fff',    dot: '#fff',    label: 'Past Due' },
+      started:  { bg: '#DBEAFE', color: '#1E40AF', dot: '#3B82F6', label: 'In Progress' },
+      past_due: { bg: '#F97316', color: '#fff',    dot: '#fff',    label: 'Overdue' },
       completed:{ bg: '#F1F5F9', color: '#475569', dot: '#94A3B8', label: 'Completed' },
     };
     return map[status] || map.upcoming;
@@ -892,30 +931,12 @@ export default function MilestoneDetail() {
                             </span>
                           ))}
                           {(() => {
-                            const assigneeIds = run.assignees || [];
-                            const authorNames = run.authors || [];
-
-                            const assigneeMembers = assigneeIds.map((uid: string) => {
+                            const assigneeIds = runAssigneeMap.get(run.id) || [];
+                            if (assigneeIds.length === 0) return null;
+                            const members = assigneeIds.map((uid: string) => {
                               const p = assigneeProfiles.get(uid);
                               return { userId: uid, name: p?.name ?? undefined, email: p?.email || undefined, photoUrl: p?.url ?? undefined };
                             });
-
-                            const assigneeNameSet = new Set(assigneeMembers.map(m => m.name || m.email).filter(Boolean));
-                            const authorMembers = authorNames
-                              .filter((author: string) => !assigneeNameSet.has(author))
-                              .map((author: string) => {
-                                const p = contributorProfiles.get(author);
-                                const isEmail = author.includes('@');
-                                return {
-                                  name: p?.name ?? (isEmail ? undefined : author),
-                                  email: p?.name ? undefined : (isEmail ? author : undefined),
-                                  photoUrl: p?.url ?? undefined,
-                                };
-                              });
-
-                            const members = [...assigneeMembers, ...authorMembers];
-                            if (members.length === 0) return null;
-
                             return (
                               <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
                                 <AvatarStack size="xs" max={4} members={members} style={{ gap: 0 }} />
