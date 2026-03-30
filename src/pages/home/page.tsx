@@ -96,7 +96,7 @@ const content = {
       {
         icon: 'ri-team-line',
         title: 'Team Collaboration',
-        description: 'Invite team members and set role-based permissions — Admin, Member, or Viewer. Assign specific test cases to individuals for clear ownership.',
+        description: 'Invite team members and set role-based permissions — Owner, Admin, Member, or Viewer. The project creator is automatically the Owner. Assign test cases to specific team members for clear ownership.',
         color: 'bg-violet-50',
         iconColor: 'text-violet-600',
         tag: 'Team',
@@ -132,6 +132,22 @@ const content = {
         color: 'bg-cyan-50',
         iconColor: 'text-cyan-600',
         tag: 'Documentation',
+      },
+      {
+        icon: 'ri-upload-download-line',
+        title: 'Import & Export',
+        description: 'Migrate from TestRail, Zephyr, or Qase in minutes. Import test cases via CSV, export to CSV/JSON for backup, and generate PDF reports for stakeholders. Your data, your way.',
+        color: 'bg-emerald-50',
+        iconColor: 'text-emerald-600',
+        tag: 'Data',
+      },
+      {
+        icon: 'ri-pie-chart-2-line',
+        title: 'Advanced Reporting',
+        description: 'Visualize your QA health with 4 built-in dashboards: Pass Rate trends, Active Runs status, Team Activity heatmap, and Test Case Overview. Export any report as PDF.',
+        color: 'bg-rose-50',
+        iconColor: 'text-rose-600',
+        tag: 'Analytics',
       },
     ],
     workflowSection: {
@@ -172,6 +188,11 @@ const content = {
         title: 'Free Forever Plan',
         content: 'Unlimited test cases, 3 projects, 3 team members. No credit card, no trial expiration.',
       },
+      {
+        icon: 'ri-arrow-left-right-line',
+        title: 'Switch from TestRail in Minutes',
+        content: 'Import your entire test library via CSV. TestRail field mapping is built-in — priority, steps, expected results all transfer automatically.',
+      },
     ],
     whySection: {
       badge: 'Why Testably',
@@ -198,7 +219,7 @@ const content = {
         annualMonthly: 41.58, annualTotal: 499,
         users: 'Up to 5 users',
         description: 'For growing teams that need more power',
-        features: ['Up to 10 projects', 'Jira integration', 'Slack & Teams integration', 'Basic reporting', '30 AI generations / month', 'Email support'],
+        features: ['Up to 10 projects', 'Jira integration', 'Slack & Teams integration', 'Basic reporting', '30 AI generations / month', 'Email support', 'Testcase Export/Import', 'Export PDF Report'],
         cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 4,
         highlighted: false, icon: 'ri-star-line', popular: '',
       },
@@ -207,7 +228,7 @@ const content = {
         annualMonthly: 84.17, annualTotal: 1010,
         users: 'Up to 20 users',
         description: 'Full-featured for professional QA teams',
-        features: ['Unlimited projects', 'Jira integration', 'Slack & Teams integration', 'Advanced reporting', 'CI/CD Integration', '150 AI generations / month', 'Priority support'],
+        features: ['Unlimited projects', 'Jira integration', 'Slack & Teams integration', 'Advanced reporting', 'CI/CD Integration', '150 AI generations / month', 'Priority support', 'Testcase Export/Import', 'Export PDF Report'],
         cta: 'Start Free Trial', ctaVariant: 'filled', aiFeatureIdx: 5,
         highlighted: true, icon: 'ri-vip-crown-line', popular: 'Most Popular',
       },
@@ -238,6 +259,17 @@ const content = {
         highlighted: false, icon: 'ri-government-line', popular: '', darkCard: true,
       },
     ],
+    viewerBanner: {
+      title: 'Viewers are always free',
+      description: "Viewer roles don't count toward your plan's seat limit. Invite unlimited stakeholders, managers, and executives to observe testing progress — at no extra cost.",
+      example: 'On the Starter plan (5 seats), you could have 1 Owner + 1 Admin + 3 Members + unlimited Viewers.',
+      tags: ['View test results', 'Track milestones', 'Read documentation', 'Monitor dashboards'],
+      comparison: [
+        { name: 'TestRail', detail: 'All users counted', price: '$36/user/month', negative: true },
+        { name: 'Qase', detail: 'All users counted', price: 'Per-seat pricing', negative: true },
+        { name: 'Testably', detail: 'Flat-rate pricing', price: 'Viewers FREE forever', negative: false },
+      ],
+    },
     faqSection: {
       badge: 'FAQ',
       title: 'Frequently asked questions',
@@ -275,6 +307,18 @@ const content = {
       {
         question: 'Can I change or cancel my plan at any time?',
         answer: 'Absolutely. You can upgrade, downgrade, or cancel your subscription at any time from your account settings. If you cancel, your account remains active until the end of your current billing period. No hidden fees or lock-in contracts.',
+      },
+      {
+        question: 'Can I import test cases from TestRail or other tools?',
+        answer: 'Yes. Testably supports CSV import with built-in TestRail field mapping. Export your test cases from TestRail as CSV, then import them into Testably — priorities, steps, and expected results are automatically mapped. You can also import from Zephyr and Qase.',
+      },
+      {
+        question: 'Do Viewers count toward my plan\'s member limit?',
+        answer: 'No. Viewer roles are completely free and excluded from your seat count. On the Starter plan (5 seats), you could have 1 Owner + 1 Admin + 3 Members + unlimited Viewers. This lets your entire organization observe testing progress without extra cost.',
+      },
+      {
+        question: 'Does Testably support webhooks?',
+        answer: 'Yes. You can configure webhooks to send real-time event notifications to any HTTP endpoint — including Slack, Discord, Microsoft Teams, or your custom automation system. Events include test run completions, test failures, member joins, and more.',
       },
     ],
     testimonialsSection: {
@@ -420,7 +464,7 @@ const content = {
       {
         icon: 'ri-team-line',
         title: '팀 협업',
-        description: '팀원을 초대하고 역할별 권한을 설정하세요. Admin, Member, Viewer 권한과 테스트 케이스별 담당자 지정으로 명확한 책임을 부여합니다.',
+        description: 'Owner, Admin, Member, Viewer 4단계 역할 권한과 테스트 케이스별 담당자 지정으로 명확한 책임을 부여합니다. 프로젝트 생성자는 자동으로 Owner가 됩니다.',
         color: 'bg-violet-50',
         iconColor: 'text-violet-600',
         tag: '팀',
@@ -456,6 +500,22 @@ const content = {
         color: 'bg-cyan-50',
         iconColor: 'text-cyan-600',
         tag: '문서',
+      },
+      {
+        icon: 'ri-upload-download-line',
+        title: '가져오기 & 내보내기',
+        description: 'TestRail, Zephyr, Qase에서 몇 분 안에 마이그레이션합니다. CSV로 테스트 케이스를 가져오고, CSV/JSON으로 내보내거나 PDF 리포트를 생성합니다.',
+        color: 'bg-emerald-50',
+        iconColor: 'text-emerald-600',
+        tag: '데이터',
+      },
+      {
+        icon: 'ri-pie-chart-2-line',
+        title: '고급 리포팅',
+        description: '4가지 대시보드로 QA 현황을 시각화하세요: Pass Rate 추이, Active Runs 상태, 팀 활동 히트맵, 테스트 케이스 개요. 모든 리포트를 PDF로 내보내세요.',
+        color: 'bg-rose-50',
+        iconColor: 'text-rose-600',
+        tag: '분석',
       },
     ],
     workflowSection: {
@@ -496,6 +556,11 @@ const content = {
         title: '영구 무료 플랜',
         content: '무제한 테스트 케이스, 프로젝트 3개, 팀 멤버 3명. 신용카드 없이, 체험 기간 만료 없이 사용하세요.',
       },
+      {
+        icon: 'ri-arrow-left-right-line',
+        title: 'TestRail에서 몇 분 안에 전환',
+        content: 'CSV를 통해 전체 테스트 라이브러리를 가져옵니다. TestRail 필드 매핑이 기본 제공되어 우선순위, 단계, 예상 결과가 자동으로 이전됩니다.',
+      },
     ],
     whySection: {
       badge: 'Why Testably',
@@ -522,7 +587,7 @@ const content = {
         annualMonthly: 41.58, annualTotal: 499,
         users: '최대 5명',
         description: '성장하는 팀을 위한 핵심 기능',
-        features: ['프로젝트 10개까지', 'Jira 연동', 'Slack & Teams 연동', '기본 리포팅', 'AI 생성 30회/월', '이메일 지원'],
+        features: ['프로젝트 10개까지', 'Jira 연동', 'Slack & Teams 연동', '기본 리포팅', 'AI 생성 30회/월', '이메일 지원', '테스트케이스 내보내기/가져오기', 'PDF 리포트 내보내기'],
         cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: 4,
         highlighted: false, icon: 'ri-star-line', popular: '',
       },
@@ -531,7 +596,7 @@ const content = {
         annualMonthly: 84.17, annualTotal: 1010,
         users: '최대 20명',
         description: '전문 QA 팀을 위한 완전한 기능',
-        features: ['프로젝트 무제한', 'Jira 연동', 'Slack & Teams 연동', '고급 리포팅', 'CI/CD 연동', 'AI 생성 150회/월', '우선 지원'],
+        features: ['프로젝트 무제한', 'Jira 연동', 'Slack & Teams 연동', '고급 리포팅', 'CI/CD 연동', 'AI 생성 150회/월', '우선 지원', '테스트케이스 내보내기/가져오기', 'PDF 리포트 내보내기'],
         cta: '14일 무료 체험', ctaVariant: 'filled', aiFeatureIdx: 5,
         highlighted: true, icon: 'ri-vip-crown-line', popular: '가장 인기',
       },
@@ -562,6 +627,17 @@ const content = {
         highlighted: false, icon: 'ri-government-line', popular: '', darkCard: true,
       },
     ],
+    viewerBanner: {
+      title: 'Viewer는 항상 무료',
+      description: 'Viewer 역할은 요금제의 좌석 수에 포함되지 않습니다. 이해관계자, 매니저, 임원을 무제한으로 초대하여 테스트 진행 상황을 관찰하게 하세요 — 추가 비용 없이.',
+      example: 'Starter 요금제(5석) 기준: Owner 1명 + Admin 1명 + Member 3명 + Viewer 무제한.',
+      tags: ['테스트 결과 확인', '마일스톤 추적', '문서 열람', '대시보드 모니터링'],
+      comparison: [
+        { name: 'TestRail', detail: '모든 유저 과금', price: '$36/유저/월', negative: true },
+        { name: 'Qase', detail: '모든 유저 과금', price: '좌석당 요금', negative: true },
+        { name: 'Testably', detail: '정액 요금제', price: 'Viewer 영구 무료', negative: false },
+      ],
+    },
     faqSection: {
       badge: 'FAQ',
       title: '자주 묻는 질문',
@@ -599,6 +675,18 @@ const content = {
       {
         question: '언제든지 플랜을 변경하거나 취소할 수 있나요?',
         answer: '물론입니다. 계정 설정에서 언제든지 구독을 업그레이드, 다운그레이드 또는 취소할 수 있습니다. 취소하면 현재 청구 기간이 끝날 때까지 계정이 활성 상태를 유지합니다. 숨겨진 수수료나 장기 계약은 없습니다.',
+      },
+      {
+        question: 'TestRail이나 다른 도구에서 테스트 케이스를 가져올 수 있나요?',
+        answer: '네. Testably는 TestRail 필드 매핑이 내장된 CSV 가져오기를 지원합니다. TestRail에서 CSV로 내보낸 후 Testably로 가져오면 우선순위, 단계, 예상 결과가 자동으로 매핑됩니다. Zephyr와 Qase에서도 가져올 수 있습니다.',
+      },
+      {
+        question: 'Viewer는 플랜의 멤버 제한에 포함되나요?',
+        answer: '아니요. Viewer 역할은 완전히 무료이며 좌석 수에서 제외됩니다. Starter 플랜(5석)에서는 Owner 1명 + Admin 1명 + Member 3명 + 무제한 Viewer를 사용할 수 있습니다. 추가 비용 없이 조직 전체가 테스트 진행 상황을 관찰할 수 있습니다.',
+      },
+      {
+        question: 'Testably는 웹훅을 지원하나요?',
+        answer: '네. 웹훅을 구성하여 Slack, Discord, Microsoft Teams 또는 사용자 정의 자동화 시스템을 포함한 모든 HTTP 엔드포인트로 실시간 이벤트 알림을 보낼 수 있습니다. 테스트 실행 완료, 테스트 실패, 멤버 참여 등의 이벤트가 포함됩니다.',
       },
     ],
     testimonialsSection: {
@@ -667,6 +755,8 @@ const FEATURE_ICON_STYLES = [
   { bg: 'rgba(6,182,212,0.12)', color: '#22D3EE' },
   { bg: 'rgba(251,146,60,0.12)', color: '#FB923C' },
   { bg: 'rgba(148,163,184,0.12)', color: '#94A3B8' },
+  { bg: 'rgba(16,185,129,0.12)', color: '#34D399' },
+  { bg: 'rgba(244,63,94,0.12)', color: '#FB7185' },
 ];
 
 export default function HomePage() {
@@ -1235,7 +1325,7 @@ export default function HomePage() {
               <p className="text-gray-400 text-lg">{t.whySection.description}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {t.whyCards.map((card) => (
                 <article key={card.title} className="rounded-2xl p-8 transition-all hover:-translate-y-1" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.04))', border: '1px solid rgba(99,102,241,0.12)' }}>
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: 'rgba(99,102,241,0.12)' }}>
@@ -1437,6 +1527,46 @@ export default function HomePage() {
                   )}
                 </article>
               ))}
+            </div>
+
+            {/* Viewer Free Banner */}
+            <div style={{ marginTop: '2.5rem', background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.12))', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '1rem', padding: '2rem', display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+              <div style={{ width: '3rem', height: '3rem', background: 'rgba(99,102,241,0.15)', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <i className="ri-eye-line" style={{ fontSize: '1.25rem', color: '#818CF8' }}></i>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#F1F5F9', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <i className="ri-gift-2-fill" style={{ color: '#818CF8' }}></i>
+                  {t.viewerBanner.title}
+                </div>
+                <p style={{ fontSize: '0.875rem', color: '#94A3B8', lineHeight: 1.7, marginBottom: '0.25rem' }}>
+                  {t.viewerBanner.description}
+                </p>
+                <p style={{ fontSize: '0.8125rem', color: '#CBD5E1', lineHeight: 1.7, marginBottom: '1rem' }}>
+                  {t.viewerBanner.example}
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                  {t.viewerBanner.tags.map((tag: string) => (
+                    <span key={tag} style={{ fontSize: '0.75rem', fontWeight: 500, color: '#A5B4FC', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '9999px', padding: '0.25rem 0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <i className="ri-check-line" style={{ fontSize: '0.7rem' }}></i>{tag}
+                    </span>
+                  ))}
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.75rem', padding: '1.25rem' }}>
+                  <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#818CF8', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {lang === 'en' ? 'WHY THIS MATTERS' : '왜 중요한가요'}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                    {t.viewerBanner.comparison.map((c: { name: string; detail: string; price: string; negative: boolean }) => (
+                      <div key={c.name} style={{ textAlign: 'center', padding: '0.75rem', borderRadius: '0.5rem', background: c.negative ? 'rgba(239,68,68,0.06)' : 'rgba(52,211,153,0.06)', border: `1px solid ${c.negative ? 'rgba(239,68,68,0.15)' : 'rgba(52,211,153,0.15)'}` }}>
+                        <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: c.negative ? '#F87171' : '#34D399', marginBottom: '0.25rem' }}>{c.name}</div>
+                        <div style={{ fontSize: '0.6875rem', color: '#94A3B8' }}>{c.detail}</div>
+                        <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: c.negative ? '#F87171' : '#34D399', marginTop: '0.125rem' }}>{c.price}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <p className="text-center mt-8 text-sm leading-relaxed" style={{ color: '#64748B' }}>
