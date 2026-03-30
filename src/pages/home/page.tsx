@@ -1717,7 +1717,6 @@ export default function HomePage() {
                 <div className="flex gap-2 mt-4">
                   {[
                     { icon: 'ri-twitter-x-line', href: 'https://x.com/GetTestably' },
-                    { icon: 'ri-github-line', href: 'https://github.com/testably' },
                     { icon: 'ri-linkedin-box-line', href: 'https://linkedin.com/company/testably' },
                   ].map(({ icon, href }) => (
                     <a key={icon} href={href} target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 text-gray-500 hover:bg-indigo-500/15 hover:text-indigo-400 transition-all cursor-pointer">
