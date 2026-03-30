@@ -1911,15 +1911,12 @@ export default function RunDetail() {
                                   }}
                                 >
                                   {assigneeName ? (
-                                    <>
-                                      <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                                        {(assignedMember
-                                          ? (assignedMember.full_name || assignedMember.email)
-                                          : assigneeName
-                                        ).substring(0, 2).toUpperCase()}
-                                      </div>
-                                      <span className="text-sm font-medium text-gray-900 truncate">{assigneeName}</span>
-                                    </>
+                                    <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0" title={assigneeName}>
+                                      {(assignedMember
+                                        ? (assignedMember.full_name || assignedMember.email)
+                                        : assigneeName
+                                      ).substring(0, 2).toUpperCase()}
+                                    </div>
                                   ) : (
                                     <span className="text-sm text-gray-400">—</span>
                                   )}
