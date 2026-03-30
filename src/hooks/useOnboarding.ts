@@ -131,6 +131,32 @@ export function useOnboarding(): UseOnboardingReturn {
     fetchOnboarding();
   }, [fetchOnboarding]);
 
+  // Realtime sync: re-fetch whenever user_onboarding row changes
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      channel = supabase
+        .channel('onboarding_realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'user_onboarding',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            setState(computeState(payload.new as Record<string, unknown>));
+          },
+        )
+        .subscribe();
+    });
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, []);
+
   const completeWelcome = useCallback(async (role: string, teamSize: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;

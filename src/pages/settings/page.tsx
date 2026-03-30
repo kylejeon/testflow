@@ -1,6 +1,7 @@
 import { LogoMark } from '../../components/Logo';
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { markOnboardingStep } from '../../lib/onboardingMarker';
 import { supabase } from '../../lib/supabase';
 import { WEBHOOK_EVENTS, WebhookEventType } from '../../hooks/useWebhooks';
 import SEOHead from '../../components/SEOHead';
@@ -231,6 +232,9 @@ export default function SettingsPage() {
     const TAB_ALIAS: Record<string, typeof activeTab> = { general: 'billing', cicd: 'api' };
     const resolved = (TAB_ALIAS[tab ?? ''] ?? tab) as typeof activeTab;
     if (resolved && VALID_TABS.includes(resolved)) setActiveTab(resolved);
+    if (tab === 'members' && searchParams.get('action') === 'invite') {
+      setShowMembersInviteModal(true);
+    }
   }, []);
 
   const fetchUserProjects = async () => {
@@ -511,6 +515,7 @@ export default function SettingsPage() {
       }
 
       setJiraSaveResult({ success: true, message: 'Jira settings saved successfully!' });
+      void markOnboardingStep('connectJira');
       setTimeout(() => setJiraSaveResult(null), 4000);
       setTestResult(null);
     } catch (error) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
+import { markOnboardingStep } from '../../../lib/onboardingMarker';
 
 interface SessionLog {
   type: string;
@@ -276,6 +277,7 @@ export default function AIGenerateModal({
     const casesToSave = generatedCases.filter((_, i) => selectedCaseIndices.has(i));
     try {
       await onSave(casesToSave);
+      void markOnboardingStep('tryAi');
       onClose();
     } catch (err: any) {
       setError(err.message || 'An error occurred while saving.');

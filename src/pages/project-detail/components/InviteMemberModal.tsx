@@ -3,6 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import { createNotification } from '../../../hooks/useNotifications';
 import { triggerWebhook } from '../../../hooks/useWebhooks';
 import { sendLoopsEvent } from '../../../lib/loops';
+import { markOnboardingStep } from '../../../lib/onboardingMarker';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -175,6 +176,7 @@ export default function InviteMemberModal({
         setFullName('');
         setRole('member');
 
+        void markOnboardingStep('inviteMember');
         setTimeout(() => {
           onInvited();
           onClose();
@@ -375,6 +377,7 @@ export default function InviteMemberModal({
                   <button
                     onClick={() => {
                       resetForm();
+                      void markOnboardingStep('inviteMember');
                       onInvited();
                       onClose();
                     }}

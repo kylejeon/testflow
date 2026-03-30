@@ -1,7 +1,7 @@
 import { LogoMark } from '../../components/Logo';
 import PageLoader from '../../components/PageLoader';
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import TestCaseList from './components/TestCaseList';
@@ -52,6 +52,16 @@ export default function ProjectTestCases() {
   const [showAIModal, setShowAIModal] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'ai-generate') {
+      setShowAIModal(true);
+      setSearchParams({}, { replace: true });
+    }
+    // 'create' for inline TC creation is handled by TestCaseList
+  }, [searchParams]);
 
   const { data: userProfile } = useQuery({
     queryKey: ['userProfile'],

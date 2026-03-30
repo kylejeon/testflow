@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import PageLoader from '../../../components/PageLoader';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { markOnboardingStep } from '../../../lib/onboardingMarker';
 import { supabase, type Project } from '../../../lib/supabase';
 import CreateProjectModal from './CreateProjectModal';
 import EditProjectModal from './EditProjectModal';
@@ -75,6 +76,13 @@ export default function ProjectsContent() {
   const [userProjectRoles, setUserProjectRoles] = useState<Record<string, string>>({});
   const { toasts, showToast, dismiss } = useToast();
   const menuRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setShowCreateModal(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -437,6 +445,7 @@ export default function ProjectsContent() {
 
       await fetchProjects();
       setShowCreateModal(false);
+      void markOnboardingStep('createProject');
     } catch (error: any) {
       console.error('프로젝트 생성 오류:', error);
       showToast(`Failed to create project: ${error?.message || 'Unknown error'}`, 'error');

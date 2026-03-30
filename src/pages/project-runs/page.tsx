@@ -1,8 +1,9 @@
 import { LogoMark } from '../../components/Logo';
 import PageLoader from '../../components/PageLoader';
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { markOnboardingStep } from '../../lib/onboardingMarker';
 import { supabase } from '../../lib/supabase';
 import NotificationBell from '../../components/feature/NotificationBell';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
@@ -139,6 +140,14 @@ export default function ProjectRunsPage() {
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setShowAddRunModal(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams]);
 
   const handleRunClick = (runId: string) => {
     navigate(`/projects/${id}/runs/${runId}`);
@@ -908,6 +917,8 @@ export default function ProjectRunsPage() {
           .select();
 
         if (error) throw error;
+
+        void markOnboardingStep('runTest');
 
         // Notify all project members when a new run is created
         await notifyProjectMembers({

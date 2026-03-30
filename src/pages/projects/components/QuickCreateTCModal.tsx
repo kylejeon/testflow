@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { markOnboardingStep } from '../../../lib/onboardingMarker';
 
 interface QuickCreateTCModalProps {
   /** Empty string / undefined = no project exists → show no-project state */
@@ -132,6 +133,7 @@ export default function QuickCreateTCModal({
 
       if (error) throw error;
 
+      void markOnboardingStep('createTestcase');
       onCreated(projectId!, title.trim());
     } catch (e) {
       console.error('Quick create TC error:', e);
