@@ -157,6 +157,9 @@ export default function MilestoneDetail() {
         if (endDate < today) {
           correctedMilestone.status = 'past_due';
           await supabase.from('milestones').update({ status: 'past_due' }).eq('id', milestoneId);
+        } else if (correctedMilestone.status === 'past_due') {
+          correctedMilestone.status = 'started';
+          await supabase.from('milestones').update({ status: 'started' }).eq('id', milestoneId);
         }
       }
 
