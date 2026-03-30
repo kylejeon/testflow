@@ -378,13 +378,17 @@ export default function MilestoneDetail() {
       }
       setRunAssigneeMap(newRunAssigneeMap);
       if (allAssigneeIds.size > 0) {
+        const assigneeNames = Array.from(allAssigneeIds);
         const { data: apData } = await supabase
           .from('profiles')
           .select('id, full_name, email, avatar_url')
-          .in('id', Array.from(allAssigneeIds));
+          .or(
+            assigneeNames.map(n => `full_name.eq.${n},email.eq.${n}`).join(',')
+          );
         const apMap = new Map<string, { name: string | null; email: string; url: string | null }>();
         (apData || []).forEach((p: any) => {
-          apMap.set(p.id, { name: p.full_name || null, email: p.email || '', url: p.avatar_url || null });
+          if (p.full_name) apMap.set(p.full_name, { name: p.full_name, email: p.email || '', url: p.avatar_url || null });
+          if (p.email) apMap.set(p.email, { name: p.full_name, email: p.email || '', url: p.avatar_url || null });
         });
         setAssigneeProfiles(apMap);
       }
@@ -933,9 +937,15 @@ export default function MilestoneDetail() {
                           {(() => {
                             const assigneeIds = runAssigneeMap.get(run.id) || [];
                             if (assigneeIds.length === 0) return null;
-                            const members = assigneeIds.map((uid: string) => {
-                              const p = assigneeProfiles.get(uid);
-                              return { userId: uid, name: p?.name ?? undefined, email: p?.email || undefined, photoUrl: p?.url ?? undefined };
+                            const members = assigneeIds.map((nameOrId: string) => {
+                              const p = assigneeProfiles.get(nameOrId);
+                              const isEmail = nameOrId.includes('@');
+                              return {
+                                userId: nameOrId,
+                                name: p?.name ?? (isEmail ? undefined : nameOrId),
+                                email: p?.email || (isEmail ? nameOrId : undefined),
+                                photoUrl: p?.url ?? undefined,
+                              };
                             });
                             return (
                               <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
