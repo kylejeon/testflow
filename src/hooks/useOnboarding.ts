@@ -131,6 +131,13 @@ export function useOnboarding(): UseOnboardingReturn {
     fetchOnboarding();
   }, [fetchOnboarding]);
 
+  // Sync when any component calls markOnboardingStep (event-based, no Realtime dependency)
+  useEffect(() => {
+    const handler = () => { void fetchOnboarding(); };
+    window.addEventListener('onboarding:step-marked', handler);
+    return () => window.removeEventListener('onboarding:step-marked', handler);
+  }, [fetchOnboarding]);
+
   // Realtime sync: re-fetch whenever user_onboarding row changes
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
