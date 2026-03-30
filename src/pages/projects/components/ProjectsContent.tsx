@@ -156,30 +156,24 @@ export default function ProjectsContent() {
         return;
       }
 
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .in('id', projectIds)
-        .order('created_at', { ascending: false });
+      const [
+        { data: projectsData, error: projectsError },
+        { data: testCasesData, error: testCasesError },
+        { data: testRunsData, error: testRunsError },
+      ] = await Promise.all([
+        supabase.from('projects').select('*').in('id', projectIds).order('created_at', { ascending: false }),
+        supabase.from('test_cases').select('project_id').in('project_id', projectIds),
+        supabase.from('test_runs').select('project_id').in('project_id', projectIds),
+      ]);
 
       if (projectsError) throw projectsError;
       setProjects(projectsData || []);
-
-      const { data: testCasesData, error: testCasesError } = await supabase
-        .from('test_cases')
-        .select('project_id')
-        .in('project_id', projectIds);
 
       if (!testCasesError && testCasesData) {
         const counts: Record<string, number> = {};
         testCasesData.forEach(tc => { counts[tc.project_id] = (counts[tc.project_id] || 0) + 1; });
         setTestCaseCounts(counts);
       }
-
-      const { data: testRunsData, error: testRunsError } = await supabase
-        .from('test_runs')
-        .select('project_id')
-        .in('project_id', projectIds);
 
       if (!testRunsError && testRunsData) {
         const counts: Record<string, number> = {};

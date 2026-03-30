@@ -193,6 +193,8 @@ export default function SettingsPage() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<'github' | 'gitlab' | 'python'>('github');
   const [scopeGuideTab, setScopeGuideTab] = useState<'github' | 'gitlab'>('github');
+  const [ciTokensFetched, setCiTokensFetched] = useState(false);
+  const [webhooksFetched, setWebhooksFetched] = useState(false);
 
   // Preferences state
   const [checklistDismissed, setChecklistDismissed] = useState(false);
@@ -260,13 +262,15 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    if (activeTab === 'api' || activeTab === 'integrations') {
+    if ((activeTab === 'api' || activeTab === 'integrations') && !ciTokensFetched) {
       fetchCITokens();
+      setCiTokensFetched(true);
     }
-    if (activeTab === 'integrations') {
+    if (activeTab === 'integrations' && !webhooksFetched) {
       fetchWebhooks();
+      setWebhooksFetched(true);
     }
-  }, [activeTab]);
+  }, [activeTab, ciTokensFetched, webhooksFetched]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
