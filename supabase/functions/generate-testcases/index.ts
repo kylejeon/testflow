@@ -14,19 +14,31 @@ const PLAN_LIMITS: Record<number, number> = {
   4: -1,   // Enterprise (무제한)
 };
 
-// Session 모드는 Professional(3) 이상만 허용
-const SESSION_MIN_TIER = 3;
+const SESSION_MIN_TIER = 3;  // Professional+
+const JIRA_MIN_TIER = 2;     // Starter+
 
 interface GenerateRequest {
   project_id: string;
-  mode: 'text' | 'session';
-  step: 1 | 2;
-  // Step 1 (Text mode)
+  mode: 'text' | 'jira' | 'session';
+  step?: 1 | 2;
+  action?: 'preview';       // jira preview: fetch & return issue data without AI generation
   input_text?: string;
-  // Step 1 (Session mode)
   session_id?: string;
-  // Step 2: 선택된 제목 목록
+  jira_issue_keys?: string[];
   selected_titles?: string[];
+}
+
+interface JiraIssueData {
+  key: string;
+  summary: string;
+  description?: string;
+  priority?: string;
+  acceptanceCriteria?: string;
+}
+
+interface JiraFetchError {
+  key: string;
+  reason: string;
 }
 
 /** 유효 구독 티어 반환 (만료된 트라이얼은 Free=1 처리) */
@@ -62,10 +74,74 @@ async function getMonthlyUsage(
     .from('ai_generation_logs')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .eq('step', 1) // Step 1 호출만 카운팅
+    .eq('step', 1)
     .gte('created_at', startOfMonth.toISOString());
 
   return count || 0;
+}
+
+/** Atlassian Document Format → plain text */
+function adfToText(node: any): string {
+  if (!node) return '';
+  if (node.type === 'text') return node.text || '';
+  if (node.type === 'hardBreak') return '\n';
+  if (node.type === 'mention') return node.attrs?.text || '';
+  if (Array.isArray(node.content)) {
+    const parts = node.content.map(adfToText).join('');
+    // Add line breaks after block nodes
+    const blockNodes = new Set(['paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'codeBlock']);
+    if (blockNodes.has(node.type)) return parts + '\n';
+    return parts;
+  }
+  return '';
+}
+
+/** Jira issue 단건 fetch */
+async function fetchJiraIssue(
+  domain: string,
+  email: string,
+  apiToken: string,
+  issueKey: string,
+): Promise<JiraIssueData> {
+  const basicAuth = btoa(`${email}:${apiToken}`);
+  // Request summary, description, priority, labels, and common AC custom field IDs
+  const fields = 'summary,description,priority,labels,customfield_10014,customfield_10016,customfield_acceptance';
+  const url = `https://${domain}/rest/api/3/issue/${issueKey}?fields=${fields}`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Basic ${basicAuth}`,
+      Accept: 'application/json',
+    },
+  });
+
+  if (response.status === 404) {
+    throw { type: 'not_found', key: issueKey, message: `Issue ${issueKey} not found` };
+  }
+  if (response.status === 401 || response.status === 403) {
+    throw { type: 'auth_error', key: issueKey, message: 'Jira credentials are invalid or expired' };
+  }
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw { type: 'api_error', key: issueKey, message: `Jira API returned HTTP ${response.status}: ${body.slice(0, 200)}` };
+  }
+
+  const data = await response.json();
+  const f = data.fields || {};
+
+  const summary: string = f.summary || '';
+  const descriptionText = f.description ? adfToText(f.description).trim() : undefined;
+  const priority: string | undefined = f.priority?.name;
+
+  // Try common acceptance criteria field IDs
+  const acRaw = f.customfield_10014 ?? f.customfield_acceptance ?? f.customfield_10016;
+  let acText: string | undefined;
+  if (acRaw) {
+    acText = typeof acRaw === 'string' ? acRaw : adfToText(acRaw).trim();
+    if (!acText) acText = undefined;
+  }
+
+  return { key: data.key, summary, description: descriptionText, priority, acceptanceCriteria: acText };
 }
 
 /** Anthropic 에러 타입 */
@@ -104,22 +180,17 @@ async function callClaude(prompt: string): Promise<{ content: string; tokens: nu
     const anthropicMessage = errorBody?.error?.message || 'Unknown Anthropic API error';
     const anthropicType = errorBody?.error?.type || 'api_error';
 
-    const err: AnthropicError = {
-      status: response.status,
-      type: anthropicType,
-      message: anthropicMessage,
-    };
+    const err: AnthropicError = { status: response.status, type: anthropicType, message: anthropicMessage };
     throw err;
   }
 
   const data = await response.json();
   const content = data.content?.[0]?.text || '';
   const tokens = (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0);
-
   return { content, tokens };
 }
 
-/** Step 1: 제목 목록 생성 프롬프트 (Text 모드) */
+/** Step 1: 제목 생성 프롬프트 (Text 모드) */
 function buildTitlePromptText(inputText: string): string {
   return `You are a QA engineer creating test cases. Based on the following feature description, generate a list of test case titles.
 
@@ -138,7 +209,31 @@ Example output:
 Output:`;
 }
 
-/** Step 1: 제목 목록 생성 프롬프트 (Session 모드) */
+/** Step 1: 제목 생성 프롬프트 (Jira 모드) */
+function buildTitlePromptJira(issues: JiraIssueData[]): string {
+  const issueText = issues.map(issue => {
+    let text = `Issue: ${issue.key} — ${issue.summary}`;
+    if (issue.description) text += `\nDescription: ${issue.description.slice(0, 600)}`;
+    if (issue.acceptanceCriteria) text += `\nAcceptance Criteria: ${issue.acceptanceCriteria.slice(0, 400)}`;
+    if (issue.priority) text += `\nPriority: ${issue.priority}`;
+    return text;
+  }).join('\n\n---\n\n');
+
+  return `You are a QA engineer creating test cases from Jira issues. Based on the following Jira issue(s), generate test case titles that thoroughly cover the requirements.
+
+Jira Issues:
+${issueText}
+
+Requirements:
+- Generate 5 to 10 test case titles that cover the requirements described in the issue(s)
+- Include happy paths, edge cases, negative scenarios, and acceptance criteria validation
+- Each title should be concise (under 80 characters) and descriptive
+- Output ONLY a JSON array of strings, no markdown, no explanation
+
+Output:`;
+}
+
+/** Step 1: 제목 생성 프롬프트 (Session 모드) */
 function buildTitlePromptSession(sessionSummary: string): string {
   return `You are a QA engineer analyzing an exploratory test session. Based on the session logs below, generate test case titles that capture the tested behaviors and discovered issues.
 
@@ -154,7 +249,7 @@ Requirements:
 Output:`;
 }
 
-/** Step 2: 상세 테스트 케이스 생성 프롬프트 */
+/** Step 2: 상세 케이스 생성 프롬프트 */
 function buildDetailPrompt(titles: string[]): string {
   const titlesJson = JSON.stringify(titles, null, 2);
   return `You are a QA engineer creating detailed test cases. For each title below, generate a complete test case.
@@ -190,86 +285,117 @@ function parseJsonSafely(text: string): any {
   return JSON.parse(cleaned);
 }
 
+/** 공통 JSON 응답 헬퍼 */
+function jsonResponse(body: object, status = 200): Response {
+  return new Response(
+    JSON.stringify(body),
+    { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+    return jsonResponse({ error: 'Method not allowed' }, 405);
   }
 
   try {
-    // 인증
+    // ── Auth ──────────────────────────────────────────────────
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Missing Authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+      return jsonResponse({ error: 'Missing Authorization header' }, 401);
     }
     const jwt = authHeader.replace('Bearer ', '');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Service role client — RLS bypass 및 JWT 검증에 사용
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    // JWT를 직접 전달해서 검증 (supabase-js@2.39.3에서 global.headers는 GoTrue에 전달되지 않음)
     const { data: { user }, error: authError } = await adminClient.auth.getUser(jwt);
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized', details: authError?.message }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+      return jsonResponse({ error: 'Unauthorized', details: authError?.message }, 401);
     }
 
     const body: GenerateRequest = await req.json();
-    const { project_id, mode, step, input_text, session_id, selected_titles } = body;
+    const { project_id, mode, step, action, input_text, session_id, jira_issue_keys, selected_titles } = body;
 
-    if (!project_id || !mode || !step) {
-      return new Response(
-        JSON.stringify({ error: 'project_id, mode, step are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+    if (!project_id || !mode) {
+      return jsonResponse({ error: 'project_id and mode are required' }, 400);
     }
 
-    // 구독 티어 확인
     const tier = await getEffectiveTier(adminClient, user.id);
 
-    // Session 모드: Professional+ 필요
-    if (mode === 'session' && tier < SESSION_MIN_TIER) {
-      return new Response(
-        JSON.stringify({
-          error: 'Session mode requires Professional plan or higher.',
-          current_tier: tier,
-          required_tier: SESSION_MIN_TIER,
-        }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+    // ── JIRA PREVIEW (action: 'preview') ──────────────────────
+    if (action === 'preview' && mode === 'jira') {
+      if (tier < JIRA_MIN_TIER) {
+        return jsonResponse({ error: 'Jira mode requires Starter plan or higher.', current_tier: tier, required_tier: JIRA_MIN_TIER }, 403);
+      }
+      if (!jira_issue_keys?.length) {
+        return jsonResponse({ error: 'jira_issue_keys is required for preview' }, 400);
+      }
+
+      // Get Jira credentials
+      const { data: jiraCreds } = await adminClient
+        .from('jira_settings')
+        .select('domain, email, api_token')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!jiraCreds?.domain || !jiraCreds?.email || !jiraCreds?.api_token) {
+        return jsonResponse({ error: 'Jira is not connected. Please connect in Settings > Integrations.', type: 'not_connected' }, 422);
+      }
+
+      const issues: JiraIssueData[] = [];
+      const failed: JiraFetchError[] = [];
+
+      for (const key of jira_issue_keys) {
+        try {
+          const issue = await fetchJiraIssue(jiraCreds.domain, jiraCreds.email, jiraCreds.api_token, key);
+          issues.push(issue);
+        } catch (err: any) {
+          failed.push({ key: err.key || key, reason: err.message || 'Unknown error' });
+        }
+      }
+
+      if (issues.length === 0 && failed.length > 0) {
+        const firstError = failed[0];
+        const isAuth = firstError.reason.includes('invalid or expired');
+        return jsonResponse({
+          error: isAuth ? firstError.reason : `No issues could be fetched. ${failed.map(f => `${f.key}: ${f.reason}`).join(', ')}`,
+          type: isAuth ? 'auth_error' : 'not_found',
+          failed,
+        }, isAuth ? 401 : 404);
+      }
+
+      return jsonResponse({ success: true, issues, failed });
     }
 
-    // 월 사용 한도 확인 (Step 1에서만 카운팅)
+    // ── GENERATE (step 1 or 2) ────────────────────────────────
+    if (!step) {
+      return jsonResponse({ error: 'step is required for generate requests' }, 400);
+    }
+
+    // Mode-level tier checks
+    if (mode === 'session' && tier < SESSION_MIN_TIER) {
+      return jsonResponse({ error: 'Session mode requires Professional plan or higher.', current_tier: tier, required_tier: SESSION_MIN_TIER }, 403);
+    }
+    if (mode === 'jira' && tier < JIRA_MIN_TIER) {
+      return jsonResponse({ error: 'Jira mode requires Starter plan or higher.', current_tier: tier, required_tier: JIRA_MIN_TIER }, 403);
+    }
+
+    // Monthly limit check (step 1 only)
     if (step === 1) {
       const limit = PLAN_LIMITS[tier] ?? 5;
       if (limit !== -1) {
         const usage = await getMonthlyUsage(adminClient, user.id);
         if (usage >= limit) {
-          return new Response(
-            JSON.stringify({
-              error: 'Monthly AI generation limit reached.',
-              usage,
-              limit,
-              current_tier: tier,
-            }),
-            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-          );
+          return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
         }
       }
     }
@@ -278,26 +404,58 @@ Deno.serve(async (req) => {
     let prompt = '';
     let responseData: any = {};
 
-    // ── Step 1: 제목 목록 생성 ────────────────────────────────
+    // ── Step 1: 제목 생성 ─────────────────────────────────────
     if (step === 1) {
       if (mode === 'text') {
         if (!input_text?.trim()) {
-          return new Response(
-            JSON.stringify({ error: 'input_text is required for text mode' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-          );
+          return jsonResponse({ error: 'input_text is required for text mode' }, 400);
         }
         prompt = buildTitlePromptText(input_text);
+
+      } else if (mode === 'jira') {
+        if (!jira_issue_keys?.length) {
+          return jsonResponse({ error: 'jira_issue_keys is required for jira mode' }, 400);
+        }
+
+        const { data: jiraCreds } = await adminClient
+          .from('jira_settings')
+          .select('domain, email, api_token')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (!jiraCreds?.domain || !jiraCreds?.email || !jiraCreds?.api_token) {
+          return jsonResponse({ error: 'Jira is not connected. Please connect in Settings > Integrations.', type: 'not_connected' }, 422);
+        }
+
+        const issues: JiraIssueData[] = [];
+        const failed: JiraFetchError[] = [];
+
+        for (const key of jira_issue_keys) {
+          try {
+            const issue = await fetchJiraIssue(jiraCreds.domain, jiraCreds.email, jiraCreds.api_token, key);
+            issues.push(issue);
+          } catch (err: any) {
+            failed.push({ key: err.key || key, reason: err.message || 'Unknown error' });
+          }
+        }
+
+        if (issues.length === 0) {
+          const isAuth = failed[0]?.reason?.includes('invalid or expired');
+          return jsonResponse({
+            error: isAuth ? failed[0].reason : `Could not fetch any Jira issues. Failed: ${failed.map(f => `${f.key} (${f.reason})`).join(', ')}`,
+            type: isAuth ? 'auth_error' : 'not_found',
+            failed,
+          }, isAuth ? 401 : 404);
+        }
+
+        prompt = buildTitlePromptJira(issues);
+
       } else {
         // session mode
         if (!session_id) {
-          return new Response(
-            JSON.stringify({ error: 'session_id is required for session mode' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-          );
+          return jsonResponse({ error: 'session_id is required for session mode' }, 400);
         }
 
-        // 세션 + 로그 조회
         const { data: sessionData } = await adminClient
           .from('sessions')
           .select('name, mission')
@@ -306,10 +464,7 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (!sessionData) {
-          return new Response(
-            JSON.stringify({ error: 'Session not found in this project' }),
-            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-          );
+          return jsonResponse({ error: 'Session not found in this project' }, 404);
         }
 
         const { data: logs } = await adminClient
@@ -334,19 +489,15 @@ Deno.serve(async (req) => {
         titles = parseJsonSafely(content);
         if (!Array.isArray(titles)) throw new Error('not an array');
       } catch {
-        return new Response(
-          JSON.stringify({ error: 'Failed to parse AI response', raw: content }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        );
+        return jsonResponse({ error: 'Failed to parse AI response', raw: content }, 500);
       }
 
-      // 로그 저장
       await adminClient.from('ai_generation_logs').insert({
         user_id: user.id,
         project_id,
         mode,
         step: 1,
-        input_text: mode === 'text' ? input_text : null,
+        input_text: mode === 'text' ? input_text : mode === 'jira' ? jira_issue_keys?.join(',') : null,
         session_id: mode === 'session' ? session_id : null,
         titles_generated: titles.length,
         model_used: 'claude-sonnet-4-20250514',
@@ -359,10 +510,7 @@ Deno.serve(async (req) => {
     // ── Step 2: 상세 케이스 생성 ──────────────────────────────
     } else {
       if (!selected_titles?.length) {
-        return new Response(
-          JSON.stringify({ error: 'selected_titles is required for step 2' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        );
+        return jsonResponse({ error: 'selected_titles is required for step 2' }, 400);
       }
 
       prompt = buildDetailPrompt(selected_titles);
@@ -374,13 +522,9 @@ Deno.serve(async (req) => {
         cases = parseJsonSafely(content);
         if (!Array.isArray(cases)) throw new Error('not an array');
       } catch {
-        return new Response(
-          JSON.stringify({ error: 'Failed to parse AI response', raw: content }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        );
+        return jsonResponse({ error: 'Failed to parse AI response', raw: content }, 500);
       }
 
-      // 로그 저장
       await adminClient.from('ai_generation_logs').insert({
         user_id: user.id,
         project_id,
@@ -395,30 +539,16 @@ Deno.serve(async (req) => {
       responseData = { cases, tokens_used: tokens, latency_ms: latency };
     }
 
-    return new Response(
-      JSON.stringify({ success: true, ...responseData }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+    return jsonResponse({ success: true, ...responseData });
 
   } catch (error: any) {
     console.error('generate-testcases error:', error);
 
-    // Anthropic API 에러는 구체적인 메시지와 상태코드를 그대로 반환
     if (error?.type && error?.message && error?.status) {
       const httpStatus = error.status === 400 ? 402 : error.status >= 500 ? 502 : error.status;
-      return new Response(
-        JSON.stringify({
-          error: 'AI API error',
-          type: error.type,
-          message: error.message,
-        }),
-        { status: httpStatus, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+      return jsonResponse({ error: 'AI API error', type: error.type, message: error.message }, httpStatus);
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error?.message || String(error) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+    return jsonResponse({ error: 'Internal server error', details: error?.message || String(error) }, 500);
   }
 });
