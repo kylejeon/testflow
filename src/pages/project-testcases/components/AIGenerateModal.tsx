@@ -20,6 +20,7 @@ interface JiraIssue {
   summary: string;
   description?: string;
   priority?: string;
+  acceptanceCriteria?: string;
 }
 
 interface GeneratedCase {
@@ -88,6 +89,7 @@ export default function AIGenerateModal({
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [sessionFilter, setSessionFilter] = useState<'all' | 'completed' | 'active'>('all');
+  const [sessionSearch, setSessionSearch] = useState('');
 
   // Shared generation state
   const [titles, setTitles] = useState<string[]>([]);
@@ -205,7 +207,16 @@ export default function AIGenerateModal({
       });
       setJiraFetchedIssues(data.issues || []);
     } catch (err: any) {
-      setJiraFetchError(err.message || 'Failed to fetch Jira issues.');
+      const msg = err.message || '';
+      if (msg.includes('not_found') || msg.includes('not found')) {
+        setJiraFetchError('One or more issue keys were not found. Please double-check the keys and try again.');
+      } else if (msg.includes('auth_error') || msg.includes('credentials') || msg.includes('401') || msg.includes('403')) {
+        setJiraFetchError('Jira authentication failed. Please reconnect your Jira account in Settings → Integrations.');
+      } else if (msg.includes('not connected') || msg.includes('jira_settings')) {
+        setJiraFetchError('Jira is not connected. Go to Settings → Integrations to connect your account.');
+      } else {
+        setJiraFetchError(msg || 'Failed to fetch Jira issues. Please try again.');
+      }
     } finally {
       setJiraFetching(false);
     }
@@ -297,13 +308,27 @@ export default function AIGenerateModal({
 
   const limitReached = planInfo.monthlyLimit !== -1 && usageLoaded && monthlyUsage >= planInfo.monthlyLimit;
 
+  // M1: StepIndicator data
+  const STEPS: { key: Step; label: string }[] = [
+    { key: 'mode', label: 'Mode' },
+    { key: 'input', label: 'Input' },
+    { key: 'titles', label: 'Titles' },
+    { key: 'details', label: 'Details' },
+    { key: 'saving', label: 'Save' },
+  ];
+  const currentStepIndex = STEPS.findIndex(s => s.key === currentStep);
+
   const jiraKeys = parseJiraKeys(jiraIssueInput);
   const canGenerateJira = jiraKeys.length > 0;
 
   // Filtered sessions
   const filteredSessions = sessions.filter(s => {
-    if (sessionFilter === 'completed') return s.status === 'completed';
-    if (sessionFilter === 'active') return s.status !== 'completed';
+    if (sessionFilter === 'completed' && s.status !== 'completed') return false;
+    if (sessionFilter === 'active' && s.status === 'completed') return false;
+    if (sessionSearch.trim()) {
+      const q = sessionSearch.toLowerCase();
+      return s.name.toLowerCase().includes(q) || (s.mission?.toLowerCase().includes(q) ?? false);
+    }
     return true;
   });
 
@@ -338,6 +363,56 @@ export default function AIGenerateModal({
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer">
             <i className="ri-close-line text-gray-500 text-lg"></i>
           </button>
+        </div>
+
+        {/* M1: Step Indicator */}
+        <div className="px-6 py-3 border-b border-gray-100">
+          <div className="flex items-center">
+            {STEPS.map((step, idx) => {
+              const isDone = idx < currentStepIndex;
+              const isActive = idx === currentStepIndex;
+              return (
+                <div key={step.key} className="flex items-center">
+                  {/* dot */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                        isDone
+                          ? 'bg-green-500'
+                          : isActive
+                          ? 'bg-indigo-600'
+                          : 'bg-gray-200'
+                      }`}
+                    >
+                      {isDone ? (
+                        <i className="ri-check-line text-white text-xs leading-none"></i>
+                      ) : (
+                        <span className={`text-xs font-semibold leading-none ${isActive ? 'text-white' : 'text-gray-400'}`}>
+                          {idx + 1}
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`text-[11px] leading-none font-medium ${
+                        isDone ? 'text-green-600' : isActive ? 'text-indigo-600' : 'text-gray-400'
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                  </div>
+                  {/* connector */}
+                  {idx < STEPS.length - 1 && (
+                    <div
+                      className={`h-0.5 flex-1 mx-1 mb-4 rounded-full transition-colors ${
+                        idx < currentStepIndex ? 'bg-green-400' : 'bg-gray-200'
+                      }`}
+                      style={{ minWidth: '16px' }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Body */}
@@ -538,8 +613,25 @@ export default function AIGenerateModal({
                     </div>
                   )}
 
+                  {/* M5: Skeleton while fetching */}
+                  {jiraFetching && (
+                    <div className="space-y-2">
+                      {[...Array(Math.max(1, parseJiraKeys(jiraIssueInput).length))].map((_, i) => (
+                        <div key={i} className="border border-gray-200 rounded-lg p-4 animate-pulse">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="h-5 w-16 bg-gray-200 rounded"></div>
+                            <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                          </div>
+                          <div className="h-4 w-3/4 bg-gray-200 rounded mb-2"></div>
+                          <div className="h-3 w-full bg-gray-100 rounded mb-1"></div>
+                          <div className="h-3 w-4/5 bg-gray-100 rounded"></div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Fetched issue preview cards */}
-                  {jiraFetchedIssues.length > 0 && (
+                  {!jiraFetching && jiraFetchedIssues.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                         {jiraFetchedIssues.length} issue{jiraFetchedIssues.length > 1 ? 's' : ''} fetched — review before generating
@@ -558,8 +650,17 @@ export default function AIGenerateModal({
                           {issue.description && (
                             <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{issue.description}</p>
                           )}
+                          {issue.acceptanceCriteria && (
+                            <div className="mt-2 pt-2 border-t border-blue-200">
+                              <p className="text-xs font-semibold text-blue-700 mb-0.5 flex items-center gap-1">
+                                <i className="ri-check-double-line"></i>
+                                Acceptance Criteria
+                              </p>
+                              <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{issue.acceptanceCriteria}</p>
+                            </div>
+                          )}
                           {!issue.description && (
-                            <p className="text-xs text-amber-600 flex items-center gap-1">
+                            <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
                               <i className="ri-error-warning-line"></i>
                               No description. Test cases will be based on the title only.
                             </p>
@@ -570,7 +671,7 @@ export default function AIGenerateModal({
                   )}
 
                   {/* Hint when no fetch done yet */}
-                  {jiraFetchedIssues.length === 0 && !jiraFetchError && jiraConnected && jiraKeys.length > 0 && (
+                  {!jiraFetching && jiraFetchedIssues.length === 0 && !jiraFetchError && jiraConnected && jiraKeys.length > 0 && (
                     <p className="text-xs text-gray-400">Click "Fetch Issues" to preview the Jira content before generating test cases.</p>
                   )}
                 </div>
@@ -601,6 +702,18 @@ export default function AIGenerateModal({
                     </div>
                   </div>
 
+                  {/* M3: Session search */}
+                  <div className="relative">
+                    <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+                    <input
+                      type="text"
+                      value={sessionSearch}
+                      onChange={e => setSessionSearch(e.target.value)}
+                      placeholder="Search sessions..."
+                      className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-gray-50"
+                    />
+                  </div>
+
                   {loadingSessions ? (
                     <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
                       <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
@@ -610,6 +723,8 @@ export default function AIGenerateModal({
                     <div className="py-6 text-center text-sm text-gray-400 border border-gray-200 rounded-lg">
                       {sessions.length === 0
                         ? 'No sessions found for this project.'
+                        : sessionSearch.trim()
+                        ? 'No sessions match your search.'
                         : 'No sessions match the current filter.'}
                     </div>
                   ) : (
