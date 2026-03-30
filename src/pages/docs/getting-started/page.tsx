@@ -46,25 +46,25 @@ const nextSteps = [
     icon: 'ri-team-line',
     title: 'Invite Team Members',
     desc: 'Add your QA team and assign roles.',
-    to: '/docs/api/members',
+    to: '/docs/team-permissions',
   },
   {
     icon: 'ri-flag-line',
     title: 'Set Up Milestones',
     desc: 'Track progress toward releases.',
-    to: '/docs/api/milestones',
+    to: '/docs/milestones',
+  },
+  {
+    icon: 'ri-search-eye-line',
+    title: 'Discovery Logs',
+    desc: 'Record exploratory testing sessions and convert to test cases.',
+    to: '/docs/discovery-logs',
   },
   {
     icon: 'ri-terminal-box-line',
     title: 'CI/CD Integration',
     desc: 'Automate test reporting in your pipeline.',
     to: '/docs/cicd',
-  },
-  {
-    icon: 'ri-code-s-slash-line',
-    title: 'API Reference',
-    desc: 'Full REST API documentation.',
-    to: '/docs/api',
   },
 ];
 
@@ -127,6 +127,14 @@ export default function GettingStartedPage() {
 
           <StepList steps={signUpSteps} />
         </section>
+
+        {/* ---- Sample Project Tip ---- */}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 flex items-start gap-3">
+          <i className="ri-lightbulb-flash-line text-amber-500 text-xl mt-0.5 flex-shrink-0"></i>
+          <p className="text-sm text-amber-800 leading-relaxed">
+            <span className="font-semibold">Tip: Want to explore first?</span> Click <strong>"Try Sample Project"</strong> on the Dashboard to get pre-loaded test data instantly — no setup required.
+          </p>
+        </div>
 
         {/* ---- 2. Create Your First Project ---- */}
         <section className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8">

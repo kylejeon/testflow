@@ -23,6 +23,27 @@ interface NavSection {
 
 const navSections: NavSection[] = [
   {
+    label: 'Using Testably',
+    icon: 'ri-layout-grid-line',
+    items: [
+      { label: 'Test Cases', to: '/docs/test-cases' },
+      { label: 'Test Runs', to: '/docs/test-runs' },
+      { label: 'Milestones', to: '/docs/milestones' },
+      { label: 'Discovery Logs', to: '/docs/discovery-logs' },
+      { label: 'Team & Permissions', to: '/docs/team-permissions' },
+    ],
+  },
+  {
+    label: 'Integrations & Guides',
+    icon: 'ri-plug-line',
+    items: [
+      { label: 'CI/CD Integration', to: '/docs/cicd' },
+      { label: 'Jira Integration', to: '/docs/integrations' },
+      { label: 'Webhooks', to: '/docs/webhooks' },
+      { label: 'Import / Export', to: '/docs/import-export' },
+    ],
+  },
+  {
     label: 'API Reference',
     icon: 'ri-code-s-slash-line',
     items: [
@@ -38,13 +59,12 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    label: 'Guides',
-    icon: 'ri-book-open-line',
+    label: 'Support',
+    icon: 'ri-customer-service-2-line',
     items: [
-      { label: 'CI/CD Integration', to: '/docs/cicd' },
-      { label: 'Import / Export', to: '/docs/import-export' },
-      { label: 'Webhooks', to: '/docs/webhooks' },
-      { label: 'Jira Integration', to: '/docs/integrations' },
+      { label: 'Account & Billing', to: '/docs/account-billing' },
+      { label: 'Keyboard Shortcuts', to: '/docs/keyboard-shortcuts' },
+      { label: 'FAQ & Troubleshooting', to: '/docs/faq' },
     ],
   },
 ];
