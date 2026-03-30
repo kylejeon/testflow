@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Features — Testably</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #0F172A; color: #CBD5E1; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  .wrap { max-width: 76rem; margin: 0 auto; padding: 0 2rem; }
+  .gt { background: linear-gradient(135deg, #818CF8, #C084FC); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .mesh { position: relative; overflow: hidden; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(100px); pointer-events: none; opacity: 0.55; }
+  @keyframes blobFloat { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(15px,-20px) scale(1.03)} 66%{transform:translate(-10px,15px) scale(0.97)} }
+
+  /* Section headers */
+  .sh-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: #818CF8; margin-bottom: 0.75rem; }
+  .sh-label i { font-size: 0.875rem; }
+  .sh-title { font-size: 2.5rem; font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -0.025em; }
+  .sh-desc { font-size: 1.0625rem; color: #94A3B8; margin-top: 0.75rem; max-width: 38rem; line-height: 1.6; }
+  .sh-center { text-align: center; }
+  .sh-center .sh-desc { margin-left: auto; margin-right: auto; }
+  .sh-center .sh-label { justify-content: center; }
+
+  /* Buttons */
+  .btn-p { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem; background: #6366F1; color: #fff; font-size: 0.9375rem; font-weight: 600; border-radius: 9999px; transition: all 0.25s; box-shadow: 0 4px 20px rgba(99,102,241,0.3); border: none; cursor: pointer; }
+  .btn-p:hover { background: #4F46E5; box-shadow: 0 6px 30px rgba(99,102,241,0.45); transform: translateY(-2px); }
+  .btn-s { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem; border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 0.9375rem; font-weight: 500; border-radius: 9999px; transition: all 0.25s; background: transparent; cursor: pointer; }
+  .btn-s:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.25); }
+
+  /* Nav */
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 0.875rem 2rem; display: flex; align-items: center; justify-content: space-between; transition: all 0.35s; background: rgba(15,23,42,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .nb { display: flex; align-items: center; gap: 0.5rem; }
+  .nl { width: 34px; height: 34px; background: #6366F1; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .nl span { font-family: 'Pacifico', cursive; color: #fff; font-size: 1.125rem; line-height: 1; }
+  .nn { font-weight: 700; color: #fff; font-size: 1.0625rem; }
+  .nk { display: flex; align-items: center; gap: 1.75rem; }
+  .nk a { color: rgba(255,255,255,0.55); font-size: 0.8125rem; font-weight: 500; transition: color 0.2s; }
+  .nk a:hover { color: #fff; }
+  .nk .nc { padding: 0.5rem 1.25rem; background: #6366F1; color: #fff !important; border-radius: 9999px; font-weight: 600; transition: all 0.25s; }
+  .nk .nc:hover { background: #4F46E5; box-shadow: 0 0 24px rgba(99,102,241,0.35); }
+
+  /* Page hero */
+  .page-hero { padding: 8rem 2rem 4rem; text-align: center; position: relative; overflow: hidden; }
+  .page-hero .blob { width: 500px; height: 500px; }
+  .page-hero .b1 { background: rgba(99,102,241,0.15); top: -20%; left: -10%; animation: blobFloat 8s ease-in-out infinite; }
+  .page-hero .b2 { background: rgba(139,92,246,0.1); bottom: -15%; right: -8%; animation: blobFloat 10s ease-in-out infinite 3s; }
+  .page-hero h1 { font-size: 3rem; font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -0.025em; position: relative; z-index: 2; }
+  .page-hero .hero-desc { font-size: 1.125rem; color: #94A3B8; margin-top: 1rem; max-width: 36rem; margin-left: auto; margin-right: auto; line-height: 1.7; position: relative; z-index: 2; }
+  .page-hero .sh-label { justify-content: center; position: relative; z-index: 2; }
+  .page-hero .hero-btns { display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; position: relative; z-index: 2; }
+
+  /* Cards */
+  .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 1.75rem; transition: all 0.35s; position: relative; overflow: hidden; }
+  .card:hover { background: rgba(255,255,255,0.05); border-color: rgba(99,102,241,0.2); transform: translateY(-4px); }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #6366F1, transparent); opacity: 0; transition: opacity 0.35s; }
+  .card:hover::before { opacity: 1; }
+  .card h3 { font-size: 1.0625rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+  .card p { font-size: 0.8125rem; color: #94A3B8; line-height: 1.6; }
+  .card-icon { width: 2.75rem; height: 2.75rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 1rem; }
+
+  /* Tag pill */
+  .tag { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.2rem 0.5rem; border-radius: 9999px; }
+
+  /* Footer */
+  footer { border-top: 1px solid rgba(255,255,255,0.04); padding: 3.5rem 2rem 2rem; }
+  .fgr { max-width: 76rem; margin: 0 auto; display: grid; grid-template-columns: 2fr repeat(4,1fr); gap: 2.5rem; }
+  .fbr p { font-size: 0.8125rem; color: #64748B; margin-top: 0.75rem; line-height: 1.6; max-width: 18rem; }
+  .fso { display: flex; gap: 0.75rem; margin-top: 1rem; }
+  .fso a { width: 2rem; height: 2rem; border-radius: 0.5rem; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: #64748B; font-size: 0.9375rem; transition: all 0.2s; }
+  .fso a:hover { background: rgba(99,102,241,0.15); color: #818CF8; }
+  .fcol h4 { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: #94A3B8; margin-bottom: 1rem; }
+  .fcol a { display: block; font-size: 0.8125rem; color: #64748B; margin-bottom: 0.625rem; transition: color 0.2s; }
+  .fcol a:hover { color: #CBD5E1; }
+  .fbot { max-width: 76rem; margin: 2rem auto 0; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; align-items: center; }
+  .fbot span { font-size: 0.75rem; color: #475569; }
+
+  /* CTA banner */
+  .cta-banner { padding: 5rem 2rem; }
+  .cta-inner { max-width: 76rem; margin: 0 auto; background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); border: 1px solid rgba(99,102,241,0.2); border-radius: 1.5rem; padding: 4rem 3rem; text-align: center; position: relative; overflow: hidden; }
+  .cta-inner::before { content: ''; position: absolute; width: 500px; height: 500px; background: rgba(99,102,241,0.12); border-radius: 50%; filter: blur(80px); top: -40%; right: -10%; pointer-events: none; }
+  .cta-inner h2 { font-size: 2.5rem; font-weight: 800; color: #fff; line-height: 1.15; position: relative; z-index: 2; }
+  .cta-inner p { font-size: 1.0625rem; color: #94A3B8; margin-top: 1rem; max-width: 32rem; margin-left: auto; margin-right: auto; line-height: 1.6; position: relative; z-index: 2; }
+  .cta-inner .btn-p { margin-top: 2rem; position: relative; z-index: 2; padding: 1rem 2.25rem; font-size: 1rem; }
+  .cta-btns { display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; position: relative; z-index: 2; }
+
+  /* Content section */
+  .content-section { padding: 5rem 2rem; }
+  .content-section + .content-section { padding-top: 0; }
+
+  /* Responsive */
+  @media (max-width:1024px) {
+    .fgr { grid-template-columns: repeat(2,1fr); }
+    .page-hero h1 { font-size: 2.5rem; }
+  }
+  @media (max-width:640px) {
+    .fgr { grid-template-columns: 1fr; }
+    .nk a:not(.nc) { display: none; }
+    .fbot { flex-direction: column; gap: 0.5rem; text-align: center; }
+    .page-hero h1 { font-size: 2rem; }
+    .sh-title { font-size: 2rem; }
+    .cta-inner h2 { font-size: 2rem; }
+    .hero-btns { flex-direction: column; align-items: center; }
+  }
+
+  /* Differentiator sections — alternating layout */
+  .diff-section { padding: 5rem 0; }
+  .diff-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+  .diff-layout.reverse { direction: rtl; }
+  .diff-layout.reverse > * { direction: ltr; }
+  .diff-text .diff-badge { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem; }
+  .diff-text h3 { font-size: 2rem; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 1rem; }
+  .diff-text p { font-size: 0.9375rem; color: #94A3B8; line-height: 1.7; margin-bottom: 1.25rem; }
+  .diff-text ul { list-style: none; display: flex; flex-direction: column; gap: 0.625rem; }
+  .diff-text ul li { font-size: 0.875rem; color: #CBD5E1; display: flex; align-items: flex-start; gap: 0.625rem; }
+  .diff-text ul li i { color: #6366F1; font-size: 1rem; margin-top: 0.125rem; flex-shrink: 0; }
+  .diff-visual { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+  .diff-visual i { font-size: 4rem; color: rgba(99,102,241,0.3); }
+  .diff-visual .placeholder-text { position: absolute; bottom: 1rem; font-size: 0.6875rem; color: #475569; }
+  .diff-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem; }
+  .diff-pills span { font-size: 0.6875rem; font-weight: 500; color: #818CF8; background: rgba(99,102,241,0.08); padding: 0.25rem 0.75rem; border-radius: 9999px; border: 1px solid rgba(99,102,241,0.15); }
+  .credit-note { font-size: 0.75rem; color: #64748B; margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 0.5rem; }
+  .credit-note strong { color: #94A3B8; }
+
+  /* Feature cards grid */
+  .feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
+  .feat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 1.75rem; transition: all 0.35s; position: relative; overflow: hidden; }
+  .feat-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(99,102,241,0.2); transform: translateY(-4px); }
+  .feat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #6366F1, transparent); opacity: 0; transition: opacity 0.35s; }
+  .feat-card:hover::before { opacity: 1; }
+  .feat-card h3 { font-size: 1.0625rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+  .feat-card p { font-size: 0.8125rem; color: #94A3B8; line-height: 1.6; }
+  .feat-icon { width: 2.75rem; height: 2.75rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 1rem; }
+  .feat-tag { display: inline-block; font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.2rem 0.5rem; border-radius: 9999px; margin-top: 0.75rem; }
+
+  /* How it works */
+  .hiw-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.5rem; margin-top: 3rem; }
+  .hiw-step { text-align: center; position: relative; }
+  .hiw-num { width: 3rem; height: 3rem; border-radius: 50%; background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.25); color: #818CF8; font-size: 1.125rem; font-weight: 800; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+  .hiw-step h4 { color: #fff; font-size: 0.9375rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .hiw-step p { font-size: 0.8125rem; color: #94A3B8; line-height: 1.6; }
+
+  /* Integration grid */
+  .integ-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.25rem; margin-top: 3rem; }
+  .integ-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 2rem; }
+  .integ-item h3 { color: #fff; font-size: 1.125rem; font-weight: 700; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem; }
+  .integ-item h3 i { font-size: 1.5rem; color: #818CF8; }
+  .integ-item p { font-size: 0.875rem; color: #94A3B8; line-height: 1.7; }
+  .integ-item ul { list-style: none; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .integ-item ul li { font-size: 0.8125rem; color: #CBD5E1; display: flex; align-items: flex-start; gap: 0.5rem; }
+  .integ-item ul li i { color: #6366F1; font-size: 0.875rem; margin-top: 0.125rem; flex-shrink: 0; }
+
+  /* Divider */
+  .section-divider { display: flex; align-items: center; gap: 1rem; margin: 3rem 0; }
+  .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+  .section-divider span { font-size: 0.75rem; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+
+  @media (max-width:1024px) {
+    .diff-layout { grid-template-columns: 1fr; gap: 2rem; }
+    .diff-layout.reverse { direction: ltr; }
+    .feat-grid { grid-template-columns: repeat(2,1fr); }
+    .hiw-grid { grid-template-columns: repeat(2,1fr); }
+    .integ-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width:640px) {
+    .feat-grid { grid-template-columns: 1fr; }
+    .hiw-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="mainNav">
+  <a href="/" class="nb">
+    <div class="nl"><span>T</span></div>
+    <span class="nn">Testably</span>
+  </a>
+  <div class="nk">
+    <a href="/page-features-final.html">Features</a>
+    <a href="/#how">How It Works</a>
+    <a href="/page-pricing-final.html">Pricing</a>
+    <a href="/#why">Why Testably</a>
+    <a href="/#faq">FAQ</a>
+    <a href="#">Log in</a>
+    <a href="#" class="nc">Get Started</a>
+  </div>
+</nav>
+
+<section class="page-hero mesh">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="sh-label"><i class="ri-layout-grid-line"></i> All-in-one test management platform</div>
+  <h1>Everything your QA team needs<br>&mdash; <span class='gt'>in one place</span></h1>
+  <p class="hero-desc">From writing test cases to analyzing results, Testably covers the full testing lifecycle with AI-powered tools.</p>
+  <div class="hero-btns">
+    <a href="#" class="btn-p">Start for Free <i class="ri-arrow-right-line"></i></a>
+    <a href="#" class="btn-s">View Demo <i class="ri-play-circle-line"></i></a>
+  </div>
+</section>
+
+<!-- ═══════════ DIFFERENTIATOR A1: AI Test Generation ═══════════ -->
+<section class="content-section mesh">
+  <div class="wrap">
+    <div class="diff-section">
+      <div class="diff-layout">
+        <div class="diff-text">
+          <div class="diff-badge" style="background:rgba(99,102,241,0.1);color:#818CF8"><i class="ri-sparkling-line" style="font-size:0.625rem"></i> AI-Native</div>
+          <h3>Describe it. Testably builds it.</h3>
+          <p>Generate structured test cases from plain text, Jira issues, or Discovery Logs. Testably's AI creates complete test steps and expected results, then suggests edge cases you might have missed.</p>
+          <ul>
+            <li><i class="ri-check-line"></i> Plain text &rarr; structured test cases with steps &amp; expected results</li>
+            <li><i class="ri-check-line"></i> Jira issue &rarr; test cases (analyzes issue content for test scenarios)</li>
+            <li><i class="ri-check-line"></i> Discovery Logs &rarr; test cases with one-click conversion</li>
+            <li><i class="ri-check-line"></i> Automatic edge case suggestions</li>
+            <li><i class="ri-check-line"></i> Edit/approve workflow for AI-generated results</li>
+          </ul>
+          <div class="diff-pills"><span>Plain text &rarr; TC</span><span>Jira &rarr; TC</span><span>Discovery &rarr; TC</span><span>Edge cases</span></div>
+          <div class="credit-note"><strong>AI credits by plan:</strong> Free 5/mo &middot; Starter 30/mo &middot; Pro 150/mo &middot; Enterprise unlimited</div>
+        </div>
+        <div class="diff-visual">
+          <i class="ri-sparkling-2-line"></i>
+          <span class="placeholder-text">AI Generation Modal Preview</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ DIFFERENTIATOR A2: Focus Mode ═══════════ -->
+    <div class="diff-section">
+      <div class="diff-layout reverse">
+        <div class="diff-text">
+          <div class="diff-badge" style="background:rgba(16,185,129,0.1);color:#34D399"><i class="ri-focus-3-line" style="font-size:0.625rem"></i> Unique</div>
+          <h3>Stay in the zone. Execute without distraction.</h3>
+          <p>Focus Mode transforms test execution into a streamlined, distraction-free experience. See only the current step, mark results with a single keystroke, and let Testably handle the rest.</p>
+          <ul>
+            <li><i class="ri-check-line"></i> Fullscreen single-step view &mdash; current step only</li>
+            <li><i class="ri-check-line"></i> Keyboard shortcuts: P (Pass) / F (Fail) / B (Block) / S (Skip)</li>
+            <li><i class="ri-check-line"></i> Auto-advance to next step (300ms delay)</li>
+            <li><i class="ri-check-line"></i> Progress bar for overall run status</li>
+            <li><i class="ri-check-line"></i> Inline notes and screenshot attachments</li>
+          </ul>
+          <div class="diff-pills"><span>P / F / B / S keys</span><span>Auto-advance</span><span>Progress bar</span><span>Inline notes</span></div>
+        </div>
+        <div class="diff-visual">
+          <i class="ri-focus-3-line"></i>
+          <span class="placeholder-text">Focus Mode Full Screen Preview</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ DIFFERENTIATOR A3: Cmd+K ═══════════ -->
+    <div class="diff-section">
+      <div class="diff-layout">
+        <div class="diff-text">
+          <div class="diff-badge" style="background:rgba(245,158,11,0.1);color:#FBBF24"><i class="ri-keyboard-line" style="font-size:0.625rem"></i> Power User</div>
+          <h3>Navigate at the speed of thought.</h3>
+          <p>Cmd+K opens a global command palette that lets you search, navigate, and execute any action from anywhere. Combined with Vim-inspired G-chord shortcuts, you can fly through your QA workflow without ever touching your mouse.</p>
+          <ul>
+            <li><i class="ri-check-line"></i> Cmd+K for global search + instant action execution</li>
+            <li><i class="ri-check-line"></i> G-chord navigation: GP=Projects, GT=Test Cases, etc.</li>
+            <li><i class="ri-check-line"></i> Every action available via keyboard &mdash; zero mouse required</li>
+            <li><i class="ri-check-line"></i> Press ? for the complete shortcuts reference</li>
+          </ul>
+          <div class="diff-pills"><span>Cmd+K palette</span><span>G-chord nav</span><span>Cmd+Shift+F</span><span>? help</span></div>
+        </div>
+        <div class="diff-visual">
+          <i class="ri-command-line"></i>
+          <span class="placeholder-text">Command Palette Preview</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"><span>Plus everything else you need</span></div>
+
+    <!-- ═══════════ CORE FEATURES GRID (9) ═══════════ -->
+    <div class="sh-center" style="margin-bottom:3rem">
+      <div class="sh-label"><i class="ri-apps-2-line"></i> Core Features</div>
+      <h2 class="sh-title">Built for the full <span class="gt">testing lifecycle</span></h2>
+      <p class="sh-desc">Nine powerful features that cover everything from test planning to execution and reporting.</p>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(99,102,241,0.12);color:#818CF8"><i class="ri-folder-3-line"></i></div>
+        <h3>Test Case Management</h3>
+        <p>Organize thousands of test cases with folder hierarchy, tags, priority levels, and filters. Bulk edit, move, and clone cases effortlessly.</p>
+        <div class="feat-tag" style="background:rgba(99,102,241,0.1);color:#818CF8">Core</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(16,185,129,0.12);color:#34D399"><i class="ri-play-circle-line"></i></div>
+        <h3>Test Run Execution</h3>
+        <p>Create runs, assign cases to team members, and track results in real-time. Five statuses: Passed, Failed, Blocked, Retest, and Untested.</p>
+        <div class="feat-tag" style="background:rgba(16,185,129,0.1);color:#34D399">Core</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(245,158,11,0.12);color:#FBBF24"><i class="ri-flag-line"></i></div>
+        <h3>Milestone Tracking</h3>
+        <p>Set release goals, visualize progress, and monitor timelines. Link test runs to milestones to track quality against your release schedule.</p>
+        <div class="feat-tag" style="background:rgba(245,158,11,0.1);color:#FBBF24">Planning</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(139,92,246,0.12);color:#C084FC"><i class="ri-search-eye-line"></i></div>
+        <h3>Discovery Logs</h3>
+        <p>Capture exploratory testing sessions with time-boxed logs, rich text notes, inline screenshots, and automated reports. Convert findings to test cases with one click.</p>
+        <div class="feat-tag" style="background:rgba(139,92,246,0.1);color:#C084FC">Testing</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(236,72,153,0.12);color:#F472B6"><i class="ri-team-line"></i></div>
+        <h3>Team Collaboration</h3>
+        <p>Invite members with role-based permissions (Admin, Member, Viewer). Assign specific test cases, track activity logs, and keep everyone aligned.</p>
+        <div class="feat-tag" style="background:rgba(236,72,153,0.1);color:#F472B6">Team</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(59,130,246,0.12);color:#60A5FA"><i class="ri-link"></i></div>
+        <h3>Jira Integration</h3>
+        <p>Automatically create Jira issues on test failure. Bidirectional status sync, custom field mapping, and seamless dev-QA collaboration.</p>
+        <div class="feat-tag" style="background:rgba(59,130,246,0.1);color:#60A5FA">Integration</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(6,182,212,0.12);color:#22D3EE"><i class="ri-git-merge-line"></i></div>
+        <h3>CI/CD Integration</h3>
+        <p>Upload automated test results via REST API with project-specific tokens. Connect GitHub Actions, Jenkins, GitLab CI, and any CI/CD pipeline.</p>
+        <div class="feat-tag" style="background:rgba(6,182,212,0.1);color:#22D3EE">Automation</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(251,146,60,0.12);color:#FB923C"><i class="ri-notification-3-line"></i></div>
+        <h3>Smart Notifications</h3>
+        <p>Get notified on team invitations, run completions, and milestone updates. Customize notification preferences for each channel.</p>
+        <div class="feat-tag" style="background:rgba(251,146,60,0.1);color:#FB923C">Productivity</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(148,163,184,0.12);color:#94A3B8"><i class="ri-file-text-line"></i></div>
+        <h3>Project Documentation</h3>
+        <p>Centralize test plans, release notes, and QA documents. Upload files, manage versions, and keep everything in one workspace alongside your test data.</p>
+        <div class="feat-tag" style="background:rgba(148,163,184,0.1);color:#94A3B8">Documentation</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ HOW IT WORKS ═══════════ -->
+<section class="content-section mesh">
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label"><i class="ri-route-line"></i> How It Works</div>
+      <h2 class="sh-title">Four steps to <span class="gt">better QA</span></h2>
+      <p class="sh-desc">Get your entire QA workflow running in under 5 minutes.</p>
+    </div>
+    <div class="hiw-grid">
+      <div class="hiw-step">
+        <div class="hiw-num">1</div>
+        <h4>Create a Project</h4>
+        <p>Set up your first project in seconds. Invite your team and configure roles.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">2</div>
+        <h4>Write Test Cases</h4>
+        <p>Write manually or let AI generate them from plain text, Jira issues, or Discovery Logs.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">3</div>
+        <h4>Execute Test Runs</h4>
+        <p>Create runs, assign cases, and execute in Focus Mode with keyboard shortcuts.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">4</div>
+        <h4>Analyze Results</h4>
+        <p>Track progress with milestones, review reports, and ship with confidence.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ INTEGRATION DETAILS ═══════════ -->
+<section class="content-section mesh">
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label"><i class="ri-plug-line"></i> Integrations</div>
+      <h2 class="sh-title">Connect your <span class="gt">existing tools</span></h2>
+      <p class="sh-desc">Testably fits seamlessly into your development workflow with deep integrations.</p>
+    </div>
+    <div class="integ-grid">
+      <div class="integ-item">
+        <h3><i class="ri-bug-line"></i> Jira Integration</h3>
+        <p>Bidirectional sync between Testably and Jira keeps your dev and QA teams on the same page. When a test fails, a Jira issue is created automatically with full context.</p>
+        <ul>
+          <li><i class="ri-check-line"></i> Auto-create Jira issues on test failure</li>
+          <li><i class="ri-check-line"></i> Bidirectional status synchronization</li>
+          <li><i class="ri-check-line"></i> Custom field mapping</li>
+          <li><i class="ri-check-line"></i> AI: Generate test cases from Jira issues</li>
+        </ul>
+      </div>
+      <div class="integ-item">
+        <h3><i class="ri-git-branch-line"></i> CI/CD Pipeline</h3>
+        <p>Push automated test results from any CI/CD tool via Testably's REST API. Generate project-specific API tokens for secure, scoped access.</p>
+        <ul>
+          <li><i class="ri-check-line"></i> GitHub Actions, Jenkins, GitLab CI</li>
+          <li><i class="ri-check-line"></i> REST API with project-scoped tokens</li>
+          <li><i class="ri-check-line"></i> Bulk result upload for automated suites</li>
+          <li><i class="ri-check-line"></i> Webhook event subscriptions</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CTA ═══════════ -->
+<section class="cta-banner">
+  <div class="cta-inner">
+    <h2>Ready to level up your<br><span class="gt">QA workflow</span>?</h2>
+    <p>Start for free &mdash; no credit card needed. Get your entire QA workflow running in minutes.</p>
+    <a href="#" class="btn-p">Start for Free <i class="ri-arrow-right-line"></i></a>
+  </div>
+</section>
+
+<footer>
+  <div class="fgr">
+    <div class="fbr">
+      <a href="/" class="nb"><div class="nl"><span>T</span></div><span class="nn">Testably</span></a>
+      <p>All-in-one test management platform. Build better software, ship with confidence.</p>
+      <div class="fso">
+        <a href="#"><i class="ri-twitter-x-line"></i></a>
+        <a href="#"><i class="ri-github-line"></i></a>
+        <a href="#"><i class="ri-linkedin-line"></i></a>
+      </div>
+    </div>
+    <div class="fcol">
+      <h4>Product</h4>
+      <a href="/page-features-final.html">Features</a>
+      <a href="/page-pricing-final.html">Pricing</a>
+      <a href="/page-changelog-final.html">Changelog</a>
+      <a href="/page-roadmap-final.html">Roadmap</a>
+    </div>
+    <div class="fcol">
+      <h4>Resources</h4>
+      <a href="/page-documentation-final.html">Documentation</a>
+      <a href="/page-api-reference-final.html">API Reference</a>
+    </div>
+    <div class="fcol">
+      <h4>Company</h4>
+      <a href="/page-about-final.html">About</a>
+      <a href="/page-contact-final.html">Contact</a>
+      <a href="/page-privacy-policy-final.html">Privacy Policy</a>
+      <a href="/page-terms-of-service-final.html">Terms of Service</a>
+    </div>
+    <div class="fcol">
+      <h4>Compare</h4>
+      <a href="/page-compare-testrail-final.html">Testably vs TestRail</a>
+      <a href="/page-compare-zephyr-final.html">Testably vs Zephyr</a>
+      <a href="/page-compare-qase-final.html">Testably vs Qase</a>
+    </div>
+  </div>
+  <div class="fbot">
+    <span>&copy; 2026 Testably. All rights reserved.</span>
+    <span style="font-size:0.6875rem;color:#334155">Design Mockup &middot; Desi (Designer) &middot; March 2026</span>
+  </div>
+</footer>
+
+<script>
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.card,.pcard,.faq-item,.comp-row,.diff-card,.feat-card,.hiw-step,.integ-item').forEach(el => {
+  el.style.opacity='0'; el.style.transform='translateY(20px)'; el.style.transition='opacity 0.6s ease, transform 0.6s ease'; obs.observe(el);
+});
+</script>
+
+</body>
+</html>

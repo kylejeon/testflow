@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testably — 경쟁사 대비 차별화 강점 정리 (마케팅 핸드오프)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F8FAFC;color:#1E293B;line-height:1.7}
+    .container{max-width:960px;margin:0 auto;padding:2.5rem 2rem 4rem}
+    h1{font-size:1.6rem;font-weight:800;color:#0F172A;margin-bottom:0.3rem}
+    .subtitle{font-size:0.88rem;color:#64748B;margin-bottom:2rem}
+    .meta-row{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:2rem;font-size:0.8rem;color:#64748B}
+    .meta-row span{display:flex;align-items:center;gap:0.3rem}
+    .section-title{font-size:1.15rem;font-weight:700;color:#0F172A;margin:2.5rem 0 1rem;padding-bottom:0.5rem;border-bottom:2px solid #E2E8F0;display:flex;align-items:center;gap:0.5rem}
+    .section-num{display:inline-flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;background:#6366F1;color:#fff;border-radius:0.4rem;font-size:0.7rem;font-weight:700}
+    h3{font-size:0.95rem;font-weight:700;color:#1E293B;margin:1.5rem 0 0.5rem}
+    p,li{font-size:0.85rem;color:#334155;margin-bottom:0.5rem}
+    ul,ol{padding-left:1.5rem;margin-bottom:1rem}
+    code{background:#EEF2FF;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.78rem;color:#4338CA;font-family:'SF Mono',Consolas,monospace}
+    strong{color:#0F172A}
+    table{width:100%;border-collapse:collapse;margin:1rem 0 1.5rem;font-size:0.8rem}
+    th{background:#F1F5F9;color:#475569;font-weight:600;text-align:left;padding:0.6rem 0.75rem;border:1px solid #E2E8F0}
+    td{padding:0.55rem 0.75rem;border:1px solid #E2E8F0;vertical-align:top}
+    .callout{background:#EEF2FF;border-left:4px solid #6366F1;padding:1rem 1.25rem;border-radius:0 0.5rem 0.5rem 0;margin:1rem 0 1.5rem;font-size:0.82rem}
+    .callout-green{background:#F0FDF4;border-left-color:#22C55E}
+    .callout-amber{background:#FFF7ED;border-left-color:#F59E0B}
+    .tag{display:inline-block;padding:0.15rem 0.5rem;border-radius:0.25rem;font-size:0.7rem;font-weight:600}
+    .tag-new{background:#DCFCE7;color:#166534}
+    .tag-unique{background:#EDE9FE;color:#5B21B6}
+    .tag-improved{background:#FEF3C7;color:#92400E}
+    .feature-card{background:#fff;border:1px solid #E2E8F0;border-radius:0.75rem;padding:1.25rem;margin:0.75rem 0;transition:box-shadow 0.2s}
+    .feature-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+    .feature-card h4{font-size:0.9rem;font-weight:700;color:#0F172A;display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem}
+    .feature-card p{font-size:0.82rem;color:#475569;margin:0}
+    .feature-card .competitor-note{font-size:0.75rem;color:#94A3B8;margin-top:0.5rem;padding-top:0.5rem;border-top:1px dashed #E2E8F0}
+    .slogan-card{background:linear-gradient(135deg,#6366F1 0%,#8B5CF6 100%);color:#fff;border-radius:0.75rem;padding:1.25rem 1.5rem;margin:0.75rem 0}
+    .slogan-card .slogan-text{font-size:1.05rem;font-weight:700;line-height:1.5}
+    .slogan-card .slogan-context{font-size:0.78rem;opacity:0.8;margin-top:0.4rem}
+    .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem}
+    @media(max-width:700px){.grid-2{grid-template-columns:1fr}}
+    .vs-table td:first-child{font-weight:600;white-space:nowrap;width:180px}
+    .check{color:#22C55E;font-weight:700} .cross{color:#EF4444;font-weight:700} .partial{color:#F59E0B;font-weight:700}
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1><i class="ri-megaphone-line" style="color:#6366F1"></i> Testably 경쟁사 대비 차별화 강점</h1>
+  <p class="subtitle">마케팅 팀(Mark) 핸드오프 — 최근 혁신 기능 + 경쟁 우위 분석 + 슬로건 제안</p>
+
+  <div class="meta-row">
+    <span><i class="ri-calendar-line"></i> 2026-03-27</span>
+    <span><i class="ri-user-line"></i> From: Kyle (PM) → Mark (Marketing)</span>
+    <span><i class="ri-flashlight-line" style="color:#F59E0B"></i> CEO 직접 요청</span>
+  </div>
+
+  <div class="callout">
+    <strong>목적:</strong> 최근 Testably에 구현/기획된 혁신 기능들을 경쟁사(TestRail, Zephyr Scale, Qase) 대비 정리하여, 마케팅 캠페인·웹사이트·피치 자료에 활용할 수 있는 핵심 메시지를 전달합니다.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §1 최근 개선 기능 목록 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">1</span> 최근 개선/기획된 혁신 기능 (14개)</div>
+
+  <p>아래는 최근 집중적으로 개발·기획된 기능들입니다. <span class="tag tag-unique">Testably 독자</span> 표시는 경쟁사에 동등한 기능이 없는 항목입니다.</p>
+  <div class="grid-2">
+    <div class="feature-card">
+      <h4><i class="ri-focus-3-line" style="color:#6366F1"></i> Focus Mode + Collapsible Sidebar <span class="tag tag-unique">Testably 독자</span></h4>
+      <p>Run 리스트에서 <strong>1-click으로 Focus Mode 진입</strong>. 280px 접이식 사이드바로 TC 목록을 탐색하면서 테스트 실행. J/K 키보드 내비게이션, 자동 미실행 TC 시작 기능 포함.</p>
+      <div class="competitor-note">경쟁사: TestRail·Zephyr·Qase 모두 별도 Focus Mode 없음. 테스트 실행 시 페이지 이동 필요.</div>
+    </div>
+    <div class="feature-card">
+      <h4><i class="ri-test-tube-line" style="color:#22C55E"></i> Step-Level Pass/Fail <span class="tag tag-improved">강화</span></h4>
+      <p>테스트 스텝 단위로 개별 Pass/Fail/Blocked/Retest 상태 기록. Focus Mode 내에서 스텝별 인라인 상태 변경 + 코멘트 추가 가능.</p>
+      <div class="competitor-note">경쟁사: TestRail은 스텝별 상태 지원하나 별도 화면 필요. Qase는 기본 지원, Zephyr는 제한적.</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="feature-card">
+      <h4><i class="ri-search-eye-line" style="color:#8B5CF6"></i> Discovery Log — 구조화된 탐색적 테스팅 <span class="tag tag-unique">Testably 독자</span></h4>
+      <p>탐색적 테스팅 세션을 <strong>5단계 상태(Active → Paused → Review → Completed/Abandoned)</strong>로 관리. 구조화된 입력(Bug/Observation/Concern/Idea/Question), Severity·Category 태깅, 히트맵, 타이머 기반 세션 추적.</p>
+      <div class="competitor-note">경쟁사: TestRail은 "Exploratory Session" 타입만 제공(구조화 없음). Zephyr·Qase에는 전용 탐색적 테스팅 모듈 없음.</div>
+    </div>
+    <div class="feature-card">
+      <h4><i class="ri-shield-check-line" style="color:#22C55E"></i> Release Readiness Score <span class="tag tag-unique">Testably 독자</span></h4>
+      <p>Project Overview에서 <strong>릴리즈 준비도를 0-100 점수로 자동 산출</strong>. Pass Rate, 미실행 TC 비율, Blocker 수, Milestone 진행률을 가중 합산. 색상 코딩(Green 80+/Amber 50-79/Red &lt;50)으로 즉시 판단 가능.</p>
+      <div class="competitor-note">경쟁사: 동등 기능 없음. TestRail은 커스텀 리포트로 유사 지표 구성 가능하나 자동 산출 불가.</div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="feature-card">
+      <h4><i class="ri-play-circle-line" style="color:#3B82F6"></i> My Runs + Priority 자동 산출 <span class="tag tag-unique">Testably 독자</span></h4>
+      <p>Overview에서 나에게 할당된 Active Run을 <strong>Priority 순으로 자동 정렬</strong>. Priority는 Milestone 기한 기반 자동 산출(≤3일=Critical, 4-7일=High, 8-14일=Medium, &gt;14일=Low) + 수동 Override 지원.</p>
+      <div class="competitor-note">경쟁사: 기한 기반 자동 Priority 산출 기능 없음. 모두 수동 Priority 설정만 가능.</div>
+    </div>
+    <div class="feature-card">
+      <h4><i class="ri-flag-line" style="color:#F59E0B"></i> Milestone Detail 대폭 개선 <span class="tag tag-improved">강화</span></h4>
+      <p>D-day 카운트다운, TC 요약(Total/Passed/Failed/Blocked), Pass Rate 게이지, Risk Indicator, Assignee 정보를 <strong>Detail Info Bar에 한눈에 표시</strong>. 4개 콘텐츠 탭(Results/Status/Activity/Issues) + 컬러 아이콘 서브탭.</p>
+      <div class="competitor-note">경쟁사: TestRail 마일스톤은 기본 Progress bar만 제공. Zephyr는 "Test Cycle"로 관리(D-day 없음).</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="feature-card">
+      <h4><i class="ri-team-line" style="color:#6366F1"></i> 멤버 초대 복원 + Settings Members 탭 <span class="tag tag-new">신규</span></h4>
+      <p>Project Overview에서 <strong>1-click 멤버 초대</strong> + Settings &gt; Members 탭에서 프로젝트별 멤버 관리. 역할 기반 접근 제어(Admin/Member/Viewer), 구독 티어별 인원 제한 자동 체크.</p>
+      <div class="competitor-note">경쟁사: 유사 기능 제공하나 프로젝트별 역할 관리 + 구독 티어 연동은 Testably가 더 세밀.</div>
+    </div>
+    <div class="feature-card">
+      <h4><i class="ri-layout-top-line" style="color:#6366F1"></i> 2-Row Unified Header <span class="tag tag-unique">Testably 독자</span></h4>
+      <p>전체 6개 탭에 걸쳐 <strong>통일된 2-Row 헤더 시스템</strong> 적용. Row 1 = 56px 공유 ProjectHeader(6탭 내비게이션), Row 2 = 42px 서브탭(컬러 아이콘 + pill 뱃지 + 액션 버튼). 학습 비용 제로, 페이지 간 이동이 자연스러움.</p>
+      <div class="competitor-note">경쟁사: TestRail은 탭별 레이아웃 불일치. Zephyr는 Jira 종속 UI. Qase만 비교적 일관된 UI.</div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="feature-card">
+      <h4><i class="ri-palette-line" style="color:#EC4899"></i> 서브탭 컬러 아이콘 시스템 <span class="tag tag-new">신규</span></h4>
+      <p>모든 서브탭에 <strong>상태별 컬러 코딩된 Remix 아이콘</strong> 적용. Active(파랑), Completed(초록), Overdue(빨강) 등 시각적으로 즉시 인지 가능. Pill 뱃지로 각 카테고리 카운트 표시.</p>
+      <div class="competitor-note">경쟁사: 대부분 텍스트 전용 탭. Qase만 아이콘 일부 사용하나 컬러 코딩은 없음.</div>
+    </div>
+    <div class="feature-card">
+      <h4><i class="ri-folder-3-line" style="color:#D97706"></i> Documents 폴더 시스템 <span class="tag tag-new">신규</span></h4>
+      <p>Documents 탭에 <strong>계층형 폴더 시스템</strong> 도입. 232px 사이드바에 폴더 트리, 하위 폴더 지원, 드래그-앤-드롭 이동, 새 폴더 생성 모달. 프로젝트 문서를 체계적으로 조직.</p>
+      <div class="competitor-note">경쟁사: TestRail은 Sections로 관리(폴더 UI 아님). Qase는 기본 폴더 지원. Zephyr는 Jira 연동 첨부.</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="feature-card">
+      <h4><i class="ri-user-settings-line" style="color:#3B82F6"></i> TC Assignee 일괄 할당 <span class="tag tag-improved">강화</span></h4>
+      <p>Test Cases 리스트에서 <strong>체크박스 다중 선택 → 일괄 Assignee 할당</strong>. 대규모 테스트 스위트를 팀원에게 빠르게 분배. Bulk Action 툴바로 상태 변경, 폴더 이동도 가능.</p>
+      <div class="competitor-note">경쟁사: TestRail·Qase는 Bulk Edit 지원. Zephyr는 Jira 내 제한적 Bulk 작업.</div>
+    </div>
+    <div class="feature-card">
+      <h4><i class="ri-sparkling-2-line" style="color:#F59E0B"></i> Generate with AI <span class="tag tag-improved">강화</span></h4>
+      <p>테스트 케이스를 <strong>AI로 자동 생성</strong>. 요구사항이나 기능 설명을 입력하면 구조화된 TC(Steps + Expected Results)를 생성. 반복 작업을 대폭 줄여 QA 생산성 극대화.</p>
+      <div class="competitor-note">경쟁사: Qase는 AIDEN으로 수동→자동 변환 중심. TestRail은 2025년 AI TC Generator 추가. Zephyr는 AI 기능 없음.</div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="feature-card">
+      <h4><i class="ri-bar-chart-grouped-line" style="color:#22C55E"></i> Runs & Results 리디자인 <span class="tag tag-improved">강화</span></h4>
+      <p>3개 서브탭(All/Active/Completed) + Result Filter(All/Has Failures/All Passed/Has Blocked)로 Run 상태를 효율적으로 필터링. <strong>Priority 그룹핑</strong>으로 긴급한 Run을 최상단에 자동 배치.</p>
+      <div class="competitor-note">경쟁사: TestRail은 테이블 뷰 중심(Priority 그룹핑 없음). Zephyr는 Jira 필터 의존.</div>
+    </div>
+    <div class="feature-card">
+      <h4><i class="ri-keyboard-box-line" style="color:#64748B"></i> 키보드 단축키 시스템 <span class="tag tag-new">신규</span></h4>
+      <p>Focus Mode 내 <strong>완전한 키보드 워크플로우</strong>: J/K(TC 이동), P/F/B/R(상태 변경), C(코멘트), H(히스토리), [(사이드바 토글), /(검색). 마우스 없이 테스트 실행 완료 가능.</p>
+      <div class="competitor-note">경쟁사: TestRail·Zephyr·Qase 모두 전용 키보드 단축키 시스템 없음.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §2 경쟁사 대비 비교표 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">2</span> 경쟁사 대비 기능 비교표</div>
+
+  <p>아래 표는 핵심 차별화 기능에 대해 Testably와 3대 경쟁사를 직접 비교한 결과입니다.</p>
+  <table class="vs-table">
+    <thead>
+      <tr><th>기능</th><th>Testably</th><th>TestRail</th><th>Zephyr Scale</th><th>Qase</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Focus Mode (몰입 테스트 실행)</td>
+        <td><span class="check">✅ 1-click 진입 + 사이드바 + 키보드</span></td>
+        <td><span class="cross">❌ 없음</span></td>
+        <td><span class="cross">❌ 없음</span></td>
+        <td><span class="cross">❌ 없음</span></td>
+      </tr>
+      <tr>
+        <td>Discovery Log (탐색적 테스팅)</td>
+        <td><span class="check">✅ 5-state + 구조화 입력 + 히트맵</span></td>
+        <td><span class="partial">△ Exploratory Session (비구조화)</span></td>
+        <td><span class="cross">❌ 없음 (외부 도구 필요)</span></td>
+        <td><span class="cross">❌ 없음</span></td>
+      </tr>
+      <tr>
+        <td>Release Readiness Score</td>
+        <td><span class="check">✅ 자동 산출 (0-100)</span></td>
+        <td><span class="cross">❌ 없음 (커스텀 리포트로 우회)</span></td>
+        <td><span class="cross">❌ 없음</span></td>
+        <td><span class="cross">❌ 없음</span></td>
+      </tr>
+      <tr>
+        <td>Priority 자동 산출 (기한 기반)</td>
+        <td><span class="check">✅ Milestone 기한 → 자동 + Override</span></td>
+        <td><span class="cross">❌ 수동만</span></td>
+        <td><span class="cross">❌ 수동만</span></td>
+        <td><span class="cross">❌ 수동만</span></td>
+      </tr>
+      <tr>
+        <td>AI 테스트 케이스 생성</td>
+        <td><span class="check">✅ Generate with AI (요구사항 → TC)</span></td>
+        <td><span class="check">✅ AI TC Generator (2025~)</span></td>
+        <td><span class="cross">❌ 없음</span></td>
+        <td><span class="check">✅ AIDEN (수동→자동 변환 중심)</span></td>
+      </tr>
+      <tr>
+        <td>통일된 UI 시스템</td>
+        <td><span class="check">✅ 2-Row Header + 컬러 아이콘 서브탭</span></td>
+        <td><span class="cross">❌ 탭별 레이아웃 불일치</span></td>
+        <td><span class="partial">△ Jira UI 종속</span></td>
+        <td><span class="partial">△ 비교적 일관적이나 서브탭 없음</span></td>
+      </tr>
+      <tr>
+        <td>키보드 단축키 시스템</td>
+        <td><span class="check">✅ 12+ 단축키 (Focus Mode 전용)</span></td>
+        <td><span class="cross">❌ 없음</span></td>
+        <td><span class="cross">❌ 없음</span></td>
+        <td><span class="cross">❌ 없음</span></td>
+      </tr>
+      <tr>
+        <td>Step-Level Pass/Fail</td>
+        <td><span class="check">✅ Focus Mode 내 인라인</span></td>
+        <td><span class="check">✅ 별도 화면</span></td>
+        <td><span class="partial">△ 제한적</span></td>
+        <td><span class="check">✅ 지원</span></td>
+      </tr>
+      <tr>
+        <td>D-day 기반 Milestone 관리</td>
+        <td><span class="check">✅ D-day 카운트다운 + Risk Indicator</span></td>
+        <td><span class="partial">△ 기본 Progress bar만</span></td>
+        <td><span class="cross">❌ Test Cycle (기한 개념 약함)</span></td>
+        <td><span class="partial">△ 마일스톤 기본 지원</span></td>
+      </tr>
+      <tr>
+        <td>문서 폴더 관리</td>
+        <td><span class="check">✅ 계층형 폴더 + 드래그앤드롭</span></td>
+        <td><span class="partial">△ Sections 기반</span></td>
+        <td><span class="cross">❌ Jira 첨부 의존</span></td>
+        <td><span class="check">✅ 기본 폴더 지원</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="callout-green callout">
+    <strong>핵심 수치:</strong> 위 9개 비교 항목 중 Testably는 <strong>9개 전항목 ✅</strong>, TestRail은 3개 ✅ + 2개 △, Zephyr Scale은 0개 ✅ + 2개 △, Qase는 3개 ✅ + 2개 △. Testably의 기능 완성도가 <strong>압도적 우위</strong>입니다.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §3 핵심 차별점 딥다이브 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">3</span> 핵심 차별점 딥다이브 — Top 6</div>
+
+  <p>마케팅 메시지로 가장 활용하기 좋은 <strong>6대 차별점</strong>을 깊이 정리합니다.</p>
+
+  <h3>① Focus Mode — "테스트 실행의 재정의"</h3>
+  <p><strong>왜 중요한가:</strong> QA 엔지니어는 하루 업무 시간의 60% 이상을 테스트 실행에 사용합니다. 기존 도구들은 "TC 목록 페이지 → TC 상세 페이지 → 결과 입력 → 돌아가기"를 반복해야 합니다. 이 context-switching이 생산성을 떨어뜨립니다.</p>
+  <p><strong>Testably 방식:</strong> Run 카드에서 ▶ 버튼 1-click → Focus Mode 진입. 좌측 280px 사이드바에서 TC 목록을 탐색하고, 우측에서 스텝별 실행 결과를 기록합니다. J/K로 다음/이전 TC 이동, P/F/B/R로 상태 변경. <strong>마우스에서 손을 뗄 필요가 없습니다.</strong></p>
+  <p><strong>경쟁사 현황:</strong> TestRail, Zephyr Scale, Qase 모두 Focus Mode 개념 자체가 없습니다. 테스트 실행 시 반드시 페이지 이동이 발생합니다.</p>
+  <h3>② Discovery Log — "탐색적 테스팅의 구조화"</h3>
+  <p><strong>왜 중요한가:</strong> 탐색적 테스팅은 스크립트 기반 테스팅이 놓치는 엣지 케이스를 발견하는 핵심 기법입니다. 하지만 대부분의 도구는 "자유 텍스트 노트"만 제공하여, 발견 사항이 체계 없이 흩어집니다.</p>
+  <p><strong>Testably 방식:</strong> 전용 Discovery Log 탭에서 세션을 5단계 상태로 관리합니다. 발견 사항을 Bug/Observation/Concern/Idea/Question 5가지 타입으로 구조화하여 입력합니다. Severity와 Category 태깅, 세션 타이머, 커버리지 히트맵까지 제공하여 탐색적 테스팅의 효과를 측정 가능하게 만듭니다.</p>
+  <p><strong>경쟁사 현황:</strong> TestRail은 "Exploratory Session" 테스트 케이스 타입만 제공하며 구조화된 입력이 없습니다. Zephyr Scale과 Qase에는 탐색적 테스팅 전용 모듈 자체가 없어, 별도 외부 도구(Rapid Reporter 등)를 사용해야 합니다.</p>
+
+  <h3>③ Release Readiness Score — "릴리즈 결정의 데이터화"</h3>
+  <p><strong>왜 중요한가:</strong> "이번 릴리즈 내보내도 되나?"는 QA 리더가 매 스프린트 받는 질문입니다. 기존에는 여러 리포트를 수동으로 취합하여 주관적으로 판단했습니다.</p>
+  <p><strong>Testably 방식:</strong> Project Overview에서 Release Readiness Score를 0-100 점수로 자동 산출합니다. Pass Rate(40%), 미실행 TC 비율(25%), Blocker 수(20%), Milestone 진행률(15%)을 가중 합산하며, 80+ Green(Go), 50-79 Amber(Caution), &lt;50 Red(Block)으로 색상 코딩합니다.</p>
+  <p><strong>경쟁사 현황:</strong> TestRail, Zephyr Scale, Qase 모두 동등한 자동 산출 기능이 없습니다. TestRail은 커스텀 리포트로 유사 지표를 구성할 수 있으나, 자동 산출·색상 코딩·점수화는 불가합니다.</p>
+  <h3>④ Milestone 기한 기반 Priority 자동 산출 — "긴급한 일을 먼저"</h3>
+  <p><strong>왜 중요한가:</strong> QA 팀은 동시에 여러 Run을 진행합니다. 어떤 Run을 먼저 해야 하는지 판단하려면 Milestone 기한을 일일이 확인해야 합니다.</p>
+  <p><strong>Testably 방식:</strong> Milestone 기한(end_date)으로부터 남은 일수를 자동 계산하여 Critical(≤3일)/High(4-7일)/Medium(8-14일)/Low(&gt;14일) Priority를 자동 부여합니다. 필요 시 수동 Override도 가능(priority_override 컬럼). Runs 리스트에서 Priority 그룹핑으로 Critical → High → Medium → Low 순서로 자동 정렬합니다.</p>
+  <p><strong>경쟁사 현황:</strong> TestRail, Zephyr Scale, Qase 모두 수동 Priority 설정만 가능합니다. 기한 기반 자동 Priority 산출 + 그룹핑 기능은 Testably 독자입니다.</p>
+
+  <h3>⑤ AI 통합 (Generate with AI) — "AI가 TC를 작성합니다"</h3>
+  <p><strong>왜 중요한가:</strong> 테스트 케이스 작성은 반복적이고 시간 소모가 큽니다. 특히 새 기능이 추가될 때마다 수십 개의 TC를 수동으로 작성해야 합니다.</p>
+  <p><strong>Testably 방식:</strong> 요구사항이나 기능 설명을 입력하면 AI가 구조화된 TC(Title, Steps, Expected Results)를 자동 생성합니다. 생성된 TC를 검토·수정하여 바로 테스트 스위트에 추가할 수 있습니다.</p>
+  <p><strong>경쟁사 현황:</strong> Qase는 AIDEN으로 "수동 TC → 자동화 스크립트" 변환에 초점. TestRail은 2025년에 AI TC Generator를 추가했으나, 요구사항 기반 생성보다는 템플릿 기반. Zephyr Scale은 AI 기능이 없습니다.</p>
+
+  <h3>⑥ 통일된 UX 패턴 — "배워야 할 것이 하나"</h3>
+  <p><strong>왜 중요한가:</strong> 테스트 관리 도구는 기능이 많을수록 학습 곡선이 급증합니다. 탭마다 UI가 다르면 팀 온보딩에 수주가 소요됩니다.</p>
+  <p><strong>Testably 방식:</strong> 6개 전체 탭(Dashboard, Test Cases, Runs, Milestones, Documents, Discovery Log)에 동일한 2-Row Header + 42px 컬러 아이콘 서브탭 + Toolbar(Search + Filters + Sort) 패턴을 적용합니다. 하나의 탭 사용법을 배우면 나머지 5개 탭도 즉시 사용 가능합니다.</p>
+  <p><strong>경쟁사 현황:</strong> TestRail은 탭별로 헤더와 서브탭 레이아웃이 다릅니다. Zephyr Scale은 Jira UI에 종속되어 자체 UX 일관성이 제한적입니다. Qase는 비교적 일관적이나 서브탭 패턴이 없습니다.</p>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §4 마케팅 슬로건 제안 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">4</span> 마케팅 슬로건 제안 (8개)</div>
+
+  <p>웹사이트 히어로 배너, 소셜 미디어, 피치 자료에 활용할 수 있는 한 줄 메시지입니다. 영문·한글 병기합니다.</p>
+
+  <div class="slogan-card">
+    <div class="slogan-text">"Test Smarter, Not Harder — Focus Mode Changes Everything."</div>
+    <div class="slogan-context">포커스: Focus Mode 차별화 · 활용: 히어로 배너, 비교 페이지</div>
+  </div>
+
+  <div class="slogan-card">
+    <div class="slogan-text">"One Score to Ship — Release Readiness, Automated."</div>
+    <div class="slogan-context">포커스: Release Readiness Score · 활용: 의사결정자(CTO/VP Eng) 타겟 메시지</div>
+  </div>
+
+  <div class="slogan-card">
+    <div class="slogan-text">"Exploratory Testing, Finally Structured."</div>
+    <div class="slogan-context">포커스: Discovery Log · 활용: 탐색적 테스팅 관련 블로그, SEO 콘텐츠</div>
+  </div>
+
+  <div class="slogan-card">
+    <div class="slogan-text">"Your Deadline Knows the Priority — So Does Testably."</div>
+    <div class="slogan-context">포커스: 기한 기반 Priority 자동 산출 · 활용: 기능 소개 페이지</div>
+  </div>
+  <div class="slogan-card">
+    <div class="slogan-text">"AI Writes the Tests. You Ship the Product."</div>
+    <div class="slogan-context">포커스: Generate with AI · 활용: AI/자동화 키워드 타겟 광고</div>
+  </div>
+
+  <div class="slogan-card">
+    <div class="slogan-text">"Learn One Tab, Master Them All."</div>
+    <div class="slogan-context">포커스: 통일된 UX (2-Row Header) · 활용: 온보딩/UX 관련 비교 콘텐츠</div>
+  </div>
+
+  <div class="slogan-card">
+    <div class="slogan-text">"Zero Context-Switching. Full Keyboard Control."</div>
+    <div class="slogan-context">포커스: Focus Mode + 키보드 단축키 · 활용: 개발자/QA 엔지니어 타겟</div>
+  </div>
+
+  <div class="slogan-card">
+    <div class="slogan-text">"From Chaos to Clarity — Test Management, Redesigned."</div>
+    <div class="slogan-context">포커스: 전체 리디자인 · 활용: 브랜드 리뉴얼 캠페인, Product Hunt 런치</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §5 활용 가이드 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">5</span> 마케팅 활용 가이드</div>
+
+  <h3>5-1. 타겟 오디언스별 핵심 메시지</h3>
+  <table>
+    <thead><tr><th>타겟</th><th>핵심 Pain Point</th><th>Testably 메시지</th><th>주력 기능</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>QA 엔지니어</strong></td>
+        <td>반복적 페이지 이동, 수동 TC 작성, 탐색적 테스팅 기록 어려움</td>
+        <td>"Focus Mode로 테스트 실행 생산성 2배. AI가 TC를 대신 작성."</td>
+        <td>Focus Mode, 키보드 단축키, Generate with AI, Discovery Log</td>
+      </tr>
+      <tr>
+        <td><strong>QA 리더/매니저</strong></td>
+        <td>릴리즈 판단의 주관성, 팀 워크로드 불균형, 진행 상황 파악 어려움</td>
+        <td>"Release Readiness Score로 데이터 기반 릴리즈 결정. Priority 자동 산출로 팀 집중."</td>
+        <td>Release Readiness, Priority 자동 산출, My Runs, Milestone D-day</td>
+      </tr>
+      <tr>
+        <td><strong>CTO/VP Engineering</strong></td>
+        <td>도구 전환 비용, 팀 온보딩 시간, 도구 파편화</td>
+        <td>"하나의 플랫폼에서 전체 QA 워크플로우. 학습 곡선 최소."</td>
+        <td>통일된 UX, Documents 폴더, 멤버 관리, AI 통합</td>
+      </tr>
+      <tr>
+        <td><strong>TestRail 이탈자</strong></td>
+        <td>낡은 UI, Focus Mode 부재, 높은 가격</td>
+        <td>"TestRail에서 전환하세요. Focus Mode + AI + 통일된 UX가 기다립니다."</td>
+        <td>Focus Mode, 2-Row Header, Generate with AI, Discovery Log</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5-2. 콘텐츠 제안</h3>
+  <table>
+    <thead><tr><th>콘텐츠 타입</th><th>제목 (안)</th><th>주력 기능</th></tr></thead>
+    <tbody>
+      <tr><td>비교 블로그</td><td>"Testably vs TestRail: 2026년, Focus Mode가 바꾼 테스트 실행"</td><td>Focus Mode, Step-level P/F, 키보드 단축키</td></tr>
+      <tr><td>비교 블로그</td><td>"탐색적 테스팅 도구 비교: Testably Discovery Log vs 경쟁사"</td><td>Discovery Log 5-state, 구조화 입력, 히트맵</td></tr>
+      <tr><td>랜딩 페이지</td><td>"Release Readiness Score — 릴리즈 결정을 숫자로"</td><td>Release Readiness, Milestone D-day</td></tr>
+      <tr><td>Product Hunt</td><td>"Testably 2.0: Test Management, Redesigned from Scratch"</td><td>전체 기능 + UX 리디자인</td></tr>
+      <tr><td>소셜 미디어</td><td>"J, K, P, F — 키보드 4개로 테스트 실행 완료 (데모 GIF)"</td><td>Focus Mode + 키보드 단축키</td></tr>
+      <tr><td>이메일 캠페인</td><td>"기한이 3일 남았다면? Testably가 자동으로 Critical을 알려줍니다"</td><td>Priority 자동 산출</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout-amber callout">
+    <strong>Mark에게 노트:</strong> 위 슬로건과 콘텐츠 제안은 PM 관점 초안입니다. 최종 톤앤매너는 마케팅 팀에서 조정해 주세요. 각 기능의 디자인 목업 HTML 파일들이 <code>/testflow/</code> 디렉토리에 있으니, 스크린샷이나 데모 GIF 제작 시 참고 가능합니다. 특히 <code>focus-mode-sidebar-design.html</code>, <code>discovery-log-session-detail-design.html</code>, <code>project-overview-redesign.html</code>이 가장 임팩트 있는 비주얼 소스입니다.
+  </div>
+
+  <!-- Footer -->
+  <div style="margin-top:3rem; padding-top:1.5rem; border-top:2px solid #E2E8F0; text-align:center; color:#94A3B8; font-size:0.8rem;">
+    <p><strong>Testably</strong> — 경쟁사 대비 차별화 강점 정리 (마케팅 핸드오프)</p>
+    <p>CEO 요청 · 2026-03-27</p>
+    <p style="margin-top:0.5rem;">Author: Kyle (PM) · Target: Mark (Marketing)</p>
+    <p style="margin-top:0.25rem; font-size:0.7rem;">기능 14개 · 비교 항목 9개 · 슬로건 8개 · 콘텐츠 제안 6개</p>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Desi Handoff — Focus Mode Enhancement</title>
+<style>
+  :root { --indigo: #6366F1; --indigo-50: #EEF2FF; --indigo-700: #4338CA; --red: #EF4444; --red-50: #FEF2F2; --green: #10B981; --green-50: #F0FDF4; --amber: #F59E0B; --amber-50: #FFFBEB; --violet: #8B5CF6; --slate-900: #0F172A; --slate-700: #334155; --slate-500: #64748B; --slate-400: #94A3B8; --slate-300: #CBD5E1; --slate-200: #E2E8F0; --slate-100: #F1F5F9; --slate-50: #F8FAFC; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--slate-700); line-height: 1.65; background: #F1F5F9; padding: 2rem; }
+  .container { max-width: 960px; margin: 0 auto; }
+  .header { background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 50%, #A78BFA 100%); color: #fff; padding: 2.5rem; border-radius: 1rem 1rem 0 0; }
+  .header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .header .sub { opacity: 0.9; font-size: 0.875rem; }
+  .tag { display: inline-block; background: rgba(255,255,255,0.2); padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; margin-top: 0.5rem; }
+  .meta { background: #fff; border: 1px solid var(--slate-200); border-top: none; padding: 1rem 2.5rem; display: flex; gap: 2rem; flex-wrap: wrap; font-size: 0.8125rem; color: var(--slate-400); }
+  .meta b { color: var(--slate-700); }
+  .body { background: #fff; border: 1px solid var(--slate-200); border-top: none; border-radius: 0 0 1rem 1rem; padding: 2.5rem; }
+  h2 { font-size: 1.125rem; font-weight: 800; color: var(--slate-900); margin: 2.5rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--violet); }
+  h2:first-child { margin-top: 0; }
+  h3 { font-size: 0.9375rem; font-weight: 700; color: var(--slate-900); margin: 1.5rem 0 0.5rem; }
+  h4 { font-size: 0.875rem; font-weight: 700; color: var(--slate-700); margin: 1.25rem 0 0.375rem; }
+  p, li { font-size: 0.875rem; margin-bottom: 0.5rem; }
+  ul, ol { padding-left: 1.25rem; }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8125rem; }
+  th { background: var(--slate-50); font-weight: 700; color: var(--slate-900); text-align: left; padding: 0.625rem 0.75rem; border: 1px solid var(--slate-200); }
+  td { padding: 0.625rem 0.75rem; border: 1px solid var(--slate-200); vertical-align: top; }
+  code { background: var(--slate-100); padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.8125rem; color: var(--violet); }
+  .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; }
+  .badge-red { background: var(--red-50); color: #DC2626; }
+  .badge-green { background: var(--green-50); color: #16A34A; }
+  .badge-indigo { background: var(--indigo-50); color: #4F46E5; }
+  .badge-amber { background: var(--amber-50); color: #D97706; }
+  .badge-slate { background: var(--slate-100); color: var(--slate-500); }
+  .badge-violet { background: #F5F3FF; color: #7C3AED; }
+  .callout { border-left: 4px solid var(--violet); background: #F5F3FF; padding: 1rem 1.25rem; border-radius: 0 0.5rem 0.5rem 0; margin: 1rem 0; font-size: 0.8125rem; }
+  .callout-green { border-left-color: var(--green); background: var(--green-50); }
+  .callout-amber { border-left-color: var(--amber); background: var(--amber-50); }
+  .callout-red { border-left-color: var(--red); background: var(--red-50); }
+  .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 4px; border: 1px solid rgba(0,0,0,0.1); }
+  .wireframe { background: var(--slate-50); border: 2px dashed var(--slate-300); border-radius: 0.75rem; padding: 1.5rem; margin: 1rem 0; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.6875rem; line-height: 1.9; color: var(--slate-700); overflow-x: auto; white-space: pre; }
+  .wireframe .label { color: var(--slate-400); font-style: italic; }
+  .wireframe .hl { color: var(--violet); font-weight: 700; }
+  .wireframe .red { color: var(--red); font-weight: 700; }
+  .wireframe .green { color: var(--green); font-weight: 700; }
+  .wireframe .amber { color: var(--amber); font-weight: 700; }
+  .design-item { background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 0.75rem; padding: 1.5rem; margin: 1.25rem 0; }
+  .design-item-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .design-item-number { background: var(--violet); color: #fff; width: 1.5rem; height: 1.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6875rem; font-weight: 800; flex-shrink: 0; }
+  .design-item-title { font-weight: 700; color: var(--slate-900); font-size: 0.9375rem; }
+  .tier-container { display: flex; gap: 0.75rem; margin: 1rem 0; }
+  .tier-box { flex: 1; border-radius: 0.75rem; padding: 1rem; }
+  .tier-1 { background: #F5F3FF; border: 2px solid #C4B5FD; }
+  .tier-2 { background: var(--slate-50); border: 1px solid var(--slate-200); }
+  .tier-3 { background: #fff; border: 1px dashed var(--slate-200); }
+  .tier-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══ Header ═══ -->
+<div class="header">
+  <h1>🎨 Desi Handoff — Focus Mode Enhancement Design</h1>
+  <div class="sub">3-Tier 정보 구조 기반 Focus Mode 확장 — Metadata Bar + Attachments + 접이식 패널</div>
+  <div class="tag">CEO APPROVED — PM Spec: pm-analysis-focus-mode-enhancement.html</div>
+</div>
+<div class="meta">
+  <span>📅 <b>2026-03-26</b></span>
+  <span>👤 <b>From</b> PM Kyle</span>
+  <span>🎨 <b>To</b> Desi (Designer)</span>
+  <span>📌 <b>Priority</b> <span class="badge badge-red">High</span></span>
+  <span>📁 <b>Component</b> FocusMode.tsx (336줄)</span>
+  <span>📐 <b>디자인 영역</b> 6건</span>
+</div>
+
+<div class="body">
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>배경 및 Context</h2>
+
+<div class="callout">
+  <b>CEO 피드백:</b> "Focus Mode의 경우, test step만 표시되고 있어. Expected result도 함께 표시되어야 하고 첨부된 사진이 있다면 그것도 함께 표시되어야 해. 그리고 test case ID, folder, priority, tags, comments 등 실제 테스트를 수행할 때 필요한 모든 정보가 표시되어야 할 것 같은데."<br><br>
+  <b>PM 분석 결과:</b> CEO 의견에 전적으로 동의. 경쟁사(TestRail/Qase/Zephyr) 대비 8개 핵심 기능 부족. 3-Tier 정보 구조로 확장하여 "집중"을 유지하면서 자급자족(Self-contained) 실행 환경으로 진화시킵니다.
+</div>
+
+<h3>현재 Focus Mode 구성 (As-Is)</h3>
+<div class="wireframe">┌──────────────────────────────────────────────────────────────────┐
+│ ████████████████░░░░░░░░░░░░░░░░░░  <span class="label">[Progress Bar]</span>                │
+├──────────────────────────────────────────────────────────────────┤
+│ Sprint 24 Run   5/15   [P=Pass F=Fail ...]     [Exit Focus Mode]│
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  <span class="red">● Previously failed</span>                                            │
+│                                                                  │
+│  <span style="font-weight:700;">Login validation fails on Safari 17</span>                              │
+│  <span class="label">Description text...</span>                                              │
+│                                                                  │
+│  <span class="label">[Precondition — 코드 있으나 데이터 미전달 🐛]</span>                      │
+│                                                                  │
+│  TEST STEPS                                                      │
+│  ┌─────────────────────────────────────────────────────┐         │
+│  │ 1  Step text                                        │         │
+│  │    <span class="label">Expected: result text</span>                            │         │
+│  │ 2  Step text                                        │         │
+│  │    <span class="label">Expected: result text</span>                            │         │
+│  └─────────────────────────────────────────────────────┘         │
+│                                                                  │
+│  <span class="label">[Expected Result — step 없을 때만 표시]</span>                          │
+│                                                                  │
+│  <span class="label">[Note 입력 — F 키 시 표시]</span>                                      │
+│                                                                  │
+│  <span class="red">❌ TC-ID, Folder, Priority, Tags, Assignee 없음</span>                  │
+│  <span class="red">❌ Attachments/Screenshots 없음</span>                                  │
+│  <span class="red">❌ Comments, Execution History 없음</span>                               │
+│                                                                  │
+├──────────────────────────────────────────────────────────────────┤
+│  ← Previous   [P Pass][F Fail][B Block][R Retest][S Skip]   → │
+└──────────────────────────────────────────────────────────────────┘</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>3-Tier 정보 구조 — 설계 원칙</h2>
+
+<div class="tier-container">
+  <div class="tier-box tier-1">
+    <div class="tier-label" style="color: #7C3AED;">🎯 Tier 1 — 메인 콘텐츠</div>
+    <p style="font-size: 0.8125rem; margin: 0;"><b>항상 표시.</b> 테스트 실행에 직접 필요한 정보.</p>
+    <ul style="font-size: 0.75rem; margin-top: 0.25rem;">
+      <li>Test Steps + Expected Result</li>
+      <li>Precondition</li>
+      <li>Attachments / Screenshots</li>
+      <li>Status 버튼 + Note 입력</li>
+    </ul>
+  </div>
+  <div class="tier-box tier-2">
+    <div class="tier-label" style="color: var(--slate-500);">📋 Tier 2 — 메타데이터 바</div>
+    <p style="font-size: 0.8125rem; margin: 0;"><b>헤더 아래 컴팩트 1줄.</b> 한눈에 TC 맥락 파악.</p>
+    <ul style="font-size: 0.75rem; margin-top: 0.25rem;">
+      <li>TC-ID (TC-001 포맷)</li>
+      <li>Priority 뱃지</li>
+      <li>Folder</li>
+      <li>Tags</li>
+      <li>Assignee 아바타</li>
+    </ul>
+  </div>
+  <div class="tier-box tier-3">
+    <div class="tier-label" style="color: var(--slate-400);">💬 Tier 3 — 확장 패널</div>
+    <p style="font-size: 0.8125rem; margin: 0;"><b>접이식. 클릭/단축키로 펼침.</b></p>
+    <ul style="font-size: 0.75rem; margin-top: 0.25rem;">
+      <li>Comments (이전 댓글)</li>
+      <li>Execution History (이전 결과)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout-green callout">
+  <b>핵심 원칙:</b> Focus Mode의 가치는 "집중"입니다. 정보를 추가하되 복잡도를 높이면 안 됩니다. Tier 1은 항상 보이고, Tier 2는 한 줄로 압축, Tier 3은 필요할 때만 펼칩니다.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>전체 화면 와이어프레임 (To-Be)</h2>
+
+<div class="wireframe">┌──────────────────────────────────────────────────────────────────────────────┐
+│ ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░  <span class="label">[Progress Bar]</span>  32%       │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ <span class="label">[Header — 기존 유지]</span>                                                        │
+│ Sprint 24 Regression   5 / 15   [P=Pass F=Fail B=Block R=Retest S=Skip]    │
+│                                                         [Exit Focus Mode ✕] │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ <span class="hl">[Tier 2: Metadata Bar — 신규]</span>                                                 │
+│                                                                              │
+│  <span class="hl">TC-012</span>  ·  📁 UI Tests  ·  <span class="red">● Critical</span>  ·  🏷 login, auth, safari  ·  👤 JK │
+│                                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│ <span class="label">[Tier 1: Main Content — 스크롤 영역]</span>                                         │
+│                                                                              │
+│  <span class="red">● Previously failed</span>  <span class="label">[기존 상태 뱃지]</span>                                     │
+│                                                                              │
+│  <span style="font-weight:700; font-size: 0.8rem;">Login validation fails on Safari 17</span>                                          │
+│  <span class="label">Verify that login form validates credentials correctly on Safari 17+</span>         │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────┐         │
+│  │ <span class="amber">⚠ Precondition</span>                                                    │         │
+│  │ User must be logged out. Safari 17.0+ browser required.         │         │
+│  │ Clear browser cache before testing.                             │         │
+│  └─────────────────────────────────────────────────────────────────┘         │
+│                                                                              │
+│  <span class="hl">[Attachments — 신규]</span>                                                         │
+│  ┌──────────┐  ┌──────────┐  ┌─────────────────────┐                        │
+│  │ 📷       │  │ 📷       │  │ 📎 error-log.txt    │                        │
+│  │ login-   │  │ safari-  │  │   (4.2 KB)          │                        │
+│  │ form.png │  │ bug.png  │  │   <span class="hl">↓ Download</span>        │                        │
+│  │ <span class="label">(120×80)</span>  │  │ <span class="label">(120×80)</span>  │  │                     │                        │
+│  └──────────┘  └──────────┘  └─────────────────────┘                        │
+│  <span class="label">(이미지 클릭 시 라이트박스 확대 — ESC로 닫기)</span>                               │
+│                                                                              │
+│  TEST STEPS                                                                  │
+│  ┌─────────────────────────────────────────────────────────────────┐         │
+│  │ <span class="hl">1</span>  Navigate to login page at /auth/login                         │         │
+│  │    ┌────────────────────────────────────────────────────────┐   │         │
+│  │    │ <span class="label">Expected:</span> Login form visible with email & password fields  │   │         │
+│  │    └────────────────────────────────────────────────────────┘   │         │
+│  ├─────────────────────────────────────────────────────────────────┤         │
+│  │ <span class="hl">2</span>  Enter valid email "test@example.com" and password "Test123!"   │         │
+│  │    ┌────────────────────────────────────────────────────────┐   │         │
+│  │    │ <span class="label">Expected:</span> Fields accept input without validation errors    │   │         │
+│  │    └────────────────────────────────────────────────────────┘   │         │
+│  ├─────────────────────────────────────────────────────────────────┤         │
+│  │ <span class="hl">3</span>  Click "Sign In" button                                        │         │
+│  │    ┌────────────────────────────────────────────────────────┐   │         │
+│  │    │ <span class="label">Expected:</span> Redirect to dashboard within 3 seconds          │   │         │
+│  │    └────────────────────────────────────────────────────────┘   │         │
+│  └─────────────────────────────────────────────────────────────────┘         │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────┐         │
+│  │ <span class="hl">✓ Expected Result</span>                                                   │         │
+│  │ User redirected to main dashboard with "Welcome back" greeting  │         │
+│  └─────────────────────────────────────────────────────────────────┘         │
+│                                                                              │
+│  <span class="hl">[Tier 3: 접이식 패널 — 신규]</span>                                                  │
+│  ┌─────────────────────────────────────────────────────────────────┐         │
+│  │ 💬 Comments (3)                                          [▼ 펼침]│         │
+│  ├─────────────────────────────────────────────────────────────────┤         │
+│  │  <span class="label">ML · 2d ago</span>                                                     │         │
+│  │  "Safari 17.2에서 재현됨, 17.1에서는 통과"                         │         │
+│  │                                                                 │         │
+│  │  <span class="label">JK · 5d ago</span>                                                     │         │
+│  │  "CORS 헤더 이슈일 수 있음 — BE팀 확인 필요"                      │         │
+│  │                                                                 │         │
+│  │  <span class="label">SY · 7d ago</span>                                                     │         │
+│  │  "최초 보고 — 고객 CS#4521 연관"                                  │         │
+│  └─────────────────────────────────────────────────────────────────┘         │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────┐         │
+│  │ 📜 Execution History (4)                              [▶ 접힘] │         │
+│  └─────────────────────────────────────────────────────────────────┘         │
+│                                                                              │
+│  <span class="label">[Note 입력 — F 키 누를 시]</span>                                                 │
+│  ┌─────────────────────────────────────────────────────────────────┐         │
+│  │ Note (optional)                                                 │         │
+│  │ Describe what you observed...                                   │         │
+│  │                                                   ⌘↵ to save   │         │
+│  └─────────────────────────────────────────────────────────────────┘         │
+│                                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ <span class="label">[Footer — Status Buttons — 기존 유지]</span>                                        │
+│  ← Previous   [<span class="green">P Passed</span>] [<span class="red">F Failed</span>] [<span class="amber">B Blocked</span>] [R Retest] [S Skip]   Next → │
+│                  <span class="label">Last test — press any status key to complete</span>                   │
+└──────────────────────────────────────────────────────────────────────────────┘</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>디자인 영역 ① — Metadata Bar (Tier 2)</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">1</div>
+    <div class="design-item-title">Metadata Bar — 헤더 아래 한 줄 컴팩트 정보 바</div>
+  </div>
+
+  <h4>위치</h4>
+  <p>Header와 Main Content 사이, border-bottom으로 구분된 독립 행.</p>
+
+  <h4>표시 항목 (좌→우)</h4>
+  <table>
+    <tr><th>항목</th><th>스타일</th><th>데이터 소스</th></tr>
+    <tr>
+      <td><b>TC-ID</b></td>
+      <td>Monospace, 13px, 600wt, <span class="swatch" style="background:#7C3AED"></span>Violet-600<br>예: <code>TC-012</code></td>
+      <td>created_at ASC 순번 기반</td>
+    </tr>
+    <tr>
+      <td><b>구분자</b></td>
+      <td><code>·</code> (middle dot), Slate-300</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><b>Folder</b></td>
+      <td>📁 아이콘 + 13px, 500wt, Slate-500<br>예: <code>📁 UI Tests</code></td>
+      <td><code>test_cases.folder</code></td>
+    </tr>
+    <tr>
+      <td><b>Priority</b></td>
+      <td>색상 도트(8px) + 텍스트, 뱃지 스타일</td>
+      <td><code>test_cases.priority</code></td>
+    </tr>
+    <tr>
+      <td><b>Tags</b></td>
+      <td>🏷 아이콘 + 콤마 구분, 12px, Slate-400<br>예: <code>🏷 login, auth, safari</code></td>
+      <td><code>test_cases.tags</code> (콤마 문자열)</td>
+    </tr>
+    <tr>
+      <td><b>Assignee</b></td>
+      <td>24px 원형 아바타 + 이니셜<br>Gradient bg (indigo-400→600)</td>
+      <td><code>test_cases.assignee</code></td>
+    </tr>
+  </table>
+
+  <h4>Priority 도트 색상</h4>
+  <table>
+    <tr><th>Priority</th><th>도트</th><th>텍스트</th></tr>
+    <tr><td>Critical</td><td><span class="swatch" style="background:#EF4444"></span>Red-500</td><td><span style="color:#991B1B; font-weight:700; font-size:0.8125rem;">Critical</span></td></tr>
+    <tr><td>High</td><td><span class="swatch" style="background:#F59E0B"></span>Amber-500</td><td><span style="color:#92400E; font-weight:600; font-size:0.8125rem;">High</span></td></tr>
+    <tr><td>Medium</td><td><span class="swatch" style="background:#6366F1"></span>Indigo-500</td><td><span style="color:#4338CA; font-weight:500; font-size:0.8125rem;">Medium</span></td></tr>
+    <tr><td>Low</td><td><span class="swatch" style="background:#94A3B8"></span>Slate-400</td><td><span style="color:#64748B; font-weight:500; font-size:0.8125rem;">Low</span></td></tr>
+  </table>
+
+  <h4>스타일 스펙</h4>
+  <table>
+    <tr><th>속성</th><th>값</th></tr>
+    <tr><td>배경</td><td><code>#F8FAFC</code> (Slate-50)</td></tr>
+    <tr><td>패딩</td><td>10px 24px</td></tr>
+    <tr><td>border-bottom</td><td>1px solid <code>#E2E8F0</code></td></tr>
+    <tr><td>높이</td><td>고정 40px</td></tr>
+    <tr><td>내부 정렬</td><td>flex, align-items: center, gap: 12px</td></tr>
+    <tr><td>항목 부재 시</td><td>해당 항목 숨김 (구분자도 자동 제거)</td></tr>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>디자인 영역 ② — Attachments 섹션 (Tier 1)</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">2</div>
+    <div class="design-item-title">Attachments — 이미지 썸네일 + 파일 목록</div>
+  </div>
+
+  <h4>위치</h4>
+  <p>Precondition 블록과 Test Steps 사이. 첨부파일이 없으면 숨김.</p>
+
+  <h4>와이어프레임</h4>
+  <div class="wireframe"><span class="label">[첨부파일 존재 시]</span>
+  📎 Attachments (3)
+  ┌──────────┐  ┌──────────┐  ┌────────────────────┐
+  │ 📷       │  │ 📷       │  │ 📄 error-log.txt   │
+  │ <span class="label">(이미지    │  │ (이미지    │  │    4.2 KB           │
+  │  썸네일)  │  │  썸네일)  │  │    </span><span class="hl">↓ Download</span><span class="label">       │</span>
+  │ 120×80px │  │ 120×80px │  │                    │
+  └──────────┘  └──────────┘  └────────────────────┘
+
+<span class="label">[첨부파일 없으면 이 섹션 전체 숨김]</span></div>
+
+  <h4>이미지 썸네일 스펙</h4>
+  <table>
+    <tr><th>속성</th><th>값</th></tr>
+    <tr><td>크기</td><td>120px × 80px (고정)</td></tr>
+    <tr><td>object-fit</td><td>cover</td></tr>
+    <tr><td>border-radius</td><td>8px</td></tr>
+    <tr><td>border</td><td>1px solid Slate-200</td></tr>
+    <tr><td>hover</td><td>border-color → Indigo-300, scale(1.02), shadow-md</td></tr>
+    <tr><td>cursor</td><td>zoom-in</td></tr>
+    <tr><td>클릭 시</td><td>라이트박스 오버레이 (아래 참조)</td></tr>
+  </table>
+
+  <h4>비이미지 파일 카드 스펙</h4>
+  <table>
+    <tr><th>속성</th><th>값</th></tr>
+    <tr><td>크기</td><td>auto × 80px (높이 고정, 너비 유동)</td></tr>
+    <tr><td>배경</td><td>Slate-50</td></tr>
+    <tr><td>아이콘</td><td>파일 확장자별: .txt→<code>ri-file-text-line</code>, .pdf→<code>ri-file-pdf-line</code>, 기타→<code>ri-attachment-2</code></td></tr>
+    <tr><td>"Download" 링크</td><td>Indigo-500, hover: underline</td></tr>
+  </table>
+
+  <h4>라이트박스 오버레이</h4>
+  <table>
+    <tr><th>속성</th><th>값</th></tr>
+    <tr><td>배경</td><td>rgba(0,0,0,0.85)</td></tr>
+    <tr><td>이미지</td><td>max-width: 90vw, max-height: 85vh, object-fit: contain</td></tr>
+    <tr><td>닫기</td><td>ESC 키 또는 오버레이 클릭 또는 우측 상단 ✕ 버튼</td></tr>
+    <tr><td>탐색</td><td>좌우 화살표로 이전/다음 이미지 (여러 이미지 시)</td></tr>
+    <tr><td>z-index</td><td>60 (Focus Mode z-50 위)</td></tr>
+  </table>
+
+  <h4>섹션 헤더 스타일</h4>
+  <table>
+    <tr><th>속성</th><th>값</th></tr>
+    <tr><td>라벨</td><td>"📎 Attachments (N)" — N은 파일 수</td></tr>
+    <tr><td>폰트</td><td>12px, 600wt, Slate-500, uppercase, letter-spacing 0.05em</td></tr>
+    <tr><td>margin-bottom</td><td>8px</td></tr>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>디자인 영역 ③ — Expected Result 항상 표시</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">3</div>
+    <div class="design-item-title">Expected Result — Step 유무와 관계없이 항상 표시</div>
+  </div>
+
+  <h4>현재 동작</h4>
+  <p>Expected Result 블록은 <b>step이 없을 때만</b> 표시됨 (Line 242 조건: <code>steps.length === 0</code>). Step이 있으면 step 내부 expected만 보임.</p>
+
+  <h4>변경 사항</h4>
+  <p><code>test.expected_result</code>가 존재하면 <b>항상</b> Steps 아래에 별도 블록으로 표시합니다. Step 내부의 per-step expected result과 별개로, TC 전체의 최종 기대 결과를 명확히 보여줍니다.</p>
+
+  <h4>스타일 (기존 유지)</h4>
+  <table>
+    <tr><th>속성</th><th>값</th></tr>
+    <tr><td>배경</td><td><code>#EEF2FF</code> (Indigo-50)</td></tr>
+    <tr><td>border</td><td>1px solid <code>#C7D2FE</code> (Indigo-200)</td></tr>
+    <tr><td>아이콘</td><td><code>ri-checkbox-circle-line</code> Indigo-500</td></tr>
+    <tr><td>라벨</td><td>"Expected Result" — 14px, 600wt, Indigo-700</td></tr>
+    <tr><td>본문</td><td>14px, 400wt, Indigo-800</td></tr>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>디자인 영역 ④ — Comments 접이식 패널 (Tier 3)</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">4</div>
+    <div class="design-item-title">Comments 패널 — 이전 테스터 댓글 접이식 표시</div>
+  </div>
+
+  <h4>위치</h4>
+  <p>Expected Result 블록 아래, Note 입력 위. 기본값: <b>접힘</b> (헤더만 표시).</p>
+
+  <h4>접힌 상태</h4>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────┐
+│ 💬 Comments <span class="badge badge-slate">3</span>                                     <span class="hl">[▶]</span>  │
+└─────────────────────────────────────────────────────────────┘
+<span class="label">클릭 또는 C 키 → 펼침</span></div>
+
+  <h4>펼친 상태</h4>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────┐
+│ 💬 Comments <span class="badge badge-slate">3</span>                                     <span class="hl">[▼]</span>  │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │ <span class="hl">ML</span> · <span class="label">2d ago</span>                                           │ │
+│  │ Safari 17.2에서 재현됨, 17.1에서는 통과                │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                                                             │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │ <span class="hl">JK</span> · <span class="label">5d ago</span>                                           │ │
+│  │ CORS 헤더 이슈일 수 있음 — BE팀 확인 필요              │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                                                             │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │ <span class="hl">SY</span> · <span class="label">7d ago</span>                                           │ │
+│  │ 최초 보고 — 고객 CS#4521 연관                          │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘</div>
+
+  <h4>스타일 스펙</h4>
+  <table>
+    <tr><th>요소</th><th>스타일</th></tr>
+    <tr><td>패널 헤더 (접힌)</td><td>bg: Slate-50, border: 1px solid Slate-200, radius: 8px, padding: 10px 16px, cursor: pointer</td></tr>
+    <tr><td>패널 헤더 (펼친)</td><td>위와 동일, border-radius: 8px 8px 0 0</td></tr>
+    <tr><td>헤더 텍스트</td><td>13px, 600wt, Slate-700</td></tr>
+    <tr><td>카운트 뱃지</td><td>Slate-100 bg, Slate-500 text, 11px, 700wt, pill shape</td></tr>
+    <tr><td>토글 아이콘</td><td>▶ (접힘) / ▼ (펼침), Slate-400</td></tr>
+    <tr><td>댓글 본문 컨테이너</td><td>bg: white, border: 1px solid Slate-200, border-top: none, radius: 0 0 8px 8px, padding: 12px 16px</td></tr>
+    <tr><td>개별 댓글 카드</td><td>bg: Slate-50, radius: 6px, padding: 10px 12px, mb: 8px</td></tr>
+    <tr><td>작성자 이름</td><td>13px, 600wt, Indigo-600</td></tr>
+    <tr><td>시간</td><td>12px, 400wt, Slate-400, "· 2d ago" 형식</td></tr>
+    <tr><td>댓글 텍스트</td><td>13px, 400wt, Slate-700, mt: 4px</td></tr>
+    <tr><td>댓글 없을 때</td><td>"No comments yet" — Slate-400, 중앙 정렬</td></tr>
+    <tr><td>키보드 단축키</td><td><kbd>C</kbd> 키로 토글</td></tr>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>디자인 영역 ⑤ — Execution History 접이식 패널 (Tier 3)</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">5</div>
+    <div class="design-item-title">Execution History — 이전 Run 결과 이력 접이식</div>
+  </div>
+
+  <h4>위치</h4>
+  <p>Comments 패널 아래. 기본값: <b>접힘</b>.</p>
+
+  <h4>펼친 상태</h4>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────┐
+│ 📜 Execution History <span class="badge badge-slate">4</span>                           <span class="hl">[▼]</span>  │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  <span class="green">✓ Passed</span>  · Sprint 23 Regression  · <span class="label">3d ago</span>   · JK            │
+│  ─────────────────────────────────────────────────────────  │
+│  <span class="red">✗ Failed</span>  · Sprint 22 Hotfix      · <span class="label">10d ago</span>  · ML            │
+│     <span class="label">"CORS error on Safari 17.2 — see CS#4521"</span>               │
+│  ─────────────────────────────────────────────────────────  │
+│  <span class="red">✗ Failed</span>  · Sprint 21 Release      · <span class="label">17d ago</span>  · SY            │
+│     <span class="label">"Login form doesn't render on Safari 17"</span>                 │
+│  ─────────────────────────────────────────────────────────  │
+│  <span class="green">✓ Passed</span>  · Sprint 20 Regression  · <span class="label">24d ago</span>  · JK            │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘</div>
+
+  <h4>스타일 스펙</h4>
+  <table>
+    <tr><th>요소</th><th>스타일</th></tr>
+    <tr><td>상태 뱃지</td><td>Passed: Green-500 dot + text, Failed: Red-500 dot + text, Blocked: Amber-500</td></tr>
+    <tr><td>Run 이름</td><td>13px, 500wt, Slate-700</td></tr>
+    <tr><td>날짜</td><td>12px, 400wt, Slate-400</td></tr>
+    <tr><td>작성자</td><td>12px, 500wt, Slate-500</td></tr>
+    <tr><td>노트 (있을 때)</td><td>12px, 400wt, Slate-400, italic, pl: 24px (들여쓰기)</td></tr>
+    <tr><td>구분선</td><td>1px solid Slate-100</td></tr>
+    <tr><td>키보드 단축키</td><td><kbd>H</kbd> 키로 토글</td></tr>
+    <tr><td>최대 표시</td><td>최근 10건. 그 이상은 "Show all N results →" 링크</td></tr>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>디자인 영역 ⑥ — 키보드 단축키 힌트 업데이트</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">6</div>
+    <div class="design-item-title">Header 키보드 힌트 — 신규 단축키 추가</div>
+  </div>
+
+  <h4>기존 키보드 힌트 (헤더 우측)</h4>
+  <div class="wireframe"><span class="label">[현재]</span>
+  [P]=Pass  [F]=Fail  [B]=Block  [R]=Retest  [S]=Skip</div>
+
+  <h4>확장 후</h4>
+  <div class="wireframe"><span class="label">[To-Be — 기존 + 신규]</span>
+  [P]=Pass [F]=Fail [B]=Block [R]=Retest [S]=Skip  │  [C]=Comments [H]=History [N]=Note</div>
+
+  <h4>스타일</h4>
+  <p>기존 <code>&lt;kbd&gt;</code> 스타일 유지 (Gray-100 bg, Gray-200 border, 20px square, monospace). 구분선(│)으로 Status 단축키와 Navigation 단축키를 시각적으로 분리.</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>인터랙션 플로우</h2>
+
+<h3>시나리오 1: 일반 테스트 실행 플로우</h3>
+<table>
+  <tr><th>Step</th><th>사용자 행동</th><th>시스템 반응</th></tr>
+  <tr><td>1</td><td>Focus Mode 진입 (Cmd+Shift+F)</td><td>풀스크린 표시. 첫 번째 TC 로드. Metadata Bar에 TC-ID·Priority·Folder·Tags·Assignee 표시.</td></tr>
+  <tr><td>2</td><td>TC 내용 확인 (스크롤)</td><td>Precondition → Attachments → Steps+Expected → Expected Result 순서로 표시.</td></tr>
+  <tr><td>3</td><td>첨부 이미지 클릭</td><td>라이트박스 오버레이 열림. ESC로 닫기.</td></tr>
+  <tr><td>4</td><td><kbd>C</kbd> 키 누름</td><td>Comments 패널 펼침. 이전 테스터 댓글 확인.</td></tr>
+  <tr><td>5</td><td><kbd>P</kbd> 키 누름</td><td>Passed 상태 저장 → 300ms 후 다음 TC로 자동 진행. Comments 패널 자동 접힘.</td></tr>
+</table>
+
+<h3>시나리오 2: Failed TC 처리 플로우</h3>
+<table>
+  <tr><th>Step</th><th>사용자 행동</th><th>시스템 반응</th></tr>
+  <tr><td>1</td><td><kbd>H</kbd> 키 누름</td><td>Execution History 펼침. "이전에도 실패했었구나" 확인.</td></tr>
+  <tr><td>2</td><td><kbd>F</kbd> 키 누름</td><td>Note 입력 영역 표시 + "Failed" pending 상태 설정.</td></tr>
+  <tr><td>3</td><td>노트 입력</td><td>"Safari 17.2 specific — CORS error persists after BE fix"</td></tr>
+  <tr><td>4</td><td><kbd>⌘</kbd>+<kbd>Enter</kbd></td><td>Failed + 노트 저장 → 300ms 후 다음 TC.</td></tr>
+</table>
+
+<h3>시나리오 3: TC 전환 시 상태 리셋</h3>
+<table>
+  <tr><th>트리거</th><th>동작</th></tr>
+  <tr><td>다음/이전 TC로 이동</td><td>Comments/History 패널 자동 접힘. Note 입력 영역 닫힘. 라이트박스 닫힘. Metadata Bar 새 TC 정보로 갱신.</td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>구현 Phase별 디자인 범위</h2>
+
+<table>
+  <tr><th>Phase</th><th>디자인 항목</th><th>Desi 작업 필요</th></tr>
+  <tr>
+    <td><b>Phase 0</b><br>(버그 수정)</td>
+    <td>Precondition 미전달 수정, Note 미저장 수정</td>
+    <td>❌ 디자인 불필요 (코드만 수정)</td>
+  </tr>
+  <tr>
+    <td><b>Phase 1</b><br>(CEO 요청)</td>
+    <td>① Metadata Bar<br>② Attachments + 라이트박스<br>③ Expected Result 항상 표시<br>⑥ 키보드 힌트 업데이트</td>
+    <td>✅ <span class="badge badge-red">디자인 필요</span></td>
+  </tr>
+  <tr>
+    <td><b>Phase 2</b><br>(확장)</td>
+    <td>④ Comments 접이식 패널<br>⑤ Execution History 접이식 패널</td>
+    <td>✅ <span class="badge badge-amber">디자인 필요</span></td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>디자인 토큰 참조</h2>
+
+<h3>색상</h3>
+<table>
+  <tr><th>용도</th><th>색상</th><th>코드</th><th>Tailwind</th></tr>
+  <tr><td>Focus Mode 강조색</td><td><span class="swatch" style="background:#6366F1"></span></td><td>#6366F1</td><td>indigo-500</td></tr>
+  <tr><td>TC-ID</td><td><span class="swatch" style="background:#7C3AED"></span></td><td>#7C3AED</td><td>violet-600</td></tr>
+  <tr><td>Passed</td><td><span class="swatch" style="background:#10B981"></span></td><td>#10B981</td><td>emerald-500</td></tr>
+  <tr><td>Failed</td><td><span class="swatch" style="background:#EF4444"></span></td><td>#EF4444</td><td>red-500</td></tr>
+  <tr><td>Blocked</td><td><span class="swatch" style="background:#F59E0B"></span></td><td>#F59E0B</td><td>amber-500</td></tr>
+  <tr><td>Retest</td><td><span class="swatch" style="background:#8B5CF6"></span></td><td>#8B5CF6</td><td>violet-500</td></tr>
+  <tr><td>Precondition bg</td><td><span class="swatch" style="background:#FFFBEB"></span></td><td>#FFFBEB</td><td>amber-50</td></tr>
+  <tr><td>Expected Result bg</td><td><span class="swatch" style="background:#EEF2FF"></span></td><td>#EEF2FF</td><td>indigo-50</td></tr>
+</table>
+
+<h3>아이콘 (Remix Icons)</h3>
+<table>
+  <tr><th>용도</th><th>클래스</th></tr>
+  <tr><td>Precondition</td><td><code>ri-alert-line</code></td></tr>
+  <tr><td>Expected Result</td><td><code>ri-checkbox-circle-line</code></td></tr>
+  <tr><td>Attachments</td><td><code>ri-attachment-2</code></td></tr>
+  <tr><td>Comments</td><td><code>ri-chat-3-line</code></td></tr>
+  <tr><td>History</td><td><code>ri-history-line</code></td></tr>
+  <tr><td>Download</td><td><code>ri-download-2-line</code></td></tr>
+  <tr><td>Folder</td><td><code>ri-folder-line</code></td></tr>
+  <tr><td>Tags</td><td><code>ri-price-tag-3-line</code></td></tr>
+  <tr><td>Close (라이트박스)</td><td><code>ri-close-line</code></td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>참고 자료</h2>
+
+<table>
+  <tr><th>문서</th><th>설명</th></tr>
+  <tr><td><code>pm-analysis-focus-mode-enhancement.html</code></td><td>PM 분석 보고서 (CEO 승인 완료)</td></tr>
+  <tr><td><code>FocusMode.tsx</code></td><td>현재 Focus Mode 컴포넌트 (336줄)</td></tr>
+  <tr><td><code>run-detail/page.tsx</code></td><td>Run Detail 페이지 (Focus Mode 진입점, Line 1376-1394)</td></tr>
+</table>
+
+<div class="callout">
+  <b>Desi 디자인 완료 후 다음 단계:</b><br>
+  1. Phase 1 디자인 시안 → PM 리뷰 → CEO 승인<br>
+  2. Phase 0 (버그 수정 2건)은 디자인 없이 Dev 즉시 착수<br>
+  3. Phase 1 승인 후 Dev 핸드오프 (예상 공수: 1일)<br>
+  4. Phase 2 디자인은 Phase 1 완료 후 진행<br><br>
+  <b>질문 있으면:</b> PM Kyle에게 문의해주세요.
+</div>
+
+</div><!-- .body -->
+</div><!-- .container -->
+</body>
+</html>

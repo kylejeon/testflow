@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Run Detail Option A (Persistent Steps + Step Results + Tabs)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Shared Chrome ── */
+  .project-header { background: #fff; display: flex; align-items: center; padding: 0 1.5rem; height: 3.5rem; gap: 0.75rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .ph-logo { width: 30px; height: 30px; background: #6366F1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; }
+  .ph-sep { width: 1px; height: 20px; background: #E2E8F0; }
+  .ph-project { font-size: 0.875rem; color: #64748B; font-weight: 500; }
+  .ph-right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+  .ph-btn { font-size: 0.8125rem; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; }
+  .av { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .av-sm { width: 24px; height: 24px; font-size: 0.5rem; }
+  .av-md { width: 32px; height: 32px; font-size: 0.6875rem; }
+
+  .tab-bar { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0 1.5rem; height: 3rem; flex-shrink: 0; }
+  .tab-item { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.875rem; height: 100%; font-size: 0.875rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; }
+  .tab-item.active { color: #6366F1; border-bottom-color: #6366F1; font-weight: 600; }
+  .tab-item i { font-size: 1rem; }
+  .tab-count { font-size: 0.6875rem; background: #F1F5F9; color: #64748B; padding: 0.125rem 0.4375rem; border-radius: 9999px; font-weight: 600; }
+  .tab-item.active .tab-count { background: #EEF2FF; color: #6366F1; }
+
+  /* ── Main Layout ── */
+  .main-layout { flex: 1; display: flex; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .sidebar { width: 200px; min-width: 200px; background: #fff; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; flex-shrink: 0; }
+  .sb-header { padding: 0.75rem 0.875rem; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: space-between; }
+  .sb-title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; }
+  .sb-list { flex: 1; overflow-y: auto; padding: 0.25rem 0; }
+  .sb-folder { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.875rem; font-size: 0.8125rem; color: #475569; cursor: pointer; transition: background 0.1s; }
+  .sb-folder:hover { background: #F8FAFC; }
+  .sb-folder.active { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .sb-folder i { font-size: 0.9375rem; color: #94A3B8; flex-shrink: 0; }
+  .sb-folder.active i { color: #6366F1; }
+  .sb-folder .cnt { margin-left: auto; font-size: 0.75rem; color: #94A3B8; }
+
+  /* ── Center ── */
+  .center { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .center-scroll { flex: 1; overflow-y: auto; }
+  .center-inner { padding: 1.75rem; }
+
+  /* ── Run Header ── */
+  .run-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.3125rem; }
+  .run-back { display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 500; color: #6366F1; cursor: pointer; text-decoration: none; margin-bottom: 0.25rem; }
+  .run-title-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .run-title { font-size: 1.375rem; font-weight: 700; color: #0F172A; }
+  .badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; }
+  .badge-progress { background: #DBEAFE; color: #1D4ED8; }
+  .badge-progress .pulse { width: 6px; height: 6px; border-radius: 50%; background: #3B82F6; animation: pulse 1.5s ease infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  .badge-auto { background: #F0F9FF; color: #0284C7; }
+  .run-sub { font-size: 0.8125rem; color: #94A3B8; }
+  .btn { font-size: 0.8125rem; font-weight: 600; padding: 0.4375rem 0.875rem; border-radius: 0.5rem; cursor: pointer; font-family: inherit; border: 1px solid; display: flex; align-items: center; gap: 0.375rem; transition: all 0.15s; }
+  .btn-ghost { background: #fff; color: #475569; border-color: #E2E8F0; }
+  .btn-focus { background: #6366F1; color: #fff; border-color: #6366F1; }
+
+  /* ── Stat Cards ── */
+  .stat-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.875rem; margin-bottom: 1rem; }
+  .stat-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem; padding: 1rem 1.125rem; display: flex; align-items: center; gap: 0.75rem; }
+  .stat-icon { width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+  .stat-icon.total { background: #DBEAFE; color: #2563EB; }
+  .stat-icon.passed { background: #D1FAE5; color: #16A34A; }
+  .stat-icon.failed { background: #FEE2E2; color: #DC2626; }
+  .stat-icon.blocked { background: #F1F5F9; color: #64748B; }
+  .stat-icon.untested { background: #FEF3C7; color: #D97706; }
+  .stat-label { font-size: 0.6875rem; color: #94A3B8; font-weight: 500; }
+  .stat-val { font-size: 1.75rem; font-weight: 800; color: #0F172A; line-height: 1.2; }
+
+  /* ── Progress Bar ── */
+  .progress-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem; padding: 1rem 1.125rem; margin-bottom: 1rem; }
+  .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+  .progress-title { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .progress-pct { font-size: 0.8125rem; font-weight: 700; color: #0F172A; }
+  .progress-bar { height: 8px; border-radius: 9999px; background: #F1F5F9; overflow: hidden; display: flex; gap: 1px; margin-bottom: 0.5rem; }
+  .pb-passed { background: #22C55E; }
+  .pb-failed { background: #EF4444; }
+  .pb-untested { background: #E2E8F0; }
+  .legend-item { display: inline-flex; align-items: center; gap: 0.3125rem; font-size: 0.6875rem; color: #64748B; margin-right: 1rem; }
+  .legend-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Table Card ── */
+  .table-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem; overflow: hidden; }
+  .table-toolbar { display: flex; align-items: center; gap: 0.625rem; padding: 0.875rem 1.125rem; border-bottom: 1px solid #E2E8F0; }
+  .search-wrap { flex: 1; position: relative; }
+  .search-wrap i { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.9375rem; color: #94A3B8; }
+  .search-box { font-size: 0.8125rem; padding: 0.4375rem 0.875rem 0.4375rem 2.125rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #334155; outline: none; width: 100%; font-family: inherit; }
+  .filter-select { font-size: 0.8125rem; padding: 0.4375rem 0.625rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #334155; cursor: pointer; font-family: inherit; font-weight: 500; }
+  .tc-table { width: 100%; border-collapse: collapse; }
+  .tc-table th { background: #F8FAFC; padding: 0.5rem 1rem; text-align: left; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+  .tc-table td { padding: 0.625rem 1rem; font-size: 0.8125rem; color: #334155; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+  .tc-table tbody tr { cursor: pointer; transition: background 0.1s; }
+  .tc-table tbody tr:hover td { background: #FAFAFF; }
+  .tc-table tbody tr.selected td { background: #EEF2FF; }
+  .tc-table .cb { width: 36px; }
+  .tc-table input[type="checkbox"] { width: 15px; height: 15px; accent-color: #6366F1; cursor: pointer; }
+  .tc-id { font-family: 'SF Mono','Fira Code',monospace; font-size: 0.75rem; color: #94A3B8; background: #F1F5F9; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; }
+  .tc-name { font-weight: 600; color: #0F172A; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .priority-badge { font-size: 0.6875rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem; }
+  .priority-badge.high { color: #DC2626; }
+  .priority-badge.medium { color: #D97706; }
+  .priority-badge.low { color: #64748B; }
+  .status-badge { font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.3125rem; }
+  .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .sb-passed { background: #F0FDF4; color: #166534; } .sb-passed .dot { background: #22C55E; }
+  .sb-failed { background: #FEF2F2; color: #991B1B; } .sb-failed .dot { background: #EF4444; }
+  .sb-untested { background: #F8FAFC; color: #64748B; } .sb-untested .dot { background: #94A3B8; }
+
+  /* ══════════════════════════════════════════════════════════════════ */
+  /* ★ OPTION A — RUN DETAIL PANEL (500px, Steps + Step Results)      */
+  /* ══════════════════════════════════════════════════════════════════ */
+  .detail-panel { width: 500px; min-width: 500px; background: #fff; border-left: 1px solid #E2E8F0; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+
+  /* ── DP Header ── */
+  .dp-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .dp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .dp-id { font-size: 0.6875rem; font-family: monospace; color: #94A3B8; margin-bottom: 0.375rem; }
+  .dp-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; line-height: 1.3; flex: 1; }
+  .dp-close { width: 1.75rem; height: 1.75rem; display: flex; align-items: center; justify-content: center; border-radius: 0.375rem; cursor: pointer; color: #94A3B8; border: none; background: none; flex-shrink: 0; }
+  .dp-close:hover { background: #F1F5F9; color: #475569; }
+
+  /* ── Quick Actions (Run context) ── */
+  .dp-actions-bar { display: flex; align-items: center; gap: 0.375rem; padding: 0.625rem 1.25rem; border-bottom: 1px solid #F1F5F9; flex-shrink: 0; }
+  .dp-status-select { font-size: 0.75rem; font-weight: 600; padding: 0.3125rem 0.625rem; border-radius: 9999px; border: 1px solid #E2E8F0; cursor: pointer; font-family: inherit; background: #F0FDF4; color: #166534; }
+  .dp-action-btn { font-size: 0.75rem; font-weight: 600; padding: 0.3125rem 0.625rem; border-radius: 0.375rem; cursor: pointer; font-family: inherit; border: none; display: flex; align-items: center; gap: 0.25rem; }
+  .dp-add-result { background: #F1F5F9; color: #475569; }
+  .dp-add-result:hover { background: #E2E8F0; }
+  .dp-action-pass { background: #22C55E; color: #fff; }
+  .dp-action-pass:hover { background: #16A34A; }
+  .dp-nav-btn { width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; }
+  .dp-spacer { flex: 1; }
+
+  /* ── Meta Grid ── */
+  .dp-meta { padding: 0.875rem 1.25rem; border-bottom: 1px solid #F1F5F9; flex-shrink: 0; }
+  .dp-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem 1rem; }
+  .dp-field-label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 0.1875rem; }
+  .dp-field-value { font-size: 0.8125rem; color: #0F172A; font-weight: 500; display: flex; align-items: center; gap: 0.25rem; }
+  .dp-priority { font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; }
+  .dp-priority.high { background: #FEE2E2; color: #991B1B; }
+  .dp-tag { font-size: 0.6875rem; font-weight: 500; padding: 0.125rem 0.4375rem; border-radius: 0.25rem; background: #EEF2FF; color: #4338CA; }
+  .dp-av { width: 1.25rem; height: 1.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; }
+
+  /* ══════════════════════════════════════════════════ */
+  /* ★ COLLAPSIBLE STEPS AREA WITH STEP-LEVEL RESULTS */
+  /* ══════════════════════════════════════════════════ */
+  .dp-steps-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.5rem 1.25rem;
+    background: #F8FAFC; border-bottom: 1px solid #E2E8F0;
+    cursor: pointer; flex-shrink: 0; user-select: none;
+  }
+  .dp-steps-toggle:hover { background: #F1F5F9; }
+  .dp-steps-toggle-left { display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; }
+  .dp-steps-toggle-left i { font-size: 0.875rem; color: #6366F1; transition: transform 0.2s; }
+  .dp-steps-toggle.collapsed .dp-steps-toggle-left i { transform: rotate(-90deg); }
+  .dp-steps-toggle-right { font-size: 0.6875rem; color: #94A3B8; font-weight: 500; }
+  .dp-steps-progress { display: flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; }
+  .dp-steps-progress .passed-count { color: #16A34A; }
+  .dp-steps-progress .sep { color: #CBD5E1; }
+  .dp-steps-progress .total-count { color: #64748B; }
+
+  .dp-steps-area {
+    max-height: 40vh;
+    overflow-y: auto;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid #E2E8F0;
+    flex-shrink: 0;
+  }
+  .dp-steps-area.collapsed { max-height: 0; padding: 0 1.25rem; overflow: hidden; border-bottom: none; }
+
+  /* Precondition */
+  .dp-section { margin-bottom: 0.75rem; }
+  .dp-section-title { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 0.375rem; display: flex; align-items: center; gap: 0.25rem; }
+  .dp-section-title i { font-size: 0.75rem; }
+  .dp-precondition { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.375rem; padding: 0.5rem 0.75rem; font-size: 0.75rem; color: #92400E; line-height: 1.5; }
+
+  /* ★ Steps with inline step-level result buttons */
+  .dp-steps { display: flex; flex-direction: column; gap: 0.375rem; }
+  .dp-step { display: flex; gap: 0.5rem; background: #F8FAFC; border-radius: 0.5rem; padding: 0.5rem 0.75rem; align-items: flex-start; position: relative; }
+  .dp-step.step-passed { background: #F0FDF4; border: 1px solid #BBF7D0; }
+  .dp-step.step-failed { background: #FEF2F2; border: 1px solid #FECACA; }
+  .dp-step-num { width: 1.25rem; height: 1.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700; flex-shrink: 0; margin-top: 0.0625rem; background: #EEF2FF; color: #4338CA; }
+  .dp-step.step-passed .dp-step-num { background: #22C55E; color: #fff; }
+  .dp-step.step-failed .dp-step-num { background: #EF4444; color: #fff; }
+  .dp-step-content { flex: 1; min-width: 0; }
+  .dp-step-text { font-size: 0.75rem; color: #334155; line-height: 1.5; }
+  .dp-expected { font-size: 0.6875rem; color: #16A34A; margin-top: 0.25rem; display: flex; align-items: flex-start; gap: 0.25rem; line-height: 1.4; }
+  .dp-expected i { font-size: 0.75rem; flex-shrink: 0; margin-top: 0.0625rem; }
+
+  /* ★ Step-level mini buttons */
+  .dp-step-actions { display: flex; gap: 0.1875rem; flex-shrink: 0; margin-top: 0.125rem; }
+  .step-mini-btn { width: 1.375rem; height: 1.375rem; border-radius: 0.25rem; border: 1px solid #E2E8F0; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; color: #94A3B8; transition: all 0.1s; }
+  .step-mini-btn:hover { border-color: #C7D2FE; }
+  .step-mini-btn.mini-pass:hover { background: #F0FDF4; color: #16A34A; border-color: #86EFAC; }
+  .step-mini-btn.mini-fail:hover { background: #FEF2F2; color: #DC2626; border-color: #FCA5A5; }
+  .step-mini-btn.mini-pass.active { background: #22C55E; color: #fff; border-color: #22C55E; }
+  .step-mini-btn.mini-fail.active { background: #EF4444; color: #fff; border-color: #EF4444; }
+
+  /* Attachments */
+  .dp-attachments { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.375rem; margin-top: 0.75rem; }
+  .dp-attach { height: 3rem; border-radius: 0.375rem; background: #F1F5F9; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: center; cursor: pointer; gap: 0.25rem; font-size: 0.6875rem; color: #94A3B8; }
+  .dp-attach:hover { border-color: #C7D2FE; }
+  .dp-attach i { font-size: 0.875rem; }
+
+  /* ══════════════════════════════════════════════ */
+  /* ★ TABS (no Details tab)                      */
+  /* ══════════════════════════════════════════════ */
+  .dp-tabs { display: flex; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .dp-tab { flex: 1; padding: 0.5rem; font-size: 0.75rem; font-weight: 600; color: #94A3B8; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 0.25rem; }
+  .dp-tab.active { color: #6366F1; border-bottom-color: #6366F1; }
+  .dp-tab:hover:not(.active) { color: #475569; }
+  .dp-tab-badge { font-size: 0.5625rem; background: #F1F5F9; color: #64748B; padding: 0.0625rem 0.3125rem; border-radius: 9999px; font-weight: 700; }
+  .dp-tab.active .dp-tab-badge { background: #EEF2FF; color: #6366F1; }
+
+  /* Tab Body */
+  .dp-tab-body { flex: 1; overflow-y: auto; padding: 0.875rem 1.25rem; }
+  .dp-tab-content { display: none; }
+  .dp-tab-content.active { display: block; }
+
+  /* Comments */
+  .dp-comment { margin-bottom: 0.75rem; }
+  .dp-comment-head { display: flex; align-items: center; gap: 0.375rem; margin-bottom: 0.25rem; }
+  .dp-comment-av { width: 1.25rem; height: 1.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .dp-comment-name { font-size: 0.75rem; font-weight: 600; color: #0F172A; }
+  .dp-comment-time { font-size: 0.6875rem; color: #94A3B8; }
+  .dp-comment-text { font-size: 0.75rem; color: #475569; line-height: 1.5; background: #F8FAFC; padding: 0.5rem 0.75rem; border-radius: 0.375rem; border: 1px solid #F1F5F9; margin-left: 1.625rem; }
+  .dp-comment-input { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .dp-comment-input textarea { flex: 1; font-size: 0.75rem; padding: 0.5rem 0.75rem; border: 1px solid #E2E8F0; border-radius: 0.375rem; resize: none; font-family: inherit; outline: none; height: 2.5rem; }
+  .dp-comment-input textarea:focus { border-color: #6366F1; }
+  .dp-comment-input button { font-size: 0.75rem; font-weight: 600; padding: 0.375rem 0.75rem; border-radius: 0.375rem; background: #6366F1; color: #fff; border: none; cursor: pointer; font-family: inherit; }
+
+  /* Results */
+  .dp-result-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #F1F5F9; }
+  .dp-result-status { font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; }
+  .dp-result-status .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .dp-result-status.passed { background: #F0FDF4; color: #166534; } .dp-result-status.passed .dot { background: #22C55E; }
+  .dp-result-status.failed { background: #FEF2F2; color: #991B1B; } .dp-result-status.failed .dot { background: #EF4444; }
+  .dp-result-info { flex: 1; }
+  .dp-result-run { font-size: 0.75rem; font-weight: 600; color: #0F172A; }
+  .dp-result-time { font-size: 0.6875rem; color: #94A3B8; }
+
+  /* Issues */
+  .dp-issue-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #F1F5F9; }
+  .dp-issue-icon { width: 1.5rem; height: 1.5rem; border-radius: 0.25rem; background: #FEF2F2; color: #EF4444; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0; }
+  .dp-issue-title { font-size: 0.75rem; font-weight: 600; color: #0F172A; }
+  .dp-issue-meta { font-size: 0.6875rem; color: #94A3B8; }
+  .dp-issue-link { font-size: 0.6875rem; color: #6366F1; font-weight: 600; text-decoration: none; }
+
+  /* History */
+  .dp-history-item { display: flex; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #F1F5F9; }
+  .dp-history-dot { width: 6px; height: 6px; border-radius: 50%; background: #C7D2FE; flex-shrink: 0; margin-top: 0.4rem; }
+  .dp-history-text { font-size: 0.75rem; color: #334155; line-height: 1.4; }
+  .dp-history-text strong { font-weight: 600; color: #0F172A; }
+  .dp-history-time { font-size: 0.6875rem; color: #94A3B8; }
+
+  /* ══════════════════════════════════ */
+  /* DEV HANDOFF SPEC                  */
+  /* ══════════════════════════════════ */
+  .spec-panel { margin-top: 2rem; padding: 1.5rem 2rem; border-top: 2px dashed #C7D2FE; background: #F8FAFC; }
+  .spec-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: #EEF2FF; color: #4338CA; font-size: 0.6875rem; font-weight: 700; padding: 0.25rem 0.625rem; border-radius: 9999px; margin-bottom: 1rem; }
+  .spec-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .spec-card .label { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6366F1; margin-bottom: 0.75rem; }
+  .spec-card h4 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin: 0.875rem 0 0.375rem; }
+  .spec-card h4:first-of-type { margin-top: 0; }
+  .spec-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.25rem 0; font-size: 0.75rem; border-bottom: 1px solid #F8FAFC; }
+  .spec-row .k { font-weight: 600; color: #475569; min-width: 160px; }
+  .spec-row .v { color: #059669; font-weight: 600; font-family: monospace; font-size: 0.6875rem; }
+  .spec-row .old { color: #94A3B8; text-decoration: line-through; font-size: 0.6875rem; margin-right: 0.5rem; }
+  .rec-box { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.75rem; color: #92400E; line-height: 1.6; margin-top: 0.5rem; }
+  .rec-box strong { color: #78350F; }
+  pre.code { background: #1E293B; color: #E2E8F0; border-radius: 0.5rem; padding: 1rem; font-size: 0.6875rem; line-height: 1.6; overflow-x: auto; margin: 0.5rem 0; font-family: 'SF Mono','Fira Code',monospace; }
+  pre.code .cm { color: #64748B; }
+  pre.code .kw { color: #818CF8; }
+  pre.code .str { color: #34D399; }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER CHROME ═══ -->
+<header class="project-header">
+  <div class="ph-logo">T</div>
+  <div class="ph-sep"></div>
+  <span class="ph-project">Mobile App v2</span>
+  <div class="ph-right">
+    <div class="ph-btn"><i class="ri-command-line"></i> ⌘K</div>
+    <div class="ph-btn"><i class="ri-notification-3-line"></i></div>
+    <div class="av av-md" style="background:#6366F1">KJ</div>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <div class="tab-item"><i class="ri-dashboard-3-line"></i> Dashboard</div>
+  <div class="tab-item"><i class="ri-file-list-3-line"></i> Test Cases <span class="tab-count">203</span></div>
+  <div class="tab-item active"><i class="ri-play-circle-line"></i> Runs <span class="tab-count">12</span></div>
+  <div class="tab-item"><i class="ri-flag-line"></i> Milestones</div>
+</div>
+
+<!-- ═══ MAIN LAYOUT ═══ -->
+<div class="main-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-header"><span class="sb-title">Folders</span></div>
+    <div class="sb-list">
+      <div class="sb-folder active"><i class="ri-folder-3-line"></i> All Cases <span class="cnt">23</span></div>
+      <div class="sb-folder"><i class="ri-folder-3-line"></i> Login <span class="cnt">10</span></div>
+      <div class="sb-folder"><i class="ri-folder-3-line"></i> Patient List <span class="cnt">12</span></div>
+      <div class="sb-folder"><i class="ri-folder-3-line"></i> Viewer <span class="cnt">1</span></div>
+    </div>
+  </aside>
+
+  <!-- Center -->
+  <div class="center">
+    <div class="center-scroll"><div class="center-inner">
+
+      <!-- Run Header -->
+      <div class="run-header">
+        <div>
+          <a class="run-back"><i class="ri-arrow-left-line"></i> Back to Runs</a>
+          <div class="run-title-row">
+            <h1 class="run-title">auto test2</h1>
+            <span class="badge badge-progress"><span class="pulse"></span> In Progress</span>
+            <span class="badge badge-auto"><i class="ri-robot-line" style="font-size:0.75rem"></i> Automated</span>
+          </div>
+          <p class="run-sub">Started Mar 24 · 9% completed · 23 test cases</p>
+        </div>
+        <div style="display:flex;gap:0.5rem;">
+          <button class="btn btn-ghost"><i class="ri-more-2-fill"></i></button>
+          <button class="btn btn-focus"><i class="ri-focus-3-line"></i> Focus Mode</button>
+        </div>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stat-row">
+        <div class="stat-card"><div class="stat-icon total"><i class="ri-file-list-3-line"></i></div><div><div class="stat-label">Total</div><div class="stat-val">23</div></div></div>
+        <div class="stat-card"><div class="stat-icon passed"><i class="ri-checkbox-circle-fill"></i></div><div><div class="stat-label">Passed</div><div class="stat-val" style="color:#16A34A">2</div></div></div>
+        <div class="stat-card"><div class="stat-icon failed"><i class="ri-close-circle-fill"></i></div><div><div class="stat-label">Failed</div><div class="stat-val">0</div></div></div>
+        <div class="stat-card"><div class="stat-icon blocked"><i class="ri-forbid-fill"></i></div><div><div class="stat-label">Blocked</div><div class="stat-val">0</div></div></div>
+        <div class="stat-card"><div class="stat-icon untested"><i class="ri-time-fill"></i></div><div><div class="stat-label">Untested</div><div class="stat-val">21</div></div></div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-card">
+        <div class="progress-header"><span class="progress-title">Execution Progress</span><span class="progress-pct">9%</span></div>
+        <div class="progress-bar"><div class="pb-passed" style="width:8.7%"></div><div class="pb-untested" style="width:91.3%"></div></div>
+        <div>
+          <span class="legend-item"><span class="legend-dot" style="background:#22C55E"></span> <b>2</b> Passed</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#EF4444"></span> <b>0</b> Failed</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#E2E8F0"></span> <b>21</b> Untested</span>
+        </div>
+      </div>
+
+      <!-- TC Table -->
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div class="search-wrap"><i class="ri-search-line"></i><input class="search-box" placeholder="Search test cases..." /></div>
+          <select class="filter-select"><option>All Status</option></select>
+          <select class="filter-select"><option>All Priority</option></select>
+        </div>
+        <table class="tc-table">
+          <thead><tr><th class="cb"><input type="checkbox" /></th><th>ID</th><th>Test Case</th><th>Priority</th><th>Assignee</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr class="selected"><td class="cb"><input type="checkbox" /></td><td><span class="tc-id">TC-001</span></td><td><span class="tc-name">Login with valid credentials on Safari 17</span></td><td><span class="priority-badge high"><i class="ri-flag-fill"></i> High</span></td><td><div class="av av-sm" style="background:#6366F1">SK</div></td><td><span class="status-badge sb-passed"><span class="dot"></span> Passed</span></td></tr>
+            <tr><td class="cb"><input type="checkbox" /></td><td><span class="tc-id">TC-002</span></td><td><span class="tc-name">Login with invalid password shows error</span></td><td><span class="priority-badge high"><i class="ri-flag-fill"></i> High</span></td><td><div class="av av-sm" style="background:#6366F1">SK</div></td><td><span class="status-badge sb-passed"><span class="dot"></span> Passed</span></td></tr>
+            <tr><td class="cb"><input type="checkbox" /></td><td><span class="tc-id">TC-003</span></td><td><span class="tc-name">OAuth SSO redirect handles timeout</span></td><td><span class="priority-badge medium"><i class="ri-flag-fill"></i> Med</span></td><td><div class="av av-sm" style="background:#EC4899">JL</div></td><td><span class="status-badge sb-untested"><span class="dot"></span> Untested</span></td></tr>
+            <tr><td class="cb"><input type="checkbox" /></td><td><span class="tc-id">TC-004</span></td><td><span class="tc-name">Session persistence after browser restart</span></td><td><span class="priority-badge medium"><i class="ri-flag-fill"></i> Med</span></td><td><div class="av av-sm" style="background:#10B981">MK</div></td><td><span class="status-badge sb-untested"><span class="dot"></span> Untested</span></td></tr>
+            <tr><td class="cb"><input type="checkbox" /></td><td><span class="tc-id">TC-005</span></td><td><span class="tc-name">Password reset email delivery under 30s</span></td><td><span class="priority-badge low"><i class="ri-flag-fill"></i> Low</span></td><td><div class="av av-sm" style="background:#F59E0B">AH</div></td><td><span class="status-badge sb-untested"><span class="dot"></span> Untested</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- ★ OPTION A: RUN DETAIL PANEL (Steps + Step-Level Results) -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="detail-panel">
+
+    <!-- Header -->
+    <div class="dp-header">
+      <div class="dp-top">
+        <div style="flex:1">
+          <div class="dp-id">TC-001</div>
+          <div class="dp-title">Login with valid credentials on Safari 17</div>
+        </div>
+        <button class="dp-close"><i class="ri-close-line" style="font-size:1.125rem"></i></button>
+      </div>
+    </div>
+
+    <!-- ★ Quick Actions (Run context: status, Add Result, Pass & Next, nav) -->
+    <div class="dp-actions-bar">
+      <select class="dp-status-select">
+        <option selected>✓ Passed</option>
+        <option>✕ Failed</option>
+        <option>⊘ Blocked</option>
+        <option>↻ Retest</option>
+        <option>— Untested</option>
+      </select>
+      <button class="dp-action-btn dp-add-result"><i class="ri-add-line"></i> Add Result</button>
+      <div class="dp-spacer"></div>
+      <button class="dp-action-btn dp-action-pass"><i class="ri-check-line"></i> Pass & Next</button>
+      <button class="dp-nav-btn"><i class="ri-arrow-up-s-line"></i></button>
+      <button class="dp-nav-btn"><i class="ri-arrow-down-s-line"></i></button>
+    </div>
+
+    <!-- Meta Grid -->
+    <div class="dp-meta">
+      <div class="dp-meta-grid">
+        <div><div class="dp-field-label">Priority</div><div class="dp-field-value"><span class="dp-priority high"><i class="ri-flag-fill"></i> High</span></div></div>
+        <div><div class="dp-field-label">Folder</div><div class="dp-field-value"><i class="ri-folder-line" style="font-size:0.75rem;color:#94A3B8"></i> Login</div></div>
+        <div><div class="dp-field-label">Tags</div><div class="dp-field-value"><span class="dp-tag">login</span> <span class="dp-tag">safari</span></div></div>
+        <div><div class="dp-field-label">Assignee</div><div class="dp-field-value"><div class="dp-av" style="background:#6366F1">SK</div> Sarah Kim</div></div>
+        <div><div class="dp-field-label">Created</div><div class="dp-field-value">Mar 18, 2026</div></div>
+        <div><div class="dp-field-label">Last Run</div><div class="dp-field-value" style="color:#6366F1;cursor:pointer">Run #42 →</div></div>
+      </div>
+    </div>
+
+    <!-- ★ Toggle Bar with step progress -->
+    <div class="dp-steps-toggle" id="stepsToggle" onclick="toggleSteps()">
+      <div class="dp-steps-toggle-left"><i class="ri-arrow-down-s-line"></i> Test Steps</div>
+      <div class="dp-steps-progress"><span class="passed-count">3</span><span class="sep">/</span><span class="total-count">5 steps passed</span></div>
+    </div>
+
+    <!-- ★ Persistent Steps Area with Step-Level Pass/Fail Buttons -->
+    <div class="dp-steps-area" id="stepsArea">
+
+      <!-- Precondition -->
+      <div class="dp-section">
+        <div class="dp-section-title"><i class="ri-alert-line"></i> Precondition</div>
+        <div class="dp-precondition">User account "testuser@testably.app" exists. Safari 17+ on macOS Sonoma.</div>
+      </div>
+
+      <!-- Steps -->
+      <div class="dp-section">
+        <div class="dp-steps">
+
+          <!-- Step 1: Passed -->
+          <div class="dp-step step-passed">
+            <div class="dp-step-num">1</div>
+            <div class="dp-step-content">
+              <div class="dp-step-text">Open Safari 17 and navigate to login page</div>
+              <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> Login page loads within 3 seconds</div>
+            </div>
+            <div class="dp-step-actions">
+              <button class="step-mini-btn mini-pass active" title="Pass"><i class="ri-check-line"></i></button>
+              <button class="step-mini-btn mini-fail" title="Fail"><i class="ri-close-line"></i></button>
+            </div>
+          </div>
+
+          <!-- Step 2: Passed -->
+          <div class="dp-step step-passed">
+            <div class="dp-step-num">2</div>
+            <div class="dp-step-content">
+              <div class="dp-step-text">Enter "testuser@testably.app" in email field</div>
+              <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> Email accepted, no validation errors</div>
+            </div>
+            <div class="dp-step-actions">
+              <button class="step-mini-btn mini-pass active" title="Pass"><i class="ri-check-line"></i></button>
+              <button class="step-mini-btn mini-fail" title="Fail"><i class="ri-close-line"></i></button>
+            </div>
+          </div>
+
+          <!-- Step 3: Passed -->
+          <div class="dp-step step-passed">
+            <div class="dp-step-num">3</div>
+            <div class="dp-step-content">
+              <div class="dp-step-text">Enter correct password and click "Sign In"</div>
+              <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> Loading spinner, button disabled</div>
+            </div>
+            <div class="dp-step-actions">
+              <button class="step-mini-btn mini-pass active" title="Pass"><i class="ri-check-line"></i></button>
+              <button class="step-mini-btn mini-fail" title="Fail"><i class="ri-close-line"></i></button>
+            </div>
+          </div>
+
+          <!-- Step 4: Not yet tested -->
+          <div class="dp-step">
+            <div class="dp-step-num">4</div>
+            <div class="dp-step-content">
+              <div class="dp-step-text">Wait for redirect to Dashboard</div>
+              <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> Redirect within 2s, user name in header</div>
+            </div>
+            <div class="dp-step-actions">
+              <button class="step-mini-btn mini-pass" title="Pass"><i class="ri-check-line"></i></button>
+              <button class="step-mini-btn mini-fail" title="Fail"><i class="ri-close-line"></i></button>
+            </div>
+          </div>
+
+          <!-- Step 5: Not yet tested -->
+          <div class="dp-step">
+            <div class="dp-step-num">5</div>
+            <div class="dp-step-content">
+              <div class="dp-step-text">Verify session token in browser storage</div>
+              <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> auth_token with HttpOnly + Secure flags</div>
+            </div>
+            <div class="dp-step-actions">
+              <button class="step-mini-btn mini-pass" title="Pass"><i class="ri-check-line"></i></button>
+              <button class="step-mini-btn mini-fail" title="Fail"><i class="ri-close-line"></i></button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Attachments -->
+      <div class="dp-attachments">
+        <div class="dp-attach"><i class="ri-image-line"></i> login.png</div>
+        <div class="dp-attach"><i class="ri-file-text-line"></i> spec.pdf</div>
+        <div class="dp-attach"><i class="ri-add-line"></i></div>
+      </div>
+
+    </div><!-- /dp-steps-area -->
+
+    <!-- ★ Tabs -->
+    <div class="dp-tabs">
+      <button class="dp-tab active" data-tab="comments">Comments <span class="dp-tab-badge">2</span></button>
+      <button class="dp-tab" data-tab="results">Results <span class="dp-tab-badge">3</span></button>
+      <button class="dp-tab" data-tab="issues">Issues</button>
+      <button class="dp-tab" data-tab="history">History</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="dp-tab-body">
+
+      <!-- Comments -->
+      <div class="dp-tab-content active" id="tab-comments">
+        <div class="dp-comment">
+          <div class="dp-comment-head">
+            <div class="dp-comment-av" style="background:#6366F1">SK</div>
+            <span class="dp-comment-name">Sarah Kim</span>
+            <span class="dp-comment-time">2 hours ago</span>
+          </div>
+          <div class="dp-comment-text">Steps 1–3 passed cleanly on Safari 17.4. Proceeding to Step 4 after lunch break.</div>
+        </div>
+        <div class="dp-comment">
+          <div class="dp-comment-head">
+            <div class="dp-comment-av" style="background:#EC4899">JL</div>
+            <span class="dp-comment-name">Jake Lee</span>
+            <span class="dp-comment-time">30 min ago</span>
+          </div>
+          <div class="dp-comment-text">Quick note: the redirect in Step 4 sometimes takes 3–4s on slower connections. Should we adjust the expected result threshold?</div>
+        </div>
+        <div class="dp-comment-input">
+          <textarea placeholder="Add a comment..."></textarea>
+          <button>Send</button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="dp-tab-content" id="tab-results">
+        <div class="dp-result-item">
+          <div class="dp-result-status passed"><span class="dot"></span> Passed</div>
+          <div class="dp-result-info"><div class="dp-result-run">Current Run — auto test2</div><div class="dp-result-time">Mar 24, 2026 · 2:15 PM · by SK</div></div>
+        </div>
+        <div class="dp-result-item">
+          <div class="dp-result-status passed"><span class="dot"></span> Passed</div>
+          <div class="dp-result-info"><div class="dp-result-run">Run #38 — Hotfix Verify</div><div class="dp-result-time">Mar 20, 2026 · 11:30 AM · by JL</div></div>
+        </div>
+        <div class="dp-result-item">
+          <div class="dp-result-status failed"><span class="dot"></span> Failed</div>
+          <div class="dp-result-info"><div class="dp-result-run">Run #35 — v2.1 Full Suite</div><div class="dp-result-time">Mar 15, 2026 · 9:00 AM · by SK</div></div>
+        </div>
+      </div>
+
+      <!-- Issues -->
+      <div class="dp-tab-content" id="tab-issues">
+        <div style="text-align:center;padding:1.5rem;color:#94A3B8;">
+          <i class="ri-bug-line" style="font-size:1.5rem;display:block;margin-bottom:0.5rem"></i>
+          <p style="font-size:0.75rem">No linked issues</p>
+          <button style="margin-top:0.75rem;font-size:0.75rem;font-weight:600;padding:0.375rem 0.75rem;border-radius:0.375rem;background:#fff;color:#6366F1;border:1px solid #C7D2FE;cursor:pointer;font-family:inherit"><i class="ri-add-line"></i> Link Issue</button>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="dp-tab-content" id="tab-history">
+        <div class="dp-history-item">
+          <div class="dp-history-dot"></div>
+          <div><div class="dp-history-text"><strong>Sarah Kim</strong> marked Step 3 as <span style="color:#16A34A;font-weight:600">Passed</span></div><div class="dp-history-time">2 hours ago</div></div>
+        </div>
+        <div class="dp-history-item">
+          <div class="dp-history-dot"></div>
+          <div><div class="dp-history-text"><strong>Sarah Kim</strong> marked Step 1–2 as <span style="color:#16A34A;font-weight:600">Passed</span></div><div class="dp-history-time">2 hours ago</div></div>
+        </div>
+        <div class="dp-history-item">
+          <div class="dp-history-dot"></div>
+          <div><div class="dp-history-text"><strong>System</strong> assigned to <strong>Sarah Kim</strong></div><div class="dp-history-time">Mar 24, 2026</div></div>
+        </div>
+      </div>
+
+    </div><!-- /dp-tab-body -->
+
+  </div><!-- /detail-panel -->
+
+</div><!-- /main-layout -->
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- DEV HANDOFF SPECIFICATION                             -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="spec-panel">
+  <div class="spec-badge"><i class="ri-code-s-slash-line"></i> DEV HANDOFF — Run Detail Panel Option A</div>
+
+  <!-- §1 Layout Diff from TC Detail -->
+  <div class="spec-card">
+    <div class="label">§1 — Run Detail vs TC Detail: Key Differences</div>
+    <h4>Shared (identical to file 36)</h4>
+    <div class="spec-row"><span class="k">Panel width</span><span class="v">500px (min-width: 500px)</span></div>
+    <div class="spec-row"><span class="k">Steps toggle</span><span class="v">Collapsible, max-height: 40vh</span></div>
+    <div class="spec-row"><span class="k">Tabs</span><span class="v">Comments / Results / Issues / History (no Details)</span></div>
+    <div class="spec-row"><span class="k">Meta grid</span><span class="v">2-col, same fields</span></div>
+
+    <h4>Run-Only Additions</h4>
+    <div class="spec-row"><span class="k">① Quick Actions bar</span><span class="v">Status select + Add Result + Pass & Next + prev/next nav</span></div>
+    <div class="spec-row"><span class="k">② Step-level result buttons</span><span class="v">Mini Pass/Fail buttons on each step row</span></div>
+    <div class="spec-row"><span class="k">③ Step progress in toggle</span><span class="v">"3/5 steps passed" (replaces "5 steps · 2 attachments")</span></div>
+    <div class="spec-row"><span class="k">④ Step state styling</span><span class="v">.step-passed bg #F0FDF4, .step-failed bg #FEF2F2</span></div>
+    <div class="spec-row"><span class="k">⑤ No Edit/Delete footer</span><span class="v">Removed — Quick Actions bar handles all actions</span></div>
+  </div>
+
+  <!-- §2 Step-Level Result Buttons -->
+  <div class="spec-card">
+    <div class="label">§2 — Step-Level Result Buttons (Run-Only)</div>
+    <h4>Mini Button Spec</h4>
+    <div class="spec-row"><span class="k">Size</span><span class="v">22px × 22px (1.375rem)</span></div>
+    <div class="spec-row"><span class="k">Border radius</span><span class="v">0.25rem (4px)</span></div>
+    <div class="spec-row"><span class="k">Default state</span><span class="v">border #E2E8F0, bg #fff, icon #94A3B8</span></div>
+    <div class="spec-row"><span class="k">Pass hover</span><span class="v">bg #F0FDF4, icon #16A34A, border #86EFAC</span></div>
+    <div class="spec-row"><span class="k">Fail hover</span><span class="v">bg #FEF2F2, icon #DC2626, border #FCA5A5</span></div>
+    <div class="spec-row"><span class="k">Pass active</span><span class="v">bg #22C55E, icon #fff, border #22C55E</span></div>
+    <div class="spec-row"><span class="k">Fail active</span><span class="v">bg #EF4444, icon #fff, border #EF4444</span></div>
+    <div class="spec-row"><span class="k">Icon size</span><span class="v">0.625rem (10px)</span></div>
+    <div class="spec-row"><span class="k">Gap between P/F</span><span class="v">0.1875rem (3px)</span></div>
+
+    <h4>Step Row State Change</h4>
+    <div class="spec-row"><span class="k">Untested (default)</span><span class="v">bg #F8FAFC, num bg #EEF2FF/#4338CA</span></div>
+    <div class="spec-row"><span class="k">.step-passed</span><span class="v">bg #F0FDF4, border 1px #BBF7D0, num bg #22C55E/#fff</span></div>
+    <div class="spec-row"><span class="k">.step-failed</span><span class="v">bg #FEF2F2, border 1px #FECACA, num bg #EF4444/#fff</span></div>
+
+    <h4>Behavior</h4>
+    <div class="rec-box"><strong>Click Pass:</strong> Step bg turns green, num circle becomes green, Pass button fills green. Clicking again toggles back to untested.<br><strong>Click Fail:</strong> Same logic with red. When all steps are marked, auto-suggest overall TC status based on majority result.<br><strong>Pass & Next:</strong> Marks ALL remaining untested steps as Passed, sets TC status to Passed, advances to next TC in the run.</div>
+  </div>
+
+  <!-- §3 Quick Actions Bar -->
+  <div class="spec-card">
+    <div class="label">§3 — Quick Actions Bar (Run-Only)</div>
+    <div class="spec-row"><span class="k">Layout</span><span class="v">flex, gap 0.375rem, padding 0.625rem 1.25rem</span></div>
+    <div class="spec-row"><span class="k">Status select</span><span class="v">0.75rem 600, pill shape, dynamic bg per status</span></div>
+    <div class="spec-row"><span class="k">Add Result btn</span><span class="v">bg #F1F5F9, color #475569</span></div>
+    <div class="spec-row"><span class="k">Pass & Next btn</span><span class="v">bg #22C55E → #16A34A hover, color #fff</span></div>
+    <div class="spec-row"><span class="k">Nav buttons</span><span class="v">28px square, border #E2E8F0, ↑↓ arrows</span></div>
+    <div class="spec-row"><span class="k">Status select colors</span><span class="v">Passed: bg #F0FDF4 / #166534 | Failed: bg #FEF2F2 / #991B1B | Blocked: bg #FFFBEB / #92400E | Retest: bg #F5F3FF / #5B21B6 | Untested: bg #F8FAFC / #64748B</span></div>
+  </div>
+
+  <!-- §4 Toggle Bar Spec -->
+  <div class="spec-card">
+    <div class="label">§4 — Steps Toggle Bar (Run Context)</div>
+    <h4>Right-side Content Difference</h4>
+    <div class="spec-row"><span class="k">TC Detail (file 36)</span><span class="v">"5 steps · 2 attachments"</span></div>
+    <div class="spec-row"><span class="k">Run Detail (file 37)</span><span class="v">"3/5 steps passed" — color-coded progress</span></div>
+    <div class="spec-row"><span class="k">Passed count</span><span class="v">color #16A34A, font-weight 600</span></div>
+    <div class="spec-row"><span class="k">Total count</span><span class="v">color #64748B</span></div>
+    <div class="spec-row"><span class="k">Separator</span><span class="v">"/" in #CBD5E1</span></div>
+  </div>
+
+  <!-- §5 Shared Architecture -->
+  <div class="spec-card">
+    <div class="label">§5 — React Component Architecture</div>
+<pre class="code"><span class="cm">// Shared base component with context-specific rendering</span>
+
+<span class="kw">interface</span> DetailPanelProps {
+  context: <span class="str">'testcase'</span> | <span class="str">'run'</span>;  <span class="cm">// determines which features show</span>
+  testCase: TestCase;
+  runExecution?: RunExecution;  <span class="cm">// only in run context</span>
+}
+
+<span class="cm">// Steps area — renders differently based on context</span>
+<span class="kw">function</span> StepsArea({ context, steps, stepResults }) {
+  <span class="kw">return</span> (
+    &lt;div className=<span class="str">"dp-steps-area"</span>&gt;
+      {steps.map(step =&gt; (
+        &lt;StepRow key={step.id} step={step}
+          result={stepResults?.[step.id]}
+          <span class="cm">/* ★ Mini buttons only in run context */</span>
+          showResultButtons={context === <span class="str">'run'</span>}
+        /&gt;
+      ))}
+    &lt;/div&gt;
+  );
+}
+
+<span class="cm">// StepRow with conditional mini buttons</span>
+<span class="kw">function</span> StepRow({ step, result, showResultButtons }) {
+  <span class="kw">const</span> stateClass = result === <span class="str">'passed'</span> ? <span class="str">'step-passed'</span>
+                    : result === <span class="str">'failed'</span> ? <span class="str">'step-failed'</span>
+                    : <span class="str">''</span>;
+  <span class="kw">return</span> (
+    &lt;div className={<span class="str">`dp-step ${stateClass}`</span>}&gt;
+      &lt;StepNum /&gt;
+      &lt;StepContent /&gt;
+      {showResultButtons && (
+        &lt;div className=<span class="str">"dp-step-actions"</span>&gt;
+          &lt;MiniPassBtn /&gt;
+          &lt;MiniFailBtn /&gt;
+        &lt;/div&gt;
+      )}
+    &lt;/div&gt;
+  );
+}
+</pre>
+    <div class="rec-box"><strong>Key architectural decision:</strong> Use a single DetailPanel component with a <code>context</code> prop rather than two separate components. This ensures consistent styling while allowing run-specific features (step results, Quick Actions, Pass & Next) to render conditionally.</div>
+  </div>
+
+  <!-- §6 Data Model -->
+  <div class="spec-card">
+    <div class="label">§6 — Step Results Data Model</div>
+<pre class="code"><span class="cm">// New table: step_results</span>
+<span class="kw">CREATE TABLE</span> step_results (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  execution_id uuid REFERENCES executions(id),
+  step_id     uuid REFERENCES test_steps(id),
+  status      text CHECK (status IN (<span class="str">'passed'</span>,<span class="str">'failed'</span>,<span class="str">'blocked'</span>)),
+  note        text,
+  created_at  timestamptz DEFAULT now(),
+  created_by  uuid REFERENCES profiles(id)
+);
+
+<span class="cm">// Index for fast lookup per execution</span>
+<span class="kw">CREATE INDEX</span> idx_step_results_execution
+  ON step_results(execution_id, step_id);
+</pre>
+    <div class="spec-row"><span class="k">RLS policy</span><span class="v">Same as executions table — project member access</span></div>
+    <div class="spec-row"><span class="k">Realtime</span><span class="v">Enable Supabase Realtime on step_results for live updates</span></div>
+  </div>
+
+</div><!-- /spec-panel -->
+
+<script>
+// Tab switching
+document.querySelectorAll('.dp-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.dp-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.dp-tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// Steps collapse/expand
+function toggleSteps() {
+  const area = document.getElementById('stepsArea');
+  const toggle = document.getElementById('stepsToggle');
+  area.classList.toggle('collapsed');
+  toggle.classList.toggle('collapsed');
+}
+
+// Step-level mini button interactivity (demo)
+document.querySelectorAll('.step-mini-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const step = btn.closest('.dp-step');
+    const isPass = btn.classList.contains('mini-pass');
+    const isFail = btn.classList.contains('mini-fail');
+    const wasActive = btn.classList.contains('active');
+
+    // Reset both buttons in this step
+    step.querySelectorAll('.step-mini-btn').forEach(b => b.classList.remove('active'));
+    step.classList.remove('step-passed', 'step-failed');
+
+    if (!wasActive) {
+      btn.classList.add('active');
+      step.classList.add(isPass ? 'step-passed' : 'step-failed');
+    }
+
+    // Update toggle bar progress count
+    const passedCount = document.querySelectorAll('.dp-step.step-passed').length;
+    const totalSteps = document.querySelectorAll('.dp-step').length;
+    document.querySelector('.passed-count').textContent = passedCount;
+    document.querySelector('.total-count').textContent = totalSteps + ' steps passed';
+  });
+});
+</script>
+</body>
+</html>

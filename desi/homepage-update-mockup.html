@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Homepage Update Mockup (P0 + P1)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #0F172A; color: #E2E8F0; min-height: 100vh; }
+
+  /* ═══ SCREEN NAVIGATOR ═══ */
+  .nav-bar {
+    position: sticky; top: 0; z-index: 100; background: #1E293B; border-bottom: 1px solid #334155;
+    display: flex; align-items: center; gap: 0; padding: 0 1rem; overflow-x: auto; flex-wrap: nowrap;
+  }
+  .nav-btn {
+    display: flex; align-items: center; gap: 0.375rem; padding: 0.625rem 1rem; font-size: 0.6875rem; font-weight: 600;
+    color: #94A3B8; border: none; background: none; cursor: pointer; white-space: nowrap; font-family: inherit;
+    border-bottom: 2px solid transparent; transition: all 0.15s;
+  }
+  .nav-btn:hover { color: #CBD5E1; background: rgba(255,255,255,0.03); }
+  .nav-btn.active { color: #818CF8; border-bottom-color: #818CF8; }
+  .nav-btn .p-tag {
+    font-size: 0.5rem; font-weight: 700; padding: 0.0625rem 0.3125rem; border-radius: 0.25rem;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .p0 { background: #EF4444; color: #fff; }
+  .p1 { background: #F59E0B; color: #fff; }
+
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeIn 0.15s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ═══ SHARED HOMEPAGE STYLES (matching live site) ═══ */
+  .page-bg { background: #0F172A; }
+  .section-container { max-width: 80rem; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 10; }
+  .section-pad { padding: 7rem 0; }
+
+  /* Section label (small upper tag) */
+  .section-label {
+    font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em;
+    color: #818CF8; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .section-label::before { content: ''; width: 1.5rem; height: 1px; background: #818CF8; }
+
+  /* Section heading */
+  .section-heading {
+    font-size: 2.25rem; font-weight: 800; color: #F8FAFC; line-height: 1.15; margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+  .section-heading .accent { color: #818CF8; }
+  .section-subdesc { font-size: 1.0625rem; color: #94A3B8; line-height: 1.6; max-width: 42rem; }
+
+  /* Feature card (dark theme matching live) */
+  .feature-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 1rem; padding: 1.75rem; transition: all 0.3s; cursor: pointer;
+  }
+  .feature-card:hover { border-color: rgba(99,102,241,0.25); box-shadow: 0 0 20px rgba(99,102,241,0.08); }
+  .card-tag {
+    font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em;
+    padding: 0.125rem 0.5rem; border-radius: 9999px; display: inline-block; margin-bottom: 0.75rem;
+  }
+  .card-title { font-size: 1.0625rem; font-weight: 700; color: #F1F5F9; margin-bottom: 0.5rem; }
+  .card-desc { font-size: 0.8125rem; color: #94A3B8; line-height: 1.65; margin-bottom: 1rem; }
+  .card-features { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.375rem; }
+  .card-features li {
+    font-size: 0.75rem; color: #94A3B8; display: flex; align-items: center; gap: 0.375rem;
+  }
+  .card-features li i { font-size: 0.625rem; }
+
+  /* Tag color variants */
+  .tag-data { background: rgba(16,185,129,0.1); color: #34D399; }
+  .tag-analytics { background: rgba(244,63,94,0.1); color: #FB7185; }
+  .tag-core { background: rgba(16,185,129,0.1); color: #34D399; }
+  .tag-team { background: rgba(236,72,153,0.1); color: #F472B6; }
+  .tag-integration { background: rgba(96,165,250,0.1); color: #60A5FA; }
+  .tag-automation { background: rgba(34,211,238,0.1); color: #22D3EE; }
+  .tag-migration { background: rgba(251,146,60,0.1); color: #FB923C; }
+
+  /* Feature grid */
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 2.5rem; }
+
+  /* ═══ PRICING STYLES ═══ */
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-top: 2rem; }
+  .plan-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 1rem; padding: 2rem; position: relative;
+  }
+  .plan-card.popular { border-color: rgba(99,102,241,0.4); background: rgba(99,102,241,0.05); }
+  .plan-card .pop-badge {
+    position: absolute; top: -0.625rem; left: 50%; transform: translateX(-50%);
+    background: #6366F1; color: #fff; font-size: 0.625rem; font-weight: 700;
+    padding: 0.1875rem 0.75rem; border-radius: 9999px; white-space: nowrap;
+  }
+  .plan-name { font-size: 1.125rem; font-weight: 700; color: #F1F5F9; margin-bottom: 0.25rem; }
+  .plan-price { margin: 1rem 0; }
+  .plan-price .amount { font-size: 2.5rem; font-weight: 800; color: #F8FAFC; }
+  .plan-price .period { font-size: 0.875rem; color: #64748B; }
+  .plan-desc { font-size: 0.8125rem; color: #64748B; margin-bottom: 0.25rem; }
+  .plan-subdesc { font-size: 0.75rem; color: #64748B; margin-bottom: 1.25rem; }
+  .plan-features { list-style: none; padding: 0; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .plan-features li {
+    font-size: 0.8125rem; color: #CBD5E1; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .plan-features li i { color: #818CF8; font-size: 0.75rem; }
+  .plan-features li.new-feat { color: #34D399; font-weight: 600; }
+  .plan-features li.new-feat i { color: #34D399; }
+  .plan-btn {
+    display: block; width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: none;
+    font-size: 0.875rem; font-weight: 600; cursor: pointer; text-align: center; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .plan-btn-primary { background: #6366F1; color: #fff; }
+  .plan-btn-primary:hover { background: #4F46E5; }
+  .plan-btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.15); color: #CBD5E1; }
+  .plan-btn-ghost:hover { background: rgba(255,255,255,0.05); }
+
+  /* Viewer banner */
+  .viewer-banner {
+    margin-top: 2.5rem; padding: 1.5rem 2rem; border-radius: 1rem;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.12));
+    border: 1px solid rgba(99,102,241,0.25);
+    display: flex; align-items: center; gap: 1.5rem;
+  }
+  .viewer-banner-icon {
+    width: 3.5rem; height: 3.5rem; border-radius: 0.875rem; flex-shrink: 0;
+    background: rgba(99,102,241,0.15); display: flex; align-items: center; justify-content: center;
+  }
+  .viewer-banner-icon i { font-size: 1.5rem; color: #818CF8; }
+  .viewer-banner-title { font-size: 1rem; font-weight: 700; color: #F1F5F9; margin-bottom: 0.25rem; }
+  .viewer-banner-desc { font-size: 0.8125rem; color: #94A3B8; line-height: 1.55; }
+  .viewer-banner-highlight { color: #A5B4FC; font-weight: 600; }
+  .viewer-banner-tags { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+  .viewer-banner-tag {
+    font-size: 0.6875rem; font-weight: 600; padding: 0.25rem 0.625rem; border-radius: 9999px;
+    background: rgba(99,102,241,0.15); color: #A5B4FC; display: flex; align-items: center; gap: 0.25rem;
+  }
+  .viewer-banner-tag i { font-size: 0.625rem; }
+
+  /* ═══ WHY TESTABLY ═══ */
+  .why-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-top: 2.5rem; }
+  .why-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 1rem; padding: 2rem; transition: all 0.3s;
+  }
+  .why-card:hover { border-color: rgba(99,102,241,0.2); }
+  .why-card .why-icon {
+    width: 3rem; height: 3rem; border-radius: 0.75rem; display: flex; align-items: center;
+    justify-content: center; font-size: 1.25rem; margin-bottom: 1rem;
+  }
+  .why-card h3 { font-size: 1rem; font-weight: 700; color: #F1F5F9; margin-bottom: 0.5rem; }
+  .why-card p { font-size: 0.8125rem; color: #94A3B8; line-height: 1.6; }
+  .why-new-badge {
+    display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.5625rem; font-weight: 700;
+    padding: 0.125rem 0.375rem; border-radius: 0.25rem; background: #34D399; color: #064E3B;
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;
+  }
+
+  /* ═══ FAQ ═══ */
+  .faq-list { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 0.5rem; max-width: 48rem; margin-left: auto; margin-right: auto; }
+  .faq-item {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 0.75rem; overflow: hidden;
+  }
+  .faq-q {
+    width: 100%; padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.9375rem; font-weight: 600; color: #F1F5F9; cursor: pointer;
+    border: none; background: none; font-family: inherit; text-align: left;
+  }
+  .faq-q i { font-size: 1rem; color: #64748B; transition: transform 0.2s; flex-shrink: 0; }
+  .faq-a { padding: 0 1.5rem 1.25rem; font-size: 0.8125rem; color: #94A3B8; line-height: 1.7; display: none; }
+  .faq-item.open .faq-a { display: block; }
+  .faq-item.open .faq-q i { transform: rotate(180deg); }
+  .faq-new-tag {
+    font-size: 0.5625rem; font-weight: 700; padding: 0.125rem 0.375rem; border-radius: 0.25rem;
+    background: rgba(52,211,153,0.15); color: #34D399; margin-left: 0.5rem; text-transform: uppercase;
+  }
+
+  /* ═══ MOCKUP ANNOTATIONS ═══ */
+  .annotation {
+    background: rgba(245,158,11,0.08); border: 1px dashed rgba(245,158,11,0.3); border-radius: 0.75rem;
+    padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 0.75rem;
+  }
+  .annotation i { color: #F59E0B; font-size: 1rem; flex-shrink: 0; margin-top: 0.125rem; }
+  .annotation-text { font-size: 0.75rem; color: #FCD34D; line-height: 1.5; }
+  .annotation-text strong { color: #FBBF24; }
+  .screen-title {
+    font-size: 1.5rem; font-weight: 800; color: #F8FAFC; padding: 2rem 1.5rem 0.5rem;
+    text-align: center;
+  }
+  .screen-subtitle {
+    font-size: 0.8125rem; color: #64748B; text-align: center; margin-bottom: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ SCREEN NAVIGATOR ═══ -->
+<div class="nav-bar">
+  <button class="nav-btn active" onclick="go('s1')"><span class="p-tag p0">P0</span> Team Collaboration Fix</button>
+  <button class="nav-btn" onclick="go('s2')"><span class="p-tag p0">P0</span> Pricing Feature Fix</button>
+  <button class="nav-btn" onclick="go('s3')"><span class="p-tag p1">P1</span> Viewer Free Banner</button>
+  <button class="nav-btn" onclick="go('s4')"><span class="p-tag p1">P1</span> Import & Export Card</button>
+  <button class="nav-btn" onclick="go('s5')"><span class="p-tag p1">P1</span> Advanced Reporting Card</button>
+  <button class="nav-btn" onclick="go('s6')"><span class="p-tag p1">P1</span> Switch from TestRail</button>
+  <button class="nav-btn" onclick="go('s7')"><span class="p-tag p1">P1</span> FAQ Additions</button>
+  <button class="nav-btn" onclick="go('s8')"><span class="p-tag p1">P1</span> Full Context</button>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SCREEN 1: P0 — Team Collaboration Fix -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="screen active" id="s1">
+  <div class="screen-title">Core Features #5 — Team Collaboration</div>
+  <div class="screen-subtitle">P0: 역할 3개(Admin/Member/Viewer) → 4개(Owner/Admin/Member/Viewer) 수정</div>
+
+  <div class="section-container" style="padding-top:2rem; padding-bottom:4rem;">
+    <div class="annotation">
+      <i class="ri-error-warning-line"></i>
+      <div class="annotation-text">
+        <strong>변경 사항:</strong> "Admin, Member, or Viewer" → "<strong>Owner, Admin, Member, or Viewer</strong>". 프로젝트 생성자가 자동으로 Owner가 되는 것을 명시. 설명 텍스트 확장.
+      </div>
+    </div>
+
+    <!-- Before/After side by side -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+      <!-- BEFORE -->
+      <div>
+        <div style="font-size:0.6875rem; font-weight:700; color:#EF4444; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.75rem;">
+          <i class="ri-close-circle-fill"></i> Before (Current)
+        </div>
+        <div class="feature-card" style="opacity:0.6; border-color:rgba(239,68,68,0.2);">
+          <span class="card-tag tag-team">Team</span>
+          <div class="card-title">Team Collaboration</div>
+          <div class="card-desc">Invite team members and set role-based permissions — Admin, Member, or Viewer. Assign specific test cases to team members for clear ownership.</div>
+          <ul class="card-features">
+            <li><i class="ri-check-line" style="color:#F472B6;"></i> Role-based permissions</li>
+            <li><i class="ri-check-line" style="color:#F472B6;"></i> Test case assignment</li>
+            <li><i class="ri-check-line" style="color:#F472B6;"></i> Team overview</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div>
+        <div style="font-size:0.6875rem; font-weight:700; color:#34D399; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.75rem;">
+          <i class="ri-check-circle-fill"></i> After (Updated)
+        </div>
+        <div class="feature-card" style="border-color:rgba(52,211,153,0.25);">
+          <span class="card-tag tag-team">Team</span>
+          <div class="card-title">Team Collaboration</div>
+          <div class="card-desc">Invite team members and set role-based permissions — <strong style="color:#F1F5F9;">Owner, Admin, Member, or Viewer</strong>. The project creator is automatically the Owner. Assign test cases to specific team members for clear ownership.</div>
+          <ul class="card-features">
+            <li><i class="ri-shield-user-fill" style="color:#F472B6;"></i> 4-level role system (Owner → Viewer)</li>
+            <li><i class="ri-user-follow-fill" style="color:#F472B6;"></i> Test case assignment</li>
+            <li><i class="ri-eye-fill" style="color:#F472B6;"></i> <span style="color:#34D399; font-weight:600;">Viewers are always free</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dev instruction -->
+    <div style="margin-top:2rem; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.15); border-radius:0.75rem; padding:1.25rem;">
+      <div style="font-size:0.6875rem; font-weight:700; color:#818CF8; margin-bottom:0.5rem;">DEV INSTRUCTION</div>
+      <div style="font-size:0.75rem; color:#94A3B8; line-height:1.6;">
+        <code style="background:rgba(255,255,255,0.08); padding:0.125rem 0.375rem; border-radius:0.25rem; color:#A5B4FC;">content.en.features[4].description</code> →<br>
+        <span style="color:#CBD5E1;">"Invite team members and set role-based permissions — <strong>Owner, Admin, Member, or Viewer</strong>. The project creator is automatically the Owner. Assign test cases to specific team members for clear ownership."</span><br><br>
+        <code style="background:rgba(255,255,255,0.08); padding:0.125rem 0.375rem; border-radius:0.25rem; color:#A5B4FC;">content.ko.features[4].description</code> →<br>
+        <span style="color:#CBD5E1;">"<strong>Owner, Admin, Member, Viewer</strong> 4단계 역할 권한과 테스트 케이스별 담당자 지정으로 명확한 책임을 부여합니다."</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SCREEN 2: P0 — Pricing Feature List Fix -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="screen" id="s2">
+  <div class="screen-title">Pricing — Starter & Professional Feature Fix</div>
+  <div class="screen-subtitle">P0: Export/Import, PDF Report 누락 항목 추가 (Settings TIER_INFO와 일치시킴)</div>
+
+  <div class="section-container" style="padding-top:2rem; padding-bottom:4rem;">
+    <div class="annotation">
+      <i class="ri-error-warning-line"></i>
+      <div class="annotation-text">
+        <strong>변경 사항:</strong> Starter와 Professional 플랜 모두에 "Testcase Export/Import"와 "Export PDF Report" 2개 항목 추가. <strong style="color:#EF4444;">초록색 NEW 표시</strong>된 항목이 추가분.
+      </div>
+    </div>
+
+    <div class="pricing-grid">
+      <!-- Free (no change) -->
+      <div class="plan-card" style="opacity:0.5;">
+        <div class="plan-name">Free</div>
+        <div class="plan-price"><span class="amount" style="color:#64748B;">Free</span></div>
+        <div class="plan-subdesc" style="color:#64748B;">Up to 3 users · forever free</div>
+        <ul class="plan-features">
+          <li><i class="ri-check-line"></i> Up to 3 projects</li>
+          <li><i class="ri-check-line"></i> Test case management</li>
+          <li><i class="ri-check-line"></i> Test runs & execution</li>
+          <li><i class="ri-check-line"></i> Jira integration</li>
+          <li><i class="ri-check-line"></i> 5 AI generations / month</li>
+          <li><i class="ri-check-line"></i> Community support</li>
+        </ul>
+        <button class="plan-btn plan-btn-ghost" style="opacity:0.5;">No changes</button>
+      </div>
+
+      <!-- Starter (UPDATED) -->
+      <div class="plan-card" style="border-color:rgba(52,211,153,0.3);">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price"><span class="amount">$49</span> <span class="period">/ month</span></div>
+        <div class="plan-subdesc">Up to 5 users</div>
+        <ul class="plan-features">
+          <li><i class="ri-check-line"></i> Up to 10 projects</li>
+          <li><i class="ri-check-line"></i> Jira integration</li>
+          <li><i class="ri-check-line"></i> Slack & Teams integration</li>
+          <li><i class="ri-check-line"></i> Basic reporting</li>
+          <li><i class="ri-check-line"></i> 30 AI generations / month</li>
+          <li><i class="ri-check-line"></i> Email support</li>
+          <li class="new-feat"><i class="ri-add-circle-fill"></i> Testcase Export/Import</li>
+          <li class="new-feat"><i class="ri-add-circle-fill"></i> Export PDF Report</li>
+        </ul>
+        <button class="plan-btn plan-btn-primary">Start Free Trial</button>
+      </div>
+
+      <!-- Professional (UPDATED) -->
+      <div class="plan-card popular" style="border-color:rgba(52,211,153,0.3);">
+        <div class="pop-badge">Most Popular</div>
+        <div class="plan-name">Professional</div>
+        <div class="plan-price"><span class="amount">$99</span> <span class="period">/ month</span></div>
+        <div class="plan-subdesc">Up to 20 users</div>
+        <ul class="plan-features">
+          <li><i class="ri-check-line"></i> Unlimited projects</li>
+          <li><i class="ri-check-line"></i> Jira integration</li>
+          <li><i class="ri-check-line"></i> Slack & Teams integration</li>
+          <li><i class="ri-check-line"></i> Advanced reporting</li>
+          <li><i class="ri-check-line"></i> CI/CD Integration</li>
+          <li><i class="ri-check-line"></i> 150 AI generations / month</li>
+          <li><i class="ri-check-line"></i> Priority support</li>
+          <li class="new-feat"><i class="ri-add-circle-fill"></i> Testcase Export/Import</li>
+          <li class="new-feat"><i class="ri-add-circle-fill"></i> Export PDF Report</li>
+        </ul>
+        <button class="plan-btn plan-btn-primary">Start Free Trial</button>
+      </div>
+    </div>
+
+    <!-- Dev instruction -->
+    <div style="margin-top:2rem; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.15); border-radius:0.75rem; padding:1.25rem;">
+      <div style="font-size:0.6875rem; font-weight:700; color:#818CF8; margin-bottom:0.5rem;">DEV INSTRUCTION</div>
+      <div style="font-size:0.75rem; color:#94A3B8; line-height:1.6;">
+        <code style="background:rgba(255,255,255,0.08); padding:0.125rem 0.375rem; border-radius:0.25rem; color:#A5B4FC;">content.en.pricingPlans[1].features</code> (Starter) — 배열 끝에 추가:<br>
+        <span style="color:#34D399;">"Testcase Export/Import"</span>, <span style="color:#34D399;">"Export PDF Report"</span><br><br>
+        <code style="background:rgba(255,255,255,0.08); padding:0.125rem 0.375rem; border-radius:0.25rem; color:#A5B4FC;">content.en.pricingPlans[2].features</code> (Professional) — 동일하게 2개 추가<br><br>
+        <span style="color:#64748B;">※ content.ko도 동일하게 반영: "테스트케이스 내보내기/가져오기", "PDF 리포트 내보내기"</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SCREEN 3: P1 — Viewer Free Banner -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="screen" id="s3">
+  <div class="screen-title">Pricing — "Viewers are always free" Banner</div>
+  <div class="screen-subtitle">P1: 경쟁사(TestRail/Qase) 대비 최대 차별점. 모든 플랜 카드 아래에 배치.</div>
+
+  <div class="section-container" style="padding-top:2rem; padding-bottom:4rem;">
+    <div class="annotation">
+      <i class="ri-error-warning-line"></i>
+      <div class="annotation-text">
+        <strong>배치 위치:</strong> Pricing 플랜 카드 그리드 하단, "Free forever for up to 3 members..." 텍스트 위에 삽입. <strong>경쟁사와의 차이:</strong> TestRail/Qase는 모든 유저가 유료 좌석을 차지하지만, Testably는 Viewer가 무료.
+      </div>
+    </div>
+
+    <!-- Banner Design -->
+    <div class="viewer-banner">
+      <div class="viewer-banner-icon">
+        <i class="ri-eye-line"></i>
+      </div>
+      <div style="flex:1;">
+        <div class="viewer-banner-title">
+          <i class="ri-gift-2-fill" style="color:#818CF8; margin-right:0.25rem;"></i>
+          Viewers are always free
+        </div>
+        <div class="viewer-banner-desc">
+          Viewer roles <span class="viewer-banner-highlight">don't count toward your plan's seat limit</span>. Invite unlimited stakeholders, managers, and executives to observe testing progress — at no extra cost. On the Starter plan (5 seats), you could have 1 Owner + 1 Admin + 3 Members + <span class="viewer-banner-highlight">unlimited Viewers</span>.
+        </div>
+        <div class="viewer-banner-tags">
+          <span class="viewer-banner-tag"><i class="ri-check-line"></i> View test results</span>
+          <span class="viewer-banner-tag"><i class="ri-check-line"></i> Track milestones</span>
+          <span class="viewer-banner-tag"><i class="ri-check-line"></i> Read documentation</span>
+          <span class="viewer-banner-tag"><i class="ri-check-line"></i> Monitor dashboards</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alternative compact design -->
+    <div style="margin-top:2.5rem;">
+      <div style="font-size:0.6875rem; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.75rem;">
+        Alternative — Compact Inline Version
+      </div>
+      <div style="text-align:center; padding:1.25rem 2rem; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.15); border-radius:0.75rem;">
+        <span style="font-size:0.9375rem; color:#CBD5E1;">
+          <i class="ri-eye-line" style="color:#818CF8;"></i>
+          <strong style="color:#F1F5F9;">Viewers are always free</strong>
+          — they don't count toward your plan's seat limit.
+          <a href="#" style="color:#818CF8; text-decoration:underline; font-weight:600;">Learn more</a>
+        </span>
+      </div>
+    </div>
+
+    <!-- Competitor comparison snippet -->
+    <div style="margin-top:2.5rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:0.75rem; padding:1.5rem;">
+      <div style="font-size:0.75rem; font-weight:700; color:#818CF8; margin-bottom:1rem;">WHY THIS MATTERS — COMPETITIVE COMPARISON</div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1rem;">
+        <div style="text-align:center; padding:1rem; border-radius:0.5rem; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15);">
+          <div style="font-size:0.875rem; font-weight:700; color:#F87171; margin-bottom:0.25rem;">TestRail</div>
+          <div style="font-size:0.6875rem; color:#94A3B8;">All users counted<br><strong style="color:#F87171;">$36/user/month</strong></div>
+        </div>
+        <div style="text-align:center; padding:1rem; border-radius:0.5rem; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15);">
+          <div style="font-size:0.875rem; font-weight:700; color:#F87171; margin-bottom:0.25rem;">Qase</div>
+          <div style="font-size:0.6875rem; color:#94A3B8;">All users counted<br><strong style="color:#F87171;">Per-seat pricing</strong></div>
+        </div>
+        <div style="text-align:center; padding:1rem; border-radius:0.5rem; background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.15);">
+          <div style="font-size:0.875rem; font-weight:700; color:#34D399; margin-bottom:0.25rem;">Testably</div>
+          <div style="font-size:0.6875rem; color:#94A3B8;">Flat-rate pricing<br><strong style="color:#34D399;">Viewers FREE forever</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SCREEN 4: P1 — Import & Export Card -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="screen" id="s4">
+  <div class="screen-title">Core Features — Import & Export Card</div>
+  <div class="screen-subtitle">P1: TestRail 마이그레이션 유입 핵심. features 배열에 추가.</div>
+
+  <div class="section-container" style="padding-top:2rem; padding-bottom:4rem;">
+    <div class="annotation">
+      <i class="ri-error-warning-line"></i>
+      <div class="annotation-text">
+        <strong>배치:</strong> Core Features 그리드의 10번째 카드. 기존 9장(3x3) → 12장(4x3)으로 확장 시 레이아웃 조정 필요.<br>
+        <strong>색상:</strong> Data 태그 = emerald (bg-emerald-50/text-emerald-600 → 다크 모드에서 #34D399)
+      </div>
+    </div>
+
+    <div class="features-grid" style="grid-template-columns:1fr;">
+      <div class="feature-card" style="max-width:28rem; border-color:rgba(52,211,153,0.25);">
+        <span class="card-tag tag-data">Data</span>
+        <div class="card-title"><i class="ri-upload-download-line" style="color:#34D399; margin-right:0.375rem;"></i> Import & Export</div>
+        <div class="card-desc">Migrate from TestRail, Zephyr, or Qase in minutes. Import test cases via CSV, export to CSV/JSON for backup, and generate PDF reports for stakeholders. Your data, your way.</div>
+        <ul class="card-features">
+          <li><i class="ri-check-line" style="color:#34D399;"></i> CSV import with TestRail field mapping</li>
+          <li><i class="ri-check-line" style="color:#34D399;"></i> Export to CSV / JSON</li>
+          <li><i class="ri-check-line" style="color:#34D399;"></i> PDF report generation</li>
+          <li><i class="ri-check-line" style="color:#34D399;"></i> Zephyr & Qase compatible</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- In-context preview (3-col grid snippet) -->
+    <div style="margin-top:2.5rem;">
+      <div style="font-size:0.6875rem; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.75rem;">
+        In-Context Preview (3-col row with neighbors)
+      </div>
+      <div class="features-grid">
+        <div class="feature-card" style="opacity:0.4;">
+          <span class="card-tag" style="background:rgba(148,163,184,0.1); color:#94A3B8;">Documentation</span>
+          <div class="card-title">Project Documentation</div>
+          <div class="card-desc" style="font-size:0.75rem;">Centralize your test plans, release notes...</div>
+        </div>
+        <div class="feature-card" style="border-color:rgba(52,211,153,0.3);">
+          <div class="why-new-badge"><i class="ri-sparkle-fill"></i> NEW</div>
+          <span class="card-tag tag-data">Data</span>
+          <div class="card-title"><i class="ri-upload-download-line" style="color:#34D399; margin-right:0.375rem;"></i> Import & Export</div>
+          <div class="card-desc" style="font-size:0.75rem;">Migrate from TestRail, Zephyr, or Qase in minutes. Import test cases via CSV...</div>
+        </div>
+        <div class="feature-card" style="border-color:rgba(244,63,94,0.3);">
+          <div class="why-new-badge"><i class="ri-sparkle-fill"></i> NEW</div>
+          <span class="card-tag tag-analytics">Analytics</span>
+          <div class="card-title"><i class="ri-pie-chart-2-line" style="color:#FB7185; margin-right:0.375rem;"></i> Advanced Reporting</div>
+          <div class="card-desc" style="font-size:0.75rem;">Visualize your QA health with 4 built-in dashboards...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SCREEN 5: P1 — Advanced Reporting Card -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="screen" id="s5">
+  <div class="screen-title">Core Features — Advanced Reporting Card</div>
+  <div class="screen-subtitle">P1: 4개 대시보드(Pass Rate, Active Runs, Team Activity, TC Overview) + PDF Export</div>
+
+  <div class="section-container" style="padding-top:2rem; padding-bottom:4rem;">
+    <div class="annotation">
+      <i class="ri-error-warning-line"></i>
+      <div class="annotation-text">
+        <strong>배치:</strong> Core Features 그리드의 11번째 카드.<br>
+        <strong>색상:</strong> Analytics 태그 = rose (bg-rose-50/text-rose-600 → 다크 모드에서 #FB7185)
+      </div>
+    </div>
+
+    <div class="features-grid" style="grid-template-columns:1fr;">
+      <div class="feature-card" style="max-width:28rem; border-color:rgba(244,63,94,0.25);">
+        <span class="card-tag tag-analytics">Analytics</span>
+        <div class="card-title"><i class="ri-pie-chart-2-line" style="color:#FB7185; margin-right:0.375rem;"></i> Advanced Reporting</div>
+        <div class="card-desc">Visualize your QA health with 4 built-in dashboards: Pass Rate trends, Active Runs status, Team Activity heatmap, and Test Case Overview. Export any report as PDF.</div>
+        <ul class="card-features">
+          <li><i class="ri-check-line" style="color:#FB7185;"></i> Pass Rate trend analysis</li>
+          <li><i class="ri-check-line" style="color:#FB7185;"></i> Active Runs real-time status</li>
+          <li><i class="ri-check-line" style="color:#FB7185;"></i> Team Activity heatmap</li>
+          <li><i class="ri-check-line" style="color:#FB7185;"></i> Test Case Overview dashboard</li>
+          <li><i class="ri-check-line" style="color:#FB7185;"></i> One-click PDF export</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Dashboard preview thumbnails -->
+    <div style="margin-top:2.5rem;">
+      <div style="font-size:0.6875rem; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.75rem;">
+        4 Built-in Dashboards (visual concept)
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:0.75rem;">
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:0.75rem; padding:1rem; text-align:center;">
+          <i class="ri-line-chart-line" style="font-size:1.5rem; color:#34D399;"></i>
+          <div style="font-size:0.6875rem; font-weight:600; color:#CBD5E1; margin-top:0.5rem;">Pass Rate</div>
+          <div style="font-size:0.5625rem; color:#64748B;">Trend over time</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:0.75rem; padding:1rem; text-align:center;">
+          <i class="ri-play-circle-line" style="font-size:1.5rem; color:#60A5FA;"></i>
+          <div style="font-size:0.6875rem; font-weight:600; color:#CBD5E1; margin-top:0.5rem;">Active Runs</div>
+          <div style="font-size:0.5625rem; color:#64748B;">Real-time status</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:0.75rem; padding:1rem; text-align:center;">
+          <i class="ri-group-line" style="font-size:1.5rem; color:#FBBF24;"></i>
+          <div style="font-size:0.6875rem; font-weight:600; color:#CBD5E1; margin-top:0.5rem;">Team Activity</div>
+          <div style="font-size:0.5625rem; color:#64748B;">Heatmap view</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:0.75rem; padding:1rem; text-align:center;">
+          <i class="ri-file-list-3-line" style="font-size:1.5rem; color:#C084FC;"></i>
+          <div style="font-size:0.6875rem; font-weight:600; color:#CBD5E1; margin-top:0.5rem;">TC Overview</div>
+          <div style="font-size:0.5625rem; color:#64748B;">By priority/type</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SCREEN 6: P1 — Switch from TestRail (Why Card) -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="screen" id="s6">
+  <div class="screen-title">Why Testably — "Switch from TestRail" Card</div>
+  <div class="screen-subtitle">P1: whyCards 배열에 추가. 기존 3장 → 4장, 4-col 레이아웃</div>
+
+  <div class="section-container" style="padding-top:2rem; padding-bottom:4rem;">
+    <div class="annotation">
+      <i class="ri-error-warning-line"></i>
+      <div class="annotation-text">
+        <strong>변경:</strong> Why Testably 섹션을 3열 → 4열로 확장. 4번째 카드로 "Switch from TestRail in Minutes" 추가. Footer의 "vs TestRail" 비교 페이지와 연계.
+      </div>
+    </div>
+
+    <div class="section-label"><span>Why Testably</span></div>
+    <div class="section-heading">Why teams choose <span class="accent">Testably</span></div>
+    <div class="section-subdesc">Everything your QA team needs, none of the complexity you don't.</div>
+
+    <div class="why-grid">
+      <!-- Existing card 1 -->
+      <div class="why-card" style="opacity:0.5;">
+        <div class="why-icon" style="background:rgba(99,102,241,0.1);"><i class="ri-timer-flash-line" style="color:#818CF8;"></i></div>
+        <h3>5-Minute Setup</h3>
+        <p>Sign up, create a project, write your first test case. No configuration wizards, no onboarding calls.</p>
+      </div>
+      <!-- Existing card 2 -->
+      <div class="why-card" style="opacity:0.5;">
+        <div class="why-icon" style="background:rgba(52,211,153,0.1);"><i class="ri-link" style="color:#34D399;"></i></div>
+        <h3>Jira + CI/CD Built-in</h3>
+        <p>Failed test becomes a Jira issue automatically. GitHub Actions and GitLab CI report results back.</p>
+      </div>
+      <!-- Existing card 3 -->
+      <div class="why-card" style="opacity:0.5;">
+        <div class="why-icon" style="background:rgba(251,191,36,0.1);"><i class="ri-money-dollar-circle-line" style="color:#FBBF24;"></i></div>
+        <h3>Free Forever Plan</h3>
+        <p>Unlimited test cases, 3 projects, 3 team members. No credit card, no trial expiration.</p>
+      </div>
+      <!-- NEW card 4 -->
+      <div class="why-card" style="border-color:rgba(251,146,60,0.3);">
+        <div class="why-new-badge"><i class="ri-sparkle-fill"></i> NEW</div>
+        <div class="why-icon" style="background:rgba(251,146,60,0.1);"><i class="ri-arrow-left-right-line" style="color:#FB923C;"></i></div>
+        <h3>Switch from TestRail in Minutes</h3>
+        <p>Import your entire test library via CSV. TestRail field mapping is built-in — priority, steps, expected results all transfer automatically.</p>
+      </div>
+    </div>
+
+    <!-- Dev instruction -->
+    <div style="margin-top:2rem; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.15); border-radius:0.75rem; padding:1.25rem;">
+      <div style="font-size:0.6875rem; font-weight:700; color:#818CF8; margin-bottom:0.5rem;">DEV INSTRUCTION</div>
+      <div style="font-size:0.75rem; color:#94A3B8; line-height:1.6;">
+        1. <code style="background:rgba(255,255,255,0.08); padding:0.125rem 0.375rem; border-radius:0.25rem; color:#A5B4FC;">content.en.whyCards</code> 배열에 4번째 객체 추가<br>
+        2. Why 섹션 그리드: <code style="color:#A5B4FC;">grid-cols-3</code> → <code style="color:#34D399;">grid-cols-4</code> 변경<br>
+        3. 아이콘: <code style="color:#A5B4FC;">ri-arrow-left-right-line</code>, 색상: <code style="color:#FB923C;">orange-400</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SCREEN 7: P1 — FAQ 3개 추가 -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="screen" id="s7">
+  <div class="screen-title">FAQ — 3개 질문 추가</div>
+  <div class="screen-subtitle">P1: Import/Migration, Viewer 무료, Webhooks — faqs 배열에 추가</div>
+
+  <div class="section-container" style="padding-top:2rem; padding-bottom:4rem;">
+    <div class="annotation">
+      <i class="ri-error-warning-line"></i>
+      <div class="annotation-text">
+        <strong>배치:</strong> 기존 8개 FAQ 아래에 3개 추가. 총 11개. NEW 태그로 신규 항목 구분.
+      </div>
+    </div>
+
+    <div class="faq-list">
+      <!-- Existing FAQs (collapsed, dimmed) -->
+      <div class="faq-item" style="opacity:0.35;">
+        <button class="faq-q">What are the limits of the Free plan? <i class="ri-arrow-down-s-line"></i></button>
+      </div>
+      <div class="faq-item" style="opacity:0.35;">
+        <button class="faq-q">How do I integrate Testably with Jira? <i class="ri-arrow-down-s-line"></i></button>
+      </div>
+      <div class="faq-item" style="opacity:0.35;">
+        <button class="faq-q">How does CI/CD pipeline integration work? <i class="ri-arrow-down-s-line"></i></button>
+      </div>
+      <div class="faq-item" style="opacity:0.25;">
+        <button class="faq-q" style="font-size:0.75rem; color:#475569;">... 5 more existing FAQs ... <i class="ri-arrow-down-s-line"></i></button>
+      </div>
+
+      <!-- NEW FAQ #9 -->
+      <div class="faq-item open" style="border-color:rgba(52,211,153,0.2);">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          Can I import test cases from TestRail or other tools?
+          <span class="faq-new-tag">NEW</span>
+          <i class="ri-arrow-down-s-line"></i>
+        </button>
+        <div class="faq-a">
+          Yes. Testably supports CSV import with built-in TestRail field mapping. Export your test cases from TestRail as CSV, then import them into Testably — priorities, steps, and expected results are automatically mapped. You can also import from Zephyr and Qase.
+        </div>
+      </div>
+
+      <!-- NEW FAQ #10 -->
+      <div class="faq-item open" style="border-color:rgba(52,211,153,0.2);">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          Do Viewers count toward my plan's member limit?
+          <span class="faq-new-tag">NEW</span>
+          <i class="ri-arrow-down-s-line"></i>
+        </button>
+        <div class="faq-a">
+          No. Viewer roles are completely free and excluded from your seat count. On the Starter plan (5 seats), you could have 1 Owner + 1 Admin + 3 Members + unlimited Viewers. This lets your entire organization observe testing progress without extra cost.
+        </div>
+      </div>
+
+      <!-- NEW FAQ #11 -->
+      <div class="faq-item open" style="border-color:rgba(52,211,153,0.2);">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          Does Testably support webhooks?
+          <span class="faq-new-tag">NEW</span>
+          <i class="ri-arrow-down-s-line"></i>
+        </button>
+        <div class="faq-a">
+          Yes. You can configure webhooks to send real-time event notifications to any HTTP endpoint — including Slack, Discord, Microsoft Teams, or your custom automation system. Events include test run completions, test failures, member joins, and more.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SCREEN 8: FULL CONTEXT — All changes together -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="screen" id="s8">
+  <div class="screen-title">Full Context — All P0 + P1 Changes Summary</div>
+  <div class="screen-subtitle">전체 변경사항 한눈에 보기</div>
+
+  <div class="section-container" style="padding-top:2rem; padding-bottom:4rem;">
+
+    <!-- Summary grid -->
+    <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:1rem; margin-bottom:2.5rem;">
+      <!-- P0 -->
+      <div style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:1rem; padding:1.5rem;">
+        <div style="font-size:0.6875rem; font-weight:700; color:#F87171; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:1rem;">
+          P0 — 즉시 수정 (잘못된 정보)
+        </div>
+        <div style="display:flex; flex-direction:column; gap:0.75rem;">
+          <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+            <i class="ri-checkbox-circle-fill" style="color:#34D399; font-size:1rem; flex-shrink:0; margin-top:0.125rem;"></i>
+            <div>
+              <div style="font-size:0.8125rem; font-weight:600; color:#F1F5F9;">Team Collaboration 역할</div>
+              <div style="font-size:0.6875rem; color:#94A3B8;">"Admin, Member, Viewer" → "Owner, Admin, Member, Viewer"</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+            <i class="ri-checkbox-circle-fill" style="color:#34D399; font-size:1rem; flex-shrink:0; margin-top:0.125rem;"></i>
+            <div>
+              <div style="font-size:0.8125rem; font-weight:600; color:#F1F5F9;">Starter 플랜 기능 추가</div>
+              <div style="font-size:0.6875rem; color:#94A3B8;">+ Testcase Export/Import, Export PDF Report</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+            <i class="ri-checkbox-circle-fill" style="color:#34D399; font-size:1rem; flex-shrink:0; margin-top:0.125rem;"></i>
+            <div>
+              <div style="font-size:0.8125rem; font-weight:600; color:#F1F5F9;">Professional 플랜 기능 추가</div>
+              <div style="font-size:0.6875rem; color:#94A3B8;">+ Testcase Export/Import, Export PDF Report</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:1rem; font-size:0.6875rem; color:#F87171; font-weight:600;">예상 작업: 10분 (텍스트 수정만)</div>
+      </div>
+
+      <!-- P1 -->
+      <div style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:1rem; padding:1.5rem;">
+        <div style="font-size:0.6875rem; font-weight:700; color:#FBBF24; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:1rem;">
+          P1 — 이번 스프린트 (차별점 노출)
+        </div>
+        <div style="display:flex; flex-direction:column; gap:0.75rem;">
+          <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+            <i class="ri-checkbox-circle-fill" style="color:#34D399; font-size:1rem; flex-shrink:0; margin-top:0.125rem;"></i>
+            <div>
+              <div style="font-size:0.8125rem; font-weight:600; color:#F1F5F9;">Viewer 무료 정책 배너</div>
+              <div style="font-size:0.6875rem; color:#94A3B8;">Pricing 하단, 경쟁사 대비 최대 차별점</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+            <i class="ri-checkbox-circle-fill" style="color:#34D399; font-size:1rem; flex-shrink:0; margin-top:0.125rem;"></i>
+            <div>
+              <div style="font-size:0.8125rem; font-weight:600; color:#F1F5F9;">Import & Export 카드</div>
+              <div style="font-size:0.6875rem; color:#94A3B8;">Core Features #10, TestRail 마이그레이션 유입</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+            <i class="ri-checkbox-circle-fill" style="color:#34D399; font-size:1rem; flex-shrink:0; margin-top:0.125rem;"></i>
+            <div>
+              <div style="font-size:0.8125rem; font-weight:600; color:#F1F5F9;">Advanced Reporting 카드</div>
+              <div style="font-size:0.6875rem; color:#94A3B8;">Core Features #11, 4개 대시보드</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+            <i class="ri-checkbox-circle-fill" style="color:#34D399; font-size:1rem; flex-shrink:0; margin-top:0.125rem;"></i>
+            <div>
+              <div style="font-size:0.8125rem; font-weight:600; color:#F1F5F9;">"Switch from TestRail" Why 카드</div>
+              <div style="font-size:0.6875rem; color:#94A3B8;">Why Testably 4번째 카드</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+            <i class="ri-checkbox-circle-fill" style="color:#34D399; font-size:1rem; flex-shrink:0; margin-top:0.125rem;"></i>
+            <div>
+              <div style="font-size:0.8125rem; font-weight:600; color:#F1F5F9;">FAQ 3개 추가</div>
+              <div style="font-size:0.6875rem; color:#94A3B8;">Import, Viewer 무료, Webhooks</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:1rem; font-size:0.6875rem; color:#FBBF24; font-weight:600;">예상 작업: 2-3시간</div>
+      </div>
+    </div>
+
+    <!-- Affected sections map -->
+    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:1rem; padding:1.5rem;">
+      <div style="font-size:0.75rem; font-weight:700; color:#818CF8; margin-bottom:1rem;">HOMEPAGE SECTION MAP — AFFECTED AREAS</div>
+      <div style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.75rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.375rem; background:rgba(255,255,255,0.02);">
+          <span style="color:#64748B; width:2rem;">①</span> <span style="color:#94A3B8;">Hero</span> <span style="margin-left:auto; color:#475569; font-size:0.625rem;">no change</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.375rem; background:rgba(255,255,255,0.02);">
+          <span style="color:#64748B; width:2rem;">②</span> <span style="color:#94A3B8;">Stats Bar</span> <span style="margin-left:auto; color:#475569; font-size:0.625rem;">no change</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.375rem; background:rgba(255,255,255,0.02);">
+          <span style="color:#64748B; width:2rem;">③</span> <span style="color:#94A3B8;">Differentiators</span> <span style="margin-left:auto; color:#475569; font-size:0.625rem;">no change</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.375rem; background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.15);">
+          <span style="color:#34D399; width:2rem; font-weight:700;">④</span>
+          <span style="color:#F1F5F9; font-weight:600;">Core Features</span>
+          <span style="margin-left:auto; display:flex; gap:0.25rem;">
+            <span style="font-size:0.5rem; padding:0.0625rem 0.25rem; border-radius:0.125rem; background:#EF4444; color:#fff; font-weight:700;">P0</span>
+            <span style="font-size:0.5rem; padding:0.0625rem 0.25rem; border-radius:0.125rem; background:#F59E0B; color:#fff; font-weight:700;">P1</span>
+          </span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.375rem; background:rgba(255,255,255,0.02);">
+          <span style="color:#64748B; width:2rem;">⑤</span> <span style="color:#94A3B8;">How It Works</span> <span style="margin-left:auto; color:#475569; font-size:0.625rem;">no change</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.375rem; background:rgba(255,255,255,0.02);">
+          <span style="color:#64748B; width:2rem;">⑥</span> <span style="color:#94A3B8;">Integrations</span> <span style="margin-left:auto; color:#475569; font-size:0.625rem;">no change (P2)</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.375rem; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.15);">
+          <span style="color:#FBBF24; width:2rem; font-weight:700;">⑦</span>
+          <span style="color:#F1F5F9; font-weight:600;">Why Testably</span>
+          <span style="margin-left:auto; font-size:0.5rem; padding:0.0625rem 0.25rem; border-radius:0.125rem; background:#F59E0B; color:#fff; font-weight:700;">P1</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.375rem; background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.15);">
+          <span style="color:#34D399; width:2rem; font-weight:700;">⑧</span>
+          <span style="color:#F1F5F9; font-weight:600;">Pricing</span>
+          <span style="margin-left:auto; display:flex; gap:0.25rem;">
+            <span style="font-size:0.5rem; padding:0.0625rem 0.25rem; border-radius:0.125rem; background:#EF4444; color:#fff; font-weight:700;">P0</span>
+            <span style="font-size:0.5rem; padding:0.0625rem 0.25rem; border-radius:0.125rem; background:#F59E0B; color:#fff; font-weight:700;">P1</span>
+          </span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.375rem; background:rgba(255,255,255,0.02);">
+          <span style="color:#64748B; width:2rem;">⑨</span> <span style="color:#94A3B8;">Testimonials</span> <span style="margin-left:auto; color:#475569; font-size:0.625rem;">no change</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.375rem; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.15);">
+          <span style="color:#FBBF24; width:2rem; font-weight:700;">⑩</span>
+          <span style="color:#F1F5F9; font-weight:600;">FAQ</span>
+          <span style="margin-left:auto; font-size:0.5rem; padding:0.0625rem 0.25rem; border-radius:0.125rem; background:#F59E0B; color:#fff; font-weight:700;">P1</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ JS ═══ -->
+<script>
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+// FAQ toggle
+document.querySelectorAll('.faq-q').forEach(btn => {
+  btn.addEventListener('click', function() {
+    this.parentElement.classList.toggle('open');
+  });
+});
+</script>
+</body>
+</html>

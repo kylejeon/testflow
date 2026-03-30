@@ -1,0 +1,2683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discovery Log Unified Design - Testably</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Pacifico&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: #0F172A;
+      background: #F8FAFC;
+      height: 100%;
+    }
+
+    /* Demo Bar */
+    .demo-bar {
+      background: #FEF08A;
+      border-bottom: 1px solid #EAB308;
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #854D0E;
+    }
+    .demo-chip {
+      background: #FBBF24;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    .demo-note {
+      margin-left: auto;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    /* Container */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* Top Header */
+    .top-header {
+      height: 52px;
+      background: #fff;
+      border-bottom: 1px solid #E2E8F0;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+
+    .logo {
+      width: 26px;
+      height: 26px;
+      background: #6366F1;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-family: 'Pacifico', cursive;
+      font-size: 18px;
+      font-weight: 400;
+      flex-shrink: 0;
+    }
+
+    .project-selector {
+      font-weight: 600;
+      color: #0F172A;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .project-selector::after {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      background: #64748B;
+      border-radius: 50%;
+    }
+
+    .nav {
+      display: flex;
+      gap: 24px;
+      flex: 1;
+      margin-left: 20px;
+    }
+
+    .nav-item {
+      font-size: 14px;
+      font-weight: 500;
+      color: #64748B;
+      cursor: pointer;
+      position: relative;
+      padding-bottom: 4px;
+      transition: color 0.2s;
+    }
+
+    .nav-item:hover {
+      color: #0F172A;
+    }
+
+    .nav-item.active {
+      color: #6366F1;
+      font-weight: 600;
+    }
+
+    .nav-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: -16px;
+      left: 0;
+      right: 0;
+      height: 2.5px;
+      background: #6366F1;
+      border-radius: 1px 1px 0 0;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-left: auto;
+    }
+
+    .search-box {
+      width: 200px;
+      padding: 6px 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      background: #F8FAFC;
+      font-size: 13px;
+      color: #64748B;
+    }
+
+    .icon-button {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid #E2E8F0;
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748B;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .icon-button:hover {
+      background: #F1F5F9;
+    }
+
+    .icon-button.has-notification::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #EF4444;
+      border-radius: 50%;
+      position: absolute;
+      top: 6px;
+      right: 6px;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #6366F1;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Subtab Row */
+    .subtab-row {
+      height: 42px;
+      background: white;
+      border-bottom: 1px solid #E2E8F0;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 24px;
+      flex-shrink: 0;
+    }
+
+    .subtab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #64748B;
+      cursor: pointer;
+      position: relative;
+      padding-bottom: 4px;
+      transition: color 0.2s;
+    }
+
+    .subtab:hover {
+      color: #0F172A;
+    }
+
+    .subtab.active {
+      color: #6366F1;
+      font-weight: 600;
+    }
+
+    .subtab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -17px;
+      left: 0;
+      right: 0;
+      height: 2.5px;
+      background: #6366F1;
+      border-radius: 1px 1px 0 0;
+    }
+
+    .subtab i {
+      font-size: 16px;
+    }
+
+    .badge {
+      background: #EEF2FF;
+      color: #4338CA;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .subtab-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-left: auto;
+    }
+
+    .count-chip {
+      background: #F1F5F9;
+      color: #64748B;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: #6366F1;
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: #4F46E5;
+    }
+
+    /* Main Content Area */
+    .content-wrapper {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* LIST VIEW */
+    .list-view {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .list-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      background: white;
+      border-right: 1px solid #E2E8F0;
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 12px 0;
+    }
+
+    .sidebar-section {
+      padding: 0 12px;
+      margin-bottom: 12px;
+    }
+
+    .sidebar-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: #94A3B8;
+      text-transform: uppercase;
+      padding: 8px 0;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-item {
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #64748B;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .sidebar-item:hover {
+      background: #F1F5F9;
+    }
+
+    .sidebar-item.active {
+      background: #EEF2FF;
+      color: #4338CA;
+      font-weight: 600;
+    }
+
+    .sidebar-item .count {
+      margin-left: auto;
+      font-size: 12px;
+      font-weight: 600;
+      color: #94A3B8;
+    }
+
+    .sidebar-item.active .count {
+      color: #6366F1;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #F8FAFC;
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      padding: 16px 20px;
+      background: white;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #F1F5F9;
+      border-radius: 6px;
+      border: 1px solid #E2E8F0;
+    }
+
+    .stat-card i {
+      font-size: 18px;
+      color: #6366F1;
+    }
+
+    .stat-card.bugs i {
+      color: #EF4444;
+    }
+
+    .stat-card.duration i {
+      color: #8B5CF6;
+    }
+
+    .stat-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #94A3B8;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0F172A;
+    }
+
+    .stat-subtitle {
+      font-size: 12px;
+      color: #64748B;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      padding: 12px 20px;
+      background: white;
+      border-bottom: 1px solid #E2E8F0;
+      align-items: center;
+    }
+
+    .toolbar-search {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      background: #F8FAFC;
+      font-size: 13px;
+      color: #64748B;
+      position: relative;
+    }
+
+    .toolbar-search::placeholder {
+      color: #94A3B8;
+    }
+
+    .toolbar-search::after {
+      content: '/';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #CBD5E1;
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .btn-secondary {
+      padding: 6px 12px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      background: white;
+      color: #64748B;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #F1F5F9;
+    }
+
+    .toolbar-right {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    /* Table */
+    .table-container {
+      flex: 1;
+      overflow-y: auto;
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      background: #F8FAFC;
+      border-bottom: 1px solid #E2E8F0;
+      position: sticky;
+      top: 0;
+    }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748B;
+      text-transform: uppercase;
+      border-right: 1px solid #E2E8F0;
+    }
+
+    th:last-child {
+      border-right: none;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #E2E8F0;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover {
+      background: #F8FAFC;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-right: 1px solid #E2E8F0;
+      font-size: 13px;
+      color: #0F172A;
+    }
+
+    td:last-child {
+      border-right: none;
+    }
+
+    .checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .status-pill .status-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-not-started {
+      background: #F1F5F9;
+      color: #64748B;
+    }
+    .status-not-started .status-indicator { background: #94A3B8; }
+
+    .status-in-progress {
+      background: #EFF6FF;
+      color: #1D4ED8;
+    }
+    .status-in-progress .status-indicator { background: #3B82F6; }
+
+    .status-paused {
+      background: #FEF3C7;
+      color: #92400E;
+    }
+    .status-paused .status-indicator { background: #F59E0B; }
+
+    .status-completed {
+      background: #DCFCE7;
+      color: #15803D;
+    }
+    .status-completed .status-indicator { background: #22C55E; }
+
+    .status-dismissed {
+      background: #F1F5F9;
+      color: #64748B;
+    }
+    .status-dismissed .status-indicator { background: #64748B; }
+
+    .discovery-name {
+      font-weight: 600;
+      color: #0F172A;
+    }
+
+    .description {
+      color: #64748B;
+      max-width: 250px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bugs-badge {
+      background: #FEF2F2;
+      color: #991B1B;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .bug-critical {
+      color: #DC2626;
+      font-weight: 700;
+    }
+
+    .tags-cell {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      background: #EEF2FF;
+      color: #4338CA;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .assignee-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #6366F1;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .duration {
+      color: #64748B;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    .updated {
+      color: #94A3B8;
+      font-size: 12px;
+    }
+
+    /* DETAIL VIEW */
+    .detail-view {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .detail-view.active {
+      display: flex;
+    }
+
+    .breadcrumb-row {
+      height: 42px;
+      background: white;
+      border-bottom: 1px solid #E2E8F0;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+      flex-shrink: 0;
+      font-size: 13px;
+      color: #64748B;
+    }
+
+    .breadcrumb-back {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      color: #6366F1;
+      font-weight: 600;
+    }
+
+    .breadcrumb-link {
+      color: #6366F1;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .detail-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      background: #F8FAFC;
+    }
+
+    .detail-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .detail-name-section {
+      padding: 20px;
+      background: white;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    .detail-name {
+      font-size: 24px;
+      font-weight: 800;
+      color: #0F172A;
+      outline: none;
+      padding: 4px;
+      margin: -4px;
+    }
+
+    .detail-name:focus {
+      outline: 2px solid #6366F1;
+      outline-offset: 2px;
+    }
+
+    .detail-mission {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      background: #F8FAFC;
+      font-size: 13px;
+      color: #64748B;
+      line-height: 1.5;
+    }
+
+    .entries-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .entry-card {
+      background: white;
+      border-radius: 6px;
+      border-left: 3px solid #6366F1;
+      padding: 12px;
+      border: 1px solid #E2E8F0;
+      border-left: 3px solid #6366F1;
+    }
+
+    .entry-card.bug {
+      border-left-color: #EF4444;
+    }
+
+    .entry-card.observation {
+      border-left-color: #F59E0B;
+    }
+
+    .entry-card.step {
+      border-left-color: #7C3AED;
+    }
+
+    .entry-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .entry-icon {
+      font-size: 16px;
+      color: #6366F1;
+    }
+
+    .entry-card.bug .entry-icon {
+      color: #DC2626;
+    }
+
+    .entry-card.observation .entry-icon {
+      color: #D97706;
+    }
+
+    .entry-card.step .entry-icon {
+      color: #7C3AED;
+    }
+
+    .entry-type {
+      font-weight: 600;
+      color: #0F172A;
+      font-size: 13px;
+    }
+
+    .entry-time {
+      color: #94A3B8;
+      font-size: 12px;
+      margin-left: auto;
+    }
+
+    .entry-menu {
+      cursor: pointer;
+      color: #94A3B8;
+      font-size: 14px;
+    }
+
+    .entry-content {
+      color: #0F172A;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .entry-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: #64748B;
+    }
+
+    .severity-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    .severity-critical {
+      background: #FEF2F2;
+      color: #991B1B;
+    }
+
+    .severity-major {
+      background: #FEF3C7;
+      color: #92400E;
+    }
+
+    .severity-minor {
+      background: #F1F5F9;
+      color: #64748B;
+    }
+
+    .field-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .field-label {
+      color: #94A3B8;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+
+    .field-value {
+      color: #0F172A;
+      background: #F8FAFC;
+      padding: 4px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .entry-bottom-bar {
+      position: sticky;
+      bottom: 0;
+      background: white;
+      border-top: 1px solid #E2E8F0;
+      padding: 12px 20px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .entry-input {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      background: #F8FAFC;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      color: #0F172A;
+    }
+
+    .entry-input::placeholder {
+      color: #94A3B8;
+    }
+
+    .entry-input:focus {
+      outline: none;
+      border-color: #6366F1;
+      background: white;
+    }
+
+    .entry-type-buttons {
+      display: flex;
+      gap: 4px;
+    }
+
+    .entry-type-btn {
+      padding: 6px 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      background: white;
+      color: #64748B;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .entry-type-btn:hover {
+      background: #F1F5F9;
+    }
+
+    .entry-type-btn.note:hover {
+      color: #6366F1;
+      border-color: #6366F1;
+    }
+
+    .entry-type-btn.bug:hover {
+      color: #DC2626;
+      border-color: #DC2626;
+    }
+
+    .entry-type-btn.observation:hover {
+      color: #D97706;
+      border-color: #D97706;
+    }
+
+    .entry-type-btn.step:hover {
+      color: #7C3AED;
+      border-color: #7C3AED;
+    }
+
+    .btn-add {
+      padding: 6px 14px;
+      background: #6366F1;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .btn-add:hover {
+      background: #4F46E5;
+    }
+
+    /* Type-specific form areas */
+    .entry-form-area {
+      display: none;
+      padding: 12px 20px 0;
+      background: white;
+      border-top: 1px solid #E2E8F0;
+    }
+
+    .entry-form-area.active {
+      display: block;
+    }
+
+    .entry-form-area .form-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .entry-form-area .form-type-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .entry-form-area .form-type-label.note { color: #6366F1; }
+    .entry-form-area .form-type-label.bug { color: #DC2626; }
+    .entry-form-area .form-type-label.observation { color: #D97706; }
+    .entry-form-area .form-type-label.step { color: #7C3AED; }
+
+    .entry-form-area .form-close {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: #F1F5F9;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #64748B;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .entry-form-area .form-close:hover {
+      background: #E2E8F0;
+      color: #0F172A;
+    }
+
+    /* Simple form (Note/Observation) */
+    .simple-form .form-input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      background: #F8FAFC;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      color: #0F172A;
+      box-sizing: border-box;
+    }
+
+    .simple-form .form-input:focus {
+      outline: none;
+      border-color: #6366F1;
+      background: white;
+    }
+
+    .simple-form .form-input::placeholder { color: #94A3B8; }
+
+    /* Bug form */
+    .bug-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bug-form .bug-title-input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #FECACA;
+      border-radius: 6px;
+      background: #FEF2F2;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      color: #0F172A;
+      font-weight: 600;
+      box-sizing: border-box;
+    }
+
+    .bug-form .bug-title-input:focus {
+      outline: none;
+      border-color: #EF4444;
+      background: white;
+    }
+
+    .bug-form .bug-title-input::placeholder { color: #F87171; }
+
+    .bug-form .bug-desc-input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      background: #F8FAFC;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      color: #0F172A;
+      resize: vertical;
+      min-height: 48px;
+      box-sizing: border-box;
+    }
+
+    .bug-form .bug-desc-input:focus {
+      outline: none;
+      border-color: #EF4444;
+      background: white;
+    }
+
+    .bug-form .bug-desc-input::placeholder { color: #94A3B8; }
+
+    .bug-form .bug-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bug-form .severity-selector {
+      display: flex;
+      gap: 4px;
+    }
+
+    .bug-form .severity-btn {
+      padding: 4px 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 4px;
+      background: white;
+      color: #64748B;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .bug-form .severity-btn:hover {
+      border-color: #94A3B8;
+    }
+
+    .bug-form .severity-btn.active {
+      color: white;
+    }
+
+    .bug-form .severity-btn.critical.active {
+      background: #DC2626;
+      border-color: #DC2626;
+    }
+
+    .bug-form .severity-btn.major.active {
+      background: #F59E0B;
+      border-color: #F59E0B;
+    }
+
+    .bug-form .severity-btn.minor.active {
+      background: #3B82F6;
+      border-color: #3B82F6;
+    }
+
+    .bug-form .severity-btn.trivial.active {
+      background: #94A3B8;
+      border-color: #94A3B8;
+    }
+
+    .bug-form .bug-attach-btns {
+      display: flex;
+      gap: 4px;
+      margin-left: auto;
+    }
+
+    .bug-form .bug-attach-btn {
+      padding: 4px 8px;
+      border: 1px solid #E2E8F0;
+      border-radius: 4px;
+      background: white;
+      color: #64748B;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+
+    .bug-form .bug-attach-btn:hover {
+      background: #F1F5F9;
+      border-color: #94A3B8;
+    }
+
+    /* Step form */
+    .step-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .step-form .step-field {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .step-form .step-field-label {
+      width: 64px;
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 700;
+      color: #7C3AED;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding-top: 9px;
+    }
+
+    .step-form .step-field-input {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      background: #F8FAFC;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      color: #0F172A;
+      box-sizing: border-box;
+    }
+
+    .step-form .step-field-input:focus {
+      outline: none;
+      border-color: #7C3AED;
+      background: white;
+    }
+
+    .step-form .step-field-input::placeholder { color: #94A3B8; }
+
+    /* Bottom bar updated for form mode */
+    .entry-bottom-bar.form-active {
+      border-top: none;
+      padding-top: 8px;
+    }
+
+    .entry-bottom-bar.form-active .entry-input {
+      display: none;
+    }
+
+    /* Detail Sidebar */
+    .detail-sidebar {
+      width: 320px;
+      background: white;
+      border-left: 1px solid #E2E8F0;
+      overflow-y: auto;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-panel {
+      padding: 16px;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #0F172A;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .about-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+
+    .about-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .about-label {
+      font-size: 11px;
+      color: #94A3B8;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .about-value {
+      font-size: 13px;
+      color: #0F172A;
+      font-weight: 500;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #DBEAFE;
+      color: #1E40AF;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      width: fit-content;
+    }
+
+    .status-badge.not-started { background: #F1F5F9; color: #64748B; }
+    .status-badge.in-progress { background: #DBEAFE; color: #1E40AF; }
+    .status-badge.paused { background: #FEF3C7; color: #92400E; }
+    .status-badge.completed { background: #DCFCE7; color: #15803D; }
+    .status-badge.dismissed { background: #F1F5F9; color: #64748B; }
+
+    .status-spinner {
+      font-size: 14px;
+      animation: spin 1.2s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .milestone-link {
+      color: #6366F1;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .milestone-link:hover {
+      text-decoration: underline;
+    }
+
+    .assignees {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .assignee-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #6366F1;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .tags-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .tag-pill {
+      background: #EEF2FF;
+      color: #4338CA;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .activity-panel {
+      padding: 16px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .timer-display {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .timer-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #0F172A;
+      font-family: 'Courier New', monospace;
+      margin-bottom: 4px;
+    }
+
+    .timer-label {
+      font-size: 12px;
+      color: #94A3B8;
+      font-weight: 600;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #E2E8F0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #6366F1;
+      transition: width 0.1s linear;
+    }
+
+    .summary-cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .summary-card {
+      background: #F8FAFC;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #E2E8F0;
+      font-size: 12px;
+    }
+
+    .summary-card-title {
+      color: #94A3B8;
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    .summary-card-value {
+      color: #0F172A;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .summary-card-subtitle {
+      color: #64748B;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .timeline {
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .timeline-time-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #94A3B8;
+      padding: 0 2px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .timeline-time-row .time-start,
+    .timeline-time-row .time-end {
+      font-weight: 600;
+      color: #64748B;
+    }
+
+    .timeline-axis {
+      position: relative;
+      height: 36px;
+      border-bottom: 1px solid #E2E8F0;
+      background: linear-gradient(to right, #F8FAFC 0%, #F1F5F9 100%);
+      border-radius: 4px 4px 0 0;
+      overflow: visible;
+    }
+
+    .timeline-tick {
+      position: absolute;
+      bottom: 0;
+      width: 1px;
+      height: 6px;
+      background: #CBD5E1;
+    }
+
+    .timeline-tick-label {
+      position: absolute;
+      bottom: -16px;
+      font-size: 9px;
+      color: #94A3B8;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      top: 50%;
+      transform: translateY(-50%) translateX(-50%);
+      border: 1.5px solid white;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      z-index: 2;
+    }
+
+    .timeline-dot:hover {
+      transform: translateY(-50%) translateX(-50%) scale(1.4);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 3;
+    }
+
+    .timeline-dot-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1E293B;
+      color: white;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 10;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .timeline-dot-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: #1E293B;
+    }
+
+    .timeline-dot:hover .timeline-dot-tooltip {
+      display: block;
+    }
+
+    .timeline-labels-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: #94A3B8;
+      padding: 2px 2px 0;
+      position: relative;
+      height: 14px;
+    }
+
+    .timeline-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      color: #64748B;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .btn-control {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .btn-start {
+      background: #22C55E;
+      color: white;
+    }
+
+    .btn-start:hover {
+      background: #16A34A;
+    }
+
+    .btn-pause {
+      background: #F59E0B;
+      color: white;
+    }
+
+    .btn-pause:hover {
+      background: #D97706;
+    }
+
+    .btn-resume {
+      background: #3B82F6;
+      color: white;
+    }
+
+    .btn-resume:hover {
+      background: #2563EB;
+    }
+
+    .btn-stop {
+      background: #EF4444;
+      color: white;
+    }
+
+    .btn-stop:hover {
+      background: #DC2626;
+    }
+
+    .btn-completed {
+      background: #D1D5DB;
+      color: #6B7280;
+      cursor: not-allowed;
+    }
+
+    .status-dropdown {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      background: white;
+      color: #0F172A;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .status-dropdown-menu {
+      position: absolute;
+      background: white;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      z-index: 100;
+      min-width: 200px;
+    }
+
+    .status-option {
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      transition: background 0.15s;
+    }
+
+    .status-option:hover {
+      background: #F1F5F9;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-bar">
+    <label>Design Mockup</label>
+    <span class="demo-chip">Discovery Log Unified</span>
+    <span class="demo-chip">Logs + Detail</span>
+    <span class="demo-chip">Interactive HTML</span>
+    <span class="demo-note">Click table rows → Detail · N/B/O/T shortcuts · Timer runs</span>
+  </div>
+
+  <div class="app-container">
+    <!-- TOP HEADER -->
+    <div class="top-header">
+      <div class="logo">T</div>
+      <div class="project-selector">Stellar Health EMR</div>
+      <div class="nav">
+        <div class="nav-item">Dashboard</div>
+        <div class="nav-item">Test Cases</div>
+        <div class="nav-item">Runs</div>
+        <div class="nav-item">Milestones</div>
+        <div class="nav-item">Documents</div>
+        <div class="nav-item active">Discovery</div>
+      </div>
+      <div class="nav-right">
+        <input type="text" class="search-box" placeholder="Search...">
+        <div class="icon-button has-notification"><i class="ri-notification-3-line"></i></div>
+        <div class="icon-button"><i class="ri-keyboard-box-line"></i></div>
+        <div class="avatar">SK</div>
+      </div>
+    </div>
+
+    <!-- LIST VIEW -->
+    <div class="list-view active" id="listView">
+      <!-- SUBTAB ROW -->
+      <div class="subtab-row">
+        <div class="subtab active" data-filter="all">
+          <i class="ri-list-check-3-line"></i>
+          All
+          <span class="badge">15</span>
+        </div>
+        <div class="subtab" data-filter="active" title="Not Started + In Progress + Paused">
+          <i class="ri-radar-fill"></i>
+          Active
+          <span class="badge">8</span>
+        </div>
+        <div class="subtab" data-filter="completed" title="Completed">
+          <i class="ri-checkbox-circle-fill"></i>
+          Completed
+          <span class="badge">5</span>
+        </div>
+        <div class="subtab" data-filter="dismissed" title="Dismissed">
+          <i class="ri-close-circle-line"></i>
+          Dismissed
+          <span class="badge">2</span>
+        </div>
+        <div class="subtab-right">
+          <span class="count-chip">15 entries</span>
+          <button class="btn-primary"><i class="ri-add-line"></i>New Entry</button>
+        </div>
+      </div>
+
+      <div class="list-container">
+        <!-- SIDEBAR -->
+        <div class="sidebar" id="sidebar">
+          <div class="sidebar-section">
+            <div class="sidebar-item active" data-filter-type="all-sessions">
+              <i class="ri-folder-line"></i>
+              All Sessions
+              <span class="count">(15)</span>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="sidebar-header">Milestones</div>
+            <div class="sidebar-item" data-filter-type="milestone" data-filter-value="Sprint 24 Release">
+              <i class="ri-flag-line"></i>
+              Sprint 24 Release
+              <span class="count">(5)</span>
+            </div>
+            <div class="sidebar-item" data-filter-type="milestone" data-filter-value="API v3 Certification">
+              <i class="ri-flag-line"></i>
+              API v3 Certification
+              <span class="count">(3)</span>
+            </div>
+            <div class="sidebar-item" data-filter-type="milestone" data-filter-value="Mobile 2.0 Launch">
+              <i class="ri-flag-line"></i>
+              Mobile 2.0 Launch
+              <span class="count">(4)</span>
+            </div>
+            <div class="sidebar-item" data-filter-type="milestone" data-filter-value="HIPAA Compliance">
+              <i class="ri-flag-line"></i>
+              HIPAA Compliance
+              <span class="count">(3)</span>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="sidebar-header">Tags</div>
+            <div class="sidebar-item" data-filter-type="tag" data-filter-value="payments">payments <span class="count">(4)</span></div>
+            <div class="sidebar-item" data-filter-type="tag" data-filter-value="auth">auth <span class="count">(3)</span></div>
+            <div class="sidebar-item" data-filter-type="tag" data-filter-value="mobile">mobile <span class="count">(3)</span></div>
+            <div class="sidebar-item" data-filter-type="tag" data-filter-value="edge-case">edge-case <span class="count">(6)</span></div>
+            <div class="sidebar-item" data-filter-type="tag" data-filter-value="api">api <span class="count">(3)</span></div>
+            <div class="sidebar-item" data-filter-type="tag" data-filter-value="security">security <span class="count">(2)</span></div>
+          </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+          <!-- Stats Bar -->
+          <div class="stats-bar">
+            <div class="stat-card">
+              <i class="ri-radar-fill"></i>
+              <div class="stat-text">
+                <span class="stat-label">Active Discoveries</span>
+                <span class="stat-value">6</span>
+              </div>
+            </div>
+            <div class="stat-card bugs">
+              <i class="ri-bug-line"></i>
+              <div class="stat-text">
+                <span class="stat-label">Bugs Found</span>
+                <span class="stat-value">23 <span class="bug-critical">(4 critical)</span></span>
+              </div>
+            </div>
+            <div class="stat-card duration">
+              <i class="ri-time-line"></i>
+              <div class="stat-text">
+                <span class="stat-label">Avg Duration</span>
+                <span class="stat-value">1h 42m</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="toolbar">
+            <input type="text" class="toolbar-search" id="searchInput" placeholder="Search discoveries...">
+            <div class="toolbar-right">
+              <button class="btn-secondary"><i class="ri-filter-3-line"></i>Filters</button>
+              <button class="btn-secondary"><i class="ri-sort-asc"></i>Sort</button>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="table-container">
+            <table id="discoveryTable">
+              <thead>
+                <tr>
+                  <th style="width: 30px;"><input type="checkbox" class="checkbox"></th>
+                  <th style="width: 120px;">Status</th>
+                  <th style="width: 240px;">Discovery Name</th>
+                  <th style="flex: 1;">Description</th>
+                  <th style="width: 70px;">Bugs</th>
+                  <th style="width: 120px;">Tags</th>
+                  <th style="width: 80px;">Assignee</th>
+                  <th style="width: 80px;">Duration</th>
+                  <th style="width: 100px;">Updated</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETAIL VIEW -->
+    <div class="detail-view" id="detailView">
+      <!-- Breadcrumb -->
+      <div class="breadcrumb-row">
+        <span class="breadcrumb-back" onclick="showView('list')">← Back</span>
+        <span class="breadcrumb-link" onclick="showView('list')">Discovery Log</span>
+        <span id="breadcrumbMilestone"></span>
+        <span id="breadcrumbName"></span>
+      </div>
+
+      <div class="detail-layout">
+        <!-- LEFT: Main Content -->
+        <div class="detail-main">
+          <div class="detail-name-section">
+            <div class="detail-name" id="detailName" contenteditable="true"></div>
+            <div class="detail-mission" id="detailMission"></div>
+          </div>
+
+          <!-- Entries Container -->
+          <div class="entries-container" id="entriesContainer"></div>
+
+          <!-- Dynamic Form Area (appears when type is selected) -->
+          <div class="entry-form-area" id="entryFormArea">
+            <!-- Note Form -->
+            <div id="noteForm" class="simple-form" style="display:none;">
+              <div class="form-header">
+                <div class="form-type-label note"><i class="ri-sticky-note-line"></i>New Note</div>
+                <button class="form-close" onclick="closeEntryForm()"><i class="ri-close-line"></i></button>
+              </div>
+              <input type="text" class="form-input" id="noteInput" placeholder="What did you notice or find?">
+            </div>
+            <!-- Bug Form -->
+            <div id="bugForm" class="bug-form" style="display:none;">
+              <div class="form-header">
+                <div class="form-type-label bug"><i class="ri-bug-line"></i>New Bug</div>
+                <button class="form-close" onclick="closeEntryForm()"><i class="ri-close-line"></i></button>
+              </div>
+              <input type="text" class="bug-title-input" id="bugTitleInput" placeholder="Bug title — what went wrong?">
+              <textarea class="bug-desc-input" id="bugDescInput" placeholder="Steps to reproduce, expected vs actual behavior..." rows="2"></textarea>
+              <div class="bug-meta-row">
+                <div class="severity-selector" id="severitySelector">
+                  <button class="severity-btn critical" data-severity="critical" onclick="selectSeverity('critical')">Critical</button>
+                  <button class="severity-btn major active" data-severity="major" onclick="selectSeverity('major')">Major</button>
+                  <button class="severity-btn minor" data-severity="minor" onclick="selectSeverity('minor')">Minor</button>
+                  <button class="severity-btn trivial" data-severity="trivial" onclick="selectSeverity('trivial')">Trivial</button>
+                </div>
+                <div class="bug-attach-btns">
+                  <button class="bug-attach-btn"><i class="ri-screenshot-line"></i>Screenshot</button>
+                  <button class="bug-attach-btn"><i class="ri-attachment-2"></i>Attach</button>
+                </div>
+              </div>
+            </div>
+            <!-- Observation Form -->
+            <div id="observationForm" class="simple-form" style="display:none;">
+              <div class="form-header">
+                <div class="form-type-label observation"><i class="ri-eye-line"></i>New Observation</div>
+                <button class="form-close" onclick="closeEntryForm()"><i class="ri-close-line"></i></button>
+              </div>
+              <input type="text" class="form-input" id="observationInput" placeholder="What behavior did you observe?">
+            </div>
+            <!-- Step Form -->
+            <div id="stepForm" class="step-form" style="display:none;">
+              <div class="form-header">
+                <div class="form-type-label step"><i class="ri-test-tube-line"></i>New Test Step</div>
+                <button class="form-close" onclick="closeEntryForm()"><i class="ri-close-line"></i></button>
+              </div>
+              <div class="step-field">
+                <div class="step-field-label">Tested</div>
+                <input type="text" class="step-field-input" id="stepTestedInput" placeholder="What did you test?">
+              </div>
+              <div class="step-field">
+                <div class="step-field-label">Expected</div>
+                <input type="text" class="step-field-input" id="stepExpectedInput" placeholder="What should have happened?">
+              </div>
+              <div class="step-field">
+                <div class="step-field-label">Actual</div>
+                <input type="text" class="step-field-input" id="stepActualInput" placeholder="What actually happened?">
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Entry Bar -->
+          <div class="entry-bottom-bar" id="entryBottomBar">
+            <input type="text" class="entry-input" id="entryInput" placeholder="Select a type or press N / B / O / T">
+            <div class="entry-type-buttons">
+              <button class="entry-type-btn note" data-type="note"><i class="ri-sticky-note-line"></i>Note</button>
+              <button class="entry-type-btn bug" data-type="bug"><i class="ri-bug-line"></i>Bug</button>
+              <button class="entry-type-btn observation" data-type="observation"><i class="ri-eye-line"></i>Obs</button>
+              <button class="entry-type-btn step" data-type="step"><i class="ri-test-tube-line"></i>Step</button>
+            </div>
+            <button class="btn-add" id="addEntryBtn">Add</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: Sidebar -->
+        <div class="detail-sidebar">
+          <!-- About Panel -->
+          <div class="sidebar-panel">
+            <div class="panel-title">About</div>
+            <div class="about-item">
+              <div class="about-label">Status</div>
+              <div style="position: relative;">
+                <div class="status-badge in-progress" id="statusBadge" onclick="toggleStatusDropdown()">
+                  <i class="ri-loader-4-line status-spinner"></i>
+                  In Progress
+                </div>
+                <div id="statusDropdown" class="status-dropdown-menu hidden" style="position: absolute; top: 32px; left: 0; right: 0;">
+                  <div class="status-option" data-status="not-started"><i class="ri-time-line" style="color: #94A3B8;"></i>Not Started</div>
+                  <div class="status-option" data-status="in-progress"><i class="ri-loader-4-line" style="color: #3B82F6;"></i>In Progress</div>
+                  <div class="status-option" data-status="paused"><i class="ri-pause-circle-line" style="color: #F59E0B;"></i>Paused</div>
+                  <div class="status-option" data-status="completed"><i class="ri-checkbox-circle-fill" style="color: #22C55E;"></i>Completed</div>
+                  <div class="status-option" data-status="dismissed"><i class="ri-close-circle-line" style="color: #94A3B8;"></i>Dismissed</div>
+                </div>
+              </div>
+            </div>
+            <div class="about-item">
+              <div class="about-label">Created</div>
+              <div class="about-value">Mar 25, 2026</div>
+            </div>
+            <div class="about-item">
+              <div class="about-label">Milestone</div>
+              <div class="about-value"><a class="milestone-link" href="#">Sprint 24 Release</a></div>
+            </div>
+            <div class="about-item">
+              <div class="about-label">Assignees</div>
+              <div class="assignees">
+                <div class="assignee-circle">SK</div>
+                <div class="about-value">Sarah Kim</div>
+              </div>
+            </div>
+            <div class="about-item">
+              <div class="about-label">Tags</div>
+              <div class="tags-list">
+                <div class="tag-pill">payments</div>
+                <div class="tag-pill">3ds</div>
+                <div class="tag-pill">edge-case</div>
+              </div>
+            </div>
+            <div class="about-item">
+              <div class="about-label">Time Box</div>
+              <div class="about-value">2h (goal)</div>
+            </div>
+          </div>
+
+          <!-- Activity Panel -->
+          <div class="activity-panel">
+            <div class="panel-title">Activity</div>
+
+            <!-- Timer -->
+            <div class="timer-display">
+              <div class="timer-value" id="timerDisplay">00:00:00</div>
+              <div class="timer-label">Total Elapsed</div>
+              <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+              <div class="summary-card">
+                <div class="summary-card-title">Duration</div>
+                <div class="summary-card-value" id="summaryDuration">0m / 2h</div>
+                <div class="summary-card-subtitle">of goal</div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-card-title">Entries</div>
+                <div class="summary-card-value" id="summaryEntries">0</div>
+                <div class="summary-card-subtitle" id="summaryEntriesBreakdown">0 Note · 0 Bug · 0 Obs · 0 Step</div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-card-title">Bugs</div>
+                <div class="summary-card-value" id="summaryBugs">0</div>
+                <div class="summary-card-subtitle" id="summaryBugsBreakdown">0 Critical · 0 Major</div>
+              </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="timeline">
+              <div class="timeline-time-row">
+                <span class="time-start" id="timelineStart">--:--</span>
+                <span class="time-end" id="timelineEnd">Now</span>
+              </div>
+              <div class="timeline-axis" id="timelineAxis"></div>
+              <div class="timeline-labels-row" id="timelineLabels"></div>
+              <div class="timeline-legend" style="margin-top: 8px;">
+                <div class="legend-item">
+                  <div class="legend-dot" style="background: #6366F1;"></div>
+                  <span>Note</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot" style="background: #EF4444;"></div>
+                  <span>Bug</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot" style="background: #F59E0B;"></div>
+                  <span>Observation</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot" style="background: #7C3AED;"></div>
+                  <span>Step</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls" id="controlsContainer">
+              <button class="btn-control btn-start" id="startBtn">Start</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Data
+    const discoveries = [
+      { id: 1, name: "Payment Flow Edge Cases", status: "in-progress", description: "Testing 3DS payment flow under various conditions", milestone: "Sprint 24 Release", bugs: 3, tags: ["payments", "3ds", "edge-case"], assignee: "SK", duration: "1h 23m", updated: "2 min ago" },
+      { id: 2, name: "Authentication Token Refresh", status: "completed", description: "Exploring token expiration and refresh logic", milestone: "Sprint 24 Release", bugs: 1, tags: ["auth", "api"], assignee: "JD", duration: "45m", updated: "1 hour ago" },
+      { id: 3, name: "Mobile App Crash on Login", status: "in-progress", description: "Reproduction of crash with offline mode", milestone: "Mobile 2.0 Launch", bugs: 2, tags: ["mobile", "auth"], assignee: "SK", duration: "2h 15m", updated: "just now" },
+      { id: 4, name: "API Rate Limiting Behavior", status: "not-started", description: "Boundary testing for rate limit thresholds", milestone: "API v3 Certification", bugs: 0, tags: ["api", "edge-case"], assignee: "MR", duration: "1h 8m", updated: "30 min ago" },
+      { id: 5, name: "Database Concurrent Updates", status: "dismissed", description: "Race condition testing in concurrent operations", milestone: "API v3 Certification", bugs: 1, tags: ["api", "edge-case"], assignee: "JD", duration: "3h 22m", updated: "3 hours ago" },
+      { id: 6, name: "HIPAA Compliance Audit", status: "completed", description: "Data handling and encryption verification", milestone: "HIPAA Compliance", bugs: 2, tags: ["security"], assignee: "MR", duration: "4h 10m", updated: "5 hours ago" },
+      { id: 7, name: "Search Performance Testing", status: "paused", description: "Load testing and indexing verification", milestone: "Sprint 24 Release", bugs: 0, tags: ["api", "mobile"], assignee: "SK", duration: "1h 55m", updated: "4 hours ago" },
+      { id: 8, name: "Payment Gateway Integration", status: "completed", description: "Third-party payment processor error handling", milestone: "Sprint 24 Release", bugs: 4, tags: ["payments"], assignee: "JD", duration: "2h 42m", updated: "6 hours ago" },
+      { id: 9, name: "Localization Edge Cases", status: "in-progress", description: "Testing RTL languages and special characters", milestone: "Mobile 2.0 Launch", bugs: 1, tags: ["mobile", "edge-case"], assignee: "MR", duration: "1h 30m", updated: "7 hours ago" },
+      { id: 10, name: "Session Timeout Behavior", status: "paused", description: "Idle timeout and re-authentication flow", milestone: "API v3 Certification", bugs: 0, tags: ["auth", "api"], assignee: "SK", duration: "1h 12m", updated: "8 hours ago" },
+      { id: 11, name: "File Upload Security", status: "in-progress", description: "Testing file type validation and malicious uploads", milestone: "HIPAA Compliance", bugs: 2, tags: ["security", "edge-case"], assignee: "JD", duration: "2h 8m", updated: "9 hours ago" },
+      { id: 12, name: "Network Latency Simulation", status: "dismissed", description: "Testing app behavior under poor network conditions", milestone: "Mobile 2.0 Launch", bugs: 0, tags: ["mobile"], assignee: "MR", duration: "1h 45m", updated: "10 hours ago" },
+      { id: 13, name: "Data Export Accuracy", status: "completed", description: "Verifying exported data format and completeness", milestone: "Sprint 24 Release", bugs: 1, tags: ["api", "edge-case"], assignee: "SK", duration: "1h 20m", updated: "12 hours ago" },
+      { id: 14, name: "Third-party Integration Issues", status: "not-started", description: "Analytics and monitoring service integration", milestone: "Sprint 24 Release", bugs: 2, tags: ["api", "edge-case"], assignee: "JD", duration: "1h 50m", updated: "13 hours ago" },
+      { id: 15, name: "Accessibility Compliance Check", status: "paused", description: "WCAG 2.1 AA standard testing", milestone: "Mobile 2.0 Launch", bugs: 3, tags: ["mobile", "security"], assignee: "MR", duration: "2h 30m", updated: "14 hours ago" }
+    ];
+
+    let currentEntryType = null;
+    let currentTimerSeconds = 0;
+    let timerInterval = null;
+    let currentStatus = "in-progress";
+    let currentDiscoveryId = null;
+    let discoveryEntries = {};
+
+    // Initialize entries
+    discoveries.forEach(d => {
+      discoveryEntries[d.id] = [];
+      if (d.id === 1) {
+        discoveryEntries[d.id] = [
+          { type: "note", time: "10:30 AM", content: "Starting payment flow exploration with focus on 3DS authentication edge cases" },
+          { type: "bug", time: "10:45 AM", content: "3DS timeout causes silent failure - user sees blank screen after 30s", severity: "critical" },
+          { type: "observation", time: "10:52 AM", content: "Concurrent sessions both succeed but wrong currency applied" },
+          { type: "step", time: "11:03 AM", tested: "Initiate 3DS challenge", expected: "Modal appears within 2s", actual: "Modal appears in 2.5s, timeout triggers at 30s" },
+          { type: "bug", time: "11:15 AM", content: "Partial refund rounding error - $1.00 refund calculated as $0.99", severity: "major" },
+          { type: "note", time: "11:25 AM", content: "Taking a break, will continue with concurrent payment scenarios" },
+          { type: "observation", time: "11:40 AM", content: "Error messages not localized for Korean locale - hardcoded English" },
+          { type: "bug", time: "11:48 AM", content: "Double charge on concurrent payment submission - same transaction twice", severity: "critical" },
+          { type: "step", time: "11:55 AM", tested: "Submit refund while balance pending", expected: "Refund pending state", actual: "Refund completes immediately, balance inconsistency" }
+        ];
+      }
+    });
+
+    // Status group mapping: subtab filter → actual statuses
+    const statusGroups = {
+      active: ["not-started", "in-progress", "paused"],
+      completed: ["completed"],
+      dismissed: ["dismissed"]
+    };
+
+    // Status display labels
+    const statusLabels = {
+      "not-started": "Not Started",
+      "in-progress": "In Progress",
+      "paused": "Paused",
+      "completed": "Completed",
+      "dismissed": "Dismissed"
+    };
+
+    // Status icons for pills
+    const statusIcons = {
+      "not-started": "ri-time-line",
+      "in-progress": "ri-loader-4-line",
+      "paused": "ri-pause-circle-line",
+      "completed": "ri-checkbox-circle-fill",
+      "dismissed": "ri-close-circle-line"
+    };
+
+    function renderTable(filterStatus = "all", filterText = "", filterType = null, filterValue = null) {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+
+      let filtered = discoveries;
+
+      // Filter by status group
+      if (filterStatus !== "all") {
+        const allowedStatuses = statusGroups[filterStatus] || [filterStatus];
+        filtered = filtered.filter(d => allowedStatuses.includes(d.status));
+      }
+
+      // Filter by milestone/tag
+      if (filterType === "milestone") {
+        filtered = filtered.filter(d => d.milestone === filterValue);
+      } else if (filterType === "tag") {
+        filtered = filtered.filter(d => d.tags.includes(filterValue));
+      }
+
+      // Filter by search
+      if (filterText) {
+        filtered = filtered.filter(d =>
+          d.name.toLowerCase().includes(filterText.toLowerCase()) ||
+          d.description.toLowerCase().includes(filterText.toLowerCase())
+        );
+      }
+
+      filtered.forEach(d => {
+        const row = document.createElement("tr");
+        const bugColor = d.bugs > 0 && d.bugs <= 2 ? "" : "bug-critical";
+        const label = statusLabels[d.status] || d.status;
+        row.innerHTML = `
+          <td><input type="checkbox" class="checkbox"></td>
+          <td><span class="status-pill status-${d.status}"><span class="status-indicator"></span>${label}</span></td>
+          <td><span class="discovery-name">${d.name}</span></td>
+          <td><span class="description">${d.description}</span></td>
+          <td><span class="bugs-badge"><span class="${bugColor}">${d.bugs}</span></span></td>
+          <td><div class="tags-cell">${d.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div></td>
+          <td><div class="assignee-avatar">${d.assignee}</div></td>
+          <td><span class="duration">${d.duration}</span></td>
+          <td><span class="updated">${d.updated}</span></td>
+        `;
+        row.onclick = () => showView("detail", d.id);
+        tbody.appendChild(row);
+      });
+
+      // Update subtab badge counts
+      updateSubtabCounts();
+    }
+
+    function updateSubtabCounts() {
+      const allCount = discoveries.length;
+      const activeCount = discoveries.filter(d => statusGroups.active.includes(d.status)).length;
+      const completedCount = discoveries.filter(d => statusGroups.completed.includes(d.status)).length;
+      const dismissedCount = discoveries.filter(d => statusGroups.dismissed.includes(d.status)).length;
+
+      const tabs = document.querySelectorAll(".subtab[data-filter]");
+      tabs.forEach(tab => {
+        const badge = tab.querySelector(".badge");
+        if (!badge) return;
+        const filter = tab.dataset.filter;
+        if (filter === "all") badge.textContent = allCount;
+        else if (filter === "active") badge.textContent = activeCount;
+        else if (filter === "completed") badge.textContent = completedCount;
+        else if (filter === "dismissed") badge.textContent = dismissedCount;
+      });
+    }
+
+    function showView(view, id = null) {
+      const listView = document.getElementById("listView");
+      const detailView = document.getElementById("detailView");
+
+      if (view === "list") {
+        listView.classList.add("active");
+        detailView.classList.remove("active");
+        stopTimer();
+      } else if (view === "detail" && id) {
+        currentDiscoveryId = id;
+        const discovery = discoveries.find(d => d.id === id);
+
+        listView.classList.remove("active");
+        detailView.classList.add("active");
+
+        document.getElementById("detailName").textContent = discovery.name;
+        document.getElementById("detailMission").textContent = `Started exploratory testing focused on ${discovery.tags[0]} flows as part of ${discovery.milestone}.`;
+        document.getElementById("breadcrumbMilestone").textContent = "·  " + discovery.milestone;
+        document.getElementById("breadcrumbName").textContent = "·  " + discovery.name;
+
+        currentTimerSeconds = parseInt(discovery.duration.match(/\d+/)[0]) * 60;
+        currentStatus = discovery.status;
+        updateStatusBadge(currentStatus);
+        renderEntries();
+        updateActivityPanel();
+        updateControls();
+      }
+    }
+
+    function renderEntries() {
+      const container = document.getElementById("entriesContainer");
+      const entries = discoveryEntries[currentDiscoveryId] || [];
+      container.innerHTML = "";
+
+      entries.forEach((entry, idx) => {
+        const card = document.createElement("div");
+        card.className = `entry-card ${entry.type}`;
+
+        let icon = "ri-sticky-note-line";
+        if (entry.type === "bug") icon = "ri-bug-line";
+        if (entry.type === "observation") icon = "ri-eye-line";
+        if (entry.type === "step") icon = "ri-test-tube-line";
+
+        let content = `
+          <div class="entry-header">
+            <i class="entry-icon ri-${icon.replace('ri-', '')}"></i>
+            <span class="entry-type">${entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}</span>
+            <span class="entry-time">${entry.time}</span>
+            <span class="entry-menu">⋯</span>
+          </div>
+          <div class="entry-content">${entry.content}</div>
+        `;
+
+        if (entry.severity) {
+          content += `<div class="entry-meta"><span class="severity-badge severity-${entry.severity}">${entry.severity.toUpperCase()}</span></div>`;
+        }
+
+        if (entry.type === "step") {
+          content += `
+            <div class="field-group">
+              <div class="field"><div class="field-label">Tested</div><div class="field-value">${entry.tested}</div></div>
+              <div class="field"><div class="field-label">Expected</div><div class="field-value">${entry.expected}</div></div>
+            </div>
+            <div class="field" style="margin-top: 8px;"><div class="field-label">Actual</div><div class="field-value">${entry.actual}</div></div>
+          `;
+        }
+
+        card.innerHTML = content;
+        container.appendChild(card);
+      });
+    }
+
+    let currentSeverity = "major";
+
+    function selectSeverity(severity) {
+      currentSeverity = severity;
+      document.querySelectorAll("#severitySelector .severity-btn").forEach(b => b.classList.remove("active"));
+      document.querySelector(`#severitySelector .severity-btn.${severity}`).classList.add("active");
+    }
+
+    function openEntryForm(type) {
+      currentEntryType = type;
+      const formArea = document.getElementById("entryFormArea");
+      const bottomBar = document.getElementById("entryBottomBar");
+
+      // Hide all sub-forms
+      document.getElementById("noteForm").style.display = "none";
+      document.getElementById("bugForm").style.display = "none";
+      document.getElementById("observationForm").style.display = "none";
+      document.getElementById("stepForm").style.display = "none";
+
+      // Show the right form
+      const formMap = { note: "noteForm", bug: "bugForm", observation: "observationForm", step: "stepForm" };
+      if (formMap[type]) {
+        document.getElementById(formMap[type]).style.display = "block";
+        formArea.classList.add("active");
+        bottomBar.classList.add("form-active");
+
+        // Highlight the active type button
+        document.querySelectorAll(".entry-type-btn").forEach(b => {
+          b.style.opacity = b.dataset.type === type ? "1" : "0.5";
+        });
+
+        // Focus the first input
+        setTimeout(() => {
+          const focusMap = {
+            note: "noteInput",
+            bug: "bugTitleInput",
+            observation: "observationInput",
+            step: "stepTestedInput"
+          };
+          document.getElementById(focusMap[type])?.focus();
+        }, 50);
+      }
+    }
+
+    function closeEntryForm() {
+      document.getElementById("entryFormArea").classList.remove("active");
+      document.getElementById("entryBottomBar").classList.remove("form-active");
+      document.querySelectorAll(".entry-type-btn").forEach(b => b.style.opacity = "1");
+      currentEntryType = null;
+      // Clear all form inputs
+      document.querySelectorAll("#entryFormArea input, #entryFormArea textarea").forEach(el => el.value = "");
+    }
+
+    function addEntry(type) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+      let entry = { type: type, time: timeStr };
+
+      if (type === "note") {
+        const text = document.getElementById("noteInput").value.trim();
+        if (!text) return;
+        entry.content = text;
+      } else if (type === "bug") {
+        const title = document.getElementById("bugTitleInput").value.trim();
+        if (!title) return;
+        entry.content = title;
+        entry.description = document.getElementById("bugDescInput").value.trim();
+        entry.severity = currentSeverity;
+      } else if (type === "observation") {
+        const text = document.getElementById("observationInput").value.trim();
+        if (!text) return;
+        entry.content = text;
+      } else if (type === "step") {
+        const tested = document.getElementById("stepTestedInput").value.trim();
+        if (!tested) return;
+        entry.content = tested;
+        entry.tested = tested;
+        entry.expected = document.getElementById("stepExpectedInput").value.trim();
+        entry.actual = document.getElementById("stepActualInput").value.trim();
+      }
+
+      if (!discoveryEntries[currentDiscoveryId]) {
+        discoveryEntries[currentDiscoveryId] = [];
+      }
+
+      discoveryEntries[currentDiscoveryId].push(entry);
+      closeEntryForm();
+      renderEntries();
+      updateActivityPanel();
+    }
+
+    function updateActivityPanel() {
+      const entries = discoveryEntries[currentDiscoveryId] || [];
+      const goalMinutes = 120;
+      const percentage = Math.min((currentTimerSeconds / (goalMinutes * 60)) * 100, 100);
+
+      document.getElementById("progressFill").style.width = percentage + "%";
+
+      const minutes = Math.floor(currentTimerSeconds / 60);
+      const seconds = currentTimerSeconds % 60;
+      document.getElementById("summaryDuration").textContent = `${minutes}m / 2h`;
+
+      const notesCount = entries.filter(e => e.type === "note").length;
+      const bugsCount = entries.filter(e => e.type === "bug").length;
+      const obsCount = entries.filter(e => e.type === "observation").length;
+      const stepsCount = entries.filter(e => e.type === "step").length;
+
+      document.getElementById("summaryEntries").textContent = entries.length;
+      document.getElementById("summaryEntriesBreakdown").textContent =
+        `${notesCount} Note · ${bugsCount} Bug · ${obsCount} Obs · ${stepsCount} Step`;
+
+      const criticalCount = entries.filter(e => e.type === "bug" && e.severity === "critical").length;
+      const majorCount = entries.filter(e => e.type === "bug" && e.severity === "major").length;
+
+      document.getElementById("summaryBugs").textContent = bugsCount;
+      document.getElementById("summaryBugsBreakdown").textContent =
+        `${criticalCount} Critical · ${majorCount} Major`;
+
+      // Timeline with time axis
+      const timelineAxis = document.getElementById("timelineAxis");
+      const timelineLabels = document.getElementById("timelineLabels");
+      timelineAxis.innerHTML = "";
+      timelineLabels.innerHTML = "";
+
+      const colors = {
+        note: "#6366F1",
+        bug: "#EF4444",
+        observation: "#F59E0B",
+        step: "#7C3AED"
+      };
+
+      const typeNames = {
+        note: "Note",
+        bug: "Bug",
+        observation: "Observation",
+        step: "Test Step"
+      };
+
+      if (entries.length > 0) {
+        // Parse times to get range
+        function parseTime(timeStr) {
+          const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+          if (!match) return 0;
+          let hours = parseInt(match[1]);
+          const mins = parseInt(match[2]);
+          const ampm = match[3].toUpperCase();
+          if (ampm === "PM" && hours !== 12) hours += 12;
+          if (ampm === "AM" && hours === 12) hours = 0;
+          return hours * 60 + mins;
+        }
+
+        const times = entries.map(e => parseTime(e.time));
+        const minTime = Math.min(...times);
+        const maxTime = Math.max(...times);
+
+        // Pad range: round down to nearest 30min, round up to nearest 30min + 30
+        const startMin = Math.floor(minTime / 30) * 30;
+        const endMin = Math.ceil((maxTime + 1) / 30) * 30;
+        const range = Math.max(endMin - startMin, 30); // at least 30 min range
+
+        // Format minutes to time string
+        function formatMinutes(totalMins) {
+          let h = Math.floor(totalMins / 60);
+          const m = totalMins % 60;
+          const ampm = h >= 12 ? "PM" : "AM";
+          if (h > 12) h -= 12;
+          if (h === 0) h = 12;
+          return `${h}:${m.toString().padStart(2, "0")} ${ampm}`;
+        }
+
+        // Update start/end labels
+        document.getElementById("timelineStart").textContent = formatMinutes(startMin);
+        document.getElementById("timelineEnd").textContent = formatMinutes(endMin);
+
+        // Add time ticks every 30 minutes
+        for (let t = startMin; t <= endMin; t += 30) {
+          const pct = ((t - startMin) / range) * 100;
+          const tick = document.createElement("div");
+          tick.className = "timeline-tick";
+          tick.style.left = pct + "%";
+          timelineAxis.appendChild(tick);
+
+          if (t > startMin && t < endMin) {
+            const label = document.createElement("span");
+            label.className = "timeline-tick-label";
+            label.style.left = pct + "%";
+            label.textContent = formatMinutes(t);
+            timelineLabels.appendChild(label);
+          }
+        }
+
+        // Position dots proportionally
+        entries.forEach((entry, idx) => {
+          const entryMin = parseTime(entry.time);
+          const pct = ((entryMin - startMin) / range) * 100;
+
+          const dot = document.createElement("div");
+          dot.className = "timeline-dot";
+          dot.style.background = colors[entry.type];
+          dot.style.left = Math.max(2, Math.min(98, pct)) + "%";
+
+          // Rich tooltip
+          const tooltip = document.createElement("div");
+          tooltip.className = "timeline-dot-tooltip";
+          tooltip.textContent = `${typeNames[entry.type]} · ${entry.time}`;
+          dot.appendChild(tooltip);
+
+          timelineAxis.appendChild(dot);
+        });
+      } else {
+        document.getElementById("timelineStart").textContent = "--:--";
+        document.getElementById("timelineEnd").textContent = "Now";
+      }
+    }
+
+    function updateControls() {
+      const container = document.getElementById("controlsContainer");
+
+      const buttons = {
+        "not-started": `<button class="btn-control btn-start" onclick="startTimer()"><i class="ri-play-line"></i>Start</button>`,
+        "in-progress": `
+          <button class="btn-control btn-pause" onclick="pauseTimer()"><i class="ri-pause-line"></i>Pause</button>
+          <button class="btn-control btn-stop" onclick="stopTimer()"><i class="ri-stop-line"></i>Stop</button>
+        `,
+        "paused": `
+          <button class="btn-control btn-resume" onclick="resumeTimer()"><i class="ri-play-line"></i>Resume</button>
+          <button class="btn-control btn-stop" onclick="stopTimer()"><i class="ri-stop-line"></i>Stop</button>
+        `,
+        "completed": `<button class="btn-control btn-start" onclick="startTimer()"><i class="ri-play-line"></i>Restart</button>`,
+        "dismissed": `<button class="btn-control btn-start" onclick="startTimer()"><i class="ri-play-line"></i>Restart</button>`
+      };
+
+      container.innerHTML = buttons[currentStatus] || buttons["not-started"];
+    }
+
+    function startTimer() {
+      currentStatus = "in-progress";
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        currentTimerSeconds++;
+        updateTimer();
+        updateActivityPanel();
+      }, 1000);
+      updateControls();
+      updateStatusBadge("in-progress");
+    }
+
+    function pauseTimer() {
+      currentStatus = "paused";
+      if (timerInterval) clearInterval(timerInterval);
+      updateControls();
+      updateStatusBadge("paused");
+    }
+
+    function resumeTimer() {
+      currentStatus = "in-progress";
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        currentTimerSeconds++;
+        updateTimer();
+        updateActivityPanel();
+      }, 1000);
+      updateControls();
+      updateStatusBadge("in-progress");
+    }
+
+    function stopTimer() {
+      currentStatus = "completed";
+      if (timerInterval) clearInterval(timerInterval);
+      updateControls();
+      updateStatusBadge("completed");
+    }
+
+    function updateTimer() {
+      const hours = Math.floor(currentTimerSeconds / 3600);
+      const minutes = Math.floor((currentTimerSeconds % 3600) / 60);
+      const seconds = currentTimerSeconds % 60;
+      const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      document.getElementById("timerDisplay").textContent = timeStr;
+    }
+
+    function toggleStatusDropdown() {
+      const dropdown = document.getElementById("statusDropdown");
+      dropdown.classList.toggle("hidden");
+    }
+
+    function updateStatusBadge(status) {
+      const badge = document.getElementById("statusBadge");
+      const label = statusLabels[status] || status;
+      const icon = statusIcons[status] || "ri-question-line";
+      // Remove all status classes
+      badge.className = "status-badge " + status;
+      // Update content (spinning icon for in-progress)
+      if (status === "in-progress") {
+        badge.innerHTML = `<i class="${icon} status-spinner"></i>${label}`;
+      } else {
+        badge.innerHTML = `<i class="${icon}" style="font-size: 14px;"></i>${label}`;
+      }
+    }
+
+    // Event Listeners
+    document.querySelectorAll(".subtab").forEach(tab => {
+      tab.addEventListener("click", function() {
+        document.querySelectorAll(".subtab").forEach(t => t.classList.remove("active"));
+        this.classList.add("active");
+        const filter = this.dataset.filter;
+        renderTable(filter);
+      });
+    });
+
+    document.querySelectorAll(".sidebar-item").forEach(item => {
+      item.addEventListener("click", function() {
+        document.querySelectorAll(".sidebar-item").forEach(i => i.classList.remove("active"));
+        this.classList.add("active");
+
+        const filterType = this.dataset.filterType;
+        if (filterType === "all-sessions") {
+          renderTable();
+        } else {
+          const filterValue = this.dataset.filterValue;
+          renderTable("all", "", filterType, filterValue);
+        }
+      });
+    });
+
+    document.getElementById("searchInput").addEventListener("input", function(e) {
+      renderTable("all", e.target.value);
+    });
+
+    document.getElementById("addEntryBtn").addEventListener("click", function() {
+      if (currentEntryType) {
+        addEntry(currentEntryType);
+      }
+    });
+
+    document.querySelectorAll(".entry-type-btn").forEach(btn => {
+      btn.addEventListener("click", function() {
+        if (this.dataset.type) {
+          openEntryForm(this.dataset.type);
+        }
+      });
+    });
+
+    document.getElementById("entryInput").addEventListener("keypress", function(e) {
+      if (e.key === "Enter" && currentEntryType) {
+        addEntry(currentEntryType);
+      }
+    });
+
+    // Enter key in form inputs
+    document.querySelectorAll("#entryFormArea input").forEach(input => {
+      input.addEventListener("keypress", function(e) {
+        if (e.key === "Enter" && currentEntryType) {
+          addEntry(currentEntryType);
+        }
+      });
+    });
+
+    document.querySelectorAll(".status-option").forEach(option => {
+      option.addEventListener("click", function() {
+        const newStatus = this.dataset.status;
+        currentStatus = newStatus;
+        updateStatusBadge(newStatus);
+        document.getElementById("statusDropdown").classList.add("hidden");
+
+        // Update the discovery data so list view stays in sync
+        const disc = discoveries.find(d => d.id === currentDiscoveryId);
+        if (disc) disc.status = newStatus;
+
+        if (newStatus === "not-started") {
+          if (timerInterval) clearInterval(timerInterval);
+          updateControls();
+        } else if (newStatus === "in-progress") {
+          startTimer();
+        } else if (newStatus === "paused") {
+          pauseTimer();
+        } else if (newStatus === "completed") {
+          stopTimer();
+        } else if (newStatus === "dismissed") {
+          if (timerInterval) clearInterval(timerInterval);
+          updateControls();
+        }
+      });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", function(e) {
+      if (document.getElementById("detailView").classList.contains("active")) {
+        const isTyping = document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA" || document.activeElement.isContentEditable;
+        if (e.code === "Escape") {
+          closeEntryForm();
+          document.activeElement.blur();
+        }
+        if (!isTyping) {
+          if (e.code === "KeyN") { e.preventDefault(); openEntryForm("note"); }
+          if (e.code === "KeyB") { e.preventDefault(); openEntryForm("bug"); }
+          if (e.code === "KeyO") { e.preventDefault(); openEntryForm("observation"); }
+          if (e.code === "KeyT") { e.preventDefault(); openEntryForm("step"); }
+        }
+      }
+    });
+
+    // Initial render
+    renderTable();
+    updateTimer();
+  </script>
+</body>
+</html>

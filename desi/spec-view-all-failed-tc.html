@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PM Spec — "View All →" Failed Test Cases Destination</title>
+<style>
+  :root { --indigo: #6366F1; --red: #EF4444; --green: #10B981; --amber: #F59E0B; --slate-900: #0F172A; --slate-700: #334155; --slate-400: #94A3B8; --slate-200: #E2E8F0; --slate-50: #F8FAFC; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--slate-700); line-height: 1.6; background: #F1F5F9; padding: 2rem; }
+  .container { max-width: 900px; margin: 0 auto; }
+  .header { background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: #fff; padding: 2.5rem; border-radius: 1rem 1rem 0 0; }
+  .header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .header .sub { opacity: 0.85; font-size: 0.875rem; }
+  .meta { background: #fff; border: 1px solid var(--slate-200); border-top: none; padding: 1.25rem 2.5rem; display: flex; gap: 2rem; flex-wrap: wrap; font-size: 0.8125rem; color: var(--slate-400); }
+  .meta b { color: var(--slate-700); }
+  .body { background: #fff; border: 1px solid var(--slate-200); border-top: none; border-radius: 0 0 1rem 1rem; padding: 2.5rem; }
+  h2 { font-size: 1.125rem; font-weight: 700; color: var(--slate-900); margin: 2rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--indigo); }
+  h2:first-child { margin-top: 0; }
+  h3 { font-size: 0.9375rem; font-weight: 700; color: var(--slate-900); margin: 1.5rem 0 0.5rem; }
+  p, li { font-size: 0.875rem; margin-bottom: 0.5rem; }
+  ul, ol { padding-left: 1.25rem; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.8125rem; }
+  th { background: var(--slate-50); font-weight: 700; color: var(--slate-900); text-align: left; padding: 0.625rem 0.75rem; border: 1px solid var(--slate-200); }
+  td { padding: 0.625rem 0.75rem; border: 1px solid var(--slate-200); vertical-align: top; }
+  code { background: #F1F5F9; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.8125rem; color: #6366F1; }
+  pre { background: #1E293B; color: #E2E8F0; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; font-size: 0.8125rem; line-height: 1.5; margin: 0.75rem 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; }
+  .badge-red { background: #FEF2F2; color: #DC2626; }
+  .badge-green { background: #F0FDF4; color: #16A34A; }
+  .badge-indigo { background: #EEF2FF; color: #4F46E5; }
+  .badge-amber { background: #FFFBEB; color: #D97706; }
+  .badge-slate { background: #F1F5F9; color: #64748B; }
+  .callout { background: #EEF2FF; border-left: 4px solid var(--indigo); padding: 1rem 1.25rem; border-radius: 0 0.5rem 0.5rem 0; margin: 1rem 0; font-size: 0.8125rem; }
+  .callout-warn { background: #FFFBEB; border-left-color: var(--amber); }
+  .callout-red { background: #FEF2F2; border-left-color: var(--red); }
+  .decision { background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .decision-title { font-weight: 700; color: #16A34A; font-size: 0.8125rem; margin-bottom: 0.5rem; }
+  .wireframe { background: var(--slate-50); border: 2px dashed var(--slate-200); border-radius: 0.75rem; padding: 1.5rem; margin: 1rem 0; font-family: monospace; font-size: 0.75rem; line-height: 1.8; color: var(--slate-700); }
+  .wireframe .label { color: var(--slate-400); font-style: italic; }
+  .vs-table td:first-child { font-weight: 700; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ─── Header ─── -->
+<div class="header">
+  <h1>PM Spec — "View All →" Failed Test Cases</h1>
+  <div class="sub">Pass Rate Report 페이지 → Failed Test Cases 섹션 → "View All" 클릭 시 목적지 기획</div>
+</div>
+<div class="meta">
+  <span>📅 <b>2026-03-26</b></span>
+  <span>👤 <b>PM</b> Kyle</span>
+  <span>📌 <b>Status</b> CEO Review Pending</span>
+  <span>🔗 <b>Origin</b> PassRateReportPage.tsx Line 415</span>
+</div>
+
+<div class="body">
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§1. 현황 분석 (As-Is)</h2>
+
+<h3>1-1. 현재 구현 상태</h3>
+<p>Pass Rate Report 페이지 하단 "Failed Test Cases" 섹션의 현재 상태:</p>
+
+<table>
+  <tr><th>항목</th><th>현재 상태</th><th>문제점</th></tr>
+  <tr>
+    <td>"View All →" 링크 목적지</td>
+    <td><code>&lt;Link to="/projects"&gt;</code> (Line 415)</td>
+    <td>프로젝트 목록으로 이동 — Failed TC와 무관한 페이지</td>
+  </tr>
+  <tr>
+    <td>표시 데이터 개수</td>
+    <td>상위 10건만 (<code>.slice(0, 10)</code>)</td>
+    <td>전체 실패 TC를 확인할 수 없음</td>
+  </tr>
+  <tr>
+    <td>FailedTCItem 인터페이스</td>
+    <td>tcId, title, projectName, priority, failCount, lastFailedAt</td>
+    <td>Assignee, Run 정보, lifecycle_status 없음</td>
+  </tr>
+  <tr>
+    <td>기존 /testcases 페이지</td>
+    <td>상태 필터 UI 있으나 로직 미연결</td>
+    <td>status filter 선택해도 실제 필터링 안 됨</td>
+  </tr>
+</table>
+
+<h3>1-2. 관련 기존 페이지</h3>
+<table>
+  <tr><th>Route</th><th>페이지</th><th>Failed TC 필터 가능?</th></tr>
+  <tr><td><code>/testcases</code></td><td>Global Test Cases</td><td>UI만 존재, 로직 미연결</td></tr>
+  <tr><td><code>/testcases-overview</code></td><td>TC Overview Stats</td><td>통계만 표시, 필터 없음</td></tr>
+  <tr><td><code>/projects/:id/testcases</code></td><td>Project TC List</td><td>lifecycle 필터만 (Draft/Active/Deprecated)</td></tr>
+  <tr><td><code>/passrate-report</code></td><td>Pass Rate Report</td><td>상위 10건만, 필터/정렬 없음</td></tr>
+</table>
+
+<div class="callout-red callout">
+  <b>핵심 GAP:</b> 현재 앱 전체에 "execution status = failed로 필터된 TC 전체 리스트" 를 볼 수 있는 페이지가 없습니다. /testcases 페이지의 status 필터 UI는 존재하나 실제 동작하지 않습니다.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§2. 경쟁사 분석</h2>
+
+<table class="vs-table">
+  <tr><th>도구</th><th>Failed TC 접근 방식</th><th>핵심 패턴</th></tr>
+  <tr>
+    <td>TestRail</td>
+    <td>"Status Tops" 리포트에서 특정 상태(Failed 등) 선택 → 바 차트 + 테이블로 해당 TC 리스트 표시. 테이블 내 TC 제목 클릭 시 TC 상세로 이동.</td>
+    <td><span class="badge badge-indigo">리포트 내 인라인 드릴다운</span></td>
+  </tr>
+  <tr>
+    <td>Qase.io</td>
+    <td>Test Run 상세 내 도넛 그래프 상태 영역 클릭 → 해당 상태 TC 즉시 필터. 별도 "Defects" 탭에서 프로젝트 전체 결함 리스트 + 필터 제공.</td>
+    <td><span class="badge badge-green">그래프 클릭 필터 + 전용 Defects 페이지</span></td>
+  </tr>
+  <tr>
+    <td>Zephyr Scale</td>
+    <td>Jira 연동 기반. Test Execution 화면에서 상태별 필터링. JQL 쿼리로 Failed 실행 필터 가능.</td>
+    <td><span class="badge badge-amber">필터 기반 리스트 뷰</span></td>
+  </tr>
+</table>
+
+<div class="callout">
+  <b>공통 패턴:</b> 경쟁사 모두 "리포트 → 필터된 리스트 뷰로 드릴다운" 패턴을 사용합니다. 별도 전용 페이지보다는 기존 TC 리스트 페이지에 상태 필터를 적용하여 이동하는 방식이 보편적입니다.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§3. PM 권장안 — 옵션 비교</h2>
+
+<table class="vs-table">
+  <tr><th>기준</th><th>Option A: 별도 전용 페이지<br><code>/failed-testcases</code></th><th>Option B: 기존 TC 페이지 + 쿼리 파라미터<br><code>/testcases?status=failed</code></th><th>Option C: 모달 / 패널 확장</th></tr>
+  <tr>
+    <td>개발 공수</td>
+    <td>🔴 높음 — 새 페이지 + 라우트 + 훅 + 컴포넌트 신규 작성</td>
+    <td>🟢 낮음 — 기존 /testcases 페이지의 필터 로직만 활성화 + URL 파라미터 연동</td>
+    <td>🟡 중간 — 모달 컴포넌트 신규, 페이지네이션 어려움</td>
+  </tr>
+  <tr>
+    <td>UX 일관성</td>
+    <td>🟡 별도 페이지 → 사용자 Mental model에 새 개념 추가</td>
+    <td>🟢 기존 TC 리스트와 동일 UI → 학습 비용 0</td>
+    <td>🔴 모달 내 긴 리스트 → 스크롤/필터 UX 열악</td>
+  </tr>
+  <tr>
+    <td>확장성</td>
+    <td>🟡 Failed 전용이라 다른 상태 필터 시 별도 페이지 필요</td>
+    <td>🟢 status=passed, status=blocked 등 모든 상태에 재사용 가능</td>
+    <td>🔴 확장 어려움</td>
+  </tr>
+  <tr>
+    <td>Deep-link 공유</td>
+    <td>🟢 가능</td>
+    <td>🟢 가능 (URL 파라미터)</td>
+    <td>🔴 모달은 URL 공유 불가</td>
+  </tr>
+  <tr>
+    <td>경쟁사 정합성</td>
+    <td>🟡 Qase의 Defects 페이지와 유사</td>
+    <td>🟢 TestRail·Zephyr의 필터 기반 드릴다운과 동일 패턴</td>
+    <td>🔴 업계 사례 없음</td>
+  </tr>
+</table>
+
+<div class="decision">
+  <div class="decision-title">✅ PM 권장: Option B — 기존 /testcases 페이지에 상태 필터 연동</div>
+  <p style="font-size: 0.8125rem; margin-bottom: 0;">
+    <b>근거:</b> 개발 공수 최소화, UX 일관성 최대화, 모든 상태에 확장 가능, 경쟁사 패턴과 일치.<br>
+    "View All →" 클릭 시 <code>/testcases?status=failed&period={현재period}</code> 로 이동하며, /testcases 페이지가 URL 파라미터를 읽어 자동으로 Failed 상태 필터를 활성화합니다.
+  </p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§4. 상세 기획 — Option B 구현 스펙</h2>
+
+<h3>4-1. URL 구조</h3>
+<pre><code>/testcases?status=failed&period=active_run
+
+Query Parameters:
+  status   = 'all' | 'passed' | 'failed' | 'blocked' | 'untested' | 'pending' | 'retest'
+             (default: 'all' — 전체 TC 표시)
+  period   = 'active_run' | '7d' | '30d' | 'all'
+             (default: localStorage 'passrate_period' 값 또는 'active_run')
+  project  = '{project_id}'  (optional — 특정 프로젝트 필터)
+  priority = 'critical' | 'high' | 'medium' | 'low' (optional)
+  sort     = 'fail_count' | 'last_failed' | 'priority' | 'title'
+             (default: 'last_failed')
+  order    = 'asc' | 'desc' (default: 'desc')</code></pre>
+
+<h3>4-2. "View All →" 링크 변경</h3>
+<pre><code>// PassRateReportPage.tsx — Line 415
+// AS-IS:
+&lt;Link to="/projects"&gt;View All →&lt;/Link&gt;
+
+// TO-BE:
+&lt;Link to={`/testcases?status=failed&period=${period}`}&gt;View All →&lt;/Link&gt;</code></pre>
+
+<h3>4-3. /testcases 페이지 확장 — 핵심 변경</h3>
+
+<h4>A. URL 파라미터 읽기</h4>
+<pre><code>// /testcases page.tsx
+import { useSearchParams } from 'react-router-dom';
+
+const [searchParams, setSearchParams] = useSearchParams();
+const statusFilter = searchParams.get('status') ?? 'all';
+const periodFilter = searchParams.get('period') as PeriodFilter ?? 'active_run';
+const projectFilter = searchParams.get('project') ?? 'all';
+const priorityFilter = searchParams.get('priority') ?? 'all';
+const sortBy = searchParams.get('sort') ?? 'last_failed';
+const sortOrder = searchParams.get('order') ?? 'desc';</code></pre>
+
+<h4>B. 상태 필터 UI 활성화</h4>
+<div class="wireframe">
+┌─────────────────────────────────────────────────────────────────┐
+│  <span class="label">[Header]</span>                                                       │
+│  Failed Test Cases                    <span class="label">[← Back to Report]</span>        │
+│  <span class="label">(status=failed일 때 타이틀 동적 변경)</span>                            │
+├─────────────────────────────────────────────────────────────────┤
+│  <span class="label">[Filter Bar]</span>                                                    │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────┐ │
+│  │ Status ▼ │ │ Period ▼ │ │Project ▼ │ │Priority▼ │ │🔍 검색│ │
+│  │ ● Failed │ │Active Run│ │  All     │ │  All     │ │       │ │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └───────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│  <span class="label">[Summary Bar]</span>                                                   │
+│  Showing 47 failed test cases across 5 projects                 │
+│  <span class="label">(결과 카운트 + 프로젝트 수)</span>                                      │
+├─────────────────────────────────────────────────────────────────┤
+│  <span class="label">[Table Header — 정렬 가능 컬럼]</span>                                  │
+│  TC-ID ↕ │ Title ↕ │ Project │ Priority ↕ │ Fail Count ↕ │     │
+│           │         │         │            │ Last Failed ↕│Assig│
+├─────────────────────────────────────────────────────────────────┤
+│  TC-012   │ Login validation   │ Auth    │ 🔴 Critical │ 5×   │
+│           │ fails on Safari    │ Project │             │ 2h ago│
+├─────────────────────────────────────────────────────────────────┤
+│  TC-045   │ Payment timeout    │ Payment │ 🟠 High     │ 3×   │
+│           │ on slow connection │ Module  │             │ 5h ago│
+├─────────────────────────────────────────────────────────────────┤
+│  TC-078   │ CSV export missing │ Reports │ 🟡 Medium   │ 2×   │
+│           │ header row         │         │             │ 1d ago│
+├─────────────────────────────────────────────────────────────────┤
+│  <span class="label">... (추가 행들)</span>                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  <span class="label">[Pagination]</span>                                                    │
+│  ← Previous    Page 1 of 3    Next →      Showing 20 per page  │
+└─────────────────────────────────────────────────────────────────┘
+</div>
+
+<h4>C. 동적 헤더</h4>
+<table>
+  <tr><th>status 파라미터</th><th>페이지 타이틀</th><th>아이콘</th></tr>
+  <tr><td><code>all</code> (기본)</td><td>All Test Cases</td><td><code>ri-list-check</code></td></tr>
+  <tr><td><code>failed</code></td><td>Failed Test Cases</td><td><code>ri-close-circle-line</code> (빨강)</td></tr>
+  <tr><td><code>passed</code></td><td>Passed Test Cases</td><td><code>ri-checkbox-circle-line</code> (초록)</td></tr>
+  <tr><td><code>blocked</code></td><td>Blocked Test Cases</td><td><code>ri-forbid-line</code> (주황)</td></tr>
+  <tr><td><code>untested</code></td><td>Untested Test Cases</td><td><code>ri-question-line</code> (회색)</td></tr>
+</table>
+
+<h3>4-4. 테이블 컬럼 스펙</h3>
+<table>
+  <tr><th>#</th><th>컬럼</th><th>데이터 소스</th><th>정렬</th><th>비고</th></tr>
+  <tr>
+    <td>1</td>
+    <td><b>TC-ID</b></td>
+    <td><code>TC-{padStart(3,'0')}</code> (created_at ASC 순번)</td>
+    <td>✅</td>
+    <td>기존 TC-ID 포맷 규칙 따름</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><b>Title</b></td>
+    <td><code>test_cases.title</code></td>
+    <td>✅</td>
+    <td>클릭 시 TC 상세 패널 열기 (기존 동작)</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><b>Project</b></td>
+    <td><code>projects.name</code> via <code>test_cases.project_id</code></td>
+    <td>✅</td>
+    <td>프로젝트명 뱃지</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><b>Priority</b></td>
+    <td><code>test_cases.priority</code></td>
+    <td>✅</td>
+    <td>Critical(빨강) > High(주황) > Medium(노랑) > Low(회색) 뱃지</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><b>Fail Count</b></td>
+    <td>기간 내 <code>test_results</code>에서 <code>status='failed'</code> 건수</td>
+    <td>✅ (기본 정렬)</td>
+    <td>"5×" 형식으로 표시</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td><b>Last Failed</b></td>
+    <td>가장 최근 failed result의 <code>created_at</code></td>
+    <td>✅</td>
+    <td>timeAgo 포맷 ("2h ago", "1d ago")</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td><b>Last Run</b></td>
+    <td><code>test_runs.name</code> via 가장 최근 failed result의 <code>run_id</code></td>
+    <td>—</td>
+    <td>Run 이름 링크 → 클릭 시 해당 Run Detail로 이동</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td><b>Assignee</b></td>
+    <td><code>test_cases.assignee</code></td>
+    <td>✅</td>
+    <td>아바타 + 이름. 미배정 시 "—"</td>
+  </tr>
+</table>
+
+<h3>4-5. Supabase 쿼리 방향</h3>
+
+<pre><code>// Step 1: 기간 필터에 맞는 failed results 전체 조회
+const dateFrom = period === '7d' ? 7일전 : period === '30d' ? 30일전 : null;
+
+let query = supabase
+  .from('test_results')
+  .select('test_case_id, run_id, status, created_at')
+  .eq('status', 'failed');
+
+if (period === 'active_run') {
+  // active run IDs 먼저 조회
+  const { data: activeRuns } = await supabase
+    .from('test_runs')
+    .select('id')
+    .in('status', ['new', 'in_progress', 'paused', 'under_review']);
+  query = query.in('run_id', activeRuns.map(r => r.id));
+} else if (dateFrom) {
+  query = query.gte('created_at', dateFrom);
+}
+// period === 'all' → 날짜 필터 없음
+
+const { data: failedResults } = await query;
+
+// Step 2: TC별 집계 (failCount, lastFailedAt, lastRunId)
+const tcAgg = {};  // group by test_case_id
+
+// Step 3: TC 상세 정보 조회
+const { data: tcDetails } = await supabase
+  .from('test_cases')
+  .select('id, title, priority, assignee, project_id, created_at')
+  .in('id', Object.keys(tcAgg));
+
+// Step 4: 프로젝트명 조회
+const { data: projects } = await supabase
+  .from('projects')
+  .select('id, name')
+  .in('id', [...new Set(tcDetails.map(tc => tc.project_id))]);
+
+// Step 5: Run 이름 조회 (lastRunId들)
+const { data: runs } = await supabase
+  .from('test_runs')
+  .select('id, name')
+  .in('id', [...new Set(Object.values(tcAgg).map(a => a.lastRunId))]);
+
+// Step 6: 정렬 + 페이지네이션 (클라이언트 사이드)
+// 20건/페이지</code></pre>
+
+<div class="callout-warn callout">
+  <b>성능 참고:</b> 전체 failed results를 한 번에 조회하므로 데이터가 많아지면 느려질 수 있습니다. Phase 2에서 서버 사이드 페이지네이션 + RPC 함수로 전환을 권장합니다. 현재 단계에서는 TC 수 &lt; 500 가정으로 클라이언트 사이드 처리 OK.
+</div>
+
+<h3>4-6. 페이지네이션</h3>
+<table>
+  <tr><th>항목</th><th>스펙</th></tr>
+  <tr><td>기본 페이지 크기</td><td>20건/페이지</td></tr>
+  <tr><td>페이지 크기 선택</td><td>20 | 50 | 100 (드롭다운)</td></tr>
+  <tr><td>네비게이션</td><td>← Previous | Page X of Y | Next →</td></tr>
+  <tr><td>총 건수 표시</td><td>"Showing 1-20 of 47 failed test cases"</td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§5. TC 행 클릭 시 동작</h2>
+
+<p>테이블에서 TC 행을 클릭하면 기존 /testcases 페이지의 TC 상세 패널이 우측에서 슬라이드인됩니다 (기존 동작 유지). 패널에는 다음 정보가 표시됩니다:</p>
+
+<table>
+  <tr><th>영역</th><th>표시 내용</th></tr>
+  <tr><td>헤더</td><td>TC-ID · Title · Priority 뱃지 · Lifecycle 뱃지</td></tr>
+  <tr><td>실패 이력</td><td>해당 TC의 기간 내 전체 failed results — Run명, 실패 일시, 작성자, 노트</td></tr>
+  <tr><td>현재 상태</td><td>가장 최근 result의 status (passed면 "현재는 통과" 표시)</td></tr>
+  <tr><td>Quick Actions</td><td>"View in Run" → 해당 Run Detail 페이지로 이동<br>"View TC Detail" → /projects/:id/testcases (해당 TC 포커스)</td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§6. 기존 /testcases 페이지와의 관계</h2>
+
+<div class="decision">
+  <div class="decision-title">핵심 원칙: 별도 페이지 신설 ✗ → 기존 페이지 강화 ✓</div>
+  <p style="font-size: 0.8125rem; margin: 0;">
+    <code>/testcases</code> 페이지는 현재 "모든 TC 탐색" 용도이나, 상태 필터가 미작동 상태입니다.<br>
+    이번 기획으로 상태 필터를 실제 동작하게 만들면서, URL 파라미터 기반 딥링크까지 지원합니다.<br>
+    <b>결과:</b> "View All" 뿐 아니라, 앱 어디서든 <code>/testcases?status=XXX</code> 로 이동하여 상태별 TC 리스트를 즉시 확인할 수 있는 범용 기능이 됩니다.
+  </p>
+</div>
+
+<h3>6-1. 상태 필터 탭 UI (신규)</h3>
+<div class="wireframe">
+┌─────────────────────────────────────────────────────┐
+│  [ All ] [ Failed (47) ] [ Passed ] [ Blocked ] ... │
+│     ↑ lifecycle 탭 아래에 execution status 탭 추가    │
+│                                                     │
+│  기존: [All] [Draft] [Active] [Deprecated]           │
+│       → lifecycle_status 필터 (유지)                 │
+│                                                     │
+│  신규: [All] [Failed 47] [Passed 128] [Blocked 5]   │
+│       → execution status 필터 (추가)                 │
+└─────────────────────────────────────────────────────┘
+</div>
+
+<div class="callout">
+  <b>UI 구조:</b> lifecycle 탭(상단)과 execution status 탭(그 아래)이 <b>독립적으로</b> 동작합니다. 예: "Active" lifecycle + "Failed" status = 활성 TC 중 최근 실패한 것만 표시.
+</div>
+
+<h3>6-2. 페이지 진입 경로별 동작</h3>
+<table>
+  <tr><th>진입 경로</th><th>URL</th><th>초기 상태</th></tr>
+  <tr>
+    <td>사이드바 "Test Cases" 클릭</td>
+    <td><code>/testcases</code></td>
+    <td>status=all, period=localStorage값</td>
+  </tr>
+  <tr>
+    <td>Pass Rate Report "View All →"</td>
+    <td><code>/testcases?status=failed&period=active_run</code></td>
+    <td>Failed 탭 자동 활성화, 기간=Active Run</td>
+  </tr>
+  <tr>
+    <td>Dashboard TC 카드 클릭 (향후)</td>
+    <td><code>/testcases?status=failed&project={id}</code></td>
+    <td>특정 프로젝트의 Failed TC만</td>
+  </tr>
+  <tr>
+    <td>딥링크 공유</td>
+    <td><code>/testcases?status=blocked&priority=critical</code></td>
+    <td>복합 필터 적용</td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§7. 코드 변경 포인트 요약</h2>
+
+<table>
+  <tr><th>#</th><th>파일</th><th>변경 내용</th><th>공수</th></tr>
+  <tr>
+    <td>1</td>
+    <td><code>PassRateReportPage.tsx</code><br>Line 415</td>
+    <td><code>to="/projects"</code> → <code>to={`/testcases?status=failed&period=${period}`}</code></td>
+    <td>5분</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>/testcases/page.tsx</code></td>
+    <td><code>useSearchParams()</code> 추가, statusFilter/periodFilter 상태 연동, 동적 헤더</td>
+    <td>1시간</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><code>/testcases/components/TestCaseList.tsx</code></td>
+    <td>status 필터 로직 활성화 (현재 UI만 존재).<br>execution status 기반 필터링 = test_results JOIN 필요.<br>정렬 가능 컬럼 헤더 추가. 페이지네이션 추가.</td>
+    <td>3시간</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><b>신규 Hook</b><br><code>useFilteredTestCases.ts</code></td>
+    <td>status + period + project + priority + sort 복합 필터 쿼리 훅.<br>test_results + test_cases + projects + test_runs JOIN 처리.</td>
+    <td>2시간</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><code>usePassRateReport.ts</code></td>
+    <td>FailedTCItem에 <code>assignee</code>, <code>lastRunId</code>, <code>lastRunName</code> 필드 추가 (선택적)</td>
+    <td>30분</td>
+  </tr>
+</table>
+
+<div class="callout">
+  <b>총 예상 공수:</b> 약 6-7시간 (1일). 기존 /testcases 페이지의 필터 인프라를 한 번 구축하면 이후 모든 상태별 드릴다운에 재사용됩니다.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§8. Desi 디자인 요청 사항</h2>
+
+<p>기존 /testcases 페이지를 확장하는 것이므로 완전히 새로운 디자인이 아닌, <b>기존 디자인에 다음 요소 추가</b>가 필요합니다:</p>
+
+<h3>8-1. 디자인 필요 항목</h3>
+<table>
+  <tr><th>#</th><th>항목</th><th>상세</th><th>참고</th></tr>
+  <tr>
+    <td>1</td>
+    <td><b>Execution Status 탭 바</b></td>
+    <td>기존 lifecycle 탭 아래에 추가. 각 탭에 뱃지 카운트 포함.<br>All | Failed (47) | Passed (128) | Blocked (5) | Untested (23)</td>
+    <td>기존 lifecycle 탭 스타일과 동일하되 색상 구분</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><b>동적 헤더 상태</b></td>
+    <td>status=failed일 때 "Failed Test Cases" 타이틀 + 빨간 아이콘 + "← Back to Report" 링크</td>
+    <td>Pass Rate Report에서 진입한 경우만 Back 링크 표시</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><b>Period 필터 드롭다운</b></td>
+    <td>Pass Rate Report 페이지의 기존 Period 드롭다운과 동일 디자인. Active Run | 7d | 30d | All Time</td>
+    <td>PassRateReportPage.tsx 기존 디자인 재사용</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><b>테이블 확장 컬럼</b></td>
+    <td>기존 TC 테이블에 "Fail Count", "Last Failed", "Last Run" 컬럼 추가 디자인</td>
+    <td>status=failed일 때만 추가 컬럼 표시</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><b>Summary Bar</b></td>
+    <td>테이블 상단 "Showing 47 failed test cases across 5 projects" 요약 바</td>
+    <td>미니멀한 단일 행</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td><b>Pagination</b></td>
+    <td>테이블 하단 페이지네이션 UI</td>
+    <td>20 | 50 | 100 페이지 크기 선택 포함</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td><b>Empty State</b></td>
+    <td>Failed TC가 0건일 때 표시할 빈 상태 일러스트 + 메시지</td>
+    <td>"No failures found for this period" + ✅ 아이콘</td>
+  </tr>
+</table>
+
+<h3>8-2. Desi에게 전달할 Context</h3>
+<div class="callout">
+  <b>디자인 참고 파일:</b><br>
+  • 기존 /testcases 페이지 스크린샷 (현재 UI 기준)<br>
+  • Pass Rate Report 페이지의 Failed TC 섹션 (현재 10건 리스트 디자인 참고)<br>
+  • Pass Rate Report의 Period 드롭다운 디자인 (재사용)<br>
+  • <code>13-team-activity.html</code>의 테이블 스타일 참고<br><br>
+  <b>핵심 원칙:</b> 기존 /testcases 페이지의 디자인 언어를 유지하면서 execution status 필터 기능만 추가하는 방향입니다. 새로운 페이지를 디자인하는 것이 아닙니다.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§9. 향후 확장 (Phase 2)</h2>
+
+<table>
+  <tr><th>기능</th><th>설명</th><th>우선순위</th></tr>
+  <tr>
+    <td>서버 사이드 페이지네이션</td>
+    <td>TC 수가 500건 이상 시 Supabase RPC 함수로 전환</td>
+    <td>데이터 증가 시</td>
+  </tr>
+  <tr>
+    <td>Bulk Actions</td>
+    <td>체크박스 선택 → "Retest Selected" / "Assign All" 등 일괄 작업</td>
+    <td>중간</td>
+  </tr>
+  <tr>
+    <td>Export</td>
+    <td>필터된 Failed TC 리스트를 CSV/XLSX로 내보내기</td>
+    <td>낮음</td>
+  </tr>
+  <tr>
+    <td>Failure Trend Sparkline</td>
+    <td>각 TC 행에 미니 스파크라인으로 최근 7일 실패 추이 표시</td>
+    <td>낮음</td>
+  </tr>
+  <tr>
+    <td>Dashboard 연동</td>
+    <td>프로젝트 Dashboard 카드에서도 <code>/testcases?status=failed&project={id}</code> 링크</td>
+    <td>높음 (이 기획 완료 후 자동 가능)</td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§10. 검증 체크리스트</h2>
+
+<table>
+  <tr><th>✓</th><th>검증 항목</th></tr>
+  <tr><td>☐</td><td>"View All →" 클릭 시 <code>/testcases?status=failed&period={period}</code> 로 이동하는가</td></tr>
+  <tr><td>☐</td><td>/testcases 페이지가 URL 파라미터를 읽어 Failed 탭 자동 활성화하는가</td></tr>
+  <tr><td>☐</td><td>Period 필터 변경 시 데이터가 재조회되는가</td></tr>
+  <tr><td>☐</td><td>Fail Count 기준 정렬이 정상 동작하는가</td></tr>
+  <tr><td>☐</td><td>TC 행 클릭 시 기존 상세 패널이 열리는가</td></tr>
+  <tr><td>☐</td><td>"Last Run" 링크 클릭 시 해당 Run Detail로 이동하는가</td></tr>
+  <tr><td>☐</td><td>Failed TC가 0건일 때 Empty State가 표시되는가</td></tr>
+  <tr><td>☐</td><td>페이지네이션이 20건 단위로 정상 동작하는가</td></tr>
+  <tr><td>☐</td><td>딥링크 URL 공유 시 동일 필터 상태가 재현되는가</td></tr>
+  <tr><td>☐</td><td>사이드바에서 /testcases 직접 진입 시 status=all (기본값)로 동작하는가</td></tr>
+</table>
+
+</div><!-- .body -->
+</div><!-- .container -->
+</body>
+</html>

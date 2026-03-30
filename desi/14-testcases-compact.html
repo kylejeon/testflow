@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Test Cases (Compact)</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; min-height: 100vh; display: flex; }
+
+  /* ── Project Header (production size, unchanged) ── */
+  .project-header { background: #fff; display: flex; align-items: center; padding: 0 1.5rem; height: 3.5rem; gap: 0.75rem; border-bottom: 1px solid #E2E8F0; }
+  .ph-logo { width: 30px; height: 30px; background: #6366F1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; flex-shrink: 0; }
+  .ph-sep { width: 1px; height: 20px; background: #E2E8F0; }
+  .ph-project { font-size: 0.875rem; color: #64748B; font-weight: 500; }
+  .ph-right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+  .ph-btn { font-size: 0.8125rem; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; }
+  .ph-avatar { width: 2rem; height: 2rem; border-radius: 50%; background: #6366F1; display: flex; align-items: center; justify-content: center; font-size: 0.6875rem; font-weight: 700; color: #fff; cursor: pointer; }
+
+  /* ── Tab Bar (production size, unchanged) ── */
+  .tab-bar { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0 1.5rem; height: 3rem; gap: 0; }
+  .tab-item { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.875rem; height: 100%; font-size: 0.875rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; transition: all 0.15s; white-space: nowrap; }
+  .tab-item:hover { color: #334155; }
+  .tab-item.active { color: #6366F1; border-bottom-color: #6366F1; font-weight: 600; }
+  .tab-item i { font-size: 1rem; }
+  .tab-count { font-size: 0.6875rem; background: #F1F5F9; color: #64748B; padding: 0.125rem 0.4375rem; border-radius: 9999px; font-weight: 600; }
+  .tab-item.active .tab-count { background: #EEF2FF; color: #6366F1; }
+
+  /* ── Main Content ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Content Layout (flex row: folders panel + content right) ── */
+  .content-layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Folders Panel ── */
+  .folders-panel { width: 220px; min-width: 220px; background: #fff; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; overflow-y: auto; }
+  .folders-header { padding: 1rem 0.875rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; }
+  .folders-title { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .collapse-btn { background: none; border: none; cursor: pointer; font-size: 1rem; color: #64748B; padding: 0; display: flex; align-items: center; justify-content: center; }
+  .folders-list { flex: 1; overflow-y: auto; }
+  .folder-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.875rem; font-size: 0.8125rem; color: #475569; cursor: pointer; transition: all 0.15s; }
+  .folder-item:hover { background: #F8FAFC; }
+  .folder-item.active { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .folder-item.sub { padding-left: 1.5rem; }
+  .folder-icon { font-size: 1rem; }
+  .folder-count { margin-left: auto; font-size: 0.75rem; color: #94A3B8; }
+  .folder-item.active .folder-count { color: #6366F1; }
+  .folder-bottom { padding: 0.75rem 0.875rem; border-top: 1px solid #E2E8F0; }
+  .new-folder-btn { width: 100%; background: #6366F1; color: #fff; border: none; border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.8125rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.375rem; font-family: inherit; transition: all 0.15s; }
+  .new-folder-btn:hover { background: #4F46E5; }
+  .new-folder-btn i { font-size: 1rem; }
+
+  /* ── Content Right (main table area) ── */
+  .content-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 1.75rem; overflow-y: auto; }
+
+  /* ── Page Header ── */
+  .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; }
+  .page-head-left { display: flex; flex-direction: column; gap: 0.25rem; }
+  .page-title { font-size: 1.375rem; font-weight: 700; color: #0F172A; }
+  .page-subtitle { font-size: 0.8125rem; color: #94A3B8; }
+  .page-head-right { display: flex; align-items: center; gap: 0.5rem; }
+  .action-btn { font-size: 0.8125rem; padding: 0.4375rem 0.875rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; font-family: inherit; font-weight: 500; transition: all 0.15s; }
+  .action-btn:hover { background: #F1F5F9; }
+  .action-btn.primary { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .action-btn.primary:hover { background: #4F46E5; }
+  .action-btn.ai { background: linear-gradient(to right, #8B5CF6, #6366F1); color: #fff; border-color: transparent; }
+  .action-btn.ai:hover { opacity: 0.9; }
+  .action-btn i { font-size: 1rem; }
+
+  /* ── Card Container ── */
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; overflow: hidden; }
+
+  /* ── Toolbar (inside card) ── */
+  .toolbar { padding: 1.3125rem; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; gap: 0.875rem; }
+  .search-wrap { flex: 1; position: relative; }
+  .search-wrap i { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 1rem; color: #94A3B8; }
+  .search-box { font-size: 0.8125rem; padding: 0.4375rem 0.875rem 0.4375rem 2.25rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #334155; outline: none; width: 100%; font-family: inherit; }
+  .search-box:focus { border-color: #6366F1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15); }
+  .filter-select { font-size: 0.8125rem; padding: 0.4375rem 0.875rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #334155; cursor: pointer; font-family: inherit; }
+
+  /* ── Table ── */
+  .tc-table { width: 100%; }
+  .tc-table table { width: 100%; border-collapse: collapse; }
+  .tc-table th { background: #F8FAFC; padding: 0.6875rem 1rem; text-align: left; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; border-bottom: 1px solid #E2E8F0; }
+  .tc-table td { padding: 0.6875rem 1rem; font-size: 0.8125rem; color: #334155; border-bottom: 1px solid #F1F5F9; }
+  .tc-table tr:last-child td { border-bottom: none; }
+  .tc-table tr:hover td { background: #FAFAFF; }
+  .tc-table .cb { width: 36px; }
+  .tc-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: #6366F1; cursor: pointer; }
+  .tc-id { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8125rem; color: #6366F1; font-weight: 600; cursor: pointer; }
+  .tc-id:hover { text-decoration: underline; }
+  .tc-name { font-weight: 600; color: #0F172A; font-size: 0.8125rem; max-width: 360px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .priority-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 0.375rem; vertical-align: middle; }
+  .priority-dot.critical { background: #EF4444; }
+  .priority-dot.high { background: #F59E0B; }
+  .priority-dot.medium { background: #6366F1; }
+  .priority-dot.low { background: #94A3B8; }
+  .status-badge { font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px; }
+  .status-badge.active { background: #F0FDF4; color: #16A34A; }
+  .status-badge.draft { background: #FEF3C7; color: #D97706; }
+  .status-badge.deprecated { background: #F1F5F9; color: #94A3B8; }
+  .assignee-sm { width: 1.5rem; height: 1.5rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.5625rem; font-weight: 700; color: #fff; }
+  .tc-meta { font-size: 0.75rem; color: #94A3B8; }
+  .table-folder-icon { font-size: 0.9375rem; color: #94A3B8; margin-right: 0.25rem; vertical-align: middle; }
+
+  /* ── Pagination ── */
+  .pagination { display: flex; align-items: center; justify-content: space-between; padding: 0.6875rem 1rem; border-top: 1px solid #E2E8F0; }
+  .pag-info { font-size: 0.75rem; color: #94A3B8; }
+  .pag-controls { display: flex; align-items: center; gap: 0.25rem; }
+  .pag-btn { width: 1.875rem; height: 1.875rem; border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8125rem; font-family: inherit; }
+  .pag-btn:hover { background: #F1F5F9; }
+  .pag-btn.active { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .pag-btn:disabled { opacity: 0.4; cursor: default; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .content-right { animation: fadeIn 0.3s ease-out; }
+</style>
+</head>
+<body>
+
+<div class="main">
+  <header class="project-header">
+    <div class="ph-logo">T</div>
+    <div class="ph-sep"></div>
+    <span class="ph-project">Mobile App v2</span>
+    <div class="ph-right">
+      <div class="ph-btn"><i class="ri-command-line"></i> ⌘K</div>
+      <div class="ph-btn"><i class="ri-notification-3-line"></i></div>
+      <div class="ph-avatar">SK</div>
+    </div>
+  </header>
+
+  <div class="tab-bar">
+    <div class="tab-item"><i class="ri-dashboard-3-line"></i> Dashboard</div>
+    <div class="tab-item active"><i class="ri-file-list-3-line"></i> Test Cases <span class="tab-count">842</span></div>
+    <div class="tab-item"><i class="ri-play-circle-line"></i> Runs <span class="tab-count">12</span></div>
+    <div class="tab-item"><i class="ri-flag-line"></i> Milestones <span class="tab-count">3</span></div>
+    <div class="tab-item"><i class="ri-file-text-line"></i> Docs <span class="tab-count">8</span></div>
+    <div class="tab-item"><i class="ri-flashlight-line"></i> Discovery</div>
+  </div>
+
+  <div class="content-layout">
+    <aside class="folders-panel">
+      <div class="folders-header">
+        <span class="folders-title">Folders</span>
+        <button class="collapse-btn"><i class="ri-arrow-left-s-line"></i></button>
+      </div>
+      <div class="folders-list">
+        <div class="folder-item active">
+          <i class="ri-folder-3-line folder-icon" style="color:#6366F1"></i>
+          <span>All Test Cases</span>
+          <span class="folder-count">(32)</span>
+        </div>
+        <div class="folder-item sub">
+          <i class="ri-folder-3-line folder-icon" style="color:#8B5CF6"></i>
+          <span>Login</span>
+          <span class="folder-count">(10)</span>
+        </div>
+        <div class="folder-item sub">
+          <i class="ri-folder-3-line folder-icon" style="color:#10B981"></i>
+          <span>Patient List</span>
+          <span class="folder-count">(12)</span>
+        </div>
+        <div class="folder-item sub">
+          <i class="ri-folder-3-line folder-icon" style="color:#EF4444"></i>
+          <span>Viewer</span>
+          <span class="folder-count">(1)</span>
+        </div>
+        <div class="folder-item sub">
+          <i class="ri-folder-3-line folder-icon" style="color:#F59E0B"></i>
+          <span>Report</span>
+          <span class="folder-count">(0)</span>
+        </div>
+        <div class="folder-item sub">
+          <i class="ri-folder-3-line folder-icon" style="color:#94A3B8"></i>
+          <span>Library</span>
+          <span class="folder-count">(0)</span>
+        </div>
+      </div>
+      <div class="folder-bottom">
+        <button class="new-folder-btn"><i class="ri-add-line"></i> New Folder</button>
+      </div>
+    </aside>
+
+    <div class="content-right">
+      <div class="page-head">
+        <div class="page-head-left">
+          <h1 class="page-title">Test Cases</h1>
+          <p class="page-subtitle">Mobile App v2 • 842 test cases</p>
+        </div>
+        <div class="page-head-right">
+          <button class="action-btn ai"><i class="ri-sparkling-2-fill"></i> Generate with AI</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div class="search-wrap">
+            <i class="ri-search-line"></i>
+            <input type="text" class="search-box" placeholder="Search test cases..." />
+          </div>
+          <select class="filter-select">
+            <option>All Priority</option>
+            <option>Critical</option>
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
+        </div>
+
+        <div class="tc-table">
+          <table>
+            <thead>
+              <tr>
+                <th class="cb"><input type="checkbox" /></th>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Folder</th>
+                <th>Assignee</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-842</span></td>
+                <td><span class="tc-name">Payment timeout handling for 3DS verification</span></td>
+                <td><span class="priority-dot critical"></span><span class="tc-meta">Critical</span></td>
+                <td><span class="status-badge active">Active</span></td>
+                <td><i class="ri-folder-3-line table-folder-icon"></i><span class="tc-meta">Payments</span></td>
+                <td><span class="assignee-sm" style="background:#6366F1">SK</span></td>
+                <td><span class="tc-meta">2h ago</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-841</span></td>
+                <td><span class="tc-name">Dashboard widget drag-and-drop reordering</span></td>
+                <td><span class="priority-dot high"></span><span class="tc-meta">High</span></td>
+                <td><span class="status-badge active">Active</span></td>
+                <td><i class="ri-folder-3-line table-folder-icon"></i><span class="tc-meta">UI</span></td>
+                <td><span class="assignee-sm" style="background:#F59E0B">MC</span></td>
+                <td><span class="tc-meta">3h ago</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-840</span></td>
+                <td><span class="tc-name">OAuth token refresh race condition under load</span></td>
+                <td><span class="priority-dot critical"></span><span class="tc-meta">Critical</span></td>
+                <td><span class="status-badge active">Active</span></td>
+                <td><i class="ri-folder-3-line table-folder-icon"></i><span class="tc-meta">Auth</span></td>
+                <td><span class="assignee-sm" style="background:#10B981">AP</span></td>
+                <td><span class="tc-meta">5h ago</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-839</span></td>
+                <td><span class="tc-name">Push notification deep-link navigation on iOS 17</span></td>
+                <td><span class="priority-dot medium"></span><span class="tc-meta">Medium</span></td>
+                <td><span class="status-badge active">Active</span></td>
+                <td><i class="ri-folder-3-line table-folder-icon"></i><span class="tc-meta">Mobile</span></td>
+                <td><span class="assignee-sm" style="background:#EC4899">JL</span></td>
+                <td><span class="tc-meta">8h ago</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-838</span></td>
+                <td><span class="tc-name">Rate limiter bypass with concurrent API requests</span></td>
+                <td><span class="priority-dot high"></span><span class="tc-meta">High</span></td>
+                <td><span class="status-badge draft">Draft</span></td>
+                <td><i class="ri-folder-3-line table-folder-icon"></i><span class="tc-meta">API</span></td>
+                <td><span class="assignee-sm" style="background:#10B981">AP</span></td>
+                <td><span class="tc-meta">12h ago</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-837</span></td>
+                <td><span class="tc-name">User avatar upload with WebP conversion fallback</span></td>
+                <td><span class="priority-dot medium"></span><span class="tc-meta">Medium</span></td>
+                <td><span class="status-badge active">Active</span></td>
+                <td><i class="ri-folder-3-line table-folder-icon"></i><span class="tc-meta">Profile</span></td>
+                <td><span class="assignee-sm" style="background:#6366F1">SK</span></td>
+                <td><span class="tc-meta">1d ago</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-836</span></td>
+                <td><span class="tc-name">Dark mode toggle persistence after logout/login cycle</span></td>
+                <td><span class="priority-dot low"></span><span class="tc-meta">Low</span></td>
+                <td><span class="status-badge active">Active</span></td>
+                <td><i class="ri-folder-3-line table-folder-icon"></i><span class="tc-meta">Settings</span></td>
+                <td><span class="assignee-sm" style="background:#F59E0B">MC</span></td>
+                <td><span class="tc-meta">1d ago</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-835</span></td>
+                <td><span class="tc-name">Biometric login fallback when Face ID unavailable</span></td>
+                <td><span class="priority-dot critical"></span><span class="tc-meta">Critical</span></td>
+                <td><span class="status-badge active">Active</span></td>
+                <td><i class="ri-folder-3-line table-folder-icon"></i><span class="tc-meta">Auth</span></td>
+                <td><span class="assignee-sm" style="background:#EC4899">JL</span></td>
+                <td><span class="tc-meta">1d ago</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-834</span></td>
+                <td><span class="tc-name">CSV bulk import with 10k+ rows performance test</span></td>
+                <td><span class="priority-dot medium"></span><span class="tc-meta">Medium</span></td>
+                <td><span class="status-badge deprecated">Deprecated</span></td>
+                <td><i class="ri-folder-3-line table-folder-icon"></i><span class="tc-meta">Data</span></td>
+                <td><span class="assignee-sm" style="background:#06B6D4">DK</span></td>
+                <td><span class="tc-meta">2d ago</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-833</span></td>
+                <td><span class="tc-name">WebSocket reconnection after network drop recovery</span></td>
+                <td><span class="priority-dot critical"></span><span class="tc-meta">Critical</span></td>
+                <td><span class="status-badge active">Active</span></td>
+                <td><i class="ri-folder-3-line table-folder-icon"></i><span class="tc-meta">Network</span></td>
+                <td><span class="assignee-sm" style="background:#8B5CF6">YH</span></td>
+                <td><span class="tc-meta">2d ago</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span class="pag-info">Showing 1–10 of 842</span>
+          <div class="pag-controls">
+            <button class="pag-btn" disabled><i class="ri-arrow-left-s-line"></i></button>
+            <button class="pag-btn active">1</button>
+            <button class="pag-btn">2</button>
+            <button class="pag-btn">3</button>
+            <button class="pag-btn">…</button>
+            <button class="pag-btn">85</button>
+            <button class="pag-btn"><i class="ri-arrow-right-s-line"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

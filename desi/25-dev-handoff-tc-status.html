@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Dev Handoff: TC Lifecycle Status System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.7; padding: 3rem 2rem; max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 1.75rem; font-weight: 800; color: #0F172A; margin-bottom: 0.25rem; }
+  .subtitle { font-size: 0.9375rem; color: #64748B; margin-bottom: 2rem; }
+  h2 { font-size: 1.25rem; font-weight: 700; color: #0F172A; margin-top: 2.5rem; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid #6366F1; }
+  h3 { font-size: 1.0625rem; font-weight: 600; color: #334155; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  h4 { font-size: 0.9375rem; font-weight: 600; color: #475569; margin-top: 1rem; margin-bottom: 0.375rem; }
+  p { margin-bottom: 0.75rem; font-size: 0.9375rem; }
+  ul, ol { margin: 0.5rem 0 1rem 1.5rem; font-size: 0.9375rem; }
+  li { margin-bottom: 0.375rem; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; background: #F1F5F9; padding: 0.125rem 0.375rem; border-radius: 0.25rem; color: #6366F1; }
+  pre { background: #1E293B; color: #E2E8F0; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 0.75rem 0 1.25rem; font-size: 0.8125rem; line-height: 1.6; font-family: 'JetBrains Mono', monospace; }
+  .cm { color: #64748B; }
+  .k { color: #7DD3FC; }
+  .v { color: #86EFAC; }
+  .n { color: #FDE68A; }
+
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1.25rem; font-size: 0.875rem; }
+  th { background: #F8FAFC; padding: 0.625rem 0.875rem; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #64748B; border-bottom: 2px solid #E2E8F0; }
+  td { padding: 0.5rem 0.875rem; border-bottom: 1px solid #F1F5F9; font-size: 0.8125rem; }
+  tr:hover td { background: #FAFAFF; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #6366F1; }
+
+  .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 0.375rem; border: 1px solid rgba(0,0,0,0.08); }
+  .badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px; }
+  .badge.p0 { background: #FEE2E2; color: #991B1B; }
+  .badge.p1 { background: #FEF3C7; color: #92400E; }
+  .badge.file { background: #EEF2FF; color: #4338CA; }
+  .badge.new { background: #F0FDF4; color: #16A34A; }
+
+  .note { background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #4338CA; margin: 1rem 0; }
+  .warn { background: #FEF9C3; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #854D0E; margin: 1rem 0; }
+  .note strong, .warn strong { font-weight: 600; }
+
+  .toc { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2rem; }
+  .toc-title { font-size: 0.875rem; font-weight: 700; color: #0F172A; margin-bottom: 0.625rem; }
+  .toc a { display: block; font-size: 0.875rem; color: #6366F1; text-decoration: none; padding: 0.1875rem 0; }
+  .toc a:hover { text-decoration: underline; }
+
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.5rem; margin: 1rem 0; }
+  .card-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .card-num { width: 1.75rem; height: 1.75rem; background: #6366F1; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.75rem; flex-shrink: 0; }
+  .card-title { font-size: 1rem; font-weight: 700; color: #0F172A; }
+
+  hr { border: none; border-top: 1px solid #E2E8F0; margin: 2rem 0; }
+</style>
+</head>
+<body>
+
+<h1>Dev Handoff — TC Lifecycle Status System</h1>
+<p class="subtitle">Testably — Draft / Active / Deprecated 전체 UI 시스템<br>
+Prepared by Desi (Design) · March 25, 2026 · v1.0<br>
+Based on PM Spec: TC_Status_Workflow_DetailSpec.docx + spec-tc-status-design.html</p>
+
+<div class="toc">
+  <div class="toc-title">Contents</div>
+  <a href="#tokens">1. Status Design Tokens (CSS Variables)</a>
+  <a href="#s1">2. §1 Status Badges (3 variants, 2 sizes)</a>
+  <a href="#s2">3. §2 TC List Row — Badge Position</a>
+  <a href="#s3">4. §3 Filter Tabs</a>
+  <a href="#s4">5. §4 Status Change Dropdown</a>
+  <a href="#s5">6. §5 Deprecated Confirm Dialog</a>
+  <a href="#s6">7. §6 Bulk Action Bar — Set Status</a>
+  <a href="#s7">8. §7 Run Draft Warning Banner</a>
+  <a href="#s8">9. §8 TC Creation Toast — "Mark as Active"</a>
+  <a href="#s9">10. §9 Right-Click Context Menu — Set Status</a>
+  <a href="#s10">11. §10 Run TC Selection — "Include Draft TCs" Toggle</a>
+  <a href="#s11">12. §11 Existing Run — Deprecated TC Info Banner</a>
+  <a href="#db">13. Database Schema</a>
+  <a href="#api">14. API / Supabase Queries</a>
+  <a href="#a11y">15. Accessibility & i18n</a>
+  <a href="#files">16. File Inventory</a>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="tokens">1. Status Design Tokens</h2>
+
+<p>Define as CSS custom properties at <code>:root</code> for easy theming. All 3 status variants follow the same pattern: background, text, border, icon color.</p>
+
+<pre><span class="cm">/* :root CSS Variables */</span>
+<span class="cm">/* Draft (Yellow) */</span>
+<span class="k">--status-draft-bg</span>: <span class="v">#FEF9C3</span>;
+<span class="k">--status-draft-text</span>: <span class="v">#854D0E</span>;
+<span class="k">--status-draft-border</span>: <span class="v">#FDE68A</span>;
+<span class="k">--status-draft-icon</span>: <span class="v">#D97706</span>;
+<span class="k">--status-draft-row-bg</span>: <span class="v">#FFFBEB</span>; <span class="cm">/* Run TC selection Draft highlight */</span>
+
+<span class="cm">/* Active (Green) */</span>
+<span class="k">--status-active-bg</span>: <span class="v">#DCFCE7</span>;
+<span class="k">--status-active-text</span>: <span class="v">#166534</span>;
+<span class="k">--status-active-border</span>: <span class="v">#BBF7D0</span>;
+<span class="k">--status-active-icon</span>: <span class="v">#16A34A</span>;
+
+<span class="cm">/* Deprecated (Slate) */</span>
+<span class="k">--status-deprecated-bg</span>: <span class="v">#F1F5F9</span>;
+<span class="k">--status-deprecated-text</span>: <span class="v">#64748B</span>;
+<span class="k">--status-deprecated-border</span>: <span class="v">#CBD5E1</span>;
+<span class="k">--status-deprecated-icon</span>: <span class="v">#94A3B8</span>;
+<span class="k">--status-deprecated-row-opacity</span>: <span class="v">0.55</span>; <span class="cm">/* TC list */</span>
+<span class="k">--status-deprecated-run-opacity</span>: <span class="v">0.65</span>; <span class="cm">/* Run detail */</span></pre>
+
+<h3>Remix Icon Mapping</h3>
+<table>
+  <thead><tr><th>Status</th><th>Icon</th><th>Icon Color (standalone)</th></tr></thead>
+  <tbody>
+    <tr><td>Draft</td><td class="mono">ri-draft-line</td><td><span class="swatch" style="background:#D97706"></span>#D97706</td></tr>
+    <tr><td>Active</td><td class="mono">ri-checkbox-circle-line</td><td><span class="swatch" style="background:#16A34A"></span>#16A34A</td></tr>
+    <tr><td>Deprecated</td><td class="mono">ri-forbid-line</td><td><span class="swatch" style="background:#94A3B8"></span>#94A3B8</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="s1">2. §1 Status Badges</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-num">1</div>
+    <div class="card-title">Status Badge Component</div>
+    <span class="badge p0">P0</span>
+  </div>
+
+  <p>Pill-shaped badge with icon + text. Two sizes: <strong>md</strong> (detail panel, dropdowns) and <strong>sm</strong> (table rows, run TC selection).</p>
+
+  <table>
+    <thead><tr><th>Property</th><th>md (default)</th><th>sm (table row)</th></tr></thead>
+    <tbody>
+      <tr><td>Font size</td><td class="mono">0.6875rem (11px)</td><td class="mono">0.625rem (10px)</td></tr>
+      <tr><td>Padding</td><td class="mono">3px 8px</td><td class="mono">2px 6px</td></tr>
+      <tr><td>Icon size</td><td class="mono">0.875rem (14px)</td><td class="mono">0.6875rem (11px)</td></tr>
+      <tr><td>Font weight</td><td class="mono">600</td><td class="mono">600</td></tr>
+      <tr><td>Border radius</td><td class="mono">9999px</td><td class="mono">9999px</td></tr>
+      <tr><td>Border</td><td class="mono">1px solid</td><td class="mono">1px solid</td></tr>
+      <tr><td>Gap (icon→text)</td><td class="mono">5px</td><td class="mono">3px</td></tr>
+    </tbody>
+  </table>
+
+  <h4>React Component Signature</h4>
+  <pre><span class="cm">// Suggested component API</span>
+&lt;<span class="k">LifecycleBadge</span>
+  <span class="k">status</span>=<span class="v">"draft"</span> | <span class="v">"active"</span> | <span class="v">"deprecated"</span>
+  <span class="k">size</span>=<span class="v">"md"</span> | <span class="v">"sm"</span>        <span class="cm">// default: "md"</span>
+  <span class="k">clickable</span>=<span class="v">{true}</span>          <span class="cm">// shows caret, opens dropdown</span>
+  <span class="k">onStatusChange</span>=<span class="v">{fn}</span>     <span class="cm">// callback(newStatus)</span>
+/&gt;</pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="s2">3. §2 TC List Row</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-num">2</div>
+    <div class="card-title">Badge Position in TC Table Row</div>
+    <span class="badge p0">P0</span>
+  </div>
+
+  <p>New <strong>"Lifecycle"</strong> column in the TC table, between Title and Priority. Uses <code>sm</code> badge size.</p>
+
+  <table>
+    <thead><tr><th>Element</th><th>Spec</th></tr></thead>
+    <tbody>
+      <tr><td>Column position</td><td>After Title, before Priority (new column)</td></tr>
+      <tr><td>Badge size</td><td class="mono">sm (10px font, 2px 6px padding)</td></tr>
+      <tr><td>Deprecated row</td><td class="mono">opacity: 0.55 on entire row</td></tr>
+      <tr><td>Deprecated row in "All" filter</td><td>Visible with opacity treatment (Deprecated tab shows at full opacity)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="s3">4. §3 Filter Tabs</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-num">3</div>
+    <div class="card-title">Lifecycle Filter Tabs</div>
+    <span class="badge p0">P0</span>
+    <span class="badge file">22-tc-list-status-full.html</span>
+  </div>
+
+  <p>Horizontal tab bar above the TC table card. Replaces (or sits alongside) the existing toolbar area.</p>
+
+  <table>
+    <thead><tr><th>Tab</th><th>Default Behavior</th><th>Icon</th></tr></thead>
+    <tbody>
+      <tr><td><strong>All</strong> (default active)</td><td>Shows Draft + Active. Deprecated hidden.</td><td>None</td></tr>
+      <tr><td><strong>Draft</strong></td><td>Draft only</td><td class="mono">ri-draft-line (#D97706)</td></tr>
+      <tr><td><strong>Active</strong></td><td>Active only</td><td class="mono">ri-checkbox-circle-line (#16A34A)</td></tr>
+      <tr><td><strong>Deprecated</strong></td><td>Deprecated only (must explicitly click to see)</td><td class="mono">ri-forbid-line (#94A3B8)</td></tr>
+    </tbody>
+  </table>
+
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Tab font</td><td class="mono">0.8125rem (13px), weight 500</td></tr>
+      <tr><td>Active tab</td><td class="mono">color #4338CA, weight 600, 2px bottom border #4338CA</td></tr>
+      <tr><td>Count badge</td><td class="mono">0.6875rem, bg #F1F5F9 (active: #EEF2FF/#4338CA)</td></tr>
+      <tr><td>Icon size</td><td class="mono">0.875rem (14px)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="s4">5. §4 Status Change Dropdown</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-num">4</div>
+    <div class="card-title">Status Dropdown Panel</div>
+    <span class="badge p0">P0</span>
+    <span class="badge file">22-tc-list-status-full.html</span>
+  </div>
+
+  <p>Opens when clicking a <code>clickable</code> LifecycleBadge. Shows 3 options with the current status checked.</p>
+
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Trigger</td><td class="mono">Badge click + caret icon (ri-arrow-down-s-line)</td></tr>
+      <tr><td>Panel min-width</td><td class="mono">160px (10rem)</td></tr>
+      <tr><td>Panel shadow</td><td class="mono">0 4px 16px rgba(0,0,0,0.10)</td></tr>
+      <tr><td>Panel border</td><td class="mono">1px solid #E2E8F0, radius 8px</td></tr>
+      <tr><td>Item padding</td><td class="mono">7px 10px</td></tr>
+      <tr><td>Item hover</td><td class="mono">bg #F8FAFC</td></tr>
+      <tr><td>Active check</td><td class="mono">ri-check-line, color #6366F1, right-aligned</td></tr>
+      <tr><td>Animation</td><td class="mono">opacity 0→1 + translateY(-4px→0), 150ms ease-out</td></tr>
+      <tr><td>Dismiss</td><td>Click outside, Escape key, or selecting an option</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Transition Rules (No Confirm / Confirm Required)</h4>
+  <table>
+    <thead><tr><th>Transition</th><th>Confirm Dialog?</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>Draft → Active</td><td>No (instant)</td><td>Safe upgrade</td></tr>
+      <tr><td>Active → Draft</td><td>No (instant)</td><td>Reversible</td></tr>
+      <tr><td>Draft → Deprecated</td><td><strong>Yes (§5 dialog)</strong></td><td>Hides from runs</td></tr>
+      <tr><td>Active → Deprecated</td><td><strong>Yes (§5 dialog)</strong></td><td>Hides from runs</td></tr>
+      <tr><td>Deprecated → Active</td><td>No (instant)</td><td>Safe restoration</td></tr>
+      <tr><td>Deprecated → Draft</td><td>No (instant)</td><td>Safe restoration</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="s5">6. §5 Deprecated Confirm Dialog</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-num">5</div>
+    <div class="card-title">Deprecate Confirmation Modal</div>
+    <span class="badge p1">P1</span>
+    <span class="badge file">22-tc-list-status-full.html</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Element</th><th>Spec</th></tr></thead>
+    <tbody>
+      <tr><td>Overlay</td><td class="mono">rgba(0,0,0,0.4), click to close</td></tr>
+      <tr><td>Dialog max-width</td><td class="mono">384px (24rem), centered</td></tr>
+      <tr><td>Icon circle</td><td class="mono">40px, bg #FEF9C3, icon ri-alert-line (#D97706)</td></tr>
+      <tr><td>Title</td><td class="mono">"Deprecate Test Case?" — 15px bold, #0F172A</td></tr>
+      <tr><td>Body</td><td class="mono">13px, #64748B. TC name in bold #334155.</td></tr>
+      <tr><td>Info line (conditional)</td><td class="mono">"현재 N개 Run에 포함..." — 12px, #94A3B8. Only if TC is in active Runs.</td></tr>
+      <tr><td>Cancel button</td><td class="mono">Ghost: bg #fff, border #E2E8F0, color #64748B</td></tr>
+      <tr><td>Deprecate button</td><td class="mono">Solid: bg #F59E0B, color #fff. Hover: #D97706</td></tr>
+      <tr><td>Overlay animation</td><td class="mono">opacity 0→1, 200ms</td></tr>
+      <tr><td>Dialog animation</td><td class="mono">scale(0.95)→1 + opacity, 200ms ease-out</td></tr>
+      <tr><td>Keyboard</td><td class="mono">Escape = Cancel. Enter = Deprecate. Focus default on Cancel (safety).</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Bulk Variant</h4>
+  <p>When deprecating multiple TCs: title becomes <strong>"Deprecate N Test Cases?"</strong>, button text becomes <strong>"Deprecate N Cases"</strong>.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="s6">7. §6 Bulk Action Bar — Set Status</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-num">6</div>
+    <div class="card-title">BulkActionBar Set Status Button</div>
+    <span class="badge p1">P1</span>
+    <span class="badge file">22-tc-list-status-full.html</span>
+  </div>
+
+  <p>Adds a "Set Status" dropdown button to the existing BulkActionBar. Position: between "Move" and "Delete".</p>
+
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Button style</td><td class="mono">Same as other bulk buttons: bg rgba(255,255,255,0.08), border rgba(255,255,255,0.12)</td></tr>
+      <tr><td>Icon</td><td class="mono">ri-arrow-left-right-line + ri-arrow-down-s-line caret</td></tr>
+      <tr><td>Dropdown panel</td><td>Same as §4 panel, but opens <strong>upward</strong> (bottom-placement)</td></tr>
+      <tr><td>Selecting "Deprecated"</td><td>Opens §5 Bulk Deprecate dialog</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="s7">8. §7 Run Draft Warning Banner</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-num">7</div>
+    <div class="card-title">Run Draft Warning Banner</div>
+    <span class="badge p1">P1</span>
+    <span class="badge file">23-run-tc-selection-draft.html</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Background</td><td class="mono">#FFFBEB (amber-50)</td></tr>
+      <tr><td>Border</td><td class="mono">1px solid #FDE68A (amber-200)</td></tr>
+      <tr><td>Text</td><td class="mono">#92400E (amber-800)</td></tr>
+      <tr><td>Icon</td><td class="mono">ri-error-warning-line, 16px</td></tr>
+      <tr><td>Location</td><td>Below TC selection list in Run creation modal</td></tr>
+      <tr><td>Condition</td><td>1+ Draft TC selected</td></tr>
+      <tr><td>CTA: "모두 Active로 변경"</td><td class="mono">Button: bg #FEF9C3, border #FDE68A, color #92400E. Batch converts all selected Draft→Active.</td></tr>
+      <tr><td>CTA: "그대로 진행"</td><td class="mono">Ghost button: bg #fff, border #E2E8F0, color #64748B. Dismisses warning.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="s8">9. §8 TC Creation Toast — "Mark as Active"</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-num">8</div>
+    <div class="card-title">Draft Creation Toast with Active Link</div>
+    <span class="badge p0">P0</span>
+    <span class="badge file">21-toast-mark-active.html</span>
+  </div>
+
+  <p>Two-state toast flow when a TC is created (default lifecycle_status = 'draft').</p>
+
+  <h4>State 1 — Draft Created</h4>
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Background</td><td class="mono">#1E293B (slate-800)</td></tr>
+      <tr><td>Text</td><td class="mono">13px, white, weight 500</td></tr>
+      <tr><td>Success icon</td><td class="mono">ri-check-line, color #4ADE80 (green-400)</td></tr>
+      <tr><td>Message</td><td class="mono">"Test case created as Draft."</td></tr>
+      <tr><td>"Mark as Active" link</td><td class="mono">color #818CF8 (indigo-400), weight 600, underline. Hover: #A5B4FC.</td></tr>
+      <tr><td>Dismiss X</td><td class="mono">ri-close-line, color #64748B</td></tr>
+      <tr><td>Duration</td><td class="mono">5 seconds auto-dismiss</td></tr>
+      <tr><td>Position</td><td class="mono">Fixed bottom center, 2rem from bottom</td></tr>
+      <tr><td>Animation</td><td class="mono">translateY(12px)→0 + opacity, 300ms ease-out</td></tr>
+    </tbody>
+  </table>
+
+  <h4>State 2 — Active Confirmed</h4>
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Background</td><td class="mono">#166534 (green-800)</td></tr>
+      <tr><td>Icon</td><td class="mono">ri-checkbox-circle-line, color #86EFAC</td></tr>
+      <tr><td>Message</td><td class="mono">"Test case marked as Active."</td></tr>
+      <tr><td>Duration</td><td class="mono">3 seconds auto-dismiss</td></tr>
+      <tr><td>Transition</td><td>State 1 fades out (200ms), State 2 fades in</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="s9">10. §9 Right-Click Context Menu — Set Status</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-num">9</div>
+    <div class="card-title">Context Menu with Status Submenu</div>
+    <span class="badge p1">P1</span>
+    <span class="badge file">22-tc-list-status-full.html</span>
+  </div>
+
+  <h4>Menu Structure</h4>
+  <pre>View Details    <span class="cm">(ri-eye-line)</span>
+Edit           <span class="cm">(ri-edit-line)</span>
+────────────
+Set Status →   <span class="cm">(ri-arrow-left-right-line) — opens submenu right</span>
+  ├ Draft      <span class="cm">(ri-draft-line, #D97706)</span>
+  ├ Active     <span class="cm">(ri-checkbox-circle-line, #16A34A) ✓ if current</span>
+  └ Deprecated <span class="cm">(ri-forbid-line, #94A3B8)</span>
+Move to Folder <span class="cm">(ri-folder-transfer-line)</span>
+────────────
+Delete         <span class="cm">(ri-delete-bin-line, red) — danger style</span></pre>
+
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Menu position</td><td class="mono">"Set Status" between Edit and Move to Folder (separated by dividers)</td></tr>
+      <tr><td>Submenu direction</td><td class="mono">Opens right: left: calc(100% + 4px)</td></tr>
+      <tr><td>Submenu panel</td><td>Same design as §4 dropdown panel</td></tr>
+      <tr><td>Current status indicator</td><td class="mono">ri-check-line (#6366F1), right-aligned</td></tr>
+      <tr><td>Deprecated selection</td><td>Menu closes first, then §5 confirm dialog opens</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="s10">11. §10 Run TC Selection — "Include Draft TCs" Toggle</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-num">10</div>
+    <div class="card-title">Run Creation — Draft TC Toggle</div>
+    <span class="badge p0">P0</span>
+    <span class="badge file">23-run-tc-selection-draft.html</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Element</th><th>Spec</th></tr></thead>
+    <tbody>
+      <tr><td>Toggle switch</td><td class="mono">36×20px (2.25rem×1.25rem). OFF: #CBD5E1 → ON: #6366F1. Knob: 14px white circle, 3px inset.</td></tr>
+      <tr><td>Default state</td><td class="mono"><strong>OFF</strong> — Draft TCs hidden, Active only</td></tr>
+      <tr><td>"Include Draft TCs" label</td><td class="mono">0.8125rem, #475569, weight 500</td></tr>
+      <tr><td>"N draft TCs hidden" hint</td><td class="mono">Toggle OFF only. 0.6875rem, #94A3B8, right-aligned. Auto-hide when toggle ON.</td></tr>
+      <tr><td>Header count text (OFF)</td><td class="mono">"32 Active TCs available"</td></tr>
+      <tr><td>Header count text (ON)</td><td class="mono">"32 Active + 5 Draft TCs"</td></tr>
+      <tr><td>Draft TC row background</td><td class="mono">#FFFBEB (amber-50) — visual distinction</td></tr>
+      <tr><td>Draft TC row badge</td><td class="mono">sm Draft badge visible on each row</td></tr>
+      <tr><td>Deprecated TCs</td><td class="mono"><strong>Completely hidden</strong> — no toggle, no rows, not in count</td></tr>
+      <tr><td>Draft TC checkbox selected → warning</td><td>§7 Run Draft Warning Banner appears below list</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Toggle Transition</h4>
+  <pre><span class="cm">// Knob animation</span>
+transition: <span class="v">transform 0.2s ease</span>;
+<span class="cm">// OFF → left: 3px</span>
+<span class="cm">// ON  → translateX(16px)</span>
+
+<span class="cm">// Draft rows appear with:</span>
+animation: <span class="v">fadeSlideIn 0.2s ease-out</span>;
+<span class="cm">// opacity 0→1 + translateY(-4px→0)</span></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="s11">12. §11 Existing Run — Deprecated TC Info Banner</h2>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-num">11</div>
+    <div class="card-title">Run Detail Deprecated Info Banner</div>
+    <span class="badge p1">P1</span>
+    <span class="badge file">24-run-deprecated-banner.html</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Background</td><td class="mono">#EFF6FF (blue-50)</td></tr>
+      <tr><td>Border</td><td class="mono">1px solid #BFDBFE (blue-200)</td></tr>
+      <tr><td>Text</td><td class="mono">#1E40AF (blue-800)</td></tr>
+      <tr><td>Icon</td><td class="mono">ri-information-line, color #3B82F6 (blue-500)</td></tr>
+      <tr><td>Position</td><td>Run detail page, above TC table</td></tr>
+      <tr><td>Show condition</td><td class="mono">1+ TC in run has lifecycle_status = 'deprecated'</td></tr>
+      <tr><td>Deprecated TC rows</td><td class="mono">opacity 0.65 + sm Deprecated badge in Lifecycle column</td></tr>
+      <tr><td>Data preservation</td><td>Existing results (Pass/Fail/Blocked) preserved. No deletion.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>Data Preservation Principle:</strong> Already-executed Run data and TC results are NEVER deleted. Deprecated banner is informational only. Users can still enter results for pending Deprecated TCs if needed.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="db">13. Database Schema</h2>
+
+<pre><span class="cm">-- Add lifecycle_status to test_cases table</span>
+<span class="k">ALTER TABLE</span> test_cases
+  <span class="k">ADD COLUMN</span> lifecycle_status <span class="v">text</span>
+  <span class="k">NOT NULL DEFAULT</span> <span class="v">'draft'</span>
+  <span class="k">CHECK</span> (lifecycle_status <span class="k">IN</span> (<span class="v">'draft'</span>, <span class="v">'active'</span>, <span class="v">'deprecated'</span>));
+
+<span class="cm">-- Index for filter queries</span>
+<span class="k">CREATE INDEX</span> idx_tc_lifecycle <span class="k">ON</span> test_cases(project_id, lifecycle_status);
+
+<span class="cm">-- History tracking (existing table)</span>
+<span class="cm">-- test_case_history already supports:</span>
+<span class="cm">--   action_type: 'status_changed'</span>
+<span class="cm">--   field_name: 'lifecycle_status'</span>
+<span class="cm">--   old_value / new_value: 'draft'|'active'|'deprecated'</span></pre>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="api">14. API / Supabase Queries</h2>
+
+<pre><span class="cm">// Update lifecycle status (single TC)</span>
+<span class="k">async function</span> setLifecycleStatus(tcId: string, newStatus: string) {
+  <span class="cm">// 1. Optimistic UI update</span>
+  setTestCase(prev => ({ ...prev, lifecycle_status: newStatus }));
+
+  <span class="cm">// 2. DB update</span>
+  <span class="k">const</span> { error } = <span class="k">await</span> supabase
+    .<span class="k">from</span>(<span class="v">'test_cases'</span>)
+    .<span class="k">update</span>({ lifecycle_status: newStatus })
+    .<span class="k">eq</span>(<span class="v">'id'</span>, tcId);
+
+  <span class="k">if</span> (error) {
+    <span class="cm">// 3. Rollback on failure</span>
+    setTestCase(prev => ({ ...prev, lifecycle_status: oldStatus }));
+    toast.error(<span class="v">'상태 변경에 실패했습니다.'</span>);
+    <span class="k">return</span>;
+  }
+
+  <span class="cm">// 4. Record history</span>
+  <span class="k">await</span> supabase.<span class="k">from</span>(<span class="v">'test_case_history'</span>).<span class="k">insert</span>({
+    test_case_id: tcId,
+    user_id: user.id,
+    action_type: <span class="v">'status_changed'</span>,
+    field_name: <span class="v">'lifecycle_status'</span>,
+    old_value: oldStatus,
+    new_value: newStatus,
+  });
+}
+
+<span class="cm">// Bulk update</span>
+<span class="k">async function</span> bulkSetLifecycleStatus(tcIds: string[], newStatus: string) {
+  <span class="k">const</span> { error } = <span class="k">await</span> supabase
+    .<span class="k">from</span>(<span class="v">'test_cases'</span>)
+    .<span class="k">update</span>({ lifecycle_status: newStatus })
+    .<span class="k">in</span>(<span class="v">'id'</span>, tcIds);
+  <span class="cm">// + bulk history insert for each TC</span>
+}
+
+<span class="cm">// Run TC selection query</span>
+<span class="k">const</span> { data } = <span class="k">await</span> supabase
+  .<span class="k">from</span>(<span class="v">'test_cases'</span>)
+  .<span class="k">select</span>(<span class="v">'*, lifecycle_status'</span>)
+  .<span class="k">eq</span>(<span class="v">'project_id'</span>, projectId)
+  .<span class="k">neq</span>(<span class="v">'lifecycle_status'</span>, <span class="v">'deprecated'</span>);  <span class="cm">// Always exclude deprecated from Run selection</span>
+
+<span class="cm">// Check deprecated TCs in existing Run</span>
+<span class="k">const</span> deprecatedInRun = <span class="k">await</span> supabase
+  .<span class="k">from</span>(<span class="v">'run_test_cases'</span>)
+  .<span class="k">select</span>(<span class="v">'test_case_id, test_cases!inner(lifecycle_status)'</span>)
+  .<span class="k">eq</span>(<span class="v">'run_id'</span>, runId)
+  .<span class="k">eq</span>(<span class="v">'test_cases.lifecycle_status'</span>, <span class="v">'deprecated'</span>);</pre>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="a11y">15. Accessibility & i18n</h2>
+
+<h4>Accessibility</h4>
+<ul>
+  <li>All badges are <code>&lt;button&gt;</code> elements with <code>aria-haspopup="listbox"</code> when clickable</li>
+  <li>Dropdown panel uses <code>role="listbox"</code>, items use <code>role="option"</code> with <code>aria-selected</code></li>
+  <li>Context menu uses <code>role="menu"</code> / <code>role="menuitem"</code></li>
+  <li>Toggle switch uses <code>role="switch"</code> with <code>aria-checked</code></li>
+  <li>Focus trap on confirm dialog, initial focus on Cancel button (safety)</li>
+  <li>Color is never sole indicator: badges always include icon + text label</li>
+  <li>Deprecated row opacity (0.55/0.65) still meets WCAG AA contrast with badge text</li>
+</ul>
+
+<h4>i18n Keys</h4>
+<table>
+  <thead><tr><th>Key</th><th>English</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">tc.status.draft</td><td>"Draft"</td></tr>
+    <tr><td class="mono">tc.status.active</td><td>"Active"</td></tr>
+    <tr><td class="mono">tc.status.deprecated</td><td>"Deprecated"</td></tr>
+    <tr><td class="mono">tc.status.setStatus</td><td>"Set Status"</td></tr>
+    <tr><td class="mono">tc.toast.createdAsDraft</td><td>"Test case created as Draft."</td></tr>
+    <tr><td class="mono">tc.toast.markAsActive</td><td>"Mark as Active"</td></tr>
+    <tr><td class="mono">tc.toast.markedActive</td><td>"Test case marked as Active."</td></tr>
+    <tr><td class="mono">tc.dialog.deprecateTitle</td><td>"Deprecate Test Case?"</td></tr>
+    <tr><td class="mono">tc.dialog.deprecateTitleBulk</td><td>"Deprecate {count} Test Cases?"</td></tr>
+    <tr><td class="mono">tc.dialog.deprecateBody</td><td>"\"{name}\" will be deprecated. It won't be included in new Runs."</td></tr>
+    <tr><td class="mono">tc.dialog.deprecateBtn</td><td>"Deprecate"</td></tr>
+    <tr><td class="mono">tc.dialog.deprecateBtnBulk</td><td>"Deprecate {count} Cases"</td></tr>
+    <tr><td class="mono">tc.run.includeDraftTCs</td><td>"Include Draft TCs"</td></tr>
+    <tr><td class="mono">tc.run.draftHidden</td><td>"{count} draft TCs hidden"</td></tr>
+    <tr><td class="mono">tc.run.draftWarning</td><td>"This Run includes {count} Draft TCs that may be incomplete."</td></tr>
+    <tr><td class="mono">tc.run.convertAllActive</td><td>"Convert all to Active"</td></tr>
+    <tr><td class="mono">tc.run.proceedAsIs</td><td>"Proceed as is"</td></tr>
+    <tr><td class="mono">tc.run.deprecatedBanner</td><td>"{count} TC(s) in this Run have been deprecated since creation."</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="files">16. File Inventory</h2>
+
+<table>
+  <thead><tr><th>#</th><th>File</th><th>Contents</th><th>Priority</th></tr></thead>
+  <tbody>
+    <tr><td>21</td><td class="mono">21-toast-mark-active.html</td><td>§8 TC Creation Toast — 2-state flow</td><td><span class="badge p0">P0</span></td></tr>
+    <tr><td>22</td><td class="mono">22-tc-list-status-full.html</td><td>§1–§6, §9 — TC List with all status components</td><td><span class="badge p0">P0</span></td></tr>
+    <tr><td>23</td><td class="mono">23-run-tc-selection-draft.html</td><td>§7, §10 — Run creation TC selection + Draft toggle</td><td><span class="badge p0">P0</span></td></tr>
+    <tr><td>24</td><td class="mono">24-run-deprecated-banner.html</td><td>§11 — Run detail with Deprecated info banner</td><td><span class="badge p1">P1</span></td></tr>
+    <tr><td>25</td><td class="mono">25-dev-handoff-tc-status.html</td><td>This document — complete dev spec</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <strong>Implementation Order 권장:</strong><br>
+  Phase 1 (P0): LifecycleBadge 컴포넌트 → DB migration → Filter Tabs → Status Dropdown → Toast "Mark as Active" → Run TC Selection Toggle<br>
+  Phase 2 (P1): Context Menu submenu → Bulk Action Bar → Deprecate Dialog → Run Deprecated Banner → Draft Warning Banner
+</div>
+
+<hr>
+<p style="font-size: 0.8125rem; color: #94A3B8; text-align: center;">End of handoff spec · Testably Design Team · v1.0 · March 25, 2026</p>
+
+</body>
+</html>

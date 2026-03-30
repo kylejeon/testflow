@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — 프로젝트별 Dashboard (Overview 탭) 개선 기획안</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.7; }
+  .doc { max-width: 960px; margin: 0 auto; padding: 3rem 2rem 4rem; }
+  .doc-header { margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 2px solid #E2E8F0; }
+  .doc-badge { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; font-weight: 700;
+    color: #EF4444; background: #FEF2F2; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem;
+    text-transform: uppercase; letter-spacing: 0.04em; }
+  .doc-badge i { font-size: 0.875rem; }
+  .doc-title { font-size: 2rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+  .doc-subtitle { font-size: 1rem; color: #64748B; margin-bottom: 1.25rem; }
+  .doc-meta { display: flex; gap: 1.5rem; font-size: 0.8125rem; color: #94A3B8; flex-wrap: wrap; }
+  .doc-meta span { display: flex; align-items: center; gap: 0.25rem; }
+  .doc-meta i { font-size: 0.9375rem; }
+</style>
+<style>
+  .section { margin-bottom: 3rem; }
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem;
+    border-radius: 50%; background: #6366F1; color: #fff; font-size: 0.75rem; font-weight: 800; margin-right: 0.5rem; vertical-align: middle; }
+  .section-title { font-size: 1.375rem; font-weight: 800; color: #0F172A; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+    padding-bottom: 0.75rem; border-bottom: 1px solid #E2E8F0; }
+  .section-title i { font-size: 1.25rem; color: #6366F1; }
+  h3 { font-size: 1rem; font-weight: 700; color: #1E293B; margin: 1.5rem 0 0.75rem; }
+  h4 { font-size: 0.875rem; font-weight: 700; color: #334155; margin: 1.25rem 0 0.5rem; }
+  p { margin-bottom: 0.875rem; color: #334155; font-size: 0.9375rem; }
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+  .card-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.375rem; }
+  .card-title i { font-size: 1rem; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.8125rem; }
+  th { background: #F8FAFC; font-weight: 600; color: #64748B; text-transform: uppercase; font-size: 0.6875rem; letter-spacing: 0.04em;
+    padding: 0.625rem 0.875rem; text-align: left; border-bottom: 1px solid #E2E8F0; }
+  td { padding: 0.625rem 0.875rem; border-bottom: 1px solid #F1F5F9; color: #334155; vertical-align: top; }
+  tr:hover { background: #FAFAFF; }
+  .tag { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600;
+    padding: 0.1875rem 0.5rem; border-radius: 9999px; }
+  .tag-indigo { background: #EEF2FF; color: #4338CA; }
+  .tag-green { background: #F0FDF4; color: #166534; }
+  .tag-amber { background: #FEF3C7; color: #92400E; }
+  .tag-red { background: #FEF2F2; color: #991B1B; }
+  .tag-blue { background: #DBEAFE; color: #1E40AF; }
+  .tag-gray { background: #F1F5F9; color: #475569; }
+  .priority-p0 { background: #FEF2F2; color: #991B1B; font-weight: 700; }
+  .priority-p1 { background: #FEF3C7; color: #92400E; font-weight: 700; }
+  .priority-p2 { background: #DBEAFE; color: #1E40AF; font-weight: 700; }
+</style>
+<style>
+  .rec-box { background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); border: 2px solid #6366F1;
+    border-radius: 0.75rem; padding: 1.5rem; margin: 1.5rem 0; position: relative; }
+  .rec-box::before { content: '★ PM 추천안'; position: absolute; top: -0.75rem; left: 1.25rem;
+    background: #6366F1; color: #fff; font-size: 0.6875rem; font-weight: 700; padding: 0.1875rem 0.75rem;
+    border-radius: 9999px; }
+  .rec-box p { color: #312E81; }
+  .ceo-quote { background: #FEF3C7; border-left: 4px solid #F59E0B; border-radius: 0 0.5rem 0.5rem 0;
+    padding: 1rem 1.25rem; margin: 1rem 0; font-style: italic; color: #92400E; font-size: 0.9375rem; }
+  .ceo-quote::before { content: 'CEO 피드백'; display: block; font-style: normal; font-weight: 700;
+    font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.375rem; color: #92400E; }
+  .mockup { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; overflow: hidden; margin: 1.5rem 0; }
+  .mockup-header { background: #F8FAFC; padding: 0.625rem 1rem; border-bottom: 1px solid #E2E8F0;
+    font-size: 0.6875rem; font-weight: 600; color: #64748B; display: flex; align-items: center; gap: 0.375rem; }
+  .mockup-body { padding: 1.25rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.72rem; line-height: 1.55; color: #475569; white-space: pre; overflow-x: auto; }
+  .gap-callout { background: #FEF2F2; border: 1px solid #FECACA; border-radius: 0.625rem; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .gap-callout h4 { color: #991B1B; font-size: 0.8125rem; margin-bottom: 0.5rem; }
+  .gap-callout li { font-size: 0.8125rem; color: #7F1D1D; list-style: none; }
+  .widget-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 1rem 0; }
+  .widget-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem; padding: 1rem; }
+  .widget-card.new { border-left: 3px solid #22C55E; }
+  .widget-card.improve { border-left: 3px solid #F59E0B; }
+  .widget-card.keep { border-left: 3px solid #6366F1; }
+  .widget-card.remove { border-left: 3px solid #EF4444; }
+  .widget-card h5 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.25rem; }
+  .widget-card p { font-size: 0.75rem; color: #64748B; margin-bottom: 0.25rem; }
+  ul, ol { padding-left: 1.25rem; margin-bottom: 0.875rem; }
+  li { font-size: 0.9375rem; color: #334155; margin-bottom: 0.375rem; }
+  .compare-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 1.5rem 0; }
+  .compare-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1rem; }
+  .compare-card h4 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin-bottom: 0.375rem; }
+  .compare-card .desc { font-size: 0.75rem; color: #64748B; margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+<div class="doc">
+  <div class="doc-header">
+    <div class="doc-badge"><i class="ri-alert-fill"></i> CEO 수정 대응 — 기존 기획안 정정</div>
+    <h1 class="doc-title">프로젝트별 Dashboard (Overview 탭) 개선 기획안</h1>
+    <p class="doc-subtitle">CEO 스크린샷 기준 As-Is 재분석 → 정보 밀도 강화 개선안</p>
+    <div class="doc-meta">
+      <span><i class="ri-user-line"></i> Author: Kyle (PM)</span>
+      <span><i class="ri-calendar-line"></i> 2026-03-27</span>
+      <span><i class="ri-git-branch-line"></i> v1.0</span>
+      <span><i class="ri-link"></i> 정정: pm-plan-dashboard-redesign.html 대체</span>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 1: 컨텍스트 정정 ═══ -->
+  <div class="section" id="s1">
+    <div class="section-title"><span class="section-num">1</span><i class="ri-error-warning-line"></i> 컨텍스트 정정 — Testably의 2개 Dashboard</div>
+
+    <div class="ceo-quote">
+      "Dashboard가 2개 있다. 전체 프로젝트 Dashboard와 프로젝트별 Dashboard(Overview 탭). 기존 기획안은 이 구분이 없었다. 먼저 프로젝트별 Dashboard(Overview 탭)부터 개선해라."
+    </div>
+
+    <h3>1-1. 2개 Dashboard 구분</h3>
+    <table>
+      <thead><tr><th>구분</th><th>전체 프로젝트 Dashboard</th><th>프로젝트별 Dashboard (Overview 탭)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>진입 시점</strong></td><td>로그인 직후 최초 화면</td><td>특정 프로젝트 선택 후 첫 화면</td></tr>
+        <tr><td><strong>범위</strong></td><td>모든 프로젝트의 전체 현황</td><td>선택한 1개 프로젝트의 상세 현황</td></tr>
+        <tr><td><strong>탭 구조</strong></td><td>단독 페이지 (탭 없음)</td><td>Dashboard 탭 > Overview · Analytics · Activity Feed 서브탭</td></tr>
+        <tr><td><strong>이번 기획 범위</strong></td><td><span class="tag tag-gray">이번 범위 아님</span></td><td><span class="tag tag-red">★ 이번 기획 대상</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>1-2. 기존 기획안(pm-plan-dashboard-redesign.html)의 오류</h3>
+    <table>
+      <thead><tr><th>오류</th><th>기존 기획안에서의 가정</th><th>실제</th></tr></thead>
+      <tbody>
+        <tr><td><strong>As-Is 분석</strong></td><td>통계 카드 4개 (Total TC, Pass Rate, Active Runs, Open Discoveries) + 차트 1개 + Activity 1개</td><td>좌측: My Tasks(40) + Attention Needed(1) + Recent Activity / 우측: Summary 패널 + Milestones + AI Usage</td></tr>
+        <tr><td><strong>레이아웃</strong></td><td>1열 풀 와이드 카드 나열</td><td>2컬럼 (좌측 메인 + 우측 사이드바)</td></tr>
+        <tr><td><strong>핵심 위젯</strong></td><td>My Tasks 위젯 없음</td><td>My Tasks가 좌측 메인 영역 최상단 — 가장 큰 비중 차지</td></tr>
+      </tbody>
+    </table>
+    <p><strong>결론:</strong> 기존 기획안은 실제 UI와 다른 가정 위에 작성되었으므로, 이 문서에서 CEO 스크린샷 기준으로 전면 재분석합니다.</p>
+  </div>
+
+  <!-- ═══ SECTION 2: As-Is 분석 ═══ -->
+  <div class="section" id="s2">
+    <div class="section-title"><span class="section-num">2</span><i class="ri-eye-line"></i> 현재 Overview 탭 As-Is 분석 (CEO 스크린샷 기준)</div>
+
+    <h3>2-1. 현재 레이아웃 와이어프레임</h3>
+    <div class="mockup">
+      <div class="mockup-header"><i class="ri-layout-line"></i> 프로젝트별 Dashboard — Overview 탭 (현재)</div>
+      <div class="mockup-body">┌─────────────────────────────────────────────────────────────────────────┐
+│ [Dashboard]  Test Cases  Runs & Results  Milestones  Documents  Discovery│
+│  Overview · Analytics · Activity Feed                                    │
+├──────────────────────────────────────────┬──────────────────────────────┤
+│ <strong style="color:#3B82F6">좌측 메인 영역 (flex: 1)</strong>                     │ <strong style="color:#8B5CF6">우측 사이드바 (~320px)</strong>       │
+│                                          │                              │
+│ ┌──────────────────────────────────────┐ │ ┌──────────────────────────┐ │
+│ │ <strong>My Tasks (40)</strong>                        │ │ │ <strong>Summary</strong>                  │ │
+│ │ ┌────────────────────────────────┐   │ │ │ Test Cases    40          │ │
+│ │ │ TC-001 Login validation        │   │ │ │ Pass Rate     68% 🍩     │ │
+│ │ │ Status: In Progress  ⬜ 3/5    │   │ │ │ Runs          4           │ │
+│ │ │ Priority: High                 │   │ │ │ Bugs          2           │ │
+│ │ ├────────────────────────────────┤   │ │ └──────────────────────────┘ │
+│ │ │ TC-002 Payment flow            │   │ │                              │
+│ │ │ Status: Not Started  ⬜ 0/8    │   │ │ ┌──────────────────────────┐ │
+│ │ │ Priority: Critical             │   │ │ │ <strong>Milestones</strong>               │ │
+│ │ ├────────────────────────────────┤   │ │ │ 1.0.0  ████████░░  72%   │ │
+│ │ │ ... (40 cards, scrollable)     │   │ │ │ [View all →]             │ │
+│ │ └────────────────────────────────┘   │ │ └──────────────────────────┘ │
+│ └──────────────────────────────────────┘ │                              │
+│                                          │ ┌──────────────────────────┐ │
+│ ┌──────────────────────────────────────┐ │ │ <strong>AI Usage</strong>                 │ │
+│ │ <strong>Attention Needed (1)</strong>                 │ │ │ Generations this month   │ │
+│ │ ⚠ TC-015: Blocked 3 days            │ │ │ [Pro] / [Advanced] 토글  │ │
+│ └──────────────────────────────────────┘ │ └──────────────────────────┘ │
+│                                          │                              │
+│ ┌──────────────────────────────────────┐ │                              │
+│ │ <strong>Recent Activity</strong>                      │ │                              │
+│ │ • Jake ran TC-041 — 2h ago          │ │                              │
+│ │ • Sarah created TC-048 — 5h ago     │ │                              │
+│ │ • Mike failed TC-043 — 1d ago       │ │                              │
+│ └──────────────────────────────────────┘ │                              │
+└──────────────────────────────────────────┴──────────────────────────────┘</div>
+    </div>
+
+    <h3>2-2. 현재 위젯별 정보량 평가</h3>
+    <table>
+      <thead><tr><th>위젯</th><th>위치</th><th>현재 제공 정보</th><th>정보량 평가</th></tr></thead>
+      <tbody>
+        <tr><td><strong>My Tasks (40)</strong></td><td>좌측 메인 최상단</td><td>나에게 할당된 TC 카드 리스트. 각 카드: TC명 + 상태 뱃지 + 미완료 카운트</td><td><span class="tag tag-amber">개선 필요</span> — 카드에 정보가 적음. 우선순위/모듈/Due 없음</td></tr>
+        <tr><td><strong>Attention Needed (1)</strong></td><td>좌측 하단</td><td>긴급 조치 필요 항목 수 + 간단한 리스트</td><td><span class="tag tag-amber">개선 필요</span> — 기준 불명확, 항목 수 적음</td></tr>
+        <tr><td><strong>Recent Activity</strong></td><td>좌측 최하단</td><td>3~5개 활동 타임라인 (이름 + 동작 + 시간)</td><td><span class="tag tag-red">부족</span> — 필터 없음, 유형 구분 없음, 아이콘 없음</td></tr>
+        <tr><td><strong>Summary</strong></td><td>우측 사이드바 상단</td><td>Test Cases 40, Pass Rate 68% (도넛), Runs 4, Bugs 2</td><td><span class="tag tag-red">부족</span> — 단순 숫자 나열, 트렌드/맥락/비교 전무</td></tr>
+        <tr><td><strong>Milestones</strong></td><td>우측 사이드바 중간</td><td>1.0.0 진행률 바 + "View all" 링크</td><td><span class="tag tag-amber">개선 필요</span> — 단일 마일스톤만, 남은 일수/TC 상태 없음</td></tr>
+        <tr><td><strong>AI Usage</strong></td><td>우측 사이드바 하단</td><td>이번 달 AI 생성 횟수, Pro/Advanced 토글</td><td><span class="tag tag-gray">유지</span> — 부가 정보, 핵심 아님</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2-3. CEO 핵심 피드백</h3>
+    <div class="ceo-quote">
+      "각 항목마다 보여주는 정보가 너무 적다."
+    </div>
+
+    <div class="gap-callout">
+      <h4>⚠️ 구체적 문제점 6가지</h4>
+      <li>① <strong>Summary 패널이 숫자 4개만 나열</strong> — 40, 68%, 4, 2. 트렌드(↑↓), 전주 대비, 목표 대비 맥락 전무</li>
+      <li>② <strong>My Tasks가 단순 카드 리스트</strong> — 우선순위 정렬 없음, 기한(Due) 없음, 모듈 분류 없음. 40개를 스크롤해야 함</li>
+      <li>③ <strong>Pass Rate 68%가 좋은 건지 나쁜 건지 판단 불가</strong> — 목표 대비 갭, 전 Run 대비 변화, 추이 그래프 없음</li>
+      <li>④ <strong>릴리스 준비 상태 지표 없음</strong> — "지금 릴리스 가능한가?" 판단 불가</li>
+      <li>⑤ <strong>테스트 실행 진행 상황 없음</strong> — 4개 Run의 개별 진행률, 예상 완료 시각 없음</li>
+      <li>⑥ <strong>모듈별/기능별 상태 브레이크다운 없음</strong> — 어느 모듈에 문제가 집중되는지 알 수 없음</li>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 3: 부족한 정보 식별 ═══ -->
+  <div class="section" id="s3">
+    <div class="section-title"><span class="section-num">3</span><i class="ri-search-eye-line"></i> 부족한 정보 식별 — Overview가 답해야 할 핵심 질문</div>
+
+    <p>QA 리드나 PM이 프로젝트를 선택하고 Overview 탭을 열었을 때, <strong>30초 안에</strong> 답을 얻어야 하는 질문입니다:</p>
+
+    <table>
+      <thead><tr><th>#</th><th>핵심 질문</th><th>필요 데이터</th><th>현재 제공 여부</th><th>부족한 정보</th></tr></thead>
+      <tbody>
+        <tr><td>Q1</td><td><strong>"릴리스 가능한가?"</strong></td><td>Pass Rate + Critical 버그 수 + 미실행 TC 수 + Blocker 현황</td><td><span class="tag tag-red">미제공</span></td><td>종합 릴리스 준비도 점수, Critical/Blocker 카운트</td></tr>
+        <tr><td>Q2</td><td><strong>"내가 지금 뭘 해야 하나?"</strong></td><td>내 할당 TC, 우선순위 정렬, 기한 임박 항목</td><td><span class="tag tag-amber">부분</span></td><td>우선순위 정렬, Due Date, 필터/그루핑</td></tr>
+        <tr><td>Q3</td><td><strong>"테스트 진행률은?"</strong></td><td>활성 Run별 진행률, 전체 실행 대비 잔여량</td><td><span class="tag tag-amber">부분</span></td><td>Runs=4 숫자만 있고, 개별 Run 진행률 없음</td></tr>
+        <tr><td>Q4</td><td><strong>"어디에 문제가 집중되나?"</strong></td><td>모듈별/폴더별 Pass/Fail 분포</td><td><span class="tag tag-red">미제공</span></td><td>모듈별 분석 전무</td></tr>
+        <tr><td>Q5</td><td><strong>"전보다 나아지고 있나?"</strong></td><td>Pass Rate 추이, 버그 발견/해결 비율, 주간 비교</td><td><span class="tag tag-red">미제공</span></td><td>트렌드 차트, 비교 지표 전무</td></tr>
+        <tr><td>Q6</td><td><strong>"긴급 조치할 것은?"</strong></td><td>반복 실패 TC, Blocked TC, 기한 초과 항목</td><td><span class="tag tag-amber">부분</span></td><td>Attention Needed에 1개만, 기준 불명확</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3-1. 페르소나별 니즈 매핑</h3>
+    <table>
+      <thead><tr><th>페르소나</th><th>Overview에서 가장 먼저 보고 싶은 것</th><th>현재 충족 여부</th></tr></thead>
+      <tbody>
+        <tr><td><strong>QA 엔지니어 (개인)</strong></td><td>내 할당 TC 우선순위별 정렬 + 오늘 해야 할 것</td><td><span class="tag tag-amber">부분</span> — My Tasks 있으나 정렬/필터 부재</td></tr>
+        <tr><td><strong>QA 리드</strong></td><td>팀 전체 진행률 + 병목 지점 + 누가 막혀있나</td><td><span class="tag tag-red">미제공</span></td></tr>
+        <tr><td><strong>PM</strong></td><td>릴리스 준비도 + 마일스톤 진행 + 남은 리스크</td><td><span class="tag tag-red">미제공</span></td></tr>
+        <tr><td><strong>개발 리드</strong></td><td>어떤 모듈이 불안정한가 + 최근 Regression</td><td><span class="tag tag-red">미제공</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══ SECTION 4: 경쟁사 벤치마킹 ═══ -->
+  <div class="section" id="s4">
+    <div class="section-title"><span class="section-num">4</span><i class="ri-bar-chart-grouped-line"></i> 경쟁사 프로젝트별 Dashboard 벤치마킹</div>
+
+    <p>경쟁사들이 "프로젝트를 선택했을 때 보여주는 첫 화면(Overview)"에 어떤 정보를 배치하는지 비교합니다.</p>
+
+    <h3>4-1. 경쟁사별 Overview 구성</h3>
+    <table>
+      <thead><tr><th>항목</th><th>TestRail</th><th>Zephyr Scale</th><th>Qase</th><th>PractiTest</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>프로젝트 Overview 형태</strong></td>
+          <td>Dashboard 탭 (고정 레이아웃). Run 단위 중심.</td>
+          <td>Jira 대시보드 가젯으로 통합. 별도 Overview 없음.</td>
+          <td>커스텀 대시보드 (드래그앤드롭). 위젯 자유 배치.</td>
+          <td>탭형 대시보드 (무제한 탭). 위젯 카탈로그에서 선택.</td>
+        </tr>
+        <tr>
+          <td><strong>통계 카드 수</strong></td>
+          <td>6~8개 (Run별 Pass/Fail/Untested + 전체 요약)</td>
+          <td>Jira 가젯 5~10개 (유연)</td>
+          <td>사용자 설정 가능 (기본 8~12개)</td>
+          <td>6~10개 (커스텀 가능)</td>
+        </tr>
+        <tr>
+          <td><strong>트렌드 차트</strong></td>
+          <td>✅ Activity 차트 (7/14/30일) + Defect 차트</td>
+          <td>✅ Jira 번다운 차트 연동</td>
+          <td>✅ 다중 차트 위젯 (Line/Bar/Pie/Area)</td>
+          <td>✅ 실행 추이 + 결함 추이 (기간 셀렉터)</td>
+        </tr>
+        <tr>
+          <td><strong>릴리스 준비도</strong></td>
+          <td>✅ Milestone Summary (목표 대비 진행률 + 잔여 TC)</td>
+          <td>❌ 직접 제공 안 함 (Jira 릴리스와 연동)</td>
+          <td>✅ Milestone Progress 위젯 (Pass Rate + 남은 일수)</td>
+          <td>✅ Release Dashboard (전용 탭)</td>
+        </tr>
+        <tr>
+          <td><strong>My Tasks / 할당 뷰</strong></td>
+          <td>✅ "Todo" 탭 (나에게 할당된 TC 필터)</td>
+          <td>✅ Jira "My Items" 가젯</td>
+          <td>❌ 별도 없음 (전체 TC 리스트에서 필터)</td>
+          <td>✅ "My Tests" 위젯 (할당 + 기한)</td>
+        </tr>
+        <tr>
+          <td><strong>모듈별 브레이크다운</strong></td>
+          <td>✅ Section/Suite별 상태 요약</td>
+          <td>⚠️ 폴더별 보고서 (별도 리포트)</td>
+          <td>✅ Suite 기반 히트맵/트리맵</td>
+          <td>✅ Filter 기반 모듈별 차트</td>
+        </tr>
+        <tr>
+          <td><strong>Attention/경고</strong></td>
+          <td>⚠️ Overdue Milestones만</td>
+          <td>❌ 없음</td>
+          <td>❌ 없음</td>
+          <td>✅ Alerts 위젯 (커스텀 조건)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>4-2. Testably vs 경쟁사 갭 분석</h3>
+    <table>
+      <thead><tr><th>기능</th><th>경쟁사 평균</th><th>Testably 현재</th><th>갭</th></tr></thead>
+      <tbody>
+        <tr><td>통계 카드 + 맥락 정보</td><td>6~12개, 트렌드 포함</td><td>4개 (Summary 패널), 숫자만</td><td><span class="tag tag-red">큰 갭</span></td></tr>
+        <tr><td>트렌드 차트</td><td>2~5개 차트 (기간 셀렉터 포함)</td><td>없음 (Overview에)</td><td><span class="tag tag-red">큰 갭</span></td></tr>
+        <tr><td>모듈별 브레이크다운</td><td>3/4 경쟁사 제공</td><td>없음</td><td><span class="tag tag-red">큰 갭</span></td></tr>
+        <tr><td>릴리스 준비도 지표</td><td>3/4 경쟁사 제공</td><td>없음</td><td><span class="tag tag-red">큰 갭</span></td></tr>
+        <tr><td>My Tasks / 할당 뷰</td><td>3/4 경쟁사 제공</td><td>있음 (My Tasks 40)</td><td><span class="tag tag-amber">개선 필요</span></td></tr>
+        <tr><td>Attention / 경고 시스템</td><td>2/4 경쟁사 제공</td><td>있음 (Attention Needed)</td><td><span class="tag tag-amber">개선 필요</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>4-3. 경쟁사에서 배울 점</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-lightbulb-line" style="color:#F59E0B"></i> Best Practices 3가지</div>
+      <p><strong>① TestRail — "Run 중심 진행률":</strong> 프로젝트 Overview에서 각 Run의 Pass/Fail/Untested를 수평 스택바로 한눈에 보여줌. Testably의 "Runs: 4"보다 훨씬 정보량이 많음.</p>
+      <p><strong>② Qase — "맥락 있는 숫자":</strong> 모든 통계 카드에 작은 스파크라인 + 전기간 대비 변화율(↑12%)을 함께 표시. 숫자 하나만 보여주지 않음.</p>
+      <p><strong>③ PractiTest — "커스텀 Alert":</strong> 사용자가 "Pass Rate < 70%이면 경고", "미실행 TC > 20개면 경고" 같은 조건을 직접 설정. Attention Needed의 기준을 투명하게 만듦.</p>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 5: 개선안 ═══ -->
+  <div class="section" id="s5">
+    <div class="section-title"><span class="section-num">5</span><i class="ri-layout-masonry-line"></i> Overview 탭 개선안 — 위젯별 상세 설계</div>
+
+    <p>기존 2컬럼(좌측 메인 + 우측 사이드바) 구조를 유지하되, 각 영역의 정보 밀도를 대폭 강화합니다.</p>
+
+    <h3>5-1. 개선 후 레이아웃 와이어프레임</h3>
+    <div class="mockup">
+      <div class="mockup-header"><i class="ri-layout-line"></i> 프로젝트별 Dashboard — Overview 탭 (개선안)</div>
+      <div class="mockup-body">┌─────────────────────────────────────────────────────────────────────────┐
+│ [Dashboard]  Test Cases  Runs & Results  Milestones  Documents  Discovery│
+│  Overview · Analytics · Activity Feed                                    │
+├──────────────────────────────────────────┬──────────────────────────────┤
+│ <strong style="color:#3B82F6">좌측 메인 영역 (flex: 1)</strong>                     │ <strong style="color:#8B5CF6">우측 사이드바 (~340px)</strong>      │
+│                                          │                              │
+│ ┌──────────────────────────────────────┐ │ ┌──────────────────────────┐ │
+│ │ <strong style="color:#22C55E">🟢 Release Readiness        Score: 72</strong> │ │ │ <strong>Summary (고밀도)</strong>          │ │
+│ │ Pass Rate 68% (목표 80% ─ 갭 12%)   │ │ │ TC  40   ↑3 이번주       │ │
+│ │ Critical Bugs 2 │ Blocked 1         │ │ │ 🍩 68%  ↑4% vs last run │ │
+│ │ 미실행 TC 8 │ Milestone 72%         │ │ │ Runs 4  ↓1 vs last week │ │
+│ │ 신호등: 🟡 Conditional              │ │ │ Bugs 2  ━ 변동없음      │ │
+│ └──────────────────────────────────────┘ │ │ 미니 스파크라인 ~~~▁▂▃▅  │ │
+│                                          │ └──────────────────────────┘ │
+│ ┌──────────────────────────────────────┐ │                              │
+│ │ <strong>My Runs (3)</strong>  Sort: Priority ▾       │ │ ┌──────────────────────────┐ │
+│ │ ┌─ 🔴 Critical (Milestone ≤3d) ──┐   │ │ │ <strong>Run Progress</strong>             │ │
+│ │ │ R-020 Sprint 12 Full Regression │   │ │ │ R-020 Sprint12  ████░ 72%│ │
+│ │ │ ████████░░░ 72%  38✓ 15✕ 0⏳   │   │ │ │ R-019 Smoke     ████░ 45%│ │
+│ │ │ Due: Apr 1 (5d) [SK] [▶ Continue]│  │ │ │ R-018 API Sanity █░░░ 15%│ │
+│ │ ├─ 🟠 High (Milestone 4~7d) ─────┤   │ │ └──────────────────────────┘ │
+│ │ │ R-019 Login Module Smoke Test   │   │ │                              │
+│ │ │ ████░░░░░░ 45%   9✓ 11✕ 0⏳    │   │ │ ┌──────────────────────────┐ │
+│ │ │ Due: Apr 5 (9d) [JD] [▶ Continue]│  │ │ │ <strong>Milestones</strong>               │ │
+│ │ ├─ 🟢 Low (No Milestone) ────────┤   │ │ │ v1.0.0  ████████░░  72% │ │
+│ │ │ R-018 API Integration Sanity    │   │ │ │ Due: Apr 5 (9 days left) │ │
+│ │ │ █░░░░░░░░░ 15%   3✓  0✕ 17⏳   │   │ │ │ P:28 F:4 B:1 U:7        │ │
+│ │ │ No Milestone [MR] [▶ Start]     │   │ │                              │
+│ │ └─────────────────────────────────┘   │ │ │ v1.1.0  ██░░░░░░░░  18% │ │
+│ └──────────────────────────────────────┘ │ │ │ Due: May 1 (35 days)    │ │
+│                                          │ │ │ v1.1.0  ██░░░░░░░░  18% │ │
+│ ┌──────────────────────────────────────┐ │ │ │ Due: May 1 (35 days)    │ │
+│ │ <strong>Test Execution Trend</strong> [7d ▾]          │ │ └──────────────────────────┘ │
+│ │ ▁▂▃▅▇▆▅  Pass/Fail/Blocked 스택    │ │                              │
+│ │ Hover: "Mar 25 — P:12 F:3 B:1"     │ │ ┌──────────────────────────┐ │
+│ └──────────────────────────────────────┘ │ │ │ <strong>Attention Needed (4)</strong>    │ │
+│                                          │ │ │ 🔴 TC-043 Failed 3x     │ │
+│ ┌──────────────────────────────────────┐ │ │ │ 🟡 TC-046 Blocked 3d    │ │
+│ │ <strong>Recent Activity</strong>  [Filter ▾]          │ │ │ 🔴 Milestone 기한 9일    │ │
+│ │ 🟢 Jake passed TC-041 — 2h ago      │ │ │ │ ⚪ 8 TC 미실행 7일+      │ │
+│ │ 📝 Sarah created TC-048 — 5h ago    │ │ └──────────────────────────┘ │
+│ │ 🔴 Mike failed TC-043 — 1d ago      │ │                              │
+│ │ ── Yesterday ──────────────          │ │ ┌──────────────────────────┐ │
+│ │ 🟢 Sarah passed TC-039 — 1d ago     │ │ │ <strong>AI Usage</strong>                 │ │
+│ │ [Show more ↓]                        │ │ │ (기존 유지)              │ │
+│ └──────────────────────────────────────┘ │ └──────────────────────────┘ │
+└──────────────────────────────────────────┴──────────────────────────────┘</div>
+    </div>
+
+    <h3>5-2. 위젯별 상세 개선 사항</h3>
+
+    <div class="widget-grid">
+      <div class="widget-card new">
+        <h5><i class="ri-shield-check-line" style="color:#22C55E"></i> Release Readiness <span class="tag tag-green">신규</span></h5>
+        <p><strong>위치:</strong> 좌측 메인 최상단 (가장 눈에 띄는 자리)</p>
+        <p><strong>구성:</strong> 종합 점수(0~100) + 신호등(🟢🟡🔴) + 4개 구성 지표 (Pass Rate vs 목표, Critical Bugs, 미실행 TC, Milestone %)</p>
+        <p><strong>신호등 기준:</strong> 🟢 Score ≥ 80 → Go / 🟡 60~79 → Conditional / 🔴 &lt; 60 → Not Ready</p>
+        <p><strong>Q1 "릴리스 가능한가?" 직접 답변</strong></p>
+      </div>
+      <div class="widget-card improve">
+        <h5><i class="ri-bar-chart-2-line" style="color:#6366F1"></i> Summary 패널 <span class="tag tag-amber">고밀도화</span></h5>
+        <p><strong>현재:</strong> TC 40 / Pass Rate 68% / Runs 4 / Bugs 2 (숫자만)</p>
+        <p><strong>개선:</strong> 각 숫자 옆에 ↑↓ 변화량 + vs 기준(전주/전 Run) + 미니 스파크라인(7일 추이). Pass Rate 도넛에 목표선 표시.</p>
+        <p><strong>Q5 "전보다 나아지고 있나?" 답변 보조</strong></p>
+      </div>
+    </div>
+
+    <div class="widget-grid">
+      <div class="widget-card improve">
+        <h5><i class="ri-play-circle-line" style="color:#3B82F6"></i> My Runs <span class="tag tag-red">CEO 확정 변경</span></h5>
+        <p><strong>현재:</strong> My Tasks — 나에게 assign된 TC 40개 플랫 리스트</p>
+        <p><strong>변경:</strong> My Tasks → <strong>My Runs</strong> — TC 단위가 아닌 <strong>Run 단위</strong>로 표시 (CEO 피드백 반영)</p>
+        <p>• <strong>Priority 자동 산출:</strong> Milestone 기한 기반 — ≤3일 🔴Critical / 4~7일 🟠High / 8~14일 🟡Medium / &gt;14일 🟢Low. Milestone 미연결 Run은 Low.</p>
+        <p>• <strong>수동 Override:</strong> 필요 시 사용자가 직접 priority 변경 가능 (DB: <code>priority_override</code> 컬럼)</p>
+        <p>• <strong>Run 카드:</strong> Run명 + 3색 진행률 바(Pass/Fail/Remaining) + 퍼센트 + Milestone Due + 담당자 + <strong>▶ Continue 버튼</strong></p>
+        <p>• <strong>헤더:</strong> "My Runs (3)" — 나에게 할당된 Active Run 수</p>
+        <p><strong>Q2 "내가 뭘 해야 하나?" 직접 답변 + Focus Mode 바로 진입</strong></p>
+      </div>
+      <div class="widget-card new">
+        <h5><i class="ri-play-circle-line" style="color:#3B82F6"></i> Run Progress <span class="tag tag-green">신규</span></h5>
+        <p><strong>위치:</strong> 우측 사이드바 (Summary 아래)</p>
+        <p><strong>구성:</strong> 활성 Run 리스트, 각각: Run명 + 미니 수평 바(Pass/Fail/Remaining) + 퍼센트 + 완료 여부 체크</p>
+        <p><strong>Q3 "테스트 진행률은?" 직접 답변</strong></p>
+      </div>
+    </div>
+
+    <div class="widget-grid">
+      <div class="widget-card improve">
+        <h5><i class="ri-line-chart-line" style="color:#6366F1"></i> Test Execution Trend <span class="tag tag-amber">개선</span></h5>
+        <p><strong>현재:</strong> Overview에 차트 없음 (기존 기획안은 있다고 가정했으나 실제 스크린샷에 없음)</p>
+        <p><strong>추가:</strong> 7일 스택 에어리어 차트 — Passed(녹)/Failed(적)/Blocked(황) 일별 누적. 기간 셀렉터(7d/14d/30d). 호버 툴팁.</p>
+        <p><strong>Q5 "전보다 나아지고 있나?" 직접 답변</strong></p>
+      </div>
+      <div class="widget-card improve">
+        <h5><i class="ri-flag-line" style="color:#F59E0B"></i> Milestones <span class="tag tag-amber">개선</span></h5>
+        <p><strong>현재:</strong> 1.0.0 진행률 바 + "View all" 링크</p>
+        <p><strong>개선:</strong> 활성 마일스톤 모두 표시. 각각: 이름 + 진행률 바 + 남은 일수 + TC 상태 미니 요약(P:28 F:4 B:1 U:7). 기한 임박 시 경고색.</p>
+      </div>
+    </div>
+
+    <div class="widget-grid">
+      <div class="widget-card improve">
+        <h5><i class="ri-alert-line" style="color:#EF4444"></i> Attention Needed <span class="tag tag-amber">개선</span></h5>
+        <p><strong>현재:</strong> 기준 불명확, 1개 항목만 표시</p>
+        <p><strong>개선:</strong> 명확한 트리거 조건 정의:</p>
+        <p>• 🔴 3회+ 연속 실패 TC (Flaky/Repeat Failure)</p>
+        <p>• 🟡 Blocked 상태 3일+ TC</p>
+        <p>• 🔴 마일스톤 기한 10일 이내 + Pass Rate < 70%</p>
+        <p>• ⚪ 미실행 7일+ TC (Untested Aging)</p>
+        <p><strong>Q6 "긴급 조치할 것은?" 직접 답변</strong></p>
+      </div>
+      <div class="widget-card improve">
+        <h5><i class="ri-time-line" style="color:#64748B"></i> Recent Activity <span class="tag tag-amber">개선</span></h5>
+        <p><strong>현재:</strong> 3~5개 플랫 리스트</p>
+        <p><strong>개선:</strong> 유형별 아이콘+컬러 + 날짜 그루핑(Today/Yesterday) + 필터 드롭다운(유형별/사용자별) + "Show more" 확장</p>
+      </div>
+    </div>
+
+    <div class="widget-grid">
+      <div class="widget-card keep">
+        <h5><i class="ri-sparkling-2-line" style="color:#8B5CF6"></i> AI Usage <span class="tag tag-indigo">유지</span></h5>
+        <p>기존 그대로 유지. 핵심 QA 지표는 아니지만, Testably의 AI 기능 사용량 모니터링 용도로 사이드바 최하단에 배치.</p>
+      </div>
+      <div class="widget-card remove">
+        <h5><i class="ri-delete-bin-line" style="color:#EF4444"></i> 제거 항목 <span class="tag tag-red">없음</span></h5>
+        <p>기존 위젯은 모두 유지하되 개선. 정보를 줄이지 않고 밀도를 높이는 방향.</p>
+      </div>
+    </div>
+
+    <h3>5-3. 변경 요약 — As-Is vs To-Be</h3>
+    <table>
+      <thead><tr><th>위젯</th><th>As-Is</th><th>To-Be</th><th>변경 유형</th></tr></thead>
+      <tbody>
+        <tr><td>Release Readiness</td><td>없음</td><td>종합 점수 + 신호등 + 4개 구성 지표</td><td><span class="tag tag-green">신규</span></td></tr>
+        <tr><td>Summary</td><td>숫자 4개</td><td>숫자 4개 + 변화량 + 스파크라인 + 목표 대비</td><td><span class="tag tag-amber">고밀도화</span></td></tr>
+        <tr><td>My Tasks → <strong>My Runs</strong></td><td>TC 40개 플랫 리스트</td><td>Run 단위 표시 + Milestone 기한 기반 Priority 자동 산출 + ▶ Continue 버튼</td><td><span class="tag tag-red">CEO 확정 변경</span></td></tr>
+        <tr><td>Run Progress</td><td>없음 ("Runs: 4" 숫자만)</td><td>개별 Run 진행률 바 + 상태</td><td><span class="tag tag-green">신규</span></td></tr>
+        <tr><td>Test Execution Trend</td><td>없음</td><td>7일 스택 에어리어 차트 + 기간 셀렉터</td><td><span class="tag tag-green">신규</span></td></tr>
+        <tr><td>Milestones</td><td>1개 바 + "View all"</td><td>전체 마일스톤 + 남은 일수 + TC 상태 요약</td><td><span class="tag tag-amber">개선</span></td></tr>
+        <tr><td>Attention Needed</td><td>기준 불명확, 1개</td><td>4가지 트리거 조건 + 중요도별 정렬</td><td><span class="tag tag-amber">개선</span></td></tr>
+        <tr><td>Recent Activity</td><td>3~5개 플랫 리스트</td><td>아이콘 + 날짜 그루핑 + 필터 + 확장</td><td><span class="tag tag-amber">개선</span></td></tr>
+        <tr><td>AI Usage</td><td>있음</td><td>그대로 유지</td><td><span class="tag tag-indigo">유지</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══ SECTION 6: PM 추천안 + 우선순위 ═══ -->
+  <div class="section" id="s6">
+    <div class="section-title"><span class="section-num">6</span><i class="ri-star-fill"></i> PM 추천안 — 우선순위 + 구현 로드맵</div>
+
+    <h3>6-1. 위젯별 우선순위</h3>
+    <table>
+      <thead><tr><th>우선순위</th><th>위젯</th><th>Q 대응</th><th>이유</th><th>규모</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag priority-p0">P0</span></td><td><strong>Release Readiness 신규</strong></td><td>Q1</td><td>CEO 피드백 핵심 — "릴리스 가능한가" 즉시 답변. 경쟁사 차별화.</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p0">P0</span></td><td><strong>Summary 고밀도화</strong></td><td>Q5</td><td>"정보가 너무 적다" 직접 대응. 트렌드 + 비교 추가.</td><td>S</td></tr>
+        <tr><td><span class="tag priority-p0">P0</span></td><td><strong>My Tasks → My Runs 전환 + Milestone 기한 기반 Priority + ▶ Continue 버튼</strong></td><td>Q2</td><td>CEO 확정. Run 단위 표시 + priority_override 컬럼 추가 + Focus Mode 진입.</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p0">P0</span></td><td><strong>Run Progress 신규</strong></td><td>Q3</td><td>"Runs: 4"만으로는 진행 상황 파악 불가. 개별 진행률 필수.</td><td>S</td></tr>
+        <tr><td><span class="tag priority-p1">P1</span></td><td><strong>Test Execution Trend 차트 추가</strong></td><td>Q5</td><td>Overview에 차트가 하나도 없음. 최소 1개 트렌드 차트 필요.</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p1">P1</span></td><td><strong>Milestones 개선</strong></td><td>Q1</td><td>마일스톤별 TC 상태 + 남은 일수 = 릴리스 판단 보조.</td><td>S</td></tr>
+        <tr><td><span class="tag priority-p1">P1</span></td><td><strong>Attention Needed 트리거 조건 정의</strong></td><td>Q6</td><td>기준 투명화 → 신뢰도 향상.</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p2">P2</span></td><td><strong>Recent Activity 개선</strong></td><td>—</td><td>아이콘 + 날짜 그루핑 + 필터. Activity Feed 탭과 축소 버전 공유.</td><td>M</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6-2. 구현 로드맵</h3>
+    <table>
+      <thead><tr><th>Phase</th><th>기간</th><th>목표</th><th>위젯</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-red">Phase 1</span></td><td>2주</td><td>P0 — 핵심 정보 밀도 확보</td><td>Release Readiness 카드 신규 + Summary 고밀도화(트렌드/비교) + My Runs(Milestone 기한 기반 Priority) + Run Progress 미니 위젯</td></tr>
+        <tr><td><span class="tag tag-amber">Phase 2</span></td><td>2주</td><td>P1 — 차트 + 판단 보조</td><td>Test Execution Trend 차트 + Milestones 개선 + Attention Needed 트리거 조건</td></tr>
+        <tr><td><span class="tag tag-blue">Phase 3</span></td><td>1주</td><td>P2 — 폴리싱</td><td>Recent Activity 개선 (아이콘/그루핑/필터)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6-3. 핵심 설계 원칙</h3>
+    <div class="rec-box">
+      <p style="margin-top:0.5rem;"><strong>Overview 탭 개선 3대 원칙:</strong></p>
+      <p><strong>① 30초 룰:</strong> Overview를 열고 30초 안에 "이 프로젝트는 지금 어떤 상태인가?"에 답할 수 있어야 한다. Release Readiness 신호등이 가장 먼저 눈에 들어와야 함.</p>
+      <p><strong>② 맥락 있는 숫자:</strong> "Pass Rate 68%"가 아니라 "Pass Rate 68% (↑4% vs last run, 목표 80% 대비 갭 12%)". 단일 숫자는 의미가 없다.</p>
+      <p><strong>③ 우선순위 기반 정보 계층:</strong> My Runs는 Milestone 기한 기반 Priority 순, Attention Needed는 긴급도 순, Milestones는 기한 임박 순. 모든 리스트에 정렬 기준이 있어야 한다.</p>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 7: Desi 핸드오프 ═══ -->
+  <div class="section" id="s7">
+    <div class="section-title"><span class="section-num">7</span><i class="ri-palette-line"></i> Desi 디자인 핸드오프</div>
+
+    <div class="card" style="border-color:#6366F1; border-width:2px;">
+      <div class="card-title" style="font-size:1rem;"><i class="ri-draft-line" style="color:#6366F1"></i> Desi 디자인 요청 — Overview 탭</div>
+
+      <h4 style="margin-top:1rem; color:#991B1B; font-size:0.875rem;">A. Release Readiness 카드 (신규)</h4>
+      <table>
+        <thead><tr><th>#</th><th>요청 항목</th><th>참고</th></tr></thead>
+        <tbody>
+          <tr><td>A-1</td><td>Release Readiness 카드: 좌측 메인 최상단, 풀 와이드. 좌측에 큰 점수(72) + 신호등 아이콘(🟢🟡🔴). 우측에 4개 구성 지표 미니 카드.</td><td>§5-2 와이어프레임</td></tr>
+          <tr><td>A-2</td><td>신호등 3단계 디자인: Go(#22C55E 녹) / Conditional(#F59E0B 황) / Not Ready(#EF4444 적). 배경 그라데이션 + 큰 아이콘.</td><td>점수 기준 §5-2</td></tr>
+          <tr><td>A-3</td><td>구성 지표 4개 미니 카드: Pass Rate vs 목표(갭 바) / Critical Bugs(빨간 카운트) / 미실행 TC(회색 카운트) / Milestone %(진행률 바)</td><td>§5-2</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1.5rem; color:#991B1B; font-size:0.875rem;">B. Summary 패널 고밀도화</h4>
+      <table>
+        <thead><tr><th>#</th><th>요청 항목</th><th>참고</th></tr></thead>
+        <tbody>
+          <tr><td>B-1</td><td>각 숫자 옆에 변화 배지: ↑3(#22C55E) / ↓2(#EF4444) / ━(#94A3B8). 비교 기준 텍스트 "vs last week" 회색 작은 글씨.</td><td>§5-2 Summary</td></tr>
+          <tr><td>B-2</td><td>Pass Rate 도넛 차트에 목표선(80%) 표시: 점선 원호 + "Target 80%" 라벨</td><td>Qase 참고</td></tr>
+          <tr><td>B-3</td><td>각 지표 하단에 7일 미니 스파크라인 (높이 16px, 폭 60px). Pass Rate만 에어리어, 나머지는 라인.</td><td>Qase 카드 참고</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1.5rem; color:#991B1B; font-size:0.875rem;">C. My Runs (CEO 확정 — My Tasks에서 변경)</h4>
+      <table>
+        <thead><tr><th>#</th><th>요청 항목</th><th>참고</th></tr></thead>
+        <tbody>
+          <tr><td>C-1</td><td>Priority 그루핑 헤더: 🔴 Critical(≤3일) / 🟠 High(4~7일) / 🟡 Medium(8~14일) / 🟢 Low(&gt;14일 또는 미연결). Milestone 기한 기반 자동 산출. 수동 override 시 🏷 아이콘 표시.</td><td>§8 Priority 확정안</td></tr>
+          <tr><td>C-2</td><td>Run 카드 디자인: Run명 + 3색 진행률 바(Pass #22C55E / Fail #EF4444 / Remaining #E2E8F0, 높이 8px) + 퍼센트 + "38✓ 15✕ 0⏳" 카운트 + Milestone Due Date(기한 임박 시 #EF4444) + 담당자 아바타</td><td>§5-1 와이어프레임</td></tr>
+          <tr><td>C-3</td><td><strong>▶ Continue 버튼:</strong> 각 Run 카드 우측 하단. In Progress Run = "▶ Continue" (Indigo #6366F1), Queued Run = "▶ Start" (Green #22C55E). 클릭 → Focus Mode 직접 진입.</td><td>Runs & Results 분석</td></tr>
+          <tr><td>C-4</td><td>헤더: "My Runs (3)" — Active Run 수. 정렬 드롭다운: [Sort: Priority ▾]. "View all runs →" 링크 → Runs & Results 탭.</td><td>§5-2</td></tr>
+          <tr><td>C-5</td><td>빈 상태: Run 0개일 때 "No active runs assigned" + "Start New Run" 버튼 (Ghost 스타일).</td><td>—</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1.5rem; color:#991B1B; font-size:0.875rem;">D. Run Progress 미니 위젯 (신규)</h4>
+      <table>
+        <thead><tr><th>#</th><th>요청 항목</th><th>참고</th></tr></thead>
+        <tbody>
+          <tr><td>D-1</td><td>사이드바 위젯: 각 Run을 1행으로. Run명(truncate 15자) + 수평 스택바(Passed #22C55E / Failed #EF4444 / Remaining #E2E8F0) + 퍼센트. 완료 Run은 ✓ 체크.</td><td>§5-1 와이어프레임</td></tr>
+          <tr><td>D-2</td><td>Run 클릭 시 해당 Run 상세 페이지로 이동. 호버 시 간단 툴팁(Passed X / Failed Y / Remaining Z).</td><td>—</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1.5rem; color:#991B1B; font-size:0.875rem;">E. Test Execution Trend 차트</h4>
+      <table>
+        <thead><tr><th>#</th><th>요청 항목</th><th>참고</th></tr></thead>
+        <tbody>
+          <tr><td>E-1</td><td>스택 에어리어 차트: Passed(#22C55E) + Failed(#EF4444) + Blocked(#F59E0B) 일별 누적. X축=날짜, Y축=TC 수. 높이 180px.</td><td>§5-2 Trend</td></tr>
+          <tr><td>E-2</td><td>기간 셀렉터: [7d] [14d] [30d] 탭 버튼. 차트 우측 상단 배치. 선택 시 즉시 차트 업데이트.</td><td>TestRail 참고</td></tr>
+          <tr><td>E-3</td><td>호버 툴팁: "Mar 25 — Passed: 12, Failed: 3, Blocked: 1". 세로 점선 가이드라인.</td><td>—</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1.5rem; color:#991B1B; font-size:0.875rem;">F. Milestones 개선</h4>
+      <table>
+        <thead><tr><th>#</th><th>요청 항목</th><th>참고</th></tr></thead>
+        <tbody>
+          <tr><td>F-1</td><td>활성 마일스톤 모두 표시: 이름 + 진행률 바(높이 8px, 둥근 모서리) + 퍼센트 + "Due: Apr 5 (9 days left)" 텍스트. 기한 ≤10일이면 #EF4444 텍스트.</td><td>§5-2 Milestones</td></tr>
+          <tr><td>F-2</td><td>미니 TC 상태 요약: 진행률 바 아래에 "P:28 F:4 B:1 U:7" 색상 코딩 텍스트 (Passed 녹, Failed 적, Blocked 황, Untested 회). 폰트 11px.</td><td>PractiTest 참고</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1.5rem; color:#991B1B; font-size:0.875rem;">G. Attention Needed 개선</h4>
+      <table>
+        <thead><tr><th>#</th><th>요청 항목</th><th>참고</th></tr></thead>
+        <tbody>
+          <tr><td>G-1</td><td>항목별 아이콘+색상: 🔴 반복 실패(#EF4444) / 🟡 Blocked(#F59E0B) / 🔴 마일스톤 위험(#EF4444) / ⚪ 미실행 오래됨(#94A3B8). 각 항목 1줄: 아이콘 + 설명 텍스트 + 대상 링크.</td><td>§5-2 Attention</td></tr>
+          <tr><td>G-2</td><td>헤더 배지: "Attention Needed (4)" — 숫자가 빨간색 배경. 항목 0개면 🟢 "All Clear" 표시.</td><td>—</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1.5rem; color:#6366F1; font-size:0.875rem;">✅ 디자인 체크리스트</h4>
+      <table>
+        <thead><tr><th>#</th><th>체크 항목</th><th>섹션</th><th>상태</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Release Readiness 카드 + 신호등 3단계 디자인</td><td>A</td><td>🔲</td></tr>
+          <tr><td>2</td><td>Summary 패널 — 변화 배지 + 스파크라인 + 도넛 목표선</td><td>B</td><td>🔲</td></tr>
+          <tr><td>3</td><td>My Runs — Run 카드 + Milestone 기한 Priority + ▶ Continue 버튼 + 빈 상태</td><td>C</td><td>🔲</td></tr>
+          <tr><td>4</td><td>Run Progress 미니 위젯 — 수평 스택바 + 호버 툴팁</td><td>D</td><td>🔲</td></tr>
+          <tr><td>5</td><td>Test Execution Trend — 스택 에어리어 차트 + 기간 셀렉터</td><td>E</td><td>🔲</td></tr>
+          <tr><td>6</td><td>Milestones — 전체 표시 + 남은 일수 + TC 상태 미니 요약</td><td>F</td><td>🔲</td></tr>
+          <tr><td>7</td><td>Attention Needed — 트리거 조건별 아이콘/색상 + "All Clear" 상태</td><td>G</td><td>🔲</td></tr>
+          <tr><td>8</td><td>Recent Activity — 유형별 아이콘 + 날짜 그루핑 + 필터</td><td>§5-2</td><td>🔲</td></tr>
+          <tr><td>9</td><td>전체 Overview 반응형: 사이드바 340px → 모바일에서 하단 접기</td><td>전체</td><td>🔲</td></tr>
+          <tr><td>10</td><td>다크 모드 대응 여부 확인</td><td>전체</td><td>🔲</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 8: My Runs Priority 확정 + Dev Handoff ═══ -->
+  <div class="section" id="s8">
+    <div class="section-title"><span class="section-num">8</span><i class="ri-code-s-slash-line"></i> My Runs Priority 확정안 + Dev Handoff 스펙</div>
+
+    <div class="rec-box">
+      <p style="margin-top:0.5rem;"><strong>CEO 최종 결정: 방안 B+A 하이브리드</strong></p>
+      <p>기본은 Milestone 기한에서 자동 산출, 필요 시 수동 override 가능.</p>
+    </div>
+
+    <h3>8-1. Priority 산출 로직 (확정)</h3>
+    <div class="card" style="border-color:#6366F1; border-width:2px;">
+      <div class="card-title"><i class="ri-calculator-line" style="color:#6366F1"></i> Priority 결정 공식</div>
+      <pre style="background:#F8FAFC; padding:1rem; border-radius:0.5rem; font-size:0.8125rem; line-height:1.6; overflow-x:auto; margin:0.75rem 0;">
+priority = priority_override ?? computeFromMilestone(milestone.end_date)
+
+function computeFromMilestone(end_date):
+  if (!end_date) return 'low'           // Milestone 미연결 → Low
+  days_remaining = diffDays(end_date, today)
+  if (days_remaining <= 3)  return 'critical'
+  if (days_remaining <= 7)  return 'high'
+  if (days_remaining <= 14) return 'medium'
+  return 'low'</pre>
+    </div>
+
+    <h3>8-2. Priority 기준 상세 (확정)</h3>
+    <table>
+      <thead><tr><th>Priority</th><th>조건</th><th>컬러</th><th>아이콘</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td><strong>🔴 Critical</strong></td><td>Milestone 기한 ≤ 3일</td><td>#EF4444 / bg #FEF2F2</td><td>ri-alert-fill</td><td>릴리스 임박, 즉시 실행 필수</td></tr>
+        <tr><td><strong>🟠 High</strong></td><td>Milestone 기한 4~7일</td><td>#F59E0B / bg #FEF3C7</td><td>ri-arrow-up-line</td><td>이번 주 내 완료 필요</td></tr>
+        <tr><td><strong>🟡 Medium</strong></td><td>Milestone 기한 8~14일</td><td>#6366F1 / bg #EEF2FF</td><td>ri-subtract-line</td><td>다음 주까지 여유</td></tr>
+        <tr><td><strong>🟢 Low</strong></td><td>Milestone 기한 &gt;14일 또는 미연결</td><td>#22C55E / bg #F0FDF4</td><td>ri-arrow-down-line</td><td>급하지 않음</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8-3. 수동 Override 규칙</h3>
+    <table>
+      <thead><tr><th>항목</th><th>규칙</th></tr></thead>
+      <tbody>
+        <tr><td><strong>override 설정</strong></td><td>Run 상세 페이지 또는 My Runs 카드에서 Priority 배지 클릭 → 드롭다운으로 변경</td></tr>
+        <tr><td><strong>시각적 구분</strong></td><td>수동 override된 Run은 Priority 배지 옆에 🏷 아이콘 + 툴팁 "Manually set (auto would be High)"</td></tr>
+        <tr><td><strong>override 해제</strong></td><td>드롭다운에서 "Auto (from Milestone)" 선택 시 priority_override = NULL로 복귀</td></tr>
+        <tr><td><strong>Milestone 변경 시</strong></td><td>Milestone 기한이 변경되면 자동 산출 priority도 변경됨. override가 설정된 Run은 영향 없음.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8-4. Dev Handoff — DB 마이그레이션</h3>
+    <div class="card" style="border-color:#22C55E; border-width:2px;">
+      <div class="card-title"><i class="ri-database-2-line" style="color:#22C55E"></i> SQL Migration</div>
+      <pre style="background:#0F172A; color:#E2E8F0; padding:1rem; border-radius:0.5rem; font-size:0.8125rem; line-height:1.6; overflow-x:auto; margin:0.75rem 0;">
+<span style="color:#94A3B8">-- Migration: add priority_override to test_runs</span>
+<span style="color:#93C5FD">ALTER TABLE</span> test_runs
+  <span style="color:#93C5FD">ADD COLUMN IF NOT EXISTS</span> priority_override <span style="color:#FDE68A">TEXT</span> <span style="color:#93C5FD">DEFAULT NULL</span>
+  <span style="color:#93C5FD">CHECK</span> (priority_override <span style="color:#93C5FD">IN</span> (<span style="color:#86EFAC">'critical'</span>, <span style="color:#86EFAC">'high'</span>, <span style="color:#86EFAC">'medium'</span>, <span style="color:#86EFAC">'low'</span>, <span style="color:#93C5FD">NULL</span>));
+
+<span style="color:#94A3B8">-- NULL = Milestone 기한 기반 자동 산출</span>
+<span style="color:#94A3B8">-- 'critical'|'high'|'medium'|'low' = 수동 override</span></pre>
+    </div>
+
+    <h3>8-5. Dev Handoff — 프론트엔드 구현 스펙</h3>
+    <table>
+      <thead><tr><th>#</th><th>항목</th><th>상세</th></tr></thead>
+      <tbody>
+        <tr><td>FE-1</td><td><strong>Priority 산출 유틸 함수</strong></td><td><code>getRunPriority(run, milestone): 'critical'|'high'|'medium'|'low'</code> — run.priority_override가 있으면 그 값, 없으면 milestone.end_date에서 계산. <code>src/utils/runPriority.ts</code>에 생성.</td></tr>
+        <tr><td>FE-2</td><td><strong>My Runs 위젯 컴포넌트</strong></td><td>기존 My Tasks 위젯을 <code>MyRunsWidget.tsx</code>로 교체. <code>useActiveRuns</code> 훅 재활용 + <code>getRunPriority</code>로 정렬. 그루핑 UI는 Desi C-1 디자인 반영.</td></tr>
+        <tr><td>FE-3</td><td><strong>▶ Continue 버튼</strong></td><td>클릭 시 <code>navigate(`/project/${projectId}/run/${runId}/focus`)</code>. In Progress = "Continue" (Indigo), Queued/New = "Start" (Green). 기존 <code>ContinueRunPanel.tsx</code> 진입 로직 재활용.</td></tr>
+        <tr><td>FE-4</td><td><strong>Priority Override UI</strong></td><td>Priority 배지 클릭 → 드롭다운 (Critical/High/Medium/Low/Auto). 선택 시 <code>supabase.from('test_runs').update({ priority_override: value })</code>. 낙관적 업데이트.</td></tr>
+        <tr><td>FE-5</td><td><strong>쿼리 변경</strong></td><td><code>useActiveRuns.ts</code>의 select에 <code>priority_override</code> 추가. join으로 <code>milestones.end_date</code> 가져오기: <code>.select('*, milestones:milestone_id(end_date)')</code></td></tr>
+        <tr><td>FE-6</td><td><strong>3색 진행률 바</strong></td><td>기존 <code>runs-results-redesign.html</code>의 <code>getProgressFill()</code> 로직 재활용. Pass(#22C55E) + Fail(#EF4444) + Remaining(#E2E8F0). 높이 8px, border-radius 4px.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8-6. Dev Handoff — 영향 범위</h3>
+    <table>
+      <thead><tr><th>파일</th><th>변경 내용</th><th>규모</th></tr></thead>
+      <tbody>
+        <tr><td><code>supabase/migrations/2026XXXX_run_priority.sql</code></td><td>priority_override 컬럼 추가</td><td>S</td></tr>
+        <tr><td><code>src/utils/runPriority.ts</code></td><td>getRunPriority() 유틸 함수 신규</td><td>S</td></tr>
+        <tr><td><code>src/hooks/useActiveRuns.ts</code></td><td>select에 priority_override 추가 + milestones join</td><td>S</td></tr>
+        <tr><td><code>src/pages/project-detail/page.tsx</code></td><td>My Tasks 위젯 → MyRunsWidget 교체</td><td>M</td></tr>
+        <tr><td><code>src/components/MyRunsWidget.tsx</code></td><td>신규 컴포넌트 (Run 카드 + Priority 그루핑 + Continue 버튼)</td><td>M</td></tr>
+        <tr><td><code>src/pages/project-runs/page.tsx</code></td><td>TestRun 인터페이스에 priority_override 추가</td><td>S</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <div style="margin-top:3rem; padding-top:1.5rem; border-top:2px solid #E2E8F0; text-align:center; color:#94A3B8; font-size:0.8rem;">
+    <p>Testably — 프로젝트별 Dashboard (Overview 탭) 개선 기획안 v1.1</p>
+    <p>v1.0: 초기 작성 · v1.1: CEO 확정 — My Tasks → My Runs 전환 + Milestone 기한 기반 Priority + Dev Handoff 스펙 추가</p>
+    <p>기존 pm-plan-dashboard-redesign.html을 대체합니다. 전체 프로젝트 Dashboard는 별도 기획 예정.</p>
+    <p style="margin-top:0.5rem;">Last updated: 2026-03-27 · Author: Kyle (PM) · Reviewer: CEO</p>
+  </div>
+
+</div>
+</body>
+</html>

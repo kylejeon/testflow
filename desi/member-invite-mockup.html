@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Member Invite UI Mockups (P0 + P1)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* DEMO BAR                                              */
+  /* ══════════════════════════════════════════════════════ */
+  .demo-bar {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem;
+    background: #FFFBEB; border-bottom: 1px solid #FDE68A; flex-shrink: 0; flex-wrap: wrap;
+  }
+  .demo-bar label { font-size: 0.625rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.04em; }
+  .demo-chip {
+    font-size: 0.625rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px;
+    background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;
+  }
+  .demo-sep { width: 1px; height: 0.875rem; background: #D97706; opacity: 0.3; }
+  .demo-toggle {
+    font-size: 0.625rem; font-weight: 600; padding: 0.1875rem 0.625rem; border-radius: 9999px;
+    cursor: pointer; font-family: inherit; border: 1px solid #E2E8F0; background: #fff; color: #475569; transition: all 0.15s;
+  }
+  .demo-toggle.active { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .demo-note { font-size: 0.5625rem; color: #92400E; margin-left: auto; font-style: italic; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TOP HEADER (ProjectHeader.tsx — exact unified copy)   */
+  /* ══════════════════════════════════════════════════════ */
+  .top-header {
+    background: #fff; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; padding: 0 1.25rem; height: 3.25rem; gap: 0; flex-shrink: 0;
+  }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding-right: 1.25rem; border-right: 1px solid #E2E8F0; margin-right: 1rem; }
+  .logo-icon { width: 26px; height: 26px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; }
+  .logo-text { font-family: 'Pacifico', cursive; font-size: 1rem; color: #6366F1; letter-spacing: -0.01em; }
+  .project-selector {
+    display: flex; align-items: center; gap: 0.375rem; cursor: pointer;
+    padding: 0.3125rem 0.625rem; border-radius: 0.375rem; margin-right: 0.5rem;
+  }
+  .project-selector:hover { background: #F8FAFC; }
+  .project-selector .proj-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .project-selector .proj-chevron { font-size: 0.75rem; color: #94A3B8; }
+  .header-nav { display: flex; align-items: center; height: 100%; gap: 0; }
+  .header-nav-item {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; font-weight: 500; white-space: nowrap;
+    transition: color 0.15s; position: relative;
+  }
+  .header-nav-item:hover { color: #475569; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .header-nav-item.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .header-nav-item i { font-size: 0.9375rem; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .header-icon-btn {
+    width: 2rem; height: 2rem; border-radius: 0.375rem; border: none; background: none;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;
+    position: relative;
+  }
+  .header-icon-btn:hover { background: #F1F5F9; color: #475569; }
+  .notif-dot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; border: 1.5px solid #fff; }
+  .header-avatar {
+    width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5625rem; font-weight: 700; color: #fff; cursor: pointer;
+  }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* MAIN LAYOUT                                           */
+  /* ══════════════════════════════════════════════════════ */
+  .main-content { flex: 1; display: flex; overflow: hidden; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* VIEW A — OVERVIEW + SIDEBAR (Team Members Widget)     */
+  /* ══════════════════════════════════════════════════════ */
+  .view-panel { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+  .view-panel.active { display: flex; }
+
+  /* Subtab row for Overview */
+  .subtab-row {
+    display: flex; align-items: center; padding: 0 1.25rem; gap: 0;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; height: 2.625rem;
+    position: relative;
+  }
+  .st-tab {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; font-weight: 500; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; white-space: nowrap; transition: color 0.15s; position: relative;
+  }
+  .st-tab:hover { color: #475569; }
+  .st-tab.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .st-tab.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .st-tab i { font-size: 0.875rem; }
+  .st-badge {
+    font-size: 0.625rem; font-weight: 700; padding: 0.0625rem 0.375rem;
+    border-radius: 9999px; background: #F1F5F9; color: #64748B; min-width: 1.25rem; text-align: center;
+  }
+  .st-tab.active .st-badge { background: #EEF2FF; color: #6366F1; }
+
+  /* Overview 2-column */
+  .overview-layout { flex: 1; display: flex; overflow: hidden; }
+  .overview-main { flex: 1; overflow-y: auto; padding: 1.25rem; background: #F8FAFC; min-width: 0; display: flex; flex-direction: column; gap: 1.25rem; }
+  .overview-sidebar {
+    width: 340px; min-width: 340px; border-left: 1px solid #E2E8F0; overflow-y: auto;
+    padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; background: #fff; flex-shrink: 0;
+  }
+
+  /* Sidebar Cards */
+  .sb-card {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem; padding: 1.25rem;
+  }
+  .sb-card-header {
+    display: flex; align-items: center; gap: 0.375rem;
+    font-size: 0.875rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem;
+  }
+  .sb-card-header i { font-size: 1rem; color: #6366F1; }
+  .sb-card-header .sb-action { margin-left: auto; }
+  .sb-placeholder {
+    background: #F8FAFC; border: 1px dashed #E2E8F0; border-radius: 0.5rem;
+    height: 80px; display: flex; align-items: center; justify-content: center;
+    color: #CBD5E1; font-size: 0.75rem;
+  }
+
+  /* Team Members Widget */
+  .team-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;
+  }
+  .team-title {
+    font-size: 0.875rem; font-weight: 700; color: #0F172A;
+    display: flex; align-items: center; gap: 0.375rem;
+  }
+  .team-title i { font-size: 1rem; color: #6366F1; }
+  .team-count {
+    font-size: 0.625rem; font-weight: 600; background: #F1F5F9; color: #64748B;
+    padding: 0.0625rem 0.375rem; border-radius: 9999px;
+  }
+  .invite-btn {
+    display: flex; align-items: center; gap: 0.25rem;
+    font-size: 0.75rem; font-weight: 600; padding: 0.3125rem 0.625rem;
+    border-radius: 0.375rem; border: none; cursor: pointer; font-family: inherit;
+    background: #6366F1; color: #fff; transition: all 0.15s;
+    box-shadow: 0 1px 3px rgba(99,102,241,0.3);
+  }
+  .invite-btn:hover { background: #4F46E5; box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
+  .invite-btn i { font-size: 0.8125rem; }
+
+  .member-list { display: flex; flex-direction: column; gap: 0; }
+  .member-row {
+    display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0;
+    border-bottom: 1px solid #F1F5F9;
+  }
+  .member-row:last-child { border-bottom: none; }
+  .member-avatar {
+    width: 1.75rem; height: 1.75rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .member-info { flex: 1; min-width: 0; }
+  .member-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .member-email { font-size: 0.6875rem; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .member-role {
+    font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.4375rem;
+    border-radius: 9999px; white-space: nowrap; flex-shrink: 0;
+  }
+  .role-admin { background: #EDE9FE; color: #6D28D9; }
+  .role-member { background: #DBEAFE; color: #1E40AF; }
+  .role-viewer { background: #F1F5F9; color: #64748B; }
+
+  .team-footer {
+    margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #F1F5F9;
+    text-align: center;
+  }
+  .team-footer a {
+    font-size: 0.75rem; font-weight: 500; color: #6366F1; cursor: pointer; text-decoration: none;
+  }
+  .team-footer a:hover { text-decoration: underline; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* Invite Modal Overlay                                  */
+  /* ══════════════════════════════════════════════════════ */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.5);
+    z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #fff; border-radius: 0.75rem; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    width: 480px; max-width: 92vw; overflow: hidden;
+  }
+  .modal-header {
+    display: flex; align-items: center; gap: 0.5rem; padding: 1.125rem 1.5rem;
+    border-bottom: 1px solid #E2E8F0;
+  }
+  .modal-header i { font-size: 1.25rem; color: #6366F1; }
+  .modal-title { font-size: 1rem; font-weight: 700; color: #0F172A; }
+  .modal-close {
+    margin-left: auto; width: 2rem; height: 2rem; border-radius: 0.375rem;
+    border: none; background: none; cursor: pointer; font-size: 1.25rem; color: #94A3B8;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: #F1F5F9; color: #475569; }
+  .modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.375rem; }
+  .form-label { font-size: 0.8125rem; font-weight: 600; color: #334155; }
+  .form-input {
+    font-size: 0.8125rem; padding: 0.5rem 0.75rem; border: 1px solid #E2E8F0;
+    border-radius: 0.375rem; background: #F8FAFC; font-family: inherit; color: #1E293B;
+    outline: none; transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: #C7D2FE; background: #fff; }
+  .form-select {
+    font-size: 0.8125rem; padding: 0.5rem 0.75rem; border: 1px solid #E2E8F0;
+    border-radius: 0.375rem; background: #F8FAFC; font-family: inherit; color: #1E293B;
+    outline: none; cursor: pointer;
+  }
+  .modal-footer {
+    padding: 1rem 1.5rem; border-top: 1px solid #E2E8F0;
+    display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;
+  }
+  .btn-cancel {
+    font-size: 0.8125rem; font-weight: 500; padding: 0.4375rem 0.875rem;
+    border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; color: #475569;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-cancel:hover { background: #F8FAFC; }
+  .btn-send-invite {
+    font-size: 0.8125rem; font-weight: 600; padding: 0.4375rem 1rem;
+    border-radius: 0.375rem; border: none; background: #6366F1; color: #fff;
+    cursor: pointer; font-family: inherit; box-shadow: 0 1px 3px rgba(99,102,241,0.3);
+    display: flex; align-items: center; gap: 0.3125rem;
+  }
+  .btn-send-invite:hover { background: #4F46E5; }
+  .btn-send-invite i { font-size: 0.875rem; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* VIEW B — SETTINGS > MEMBERS TAB                       */
+  /* ══════════════════════════════════════════════════════ */
+  .settings-layout { flex: 1; display: flex; overflow: hidden; }
+  .settings-sidebar {
+    width: 220px; min-width: 220px; border-right: 1px solid #E2E8F0; background: #fff;
+    padding: 1.25rem 0; display: flex; flex-direction: column; gap: 0.125rem; flex-shrink: 0; overflow-y: auto;
+  }
+  .settings-label {
+    font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: #94A3B8; padding: 0.5rem 1.25rem 0.375rem; margin-top: 0.5rem;
+  }
+  .settings-label:first-child { margin-top: 0; }
+  .settings-item {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem;
+    font-size: 0.8125rem; font-weight: 500; color: #64748B; cursor: pointer;
+    border-radius: 0; transition: all 0.1s; border-left: 3px solid transparent;
+  }
+  .settings-item:hover { background: #F8FAFC; color: #475569; }
+  .settings-item.active { background: #EEF2FF; color: #4338CA; font-weight: 600; border-left-color: #6366F1; }
+  .settings-item i { font-size: 1rem; width: 1.125rem; text-align: center; }
+
+  .settings-content {
+    flex: 1; overflow-y: auto; padding: 2rem 2.5rem; background: #F8FAFC;
+  }
+  .settings-page-header {
+    display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem;
+  }
+  .settings-page-title { font-size: 1.125rem; font-weight: 700; color: #0F172A; }
+  .settings-page-desc { font-size: 0.8125rem; color: #64748B; margin-top: 0.25rem; }
+  .settings-invite-btn {
+    display: flex; align-items: center; gap: 0.3125rem;
+    font-size: 0.8125rem; font-weight: 600; padding: 0.4375rem 1rem;
+    border-radius: 0.375rem; border: none; background: #6366F1; color: #fff;
+    cursor: pointer; font-family: inherit; box-shadow: 0 1px 3px rgba(99,102,241,0.3);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .settings-invite-btn:hover { background: #4F46E5; }
+  .settings-invite-btn i { font-size: 0.875rem; }
+  .settings-invite-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Project dropdown */
+  .project-dropdown-wrap { margin-bottom: 1.5rem; }
+  .project-dropdown-label { font-size: 0.8125rem; font-weight: 600; color: #334155; margin-bottom: 0.375rem; }
+  .project-dropdown {
+    width: 100%; max-width: 360px; height: 2.5rem; padding: 0 0.75rem;
+    font-size: 0.8125rem; font-family: inherit; color: #1E293B;
+    border: 1px solid #E2E8F0; border-radius: 0.375rem; background: #fff;
+    outline: none; cursor: pointer;
+  }
+  .project-dropdown:focus { border-color: #C7D2FE; }
+
+  /* Members table */
+  .members-table-wrap {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem; overflow: hidden;
+  }
+  .members-table { width: 100%; border-collapse: collapse; }
+  .members-table thead th {
+    background: #F8FAFC; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em; color: #94A3B8; padding: 0.625rem 1rem; text-align: left;
+    border-bottom: 1px solid #E2E8F0;
+  }
+  .members-table tbody td {
+    padding: 0.75rem 1rem; font-size: 0.8125rem; color: #334155;
+    border-bottom: 1px solid #F1F5F9; vertical-align: middle;
+  }
+  .members-table tbody tr:last-child td { border-bottom: none; }
+  .members-table tbody tr:hover { background: #FAFAFF; }
+  .tbl-user { display: flex; align-items: center; gap: 0.625rem; }
+  .tbl-avatar {
+    width: 2rem; height: 2rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5625rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .tbl-user-info { min-width: 0; }
+  .tbl-user-name { font-weight: 600; color: #0F172A; }
+  .tbl-user-email { font-size: 0.6875rem; color: #94A3B8; }
+  .tbl-role-select {
+    font-size: 0.75rem; font-weight: 500; padding: 0.25rem 0.5rem;
+    border: 1px solid #E2E8F0; border-radius: 0.375rem; background: #fff;
+    font-family: inherit; color: #475569; cursor: pointer; outline: none;
+  }
+  .tbl-role-select:focus { border-color: #C7D2FE; }
+  .tbl-date { font-size: 0.75rem; color: #94A3B8; }
+  .tbl-remove-btn {
+    width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; border: none;
+    background: none; color: #CBD5E1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 1rem;
+  }
+  .tbl-remove-btn:hover { background: #FEE2E2; color: #EF4444; }
+  .tbl-remove-btn.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TRANSITIONS                                           */
+  /* ══════════════════════════════════════════════════════ */
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .view-panel.active { animation: fadeIn 0.15s ease-out; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ DEMO BAR ═══════════ -->
+<div class="demo-bar">
+  <label>Desi 디자인 시안</label>
+  <span class="demo-chip">Member Invite UI</span>
+  <span class="demo-sep"></span>
+  <label>View:</label>
+  <button class="demo-toggle active" onclick="switchView('overview', this)">P0 — Overview Widget</button>
+  <button class="demo-toggle" onclick="switchView('settings', this)">P1 — Settings Members</button>
+  <span class="demo-note">2개 뷰 전환 가능 · 각 Invite 버튼으로 모달 확인</span>
+</div>
+
+<!-- ═══════════ TOP HEADER ═══════════ -->
+<div class="top-header" id="topHeader">
+  <div class="header-logo">
+    <div class="logo-icon">T</div>
+    <span class="logo-text">Testably</span>
+  </div>
+  <div class="project-selector">
+    <span class="proj-name">Acme Healthcare</span>
+    <i class="ri-arrow-down-s-line proj-chevron"></i>
+  </div>
+  <div class="header-nav">
+    <div class="header-nav-item active" id="navDashboard"><i class="ri-dashboard-line"></i> Dashboard</div>
+    <div class="header-nav-item"><i class="ri-file-list-3-line"></i> Test Cases</div>
+    <div class="header-nav-item"><i class="ri-play-circle-line"></i> Runs &amp; Results</div>
+    <div class="header-nav-item"><i class="ri-flag-line"></i> Milestones</div>
+    <div class="header-nav-item"><i class="ri-file-text-line"></i> Documents</div>
+    <div class="header-nav-item"><i class="ri-search-eye-line"></i> Discovery Log</div>
+  </div>
+  <div class="header-right">
+    <button class="header-icon-btn"><i class="ri-search-line"></i></button>
+    <button class="header-icon-btn">
+      <i class="ri-notification-3-line"></i>
+      <span class="notif-dot"></span>
+    </button>
+    <button class="header-icon-btn"><i class="ri-keyboard-line"></i></button>
+    <div class="header-avatar">SK</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- VIEW A — PROJECT OVERVIEW (Team Members Widget in Sidebar) -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="view-panel active" id="view-overview">
+  <!-- Subtab Row -->
+  <div class="subtab-row">
+    <div class="st-tab active"><i class="ri-dashboard-line" style="color:#6366F1"></i> Overview</div>
+    <div class="st-tab"><i class="ri-line-chart-line" style="color:#3B82F6"></i> Analytics</div>
+  </div>
+
+  <div class="overview-layout">
+    <!-- Main content (placeholders) -->
+    <div class="overview-main">
+      <div class="sb-card">
+        <div class="sb-card-header"><i class="ri-bar-chart-box-line"></i> Release Readiness</div>
+        <div class="sb-placeholder">Release Readiness widget (existing)</div>
+      </div>
+      <div class="sb-card">
+        <div class="sb-card-header"><i class="ri-play-circle-line"></i> My Runs</div>
+        <div class="sb-placeholder">My Runs widget — priority-grouped cards (existing)</div>
+      </div>
+      <div class="sb-card">
+        <div class="sb-card-header"><i class="ri-line-chart-line"></i> Trend</div>
+        <div class="sb-placeholder">7-day trend chart (existing)</div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="overview-sidebar">
+      <!-- Summary (existing) -->
+      <div class="sb-card" style="border:none; padding:0;">
+        <div class="sb-card-header"><i class="ri-layout-grid-line"></i> Summary</div>
+        <div class="sb-placeholder" style="height:120px;">Summary widget (existing)</div>
+      </div>
+
+      <!-- Run Progress (existing) -->
+      <div class="sb-card" style="border:none; padding:0;">
+        <div class="sb-card-header"><i class="ri-play-circle-line"></i> Run Progress</div>
+        <div class="sb-placeholder" style="height:100px;">Run Progress widget (existing)</div>
+      </div>
+
+      <!-- ═══ TEAM MEMBERS WIDGET (NEW — P0) ═══ -->
+      <div class="sb-card" style="border:none; padding:0;" id="teamMembersWidget">
+        <div class="team-header">
+          <div class="team-title">
+            <i class="ri-team-line"></i> Team Members <span class="team-count">4</span>
+          </div>
+          <button class="invite-btn" onclick="openModal()">
+            <i class="ri-user-add-line"></i> Invite
+          </button>
+        </div>
+        <div class="member-list">
+          <div class="member-row">
+            <div class="member-avatar" style="background:#6366F1">KJ</div>
+            <div class="member-info">
+              <div class="member-name">Kyle Jeon</div>
+              <div class="member-email">kyle@testably.app</div>
+            </div>
+            <span class="member-role role-admin">Admin</span>
+          </div>
+          <div class="member-row">
+            <div class="member-avatar" style="background:#EC4899">SK</div>
+            <div class="member-info">
+              <div class="member-name">Sarah Kim</div>
+              <div class="member-email">sarah@testably.app</div>
+            </div>
+            <span class="member-role role-member">Member</span>
+          </div>
+          <div class="member-row">
+            <div class="member-avatar" style="background:#F59E0B">JD</div>
+            <div class="member-info">
+              <div class="member-name">John Doe</div>
+              <div class="member-email">john@testably.app</div>
+            </div>
+            <span class="member-role role-member">Member</span>
+          </div>
+          <div class="member-row">
+            <div class="member-avatar" style="background:#22C55E">AL</div>
+            <div class="member-info">
+              <div class="member-name">Amy Lee</div>
+              <div class="member-email">amy@testably.app</div>
+            </div>
+            <span class="member-role role-viewer">Viewer</span>
+          </div>
+        </div>
+        <div class="team-footer">
+          <a>Manage in Settings →</a>
+        </div>
+      </div>
+
+      <!-- Milestones (existing) -->
+      <div class="sb-card" style="border:none; padding:0;">
+        <div class="sb-card-header"><i class="ri-flag-line"></i> Milestones</div>
+        <div class="sb-placeholder" style="height:100px;">Milestones widget (existing)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- VIEW B — SETTINGS > MEMBERS TAB                        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="view-panel" id="view-settings">
+  <div class="settings-layout">
+    <!-- Settings Sidebar -->
+    <div class="settings-sidebar">
+      <div class="settings-label">Account</div>
+      <div class="settings-item"><i class="ri-user-line"></i> Profile</div>
+      <div class="settings-label">Project</div>
+      <div class="settings-item"><i class="ri-settings-3-line"></i> General</div>
+      <div class="settings-item active"><i class="ri-team-line"></i> Members</div>
+      <div class="settings-item"><i class="ri-link"></i> Integrations</div>
+      <div class="settings-item"><i class="ri-notification-3-line"></i> Notifications</div>
+      <div class="settings-item"><i class="ri-git-branch-line"></i> CI/CD</div>
+    </div>
+
+    <!-- Settings Content -->
+    <div class="settings-content">
+      <div class="settings-page-header">
+        <div>
+          <div class="settings-page-title">Project Members</div>
+          <div class="settings-page-desc">Manage team members and their roles for each project.</div>
+        </div>
+        <button class="settings-invite-btn" onclick="openModal()">
+          <i class="ri-user-add-line"></i> Invite Member
+        </button>
+      </div>
+
+      <!-- Project Dropdown -->
+      <div class="project-dropdown-wrap">
+        <div class="project-dropdown-label">Project</div>
+        <select class="project-dropdown">
+          <option value="acme">Acme Healthcare</option>
+          <option value="stellar">Stellar Health EMR</option>
+          <option value="nexus">Nexus Platform</option>
+        </select>
+      </div>
+
+      <!-- Members Table -->
+      <div class="members-table-wrap">
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th style="width:40%">Member</th>
+              <th style="width:15%">Role</th>
+              <th style="width:20%">Joined</th>
+              <th style="width:15%">Last Active</th>
+              <th style="width:10%; text-align:center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="tbl-user">
+                  <div class="tbl-avatar" style="background:#6366F1">KJ</div>
+                  <div class="tbl-user-info">
+                    <div class="tbl-user-name">Kyle Jeon</div>
+                    <div class="tbl-user-email">kyle@testably.app</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <select class="tbl-role-select" disabled>
+                  <option selected>Admin</option>
+                </select>
+              </td>
+              <td><span class="tbl-date">Jan 15, 2026</span></td>
+              <td><span class="tbl-date">Today</span></td>
+              <td style="text-align:center"><button class="tbl-remove-btn disabled"><i class="ri-delete-bin-line"></i></button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="tbl-user">
+                  <div class="tbl-avatar" style="background:#EC4899">SK</div>
+                  <div class="tbl-user-info">
+                    <div class="tbl-user-name">Sarah Kim</div>
+                    <div class="tbl-user-email">sarah@testably.app</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <select class="tbl-role-select">
+                  <option>Admin</option>
+                  <option selected>Member</option>
+                  <option>Viewer</option>
+                </select>
+              </td>
+              <td><span class="tbl-date">Feb 3, 2026</span></td>
+              <td><span class="tbl-date">2 hours ago</span></td>
+              <td style="text-align:center"><button class="tbl-remove-btn"><i class="ri-delete-bin-line"></i></button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="tbl-user">
+                  <div class="tbl-avatar" style="background:#F59E0B">JD</div>
+                  <div class="tbl-user-info">
+                    <div class="tbl-user-name">John Doe</div>
+                    <div class="tbl-user-email">john@testably.app</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <select class="tbl-role-select">
+                  <option>Admin</option>
+                  <option selected>Member</option>
+                  <option>Viewer</option>
+                </select>
+              </td>
+              <td><span class="tbl-date">Feb 20, 2026</span></td>
+              <td><span class="tbl-date">Yesterday</span></td>
+              <td style="text-align:center"><button class="tbl-remove-btn"><i class="ri-delete-bin-line"></i></button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="tbl-user">
+                  <div class="tbl-avatar" style="background:#22C55E">AL</div>
+                  <div class="tbl-user-info">
+                    <div class="tbl-user-name">Amy Lee</div>
+                    <div class="tbl-user-email">amy@testably.app</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <select class="tbl-role-select">
+                  <option>Admin</option>
+                  <option>Member</option>
+                  <option selected>Viewer</option>
+                </select>
+              </td>
+              <td><span class="tbl-date">Mar 10, 2026</span></td>
+              <td><span class="tbl-date">3 days ago</span></td>
+              <td style="text-align:center"><button class="tbl-remove-btn"><i class="ri-delete-bin-line"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ INVITE MODAL ═══════════ -->
+<div class="modal-overlay" id="inviteModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <i class="ri-user-add-line"></i>
+      <span class="modal-title">Invite Team Member</span>
+      <button class="modal-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" type="email" placeholder="colleague@company.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Name (optional)</label>
+        <input class="form-input" type="text" placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-select">
+          <option value="member">Member — can execute tests and log results</option>
+          <option value="viewer">Viewer — read-only access</option>
+          <option value="admin">Admin — full project management</option>
+        </select>
+      </div>
+      <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:0.375rem; padding:0.625rem 0.75rem; font-size:0.75rem; color:#64748B; display:flex; align-items:flex-start; gap:0.375rem;">
+        <i class="ri-information-line" style="font-size:0.875rem; color:#94A3B8; flex-shrink:0; margin-top:0.0625rem;"></i>
+        <span>An invitation email will be sent. If the person already has a Testably account, they'll be added directly. Otherwise, they'll receive a sign-up link.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-send-invite"><i class="ri-send-plane-line"></i> Send Invite</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchView(view, btn) {
+  // Toggle demo buttons
+  document.querySelectorAll('.demo-toggle').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Toggle panels
+  document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`view-${view}`).classList.add('active');
+  // Update header nav active state
+  const navDash = document.getElementById('navDashboard');
+  if (view === 'overview') {
+    navDash.classList.add('active');
+  } else {
+    navDash.classList.remove('active');
+  }
+}
+function openModal() {
+  document.getElementById('inviteModal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('inviteModal').classList.remove('open');
+}
+// Close modal on overlay click
+document.getElementById('inviteModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+
+</body>
+</html>

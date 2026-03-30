@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PM Analysis — Test Run Workflow Usability</title>
+<style>
+  :root { --indigo: #6366F1; --indigo-50: #EEF2FF; --red: #EF4444; --red-50: #FEF2F2; --green: #10B981; --green-50: #F0FDF4; --amber: #F59E0B; --amber-50: #FFFBEB; --violet: #8B5CF6; --slate-900: #0F172A; --slate-700: #334155; --slate-500: #64748B; --slate-400: #94A3B8; --slate-200: #E2E8F0; --slate-100: #F1F5F9; --slate-50: #F8FAFC; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--slate-700); line-height: 1.65; background: #F1F5F9; padding: 2rem; }
+  .container { max-width: 920px; margin: 0 auto; }
+  .header { background: linear-gradient(135deg, #059669 0%, #10B981 50%, #34D399 100%); color: #fff; padding: 2.5rem; border-radius: 1rem 1rem 0 0; }
+  .header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .header .sub { opacity: 0.9; font-size: 0.875rem; }
+  .tag { display: inline-block; background: rgba(255,255,255,0.2); padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; margin-top: 0.5rem; }
+  .meta { background: #fff; border: 1px solid var(--slate-200); border-top: none; padding: 1rem 2.5rem; display: flex; gap: 2rem; flex-wrap: wrap; font-size: 0.8125rem; color: var(--slate-400); }
+  .meta b { color: var(--slate-700); }
+  .body { background: #fff; border: 1px solid var(--slate-200); border-top: none; border-radius: 0 0 1rem 1rem; padding: 2.5rem; }
+  h2 { font-size: 1.125rem; font-weight: 800; color: var(--slate-900); margin: 2.5rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--indigo); }
+  h2:first-child { margin-top: 0; }
+  h3 { font-size: 0.9375rem; font-weight: 700; color: var(--slate-900); margin: 1.5rem 0 0.5rem; }
+  h4 { font-size: 0.875rem; font-weight: 700; color: var(--slate-700); margin: 1.25rem 0 0.375rem; }
+  p, li { font-size: 0.875rem; margin-bottom: 0.5rem; }
+  ul, ol { padding-left: 1.25rem; }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8125rem; }
+  th { background: var(--slate-50); font-weight: 700; color: var(--slate-900); text-align: left; padding: 0.625rem 0.75rem; border: 1px solid var(--slate-200); }
+  td { padding: 0.625rem 0.75rem; border: 1px solid var(--slate-200); vertical-align: top; }
+  code { background: var(--slate-100); padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.8125rem; color: var(--indigo); }
+  pre { background: #1E293B; color: #E2E8F0; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; font-size: 0.8125rem; line-height: 1.5; margin: 0.75rem 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; }
+  .badge-red { background: var(--red-50); color: #DC2626; }
+  .badge-green { background: var(--green-50); color: #16A34A; }
+  .badge-indigo { background: var(--indigo-50); color: #4F46E5; }
+  .badge-amber { background: var(--amber-50); color: #D97706; }
+  .badge-slate { background: var(--slate-100); color: var(--slate-500); }
+  .callout { border-left: 4px solid var(--indigo); background: var(--indigo-50); padding: 1rem 1.25rem; border-radius: 0 0.5rem 0.5rem 0; margin: 1rem 0; font-size: 0.8125rem; }
+  .callout-green { border-left-color: var(--green); background: var(--green-50); }
+  .callout-red { border-left-color: var(--red); background: var(--red-50); }
+  .callout-amber { border-left-color: var(--amber); background: var(--amber-50); }
+  .decision { background: var(--green-50); border: 1px solid #BBF7D0; border-radius: 0.75rem; padding: 1.25rem; margin: 1rem 0; }
+  .decision-title { font-weight: 700; color: #15803D; font-size: 0.875rem; margin-bottom: 0.5rem; }
+  .wireframe { background: var(--slate-50); border: 2px dashed var(--slate-200); border-radius: 0.75rem; padding: 1.5rem; margin: 1rem 0; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.6875rem; line-height: 1.9; color: var(--slate-700); overflow-x: auto; white-space: pre; }
+  .wireframe .hl { color: var(--indigo); font-weight: 700; }
+  .wireframe .red { color: var(--red); font-weight: 700; }
+  .wireframe .green { color: var(--green); font-weight: 700; }
+  .wireframe .amber { color: var(--amber); font-weight: 700; }
+  .wireframe .label { color: var(--slate-400); font-style: italic; }
+  .pro { color: #16A34A; font-weight: 700; }
+  .con { color: #DC2626; font-weight: 700; }
+  .score { display: inline-flex; align-items: center; gap: 0.25rem; }
+  .score-bar { display: inline-block; height: 6px; border-radius: 3px; }
+  .issue-card { background: var(--red-50); border: 1px solid #FECACA; border-radius: 0.5rem; padding: 0.75rem 1rem; margin: 0.5rem 0; }
+  .issue-title { font-weight: 700; color: #991B1B; font-size: 0.8125rem; }
+  .issue-body { font-size: 0.8125rem; color: #7F1D1D; margin-top: 0.25rem; }
+  .improve-card { background: var(--green-50); border: 1px solid #BBF7D0; border-radius: 0.5rem; padding: 0.75rem 1rem; margin: 0.5rem 0; }
+  .improve-title { font-weight: 700; color: #166534; font-size: 0.8125rem; }
+  .improve-body { font-size: 0.8125rem; color: #14532D; margin-top: 0.25rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══ Header ═══ -->
+<div class="header">
+  <h1>PM Analysis — Test Run Execution Workflow Usability</h1>
+  <div class="sub">CEO 질문: "Pass & Next / Add Result 2-버튼 워크플로우를 유지하는게 좋을까? 사용성 개선이 필요할까?"</div>
+  <div class="tag">CEO QUESTION → PM ANALYSIS</div>
+</div>
+<div class="meta">
+  <span>📅 <b>2026-03-26</b></span>
+  <span>👤 <b>PM</b> Kyle</span>
+  <span>📌 <b>Type</b> Usability Analysis</span>
+  <span>📁 <b>Page</b> run-detail/page.tsx (3,482줄)</span>
+</div>
+
+<div class="body">
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§1. PM 최종 견해 (Executive Summary)</h2>
+
+<div class="decision">
+  <div class="decision-title">✅ 2-버튼 구조는 유지하되, 3가지 핵심 개선이 필요합니다</div>
+  <p style="font-size: 0.8125rem; margin-bottom: 0;">
+    현재 <b>"Pass & Next"</b> + <b>"Add Result"</b> 2-버튼 구조는 업계 표준(TestRail·Qase·Zephyr 모두 유사)이며, "빠른 실행"과 "상세 기록"의 명확한 분리는 올바른 설계입니다.<br><br>
+    그러나 코드 분석 결과 <b>사용성 문제 6건</b>과 <b>기능 불완전 3건</b>을 발견했습니다. 핵심 개선 3가지:
+  </p>
+  <ol style="font-size: 0.8125rem; margin-top: 0.5rem; padding-left: 1.5rem;">
+    <li><b>"Pass & Next"를 인라인 Quick Status 버튼 바로 확장</b> — Fail & Next, Block & Next 추가</li>
+    <li><b>Add Result 모달의 조건부 UI 간소화</b> — Status에 따라 필드 표시/숨김</li>
+    <li><b>리치 텍스트 에디터 도구 바 작동화 + 노트 저장 버그 수정</b></li>
+  </ol>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§2. 현재 워크플로우 분석 (As-Is)</h2>
+
+<h3>2-1. 현재 버튼 배치</h3>
+<div class="wireframe"><span class="label">[Run Detail 우측 패널 — Action Buttons (Line 2074-2101)]</span>
+
+┌───────────────────────────────────────────────────────────┐
+│  ┌──────────────┐  ┌──────────────┐  ┌───┐  ┌───┐       │
+│  │  Add result   │  │ <span class="green">Pass & Next</span>  │  │ ← │  │ → │       │
+│  │  (gray bg)    │  │ (green bg)   │  │   │  │   │       │
+│  └──────────────┘  └──────────────┘  └───┘  └───┘       │
+└───────────────────────────────────────────────────────────┘</div>
+
+<h3>2-2. 두 버튼의 역할 비교</h3>
+<table>
+  <tr><th>기준</th><th>"Pass & Next" 버튼</th><th>"Add Result" 모달</th></tr>
+  <tr>
+    <td><b>주 사용 시나리오</b></td>
+    <td>TC가 명확히 통과 → 빠르게 넘어감</td>
+    <td>Failed/Blocked 시 상세 기록, 또는 Passed지만 노트/첨부 필요 시</td>
+  </tr>
+  <tr>
+    <td><b>지원 상태</b></td>
+    <td>Passed만 가능</td>
+    <td>5개 전체 (Passed/Failed/Blocked/Retest/Untested)</td>
+  </tr>
+  <tr>
+    <td><b>노트 입력</b></td>
+    <td>❌ 불가 (빈 문자열 전송)</td>
+    <td>✅ 리치 텍스트 에디터</td>
+  </tr>
+  <tr>
+    <td><b>Step별 결과</b></td>
+    <td>❌ 빈 객체 전송 (<code>step_statuses: {}</code>)</td>
+    <td>✅ Step별 Untested/Passed/Failed/Blocked</td>
+  </tr>
+  <tr>
+    <td><b>첨부파일</b></td>
+    <td>❌ 빈 배열 전송</td>
+    <td>✅ 파일 업로드 + 스크린샷 캡처</td>
+  </tr>
+  <tr>
+    <td><b>Assignee</b></td>
+    <td>❌</td>
+    <td>✅ 드롭다운</td>
+  </tr>
+  <tr>
+    <td><b>Issues/Defects</b></td>
+    <td>❌</td>
+    <td>✅ Jira 이슈 키 연동</td>
+  </tr>
+  <tr>
+    <td><b>Elapsed Time</b></td>
+    <td>❌ ("00:00" 전송)</td>
+    <td>✅ 수동 입력 + 타이머</td>
+  </tr>
+  <tr>
+    <td><b>자동 진행</b></td>
+    <td>✅ 500ms 후 다음 TC</td>
+    <td>❌ 모달 닫힌 후 같은 TC 유지</td>
+  </tr>
+  <tr>
+    <td><b>클릭 수</b></td>
+    <td>1 클릭</td>
+    <td>최소 3 클릭 (버튼 → 상태 선택 → Add result)</td>
+  </tr>
+</table>
+
+
+<h3>2-3. 장단점 분석</h3>
+
+<h4>✅ 현재 구조의 장점</h4>
+<table>
+  <tr><th>#</th><th>장점</th><th>설명</th></tr>
+  <tr>
+    <td>1</td>
+    <td><span class="pro">✓ Happy Path 최적화</span></td>
+    <td>대부분의 TC가 Pass되는 일반적 테스트 시나리오에서 1-클릭으로 빠르게 진행 가능. 테스트 실행 효율 극대화.</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><span class="pro">✓ 명확한 역할 분리</span></td>
+    <td>"빠른 Pass"와 "상세 기록"이 물리적으로 분리되어 혼동 없음.</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><span class="pro">✓ resolved_at 자동 처리</span></td>
+    <td>Pass & Next에서 이전 상태가 failed/blocked였으면 resolved_at 자동 설정 (Line 604-614). Avg Response Time 측정에 기여.</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><span class="pro">✓ 업계 표준 패턴</span></td>
+    <td>TestRail(Quick Status + Full Edit), Qase(Wizard + Detail), Zephyr(Test Player + Edit) 모두 유사한 2-tier 구조.</td>
+  </tr>
+</table>
+
+<h4>❌ 현재 구조의 단점</h4>
+<table>
+  <tr><th>#</th><th>단점</th><th>심각도</th><th>설명</th></tr>
+  <tr>
+    <td>1</td>
+    <td><span class="con">✗ Fail 빠른 처리 불가</span></td>
+    <td><span class="badge badge-red">High</span></td>
+    <td>TC 실패 시 반드시 "Add Result" 모달을 열어야 함. 단순 실패도 3+ 클릭 필요. Failed가 많은 Regression 테스트에서 비효율.</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><span class="con">✗ 모달 후 자동 진행 없음</span></td>
+    <td><span class="badge badge-amber">Medium</span></td>
+    <td>Add Result 모달에서 결과 제출 후 같은 TC에 머무름. 테스터가 수동으로 다음 TC로 이동해야 함.</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><span class="con">✗ 모달 필드 과다 노출</span></td>
+    <td><span class="badge badge-amber">Medium</span></td>
+    <td>Pass 선택 시에도 Issues, Elapsed Time 등 불필요한 필드가 모두 표시됨. 인지 부담 증가.</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><span class="con">✗ 리치 텍스트 비작동</span></td>
+    <td><span class="badge badge-red">High</span></td>
+    <td>노트의 리치 텍스트 도구 바(Bold, Italic 등) 버튼이 UI만 존재하고 실제 기능이 연결되지 않음.</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><span class="con">✗ Focus Mode 노트 미저장</span></td>
+    <td><span class="badge badge-red">High</span></td>
+    <td>Focus Mode에서 입력한 노트가 <code>_note</code>로 무시됨 (이전 분석에서 발견). 테스터의 기록이 유실.</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td><span class="con">✗ 모달 ↔ Focus Mode 불일치</span></td>
+    <td><span class="badge badge-amber">Medium</span></td>
+    <td>Focus Mode에는 Issues/Attachments/Step결과가 없고, 모달에는 키보드 단축키가 없음. 두 모드 간 기능 격차가 큼.</td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§3. 경쟁사 Test Execution 워크플로우 비교</h2>
+
+<table>
+  <tr><th>기능</th><th>Testably<br>(현재)</th><th>TestRail</th><th>Qase.io</th><th>Zephyr Scale</th></tr>
+  <tr>
+    <td><b>Quick Status 변경</b><br>(클릭 1회)</td>
+    <td>Pass만 가능<br>(Pass & Next)</td>
+    <td>모든 상태 1-클릭<br>(인라인 드롭다운)</td>
+    <td>Wizard 내 상태 버튼<br>(모든 상태 1-클릭)</td>
+    <td>Test Player 내<br>모든 상태 버튼</td>
+  </tr>
+  <tr>
+    <td><b>상세 결과 입력</b></td>
+    <td>Add Result 모달</td>
+    <td>인라인 확장 패널</td>
+    <td>Wizard 내 직접 입력</td>
+    <td>실행 패널 내 직접</td>
+  </tr>
+  <tr>
+    <td><b>자동 진행 (Next)</b></td>
+    <td>Pass만 자동<br>(모달은 수동)</td>
+    <td>상태 변경 후 선택<br>(Next or Stay)</td>
+    <td>3가지 옵션:<br>Stay / First Unresulted / Next</td>
+    <td>자동 진행 옵션</td>
+  </tr>
+  <tr>
+    <td><b>Fail 시 워크플로우</b></td>
+    <td>모달 열기 → 입력<br>(3+ 클릭)</td>
+    <td>상태 클릭 → 코멘트 인라인<br>(2 클릭)</td>
+    <td>상태 클릭 → 인라인 입력<br>(2 클릭)</td>
+    <td>상태 클릭 → 인라인<br>(2 클릭)</td>
+  </tr>
+  <tr>
+    <td><b>Defect 생성</b></td>
+    <td>모달 내 Jira 키 수동 입력</td>
+    <td>1-클릭 Defect Push<br>(자동 연동)</td>
+    <td>Wizard 내 자동 생성<br>(상태 정보 포함)</td>
+    <td>Test Player 내<br>Jira Issue 직접 생성</td>
+  </tr>
+  <tr>
+    <td><b>진행 후 리다이렉트 설정</b></td>
+    <td>❌ 없음</td>
+    <td>설정 가능</td>
+    <td>✅ 3가지 옵션</td>
+    <td>설정 가능</td>
+  </tr>
+  <tr>
+    <td><b>키보드 단축키</b></td>
+    <td>Focus Mode에서만<br>(Run Detail에는 없음)</td>
+    <td>부분 지원</td>
+    <td>❌</td>
+    <td>❌</td>
+  </tr>
+</table>
+
+<div class="callout">
+  <b>핵심 차이:</b> 경쟁사는 모두 <b>"어떤 상태든 1-클릭으로 빠르게 변경"</b>을 지원합니다. Testably만 유일하게 "Pass만 1-클릭, 나머지는 모달 필수"입니다. 또한 경쟁사는 <b>결과 제출 후 자동 진행 옵션</b>을 제공하여 테스터가 연속으로 테스트를 실행할 수 있게 합니다.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§4. Add Result 모달 UX 분석</h2>
+
+<h3>4-1. 현재 모달 구조</h3>
+<div class="wireframe">┌─────────────────────────────────────────────────────────┐
+│  Add Test Result                                   [✕]  │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  Status *                                               │
+│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐                    │
+│  │<span class="green"> ✓  </span>│ │<span class="red"> ✗  </span>│ │ ⊘  │ │<span class="amber"> ↻  </span>│ │ ?  │                    │
+│  │Pass│ │Fail│ │Blck│ │Rtst│ │Skip│                    │
+│  └────┘ └────┘ └────┘ └────┘ └────┘                    │
+│                                                         │
+│  Note                                                   │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │ ¶ │ B │ I │ U │ S │ &lt;/&gt; │ 🔗 │ • │ 1. │        │    │
+│  ├─────────────────────────────────────────────────┤    │
+│  │ <span class="label">(리치 텍스트 에디터 — 도구바 비작동!)</span>            │    │
+│  │                                                 │    │
+│  └─────────────────────────────────────────────────┘    │
+│                                                         │
+│  Steps                                                  │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │ <span class="hl">1</span>  Step text here                                │    │
+│  │    <span class="label">Expected: result text</span>                        │    │
+│  │    Status: [Untested ▼]                         │    │
+│  ├─────────────────────────────────────────────────┤    │
+│  │ <span class="hl">2</span>  Step text here                                │    │
+│  │    <span class="label">Expected: result text</span>                        │    │
+│  │    Status: [Untested ▼]                         │    │
+│  └─────────────────────────────────────────────────┘    │
+│                                                         │
+│  Assign to                                              │
+│  [Select member ▼]                                      │
+│                                                         │
+│  Elapsed Time                                           │
+│  [00:00] [▶]                                            │
+│                                                         │
+│  Issues                                                 │
+│  [Enter Jira key...] [+ Add Issue]                      │
+│                                                         │
+│  Attachments                                            │
+│  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐      │
+│  │  Drag and drop files here                     │      │
+│  │  [Choose files]  [📷 screenshot]              │      │
+│  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘      │
+│                                                         │
+│  ┌──────────┐  ┌──────────────┐                         │
+│  │  Cancel   │  │  Add result  │                         │
+│  └──────────┘  └──────────────┘                         │
+└─────────────────────────────────────────────────────────┘</div>
+
+<h3>4-2. 모달 UX 문제점 상세</h3>
+
+<div class="issue-card">
+  <div class="issue-title">🔴 문제 1: 리치 텍스트 도구 바 비작동 (High)</div>
+  <div class="issue-body">
+    Bold, Italic, Underline, Strikethrough, Code, Link, List 버튼이 모두 UI만 존재하고 실제 기능이 없습니다. 버튼에 onClick 핸들러가 없으며, textarea는 plain text만 지원합니다. 사용자가 서식을 적용하려고 클릭해도 아무 반응 없음 → <b>신뢰도 하락</b>.
+  </div>
+</div>
+
+<div class="issue-card">
+  <div class="issue-title">🔴 문제 2: 모든 상태에 동일한 필드 노출 (Medium)</div>
+  <div class="issue-body">
+    "Passed" 선택 시에도 Issues(Jira 연동), Elapsed Time, Step별 결과 등이 모두 표시됩니다. Pass 시에는 대부분 노트와 첨부만 필요합니다. 7개 섹션이 한 번에 표시되면 스크롤 양이 많아지고, "무엇을 채워야 하는지" 혼란이 생깁니다.
+  </div>
+</div>
+
+<div class="issue-card">
+  <div class="issue-title">🟡 문제 3: 결과 제출 후 자동 진행 없음 (Medium)</div>
+  <div class="issue-body">
+    "Add result" 클릭 후 모달만 닫히고 같은 TC에 머무릅니다. 연속 테스트 시 매번 수동으로 "→" 버튼을 눌러야 합니다. 경쟁사(Qase)는 "제출 후 다음 미완료 TC로 자동 이동" 옵션을 제공합니다.
+  </div>
+</div>
+
+<div class="issue-card">
+  <div class="issue-title">🟡 문제 4: Step 결과 기록의 시각적 불명확 (Low)</div>
+  <div class="issue-body">
+    Step별 결과 드롭다운이 작은 select 요소로 되어 있어 어떤 step이 fail인지 한눈에 보기 어렵습니다. TestRail은 step별로 색상 코드 뱃지를 제공하여 시각적 구분이 명확합니다.
+  </div>
+</div>
+
+<div class="issue-card">
+  <div class="issue-title">🟡 문제 5: Issues 입력의 낮은 직관성 (Low)</div>
+  <div class="issue-body">
+    "Enter Jira issue key" 입력 필드는 Enter/Comma로 추가하는 방식인데, 이 인터랙션이 시각적으로 안내되지 않습니다. 또한 기존 Jira 이슈 검색/자동완성이 없어 사용자가 이슈 키를 정확히 기억하고 있어야 합니다.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§5. 개선안 — 3단계 구조</h2>
+
+<h3>개선안 A: Quick Status 버튼 바 확장 (핵심 — 반드시 필요)</h3>
+
+<p>"Pass & Next" 단일 버튼을 <b>인라인 Quick Status 바</b>로 확장합니다. Fail, Block도 1-클릭으로 처리 가능하게 합니다.</p>
+
+<h4>현재 → 개선 후</h4>
+<div class="wireframe"><span class="label">[AS-IS]</span>
+  ┌──────────────┐  ┌──────────────┐  ┌───┐  ┌───┐
+  │  Add result   │  │ <span class="green">Pass & Next</span>  │  │ ← │  │ → │
+  └──────────────┘  └──────────────┘  └───┘  └───┘
+
+<span class="label">[TO-BE: Option 1 — 확장 Quick Status 바]</span>
+  ┌──────────────┐  ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐  ┌───┐ ┌───┐
+  │ <span class="hl">Add result</span>   │  │ <span class="green">Pass</span>  │ │ <span class="red">Fail</span>  │ │ <span class="amber">Block</span> │ │ Retest│  │ ← │ │ → │
+  │  (상세 입력)  │  │  ✓    │ │  ✗    │ │  ⊘    │ │  ↻    │  │   │ │   │
+  └──────────────┘  └───────┘ └───────┘ └───────┘ └───────┘  └───┘ └───┘
+                    <span class="label">↑ 클릭 시 즉시 상태 적용 + 자동 Next (500ms)</span>
+                    <span class="label">  Fail 클릭 시 → 인라인 노트 입력 팝업 후 Next</span></div>
+
+<h4>상태별 동작 규칙</h4>
+<table>
+  <tr><th>버튼</th><th>클릭 시 동작</th><th>노트 요구</th><th>자동 진행</th></tr>
+  <tr>
+    <td><span class="badge badge-green">Pass</span></td>
+    <td>즉시 passed 결과 생성 + DB 저장</td>
+    <td>❌ 선택적</td>
+    <td>✅ 500ms 후 Next</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-red">Fail</span></td>
+    <td>인라인 노트 입력 팝업 표시 (모달 아님 — 작은 드롭다운)</td>
+    <td>✅ 권장 (빈 채로 제출 가능)</td>
+    <td>✅ 제출 후 500ms Next</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-amber">Block</span></td>
+    <td>인라인 노트 입력 팝업 표시</td>
+    <td>✅ 권장</td>
+    <td>✅ 제출 후 500ms Next</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-slate">Retest</span></td>
+    <td>즉시 retest 결과 생성</td>
+    <td>❌ 선택적</td>
+    <td>✅ 500ms 후 Next</td>
+  </tr>
+</table>
+
+<h4>Fail/Block 인라인 노트 팝업</h4>
+<div class="wireframe"><span class="label">[Fail 클릭 시 — 인라인 팝업 (모달 아님)]</span>
+
+  ┌──────────────────────────────────────────┐
+  │ <span class="red">✗</span> Failed — Add a note (optional)          │
+  ├──────────────────────────────────────────┤
+  │ ┌──────────────────────────────────────┐ │
+  │ │ What went wrong?                     │ │
+  │ │                                      │ │
+  │ └──────────────────────────────────────┘ │
+  │                                          │
+  │  ┌──────────────┐  ┌────────────────┐    │
+  │  │ Skip & Next  │  │ <span class="red">Save & Next</span>   │    │
+  │  └──────────────┘  └────────────────┘    │
+  │  <span class="label">Need more details? [Open full modal →]</span>   │
+  └──────────────────────────────────────────┘</div>
+
+<div class="callout-green callout">
+  <b>핵심 포인트:</b> "Open full modal →" 링크로 Add Result 모달과 연결합니다. 빠른 Fail은 인라인 팝업으로, 상세 기록(첨부, Issues, Step결과)이 필요하면 모달로 진입. <b>2-tier 구조 유지하면서 중간 레이어를 추가</b>하는 것입니다.
+</div>
+
+
+<h3>개선안 B: Add Result 모달 — 조건부 UI (추천)</h3>
+
+<p>Status 선택에 따라 표시되는 필드를 다르게 합니다.</p>
+
+<table>
+  <tr><th>필드</th><th>Passed</th><th>Failed</th><th>Blocked</th><th>Retest</th></tr>
+  <tr><td>Note</td><td>✅ (축소)</td><td>✅ (확대, 필수 권장)</td><td>✅ (확대)</td><td>✅ (축소)</td></tr>
+  <tr><td>Steps 결과</td><td>✅ (접힘)</td><td>✅ (펼침)</td><td>✅ (접힘)</td><td>✅ (접힘)</td></tr>
+  <tr><td>Attachments</td><td>✅ (접힘)</td><td>✅ (펼침, 권장)</td><td>✅ (접힘)</td><td>✅ (접힘)</td></tr>
+  <tr><td>Issues</td><td>숨김</td><td>✅ (펼침, 권장)</td><td>✅ (펼침)</td><td>숨김</td></tr>
+  <tr><td>Elapsed Time</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Assign to</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+</table>
+
+<div class="callout">
+  <b>원칙:</b> "Passed"일 때는 최소 필드만, "Failed"일 때는 상세 기록 필드를 자동 펼침. 테스터가 필요하면 "Show more" 토글로 숨겨진 필드를 언제든 펼칠 수 있습니다.
+</div>
+
+<h4>모달 하단에 "Submit & Next" 옵션 추가</h4>
+<div class="wireframe"><span class="label">[모달 하단 버튼 — 개선 후]</span>
+
+  ┌───────────────────────────────────────────────────────┐
+  │  ☐ Auto-advance to next test case after submit        │
+  │                                                       │
+  │  ┌──────────┐  ┌──────────────┐  ┌──────────────────┐ │
+  │  │  Cancel   │  │  Add result  │  │  Add & Next →   │ │
+  │  └──────────┘  └──────────────┘  └──────────────────┘ │
+  └───────────────────────────────────────────────────────┘</div>
+
+
+<h3>개선안 C: 리치 텍스트 에디터 정리 (즉시 수정)</h3>
+
+<table>
+  <tr><th>옵션</th><th>설명</th><th>공수</th><th>권장</th></tr>
+  <tr>
+    <td><b>C-1: 도구 바 제거</b></td>
+    <td>비작동 리치 텍스트 도구 바를 제거하고 plain textarea만 유지</td>
+    <td>15분</td>
+    <td><span class="badge badge-green">Phase 1 권장</span></td>
+  </tr>
+  <tr>
+    <td><b>C-2: Markdown 지원</b></td>
+    <td>도구 바를 Markdown 도구 바로 교체. **bold**, *italic* 등 Markdown 렌더링</td>
+    <td>4시간</td>
+    <td><span class="badge badge-amber">Phase 2</span></td>
+  </tr>
+  <tr>
+    <td><b>C-3: 풀 리치 텍스트</b></td>
+    <td>TipTap/Lexical 등 에디터 라이브러리 도입</td>
+    <td>2-3일</td>
+    <td><span class="badge badge-slate">Phase 3</span></td>
+  </tr>
+</table>
+
+<div class="callout-amber callout">
+  <b>Phase 1 즉시 수정:</b> 작동하지 않는 도구 바를 제거하고 깔끔한 plain textarea로 교체하는 것이 가장 시급합니다. 비작동 UI 요소는 제품 신뢰도를 떨어뜨립니다.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§6. "Pass & Next" 역할 재정의 — Fail & Next, Block & Next 필요한가?</h2>
+
+<div class="decision">
+  <div class="decision-title">✅ PM 권장: Yes — Quick Status 버튼 바로 확장 (개선안 A)</div>
+  <p style="font-size: 0.8125rem; margin-bottom: 0;">
+    <b>근거:</b>
+  </p>
+  <ol style="font-size: 0.8125rem; padding-left: 1.5rem; margin-top: 0.5rem;">
+    <li><b>실제 사용 데이터 기반 추론:</b> Regression 테스트에서 Fail/Block 비율이 10-30%일 수 있음. 이 경우 매번 모달을 열면 테스트 실행 시간이 크게 증가.</li>
+    <li><b>Focus Mode와의 일관성:</b> Focus Mode는 이미 P/F/B/R/S 5개 버튼을 모두 제공. Run Detail 패널에서만 Pass만 빠른 처리가 가능한 것은 일관성 부족.</li>
+    <li><b>경쟁사 표준:</b> TestRail, Qase, Zephyr 모두 어떤 상태든 1-클릭으로 빠르게 변경 가능.</li>
+    <li><b>Fail 시 노트 입력은 인라인 팝업으로 해결:</b> 풀 모달이 아닌 작은 팝업으로 "빠르게 메모 + 다음"을 지원하되, 상세 기록이 필요하면 "Open full modal"로 전환.</li>
+  </ol>
+</div>
+
+<p>단, 모든 5개 상태를 동일 크기 버튼으로 나열하면 시각적 혼잡합니다. <b>Primary/Secondary 구분</b>을 권장합니다:</p>
+
+<table>
+  <tr><th>구분</th><th>버튼</th><th>스타일</th><th>근거</th></tr>
+  <tr>
+    <td>Primary</td>
+    <td><span class="badge badge-green">Pass</span> <span class="badge badge-red">Fail</span></td>
+    <td>컬러 배경, 큰 크기</td>
+    <td>가장 빈번한 2가지 결과</td>
+  </tr>
+  <tr>
+    <td>Secondary</td>
+    <td><span class="badge badge-amber">Block</span> <span class="badge badge-slate">Retest</span></td>
+    <td>아웃라인 스타일, 약간 작은 크기</td>
+    <td>상대적으로 덜 빈번</td>
+  </tr>
+  <tr>
+    <td>Tertiary</td>
+    <td>Skip (Untested)</td>
+    <td>"→" 버튼에 통합 또는 별도 텍스트 링크</td>
+    <td>드물게 사용</td>
+  </tr>
+</table>
+
+<h4>최종 버튼 바 와이어프레임</h4>
+<div class="wireframe">┌────────────────────────────────────────────────────────────────┐
+│  <span class="label">[Action Buttons — 개선 후]</span>                                      │
+│                                                                │
+│  ┌──────────────┐  ┌─────────┐ ┌─────────┐ ┌─────┐ ┌─────┐   │
+│  │ <span class="hl">✎ Add result</span> │  │ <span class="green">✓ Pass</span>  │ │ <span class="red">✗ Fail</span>  │ │<span class="amber">Block</span>│ │Retst│   │
+│  │              │  │  & Next │ │  & Next │ │     │ │     │   │
+│  └──────────────┘  └─────────┘ └─────────┘ └─────┘ └─────┘   │
+│                                             <span class="label">↑ secondary</span>        │
+│  <span class="label">키보드: A=Add result, P=Pass, F=Fail, B=Block, R=Retest</span>        │
+│                                                    ┌───┐ ┌───┐│
+│                                                    │ ← │ │ → ││
+│                                                    └───┘ └───┘│
+└────────────────────────────────────────────────────────────────┘</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§7. 3개 실행 모드 통합 전략</h2>
+
+<p>현재 Testably에는 테스트 실행을 위한 3개의 독립적 인터페이스가 존재합니다:</p>
+
+<table>
+  <tr><th>모드</th><th>현재 상태</th><th>강점</th><th>약점</th><th>적합 시나리오</th></tr>
+  <tr>
+    <td><b>① Run Detail 패널</b><br>(Quick Status + Add Result)</td>
+    <td>메인 실행 환경</td>
+    <td>TC 리스트 + 상세 + 결과를 한 화면에서</td>
+    <td>Pass만 빠른 처리, 모달 전환 비용</td>
+    <td>개별 TC 상세 확인 + 결과 입력</td>
+  </tr>
+  <tr>
+    <td><b>② Focus Mode</b><br>(풀스크린 키보드 중심)</td>
+    <td>미니멀 실행 환경</td>
+    <td>키보드 단축키, 집중 UX</td>
+    <td>첨부/Issues/Step결과 없음, 노트 미저장</td>
+    <td>대량 TC 빠른 실행</td>
+  </tr>
+  <tr>
+    <td><b>③ Add Result 모달</b><br>(풀 기능 입력 폼)</td>
+    <td>상세 기록 환경</td>
+    <td>모든 필드 지원 (7개 섹션)</td>
+    <td>자동 진행 없음, 필드 과다 노출</td>
+    <td>Failed/Blocked 상세 기록</td>
+  </tr>
+</table>
+
+<div class="callout">
+  <b>장기 비전:</b> 3개 모드가 각각의 역할을 유지하되, <b>기능 격차를 줄이고 전환을 부드럽게</b> 하는 것이 목표입니다.<br>
+  • Focus Mode → "Open Full Details" 버튼으로 Add Result 모달 진입 가능<br>
+  • Add Result 모달 → "Submit & Next" 옵션으로 자동 진행<br>
+  • Quick Status 바 → Fail/Block 시 인라인 팝업 → "Open full modal" 링크<br>
+  <b>결과:</b> 어떤 모드에서 시작하든 필요에 따라 상세 레벨을 올리거나 내릴 수 있는 <b>"Escalation Path"</b>가 완성됩니다.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§8. 발견된 버그/문제 목록</h2>
+
+<table>
+  <tr><th>#</th><th>문제</th><th>위치</th><th>심각도</th><th>수정 공수</th></tr>
+  <tr>
+    <td>1</td>
+    <td><b>리치 텍스트 도구 바 비작동</b> — 버튼 존재하나 기능 없음</td>
+    <td>Line 2770-2810</td>
+    <td><span class="badge badge-red">High</span></td>
+    <td>15분 (제거) 또는 4시간 (Markdown)</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><b>Focus Mode 노트 미저장</b> — <code>_note</code> 파라미터 무시</td>
+    <td>Line 1370</td>
+    <td><span class="badge badge-red">High</span></td>
+    <td>30분</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><b>Focus Mode precondition 미전달</b></td>
+    <td>Line 1376-1383</td>
+    <td><span class="badge badge-amber">Medium</span></td>
+    <td>1분</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><b>Add Result 모달 후 자동 진행 없음</b></td>
+    <td>Line 845-859</td>
+    <td><span class="badge badge-amber">Medium</span></td>
+    <td>1시간</td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§9. 구현 우선순위 로드맵</h2>
+
+<h3>Phase 0: 즉시 수정 (버그) — 1시간</h3>
+<table>
+  <tr><th>항목</th><th>변경</th></tr>
+  <tr><td>리치 텍스트 도구 바 제거</td><td>Line 2771-2810 도구 바 div 제거 → plain textarea</td></tr>
+  <tr><td>Focus Mode 노트 저장</td><td><code>_note</code> → <code>note</code> 변경 + DB 저장 로직</td></tr>
+  <tr><td>Focus Mode precondition 전달</td><td>focusTests 매핑에 <code>precondition: tc.precondition</code> 추가</td></tr>
+</table>
+
+<h3>Phase 1: Quick Status 버튼 바 + 모달 개선 — 1-2일</h3>
+<table>
+  <tr><th>항목</th><th>변경</th></tr>
+  <tr><td>Quick Status 바 확장</td><td>Pass/Fail/Block/Retest 4버튼 + 인라인 노트 팝업</td></tr>
+  <tr><td>모달 "Add & Next" 버튼</td><td>제출 후 자동 진행 옵션 추가</td></tr>
+  <tr><td>모달 조건부 UI</td><td>Status에 따라 필드 접힘/펼침 처리</td></tr>
+  <tr><td>Run Detail 키보드 단축키</td><td>P/F/B/R/A 키 바인딩 (Focus Mode 바깥)</td></tr>
+</table>
+
+<h3>Phase 2: 고급 기능 — 2-3일</h3>
+<table>
+  <tr><th>항목</th><th>변경</th></tr>
+  <tr><td>Markdown 노트 에디터</td><td>Markdown 입력 + 프리뷰 지원</td></tr>
+  <tr><td>자동 진행 설정</td><td>"After submit: Stay / Next Unresulted / Next" 3옵션 (Qase 패턴)</td></tr>
+  <tr><td>Step별 결과 시각 개선</td><td>드롭다운 → 색상 뱃지 버튼 (인라인)</td></tr>
+  <tr><td>Focus Mode 기능 확장</td><td>첨부파일 + Issues + Step결과 지원 (별도 기획)</td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§10. CEO 질문에 대한 직접 답변</h2>
+
+<table>
+  <tr><th>CEO 질문</th><th>PM 답변</th></tr>
+  <tr>
+    <td><b>"이 워크플로우를 유지하는 게 좋을까?"</b></td>
+    <td><b>2-버튼 구조(Quick vs Detail)는 유지합니다.</b> 업계 표준이며 올바른 설계입니다. 다만 Quick 버튼을 Pass 전용에서 <b>모든 상태 지원으로 확장</b>해야 합니다.</td>
+  </tr>
+  <tr>
+    <td><b>"사용성 개선이 필요할까?"</b></td>
+    <td><b>Yes, 3가지 핵심 개선이 필요합니다:</b><br>① Quick Status 바 확장 (Fail/Block도 1-클릭)<br>② 모달 조건부 UI (Status에 따라 필드 접힘)<br>③ 비작동 리치 텍스트 도구 바 정리 + 모달 "Add & Next" 추가</td>
+  </tr>
+  <tr>
+    <td><b>"Fail & Next, Block & Next도 필요한지?"</b></td>
+    <td><b>Yes.</b> 경쟁사 모두 지원하며, Focus Mode도 이미 5개 상태를 모두 Quick으로 지원합니다. Run Detail에서만 Pass만 가능한 것은 <b>불일치이자 비효율</b>입니다. 단, Fail/Block은 인라인 노트 팝업을 거치도록 합니다.</td>
+  </tr>
+</table>
+
+
+</div><!-- .body -->
+</div><!-- .container -->
+</body>
+</html>

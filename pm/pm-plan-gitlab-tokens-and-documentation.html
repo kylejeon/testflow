@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM 기획서: GitLab 토큰 관리 + Testably Documentation 페이지</title>
+<style>
+  :root {
+    --primary: #6366f1;
+    --primary-light: #818cf8;
+    --primary-bg: #eef2ff;
+    --success: #22c55e;
+    --success-bg: #f0fdf4;
+    --warning: #f59e0b;
+    --warning-bg: #fffbeb;
+    --danger: #ef4444;
+    --danger-bg: #fef2f2;
+    --info: #3b82f6;
+    --info-bg: #eff6ff;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --border: #e5e7eb;
+    --gitlab: #fc6d26;
+    --github: #0f172a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 32px; }
+
+  /* Header */
+  .doc-header {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    padding: 48px 40px;
+    border-radius: 16px;
+    margin-bottom: 32px;
+  }
+  .doc-header h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+  .doc-header .subtitle { font-size: 16px; opacity: 0.85; margin-bottom: 20px; }
+  .doc-meta { display: flex; gap: 24px; font-size: 13px; opacity: 0.8; flex-wrap: wrap; }
+
+  /* Section */
+  .section {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+  .section h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--primary);
+  }
+  .section h2.gitlab { border-bottom-color: var(--gitlab); }
+  .section h2.docs { border-bottom-color: #22c55e; }
+  .section h3 { font-size: 17px; font-weight: 600; color: var(--gray-700); margin: 24px 0 12px 0; }
+  .section h4 { font-size: 15px; font-weight: 600; color: var(--gray-700); margin: 18px 0 8px 0; }
+  .section p { margin-bottom: 12px; color: var(--gray-700); }
+
+  /* TOC */
+  .toc {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 32px;
+  }
+  .toc h2 { font-size: 18px; margin-bottom: 16px; color: var(--gray-700); border: none; padding: 0; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 6px; font-size: 14px; }
+  .toc a { color: var(--primary); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ol ol { margin-top: 4px; padding-left: 18px; }
+  .toc ol ol li { font-size: 13px; color: var(--gray-500); }
+
+  /* Callout */
+  .callout {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .callout-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .callout.info { background: var(--info-bg); border-left: 4px solid var(--info); }
+  .callout.info .callout-title { color: var(--info); }
+  .callout.warning { background: var(--warning-bg); border-left: 4px solid var(--warning); }
+  .callout.warning .callout-title { color: var(--warning); }
+  .callout.danger { background: var(--danger-bg); border-left: 4px solid var(--danger); }
+  .callout.danger .callout-title { color: var(--danger); }
+  .callout.success { background: var(--success-bg); border-left: 4px solid var(--success); }
+  .callout.success .callout-title { color: var(--success); }
+  .callout.purple { background: #f5f3ff; border-left: 4px solid #7c3aed; }
+  .callout.purple .callout-title { color: #7c3aed; }
+  .callout.gitlab { background: #fff7ed; border-left: 4px solid var(--gitlab); }
+  .callout.gitlab .callout-title { color: #c2410c; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th {
+    background: var(--gray-100);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--gray-700);
+    border-bottom: 2px solid var(--gray-200);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--gray-100);
+    color: var(--gray-700);
+    vertical-align: top;
+  }
+  tr:hover td { background: var(--gray-50); }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .tag-new { background: #dbeafe; color: #1d4ed8; }
+  .tag-existing { background: #dcfce7; color: #15803d; }
+  .tag-modify { background: #fef3c7; color: #92400e; }
+  .tag-bug { background: #fce7f3; color: #9d174d; }
+  .tag-gitlab { background: #fff7ed; color: #c2410c; }
+  .tag-doc { background: #f0fdf4; color: #166534; }
+
+  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+
+  /* Code */
+  .code-block {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+
+  /* Comparison cards */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .compare-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    background: white;
+  }
+  .compare-card h5 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .compare-card.github h5 { color: var(--github); }
+  .compare-card.gitlab h5 { color: var(--gitlab); }
+
+  /* Doc tree */
+  .doc-tree {
+    background: var(--gray-50);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 16px 0;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--gray-700);
+  }
+  .doc-tree .folder { color: var(--primary); font-weight: 600; }
+  .doc-tree .file { color: var(--gray-500); }
+  .doc-tree .new { color: #22c55e; font-weight: 600; }
+  .doc-tree .indent { margin-left: 20px; }
+  .doc-tree .indent2 { margin-left: 40px; }
+  .doc-tree .indent3 { margin-left: 60px; }
+
+  /* Doc section card */
+  .doc-section-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 16px 0;
+    overflow: hidden;
+  }
+  .doc-section-card .card-header {
+    padding: 14px 18px;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .doc-section-card .card-header h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--gray-900);
+  }
+  .doc-section-card .card-header .badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .doc-section-card .card-body { padding: 18px; }
+  .doc-section-card .card-body p { font-size: 14px; }
+
+  .endpoint-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 13px;
+    font-family: 'SF Mono', monospace;
+  }
+  .method {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 48px;
+    text-align: center;
+  }
+  .method.get { background: #dcfce7; color: #166534; }
+  .method.post { background: #dbeafe; color: #1d4ed8; }
+  .method.put { background: #fef3c7; color: #92400e; }
+  .method.patch { background: #fef3c7; color: #92400e; }
+  .method.delete { background: #fce7f3; color: #9d174d; }
+  .endpoint-path { color: var(--gray-700); }
+  .endpoint-desc { color: var(--gray-500); font-family: -apple-system, sans-serif; font-size: 12px; margin-left: auto; }
+
+  hr.divider { border: none; border-top: 1px solid var(--gray-200); margin: 28px 0; }
+
+  ul, ol { margin: 8px 0 8px 20px; }
+  li { margin-bottom: 4px; font-size: 14px; color: var(--gray-700); }
+
+  /* Modal mockup */
+  .modal-mockup {
+    background: white;
+    border: 2px solid var(--gray-200);
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 520px;
+    margin: 16px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .modal-header h5 { font-size: 16px; font-weight: 600; }
+  .modal-body { padding: 20px; }
+  .modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-ghost { background: transparent; color: var(--gray-500); border: 1px solid var(--gray-200); }
+
+  @media (max-width: 768px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .container { padding: 20px 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ========== HEADER ========== -->
+<div class="doc-header">
+  <h1>CEO 보고 이슈 기획서: GitLab 토큰 + Documentation 페이지</h1>
+  <p class="subtitle">Issue 1: Settings → API & Tokens의 GitLab 지원 &nbsp;|&nbsp; Issue 2: Testably Documentation 전체 콘텐츠 기획</p>
+  <div class="doc-meta">
+    <span>PM 기획서</span>
+    <span>|</span>
+    <span>작성일: 2026-03-29</span>
+    <span>|</span>
+    <span>담당: Dev2</span>
+    <span>|</span>
+    <span>버전: v1.0</span>
+  </div>
+</div>
+
+<!-- ========== TOC ========== -->
+<div class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li>
+      <a href="#issue1">Issue 1: GitLab 토큰 관리 기능</a>
+      <ol>
+        <li>현재 상태 분석 (GitHub vs GitLab)</li>
+        <li>GitLab Token Scope Guide 구현 기획</li>
+        <li>개발 요약</li>
+      </ol>
+    </li>
+    <li>
+      <a href="#issue2">Issue 2: Testably Documentation 페이지</a>
+      <ol>
+        <li>현재 상태 분석</li>
+        <li>문서 사이트 구조</li>
+        <li>Getting Started</li>
+        <li>API Reference</li>
+        <li>Authentication</li>
+        <li>CI/CD Integration</li>
+        <li>Import/Export</li>
+        <li>Webhooks</li>
+        <li>Integrations (Jira)</li>
+        <li>개발 요약</li>
+      </ol>
+    </li>
+  </ol>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- ISSUE 1: GITLAB TOKENS                                                    -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="section" id="issue1">
+  <h2 class="gitlab">Issue 1: GitLab 토큰 관리 기능</h2>
+
+  <div class="badge-row">
+    <span class="tag tag-bug">CEO 보고 이슈</span>
+    <span class="tag tag-gitlab">GitLab 지원</span>
+    <span class="tag tag-modify">API & Tokens 탭 수정</span>
+  </div>
+
+  <h3>1.1 현재 상태 분석</h3>
+  <p>Settings → API & Tokens 탭에서 CEO가 보고한 문제:</p>
+
+  <div class="callout danger">
+    <div class="callout-title">CEO 보고 내용</div>
+    "GitHub 토큰 정보만 있고, GitLab은 클릭이 안 됨"
+  </div>
+
+  <h4>현재 코드 분석 결과</h4>
+
+  <table>
+    <thead>
+      <tr>
+        <th>영역</th>
+        <th>GitHub</th>
+        <th>GitLab</th>
+        <th>문제</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>CI/CD Pipelines 탭 → 플랫폼 선택</strong></td>
+        <td>GitHub Actions YAML 스니펫 정상 표시</td>
+        <td>GitLab CI YAML 스니펫 정상 표시</td>
+        <td><span class="tag tag-existing">정상 동작</span></td>
+      </tr>
+      <tr>
+        <td><strong>API & Tokens 탭 → API Tokens 카드</strong></td>
+        <td colspan="2">GitHub/GitLab 구분 없이 동일한 <code>testably_*</code> 토큰. 생성/복사/삭제 정상 동작</td>
+        <td><span class="tag tag-existing">정상 동작</span></td>
+      </tr>
+      <tr>
+        <td><strong>API & Tokens 탭 → Token Scope Guide</strong></td>
+        <td>GitHub 버튼 활성 (dark 스타일). <code>repo</code>, <code>workflow</code>, <code>read:org</code> 스코프 표시</td>
+        <td>GitLab 버튼 있으나 <strong>클릭해도 아무 변화 없음</strong>. 상태 전환 로직 미구현</td>
+        <td><span class="tag tag-bug">버그: GitLab 클릭 불가</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout info">
+    <div class="callout-title">근본 원인</div>
+    <code>page.tsx</code>의 Token Scope Configuration Guide 섹션에서 GitHub/GitLab 버튼은 UI만 존재하고, GitLab 클릭 시 콘텐츠를 전환하는 상태(<code>selectedScopeGuide</code> 등)가 없습니다. GitHub 스코프 내용이 하드코딩되어 있어 GitLab 전환이 불가능합니다.
+  </div>
+
+  <h3>1.2 수정 사항: GitLab Token Scope Guide 구현</h3>
+
+  <h4>A. 상태 관리 추가</h4>
+  <p><code>page.tsx</code>에 새로운 상태를 추가합니다:</p>
+  <div class="code-block">
+<span style="color:#6c7086;">// 기존 selectedPlatform은 CI/CD 탭의 코드 스니펫용 (github | gitlab | python)</span>
+<span style="color:#6c7086;">// 새로 추가: Token Scope Guide의 GitHub/GitLab 전환용</span>
+<span style="color:#cba6f7;">const</span> [scopeGuideTab, setScopeGuideTab] = <span style="color:#f38ba8;">useState</span>&lt;<span style="color:#a6e3a1;">'github'</span> | <span style="color:#a6e3a1;">'gitlab'</span>&gt;(<span style="color:#a6e3a1;">'github'</span>);
+  </div>
+
+  <h4>B. GitLab/GitHub 스코프 데이터</h4>
+
+  <div class="compare-grid">
+    <div class="compare-card github">
+      <h5><i class="ri-github-fill"></i> GitHub (기존 &mdash; 유지)</h5>
+      <table style="font-size: 13px; margin: 8px 0;">
+        <tr><td><code>repo</code></td><td>Repository read access (for private repos)</td><td><strong>Required</strong></td></tr>
+        <tr><td><code>workflow</code></td><td>GitHub Actions workflow execution</td><td><strong>Required</strong></td></tr>
+        <tr><td><code>read:org</code></td><td>Read organization info</td><td>Optional</td></tr>
+      </table>
+      <p style="font-size: 12px; color: var(--gray-500); margin-top: 8px;">
+        <strong>Recommended:</strong> 자동 제공되는 <code>GITHUB_TOKEN</code> 사용이 가장 안전
+      </p>
+      <p style="font-size: 12px; margin-top: 4px;">
+        <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" style="color: var(--primary);">GitHub Token Docs →</a>
+      </p>
+    </div>
+
+    <div class="compare-card gitlab">
+      <h5><span style="color: var(--gitlab);">&#9670;</span> GitLab (신규 추가)</h5>
+      <table style="font-size: 13px; margin: 8px 0;">
+        <tr><td><code>api</code></td><td>Full API access (read/write)</td><td><strong>Required</strong></td></tr>
+        <tr><td><code>read_api</code></td><td>Read-only API access</td><td>Minimum</td></tr>
+        <tr><td><code>read_repository</code></td><td>Repository read access</td><td>Optional</td></tr>
+      </table>
+      <p style="font-size: 12px; color: var(--gray-500); margin-top: 8px;">
+        <strong>Recommended:</strong> GitLab CI/CD에서 자동 제공되는 <code>CI_JOB_TOKEN</code> 사용. 별도 PAT 불필요
+      </p>
+      <p style="font-size: 12px; margin-top: 4px;">
+        <a href="https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html" style="color: var(--gitlab);">GitLab Token Docs →</a>
+      </p>
+    </div>
+  </div>
+
+  <h4>C. 구현 방법 (Dev2 가이드)</h4>
+
+  <table>
+    <thead>
+      <tr>
+        <th>단계</th>
+        <th>파일</th>
+        <th>변경 내용</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>page.tsx</code> (상단 상태)</td>
+        <td><code>scopeGuideTab</code> state 추가: <code>useState&lt;'github' | 'gitlab'&gt;('github')</code></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>page.tsx</code> (Token Scope Guide 버튼)</td>
+        <td>GitLab 버튼에 <code>onClick={() => setScopeGuideTab('gitlab')}</code> 추가. 활성 스타일 조건부 적용: <code>scopeGuideTab === 'gitlab' ? 'bg-[#FC6D26] text-white ...' : 'bg-white ...'</code></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>page.tsx</code> (스코프 데이터)</td>
+        <td>
+          스코프 배열을 <code>scopeGuideTab</code>에 따라 분기:
+          <br><code>github</code>: <code>[{scope:'repo', ...}, {scope:'workflow', ...}, {scope:'read:org', ...}]</code>
+          <br><code>gitlab</code>: <code>[{scope:'api', ...}, {scope:'read_api', ...}, {scope:'read_repository', ...}]</code>
+        </td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>page.tsx</code> (하단 안내 메시지)</td>
+        <td>
+          GitHub: "Recommended: Using the automatically provided <code>GITHUB_TOKEN</code>..."<br>
+          GitLab: "Recommended: Using the automatically provided <code>CI_JOB_TOKEN</code> within GitLab CI/CD pipelines is the safest approach — no separate PAT creation needed."
+        </td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>page.tsx</code> (외부 링크)</td>
+        <td>
+          GitHub: <code>https://docs.github.com/en/authentication/.../personal-access-tokens</code><br>
+          GitLab: <code>https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html</code>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout success">
+    <div class="callout-title">예상 작업량</div>
+    순수 UI 로직 변경만 필요 (상태 1개 추가 + 조건부 렌더링). <strong>0.5일</strong> 이내 완료 가능.<br>
+    API Tokens 카드 자체는 GitHub/GitLab 공용이므로 변경 불필요. Token Scope Guide 섹션만 수정.
+  </div>
+
+  <h3>1.3 GitLab Token Scope Guide UI 상세</h3>
+  <p>수정 후 예상 UI입니다. GitHub 버튼 클릭 시와 GitLab 버튼 클릭 시 콘텐츠가 전환됩니다.</p>
+
+  <div style="border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 16px 0; background: white;">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+      <span style="font-size: 15px; font-weight: 700;">🛡 API Token Scope Configuration Guide</span>
+    </div>
+    <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px;">When using a Personal Access Token (PAT) in GitLab, only the following permissions are needed.</p>
+
+    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+      <span style="padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; background: white; color: var(--gray-500); border: 1px solid var(--gray-200);">GitHub</span>
+      <span style="padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; background: var(--gitlab); color: white; border: 1px solid var(--gitlab);">GitLab</span>
+    </div>
+
+    <div style="font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Minimum Required Scopes</div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--gray-50); border-radius: 8px;">
+        <code style="background: #fff7ed; color: #c2410c; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700;">api</code>
+        <span style="font-size: 13px; color: var(--gray-700); flex: 1;">Full API access — required for uploading CI/CD results</span>
+        <span style="font-size: 12px; font-weight: 600; color: var(--gitlab);">Required</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--gray-50); border-radius: 8px;">
+        <code style="background: #fff7ed; color: #c2410c; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700;">read_api</code>
+        <span style="font-size: 13px; color: var(--gray-700); flex: 1;">Read-only API access (alternative if write isn't needed)</span>
+        <span style="font-size: 12px; font-weight: 500; color: var(--gray-500);">Minimum</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--gray-50); border-radius: 8px;">
+        <code style="background: #fff7ed; color: #c2410c; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700;">read_repository</code>
+        <span style="font-size: 13px; color: var(--gray-700); flex: 1;">Repository read access (for private repos)</span>
+        <span style="font-size: 12px; font-weight: 500; color: var(--gray-500);">Optional</span>
+      </div>
+    </div>
+
+    <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #9a3412; margin-bottom: 12px;">
+      <strong>Recommended:</strong> Using the automatically provided <code style="background: #fef3c7; padding: 1px 4px; border-radius: 3px;">CI_JOB_TOKEN</code> within GitLab CI/CD pipelines is the safest approach — no separate PAT creation needed.
+    </div>
+
+    <a href="#" style="font-size: 12px; color: var(--gitlab); text-decoration: none;">🔗 GitLab Personal Access Token Official Documentation →</a>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- ISSUE 2: DOCUMENTATION                                                    -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="section" id="issue2">
+  <h2 class="docs">Issue 2: Testably Documentation 페이지 전체 콘텐츠 기획</h2>
+
+  <div class="badge-row">
+    <span class="tag tag-bug">CEO 보고 이슈</span>
+    <span class="tag tag-new">신규 콘텐츠 작성</span>
+    <span class="tag tag-doc">/docs 페이지</span>
+  </div>
+
+  <h3>2.1 현재 상태 분석</h3>
+
+  <div class="callout danger">
+    <div class="callout-title">CEO 보고 내용</div>
+    "View full API reference" 링크 클릭 시 Testably Documentation 페이지로 이동하는데, 문서가 비어있음
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>페이지</th>
+        <th>경로</th>
+        <th>현재 상태</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Documentation Hub</td>
+        <td><code>/docs</code></td>
+        <td>카테고리 카드 10개 (Quick Start 3개 + Browse by Category 10개). 모든 링크가 <code>href="#"</code>로 비어있음. 하단에 "Full documentation content is being built" 안내</td>
+      </tr>
+      <tr>
+        <td>API Reference</td>
+        <td><code>/docs/api</code></td>
+        <td>Endpoint 카테고리 7개 (Auth, Test Cases, Test Runs, Results, Projects, Milestones, Webhooks). 모든 링크가 <code>href="#"</code>. "Full API documentation will be hosted on a dedicated Swagger/Redoc instance" 안내</td>
+      </tr>
+      <tr>
+        <td>Settings → API & Tokens</td>
+        <td>(링크: <code>testably.app/docs</code>)</td>
+        <td>"View full API reference →" 링크가 <code>/docs</code> 가 아닌 <code>testably.app/docs</code>로 연결. 외부 링크 형태</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>2.2 문서 사이트 구조</h3>
+
+  <div class="doc-tree">
+    <div class="folder">/docs</div>
+    <div class="indent file">page.tsx <span style="color: var(--gray-400);">(기존 — Documentation Hub, 링크 연결 수정)</span></div>
+    <div class="indent folder new">/getting-started</div>
+    <div class="indent2 file new">page.tsx — 회원가입, 첫 프로젝트 생성, 첫 TC 생성</div>
+    <div class="indent folder">/api</div>
+    <div class="indent2 file">page.tsx <span style="color: var(--gray-400);">(기존 — API Reference 개요, 콘텐츠 보강)</span></div>
+    <div class="indent2 folder new">/authentication</div>
+    <div class="indent3 file new">page.tsx — API Key 발급, Bearer Token 사용법</div>
+    <div class="indent2 folder new">/projects</div>
+    <div class="indent3 file new">page.tsx — Projects API endpoints</div>
+    <div class="indent2 folder new">/test-cases</div>
+    <div class="indent3 file new">page.tsx — Test Cases API endpoints</div>
+    <div class="indent2 folder new">/test-runs</div>
+    <div class="indent3 file new">page.tsx — Test Runs API endpoints</div>
+    <div class="indent2 folder new">/test-results</div>
+    <div class="indent3 file new">page.tsx — Test Results API endpoints</div>
+    <div class="indent2 folder new">/milestones</div>
+    <div class="indent3 file new">page.tsx — Milestones API endpoints</div>
+    <div class="indent2 folder new">/discovery-logs</div>
+    <div class="indent3 file new">page.tsx — Discovery Logs API endpoints</div>
+    <div class="indent2 folder new">/members</div>
+    <div class="indent3 file new">page.tsx — Members API endpoints</div>
+    <div class="indent folder new">/cicd</div>
+    <div class="indent2 file new">page.tsx — GitHub Actions, GitLab CI, Python 연동 가이드</div>
+    <div class="indent folder new">/import-export</div>
+    <div class="indent2 file new">page.tsx — TestRail Import, Data Export (JSON/CSV)</div>
+    <div class="indent folder new">/webhooks</div>
+    <div class="indent2 file new">page.tsx — Slack/Teams Webhook 설정 가이드</div>
+    <div class="indent folder new">/integrations</div>
+    <div class="indent2 file new">page.tsx — Jira 연동 설정 가이드</div>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-title">라우팅 참고</div>
+    기존 <code>router/config.tsx</code>에 <code>/docs</code>와 <code>/docs/api</code> 라우트만 존재합니다. 위 신규 페이지들 모두 라우트 추가가 필요합니다. MarketingLayout을 공통으로 사용하되, 문서 페이지 전용 사이드바 네비게이션 컴포넌트를 추가하는 것을 권장합니다.
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── Getting Started ── -->
+  <h3 id="doc-getting-started">2.3 Getting Started</h3>
+  <div class="doc-section-card">
+    <div class="card-header">
+      <h4>Getting Started Guide</h4>
+      <span class="badge" style="background: #dcfce7; color: #166534;">필수</span>
+      <span class="badge" style="background: #dbeafe; color: #1d4ed8;">/docs/getting-started</span>
+    </div>
+    <div class="card-body">
+      <p><strong>목적:</strong> 신규 사용자가 회원가입부터 첫 테스트 케이스 실행까지 5분 내에 완료할 수 있도록 안내합니다.</p>
+
+      <h4 style="margin-top: 16px;">문서 목차</h4>
+      <table>
+        <thead><tr><th>섹션</th><th>핵심 내용</th><th>포함 요소</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1. 회원가입</strong></td>
+            <td>Email 가입 + Google SSO 방법. 이메일 인증 프로세스</td>
+            <td>스크린샷 2-3장, 단계별 설명</td>
+          </tr>
+          <tr>
+            <td><strong>2. 첫 프로젝트 생성</strong></td>
+            <td>Dashboard → "Create New Project" 클릭 → 프로젝트명, prefix 입력 → 생성 완료</td>
+            <td>스크린샷, prefix 규칙 설명 (예: "PRJ" → PRJ-1, PRJ-2)</td>
+          </tr>
+          <tr>
+            <td><strong>3. 첫 Test Case 생성</strong></td>
+            <td>프로젝트 → Test Cases 탭 → "New Test Case" 버튼 → 제목, 우선순위, Steps 입력 → 저장</td>
+            <td>스크린샷, 필드 설명 (title, priority, type, precondition, steps, expected result)</td>
+          </tr>
+          <tr>
+            <td><strong>4. 첫 Test Run 실행</strong></td>
+            <td>Test Runs 탭 → "Create Run" → TC 선택 → 실행 → Focus Mode에서 결과 입력</td>
+            <td>스크린샷, 상태값 설명 (passed/failed/blocked/retest/not_tested)</td>
+          </tr>
+          <tr>
+            <td><strong>5. 다음 단계</strong></td>
+            <td>팀원 초대, 마일스톤 설정, CI/CD 연동 링크</td>
+            <td>관련 문서 링크</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── API Reference ── -->
+  <h3 id="doc-api-reference">2.4 API Reference</h3>
+  <div class="doc-section-card">
+    <div class="card-header">
+      <h4>REST API Reference</h4>
+      <span class="badge" style="background: #dcfce7; color: #166534;">필수</span>
+      <span class="badge" style="background: #dbeafe; color: #1d4ed8;">/docs/api/*</span>
+    </div>
+    <div class="card-body">
+      <p><strong>목적:</strong> Testably의 모든 REST API 엔드포인트를 문서화합니다. 각 엔드포인트에 대해 Method, Path, Parameters, Request/Response Body, 예제를 제공합니다.</p>
+
+      <div class="callout purple">
+        <div class="callout-title">공통 사항 (모든 API 페이지 상단에 포함)</div>
+        <strong>Base URL:</strong> <code>https://api.testably.app/v1</code> (또는 Supabase Edge Function URL)<br>
+        <strong>Authentication:</strong> <code>Authorization: Bearer YOUR_API_TOKEN</code><br>
+        <strong>Content-Type:</strong> <code>application/json</code><br>
+        <strong>Rate Limit:</strong> 60 requests/min per token → <code>429 Too Many Requests</code><br>
+        <strong>Error Format:</strong> <code>{ "error": "error_code", "message": "Human readable message" }</code>
+      </div>
+
+      <h4>2.4.1 Authentication (<code>/docs/api/authentication</code>)</h4>
+      <table>
+        <thead><tr><th>섹션</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td>API Key 발급 방법</td><td>Settings → API & Tokens → "New Token" → 이름 입력 → 토큰 생성 → 복사 및 안전 보관. 스크린샷 포함</td></tr>
+          <tr><td>Bearer Token 사용법</td><td><code>curl -H "Authorization: Bearer testably_xxx..."</code> 예제. 모든 요청에 필수</td></tr>
+          <tr><td>토큰 보안 가이드</td><td>환경변수로 관리, 코드에 하드코딩 금지, CI/CD Secrets 활용 권장</td></tr>
+          <tr><td>토큰 무효화</td><td>Settings → API & Tokens → Delete 버튼. 즉시 비활성화 (soft delete: is_active=false)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>2.4.2 Projects API (<code>/docs/api/projects</code>)</h4>
+      <div class="endpoint-row"><span class="method get">GET</span> <span class="endpoint-path">/v1/projects</span> <span class="endpoint-desc">프로젝트 목록 조회</span></div>
+      <div class="endpoint-row"><span class="method get">GET</span> <span class="endpoint-path">/v1/projects/:id</span> <span class="endpoint-desc">프로젝트 상세 조회</span></div>
+      <div class="endpoint-row"><span class="method post">POST</span> <span class="endpoint-path">/v1/projects</span> <span class="endpoint-desc">프로젝트 생성</span></div>
+      <div class="endpoint-row"><span class="method patch">PATCH</span> <span class="endpoint-path">/v1/projects/:id</span> <span class="endpoint-desc">프로젝트 수정</span></div>
+      <div class="endpoint-row"><span class="method delete">DEL</span> <span class="endpoint-path">/v1/projects/:id</span> <span class="endpoint-desc">프로젝트 삭제</span></div>
+      <p style="font-size: 13px; color: var(--gray-500); margin-top: 8px;">각 엔드포인트별 Request/Response 예제, 파라미터 설명, 에러 코드 포함</p>
+
+      <h4>2.4.3 Test Cases API (<code>/docs/api/test-cases</code>)</h4>
+      <div class="endpoint-row"><span class="method get">GET</span> <span class="endpoint-path">/v1/projects/:pid/test-cases</span> <span class="endpoint-desc">TC 목록 (필터: folder, priority, type, search)</span></div>
+      <div class="endpoint-row"><span class="method get">GET</span> <span class="endpoint-path">/v1/projects/:pid/test-cases/:id</span> <span class="endpoint-desc">TC 상세 조회</span></div>
+      <div class="endpoint-row"><span class="method post">POST</span> <span class="endpoint-path">/v1/projects/:pid/test-cases</span> <span class="endpoint-desc">TC 생성</span></div>
+      <div class="endpoint-row"><span class="method patch">PATCH</span> <span class="endpoint-path">/v1/projects/:pid/test-cases/:id</span> <span class="endpoint-desc">TC 수정</span></div>
+      <div class="endpoint-row"><span class="method delete">DEL</span> <span class="endpoint-path">/v1/projects/:pid/test-cases/:id</span> <span class="endpoint-desc">TC 삭제</span></div>
+      <div class="endpoint-row"><span class="method post">POST</span> <span class="endpoint-path">/v1/projects/:pid/test-cases/bulk</span> <span class="endpoint-desc">TC 벌크 생성</span></div>
+      <p style="font-size: 13px; color: var(--gray-500); margin-top: 8px;">필드: title, folder_id, priority(critical/high/medium/low), type(manual/automated), precondition, steps[], expected_result, custom_id</p>
+
+      <h4>2.4.4 Test Runs API (<code>/docs/api/test-runs</code>)</h4>
+      <div class="endpoint-row"><span class="method get">GET</span> <span class="endpoint-path">/v1/projects/:pid/runs</span> <span class="endpoint-desc">Run 목록 조회</span></div>
+      <div class="endpoint-row"><span class="method get">GET</span> <span class="endpoint-path">/v1/projects/:pid/runs/:id</span> <span class="endpoint-desc">Run 상세 조회</span></div>
+      <div class="endpoint-row"><span class="method post">POST</span> <span class="endpoint-path">/v1/projects/:pid/runs</span> <span class="endpoint-desc">Run 생성 (TC IDs 포함)</span></div>
+      <div class="endpoint-row"><span class="method patch">PATCH</span> <span class="endpoint-path">/v1/projects/:pid/runs/:id</span> <span class="endpoint-desc">Run 수정 (이름, 상태)</span></div>
+      <div class="endpoint-row"><span class="method post">POST</span> <span class="endpoint-path">/v1/projects/:pid/runs/:id/close</span> <span class="endpoint-desc">Run 종료</span></div>
+
+      <h4>2.4.5 Test Results API (<code>/docs/api/test-results</code>)</h4>
+      <div class="endpoint-row"><span class="method get">GET</span> <span class="endpoint-path">/v1/runs/:rid/results</span> <span class="endpoint-desc">Run의 결과 목록</span></div>
+      <div class="endpoint-row"><span class="method put">PUT</span> <span class="endpoint-path">/v1/runs/:rid/results/:id</span> <span class="endpoint-desc">개별 결과 업데이트</span></div>
+      <div class="endpoint-row"><span class="method post">POST</span> <span class="endpoint-path">/v1/runs/:rid/results/bulk</span> <span class="endpoint-desc">벌크 결과 업로드 (CI/CD용)</span></div>
+      <p style="font-size: 13px; color: var(--gray-500); margin-top: 8px;">상태값: passed, failed, blocked, retest, not_tested. 각 결과에 note, elapsed(실행시간), author 포함 가능</p>
+
+      <h4>2.4.6 Milestones API (<code>/docs/api/milestones</code>)</h4>
+      <div class="endpoint-row"><span class="method get">GET</span> <span class="endpoint-path">/v1/projects/:pid/milestones</span> <span class="endpoint-desc">마일스톤 목록</span></div>
+      <div class="endpoint-row"><span class="method post">POST</span> <span class="endpoint-path">/v1/projects/:pid/milestones</span> <span class="endpoint-desc">마일스톤 생성</span></div>
+      <div class="endpoint-row"><span class="method patch">PATCH</span> <span class="endpoint-path">/v1/projects/:pid/milestones/:id</span> <span class="endpoint-desc">마일스톤 수정</span></div>
+
+      <h4>2.4.7 Discovery Logs API (<code>/docs/api/discovery-logs</code>)</h4>
+      <div class="endpoint-row"><span class="method get">GET</span> <span class="endpoint-path">/v1/projects/:pid/sessions</span> <span class="endpoint-desc">세션 목록</span></div>
+      <div class="endpoint-row"><span class="method post">POST</span> <span class="endpoint-path">/v1/projects/:pid/sessions</span> <span class="endpoint-desc">세션 생성</span></div>
+      <div class="endpoint-row"><span class="method get">GET</span> <span class="endpoint-path">/v1/sessions/:sid/logs</span> <span class="endpoint-desc">로그 목록</span></div>
+      <div class="endpoint-row"><span class="method post">POST</span> <span class="endpoint-path">/v1/sessions/:sid/logs</span> <span class="endpoint-desc">로그 추가</span></div>
+
+      <h4>2.4.8 Members API (<code>/docs/api/members</code>)</h4>
+      <div class="endpoint-row"><span class="method get">GET</span> <span class="endpoint-path">/v1/projects/:pid/members</span> <span class="endpoint-desc">멤버 목록 (role 포함)</span></div>
+      <div class="endpoint-row"><span class="method post">POST</span> <span class="endpoint-path">/v1/projects/:pid/members/invite</span> <span class="endpoint-desc">멤버 초대 (이메일)</span></div>
+      <div class="endpoint-row"><span class="method patch">PATCH</span> <span class="endpoint-path">/v1/projects/:pid/members/:uid</span> <span class="endpoint-desc">역할 변경</span></div>
+      <div class="endpoint-row"><span class="method delete">DEL</span> <span class="endpoint-path">/v1/projects/:pid/members/:uid</span> <span class="endpoint-desc">멤버 제거</span></div>
+      <p style="font-size: 13px; color: var(--gray-500); margin-top: 8px;">역할: admin, member, viewer</p>
+    </div>
+  </div>
+
+  <!-- ── CI/CD Integration ── -->
+  <h3 id="doc-cicd">2.5 CI/CD Integration</h3>
+  <div class="doc-section-card">
+    <div class="card-header">
+      <h4>CI/CD Integration Guide</h4>
+      <span class="badge" style="background: #dcfce7; color: #166534;">필수</span>
+      <span class="badge" style="background: #dbeafe; color: #1d4ed8;">/docs/cicd</span>
+    </div>
+    <div class="card-body">
+      <p><strong>목적:</strong> Settings → CI/CD Pipelines에 이미 있는 코드 스니펫을 바탕으로, 각 플랫폼별 상세 연동 가이드를 제공합니다.</p>
+
+      <table>
+        <thead><tr><th>섹션</th><th>내용</th><th>소스 (Settings 코드 기반)</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1. 사전 준비</strong></td>
+            <td>API Token 생성 → 환경변수 등록 (TESTABLY_URL, TESTABLY_TOKEN)</td>
+            <td>Settings CI/CD 탭의 환경변수 등록 가이드 영역 기반</td>
+          </tr>
+          <tr>
+            <td><strong>2. GitHub Actions</strong></td>
+            <td>
+              전체 YAML 코드 + 단계별 설명:<br>
+              ① Secrets에 TESTABLY_URL, TESTABLY_TOKEN 등록<br>
+              ② Workflow YAML 파일 생성 (.github/workflows/testably.yml)<br>
+              ③ curl로 결과 업로드 (POST 요청)<br>
+              ④ run_id, test_case_id, status 파라미터 설명
+            </td>
+            <td><code>getYAMLSnippet('github')</code> 함수 기반</td>
+          </tr>
+          <tr>
+            <td><strong>3. GitLab CI</strong></td>
+            <td>
+              전체 YAML 코드 + 단계별 설명:<br>
+              ① CI/CD Variables에 등록<br>
+              ② .gitlab-ci.yml 파일 작성<br>
+              ③ JUnit XML 아티팩트 연동<br>
+              ④ upload_results 스테이지 설명
+            </td>
+            <td><code>getYAMLSnippet('gitlab')</code> 함수 기반</td>
+          </tr>
+          <tr>
+            <td><strong>4. Python (pytest)</strong></td>
+            <td>
+              두 가지 방법:<br>
+              <strong>Method 1:</strong> Function-based — <code>report_result()</code> 함수로 수동 업로드<br>
+              <strong>Method 2:</strong> conftest.py — pytest hook 자동 수집 + 업로드<br>
+              각 방법의 전체 코드 + 사용법 설명
+            </td>
+            <td><code>getPythonFunctionSnippet()</code>, <code>getPythonConftestSnippet()</code> 기반</td>
+          </tr>
+          <tr>
+            <td><strong>5. 공통 참고사항</strong></td>
+            <td>
+              상태값 목록: passed/failed/blocked/retest<br>
+              run_id 확인 방법 (Testably UI에서 복사)<br>
+              test_case_id 형식 (예: SUI-1)<br>
+              업로드 API 엔드포인트 설명
+            </td>
+            <td>코드 스니펫 하단의 How to use 가이드 기반</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout gitlab">
+        <div class="callout-title">Settings 코드에서 가져올 내용</div>
+        Settings <code>page.tsx</code>의 <code>getYAMLSnippet()</code>, <code>getPythonFunctionSnippet()</code>, <code>getPythonConftestSnippet()</code> 함수에 이미 완성된 코드 스니펫이 있습니다. Documentation 페이지에서는 이 코드를 그대로 사용하되, 각 줄에 대한 <strong>상세 설명</strong>을 추가합니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Authentication ── -->
+  <h3 id="doc-auth">2.6 Authentication</h3>
+  <div class="doc-section-card">
+    <div class="card-header">
+      <h4>Authentication Guide</h4>
+      <span class="badge" style="background: #dcfce7; color: #166534;">필수</span>
+      <span class="badge" style="background: #dbeafe; color: #1d4ed8;">/docs/api/authentication</span>
+    </div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>섹션</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1. API Key 발급 방법</strong></td>
+            <td>
+              <strong>경로:</strong> Settings → API & Tokens → "New Token"<br>
+              <strong>단계:</strong><br>
+              ① "New Token" 버튼 클릭<br>
+              ② Token 이름 입력 (예: "CI/CD Pipeline", "Local Development")<br>
+              ③ "Create" 클릭 → <code>testably_xxxxxxxxxxxx</code> 형태 토큰 생성<br>
+              ④ 토큰 복사 (클립보드 복사 버튼 사용)<br>
+              ⑤ 안전한 곳에 보관 (토큰은 다시 확인 불가하지 않지만, 보안상 환경변수 사용 권장)<br>
+              <strong>스크린샷:</strong> New Token 모달 + 생성된 토큰 화면
+            </td>
+          </tr>
+          <tr>
+            <td><strong>2. Bearer Token 사용법</strong></td>
+            <td>
+              모든 API 요청의 헤더에 포함:<br>
+              <code>Authorization: Bearer testably_your_token_here</code><br>
+              <br>
+              <strong>curl 예제:</strong><br>
+              <code>curl -H "Authorization: Bearer testably_abc123..." \<br>&nbsp;&nbsp;&nbsp;&nbsp; -H "Content-Type: application/json" \<br>&nbsp;&nbsp;&nbsp;&nbsp; https://api.testably.app/v1/projects</code><br>
+              <br>
+              <strong>JavaScript 예제:</strong><br>
+              <code>fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })</code>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>3. 보안 가이드</strong></td>
+            <td>
+              환경변수 사용 권장 (<code>TESTABLY_TOKEN</code>)<br>
+              코드에 하드코딩 금지, .env 파일 사용 시 .gitignore에 추가<br>
+              CI/CD에서는 GitHub Secrets / GitLab CI Variables 사용<br>
+              토큰 유출 시 즉시 삭제 후 재발급
+            </td>
+          </tr>
+          <tr>
+            <td><strong>4. 에러 코드</strong></td>
+            <td>
+              <code>401</code>: Invalid or missing token<br>
+              <code>403</code>: Token doesn't have access to this resource<br>
+              <code>429</code>: Rate limit exceeded (60 req/min)
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Import/Export ── -->
+  <h3 id="doc-import-export">2.7 Import/Export</h3>
+  <div class="doc-section-card">
+    <div class="card-header">
+      <h4>Import/Export Guide</h4>
+      <span class="badge" style="background: #fef3c7; color: #92400e;">중요</span>
+      <span class="badge" style="background: #dbeafe; color: #1d4ed8;">/docs/import-export</span>
+    </div>
+    <div class="card-body">
+      <h4>A. TestRail Import 가이드</h4>
+      <table>
+        <thead><tr><th>섹션</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1. CSV 파일 임포트 (현재 지원)</strong></td>
+            <td>
+              ① TestRail에서 CSV 내보내기 방법 (TestRail → Test Cases → Export to CSV)<br>
+              ② Testably에서 프로젝트 선택 → Test Cases → Import 버튼 → CSV 파일 업로드<br>
+              ③ 컬럼 자동 매핑 설명 (Title, Priority, Type, Steps 등)<br>
+              ④ 미리보기 확인 → Import 실행<br>
+              ⑤ Priority 매핑: Critical↔Critical, High↔High, Medium↔Medium, Low↔Low
+            </td>
+          </tr>
+          <tr>
+            <td><strong>2. API 기반 임포트 (예정)</strong></td>
+            <td>
+              "Coming Soon" 배지와 함께 간략히 안내:<br>
+              API Key 인증 → 프로젝트 선택 → 데이터 타입 선택 → 매핑 → 자동 임포트
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top: 16px;">B. Data Export 가이드</h4>
+      <table>
+        <thead><tr><th>섹션</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1. CSV Export</strong></td>
+            <td>
+              프로젝트 → Test Cases → Export 버튼 → 컬럼 선택 (11개 옵션) → CSV 다운로드<br>
+              포함 가능 컬럼: ID, Title, Priority, Type, Status, Folder, Precondition, Steps, Expected Result, Created, Updated
+            </td>
+          </tr>
+          <tr>
+            <td><strong>2. TestRail 호환 CSV</strong></td>
+            <td>
+              TestRail 포맷으로 내보내기. TestRail에서 바로 Import 가능한 형태<br>
+              RFC 4180 준수 CSV 형식
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Webhooks ── -->
+  <h3 id="doc-webhooks">2.8 Webhooks</h3>
+  <div class="doc-section-card">
+    <div class="card-header">
+      <h4>Webhook Integration Guide</h4>
+      <span class="badge" style="background: #fef3c7; color: #92400e;">중요</span>
+      <span class="badge" style="background: #dbeafe; color: #1d4ed8;">/docs/webhooks</span>
+    </div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>섹션</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Slack Webhook 설정</strong></td>
+            <td>
+              <strong>사전 준비:</strong> Slack Workspace에서 Incoming Webhook 생성 (api.slack.com/apps → Incoming Webhooks → Add New Webhook to Workspace)<br>
+              <strong>Testably 설정:</strong><br>
+              ① Settings → Integrations → "Add Integration"<br>
+              ② Type: Slack 선택<br>
+              ③ Project 선택<br>
+              ④ Webhook URL 입력 (https://hooks.slack.com/services/...)<br>
+              ⑤ Channel name (선택사항)<br>
+              ⑥ Events 선택<br>
+              ⑦ Save → Test 버튼으로 확인
+            </td>
+          </tr>
+          <tr>
+            <td><strong>2. Microsoft Teams Webhook 설정</strong></td>
+            <td>
+              <strong>사전 준비:</strong> Teams Channel → Connectors → "Incoming Webhook" 추가 → URL 복사<br>
+              <strong>Testably 설정:</strong> Slack과 동일한 절차. Type을 "Microsoft Teams"로 선택
+            </td>
+          </tr>
+          <tr>
+            <td><strong>3. 지원 이벤트</strong></td>
+            <td>
+              7가지 이벤트 (현재 구현된 WEBHOOK_EVENTS 기반):<br>
+              <strong>Team Activity:</strong> invitation_received, member_joined<br>
+              <strong>Test Runs:</strong> run_created, run_completed<br>
+              <strong>Milestones:</strong> milestone_started, milestone_completed, milestone_past_due<br>
+              각 이벤트별 payload 예제 포함
+            </td>
+          </tr>
+          <tr>
+            <td><strong>4. 관리 기능</strong></td>
+            <td>
+              Toggle (활성/비활성), Edit, Delete, Test (테스트 메시지 전송), Logs (배달 로그 조회, 최근 50건)<br>
+              각 기능별 스크린샷 + 설명
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Integrations: Jira ── -->
+  <h3 id="doc-integrations">2.9 Integrations (Jira)</h3>
+  <div class="doc-section-card">
+    <div class="card-header">
+      <h4>Jira Integration Guide</h4>
+      <span class="badge" style="background: #fef3c7; color: #92400e;">중요</span>
+      <span class="badge" style="background: #dbeafe; color: #1d4ed8;">/docs/integrations</span>
+    </div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>섹션</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1. 사전 준비</strong></td>
+            <td>
+              Jira Cloud 계정 필요 (Server/Data Center는 추후 지원)<br>
+              Jira API Token 생성: id.atlassian.com → Security → API tokens → Create token<br>
+              필요 정보: Jira Domain, Email, API Token
+            </td>
+          </tr>
+          <tr>
+            <td><strong>2. Testably에서 설정</strong></td>
+            <td>
+              <strong>경로:</strong> Settings → Integrations → Jira Settings<br>
+              <strong>티어:</strong> Starter 이상 필요 (Free는 잠금)<br>
+              ① Jira Domain 입력 (예: yourcompany.atlassian.net)<br>
+              ② Email 입력<br>
+              ③ API Token 입력<br>
+              ④ Issue Type 선택 (Bug, Task, Story 등)<br>
+              ⑤ "Test Connection" 으로 연결 확인<br>
+              ⑥ "Save Settings"<br>
+              <strong>스크린샷:</strong> Jira 설정 폼 화면
+            </td>
+          </tr>
+          <tr>
+            <td><strong>3. 사용법</strong></td>
+            <td>
+              Test Case 상세 또는 Test Run 결과에서 "Create Jira Issue" 버튼 → 자동으로 Jira 이슈 생성<br>
+              테스트 실패 시 빠르게 버그 리포트 가능
+            </td>
+          </tr>
+          <tr>
+            <td><strong>4. 문제 해결</strong></td>
+            <td>
+              연결 실패 시: Domain 확인, API Token 유효성, 네트워크<br>
+              권한 오류: Jira 프로젝트 접근 권한 확인<br>
+              Issue Type 없음: Jira 프로젝트 설정에서 Issue Type 확인
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── Dev Summary ── -->
+  <h3 id="doc-dev-summary">2.10 개발 요약</h3>
+
+  <h4>A. 공통 컴포넌트 (선행 개발)</h4>
+  <table>
+    <thead><tr><th>컴포넌트</th><th>설명</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>DocsLayout.tsx</code></td>
+        <td>문서 전용 레이아웃. 좌측 사이드바 네비게이션 + 우측 콘텐츠 영역 + 우측 TOC (Table of Contents)</td>
+        <td><span class="tag tag-new">신규</span></td>
+      </tr>
+      <tr>
+        <td><code>DocsSidebar.tsx</code></td>
+        <td>좌측 네비게이션. 카테고리별 트리 메뉴. 현재 페이지 하이라이트. 접기/펼치기</td>
+        <td><span class="tag tag-new">신규</span></td>
+      </tr>
+      <tr>
+        <td><code>CodeBlock.tsx</code></td>
+        <td>신택스 하이라이트 코드 블록. Copy 버튼 포함. 언어 탭 전환 (curl/JS/Python)</td>
+        <td><span class="tag tag-new">신규</span></td>
+      </tr>
+      <tr>
+        <td><code>EndpointCard.tsx</code></td>
+        <td>API 엔드포인트 표시 카드. Method 배지 + Path + 파라미터 + Request/Response 예제</td>
+        <td><span class="tag tag-new">신규</span></td>
+      </tr>
+      <tr>
+        <td><code>Callout.tsx</code></td>
+        <td>Info/Warning/Danger 알림 박스. 재사용 가능</td>
+        <td><span class="tag tag-new">신규</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>B. 신규 페이지 파일</h4>
+  <table>
+    <thead><tr><th>경로</th><th>내용</th><th>우선순위</th></tr></thead>
+    <tbody>
+      <tr><td><code>/docs/getting-started/page.tsx</code></td><td>Getting Started 가이드</td><td><strong>P0</strong></td></tr>
+      <tr><td><code>/docs/api/authentication/page.tsx</code></td><td>API Key 발급 + Bearer Token</td><td><strong>P0</strong></td></tr>
+      <tr><td><code>/docs/api/projects/page.tsx</code></td><td>Projects API</td><td>P1</td></tr>
+      <tr><td><code>/docs/api/test-cases/page.tsx</code></td><td>Test Cases API</td><td><strong>P0</strong></td></tr>
+      <tr><td><code>/docs/api/test-runs/page.tsx</code></td><td>Test Runs API</td><td><strong>P0</strong></td></tr>
+      <tr><td><code>/docs/api/test-results/page.tsx</code></td><td>Test Results API (CI/CD 핵심)</td><td><strong>P0</strong></td></tr>
+      <tr><td><code>/docs/api/milestones/page.tsx</code></td><td>Milestones API</td><td>P1</td></tr>
+      <tr><td><code>/docs/api/discovery-logs/page.tsx</code></td><td>Discovery Logs API</td><td>P2</td></tr>
+      <tr><td><code>/docs/api/members/page.tsx</code></td><td>Members API</td><td>P2</td></tr>
+      <tr><td><code>/docs/cicd/page.tsx</code></td><td>CI/CD Integration Guide</td><td><strong>P0</strong></td></tr>
+      <tr><td><code>/docs/import-export/page.tsx</code></td><td>Import/Export Guide</td><td>P1</td></tr>
+      <tr><td><code>/docs/webhooks/page.tsx</code></td><td>Webhook Guide</td><td>P1</td></tr>
+      <tr><td><code>/docs/integrations/page.tsx</code></td><td>Jira Integration Guide</td><td>P1</td></tr>
+    </tbody>
+  </table>
+
+  <h4>C. 기존 파일 수정</h4>
+  <table>
+    <thead><tr><th>파일</th><th>변경 내용</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>router/config.tsx</code></td>
+        <td>신규 13개 라우트 추가</td>
+      </tr>
+      <tr>
+        <td><code>/docs/page.tsx</code></td>
+        <td>모든 <code>href="#"</code>를 실제 페이지 링크로 교체. Quick Start 카드 3개의 href를 getting-started, api/test-cases 등으로 변경</td>
+      </tr>
+      <tr>
+        <td><code>/docs/api/page.tsx</code></td>
+        <td>Endpoint 카드들의 <code>href="#"</code>를 각 API 문서 페이지 링크로 교체</td>
+      </tr>
+      <tr>
+        <td><code>settings/page.tsx</code></td>
+        <td>"View full API reference" 링크의 href를 <code>/docs/api</code>로 변경 (현재 <code>testably.app/docs</code>)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>D. 개발 우선순위 및 일정 권장</h4>
+  <table>
+    <thead><tr><th>Phase</th><th>내용</th><th>예상 기간</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Phase 1 (P0)</strong></td>
+        <td>
+          DocsLayout + DocsSidebar 공통 컴포넌트<br>
+          Getting Started<br>
+          Authentication<br>
+          Test Cases / Test Runs / Test Results API<br>
+          CI/CD Integration Guide<br>
+          기존 docs 페이지 링크 수정
+        </td>
+        <td><strong>5-7일</strong></td>
+      </tr>
+      <tr>
+        <td><strong>Phase 2 (P1)</strong></td>
+        <td>
+          Projects / Milestones API<br>
+          Import/Export Guide<br>
+          Webhooks Guide<br>
+          Jira Integration Guide
+        </td>
+        <td><strong>3-4일</strong></td>
+      </tr>
+      <tr>
+        <td><strong>Phase 3 (P2)</strong></td>
+        <td>
+          Discovery Logs / Members API<br>
+          검색 기능 구현 (docs 내 전문 검색)<br>
+          스크린샷 추가 및 폴리싱
+        </td>
+        <td><strong>2-3일</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warning">
+    <div class="callout-title">중요 참고사항</div>
+    <strong>API 엔드포인트 실제 구현 확인 필요:</strong> 위 API 엔드포인트 목록은 Testably가 제공해야 할 표준 REST API를 기획한 것입니다. 현재 실제로 구현된 API가 Supabase Edge Function (<code>upload-ci-results</code>)만 있다면, Documentation에는 "현재 사용 가능한 API"와 "Coming Soon API"를 구분하여 표시해야 합니다. Dev2는 백엔드 팀과 실제 구현된 API 범위를 확인 후 문서를 작성해야 합니다.
+  </div>
+</div>
+
+</div><!-- /container -->
+</body>
+</html>

@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM 기획서 — Get Started 체크리스트 워크플로우 개선</title>
+<style>
+  :root {
+    --indigo: #4338CA;
+    --indigo-light: #EEF2FF;
+    --red: #DC2626;
+    --red-light: #FEF2F2;
+    --green: #16A34A;
+    --green-light: #F0FDF4;
+    --amber: #D97706;
+    --amber-light: #FFFBEB;
+    --slate-900: #0F172A;
+    --slate-700: #334155;
+    --slate-500: #64748B;
+    --slate-200: #E2E8F0;
+    --slate-50: #F8FAFC;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--slate-700); line-height: 1.7; background: #fff; }
+  .container { max-width: 960px; margin: 0 auto; padding: 48px 32px; }
+  h1 { font-size: 28px; font-weight: 800; color: var(--slate-900); margin-bottom: 8px; }
+  .subtitle { font-size: 15px; color: var(--slate-500); margin-bottom: 32px; }
+  h2 { font-size: 20px; font-weight: 700; color: var(--slate-900); margin-top: 40px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--indigo); }
+  h3 { font-size: 16px; font-weight: 700; color: var(--slate-900); margin-top: 24px; margin-bottom: 10px; }
+  h4 { font-size: 14px; font-weight: 600; color: var(--slate-700); margin-top: 16px; margin-bottom: 8px; }
+  p { margin-bottom: 12px; font-size: 14px; }
+  .meta { display: flex; gap: 24px; margin-bottom: 32px; font-size: 13px; color: var(--slate-500); }
+  .meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* Cards */
+  .card { border: 1px solid var(--slate-200); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .card-header .num { width: 28px; height: 28px; border-radius: 50%; background: var(--indigo); color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .card-header .title { font-size: 15px; font-weight: 700; color: var(--slate-900); }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; margin-right: 6px; }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-indigo { background: var(--indigo-light); color: var(--indigo); }
+
+  /* Alert */
+  .alert { border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; font-size: 13px; }
+  .alert-red { background: var(--red-light); border-left: 4px solid var(--red); }
+  .alert-amber { background: var(--amber-light); border-left: 4px solid var(--amber); }
+  .alert-green { background: var(--green-light); border-left: 4px solid var(--green); }
+  .alert-indigo { background: var(--indigo-light); border-left: 4px solid var(--indigo); }
+  .alert strong { color: var(--slate-900); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+  th { background: var(--slate-50); font-weight: 700; color: var(--slate-900); text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--slate-200); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--slate-200); vertical-align: top; }
+  tr:hover td { background: #FAFAFF; }
+
+  /* Code */
+  code { background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 4px; padding: 1px 6px; font-size: 12px; font-family: 'SF Mono', 'Fira Code', monospace; color: var(--indigo); }
+
+  /* Summary box */
+  .summary-box { background: linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%); border: 1px solid #C7D2FE; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .summary-box h3 { margin-top: 0; color: var(--indigo); }
+
+  /* Flow diagram */
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+  .flow-step { background: var(--indigo-light); border: 1px solid #C7D2FE; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: var(--indigo); }
+  .flow-arrow { color: var(--slate-500); font-size: 16px; }
+
+  /* Section divider */
+  .divider { height: 1px; background: var(--slate-200); margin: 32px 0; }
+
+  /* File tree */
+  .file-tree { background: var(--slate-50); border-radius: 8px; padding: 16px; font-size: 12px; font-family: monospace; line-height: 1.9; margin-bottom: 16px; }
+  .file-tree .active { color: var(--indigo); font-weight: 700; }
+  .file-tree .dead { color: var(--red); text-decoration: line-through; }
+  .file-tree .new { color: var(--green); font-weight: 700; }
+
+  /* Two column layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+  ul { margin-left: 20px; margin-bottom: 12px; font-size: 14px; }
+  li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Get Started 체크리스트 워크플로우 개선</h1>
+<p class="subtitle">CEO 피드백 기반 — 현재 상태 분석 + 개선 기획안</p>
+
+<div class="meta">
+  <span>📅 2026-03-30</span>
+  <span>👤 PM</span>
+  <span>🏷️ Onboarding / UX</span>
+  <span>⏱️ 예상 개발: 3–4일</span>
+</div>
+
+<!-- ===== Executive Summary ===== -->
+<div class="summary-box">
+  <h3>Executive Summary</h3>
+  <p style="margin-bottom:8px;">CEO 피드백: "워크플로우가 명확하지 않고, 클릭해도 동작하지 않는 항목이 있다."</p>
+  <p style="margin-bottom:8px;">소스코드 분석 결과, <strong>6개 항목 중 자동 완료가 되는 것은 1개(Create Project)뿐</strong>이며, 나머지 5개는 markStep 호출이 없어 사용자가 실제 액션을 수행해도 체크되지 않습니다. 또한 네비게이션 링크에 버그가 있어 Settings 탭 이동이 작동하지 않습니다.</p>
+  <p style="margin-bottom:0;">추가로, <strong>두 개의 체크리스트 컴포넌트</strong>가 공존하며 (OnboardingChecklist + GettingStartedChecklist) 후자는 사용되지 않는 데드코드입니다.</p>
+</div>
+
+<!-- ===== 1. Architecture Overview ===== -->
+<h2>1. 현재 아키텍처 개요</h2>
+
+<h3>1.1 파일 구조</h3>
+<div class="file-tree">
+  src/<br>
+  ├── hooks/<br>
+  │   ├── <span class="active">useOnboarding.ts</span> — DB 연동 온보딩 상태 관리 (핵심 훅)<br>
+  │   └── <span class="active">useSampleProject.ts</span> — 샘플 프로젝트 생성<br>
+  ├── components/onboarding/<br>
+  │   ├── <span class="active">OnboardingChecklist.tsx</span> — 실제 사용 중인 플로팅 체크리스트<br>
+  │   ├── <span class="active">ChecklistItem.tsx</span> — 개별 항목 컴포넌트<br>
+  │   ├── <span class="active">OnboardingProgress.tsx</span> — 프로그레스 바<br>
+  │   └── <span class="active">WelcomeScreen.tsx</span> — 최초 가입 시 환영 모달<br>
+  ├── pages/projects/components/<br>
+  │   └── <span class="dead">GettingStartedChecklist.tsx</span> — ⚠️ 미사용 데드코드 (localStorage 기반)<br>
+  └── <span class="active">App.tsx</span> — 온보딩 오케스트레이션<br>
+  <br>
+  supabase/migrations/<br>
+  └── <span class="active">20260323001_onboarding.sql</span> — user_onboarding 테이블 + 트리거
+</div>
+
+<h3>1.2 데이터 흐름</h3>
+<div class="flow">
+  <span class="flow-step">회원가입</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step">DB trigger: user_onboarding 레코드 생성</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step">WelcomeScreen 모달</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step">OnboardingChecklist 표시</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step">6개 스텝 완료 or 14일 경과 → 자동 닫힘</span>
+</div>
+
+<h3>1.3 DB 스키마 — user_onboarding</h3>
+<table>
+  <tr><th>컬럼</th><th>타입</th><th>설명</th></tr>
+  <tr><td><code>welcome_completed</code></td><td>BOOLEAN</td><td>환영 모달 완료 여부</td></tr>
+  <tr><td><code>checklist_dismissed</code></td><td>BOOLEAN</td><td>체크리스트 수동 닫기 여부</td></tr>
+  <tr><td><code>sample_project_created</code></td><td>BOOLEAN</td><td>샘플 프로젝트 생성 여부</td></tr>
+  <tr><td><code>step_create_project</code></td><td>BOOLEAN</td><td>프로젝트 생성 스텝</td></tr>
+  <tr><td><code>step_create_testcase</code></td><td>BOOLEAN</td><td>TC 작성 스텝</td></tr>
+  <tr><td><code>step_try_ai</code></td><td>BOOLEAN</td><td>AI 생성 스텝</td></tr>
+  <tr><td><code>step_run_test</code></td><td>BOOLEAN</td><td>테스트 실행 스텝</td></tr>
+  <tr><td><code>step_invite_member</code></td><td>BOOLEAN</td><td>멤버 초대 스텝</td></tr>
+  <tr><td><code>step_connect_jira</code></td><td>BOOLEAN</td><td>Jira 연결 스텝</td></tr>
+  <tr><td><code>completed_at</code></td><td>TIMESTAMPTZ</td><td>6개 모두 완료 시 타임스탬프</td></tr>
+</table>
+
+<!-- ===== 2. Critical Findings ===== -->
+<h2>2. 핵심 발견 — 버그 및 미구현 항목</h2>
+
+<div class="alert alert-red">
+  <strong>🔴 Critical Bug 1: 자동 완료 감지 미구현 (5/6 항목)</strong><br>
+  <code>markStep()</code> 호출이 코드베이스 전체에서 <strong>createProject 한 곳</strong>에서만 발생합니다. 나머지 5개 스텝(createTestcase, tryAi, runTest, inviteMember, connectJira)은 사용자가 실제로 수행해도 DB에 반영되지 않아 체크가 되지 않습니다.
+</div>
+
+<div class="alert alert-red">
+  <strong>🔴 Critical Bug 2: Settings 탭 네비게이션 불일치</strong><br>
+  OnboardingChecklist가 <code>/settings#team</code>, <code>/settings#integrations</code>로 링크하지만, Settings 페이지는 <strong>해시(#) 대신 쿼리 파라미터(<code>?tab=members</code>)</strong>를 사용합니다. 결과적으로 클릭 시 Settings 페이지로 이동은 되지만 Profile 탭(기본값)이 표시됩니다.
+</div>
+
+<div class="alert alert-amber">
+  <strong>🟡 Issue 3: 데드코드 — GettingStartedChecklist.tsx</strong><br>
+  <code>pages/projects/components/GettingStartedChecklist.tsx</code>는 어디에서도 import되지 않는 미사용 파일입니다. localStorage 기반의 다른 체크리스트인데, OnboardingChecklist (DB 기반)와 혼동됩니다. 삭제해야 합니다.
+</div>
+
+<div class="alert alert-amber">
+  <strong>🟡 Issue 4: 항목 간 의존성 없음</strong><br>
+  "프로젝트 생성 전에 TC 작성 불가"와 같은 논리적 순서가 있으나, 모든 항목이 독립적으로 클릭 가능합니다. 프로젝트가 없는 상태에서 TC 작성 클릭 → /projects 페이지로 이동하지만 맥락이 없습니다.
+</div>
+
+<div class="alert alert-amber">
+  <strong>🟡 Issue 5: 수동 토글 vs 자동 감지 혼합 설계</strong><br>
+  GettingStartedChecklist (데드코드)는 수동 클릭으로 체크/언체크가 되고, OnboardingChecklist (활성)는 DB 기반이지만 자동 감지가 없어 사실상 아무것도 체크되지 않는 상태입니다.
+</div>
+
+<!-- ===== 3. Per-Item Analysis ===== -->
+<h2>3. 항목별 상세 분석</h2>
+
+<!-- Step 1 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">1</span>
+    <span class="title">Create your first project</span>
+    <span class="badge badge-green">✅ 작동</span>
+  </div>
+  <table>
+    <tr><th style="width:140px;">클릭 시 동작</th><td><code>navigate('/projects')</code> → 프로젝트 목록 페이지로 이동</td></tr>
+    <tr><th>자동 완료</th><td><span class="badge badge-green">구현됨</span> Welcome 모달에서 "Try Sample Data" 선택 시 <code>markStep('createProject')</code> 호출 (App.tsx:129)</td></tr>
+    <tr><th>문제점</th><td>사용자가 Welcome 모달에서 "Start Fresh" 선택 후 직접 프로젝트를 생성하면 markStep이 호출되지 않음. 샘플 프로젝트 선택 시에만 자동 완료됨.</td></tr>
+    <tr><th>개선 필요</th><td>프로젝트 생성 후 <code>markStep('createProject')</code> 호출 추가 필요</td></tr>
+  </table>
+</div>
+
+<!-- Step 2 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">2</span>
+    <span class="title">Write your first test case</span>
+    <span class="badge badge-red">❌ 미작동</span>
+  </div>
+  <table>
+    <tr><th style="width:140px;">클릭 시 동작</th><td><code>navigate(projectTestcasesLink)</code> → firstProjectId가 있으면 <code>/projects/{id}/testcases</code>, 없으면 <code>/projects</code></td></tr>
+    <tr><th>자동 완료</th><td><span class="badge badge-red">미구현</span> markStep('createTestcase') 호출 없음</td></tr>
+    <tr><th>문제점</th><td>TC를 작성해도 체크 안 됨. 또한 프로젝트가 없으면 /projects로 이동하지만 TC 작성과의 관계가 불명확</td></tr>
+    <tr><th>개선 필요</th><td>TC 저장 성공 시 markStep 호출, 프로젝트 없을 때는 "먼저 프로젝트를 만들어주세요" 안내</td></tr>
+  </table>
+</div>
+
+<!-- Step 3 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">3</span>
+    <span class="title">Try AI test generation</span>
+    <span class="badge badge-red">❌ 미작동</span>
+  </div>
+  <table>
+    <tr><th style="width:140px;">클릭 시 동작</th><td><code>navigate(projectTestcasesLink)</code> → Step 2와 동일 경로</td></tr>
+    <tr><th>자동 완료</th><td><span class="badge badge-red">미구현</span> markStep('tryAi') 호출 없음</td></tr>
+    <tr><th>문제점</th><td>AI 모달이 자동으로 열리지 않음 — 페이지로 이동만 되고 사용자가 AI 버튼을 직접 찾아야 함. AI 생성을 완료해도 체크 안 됨.</td></tr>
+    <tr><th>개선 필요</th><td>클릭 시 AI Generate 모달 직접 오픈, AI TC 저장 성공 시 markStep 호출</td></tr>
+  </table>
+</div>
+
+<!-- Step 4 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">4</span>
+    <span class="title">Run your first test</span>
+    <span class="badge badge-red">❌ 미작동</span>
+  </div>
+  <table>
+    <tr><th style="width:140px;">클릭 시 동작</th><td><code>navigate(projectRunsLink)</code> → firstProjectId가 있으면 <code>/projects/{id}/runs</code>, 없으면 <code>/projects</code></td></tr>
+    <tr><th>자동 완료</th><td><span class="badge badge-red">미구현</span> markStep('runTest') 호출 없음</td></tr>
+    <tr><th>문제점</th><td>Test Run을 만들어도 체크 안 됨. TC가 없으면 Run을 만들 수 없지만 그에 대한 안내 없음.</td></tr>
+    <tr><th>개선 필요</th><td>Run 생성 성공 시 markStep 호출, TC 없으면 "먼저 TC를 추가하세요" 안내</td></tr>
+  </table>
+</div>
+
+<!-- Step 5 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">5</span>
+    <span class="title">Invite a team member</span>
+    <span class="badge badge-red">❌ 미작동 + 링크 버그</span>
+  </div>
+  <table>
+    <tr><th style="width:140px;">클릭 시 동작</th><td><code>navigate('/settings#team')</code> → Settings 페이지로 이동하지만 <strong>Profile 탭</strong>이 표시됨</td></tr>
+    <tr><th>자동 완료</th><td><span class="badge badge-red">미구현</span> markStep('inviteMember') 호출 없음</td></tr>
+    <tr><th>링크 버그</th><td>Settings는 <code>?tab=members</code> 쿼리 파라미터를 사용하는데, <code>#team</code> 해시를 사용하여 탭 전환 안 됨</td></tr>
+    <tr><th>개선 필요</th><td>링크를 <code>/settings?tab=members</code>로 수정, 초대 성공 시 markStep 호출</td></tr>
+  </table>
+</div>
+
+<!-- Step 6 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">6</span>
+    <span class="title">Connect Jira (optional)</span>
+    <span class="badge badge-red">❌ 미작동 + 링크 버그</span>
+  </div>
+  <table>
+    <tr><th style="width:140px;">클릭 시 동작</th><td><code>navigate('/settings#integrations')</code> → Settings 페이지로 이동하지만 <strong>Profile 탭</strong>이 표시됨</td></tr>
+    <tr><th>자동 완료</th><td><span class="badge badge-red">미구현</span> markStep('connectJira') 호출 없음</td></tr>
+    <tr><th>링크 버그</th><td>Step 5와 동일 — <code>#integrations</code> 해시 대신 <code>?tab=integrations</code> 필요</td></tr>
+    <tr><th>개선 필요</th><td>링크를 <code>/settings?tab=integrations</code>로 수정, Jira 연결 테스트 성공 시 markStep 호출</td></tr>
+  </table>
+</div>
+
+<!-- ===== Summary Table ===== -->
+<h3>3.1 현재 상태 요약 테이블</h3>
+<table>
+  <tr>
+    <th>#</th>
+    <th>항목</th>
+    <th>네비게이션</th>
+    <th>자동 완료</th>
+    <th>심각도</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>Create project</td>
+    <td><span class="badge badge-green">정상</span></td>
+    <td><span class="badge badge-amber">부분</span> 샘플만</td>
+    <td><span class="badge badge-amber">Medium</span></td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Write test case</td>
+    <td><span class="badge badge-green">정상</span></td>
+    <td><span class="badge badge-red">미구현</span></td>
+    <td><span class="badge badge-red">High</span></td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Try AI generation</td>
+    <td><span class="badge badge-amber">부분</span> 모달 미오픈</td>
+    <td><span class="badge badge-red">미구현</span></td>
+    <td><span class="badge badge-red">High</span></td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Run first test</td>
+    <td><span class="badge badge-green">정상</span></td>
+    <td><span class="badge badge-red">미구현</span></td>
+    <td><span class="badge badge-red">High</span></td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>Invite member</td>
+    <td><span class="badge badge-red">버그</span> #hash</td>
+    <td><span class="badge badge-red">미구현</span></td>
+    <td><span class="badge badge-red">Critical</span></td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>Connect Jira</td>
+    <td><span class="badge badge-red">버그</span> #hash</td>
+    <td><span class="badge badge-red">미구현</span></td>
+    <td><span class="badge badge-red">Critical</span></td>
+  </tr>
+</table>
+
+<!-- ===== 4. Improvement Plan ===== -->
+<h2>4. 개선안 — 워크플로우 재설계</h2>
+
+<h3>4.1 핵심 원칙</h3>
+<div class="two-col">
+  <div class="card" style="background:var(--indigo-light); border-color:#C7D2FE;">
+    <h4 style="margin-top:0;">🎯 클릭 = 즉시 맥락</h4>
+    <p style="margin-bottom:0;">각 항목 클릭 시 해당 기능의 정확한 위치로 이동하고, 가능하면 관련 모달/UI를 자동으로 열어줍니다.</p>
+  </div>
+  <div class="card" style="background:var(--green-light); border-color:#BBF7D0;">
+    <h4 style="margin-top:0;">✅ 완료 = 자동 감지</h4>
+    <p style="margin-bottom:0;">사용자가 수동으로 체크하는 것이 아니라, 실제 액션 완료 시 DB에 자동 반영됩니다.</p>
+  </div>
+  <div class="card" style="background:var(--amber-light); border-color:#FDE68A;">
+    <h4 style="margin-top:0;">🔗 순서 = 의존성 안내</h4>
+    <p style="margin-bottom:0;">선행 스텝 미완료 시 비활성화하지는 않되, 인라인 안내를 제공합니다.</p>
+  </div>
+  <div class="card" style="background:var(--red-light); border-color:#FECACA;">
+    <h4 style="margin-top:0;">🧹 정리 = 데드코드 삭제</h4>
+    <p style="margin-bottom:0;">GettingStartedChecklist.tsx를 삭제하고, 단일 시스템으로 통합합니다.</p>
+  </div>
+</div>
+
+<h3>4.2 항목별 개선 상세</h3>
+
+<!-- Improved Step 1 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">1</span>
+    <span class="title">Create your first project</span>
+  </div>
+  <h4>클릭 동작 (개선)</h4>
+  <div class="flow">
+    <span class="flow-step">클릭</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">/projects 이동</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Create Project 모달 자동 오픈</span>
+  </div>
+  <p>현재는 /projects 페이지로만 이동하고 사용자가 "New Project" 버튼을 찾아야 합니다. 개선 후에는 <code>?action=create</code> 쿼리 파라미터를 통해 모달이 자동으로 열립니다.</p>
+
+  <h4>완료 조건 (개선)</h4>
+  <table>
+    <tr><th style="width:100px;">현재</th><td>샘플 프로젝트 생성 시에만 markStep 호출</td></tr>
+    <tr><th>개선</th><td>프로젝트 생성 성공 후 <code>markStep('createProject')</code> 호출. 위치: <code>ProjectsContent.tsx</code>의 프로젝트 생성 핸들러 + <code>App.tsx</code>의 샘플 프로젝트 생성 핸들러 (기존 유지)</td></tr>
+  </table>
+
+  <h4>구현 방안</h4>
+  <p><strong>방법 A (권장) — useOnboarding 전역 구독:</strong> <code>useOnboarding</code> 훅에서 <code>projects</code> 테이블을 실시간 구독하여, 프로젝트가 1개 이상이면 자동으로 step_create_project를 true로 설정합니다.</p>
+  <p><strong>방법 B — 이벤트 기반:</strong> 프로젝트 생성 완료 콜백에서 직접 <code>markStep('createProject')</code>을 호출합니다. 이 경우 ProjectsContent에서 useOnboarding을 import해야 합니다.</p>
+</div>
+
+<!-- Improved Step 2 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">2</span>
+    <span class="title">Write your first test case</span>
+  </div>
+  <h4>클릭 동작 (개선)</h4>
+  <div class="flow">
+    <span class="flow-step">클릭</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">프로젝트 있음?</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Yes: /projects/{id}/testcases?action=create</span>
+  </div>
+  <div class="flow">
+    <span class="flow-step" style="visibility:hidden">클릭</span>
+    <span class="flow-arrow" style="visibility:hidden">→</span>
+    <span class="flow-step" style="visibility:hidden">프로젝트 있음?</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">No: /projects + 토스트 "먼저 프로젝트를 만들어주세요"</span>
+  </div>
+  <p>개선: <code>?action=create</code> 쿼리 파라미터를 감지하여 TC 작성 모달 또는 인라인 에디터를 자동 오픈합니다. Quick Create TC 모달(<code>QuickCreateTCModal</code>)을 활용합니다.</p>
+
+  <h4>완료 조건</h4>
+  <table>
+    <tr><th style="width:100px;">트리거</th><td>TC 저장 성공 (INSERT INTO test_cases) 후 <code>markStep('createTestcase')</code></td></tr>
+    <tr><th>위치</th><td><code>QuickCreateTCModal.tsx</code>의 저장 핸들러 또는 TestCase 상세 페이지의 저장 핸들러</td></tr>
+    <tr><th>대안</th><td>DB 트리거 — test_cases 테이블 INSERT 시 user_onboarding.step_create_testcase를 true로 업데이트 (서버 사이드 자동 감지)</td></tr>
+  </table>
+</div>
+
+<!-- Improved Step 3 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">3</span>
+    <span class="title">Try AI test generation</span>
+  </div>
+  <h4>클릭 동작 (개선)</h4>
+  <div class="flow">
+    <span class="flow-step">클릭</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">프로젝트 있음?</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Yes: /projects/{id}/testcases?action=ai-generate</span>
+  </div>
+  <p>핵심 개선: 단순히 TC 목록 페이지로 이동하는 대신, <code>?action=ai-generate</code> 파라미터로 <strong>AIGenerateModal을 즉시 자동 오픈</strong>합니다. 사용자가 AI 버튼을 찾을 필요 없이 바로 AI 생성 플로우를 시작할 수 있습니다.</p>
+
+  <h4>완료 조건</h4>
+  <table>
+    <tr><th style="width:100px;">트리거</th><td>AI 생성 완료 후 TC 저장 성공 시 <code>markStep('tryAi')</code></td></tr>
+    <tr><th>위치</th><td><code>AIGenerateModal.tsx</code>의 최종 저장 단계 (Step 5: saving 완료 후)</td></tr>
+    <tr><th>참고</th><td>AI 모달의 5단계 위저드에서 마지막 저장 스텝 완료 콜백에 추가</td></tr>
+  </table>
+</div>
+
+<!-- Improved Step 4 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">4</span>
+    <span class="title">Run your first test</span>
+  </div>
+  <h4>클릭 동작 (개선)</h4>
+  <div class="flow">
+    <span class="flow-step">클릭</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">프로젝트 + TC 있음?</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">Yes: /projects/{id}/runs?action=create</span>
+  </div>
+  <div class="flow">
+    <span class="flow-step" style="visibility:hidden">클릭</span>
+    <span class="flow-arrow" style="visibility:hidden">→</span>
+    <span class="flow-step" style="visibility:hidden">프로젝트 + TC 있음?</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">No TC: 토스트 "먼저 테스트 케이스를 추가하세요"</span>
+  </div>
+  <p>Run 생성 모달을 자동 오픈하여 바로 TC를 선택하고 실행할 수 있게 합니다.</p>
+
+  <h4>완료 조건</h4>
+  <table>
+    <tr><th style="width:100px;">트리거</th><td>Test Run 생성 성공 시 <code>markStep('runTest')</code></td></tr>
+    <tr><th>위치</th><td>Runs 페이지의 Run 생성 핸들러</td></tr>
+  </table>
+</div>
+
+<!-- Improved Step 5 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">5</span>
+    <span class="title">Invite a team member</span>
+  </div>
+  <h4>클릭 동작 (개선 — 버그 수정)</h4>
+  <div class="flow">
+    <span class="flow-step">클릭</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step" style="background:var(--red-light); border-color:#FECACA; text-decoration:line-through;">/settings#team</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step" style="background:var(--green-light); border-color:#BBF7D0;">/settings?tab=members</span>
+  </div>
+  <p><strong>버그 수정:</strong> OnboardingChecklist.tsx의 linkTo를 <code>'/settings?tab=members'</code>로 변경합니다.</p>
+  <p><strong>추가 개선:</strong> Members 탭 진입 시 Invite 모달을 자동 오픈하여 바로 이메일을 입력할 수 있게 합니다. <code>/settings?tab=members&action=invite</code></p>
+
+  <h4>완료 조건</h4>
+  <table>
+    <tr><th style="width:100px;">트리거</th><td>멤버 초대 성공 (InviteMemberModal에서 invite 완료) 시 <code>markStep('inviteMember')</code></td></tr>
+    <tr><th>위치</th><td><code>InviteMemberModal.tsx</code>의 초대 성공 콜백 또는 Settings 페이지의 초대 핸들러</td></tr>
+    <tr><th>대안</th><td>DB 트리거 — project_members 테이블에 INSERT 시 (자기 자신 제외) user_onboarding.step_invite_member를 true로 업데이트</td></tr>
+  </table>
+</div>
+
+<!-- Improved Step 6 -->
+<div class="card">
+  <div class="card-header">
+    <span class="num">6</span>
+    <span class="title">Connect Jira (optional)</span>
+  </div>
+  <h4>클릭 동작 (개선 — 버그 수정)</h4>
+  <div class="flow">
+    <span class="flow-step">클릭</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step" style="background:var(--red-light); border-color:#FECACA; text-decoration:line-through;">/settings#integrations</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step" style="background:var(--green-light); border-color:#BBF7D0;">/settings?tab=integrations</span>
+  </div>
+  <p><strong>버그 수정:</strong> OnboardingChecklist.tsx의 linkTo를 <code>'/settings?tab=integrations'</code>로 변경합니다.</p>
+
+  <h4>완료 조건</h4>
+  <table>
+    <tr><th style="width:100px;">트리거</th><td>Jira 연결 테스트 성공 (<code>test-jira-connection</code> Edge Function 성공 응답) 시 <code>markStep('connectJira')</code></td></tr>
+    <tr><th>위치</th><td>Settings 페이지의 <code>handleSaveJiraSettings</code> 성공 콜백 (line 474 부근)</td></tr>
+    <tr><th>참고</th><td>optional 항목이므로, 전체 완료 계산 시 connectJira를 제외한 5/5 완료로도 "All done" 처리 가능 (선택 고려)</td></tr>
+  </table>
+</div>
+
+<!-- ===== 5. Dependency & Order ===== -->
+<h2>5. 항목 간 순서 및 의존성</h2>
+
+<h3>5.1 논리적 의존성 그래프</h3>
+<table>
+  <tr>
+    <th>항목</th>
+    <th>선행 조건</th>
+    <th>현재 처리</th>
+    <th>개선안</th>
+  </tr>
+  <tr>
+    <td><strong>1. Create Project</strong></td>
+    <td>없음 (최초 스텝)</td>
+    <td>—</td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td><strong>2. Write Test Case</strong></td>
+    <td>프로젝트 ≥ 1개</td>
+    <td>프로젝트 없으면 /projects로 이동 (맥락 없음)</td>
+    <td>프로젝트 없으면 토스트 안내 + Step 1 하이라이트</td>
+  </tr>
+  <tr>
+    <td><strong>3. Try AI Generation</strong></td>
+    <td>프로젝트 ≥ 1개</td>
+    <td>Step 2와 동일 경로</td>
+    <td>프로젝트 없으면 토스트 안내, 있으면 AI 모달 직접 오픈</td>
+  </tr>
+  <tr>
+    <td><strong>4. Run First Test</strong></td>
+    <td>프로젝트 ≥ 1개 + TC ≥ 1개</td>
+    <td>프로젝트 없으면 /projects로 이동</td>
+    <td>TC 없으면 "먼저 TC를 추가하세요" 안내 + Step 2 하이라이트</td>
+  </tr>
+  <tr>
+    <td><strong>5. Invite Member</strong></td>
+    <td>없음 (독립)</td>
+    <td>—</td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td><strong>6. Connect Jira</strong></td>
+    <td>없음 (독립, optional)</td>
+    <td>—</td>
+    <td>—</td>
+  </tr>
+</table>
+
+<h3>5.2 의존성 처리 방식 — Soft Lock 권장</h3>
+<div class="alert alert-indigo">
+  <strong>권장 방식: Soft Lock (비활성화하지 않되 안내 제공)</strong><br>
+  모든 항목은 항상 클릭 가능하지만, 선행 조건 미충족 시 이동 후 인라인 토스트로 안내합니다. Hard Lock(비활성화)은 사용자 자유도를 제한하므로 비권장합니다.
+</div>
+
+<p><strong>안내 메시지 예시:</strong></p>
+<ul>
+  <li>Step 2/3 클릭 + 프로젝트 없음 → "프로젝트를 먼저 만들어야 테스트 케이스를 추가할 수 있어요."</li>
+  <li>Step 4 클릭 + TC 없음 → "테스트 케이스를 먼저 추가해야 테스트 실행을 만들 수 있어요."</li>
+</ul>
+
+<!-- ===== 6. Auto-Completion Architecture ===== -->
+<h2>6. 자동 완료 감지 아키텍처</h2>
+
+<h3>6.1 방법 비교</h3>
+<table>
+  <tr>
+    <th>방식</th>
+    <th>장점</th>
+    <th>단점</th>
+    <th>권장 여부</th>
+  </tr>
+  <tr>
+    <td><strong>A. 프론트엔드 이벤트 기반</strong><br>각 액션 완료 콜백에서 markStep 호출</td>
+    <td>구현 간단, 즉시 UI 반영</td>
+    <td>호출 누락 가능, 여러 파일에 분산</td>
+    <td><span class="badge badge-green">권장</span></td>
+  </tr>
+  <tr>
+    <td><strong>B. DB 트리거 기반</strong><br>Supabase DB에서 INSERT 감지하여 자동 업데이트</td>
+    <td>누락 불가, 서버 사이드 보장</td>
+    <td>실시간 UI 반영 어려움, 복잡한 SQL 로직</td>
+    <td><span class="badge badge-amber">보조</span></td>
+  </tr>
+  <tr>
+    <td><strong>C. 하이브리드</strong><br>프론트엔드 즉시 반영 + 로그인 시 DB 검증으로 보정</td>
+    <td>즉시 반영 + 누락 방지</td>
+    <td>구현 복잡도 높음</td>
+    <td><span class="badge badge-indigo">이상적</span></td>
+  </tr>
+</table>
+
+<h3>6.2 권장: 하이브리드 접근</h3>
+
+<h4>Phase 1 — 프론트엔드 즉시 반영 (빠른 수정)</h4>
+<p>각 액션 완료 지점에 <code>markStep()</code> 호출을 추가합니다.</p>
+<table>
+  <tr><th>스텝</th><th>markStep 호출 위치</th><th>파일</th></tr>
+  <tr>
+    <td>createProject</td>
+    <td>프로젝트 생성 성공 콜백</td>
+    <td><code>ProjectsContent.tsx</code> (handleCreate 성공 후)</td>
+  </tr>
+  <tr>
+    <td>createTestcase</td>
+    <td>TC 저장 성공 콜백</td>
+    <td><code>QuickCreateTCModal.tsx</code>, TC 상세 저장 핸들러</td>
+  </tr>
+  <tr>
+    <td>tryAi</td>
+    <td>AI 생성 → TC 저장 완료</td>
+    <td><code>AIGenerateModal.tsx</code> (Step 5 완료 후)</td>
+  </tr>
+  <tr>
+    <td>runTest</td>
+    <td>Test Run 생성 성공</td>
+    <td>Runs 페이지의 Run 생성 핸들러</td>
+  </tr>
+  <tr>
+    <td>inviteMember</td>
+    <td>초대 성공</td>
+    <td><code>InviteMemberModal.tsx</code> 초대 성공 콜백</td>
+  </tr>
+  <tr>
+    <td>connectJira</td>
+    <td>Jira 연결 저장 성공</td>
+    <td><code>Settings/page.tsx</code> handleSaveJiraSettings 성공</td>
+  </tr>
+</table>
+
+<h4>Phase 2 — 로그인 시 DB 검증 (보정 로직)</h4>
+<p><code>useOnboarding</code>의 <code>fetchOnboarding</code>에서 로그인 시 한 번 실제 데이터를 검증하여 보정합니다.</p>
+<pre style="background:var(--slate-50); border:1px solid var(--slate-200); border-radius:8px; padding:16px; font-size:12px; overflow-x:auto; margin-bottom:16px;">
+// useOnboarding.ts — fetchOnboarding 내부에 추가
+async function reconcileSteps(userId: string) {
+  // 프로젝트 존재 확인
+  const { count: projectCount } = await supabase
+    .from('project_members').select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  // TC 존재 확인
+  const { count: tcCount } = await supabase
+    .from('test_cases').select('*', { count: 'exact', head: true })
+    .eq('created_by', userId);
+
+  // Run 존재 확인
+  const { count: runCount } = await supabase
+    .from('test_runs').select('*', { count: 'exact', head: true })
+    .eq('created_by', userId);
+
+  // Jira 연결 확인
+  const { data: jira } = await supabase
+    .from('jira_settings').select('id').eq('user_id', userId).single();
+
+  const updates: Record&lt;string, boolean&gt; = {};
+  if (projectCount &gt; 0) updates.step_create_project = true;
+  if (tcCount &gt; 0) updates.step_create_testcase = true;
+  if (runCount &gt; 0) updates.step_run_test = true;
+  if (jira) updates.step_connect_jira = true;
+  // tryAi, inviteMember는 프론트엔드에서만 감지 (별도 테이블 없음)
+
+  if (Object.keys(updates).length &gt; 0) {
+    await supabase.from('user_onboarding').update(updates).eq('user_id', userId);
+  }
+}
+</pre>
+
+<!-- ===== 7. markStep Propagation ===== -->
+<h2>7. markStep 전파 방법</h2>
+
+<p>현재 <code>markStep</code>은 <code>useOnboarding</code> 훅에서 제공되지만, App.tsx에서만 사용됩니다. 하위 컴포넌트에 전파하는 방법:</p>
+
+<h3>7.1 방법 비교</h3>
+<table>
+  <tr>
+    <th>방법</th>
+    <th>설명</th>
+    <th>장단점</th>
+  </tr>
+  <tr>
+    <td><strong>A. Context API (권장)</strong></td>
+    <td>OnboardingContext를 만들어 전역에서 markStep 접근 가능</td>
+    <td>✅ 깔끔, 어디서든 호출 가능<br>⚠️ Context 추가 필요</td>
+  </tr>
+  <tr>
+    <td><strong>B. Custom Event</strong></td>
+    <td><code>window.dispatchEvent(new CustomEvent('onboarding:step', { detail: 'createTestcase' }))</code></td>
+    <td>✅ 기존 코드 변경 최소<br>⚠️ 타입 안전성 약함</td>
+  </tr>
+  <tr>
+    <td><strong>C. 각 컴포넌트에서 useOnboarding 직접 사용</strong></td>
+    <td>필요한 컴포넌트에서 직접 훅 호출</td>
+    <td>✅ 단순<br>⚠️ 훅 인스턴스 중복, 상태 불일치 가능</td>
+  </tr>
+</table>
+
+<div class="alert alert-green">
+  <strong>권장: 방법 A — OnboardingContext</strong><br>
+  App.tsx에서 OnboardingProvider로 감싸고, 하위 컴포넌트에서 <code>useOnboardingContext()</code>로 markStep에 접근합니다. state와 markStep을 단일 소스에서 관리하여 일관성을 보장합니다.
+</div>
+
+<pre style="background:var(--slate-50); border:1px solid var(--slate-200); border-radius:8px; padding:16px; font-size:12px; overflow-x:auto; margin-bottom:16px;">
+// contexts/OnboardingContext.tsx
+const OnboardingContext = createContext&lt;UseOnboardingReturn | null&gt;(null);
+
+export function OnboardingProvider({ children }: { children: React.ReactNode }) {
+  const onboarding = useOnboarding();
+  return (
+    &lt;OnboardingContext.Provider value={onboarding}&gt;
+      {children}
+    &lt;/OnboardingContext.Provider&gt;
+  );
+}
+
+export function useOnboardingContext() {
+  const ctx = useContext(OnboardingContext);
+  if (!ctx) throw new Error('OnboardingProvider not found');
+  return ctx;
+}
+
+// 사용 예: AIGenerateModal.tsx
+const { markStep } = useOnboardingContext();
+// AI TC 저장 완료 후:
+await markStep('tryAi');
+</pre>
+
+<!-- ===== 8. Link Fixes ===== -->
+<h2>8. 네비게이션 링크 버그 수정</h2>
+
+<h3>OnboardingChecklist.tsx — 수정 사항</h3>
+<table>
+  <tr>
+    <th>#</th>
+    <th>현재 (버그)</th>
+    <th>수정</th>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><code>linkTo: '/settings#team'</code></td>
+    <td><code>linkTo: '/settings?tab=members'</code></td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td><code>linkTo: '/settings#integrations'</code></td>
+    <td><code>linkTo: '/settings?tab=integrations'</code></td>
+  </tr>
+</table>
+
+<h3>추가 개선 — action 파라미터 지원</h3>
+<table>
+  <tr>
+    <th>#</th>
+    <th>현재 linkTo</th>
+    <th>개선 linkTo</th>
+    <th>효과</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td><code>/projects</code></td>
+    <td><code>/projects?action=create</code></td>
+    <td>모달 자동 오픈</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>/projects/{id}/testcases</code></td>
+    <td><code>/projects/{id}/testcases?action=create</code></td>
+    <td>TC 작성 모달 자동 오픈</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><code>/projects/{id}/testcases</code></td>
+    <td><code>/projects/{id}/testcases?action=ai-generate</code></td>
+    <td>AI 모달 자동 오픈</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><code>/projects/{id}/runs</code></td>
+    <td><code>/projects/{id}/runs?action=create</code></td>
+    <td>Run 생성 모달 자동 오픈</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><code>/settings#team</code></td>
+    <td><code>/settings?tab=members&action=invite</code></td>
+    <td>Invite 모달 자동 오픈</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td><code>/settings#integrations</code></td>
+    <td><code>/settings?tab=integrations</code></td>
+    <td>Integrations 탭 정확히 열림</td>
+  </tr>
+</table>
+
+<!-- ===== 9. Dead Code Cleanup ===== -->
+<h2>9. 데드코드 정리</h2>
+
+<h3>삭제 대상</h3>
+<table>
+  <tr>
+    <th>파일</th>
+    <th>이유</th>
+    <th>액션</th>
+  </tr>
+  <tr>
+    <td><code>src/pages/projects/components/GettingStartedChecklist.tsx</code></td>
+    <td>어디에서도 import되지 않음. localStorage 기반의 구버전 체크리스트로, OnboardingChecklist (DB 기반)로 완전히 대체됨</td>
+    <td><span class="badge badge-red">삭제</span></td>
+  </tr>
+</table>
+
+<h3>GettingStartedChecklist vs OnboardingChecklist 비교</h3>
+<table>
+  <tr>
+    <th>특성</th>
+    <th>GettingStartedChecklist (삭제 대상)</th>
+    <th>OnboardingChecklist (유지)</th>
+  </tr>
+  <tr>
+    <td>상태 저장</td>
+    <td>localStorage</td>
+    <td>Supabase DB (user_onboarding 테이블)</td>
+  </tr>
+  <tr>
+    <td>체크 방식</td>
+    <td>수동 토글 (클릭하면 체크/언체크)</td>
+    <td>markStep으로 단방향 완료 처리</td>
+  </tr>
+  <tr>
+    <td>항목 수</td>
+    <td>5개 (Create Project, Add TC, Invite, Start Run, Create Milestone)</td>
+    <td>6개 (Create Project, Write TC, Try AI, Run Test, Invite, Connect Jira)</td>
+  </tr>
+  <tr>
+    <td>클릭 시 동작</td>
+    <td>체크만 토글 (네비게이션 없음)</td>
+    <td>해당 페이지로 네비게이션</td>
+  </tr>
+  <tr>
+    <td>위치</td>
+    <td>인라인 (페이지 내)</td>
+    <td>플로팅 (fixed bottom-right)</td>
+  </tr>
+  <tr>
+    <td>사용 여부</td>
+    <td><span class="badge badge-red">미사용</span></td>
+    <td><span class="badge badge-green">활성</span></td>
+  </tr>
+</table>
+
+<!-- ===== 10. UI/UX Improvements ===== -->
+<h2>10. 추가 UI/UX 개선 제안</h2>
+
+<h3>10.1 체크리스트 항목에 진행 힌트 추가</h3>
+<p>현재 각 항목은 label만 표시합니다. 아래처럼 현재 상태를 반영하는 서브텍스트를 추가합니다:</p>
+<table>
+  <tr><th>항목</th><th>미완료 시</th><th>완료 시</th></tr>
+  <tr><td>Create project</td><td>"프로젝트를 만들어 시작하세요"</td><td>"✓ 'My Project' 생성 완료"</td></tr>
+  <tr><td>Write test case</td><td>"테스트 케이스를 작성하세요"</td><td>"✓ 첫 TC 작성 완료"</td></tr>
+  <tr><td>Try AI generation</td><td>"AI가 테스트를 자동 생성합니다"</td><td>"✓ AI 생성 완료"</td></tr>
+  <tr><td>Run first test</td><td>"테스트를 실행하고 결과를 확인하세요"</td><td>"✓ 첫 테스트 실행 완료"</td></tr>
+  <tr><td>Invite member</td><td>"팀원과 함께 테스트하세요"</td><td>"✓ 팀원 초대 완료"</td></tr>
+  <tr><td>Connect Jira</td><td>"Jira 이슈와 연동하세요 (선택)"</td><td>"✓ Jira 연결 완료"</td></tr>
+</table>
+
+<h3>10.2 완료 축하 애니메이션</h3>
+<p>각 스텝 완료 시 체크 아이콘에 짧은 bounce/confetti 애니메이션을 추가합니다. 전체 완료 시에는 체크리스트가 축하 메시지("All done! 🎉")를 2초간 표시한 뒤 자연스럽게 접힙니다.</p>
+
+<h3>10.3 자동 확장/축소 개선</h3>
+<p>현재: 처음 3번 로그인까지 자동 확장. 개선: 새 스텝이 완료될 때마다 체크리스트를 잠시 확장하여 완료를 보여준 뒤 다시 축소합니다.</p>
+
+<!-- ===== 11. Implementation Plan ===== -->
+<h2>11. 구현 계획</h2>
+
+<h3>Phase 1 — 즉시 수정 (1일)</h3>
+<table>
+  <tr><th>작업</th><th>파일</th><th>난이도</th></tr>
+  <tr>
+    <td>네비게이션 링크 버그 수정 (#hash → ?tab=)</td>
+    <td><code>OnboardingChecklist.tsx</code></td>
+    <td><span class="badge badge-green">Easy</span></td>
+  </tr>
+  <tr>
+    <td>GettingStartedChecklist.tsx 데드코드 삭제</td>
+    <td><code>GettingStartedChecklist.tsx</code></td>
+    <td><span class="badge badge-green">Easy</span></td>
+  </tr>
+  <tr>
+    <td>createProject markStep을 프로젝트 직접 생성에도 추가</td>
+    <td><code>ProjectsContent.tsx</code></td>
+    <td><span class="badge badge-green">Easy</span></td>
+  </tr>
+</table>
+
+<h3>Phase 2 — 자동 완료 감지 구현 (1.5일)</h3>
+<table>
+  <tr><th>작업</th><th>파일</th><th>난이도</th></tr>
+  <tr>
+    <td>OnboardingContext 생성 및 App.tsx 통합</td>
+    <td><code>contexts/OnboardingContext.tsx</code>, <code>App.tsx</code></td>
+    <td><span class="badge badge-amber">Medium</span></td>
+  </tr>
+  <tr>
+    <td>각 액션 완료 지점에 markStep 호출 추가 (5개)</td>
+    <td>QuickCreateTCModal, AIGenerateModal, Runs 생성, InviteMemberModal, Settings (Jira)</td>
+    <td><span class="badge badge-amber">Medium</span></td>
+  </tr>
+  <tr>
+    <td>로그인 시 DB 검증 로직 추가 (reconcileSteps)</td>
+    <td><code>useOnboarding.ts</code></td>
+    <td><span class="badge badge-amber">Medium</span></td>
+  </tr>
+</table>
+
+<h3>Phase 3 — 클릭 워크플로우 개선 (1일)</h3>
+<table>
+  <tr><th>작업</th><th>파일</th><th>난이도</th></tr>
+  <tr>
+    <td>?action= 쿼리 파라미터 지원 (모달 자동 오픈)</td>
+    <td>Projects, TestCases, Runs, Settings 각 페이지</td>
+    <td><span class="badge badge-amber">Medium</span></td>
+  </tr>
+  <tr>
+    <td>선행 조건 미충족 시 토스트 안내</td>
+    <td><code>OnboardingChecklist.tsx</code>, <code>ChecklistItem.tsx</code></td>
+    <td><span class="badge badge-green">Easy</span></td>
+  </tr>
+  <tr>
+    <td>체크리스트 항목 서브텍스트 추가</td>
+    <td><code>ChecklistItem.tsx</code></td>
+    <td><span class="badge badge-green">Easy</span></td>
+  </tr>
+</table>
+
+<h3>Phase 4 — 완료 축하 UX (0.5일)</h3>
+<table>
+  <tr><th>작업</th><th>파일</th><th>난이도</th></tr>
+  <tr>
+    <td>스텝 완료 시 bounce 애니메이션</td>
+    <td><code>ChecklistItem.tsx</code></td>
+    <td><span class="badge badge-green">Easy</span></td>
+  </tr>
+  <tr>
+    <td>전체 완료 시 축하 메시지 + 자동 축소</td>
+    <td><code>OnboardingChecklist.tsx</code></td>
+    <td><span class="badge badge-green">Easy</span></td>
+  </tr>
+</table>
+
+<div class="divider"></div>
+
+<!-- ===== 12. Dev Handoff Summary ===== -->
+<h2>12. Dev1 전달 요약</h2>
+
+<div class="summary-box">
+  <h3 style="color:var(--red);">🔴 즉시 수정 필요 (P0)</h3>
+  <ol style="font-size:14px;">
+    <li><strong>OnboardingChecklist.tsx</strong>: <code>linkTo: '/settings#team'</code> → <code>'/settings?tab=members'</code>, <code>'/settings#integrations'</code> → <code>'/settings?tab=integrations'</code></li>
+    <li><strong>5개 markStep 호출 추가</strong>: createTestcase, tryAi, runTest, inviteMember, connectJira — 각 액션 완료 콜백에 연결</li>
+    <li><strong>OnboardingContext</strong> 생성하여 markStep을 하위 컴포넌트에서 접근 가능하게</li>
+  </ol>
+</div>
+
+<div class="summary-box" style="background: linear-gradient(135deg, #FFF7ED 0%, #FFFBEB 100%); border-color: #FDE68A;">
+  <h3 style="color:var(--amber);">🟡 후속 개선 (P1)</h3>
+  <ol style="font-size:14px;">
+    <li><strong>GettingStartedChecklist.tsx 삭제</strong> (데드코드)</li>
+    <li><strong>?action= 쿼리 파라미터 지원</strong>으로 모달 자동 오픈</li>
+    <li><strong>로그인 시 DB 검증 로직</strong> (reconcileSteps) 추가</li>
+    <li><strong>선행 조건 미충족 시 토스트 안내</strong></li>
+  </ol>
+</div>
+
+<div class="summary-box" style="background: linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 100%); border-color: #BBF7D0;">
+  <h3 style="color:var(--green);">🟢 UX 폴리시 (P2)</h3>
+  <ol style="font-size:14px;">
+    <li>체크리스트 항목 서브텍스트</li>
+    <li>완료 축하 애니메이션</li>
+    <li>자동 확장/축소 개선</li>
+  </ol>
+</div>
+
+<div style="margin-top:40px; padding-top:16px; border-top:1px solid var(--slate-200); font-size:12px; color:var(--slate-500);">
+  <p>문서 작성: PM | 날짜: 2026-03-30 | 버전: 1.0</p>
+  <p>분석 대상 파일: OnboardingChecklist.tsx, ChecklistItem.tsx, OnboardingProgress.tsx, WelcomeScreen.tsx, useOnboarding.ts, App.tsx, GettingStartedChecklist.tsx, Settings/page.tsx, 20260323001_onboarding.sql</p>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Reddit Banner 1920×384</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Pacifico&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    padding: 40px 20px;
+  }
+
+  .info {
+    color: #94a3b8;
+    font-size: 13px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .info strong { color: #e2e8f0; }
+
+  .banner-wrapper {
+    width: 100%;
+    max-width: 1920px;
+    aspect-ratio: 10 / 2;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  /* ── Banner Canvas ── */
+  .banner {
+    width: 1920px;
+    height: 384px;
+    position: relative;
+    overflow: hidden;
+    background: #0f0f1a;
+    transform-origin: top left;
+  }
+
+  /* ── Background ── */
+  .bg-gradient {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% 50%, rgba(99,102,241,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 700px 400px at 85% 40%, rgba(139,92,246,0.14) 0%, transparent 70%),
+      radial-gradient(ellipse 500px 300px at 50% 120%, rgba(99,102,241,0.10) 0%, transparent 70%),
+      linear-gradient(135deg, #0f0f1a 0%, #131325 40%, #0f0f1a 100%);
+  }
+
+  /* ── Grid Pattern ── */
+  .grid-pattern {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%);
+  }
+
+  /* ── Floating Orbs ── */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.5;
+    animation: float 8s ease-in-out infinite;
+  }
+  .orb-1 {
+    width: 300px; height: 300px;
+    background: rgba(99,102,241,0.25);
+    top: -80px; left: 120px;
+    animation-delay: 0s;
+  }
+  .orb-2 {
+    width: 220px; height: 220px;
+    background: rgba(139,92,246,0.20);
+    bottom: -60px; right: 300px;
+    animation-delay: -3s;
+  }
+  .orb-3 {
+    width: 180px; height: 180px;
+    background: rgba(99,102,241,0.15);
+    top: 40px; right: 150px;
+    animation-delay: -5s;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-18px); }
+  }
+
+  /* ── Decorative Dots ── */
+  .dots {
+    position: absolute;
+    inset: 0;
+  }
+  .dot {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(99,102,241,0.3);
+    animation: pulse-dot 4s ease-in-out infinite;
+  }
+  .dot:nth-child(1) { width:4px; height:4px; top:60px; left:280px; animation-delay:0s; }
+  .dot:nth-child(2) { width:3px; height:3px; top:140px; left:480px; animation-delay:-1s; background:rgba(139,92,246,0.3); }
+  .dot:nth-child(3) { width:5px; height:5px; top:80px; right:400px; animation-delay:-2s; }
+  .dot:nth-child(4) { width:3px; height:3px; top:280px; left:350px; animation-delay:-0.5s; background:rgba(139,92,246,0.25); }
+  .dot:nth-child(5) { width:4px; height:4px; top:200px; right:250px; animation-delay:-3s; }
+  .dot:nth-child(6) { width:3px; height:3px; top:100px; left:700px; animation-delay:-1.5s; }
+  .dot:nth-child(7) { width:4px; height:4px; top:300px; right:600px; animation-delay:-2.5s; background:rgba(139,92,246,0.3); }
+  .dot:nth-child(8) { width:3px; height:3px; top:50px; right:700px; animation-delay:-4s; }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.5); }
+  }
+
+  /* ── Connector Lines (subtle tech feel) ── */
+  .lines {
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+  }
+  .lines svg { width: 100%; height: 100%; }
+
+  /* ── Content ── */
+  .content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 64px;
+    padding: 0 120px;
+    z-index: 10;
+  }
+
+  /* Left side: Logo + Brand */
+  .brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-shrink: 0;
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 20px;
+  }
+
+  .logo-icon {
+    width: 56px;
+    height: 56px;
+    background: #6366F1;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(99,102,241,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .logo-icon svg { width: 32px; height: 32px; }
+
+  .logo-text {
+    font-family: 'Pacifico', cursive;
+    font-size: 44px;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 20px rgba(99,102,241,0.3);
+  }
+
+  .tagline {
+    font-size: 20px;
+    font-weight: 600;
+    color: #e2e8f0;
+    letter-spacing: -0.2px;
+    margin-bottom: 10px;
+  }
+
+  .tagline-accent {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .url {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(148,163,184,0.8);
+    letter-spacing: 0.5px;
+  }
+
+  /* Divider */
+  .divider {
+    width: 1px;
+    height: 160px;
+    background: linear-gradient(180deg, transparent, rgba(99,102,241,0.3), transparent);
+    flex-shrink: 0;
+  }
+
+  /* Right side: Feature highlights */
+  .features {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .feature {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .feature-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .feature-icon svg { width: 20px; height: 20px; }
+
+  .fi-indigo  { background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.2); }
+  .fi-violet  { background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.2); }
+  .fi-emerald { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.2); }
+
+  .feature-label {
+    font-size: 16px;
+    font-weight: 500;
+    color: #cbd5e1;
+    letter-spacing: -0.1px;
+  }
+
+  /* ── Bottom accent line ── */
+  .bottom-line {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent 5%, #6366F1 30%, #8B5CF6 50%, #6366F1 70%, transparent 95%);
+    opacity: 0.7;
+  }
+
+  /* ── Responsive scale ── */
+  @media (max-width: 1920px) {
+    .banner-wrapper { width: 100%; }
+    .banner { transform: scale(var(--s, 1)); }
+  }
+</style>
+</head>
+<body>
+
+<p class="info"><strong>Testably Reddit Banner</strong> — 1920 × 384 px (10:2)</p>
+
+<div class="banner-wrapper" id="wrapper">
+  <div class="banner" id="banner">
+
+    <!-- Background layers -->
+    <div class="bg-gradient"></div>
+    <div class="grid-pattern"></div>
+
+    <!-- Orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <!-- Dots -->
+    <div class="dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+
+    <!-- Subtle connector lines -->
+    <div class="lines">
+      <svg viewBox="0 0 1920 384" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 192 Q 480 100, 960 192 T 1920 192" stroke="#6366F1" stroke-width="1"/>
+        <path d="M0 250 Q 400 180, 800 250 T 1600 220 T 1920 250" stroke="#8B5CF6" stroke-width="0.8"/>
+        <circle cx="480" cy="148" r="3" fill="#6366F1" opacity="0.5"/>
+        <circle cx="960" cy="192" r="3" fill="#8B5CF6" opacity="0.5"/>
+        <circle cx="1440" cy="168" r="3" fill="#6366F1" opacity="0.5"/>
+      </svg>
+    </div>
+
+    <!-- Main content -->
+    <div class="content">
+
+      <!-- Left: Brand -->
+      <div class="brand">
+        <div class="logo-row">
+          <!-- Squircle Logo -->
+          <div class="logo-icon">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 16.5L13 21.5L24 10.5" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="logo-text">testably</span>
+        </div>
+        <div class="tagline">
+          <span class="tagline-accent">AI-Native</span> Test Management Platform
+        </div>
+        <div class="url">testably.app</div>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider"></div>
+
+      <!-- Right: Features -->
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon fi-indigo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <span class="feature-label">AI-Powered Test Case Generation</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon fi-violet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+          </div>
+          <span class="feature-label">Smart Test Runs & Coverage Analysis</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon fi-emerald">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+          </div>
+          <span class="feature-label">Seamless Team Collaboration</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom accent -->
+    <div class="bottom-line"></div>
+
+  </div>
+</div>
+
+<script>
+  // Responsive scaling
+  function scaleBanner() {
+    const wrapper = document.getElementById('wrapper');
+    const banner = document.getElementById('banner');
+    const wrapperWidth = wrapper.clientWidth;
+    const scale = Math.min(wrapperWidth / 1920, 1);
+    banner.style.transform = `scale(${scale})`;
+    wrapper.style.height = `${384 * scale}px`;
+  }
+  window.addEventListener('resize', scaleBanner);
+  scaleBanner();
+</script>
+
+</body>
+</html>

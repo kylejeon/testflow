@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Header Cleanup: Before vs After (TC + Runs)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F1F5F9; color: #1E293B; min-height: 100vh; overflow-y: auto; }
+
+  /* ══════════════════════════════════════════ */
+  /* DEMO CONTROLS                             */
+  /* ══════════════════════════════════════════ */
+  .demo-bar {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.5rem;
+    background: #FFFBEB; border-bottom: 1px solid #FDE68A; flex-wrap: wrap;
+  }
+  .demo-bar label { font-size: 0.6875rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.04em; }
+  .demo-btn {
+    font-size: 0.6875rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 9999px;
+    cursor: pointer; font-family: inherit; border: 1px solid #E2E8F0; background: #fff; color: #475569; transition: all 0.15s;
+  }
+  .demo-btn.active { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .demo-sep { width: 1px; height: 1rem; background: #D97706; opacity: 0.3; }
+
+  /* ══════════════════════════════════════════ */
+  /* LAYOUT                                    */
+  /* ══════════════════════════════════════════ */
+  .panels { display: flex; gap: 1.5rem; padding: 1.5rem; align-items: flex-start; }
+  @media (max-width: 1400px) { .panels { flex-direction: column; } }
+  .panel {
+    flex: 1; background: #fff; border-radius: 12px; border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; min-width: 0;
+  }
+  .panel-label {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem;
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    border-bottom: 1px solid #E2E8F0;
+  }
+  .panel-label.before { color: #DC2626; background: #FEF2F2; }
+  .panel-label.after { color: #16A34A; background: #F0FDF4; }
+  .panel-label .tag {
+    font-size: 0.5625rem; padding: 0.125rem 0.5rem; border-radius: 9999px; font-weight: 700;
+  }
+  .panel-label.before .tag { background: #FEE2E2; color: #991B1B; }
+  .panel-label.after .tag { background: #DCFCE7; color: #166534; }
+
+  .mock { display: flex; flex-direction: column; height: 480px; overflow: hidden; }
+
+  /* ── Shared header ── */
+  .top-hdr {
+    display: flex; align-items: center; padding: 0 1rem; height: 2.75rem; gap: 0;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0;
+  }
+  .logo { display: flex; align-items: center; gap: 0.375rem; padding-right: 0.875rem; border-right: 1px solid #E2E8F0; margin-right: 0.75rem; }
+  .logo-sq { width: 22px; height: 22px; background: #6366F1; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.6875rem; }
+  .logo-txt { font-family: 'Pacifico', cursive; font-size: 0.8125rem; color: #6366F1; }
+  .proj { font-size: 0.6875rem; font-weight: 600; color: #0F172A; margin-right: 0.5rem; display: flex; align-items: center; gap: 0.25rem; }
+  .proj i { font-size: 0.6875rem; color: #94A3B8; }
+  .nav { display: flex; height: 100%; }
+  .nav-item {
+    display: flex; align-items: center; gap: 0.25rem; padding: 0 0.5rem; height: 100%;
+    font-size: 0.6875rem; color: #64748B; cursor: default; border-bottom: 2px solid transparent; font-weight: 500;
+  }
+  .nav-item.active { color: #6366F1; border-bottom-color: #6366F1; font-weight: 600; }
+  .nav-item i { font-size: 0.8125rem; }
+  .hdr-right { margin-left: auto; display: flex; align-items: center; gap: 0.25rem; }
+  .hdr-icon { width: 1.625rem; height: 1.625rem; border-radius: 0.25rem; display: flex; align-items: center; justify-content: center; color: #64748B; font-size: 0.9375rem; }
+  .hdr-av { width: 1.5rem; height: 1.5rem; border-radius: 50%; background: #6366F1; display: flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; }
+
+  /* ── Page title row (Before only) ── */
+  .page-title-row {
+    display: flex; align-items: center; padding: 0.75rem 1rem;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0;
+  }
+  .page-title-row .pt { font-size: 0.9375rem; font-weight: 700; color: #0F172A; }
+  .page-title-row .pc { font-size: 0.6875rem; color: #94A3B8; margin-left: 0.5rem; }
+  .page-title-row .ai-btn {
+    margin-left: auto; display: flex; align-items: center; gap: 0.25rem;
+    font-size: 0.6875rem; font-weight: 600; padding: 0.3125rem 0.625rem;
+    border-radius: 0.375rem; border: none; cursor: default; font-family: inherit;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6); color: #fff;
+  }
+  .page-title-row .run-btn {
+    margin-left: auto; display: flex; align-items: center; gap: 0.25rem;
+    font-size: 0.6875rem; font-weight: 600; padding: 0.3125rem 0.625rem;
+    border-radius: 0.375rem; border: none; cursor: default; font-family: inherit;
+    background: linear-gradient(135deg, #6366F1, #4F46E5); color: #fff;
+  }
+
+  /* ── Lifecycle tabs ── */
+  .lc-bar {
+    display: flex; align-items: center; padding: 0 1rem; height: 2.375rem;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0;
+  }
+  .lc-tab {
+    display: flex; align-items: center; gap: 0.25rem; padding: 0 0.625rem; height: 100%;
+    font-size: 0.6875rem; font-weight: 500; color: #64748B; border-bottom: 2px solid transparent;
+  }
+  .lc-tab.active { color: #6366F1; border-bottom-color: #6366F1; font-weight: 600; }
+  .lc-tab i { font-size: 0.75rem; }
+  .lc-badge {
+    font-size: 0.5625rem; font-weight: 700; padding: 0 0.3125rem; border-radius: 9999px;
+    background: #F1F5F9; color: #64748B; min-width: 1rem; text-align: center;
+  }
+  .lc-tab.active .lc-badge { background: #EEF2FF; color: #6366F1; }
+  .lc-right { margin-left: auto; display: flex; align-items: center; gap: 0.375rem; }
+  .lc-right .ai-btn-sm {
+    display: flex; align-items: center; gap: 0.25rem;
+    font-size: 0.6875rem; font-weight: 600; padding: 0.25rem 0.625rem;
+    border-radius: 0.375rem; border: none; cursor: default; font-family: inherit;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6); color: #fff;
+  }
+  .lc-right .run-btn-sm {
+    display: flex; align-items: center; gap: 0.25rem;
+    font-size: 0.6875rem; font-weight: 600; padding: 0.25rem 0.625rem;
+    border-radius: 0.375rem; border: none; cursor: default; font-family: inherit;
+    background: linear-gradient(135deg, #6366F1, #4F46E5); color: #fff;
+  }
+  .lc-right .count-chip {
+    font-size: 0.5625rem; font-weight: 600; color: #94A3B8; padding: 0.125rem 0.5rem;
+    border: 1px solid #E2E8F0; border-radius: 9999px; background: #F8FAFC;
+  }
+
+  /* ── Content placeholder ── */
+  .content-area { flex: 1; display: flex; overflow: hidden; }
+  .sidebar-ph { width: 180px; background: #fff; border-right: 1px solid #E2E8F0; }
+  .sb-item { padding: 0.375rem 0.75rem; font-size: 0.6875rem; color: #64748B; display: flex; align-items: center; gap: 0.25rem; }
+  .sb-item.active { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .sb-item i { font-size: 0.8125rem; }
+  .sb-item .c { margin-left: auto; font-size: 0.5625rem; color: #94A3B8; }
+  .list-ph { flex: 1; background: #F8FAFC; padding: 0.5rem; }
+  .list-ph .toolbar {
+    display: flex; align-items: center; gap: 0.25rem; padding: 0.375rem 0.5rem;
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.375rem; margin-bottom: 0.375rem;
+  }
+  .toolbar input { border: none; background: none; font-size: 0.6875rem; outline: none; flex: 1; font-family: inherit; color: #475569; }
+  .toolbar .f-btn { font-size: 0.625rem; padding: 0.1875rem 0.4375rem; border-radius: 0.25rem; border: 1px solid #E2E8F0; background: #fff; color: #64748B; font-family: inherit; }
+  .list-rows { }
+  .list-row { display: flex; align-items: center; gap: 0.375rem; padding: 0.3125rem 0.5rem; background: #fff; border-bottom: 1px solid #F1F5F9; font-size: 0.6875rem; }
+  .list-row.sel { background: #EEF2FF; }
+  .list-row .id { font-family: monospace; font-size: 0.5625rem; color: #94A3B8; min-width: 40px; }
+  .list-row .tt { flex: 1; font-weight: 500; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list-row .badge { font-size: 0.5rem; padding: 0 0.25rem; border-radius: 9999px; font-weight: 600; }
+  .badge.hi { background: #FEE2E2; color: #991B1B; }
+  .badge.med { background: #FEF3C7; color: #92400E; }
+  .detail-ph { width: 200px; background: #fff; border-left: 1px solid #E2E8F0; padding: 0.75rem; }
+  .detail-ph .dp-id { font-size: 0.5625rem; color: #94A3B8; font-family: monospace; margin-bottom: 0.125rem; }
+  .detail-ph .dp-t { font-size: 0.75rem; font-weight: 700; color: #0F172A; margin-bottom: 0.5rem; }
+  .detail-ph .dp-meta { font-size: 0.5625rem; color: #64748B; margin-bottom: 0.125rem; }
+
+  /* ── Annotation markers ── */
+  .anno {
+    position: relative; display: inline-block;
+  }
+  .anno::before {
+    content: attr(data-anno);
+    position: absolute; left: 0; top: -14px;
+    font-size: 0.5rem; font-weight: 700; color: #fff; background: #DC2626;
+    padding: 0 4px; border-radius: 2px; white-space: nowrap; z-index: 5;
+  }
+  .anno.green::before { background: #16A34A; }
+  .highlight-row { outline: 2px dashed #DC2626; outline-offset: -2px; position: relative; }
+  .highlight-row.green { outline-color: #16A34A; }
+  .saved-px {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    font-size: 0.5rem; font-weight: 700; color: #16A34A; background: #F0FDF4;
+    padding: 1px 6px; border-radius: 9999px; border: 1px solid #BBF7D0;
+  }
+
+  /* ══════════════════════════════════════════ */
+  /* ANALYSIS SECTION                          */
+  /* ══════════════════════════════════════════ */
+  .analysis { padding: 1.5rem; }
+  .analysis-card {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 12px;
+    padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .analysis-card h2 { font-size: 1rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .analysis-card h3 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin: 1rem 0 0.5rem; }
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 768px) { .pros-cons { grid-template-columns: 1fr; } }
+  .pro-box, .con-box { padding: 1rem; border-radius: 0.5rem; font-size: 0.8125rem; line-height: 1.6; }
+  .pro-box { background: #F0FDF4; border: 1px solid #BBF7D0; }
+  .con-box { background: #FEF2F2; border: 1px solid #FECACA; }
+  .pro-box strong { color: #166534; }
+  .con-box strong { color: #991B1B; }
+  .pro-box li, .con-box li { margin-bottom: 0.25rem; }
+  ul { padding-left: 1.25rem; }
+  .rec-box { background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 0.5rem; padding: 1rem; font-size: 0.8125rem; line-height: 1.6; margin-top: 1rem; }
+  .rec-box strong { color: #4338CA; }
+  .spec-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin-top: 0.5rem; }
+  .spec-table th { text-align: left; font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; padding: 0.375rem 0.625rem; border-bottom: 2px solid #E2E8F0; }
+  .spec-table td { padding: 0.375rem 0.625rem; border-bottom: 1px solid #F1F5F9; color: #334155; }
+  .spec-table .del { color: #DC2626; text-decoration: line-through; }
+  .spec-table .add { color: #16A34A; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ DEMO CONTROLS ═══════════ -->
+<div class="demo-bar">
+  <label>Context:</label>
+  <button class="demo-btn active" onclick="setCtx('tc')">Test Cases</button>
+  <button class="demo-btn" onclick="setCtx('run')">Runs &amp; Results</button>
+  <span class="demo-sep"></span>
+  <label>View:</label>
+  <button class="demo-btn active" onclick="setView('compare')">Side-by-Side</button>
+  <button class="demo-btn" onclick="setView('analysis')">Design Analysis</button>
+</div>
+
+<!-- ═══════════ SIDE-BY-SIDE COMPARISON ═══════════ -->
+<div class="panels" id="compareView">
+
+  <!-- ── BEFORE ── -->
+  <div class="panel">
+    <div class="panel-label before">
+      <i class="ri-close-circle-line"></i> Before (Current)
+      <span class="tag">3 rows · ~96px</span>
+    </div>
+    <div class="mock">
+      <!-- Top Header -->
+      <div class="top-hdr">
+        <div class="logo"><div class="logo-sq">T</div><span class="logo-txt">Testably</span></div>
+        <div class="proj">Stellar Health EMR <i class="ri-arrow-down-s-line"></i></div>
+        <div class="nav">
+          <div class="nav-item"><i class="ri-dashboard-line"></i> Dashboard</div>
+          <div class="nav-item active" id="bNavTC"><i class="ri-file-list-3-line"></i> <span id="bNavTCText">Test Cases</span></div>
+          <div class="nav-item" id="bNavRun"><i class="ri-play-circle-line"></i> <span id="bNavRunText">Runs</span></div>
+          <div class="nav-item"><i class="ri-flag-line"></i> Milestones</div>
+        </div>
+        <div class="hdr-right">
+          <div class="hdr-icon"><i class="ri-notification-3-line"></i></div>
+          <div class="hdr-icon"><i class="ri-keyboard-line"></i></div>
+          <div class="hdr-av">KJ</div>
+        </div>
+      </div>
+
+      <!-- Page Title Row (REDUNDANT) -->
+      <div class="page-title-row highlight-row" id="bTitleRow">
+        <span class="anno" data-anno="REDUNDANT — same as nav tab above">
+          <span class="pt" id="bTitle">Test Cases</span>
+        </span>
+        <span class="pc" id="bCount">· 40 test cases</span>
+        <button class="ai-btn" id="bAiBtn" style="display:flex">✨ Generate with AI</button>
+        <button class="run-btn" id="bRunBtn" style="display:none"><i class="ri-play-circle-line" style="font-size:0.75rem"></i> Start New Run</button>
+      </div>
+
+      <!-- Lifecycle Tabs -->
+      <div class="lc-bar" id="bLcBar">
+        <div class="lc-tab active" id="bLc1"><i class="ri-list-check-3"></i> <span id="bLc1T">All</span> <span class="lc-badge" id="bLc1B">40</span></div>
+        <div class="lc-tab" id="bLc2"><i class="ri-draft-line" id="bLc2I"></i> <span id="bLc2T">Draft</span> <span class="lc-badge" id="bLc2B">1</span></div>
+        <div class="lc-tab" id="bLc3"><i class="ri-checkbox-circle-line" id="bLc3I"></i> <span id="bLc3T">Active</span> <span class="lc-badge" id="bLc3B">39</span></div>
+        <div class="lc-tab" id="bLc4"><i class="ri-archive-line"></i> <span id="bLc4T">Deprecated</span> <span class="lc-badge" id="bLc4B">0</span></div>
+      </div>
+
+      <!-- Content -->
+      <div class="content-area">
+        <div class="sidebar-ph">
+          <div class="sb-item active"><i class="ri-folder-fill" style="color:#6366F1"></i> <span id="bSb1">All Test Cases</span> <span class="c">40</span></div>
+          <div class="sb-item"><i class="ri-folder-line"></i> Login <span class="c">8</span></div>
+          <div class="sb-item"><i class="ri-folder-line"></i> Patient List <span class="c">12</span></div>
+          <div class="sb-item"><i class="ri-folder-line"></i> Viewer <span class="c">9</span></div>
+        </div>
+        <div class="list-ph">
+          <div class="toolbar"><i class="ri-search-line" style="font-size:0.75rem;color:#94A3B8"></i><input placeholder="Search..." /><button class="f-btn">Filters</button></div>
+          <div class="list-rows">
+            <div class="list-row sel"><span class="id">TC-041</span><span class="tt">Login with valid credentials on Safari 17</span><span class="badge hi">High</span></div>
+            <div class="list-row"><span class="id">TC-042</span><span class="tt">Login with invalid password shows error</span><span class="badge hi">High</span></div>
+            <div class="list-row"><span class="id">TC-043</span><span class="tt">OAuth SSO redirect handles timeout</span><span class="badge med">Med</span></div>
+            <div class="list-row"><span class="id">TC-044</span><span class="tt">Patient list loads within 2 seconds</span><span class="badge hi">High</span></div>
+            <div class="list-row"><span class="id">TC-045</span><span class="tt">Search patient by name returns results</span><span class="badge med">Med</span></div>
+          </div>
+        </div>
+        <div class="detail-ph">
+          <div class="dp-id">TC-041</div>
+          <div class="dp-t">Login with valid credentials on Safari 17</div>
+          <div class="dp-meta">Priority: High</div>
+          <div class="dp-meta">Folder: Login</div>
+          <div class="dp-meta">Assignee: Sarah Kim</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AFTER ── -->
+  <div class="panel">
+    <div class="panel-label after">
+      <i class="ri-checkbox-circle-line"></i> After (Proposed)
+      <span class="tag">2 rows · ~60px · saves 36px</span>
+    </div>
+    <div class="mock">
+      <!-- Top Header -->
+      <div class="top-hdr">
+        <div class="logo"><div class="logo-sq">T</div><span class="logo-txt">Testably</span></div>
+        <div class="proj">Stellar Health EMR <i class="ri-arrow-down-s-line"></i></div>
+        <div class="nav">
+          <div class="nav-item"><i class="ri-dashboard-line"></i> Dashboard</div>
+          <div class="nav-item active" id="aNavTC"><i class="ri-file-list-3-line"></i> <span id="aNavTCText">Test Cases</span></div>
+          <div class="nav-item" id="aNavRun"><i class="ri-play-circle-line"></i> <span id="aNavRunText">Runs</span></div>
+          <div class="nav-item"><i class="ri-flag-line"></i> Milestones</div>
+        </div>
+        <div class="hdr-right">
+          <div class="hdr-icon"><i class="ri-notification-3-line"></i></div>
+          <div class="hdr-icon"><i class="ri-keyboard-line"></i></div>
+          <div class="hdr-av">KJ</div>
+        </div>
+      </div>
+
+      <!-- NO title row — merged into lifecycle bar -->
+      <div class="lc-bar highlight-row green" id="aLcBar" style="position:relative">
+        <div class="lc-tab active" id="aLc1"><i class="ri-list-check-3"></i> <span id="aLc1T">All</span> <span class="lc-badge" id="aLc1B">40</span></div>
+        <div class="lc-tab" id="aLc2"><i class="ri-draft-line" id="aLc2I"></i> <span id="aLc2T">Draft</span> <span class="lc-badge" id="aLc2B">1</span></div>
+        <div class="lc-tab" id="aLc3"><i class="ri-checkbox-circle-line" id="aLc3I"></i> <span id="aLc3T">Active</span> <span class="lc-badge" id="aLc3B">39</span></div>
+        <div class="lc-tab" id="aLc4"><i class="ri-archive-line"></i> <span id="aLc4T">Deprecated</span> <span class="lc-badge" id="aLc4B">0</span></div>
+        <div class="lc-right">
+          <span class="count-chip" id="aCountChip">40 test cases</span>
+          <button class="ai-btn-sm" id="aAiBtn" style="display:flex">✨ Generate with AI</button>
+          <button class="run-btn-sm" id="aRunBtn" style="display:none"><i class="ri-play-circle-line" style="font-size:0.6875rem"></i> Start New Run</button>
+        </div>
+        <span class="saved-px">▲ 36px saved</span>
+      </div>
+
+      <!-- Content (more vertical space) -->
+      <div class="content-area">
+        <div class="sidebar-ph">
+          <div class="sb-item active"><i class="ri-folder-fill" style="color:#6366F1"></i> <span id="aSb1">All Test Cases</span> <span class="c">40</span></div>
+          <div class="sb-item"><i class="ri-folder-line"></i> Login <span class="c">8</span></div>
+          <div class="sb-item"><i class="ri-folder-line"></i> Patient List <span class="c">12</span></div>
+          <div class="sb-item"><i class="ri-folder-line"></i> Viewer <span class="c">9</span></div>
+        </div>
+        <div class="list-ph">
+          <div class="toolbar"><i class="ri-search-line" style="font-size:0.75rem;color:#94A3B8"></i><input placeholder="Search..." /><button class="f-btn">Filters</button></div>
+          <div class="list-rows">
+            <div class="list-row sel"><span class="id">TC-041</span><span class="tt">Login with valid credentials on Safari 17</span><span class="badge hi">High</span></div>
+            <div class="list-row"><span class="id">TC-042</span><span class="tt">Login with invalid password shows error</span><span class="badge hi">High</span></div>
+            <div class="list-row"><span class="id">TC-043</span><span class="tt">OAuth SSO redirect handles timeout</span><span class="badge med">Med</span></div>
+            <div class="list-row"><span class="id">TC-044</span><span class="tt">Patient list loads within 2 seconds</span><span class="badge hi">High</span></div>
+            <div class="list-row"><span class="id">TC-045</span><span class="tt">Search patient by name returns results</span><span class="badge med">Med</span></div>
+            <div class="list-row"><span class="id">TC-046</span><span class="tt">DICOM viewer renders CT scan correctly</span><span class="badge hi">High</span></div>
+          </div>
+        </div>
+        <div class="detail-ph">
+          <div class="dp-id">TC-041</div>
+          <div class="dp-t">Login with valid credentials on Safari 17</div>
+          <div class="dp-meta">Priority: High</div>
+          <div class="dp-meta">Folder: Login</div>
+          <div class="dp-meta">Assignee: Sarah Kim</div>
+          <div class="dp-meta">Tags: login, safari</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ DESIGN ANALYSIS ═══════════ -->
+<div class="analysis" id="analysisView" style="display:none">
+
+  <div class="analysis-card">
+    <h2><i class="ri-lightbulb-line" style="color:#F59E0B"></i> CEO 제안 분석: 타이틀 행 삭제 + 버튼 이동</h2>
+
+    <h3>현재 구조 (Before)</h3>
+    <table class="spec-table">
+      <tr><th>Layer</th><th>Height</th><th>Content</th></tr>
+      <tr><td>① Top Header</td><td>52px</td><td>Logo + Project + Nav(Test Cases active) + Icons + Avatar</td></tr>
+      <tr><td>② Page Title Row</td><td class="del">36px</td><td class="del">"Test Cases · 40 test cases" + ✨ Generate with AI</td></tr>
+      <tr><td>③ Lifecycle Tabs</td><td>38px</td><td>All(40) / Draft(1) / Active(39) / Deprecated(0)</td></tr>
+      <tr><td><strong>Total</strong></td><td><strong>126px</strong></td><td></td></tr>
+    </table>
+
+    <h3>제안 구조 (After)</h3>
+    <table class="spec-table">
+      <tr><th>Layer</th><th>Height</th><th>Content</th></tr>
+      <tr><td>① Top Header</td><td>52px</td><td>동일</td></tr>
+      <tr><td class="add">② Lifecycle Tabs + Action</td><td class="add">38px</td><td class="add">All(40) / Draft(1) / Active(39) / Deprecated(0) + "40 test cases" chip + ✨ Generate with AI</td></tr>
+      <tr><td><strong>Total</strong></td><td class="add"><strong>90px (−36px)</strong></td><td></td></tr>
+    </table>
+
+    <div class="pros-cons">
+      <div class="pro-box">
+        <strong>장점 (Pros)</strong>
+        <ul>
+          <li><strong>36px 수직 공간 확보</strong> — TC 리스트에 ~1행 더 표시</li>
+          <li><strong>중복 제거</strong> — "Test Cases" 텍스트가 nav 탭에만 존재 → 시각적 정리</li>
+          <li><strong>시선 흐름 개선</strong> — nav 탭 → 바로 lifecycle 필터링 → 콘텐츠. 불필요한 중간 단계 제거</li>
+          <li><strong>Linear/Notion 패턴 일치</strong> — 최신 SaaS는 page title 제거 + 탭 행에 액션 통합 추세</li>
+          <li><strong>Runs & Results에도 동일 적용 가능</strong> — 일관된 패턴</li>
+        </ul>
+      </div>
+      <div class="con-box">
+        <strong>단점 / 리스크 (Cons)</strong>
+        <ul>
+          <li><strong>정보 밀도 증가</strong> — lifecycle tabs + count chip + AI 버튼이 한 행에 → 좁은 화면에서 빡빡</li>
+          <li><strong>총 TC 카운트 눈에 덜 띔</strong> — 15px 타이틀 옆 → 11px chip으로 축소</li>
+          <li><strong>AI 버튼 발견성 감소</strong> — 큰 별도 행 vs lifecycle 행 우측은 CTR이 다를 수 있음</li>
+          <li><strong>미래 확장성</strong> — 필터, 벌크 액션 버튼 등 추가 시 lifecycle 행이 과밀해질 수 있음</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="rec-box">
+      <strong>Desi 의견:</strong> CEO 제안에 동의합니다. 중복 제거가 명확하고, 36px 절약은 detail panel의 Steps 영역에서 특히 가치가 큽니다. 단, 두 가지 보완을 제안합니다: (1) "40 test cases" 카운트를 chip으로 유지하여 정보 손실 방지, (2) ✨ 버튼 크기를 약간 줄이되 gradient + 아이콘은 유지하여 발견성 보존. Runs & Results도 동일 패턴 적용 — "Start New Run" 버튼을 Active/Completed/Archived 탭 행 우측으로 이동.
+    </div>
+  </div>
+
+  <div class="analysis-card">
+    <h2><i class="ri-play-circle-line" style="color:#6366F1"></i> Runs &amp; Results — 동일 분석</h2>
+    <p style="font-size:0.8125rem; line-height:1.6; margin-bottom:1rem;">
+      Runs & Results 탭도 동일한 중복 문제 존재: nav 탭에 "Runs & Results" + 바로 아래 "Runs & Results · 20 runs" 타이틀. CEO 제안과 동일한 패턴 적용 가능.
+    </p>
+    <table class="spec-table">
+      <tr><th>Before</th><th>After</th></tr>
+      <tr><td>Nav: "Runs & Results" (active) <br>Title row: "Runs & Results · 20 runs" + ▶ Start New Run <br>Tabs: Active(3) | Completed(12) | Archived(5)</td>
+      <td>Nav: "Runs & Results" (active) <br><span class="del">Title row 삭제</span> <br>Tabs: Active(3) | Completed(12) | Archived(5) + <span class="add">"20 runs" chip + ▶ Start New Run</span></td></tr>
+    </table>
+    <div class="rec-box">
+      <strong>결론:</strong> TC와 Runs 모두 동일 패턴 적용 → 전체 앱에서 일관된 2-row header 구조 (Top Header + Lifecycle/Status Tabs with Actions). Nav 탭이 이미 페이지 이름을 명시하므로 별도 타이틀은 불필요.
+    </div>
+  </div>
+
+  <div class="analysis-card">
+    <h2><i class="ri-code-s-slash-line" style="color:#6366F1"></i> Dev Handoff — 변경 스펙</h2>
+    <table class="spec-table">
+      <tr><th>Component</th><th>Change</th><th>Detail</th></tr>
+      <tr><td>PageTitleRow</td><td class="del">삭제</td><td>컴포넌트 및 CSS 제거</td></tr>
+      <tr><td>LifecycleTabBar</td><td class="add">우측 슬롯 추가</td><td>children right slot: count chip + primary action button</td></tr>
+      <tr><td>count chip</td><td class="add">신규</td><td>11px, #94A3B8, border: #E2E8F0, border-radius: 9999px, padding: 2px 8px</td></tr>
+      <tr><td>AI 버튼 위치</td><td class="add">이동</td><td>page-title-row → lifecycle-tab-bar .lc-right</td></tr>
+      <tr><td>버튼 크기</td><td class="add">축소</td><td>padding: 0.3125rem 0.625rem → 0.25rem 0.625rem (2px 절약)</td></tr>
+      <tr><td>switchContext()</td><td class="add">업데이트</td><td>pageTitle/pageCount DOM 제거, lc-right 내 chip + button 전환</td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+let ctx = 'tc';
+
+function setCtx(c) {
+  ctx = c;
+  document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.demo-btn[onclick="setCtx('${c}')"]`).classList.add('active');
+
+  // Before panel
+  const bNavTC = document.getElementById('bNavTC');
+  const bNavRun = document.getElementById('bNavRun');
+  const bTitle = document.getElementById('bTitle');
+  const bCount = document.getElementById('bCount');
+  const bAiBtn = document.getElementById('bAiBtn');
+  const bRunBtn = document.getElementById('bRunBtn');
+
+  // After panel
+  const aNavTC = document.getElementById('aNavTC');
+  const aNavRun = document.getElementById('aNavRun');
+  const aAiBtn = document.getElementById('aAiBtn');
+  const aRunBtn = document.getElementById('aRunBtn');
+  const aCountChip = document.getElementById('aCountChip');
+
+  if (c === 'tc') {
+    bNavTC.classList.add('active'); bNavRun.classList.remove('active');
+    aNavTC.classList.add('active'); aNavRun.classList.remove('active');
+    bTitle.textContent = 'Test Cases'; bCount.textContent = '· 40 test cases';
+    bAiBtn.style.display = 'flex'; bRunBtn.style.display = 'none';
+    aAiBtn.style.display = 'flex'; aRunBtn.style.display = 'none';
+    aCountChip.textContent = '40 test cases';
+    // LC tabs
+    document.getElementById('bLc1T').textContent = 'All'; document.getElementById('bLc1B').textContent = '40';
+    document.getElementById('bLc2T').textContent = 'Draft'; document.getElementById('bLc2B').textContent = '1';
+    document.getElementById('bLc3T').textContent = 'Active'; document.getElementById('bLc3B').textContent = '39';
+    document.getElementById('bLc4T').textContent = 'Deprecated'; document.getElementById('bLc4B').textContent = '0';
+    document.getElementById('aLc1T').textContent = 'All'; document.getElementById('aLc1B').textContent = '40';
+    document.getElementById('aLc2T').textContent = 'Draft'; document.getElementById('aLc2B').textContent = '1';
+    document.getElementById('aLc3T').textContent = 'Active'; document.getElementById('aLc3B').textContent = '39';
+    document.getElementById('aLc4T').textContent = 'Deprecated'; document.getElementById('aLc4B').textContent = '0';
+  } else {
+    bNavTC.classList.remove('active'); bNavRun.classList.add('active');
+    aNavTC.classList.remove('active'); aNavRun.classList.add('active');
+    bTitle.textContent = 'Runs & Results'; bCount.textContent = '· 20 runs';
+    bAiBtn.style.display = 'none'; bRunBtn.style.display = 'flex';
+    aAiBtn.style.display = 'none'; aRunBtn.style.display = 'flex';
+    aCountChip.textContent = '20 runs';
+    // LC tabs for runs
+    document.getElementById('bLc1T').textContent = 'Active'; document.getElementById('bLc1B').textContent = '3';
+    document.getElementById('bLc2T').textContent = 'Completed'; document.getElementById('bLc2B').textContent = '12';
+    document.getElementById('bLc3T').textContent = 'Archived'; document.getElementById('bLc3B').textContent = '5';
+    document.getElementById('bLc4T').textContent = ''; document.getElementById('bLc4B').textContent = '';
+    document.getElementById('aLc1T').textContent = 'Active'; document.getElementById('aLc1B').textContent = '3';
+    document.getElementById('aLc2T').textContent = 'Completed'; document.getElementById('aLc2B').textContent = '12';
+    document.getElementById('aLc3T').textContent = 'Archived'; document.getElementById('aLc3B').textContent = '5';
+    document.getElementById('aLc4T').textContent = ''; document.getElementById('aLc4B').textContent = '';
+    // hide 4th tab when empty
+    document.getElementById('bLc4').style.display = c === 'run' ? 'none' : '';
+    document.getElementById('aLc4').style.display = c === 'run' ? 'none' : '';
+  }
+}
+
+function setView(v) {
+  document.querySelectorAll('.demo-btn').forEach(b => {
+    if (b.getAttribute('onclick')?.includes('setView')) b.classList.remove('active');
+  });
+  document.querySelector(`.demo-btn[onclick="setView('${v}')"]`).classList.add('active');
+  document.getElementById('compareView').style.display = v === 'compare' ? '' : 'none';
+  document.getElementById('analysisView').style.display = v === 'analysis' ? '' : 'none';
+}
+</script>
+</body>
+</html>

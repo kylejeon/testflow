@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { loadProjectDetailData } from './queryFns';
 import ProjectMembersPanel from './components/ProjectMembersPanel';
 import InviteMemberModal from './components/InviteMemberModal';
 import SEOHead from '../../components/SEOHead';
@@ -31,27 +32,17 @@ const TIER_INFO = {
 
 export default function ProjectDetail() {
   const { id } = useParams();
-  const [project, setProject] = useState<any>(null);
-  const [milestones, setMilestones] = useState<any[]>([]);
-  const [testRuns, setTestRuns] = useState<any[]>([]);
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [memberRefreshTrigger, setMemberRefreshTrigger] = useState(0);
   const [projectIntegrations, setProjectIntegrations] = useState<any[]>([]);
   const [jiraConfigured, setJiraConfigured] = useState(false);
-  const [testCaseCount, setTestCaseCount] = useState(0);
   const [showQuickCreateTC, setShowQuickCreateTC] = useState(false);
   const [showContinueRun, setShowContinueRun] = useState(false);
   const [showAIAssist, setShowAIAssist] = useState(false);
   const [showAIGenerate, setShowAIGenerate] = useState(false);
   const [dashboardTab, setDashboardTab] = useState<'overview' | 'analytics' | 'activity'>('overview');
-  const [projectPassRateData, setProjectPassRateData] = useState<{ total: number; passed: number } | null>(null);
-  const [rawTestResults, setRawTestResults] = useState<any[]>([]);
-  const [allRunsRaw, setAllRunsRaw] = useState<any[]>([]);
   const [trendPeriod, setTrendPeriod] = useState<'7d' | '14d' | '30d'>('7d');
   const [expandedPriorityGroups, setExpandedPriorityGroups] = useState<Set<string>>(new Set(['critical', 'high']));
   const [activityFilter, setActivityFilter] = useState<string>('all');
@@ -110,9 +101,38 @@ export default function ProjectDetail() {
     staleTime: 10 * 60_000,
   });
 
+  // Project detail data: React Query
+  const { data: projectData, isLoading } = useQuery({
+    queryKey: ['project-detail', id],
+    queryFn: () => loadProjectDetailData(id!),
+    enabled: !!id,
+  });
+
+  const project = projectData?.project ?? null;
+  const testCaseCount = projectData?.testCaseCount ?? 0;
+  const milestones = projectData?.milestones ?? [];
+  const testRuns = projectData?.testRuns ?? [];
+  const sessions = projectData?.sessions ?? [];
+  const recentActivity = projectData?.recentActivity ?? [];
+  const projectPassRateData = projectData?.projectPassRateData ?? null;
+  const rawTestResults = projectData?.rawTestResults ?? [];
+  const allRunsRaw = projectData?.allRunsRaw ?? [];
+
+  // Initialize expandedMilestones when milestones first load
+  const expandedInitialized = useRef(false);
+  useEffect(() => {
+    if (milestones.length > 0 && !expandedInitialized.current) {
+      expandedInitialized.current = true;
+      const initial = new Set<string>();
+      milestones.forEach((m: any) => {
+        if (m.subMilestones?.length) initial.add(m.id);
+      });
+      setExpandedMilestones(initial);
+    }
+  }, [milestones]);
+
   useEffect(() => {
     if (id) {
-      fetchData();
       fetchIntegrationStatus();
     }
   }, [id]);
@@ -127,303 +147,6 @@ export default function ProjectDetail() {
     ]);
     setProjectIntegrations(intRes.data ?? []);
     setJiraConfigured(!!(jiraRes.data?.domain));
-  };
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-
-      // ── 독립 쿼리를 모두 병렬로 실행 ──
-      const [
-        { data: projectData, error: projectError },
-        { count: tcCount },
-        { data: milestonesData, error: milestonesError },
-        { data: allRunsData, error: allRunsError },
-        { data: sessionsRaw },
-      ] = await Promise.all([
-        supabase.from('projects').select('*').eq('id', id).single(),
-        supabase.from('test_cases').select('id', { count: 'exact', head: true }).eq('project_id', id),
-        supabase.from('milestones').select('*').eq('project_id', id).order('end_date', { ascending: true }),
-        supabase.from('test_runs').select('*').eq('project_id', id).order('created_at', { ascending: false }),
-        supabase.from('sessions').select('*').eq('project_id', id).order('created_at', { ascending: false }).limit(20),
-      ]);
-
-      if (projectError) throw projectError;
-      if (milestonesError) throw milestonesError;
-      if (allRunsError) throw allRunsError;
-
-      setProject(projectData);
-      setTestCaseCount(tcCount || 0);
-      // Store raw run data (original DB counters) for trend chart — before they get
-      // overwritten by the test_results-based recalculation below.
-      setAllRunsRaw(allRunsData || []);
-
-      // ── test_results를 모든 run에 대해 한 번에 fetch (N+1 제거) ──
-      const runIds = (allRunsData || []).map(r => r.id);
-      const sessionIds = (sessionsRaw || []).map((s: any) => s.id);
-
-      const [
-        { data: allTestResultsData, error: allTestResultsError },
-        { data: sessionLogsData },
-      ] = await Promise.all([
-        runIds.length
-          ? supabase.from('test_results').select('run_id, test_case_id, status, created_at').in('run_id', runIds).order('created_at', { ascending: false })
-          : Promise.resolve({ data: [], error: null }),
-        sessionIds.length
-          ? supabase.from('session_logs').select('session_id, type, created_at').in('session_id', sessionIds).order('created_at', { ascending: false })
-          : Promise.resolve({ data: [], error: null }),
-      ]);
-
-      if (allTestResultsError) throw allTestResultsError;
-
-      // ── test_results를 run_id별로 그룹화 (메모리에서 O(1) 조회) ──
-      const allResultsByRun = new Map<string, any[]>();
-      (allTestResultsData || []).forEach((r: any) => {
-        if (!allResultsByRun.has(r.run_id)) allResultsByRun.set(r.run_id, []);
-        allResultsByRun.get(r.run_id)!.push(r);
-      });
-
-      // Compute pass rate from actual test_results (stored run columns are unreliable)
-      const _prTotal = (allTestResultsData || []).filter((r: any) => r.status !== 'untested').length;
-      const _prPassed = (allTestResultsData || []).filter((r: any) => r.status === 'passed').length;
-      setProjectPassRateData({ total: _prTotal, passed: _prPassed });
-      setRawTestResults(allTestResultsData || []);
-
-      // calculate milestone progress
-      const milestonesWithProgress = (milestonesData || []).map((milestone) => {
-        const milestoneRuns = allRunsData?.filter(run => run.milestone_id === milestone.id) || [];
-
-        if (milestoneRuns.length === 0) {
-          let status = milestone.status;
-          if (status === 'upcoming' && milestone.start_date) {
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-            const start = new Date(milestone.start_date); start.setHours(0, 0, 0, 0);
-            if (start <= today) status = 'started';
-          }
-          return { ...milestone, status, progress: 0 };
-        }
-
-        let totalTestsSum = 0;
-        let completedTestsSum = 0;
-
-        milestoneRuns.forEach(run => {
-          const runResults = allTestResultsData?.filter(r => r.run_id === run.id) || [];
-          const statusMap = new Map<string, string>();
-          runResults.forEach(r => {
-            if (!statusMap.has(r.test_case_id)) statusMap.set(r.test_case_id, r.status);
-          });
-
-          const totalTests = run.test_case_ids.length;
-          totalTestsSum += totalTests;
-          if (totalTests === 0) return;
-
-          run.test_case_ids.forEach((tcId: string) => {
-            const s = statusMap.get(tcId);
-            if (s === 'passed' || s === 'failed' || s === 'blocked' || s === 'retest') completedTestsSum++;
-          });
-        });
-
-        const avg = totalTestsSum > 0 ? Math.round((completedTestsSum / totalTestsSum) * 100) : 0;
-
-        let status = milestone.status;
-        if (status === 'upcoming' && milestone.start_date) {
-          const today = new Date(); today.setHours(0, 0, 0, 0);
-          const start = new Date(milestone.start_date); start.setHours(0, 0, 0, 0);
-          if (start <= today) status = 'started';
-        }
-
-        return { ...milestone, status, progress: avg };
-      });
-
-      // organize parent/child milestones
-      const parentMilestones = milestonesWithProgress.filter(m => !m.parent_milestone_id);
-      const organizedMilestones = parentMilestones.map(parent => ({
-        ...parent,
-        subMilestones: milestonesWithProgress.filter(m => m.parent_milestone_id === parent.id),
-      }));
-
-      const initialExpanded = new Set<string>();
-      organizedMilestones.forEach(m => {
-        if (m.subMilestones && m.subMilestones.length) initialExpanded.add(m.id);
-      });
-      setExpandedMilestones(initialExpanded);
-      setMilestones(organizedMilestones);
-
-      // milestone id → name 맵 생성
-      const milestoneMap = new Map<string, string>();
-      (milestonesData || []).forEach(m => milestoneMap.set(m.id, m.name));
-
-      // ── LATEST RUNS WITH PROGRESS (캐싱된 allResultsByRun 사용, N+1 없음) ──
-      const runsWithProgress = (allRunsData || []).slice(0, 5).map((run: any) => {
-        const runResults = allResultsByRun.get(run.id) || [];
-        const statusMap = new Map<string, string>();
-        runResults.forEach((r: any) => {
-          if (!statusMap.has(r.test_case_id)) statusMap.set(r.test_case_id, r.status);
-        });
-
-        let passed = 0, failed = 0, blocked = 0, retest = 0, untested = 0;
-        (run.test_case_ids || []).forEach((tcId: string) => {
-          const s = statusMap.get(tcId) || 'untested';
-          if (s === 'passed') passed++;
-          else if (s === 'failed') failed++;
-          else if (s === 'blocked') blocked++;
-          else if (s === 'retest') retest++;
-          else untested++;
-        });
-
-        const milestoneName = run.milestone_id ? milestoneMap.get(run.milestone_id) || null : null;
-        return { ...run, passed, failed, blocked, retest, untested, milestoneName };
-      });
-      setTestRuns(runsWithProgress);
-
-      // ── SESSIONS & ACTIVITY (이미 병렬로 fetch한 sessionsRaw + sessionLogsData 재사용) ──
-      const sessionsData = sessionsRaw;
-
-      const logsBySession = new Map<string, any[]>();
-      (sessionLogsData || []).forEach((log: any) => {
-        if (!logsBySession.has(log.session_id)) logsBySession.set(log.session_id, []);
-        logsBySession.get(log.session_id)!.push(log);
-      });
-
-      const generateActivityData = (logs: any[]) => {
-        const blockCount = 24;
-        const activity = new Array(blockCount).fill('#e5e7eb');
-        if (!logs?.length) return activity;
-
-        const recent = logs.slice(0, blockCount);
-        recent.forEach((log, i) => {
-          switch (log.type) {
-            case 'note':
-              activity[i] = '#3b82f6';
-              break;
-            case 'passed':
-              activity[i] = '#10b981';
-              break;
-            case 'failed':
-              activity[i] = '#ef4444';
-              break;
-            case 'blocked':
-              activity[i] = '#f59e0b';
-              break;
-            default:
-              activity[i] = '#6366F1';
-          }
-        });
-        return activity;
-      };
-
-      const sessionsWithActivity = (sessionsData || []).map(session => {
-        const logs = logsBySession.get(session.id) || [];
-        const activityData = generateActivityData(logs);
-
-        let actualStatus: string;
-        if (session.ended_at || session.status === 'closed' || session.status === 'completed') {
-          actualStatus = 'completed';
-        } else if (session.status === 'paused' || session.paused_at) {
-          actualStatus = 'paused';
-        } else if (session.started_at) {
-          actualStatus = 'in_progress';
-        } else {
-          actualStatus = 'new';
-        }
-
-        return { ...session, actualStatus, activityData };
-      });
-
-      setSessions(sessionsWithActivity);
-
-      // ── TIMELINE ACTIVITY (allResultsByRun 재사용, N+1 없음) ──
-      const runResultSummary: Record<string, {
-        passed: number; failed: number; blocked: number; retest: number; latestAt: string; runName: string;
-      }> = {};
-
-      (allRunsData || []).slice(0, 10).forEach((run: any) => {
-        const results = allResultsByRun.get(run.id) || [];
-        if (!results.length) return;
-        let passed = 0, failed = 0, blocked = 0, retest = 0;
-        results.forEach((r: any) => {
-          if (r.status === 'passed') passed++;
-          else if (r.status === 'failed') failed++;
-          else if (r.status === 'blocked') blocked++;
-          else if (r.status === 'retest') retest++;
-        });
-        runResultSummary[run.id] = {
-          passed, failed, blocked, retest,
-          latestAt: results[0].created_at,
-          runName: run.name,
-        };
-      });
-
-      // 이미 fetch한 데이터 재사용 (중복 fetch 제거)
-      const allRunsTimeline = (allRunsData || []).slice(0, 20);
-      const allSessionsTimeline = (sessionsData || []).slice(0, 20);
-      const allMilestonesTimeline = [...(milestonesData || [])].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      ).slice(0, 20);
-
-      const activities = [
-        // Milestones
-        ...allMilestonesTimeline.map((m: any) => ({
-          type: 'milestone', action: 'created', name: m.name, created_at: m.created_at,
-          meta: { status: m.status, start_date: m.start_date, end_date: m.end_date },
-        })),
-        ...allMilestonesTimeline
-          .filter((m: any) => m.status === 'completed' && m.updated_at)
-          .map((m: any) => ({
-            type: 'milestone', action: 'completed', name: m.name, created_at: m.updated_at,
-            meta: { status: m.status },
-          })),
-        // Runs
-        ...allRunsTimeline.map((r: any) => ({
-          type: 'run', action: 'created', name: r.name, created_at: r.created_at,
-          meta: { testCount: r.test_case_ids?.length || 0, status: r.status },
-        })),
-        ...allRunsTimeline
-          .filter((r: any) => r.status === 'completed' && r.executed_at)
-          .map((r: any) => ({
-            type: 'run', action: 'completed', name: r.name, created_at: r.executed_at,
-            meta: { testCount: r.test_case_ids?.length || 0 },
-          })),
-        // Test result activity
-        ...Object.entries(runResultSummary).map(([runId, summary]) => ({
-          type: 'test_activity',
-          action: 'tested',
-          name: summary.runName,
-          created_at: summary.latestAt,
-          meta: {
-            passed: summary.passed,
-            failed: summary.failed,
-            blocked: summary.blocked,
-            retest: summary.retest,
-          },
-        })),
-        // Sessions
-        ...(allSessionsTimeline || []).map((s: any) => ({
-          type: 'session',
-          action: 'created',
-          name: s.name,
-          created_at: s.created_at,
-          meta: { status: s.status },
-        })),
-        ...(allSessionsTimeline || [])
-          .filter((s: any) => (s.status === 'completed' || s.status === 'closed') && s.ended_at)
-          .map((s: any) => ({
-            type: 'session',
-            action: 'completed',
-            name: s.name,
-            created_at: s.ended_at,
-            meta: {},
-          })),
-      ]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 20);
-
-      setRecentActivity(activities);
-    } catch (error) {
-      console.error('데이터 로딩 오류:', error);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const toggleExpanded = (milestoneId: string) => {
@@ -600,7 +323,7 @@ export default function ProjectDetail() {
   }, [rawTestResults, allRunsRaw, trendPeriod]);
 
   // ── Loading / Not found states ──
-  if (loading) {
+  if (isLoading) {
     return (
       <>
         <SEOHead title="Loading project... | Testably" description="Loading your Testably project." noindex />

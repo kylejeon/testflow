@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Documents Tab Redesign</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* DEMO BAR                                              */
+  /* ══════════════════════════════════════════════════════ */
+  .demo-bar {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem;
+    background: #FFFBEB; border-bottom: 1px solid #FDE68A; flex-shrink: 0; flex-wrap: wrap;
+  }
+  .demo-bar label { font-size: 0.625rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.04em; }
+  .demo-chip {
+    font-size: 0.625rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px;
+    background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;
+  }
+  .demo-note { font-size: 0.5625rem; color: #92400E; margin-left: auto; font-style: italic; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TOP HEADER (52px)                                     */
+  /* ══════════════════════════════════════════════════════ */
+  .top-header {
+    background: #fff; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; padding: 0 1.25rem; height: 3.25rem; gap: 0; flex-shrink: 0;
+  }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding-right: 1.25rem; border-right: 1px solid #E2E8F0; margin-right: 1rem; }
+  .logo-icon { width: 26px; height: 26px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; }
+  .logo-text { font-family: 'Pacifico', cursive; font-size: 1rem; color: #6366F1; letter-spacing: -0.01em; }
+  .project-selector {
+    display: flex; align-items: center; gap: 0.375rem; cursor: pointer;
+    padding: 0.3125rem 0.625rem; border-radius: 0.375rem; margin-right: 0.5rem;
+  }
+  .project-selector:hover { background: #F8FAFC; }
+  .project-selector .proj-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .project-selector .proj-chevron { font-size: 0.75rem; color: #94A3B8; }
+  .header-nav { display: flex; align-items: center; height: 100%; gap: 0; }
+  .header-nav-item {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; font-weight: 500; white-space: nowrap;
+    transition: color 0.15s; position: relative;
+  }
+  .header-nav-item:hover { color: #475569; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .header-nav-item.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .header-nav-item i { font-size: 0.9375rem; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .header-icon-btn {
+    width: 2rem; height: 2rem; border-radius: 0.375rem; border: none; background: none;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;
+    position: relative;
+  }
+  .header-icon-btn:hover { background: #F1F5F9; color: #475569; }
+  .notif-dot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; border: 1.5px solid #fff; }
+  .header-avatar {
+    width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5625rem; font-weight: 700; color: #fff; cursor: pointer;
+  }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* SUBTAB ROW (42px)                                     */
+  /* ══════════════════════════════════════════════════════ */
+  .subtab-row {
+    display: flex; align-items: center; padding: 0 1.25rem; gap: 0;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; height: 2.625rem;
+    position: relative;
+  }
+  .st-tab {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; font-weight: 500; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; white-space: nowrap; transition: color 0.15s; position: relative;
+  }
+  .st-tab:hover { color: #475569; }
+  .st-tab.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .st-tab.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .st-tab i { font-size: 0.875rem; }
+  .st-badge {
+    font-size: 0.625rem; font-weight: 700; padding: 0.0625rem 0.375rem;
+    border-radius: 9999px; background: #F1F5F9; color: #64748B; min-width: 1.25rem; text-align: center;
+  }
+  .st-tab.active .st-badge { background: #EEF2FF; color: #6366F1; }
+  .st-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .count-chip {
+    font-size: 0.6875rem; font-weight: 600; color: #94A3B8; padding: 0.1875rem 0.625rem;
+    border: 1px solid #E2E8F0; border-radius: 9999px; background: #F8FAFC; white-space: nowrap;
+  }
+  .action-btn {
+    display: flex; align-items: center; gap: 0.3125rem;
+    font-size: 0.8125rem; font-weight: 600; padding: 0.375rem 0.875rem;
+    border-radius: 0.375rem; border: none; cursor: pointer; font-family: inherit;
+    background: #6366F1; color: #fff; white-space: nowrap; transition: all 0.15s;
+    box-shadow: 0 1px 3px rgba(99,102,241,0.3);
+  }
+  .action-btn:hover { box-shadow: 0 2px 8px rgba(99,102,241,0.4); transform: translateY(-0.5px); }
+  .action-btn i { font-size: 0.875rem; }
+  .action-btn.secondary {
+    background: #fff; color: #475569; border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .action-btn.secondary:hover { background: #F8FAFC; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transform: translateY(-0.5px); }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* MAIN LAYOUT                                           */
+  /* ══════════════════════════════════════════════════════ */
+  .main { flex: 1; display: flex; overflow: hidden; }
+
+  /* ── Folder Sidebar ── */
+  .folder-sidebar {
+    width: 232px; min-width: 232px; background: #fff; border-right: 1px solid #E2E8F0;
+    display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+  }
+  .fs-header {
+    padding: 0.75rem 0.875rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .fs-title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; }
+  .fs-add-btn {
+    display: flex; align-items: center; gap: 0.25rem;
+    font-size: 0.6875rem; font-weight: 600; color: #6366F1; cursor: pointer;
+    padding: 0.1875rem 0.5rem; border-radius: 0.25rem; border: none; background: none; font-family: inherit;
+    transition: background 0.1s;
+  }
+  .fs-add-btn:hover { background: #EEF2FF; }
+  .fs-add-btn i { font-size: 0.8125rem; }
+  .fs-tree { flex: 1; overflow-y: auto; padding: 0.375rem 0; }
+  .folder-item {
+    display: flex; align-items: center; gap: 0.375rem; padding: 0.4375rem 0.875rem; cursor: pointer;
+    font-size: 0.8125rem; color: #475569; border-radius: 0 0.375rem 0.375rem 0; margin-right: 0.375rem;
+    transition: background 0.1s; position: relative;
+  }
+  .folder-item:hover { background: #F8FAFC; }
+  .folder-item.active { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .folder-item .f-count { margin-left: auto; font-size: 0.6875rem; color: #94A3B8; font-weight: 500; }
+  .folder-item.active .f-count { color: #6366F1; }
+  .folder-item i { font-size: 1rem; }
+  .folder-item.active i { color: #6366F1; }
+  .folder-item.sub { padding-left: 2rem; font-size: 0.75rem; }
+  .folder-item.sub::before {
+    content: ''; position: absolute; left: 1.25rem; top: 0; bottom: 0;
+    width: 1px; background: #E2E8F0;
+  }
+  .folder-chevron { font-size: 0.6875rem; color: #94A3B8; transition: transform 0.15s; cursor: pointer; }
+  .folder-chevron.expanded { transform: rotate(90deg); }
+
+  /* ── Document List Area ── */
+  .doc-list-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+  /* Search / Filter / Edit Toolbar */
+  .doc-toolbar {
+    padding: 0.625rem 1rem; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; gap: 0.375rem; background: #fff; flex-shrink: 0;
+  }
+  .doc-search {
+    flex: 1; display: flex; align-items: center; gap: 0.375rem;
+    background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 0.375rem; padding: 0.3125rem 0.625rem;
+  }
+  .doc-search i { font-size: 0.875rem; color: #94A3B8; }
+  .doc-search input { border: none; background: none; outline: none; font-size: 0.8125rem; color: #1E293B; font-family: inherit; flex: 1; }
+  .doc-search input::placeholder { color: #94A3B8; }
+  .toolbar-btn {
+    font-size: 0.75rem; padding: 0.3125rem 0.625rem; border-radius: 0.375rem;
+    border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer;
+    display: flex; align-items: center; gap: 0.25rem; font-family: inherit; font-weight: 500;
+    transition: background 0.1s;
+  }
+  .toolbar-btn:hover { background: #F8FAFC; }
+  .toolbar-btn i { font-size: 0.8125rem; }
+
+  /* Selection Action Bar (hidden by default) */
+  .selection-bar {
+    display: none; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;
+    background: #EEF2FF; border-bottom: 1px solid #C7D2FE; flex-shrink: 0;
+  }
+  .selection-bar.visible { display: flex; }
+  .selection-count { font-size: 0.75rem; font-weight: 600; color: #4338CA; }
+  .sel-btn {
+    font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.625rem; border-radius: 0.375rem;
+    border: 1px solid #C7D2FE; background: #fff; color: #4338CA; cursor: pointer;
+    display: flex; align-items: center; gap: 0.25rem; font-family: inherit;
+    transition: all 0.1s;
+  }
+  .sel-btn:hover { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .sel-btn.danger { border-color: #FECACA; color: #DC2626; }
+  .sel-btn.danger:hover { background: #EF4444; color: #fff; border-color: #EF4444; }
+  .sel-btn i { font-size: 0.8125rem; }
+  .sel-clear {
+    margin-left: auto; font-size: 0.6875rem; color: #6366F1; cursor: pointer;
+    font-weight: 600; border: none; background: none; font-family: inherit;
+  }
+  .sel-clear:hover { text-decoration: underline; }
+
+  /* Document Table */
+  .doc-table { flex: 1; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { position: sticky; top: 0; z-index: 2; }
+  thead th {
+    background: #F8FAFC; font-size: 0.625rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em; color: #94A3B8; padding: 0.4375rem 0.75rem; text-align: left;
+    border-bottom: 1px solid #E2E8F0; white-space: nowrap;
+  }
+  thead th:first-child { width: 2.25rem; text-align: center; }
+  tbody td { padding: 0.4375rem 0.75rem; font-size: 0.8125rem; color: #334155; border-bottom: 1px solid #F1F5F9; }
+  tbody td:first-child { text-align: center; }
+  tbody tr { cursor: pointer; transition: background 0.1s; }
+  tbody tr:hover { background: #FAFAFF; }
+  tbody tr.selected { background: #EEF2FF; }
+  .doc-checkbox { width: 0.875rem; height: 0.875rem; accent-color: #6366F1; cursor: pointer; }
+
+  /* Document name cell */
+  .doc-name-cell { display: flex; align-items: center; gap: 0.5rem; }
+  .doc-icon {
+    width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center;
+    font-size: 0.875rem; flex-shrink: 0;
+  }
+  .doc-icon.req { background: #FEF3C7; color: #D97706; }
+  .doc-icon.plan { background: #DBEAFE; color: #2563EB; }
+  .doc-icon.report { background: #EDE9FE; color: #7C3AED; }
+  .doc-icon.spec { background: #F0FDF4; color: #16A34A; }
+  .doc-icon.link { background: #F1F5F9; color: #64748B; }
+  .doc-name { font-weight: 500; color: #1E293B; }
+  .doc-ext { font-size: 0.6875rem; color: #94A3B8; margin-left: 0.25rem; }
+
+  /* Category badge */
+  .cat-badge {
+    font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem;
+    border-radius: 9999px; white-space: nowrap;
+  }
+  .cat-req { background: #FEF3C7; color: #92400E; }
+  .cat-plan { background: #DBEAFE; color: #1E40AF; }
+  .cat-report { background: #EDE9FE; color: #5B21B6; }
+  .cat-spec { background: #F0FDF4; color: #166534; }
+  .cat-link { background: #F1F5F9; color: #475569; }
+
+  /* Author avatar */
+  .author-cell { display: flex; align-items: center; gap: 0.375rem; }
+  .mini-avatar {
+    width: 1.375rem; height: 1.375rem; border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff;
+  }
+  .author-name { font-size: 0.75rem; color: #64748B; }
+
+  /* Row actions */
+  .row-actions { display: flex; gap: 0.25rem; opacity: 0; transition: opacity 0.15s; }
+  tbody tr:hover .row-actions { opacity: 1; }
+  .row-action-btn {
+    width: 1.5rem; height: 1.5rem; border-radius: 0.25rem; border: none; background: none;
+    color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 0.8125rem; transition: all 0.1s;
+  }
+  .row-action-btn:hover { background: #F1F5F9; color: #475569; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* MODALS                                                */
+  /* ══════════════════════════════════════════════════════ */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.4);
+    z-index: 100; align-items: center; justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 0.75rem; width: 24rem; max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15); overflow: hidden;
+    animation: modalIn 0.2s ease-out;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.25rem; border-bottom: 1px solid #E2E8F0;
+  }
+  .modal-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; }
+  .modal-close {
+    width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; border: none;
+    background: none; color: #94A3B8; cursor: pointer; font-size: 1.125rem;
+    display: flex; align-items: center; justify-content: center; transition: all 0.1s;
+  }
+  .modal-close:hover { background: #F1F5F9; color: #475569; }
+  .modal-body { padding: 1.25rem; }
+  .modal-field { margin-bottom: 1rem; }
+  .modal-field:last-child { margin-bottom: 0; }
+  .modal-label { display: block; font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 0.375rem; }
+  .modal-input {
+    width: 100%; font-size: 0.8125rem; padding: 0.5rem 0.75rem;
+    border: 1px solid #E2E8F0; border-radius: 0.375rem; background: #F8FAFC;
+    outline: none; font-family: inherit; color: #1E293B; transition: border-color 0.15s;
+  }
+  .modal-input:focus { border-color: #6366F1; background: #fff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+  .modal-input::placeholder { color: #94A3B8; }
+  .modal-select {
+    width: 100%; font-size: 0.8125rem; padding: 0.5rem 0.75rem;
+    border: 1px solid #E2E8F0; border-radius: 0.375rem; background: #F8FAFC;
+    outline: none; font-family: inherit; color: #1E293B; cursor: pointer;
+  }
+  .modal-footer {
+    display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;
+    padding: 0.875rem 1.25rem; border-top: 1px solid #E2E8F0; background: #FAFAFA;
+  }
+  .modal-btn {
+    font-size: 0.8125rem; font-weight: 600; padding: 0.4375rem 1rem;
+    border-radius: 0.375rem; cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .modal-btn.cancel { background: #fff; color: #475569; border: 1px solid #E2E8F0; }
+  .modal-btn.cancel:hover { background: #F8FAFC; }
+  .modal-btn.primary { background: #6366F1; color: #fff; border: none; box-shadow: 0 1px 3px rgba(99,102,241,0.3); }
+  .modal-btn.primary:hover { box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
+
+  /* Move-to dropdown inside modal */
+  .move-folder-list { max-height: 12rem; overflow-y: auto; border: 1px solid #E2E8F0; border-radius: 0.375rem; }
+  .move-folder-option {
+    display: flex; align-items: center; gap: 0.375rem; padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem; color: #334155; cursor: pointer; transition: background 0.1s;
+  }
+  .move-folder-option:hover { background: #EEF2FF; }
+  .move-folder-option.selected { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .move-folder-option i { font-size: 0.9375rem; color: #94A3B8; }
+  .move-folder-option.selected i { color: #6366F1; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* EMPTY STATE                                           */
+  /* ══════════════════════════════════════════════════════ */
+  .empty-state {
+    display: none; flex: 1; align-items: center; justify-content: center;
+    flex-direction: column; gap: 0.75rem; color: #94A3B8; padding: 3rem;
+  }
+  .empty-state i { font-size: 2.5rem; color: #CBD5E1; }
+  .empty-state p { font-size: 0.875rem; text-align: center; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* DEV HANDOFF SPEC (floating note)                      */
+  /* ══════════════════════════════════════════════════════ */
+  .dev-spec {
+    position: fixed; bottom: 1rem; right: 1rem; width: 22rem; max-height: 28rem;
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1); z-index: 50; overflow: hidden;
+    font-size: 0.6875rem; transition: all 0.2s;
+  }
+  .dev-spec.collapsed { max-height: 2.5rem; }
+  .dev-spec-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.625rem 0.875rem; background: #F8FAFC; border-bottom: 1px solid #E2E8F0;
+    cursor: pointer; user-select: none;
+  }
+  .dev-spec-header span { font-weight: 700; color: #6366F1; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dev-spec-header i { color: #94A3B8; transition: transform 0.2s; }
+  .dev-spec.collapsed .dev-spec-header i { transform: rotate(180deg); }
+  .dev-spec-body { padding: 0.875rem; overflow-y: auto; max-height: 24rem; line-height: 1.6; color: #475569; }
+  .dev-spec-body h4 { font-size: 0.6875rem; font-weight: 700; color: #0F172A; margin-top: 0.625rem; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dev-spec-body h4:first-child { margin-top: 0; }
+  .dev-spec-body code { font-size: 0.625rem; background: #F1F5F9; padding: 0.0625rem 0.25rem; border-radius: 0.1875rem; color: #6366F1; font-family: 'SF Mono','Fira Code',monospace; }
+  .dev-spec-body ul { padding-left: 1rem; margin: 0.25rem 0; }
+  .dev-spec-body li { margin-bottom: 0.125rem; }
+  .spec-color { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 0.25rem; vertical-align: middle; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* SCROLLBAR                                             */
+  /* ══════════════════════════════════════════════════════ */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ DEMO BAR ═══════════════ -->
+<div class="demo-bar">
+  <label>Testably Design</label>
+  <span class="demo-chip">Documents Tab Redesign</span>
+  <span class="demo-chip">2-Row Header · 94px</span>
+  <span class="demo-chip">Interactive Mockup</span>
+  <span class="demo-note">Folder sidebar + Document table + Modals</span>
+</div>
+
+<!-- ═══════════════ TOP HEADER (52px) ═══════════════ -->
+<div class="top-header">
+  <div class="header-logo">
+    <div class="logo-icon">T</div>
+    <span class="logo-text">Testably</span>
+  </div>
+  <div class="project-selector">
+    <span class="proj-name">Stellar Health EMR</span>
+    <i class="ri-arrow-down-s-line proj-chevron"></i>
+  </div>
+  <nav class="header-nav">
+    <div class="header-nav-item"><i class="ri-dashboard-line"></i> Dashboard</div>
+    <div class="header-nav-item"><i class="ri-file-list-3-line"></i> Test Cases</div>
+    <div class="header-nav-item"><i class="ri-play-circle-line"></i> Runs &amp; Results</div>
+    <div class="header-nav-item"><i class="ri-flag-line"></i> Milestones</div>
+    <div class="header-nav-item active"><i class="ri-file-text-line"></i> Documents</div>
+    <div class="header-nav-item"><i class="ri-search-eye-line"></i> Discovery Log</div>
+  </nav>
+  <div class="header-right">
+    <button class="header-icon-btn"><i class="ri-search-line"></i></button>
+    <button class="header-icon-btn"><i class="ri-notification-3-line"></i><span class="notif-dot"></span></button>
+    <button class="header-icon-btn"><i class="ri-settings-3-line"></i></button>
+    <div class="header-avatar">KJ</div>
+  </div>
+</div>
+
+<!-- ═══════════════ SUBTAB ROW (42px) ═══════════════ -->
+<div class="subtab-row">
+  <div class="st-tab active" data-filter="all" onclick="filterDocs('all', this)">
+    <i class="ri-file-list-fill" style="color:#6366F1"></i> All <span class="st-badge">24</span>
+  </div>
+  <div class="st-tab" data-filter="requirements" onclick="filterDocs('requirements', this)">
+    <i class="ri-alert-fill" style="color:#F59E0B"></i> Requirements <span class="st-badge">8</span>
+  </div>
+  <div class="st-tab" data-filter="test-plans" onclick="filterDocs('test-plans', this)">
+    <i class="ri-route-fill" style="color:#3B82F6"></i> Test Plans <span class="st-badge">6</span>
+  </div>
+  <div class="st-tab" data-filter="reports" onclick="filterDocs('reports', this)">
+    <i class="ri-bar-chart-fill" style="color:#8B5CF6"></i> Reports <span class="st-badge">10</span>
+  </div>
+  <div class="st-right">
+    <span class="count-chip" id="countChip">24 documents</span>
+    <button class="action-btn secondary" onclick="openModal('linkModal')"><i class="ri-link"></i> Add Link</button>
+    <button class="action-btn" onclick="openModal('uploadModal')"><i class="ri-upload-2-line"></i> Upload</button>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+<div class="main">
+
+  <!-- ── Folder Sidebar ── -->
+  <div class="folder-sidebar">
+    <div class="fs-header">
+      <span class="fs-title">Folders</span>
+      <button class="fs-add-btn" onclick="openModal('folderModal')"><i class="ri-add-line"></i> New Folder</button>
+    </div>
+    <div class="fs-tree">
+      <div class="folder-item active" data-folder="all" onclick="selectFolder('all', this)">
+        <i class="ri-folder-fill" style="color:#6366F1"></i> All Documents <span class="f-count">24</span>
+      </div>
+      <div class="folder-item" data-folder="requirements" onclick="selectFolder('requirements', this)">
+        <i class="ri-folder-fill" style="color:#D97706"></i> Requirements
+        <span class="f-count">8</span>
+      </div>
+      <div class="folder-item" data-folder="test-plans" onclick="selectFolder('test-plans', this)">
+        <i class="ri-folder-fill" style="color:#2563EB"></i>
+        <i class="ri-arrow-right-s-line folder-chevron expanded" onclick="event.stopPropagation(); toggleSubfolder(this)"></i>
+        Test Plans
+        <span class="f-count">6</span>
+      </div>
+      <div class="folder-item sub" data-folder="tp-smoke" onclick="selectFolder('tp-smoke', this)" style="display:flex">
+        <i class="ri-file-list-3-line" style="color:#94A3B8"></i> Smoke Tests <span class="f-count">2</span>
+      </div>
+      <div class="folder-item sub" data-folder="tp-regression" onclick="selectFolder('tp-regression', this)" style="display:flex">
+        <i class="ri-file-list-3-line" style="color:#94A3B8"></i> Regression <span class="f-count">4</span>
+      </div>
+      <div class="folder-item" data-folder="reports" onclick="selectFolder('reports', this)">
+        <i class="ri-folder-fill" style="color:#7C3AED"></i> Reports <span class="f-count">10</span>
+      </div>
+      <div class="folder-item" data-folder="specs" onclick="selectFolder('specs', this)">
+        <i class="ri-folder-fill" style="color:#16A34A"></i> API Specs <span class="f-count">3</span>
+      </div>
+      <div class="folder-item" data-folder="links" onclick="selectFolder('links', this)">
+        <i class="ri-folder-fill" style="color:#64748B"></i> External Links <span class="f-count">4</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Document List Area ── -->
+  <div class="doc-list-area">
+
+    <!-- Toolbar: Search + Filters + Edit -->
+    <div class="doc-toolbar">
+      <div class="doc-search">
+        <i class="ri-search-line"></i>
+        <input type="text" placeholder="Search documents..." id="docSearchInput" oninput="searchDocs()">
+      </div>
+      <button class="toolbar-btn"><i class="ri-filter-3-line"></i> Filters</button>
+      <button class="toolbar-btn" onclick="toggleSortOrder()"><i class="ri-sort-desc"></i> Sort</button>
+    </div>
+
+    <!-- Selection Action Bar -->
+    <div class="selection-bar" id="selectionBar">
+      <span class="selection-count" id="selCount">0 selected</span>
+      <button class="sel-btn" onclick="openModal('moveModal')"><i class="ri-folder-transfer-line"></i> Move to...</button>
+      <button class="sel-btn danger" onclick="deleteSelected()"><i class="ri-delete-bin-6-line"></i> Delete</button>
+      <button class="sel-clear" onclick="clearSelection()">Clear selection</button>
+    </div>
+
+    <!-- Document Table -->
+    <div class="doc-table">
+      <table>
+        <thead>
+          <tr>
+            <th><input type="checkbox" class="doc-checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Updated</th>
+            <th>Author</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="docTableBody">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState">
+      <i class="ri-file-search-line"></i>
+      <p>No documents found.<br>Try adjusting your search or filters.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+
+<!-- New Folder Modal -->
+<div class="modal-overlay" id="folderModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Create New Folder</span>
+      <button class="modal-close" onclick="closeModal('folderModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label class="modal-label">Folder Name</label>
+        <input class="modal-input" type="text" placeholder="e.g., Sprint 25 Docs" id="newFolderName" autofocus>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Parent Folder (optional)</label>
+        <select class="modal-select" id="parentFolder">
+          <option value="">— Root level —</option>
+          <option value="requirements">Requirements</option>
+          <option value="test-plans">Test Plans</option>
+          <option value="reports">Reports</option>
+          <option value="specs">API Specs</option>
+          <option value="links">External Links</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn cancel" onclick="closeModal('folderModal')">Cancel</button>
+      <button class="modal-btn primary" onclick="createFolder()">Create Folder</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Link Modal -->
+<div class="modal-overlay" id="linkModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add External Link</span>
+      <button class="modal-close" onclick="closeModal('linkModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label class="modal-label">URL</label>
+        <input class="modal-input" type="url" placeholder="https://..." id="linkUrl">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Title</label>
+        <input class="modal-input" type="text" placeholder="e.g., Confluence — API Design Doc" id="linkTitle">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Category</label>
+        <select class="modal-select" id="linkCategory">
+          <option value="link">External Link</option>
+          <option value="requirements">Requirement</option>
+          <option value="test-plans">Test Plan</option>
+          <option value="reports">Report</option>
+          <option value="specs">API Spec</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn cancel" onclick="closeModal('linkModal')">Cancel</button>
+      <button class="modal-btn primary" onclick="addLink()"><i class="ri-link" style="margin-right:0.25rem"></i> Add Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Upload Document</span>
+      <button class="modal-close" onclick="closeModal('uploadModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="border: 2px dashed #E2E8F0; border-radius: 0.5rem; padding: 2rem; text-align: center; background: #FAFAFA; cursor: pointer;" onclick="this.querySelector('input').click()">
+        <i class="ri-upload-cloud-2-line" style="font-size: 2rem; color: #CBD5E1; display: block; margin-bottom: 0.5rem;"></i>
+        <p style="font-size: 0.8125rem; color: #64748B; margin-bottom: 0.25rem;">Drop files here or <span style="color: #6366F1; font-weight: 600;">browse</span></p>
+        <p style="font-size: 0.6875rem; color: #94A3B8;">PDF, DOCX, MD, TXT — Max 25 MB</p>
+        <input type="file" style="display:none" multiple>
+      </div>
+      <div class="modal-field" style="margin-top: 1rem;">
+        <label class="modal-label">Upload to Folder</label>
+        <select class="modal-select">
+          <option value="all">All Documents (root)</option>
+          <option value="requirements">Requirements</option>
+          <option value="test-plans">Test Plans</option>
+          <option value="reports">Reports</option>
+          <option value="specs">API Specs</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn cancel" onclick="closeModal('uploadModal')">Cancel</button>
+      <button class="modal-btn primary">Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- Move To Modal -->
+<div class="modal-overlay" id="moveModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Move Documents</span>
+      <button class="modal-close" onclick="closeModal('moveModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size: 0.75rem; color: #64748B; margin-bottom: 0.75rem;">Select a destination folder:</p>
+      <div class="move-folder-list" id="moveFolderList">
+        <div class="move-folder-option" onclick="selectMoveFolder(this)"><i class="ri-folder-fill" style="color:#D97706"></i> Requirements</div>
+        <div class="move-folder-option" onclick="selectMoveFolder(this)"><i class="ri-folder-fill" style="color:#2563EB"></i> Test Plans</div>
+        <div class="move-folder-option" onclick="selectMoveFolder(this)"><i class="ri-folder-fill" style="color:#7C3AED"></i> Reports</div>
+        <div class="move-folder-option" onclick="selectMoveFolder(this)"><i class="ri-folder-fill" style="color:#16A34A"></i> API Specs</div>
+        <div class="move-folder-option" onclick="selectMoveFolder(this)"><i class="ri-folder-fill" style="color:#64748B"></i> External Links</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn cancel" onclick="closeModal('moveModal')">Cancel</button>
+      <button class="modal-btn primary" onclick="moveSelected()">Move Here</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ DEV HANDOFF SPEC ═══════════════ -->
+<div class="dev-spec" id="devSpec">
+  <div class="dev-spec-header" onclick="toggleDevSpec()">
+    <span><i class="ri-code-s-slash-line" style="margin-right:0.25rem"></i> Dev Handoff Spec</span>
+    <i class="ri-arrow-down-s-line"></i>
+  </div>
+  <div class="dev-spec-body">
+    <h4>Layout</h4>
+    <ul>
+      <li>2-row header: Top Header <code>52px</code> + Subtab Row <code>42px</code> = <code>94px</code> total</li>
+      <li>Folder sidebar: <code>232px</code> fixed width, scrollable tree</li>
+      <li>Document list: flex-1, full-width table with sticky thead</li>
+    </ul>
+
+    <h4>Subtab Row — Colored Icons</h4>
+    <ul>
+      <li><span class="spec-color" style="background:#6366F1"></span> All = Indigo <code>#6366F1</code> · <code>ri-file-list-fill</code></li>
+      <li><span class="spec-color" style="background:#F59E0B"></span> Requirements = Amber <code>#F59E0B</code> · <code>ri-alert-fill</code></li>
+      <li><span class="spec-color" style="background:#3B82F6"></span> Test Plans = Blue <code>#3B82F6</code> · <code>ri-route-fill</code></li>
+      <li><span class="spec-color" style="background:#8B5CF6"></span> Reports = Violet <code>#8B5CF6</code> · <code>ri-bar-chart-fill</code></li>
+    </ul>
+
+    <h4>Category Color Icons (table cells)</h4>
+    <ul>
+      <li><span class="spec-color" style="background:#D97706"></span> Requirement: bg <code>#FEF3C7</code>, icon <code>#D97706</code></li>
+      <li><span class="spec-color" style="background:#2563EB"></span> Test Plan: bg <code>#DBEAFE</code>, icon <code>#2563EB</code></li>
+      <li><span class="spec-color" style="background:#7C3AED"></span> Report: bg <code>#EDE9FE</code>, icon <code>#7C3AED</code></li>
+      <li><span class="spec-color" style="background:#16A34A"></span> Spec: bg <code>#F0FDF4</code>, icon <code>#16A34A</code></li>
+      <li><span class="spec-color" style="background:#64748B"></span> Link: bg <code>#F1F5F9</code>, icon <code>#64748B</code></li>
+    </ul>
+
+    <h4>Folder Sidebar</h4>
+    <ul>
+      <li>Tree with expandable subfolder support via chevron</li>
+      <li>Active state: bg <code>#EEF2FF</code>, text <code>#4338CA</code>, weight <code>600</code></li>
+      <li>Each folder has colored <code>ri-folder-fill</code> icon matching category</li>
+      <li>"+ New Folder" button triggers create modal</li>
+    </ul>
+
+    <h4>Document Table</h4>
+    <ul>
+      <li>Columns: Checkbox · Name (icon + name + ext) · Category badge · Updated · Author (avatar + name) · Row actions</li>
+      <li>Checkbox: <code>accent-color: #6366F1</code>, <code>0.875rem</code></li>
+      <li>Row hover reveals action buttons (download, more)</li>
+      <li>Selected row: bg <code>#EEF2FF</code></li>
+    </ul>
+
+    <h4>Selection Action Bar</h4>
+    <ul>
+      <li>Appears when ≥1 checkbox is checked</li>
+      <li>Shows count + "Move to..." + "Delete" + "Clear selection"</li>
+      <li>Bg <code>#EEF2FF</code>, border <code>#C7D2FE</code></li>
+    </ul>
+
+    <h4>Modals</h4>
+    <ul>
+      <li>New Folder: name input + parent folder select</li>
+      <li>Add Link: URL + title + category select</li>
+      <li>Upload: drag-and-drop zone + folder select</li>
+      <li>Move To: folder list with click-to-select</li>
+      <li>All: <code>border-radius: 0.75rem</code>, <code>width: 24rem</code>, backdrop blur</li>
+    </ul>
+
+    <h4>Action Buttons (unified spec)</h4>
+    <ul>
+      <li>Font: <code>0.8125rem / 600</code></li>
+      <li>Padding: <code>0.375rem 0.875rem</code></li>
+      <li>Border-radius: <code>0.375rem</code></li>
+      <li>Primary: bg <code>#6366F1</code>, shadow <code>rgba(99,102,241,0.3)</code></li>
+      <li>Secondary (Add Link): bg <code>#fff</code>, border <code>#E2E8F0</code></li>
+    </ul>
+
+    <h4>Active Tab Indicator</h4>
+    <ul>
+      <li><code>::after</code> pseudo-element, <code>height: 2.5px</code></li>
+      <li><code>border-radius: 1px 1px 0 0</code></li>
+      <li>Color: <code>#6366F1</code></li>
+    </ul>
+
+    <h4>Typography / Tokens</h4>
+    <ul>
+      <li>Body text: <code>0.8125rem</code> (13px)</li>
+      <li>Table header: <code>0.625rem</code> uppercase</li>
+      <li>Category badge: <code>0.6875rem / 600</code></li>
+      <li>Folder item: <code>0.8125rem</code>, subfolder <code>0.75rem</code></li>
+      <li>Mini avatar: <code>1.375rem</code></li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// DOCUMENT DATA
+// ════════════════════════════════════════════════════════
+const documents = [
+  { id: 1, name: 'Patient Registration Requirements', ext: '.docx', category: 'requirements', folder: 'requirements', updated: '2026-03-25', author: 'Sarah Kim', initials: 'SK', color: '#EC4899' },
+  { id: 2, name: 'HIPAA Compliance Checklist', ext: '.pdf', category: 'requirements', folder: 'requirements', updated: '2026-03-24', author: 'David Park', initials: 'DP', color: '#F59E0B' },
+  { id: 3, name: 'EMR Data Migration Spec', ext: '.md', category: 'requirements', folder: 'requirements', updated: '2026-03-23', author: 'Kyle Jeon', initials: 'KJ', color: '#6366F1' },
+  { id: 4, name: 'API v3 Requirements', ext: '.docx', category: 'requirements', folder: 'requirements', updated: '2026-03-22', author: 'Sarah Kim', initials: 'SK', color: '#EC4899' },
+  { id: 5, name: 'Security Audit Requirements', ext: '.pdf', category: 'requirements', folder: 'requirements', updated: '2026-03-20', author: 'James Lee', initials: 'JL', color: '#14B8A6' },
+  { id: 6, name: 'Accessibility Standards (WCAG 2.1)', ext: '.pdf', category: 'requirements', folder: 'requirements', updated: '2026-03-18', author: 'Emily Chen', initials: 'EC', color: '#8B5CF6' },
+  { id: 7, name: 'Performance SLA Requirements', ext: '.docx', category: 'requirements', folder: 'requirements', updated: '2026-03-15', author: 'David Park', initials: 'DP', color: '#F59E0B' },
+  { id: 8, name: 'Multi-Tenant Architecture Spec', ext: '.md', category: 'requirements', folder: 'requirements', updated: '2026-03-12', author: 'Kyle Jeon', initials: 'KJ', color: '#6366F1' },
+  { id: 9, name: 'Sprint 24 Smoke Test Plan', ext: '.pdf', category: 'test-plans', folder: 'tp-smoke', updated: '2026-03-26', author: 'Kyle Jeon', initials: 'KJ', color: '#6366F1' },
+  { id: 10, name: 'Login Flow Smoke Tests', ext: '.md', category: 'test-plans', folder: 'tp-smoke', updated: '2026-03-25', author: 'Emily Chen', initials: 'EC', color: '#8B5CF6' },
+  { id: 11, name: 'Q1 Regression Test Plan', ext: '.docx', category: 'test-plans', folder: 'tp-regression', updated: '2026-03-24', author: 'Sarah Kim', initials: 'SK', color: '#EC4899' },
+  { id: 12, name: 'Patient Records Regression', ext: '.pdf', category: 'test-plans', folder: 'tp-regression', updated: '2026-03-22', author: 'James Lee', initials: 'JL', color: '#14B8A6' },
+  { id: 13, name: 'Billing Module Regression', ext: '.md', category: 'test-plans', folder: 'tp-regression', updated: '2026-03-20', author: 'David Park', initials: 'DP', color: '#F59E0B' },
+  { id: 14, name: 'API Integration Regression', ext: '.docx', category: 'test-plans', folder: 'tp-regression', updated: '2026-03-18', author: 'Kyle Jeon', initials: 'KJ', color: '#6366F1' },
+  { id: 15, name: 'Sprint 24 Test Coverage Report', ext: '.pdf', category: 'reports', folder: 'reports', updated: '2026-03-27', author: 'Kyle Jeon', initials: 'KJ', color: '#6366F1' },
+  { id: 16, name: 'Q1 Quality Metrics Dashboard', ext: '.html', category: 'reports', folder: 'reports', updated: '2026-03-26', author: 'Sarah Kim', initials: 'SK', color: '#EC4899' },
+  { id: 17, name: 'HIPAA Compliance Audit Report', ext: '.pdf', category: 'reports', folder: 'reports', updated: '2026-03-25', author: 'David Park', initials: 'DP', color: '#F59E0B' },
+  { id: 18, name: 'Sprint 23 Release Notes', ext: '.md', category: 'reports', folder: 'reports', updated: '2026-03-23', author: 'Emily Chen', initials: 'EC', color: '#8B5CF6' },
+  { id: 19, name: 'Performance Benchmark Results', ext: '.pdf', category: 'reports', folder: 'reports', updated: '2026-03-22', author: 'James Lee', initials: 'JL', color: '#14B8A6' },
+  { id: 20, name: 'Defect Trend Analysis', ext: '.html', category: 'reports', folder: 'reports', updated: '2026-03-20', author: 'Kyle Jeon', initials: 'KJ', color: '#6366F1' },
+  { id: 21, name: 'API v3 Endpoint Coverage', ext: '.pdf', category: 'reports', folder: 'reports', updated: '2026-03-18', author: 'Sarah Kim', initials: 'SK', color: '#EC4899' },
+  { id: 22, name: 'Sprint 22 Retrospective Report', ext: '.docx', category: 'reports', folder: 'reports', updated: '2026-03-15', author: 'David Park', initials: 'DP', color: '#F59E0B' },
+  { id: 23, name: 'Monthly QA Summary — Feb', ext: '.pdf', category: 'reports', folder: 'reports', updated: '2026-03-10', author: 'Emily Chen', initials: 'EC', color: '#8B5CF6' },
+  { id: 24, name: 'Test Automation ROI Report', ext: '.pdf', category: 'reports', folder: 'reports', updated: '2026-03-05', author: 'James Lee', initials: 'JL', color: '#14B8A6' },
+  // Specs
+  { id: 25, name: 'Patient API Swagger Spec', ext: '.yaml', category: 'specs', folder: 'specs', updated: '2026-03-26', author: 'Kyle Jeon', initials: 'KJ', color: '#6366F1' },
+  { id: 26, name: 'Billing API OpenAPI 3.0', ext: '.json', category: 'specs', folder: 'specs', updated: '2026-03-22', author: 'David Park', initials: 'DP', color: '#F59E0B' },
+  { id: 27, name: 'Auth Service gRPC Proto', ext: '.proto', category: 'specs', folder: 'specs', updated: '2026-03-18', author: 'James Lee', initials: 'JL', color: '#14B8A6' },
+  // External Links
+  { id: 28, name: 'Confluence — QA Standards', ext: 'link', category: 'link', folder: 'links', updated: '2026-03-25', author: 'Sarah Kim', initials: 'SK', color: '#EC4899', url: 'https://confluence.example.com/qa-standards' },
+  { id: 29, name: 'Figma — EMR Design System', ext: 'link', category: 'link', folder: 'links', updated: '2026-03-24', author: 'Kyle Jeon', initials: 'KJ', color: '#6366F1', url: 'https://figma.com/file/emr-design' },
+  { id: 30, name: 'Jira — Sprint 24 Board', ext: 'link', category: 'link', folder: 'links', updated: '2026-03-23', author: 'Emily Chen', initials: 'EC', color: '#8B5CF6', url: 'https://jira.example.com/board/24' },
+  { id: 31, name: 'Notion — Onboarding Wiki', ext: 'link', category: 'link', folder: 'links', updated: '2026-03-20', author: 'David Park', initials: 'DP', color: '#F59E0B', url: 'https://notion.so/onboarding' },
+];
+
+// State
+let currentFolder = 'all';
+let currentSubtab = 'all';
+let selectedIds = new Set();
+let sortAsc = false; // newest first by default
+
+// ════════════════════════════════════════════════════════
+// RENDER TABLE
+// ════════════════════════════════════════════════════════
+function getFilteredDocs() {
+  let filtered = [...documents];
+
+  // Folder filter
+  if (currentFolder !== 'all') {
+    filtered = filtered.filter(d => d.folder === currentFolder);
+  }
+
+  // Subtab filter
+  if (currentSubtab !== 'all') {
+    if (currentSubtab === 'test-plans') {
+      filtered = filtered.filter(d => d.category === 'test-plans');
+    } else {
+      filtered = filtered.filter(d => d.category === currentSubtab);
+    }
+  }
+
+  // Search filter
+  const q = document.getElementById('docSearchInput').value.toLowerCase().trim();
+  if (q) {
+    filtered = filtered.filter(d => d.name.toLowerCase().includes(q) || d.author.toLowerCase().includes(q) || d.category.toLowerCase().includes(q));
+  }
+
+  // Sort by date
+  filtered.sort((a, b) => sortAsc ? a.updated.localeCompare(b.updated) : b.updated.localeCompare(a.updated));
+
+  return filtered;
+}
+
+function getCategoryIcon(cat) {
+  const map = {
+    'requirements': { icon: 'ri-alert-fill', cls: 'req' },
+    'test-plans':   { icon: 'ri-route-fill', cls: 'plan' },
+    'reports':      { icon: 'ri-bar-chart-fill', cls: 'report' },
+    'specs':        { icon: 'ri-code-s-slash-fill', cls: 'spec' },
+    'link':         { icon: 'ri-link', cls: 'link' },
+  };
+  return map[cat] || { icon: 'ri-file-text-fill', cls: 'plan' };
+}
+
+function getCategoryLabel(cat) {
+  const map = { 'requirements': 'Requirement', 'test-plans': 'Test Plan', 'reports': 'Report', 'specs': 'API Spec', 'link': 'Link' };
+  return map[cat] || cat;
+}
+
+function getCategoryBadgeClass(cat) {
+  const map = { 'requirements': 'cat-req', 'test-plans': 'cat-plan', 'reports': 'cat-report', 'specs': 'cat-spec', 'link': 'cat-link' };
+  return map[cat] || 'cat-plan';
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  if (diff < 7) return diff + ' days ago';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function renderTable() {
+  const docs = getFilteredDocs();
+  const tbody = document.getElementById('docTableBody');
+  const empty = document.getElementById('emptyState');
+  const table = tbody.closest('table');
+
+  if (docs.length === 0) {
+    table.style.display = 'none';
+    empty.style.display = 'flex';
+  } else {
+    table.style.display = '';
+    empty.style.display = 'none';
+  }
+
+  // Update count chip
+  document.getElementById('countChip').textContent = docs.length + ' document' + (docs.length !== 1 ? 's' : '');
+
+  tbody.innerHTML = docs.map(doc => {
+    const ci = getCategoryIcon(doc.category);
+    const checked = selectedIds.has(doc.id) ? 'checked' : '';
+    const selCls = selectedIds.has(doc.id) ? ' selected' : '';
+    const extLabel = doc.ext === 'link' ? '' : doc.ext;
+    const linkIcon = doc.ext === 'link' ? '<i class="ri-external-link-line" style="font-size:0.6875rem; color:#94A3B8; margin-left:0.25rem;"></i>' : '';
+
+    return `<tr class="${selCls}" data-id="${doc.id}">
+      <td><input type="checkbox" class="doc-checkbox" ${checked} onchange="toggleSelect(${doc.id})"></td>
+      <td>
+        <div class="doc-name-cell">
+          <div class="doc-icon ${ci.cls}"><i class="${ci.icon}"></i></div>
+          <span class="doc-name">${highlightSearch(doc.name)}</span>
+          <span class="doc-ext">${extLabel}</span>
+          ${linkIcon}
+        </div>
+      </td>
+      <td><span class="cat-badge ${getCategoryBadgeClass(doc.category)}">${getCategoryLabel(doc.category)}</span></td>
+      <td style="font-size:0.75rem; color:#64748B; white-space:nowrap;">${formatDate(doc.updated)}</td>
+      <td>
+        <div class="author-cell">
+          <div class="mini-avatar" style="background:${doc.color}">${doc.initials}</div>
+          <span class="author-name">${doc.author}</span>
+        </div>
+      </td>
+      <td>
+        <div class="row-actions">
+          <button class="row-action-btn" title="Download"><i class="ri-download-2-line"></i></button>
+          <button class="row-action-btn" title="More"><i class="ri-more-2-fill"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  updateSelectionBar();
+}
+
+function highlightSearch(text) {
+  const q = document.getElementById('docSearchInput').value.trim();
+  if (!q) return text;
+  const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.replace(regex, '<mark style="background:#FEF08A; padding:0 1px; border-radius:2px;">$1</mark>');
+}
+
+// ════════════════════════════════════════════════════════
+// FOLDER SIDEBAR
+// ════════════════════════════════════════════════════════
+function selectFolder(folder, el) {
+  currentFolder = folder;
+  document.querySelectorAll('.folder-item').forEach(f => f.classList.remove('active'));
+  el.classList.add('active');
+  clearSelection();
+  renderTable();
+}
+
+function toggleSubfolder(chevron) {
+  chevron.classList.toggle('expanded');
+  const parent = chevron.closest('.folder-item');
+  let next = parent.nextElementSibling;
+  while (next && next.classList.contains('sub')) {
+    next.style.display = chevron.classList.contains('expanded') ? 'flex' : 'none';
+    next = next.nextElementSibling;
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// SUBTAB FILTER
+// ════════════════════════════════════════════════════════
+function filterDocs(filter, el) {
+  currentSubtab = filter;
+  document.querySelectorAll('.st-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  clearSelection();
+  renderTable();
+}
+
+// ════════════════════════════════════════════════════════
+// SEARCH
+// ════════════════════════════════════════════════════════
+function searchDocs() { renderTable(); }
+
+// ════════════════════════════════════════════════════════
+// SORT
+// ════════════════════════════════════════════════════════
+function toggleSortOrder() {
+  sortAsc = !sortAsc;
+  renderTable();
+}
+
+// ════════════════════════════════════════════════════════
+// SELECTION
+// ════════════════════════════════════════════════════════
+function toggleSelect(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+  renderTable();
+}
+
+function toggleSelectAll(el) {
+  const docs = getFilteredDocs();
+  if (el.checked) {
+    docs.forEach(d => selectedIds.add(d.id));
+  } else {
+    selectedIds.clear();
+  }
+  renderTable();
+}
+
+function clearSelection() {
+  selectedIds.clear();
+  const allCb = document.getElementById('selectAll');
+  if (allCb) allCb.checked = false;
+  renderTable();
+}
+
+function updateSelectionBar() {
+  const bar = document.getElementById('selectionBar');
+  const count = selectedIds.size;
+  if (count > 0) {
+    bar.classList.add('visible');
+    document.getElementById('selCount').textContent = count + ' selected';
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+function deleteSelected() {
+  // Demo: just clear selection
+  alert('Demo: ' + selectedIds.size + ' document(s) would be deleted.');
+  clearSelection();
+}
+
+function moveSelected() {
+  const selected = document.querySelector('.move-folder-option.selected');
+  if (!selected) { alert('Please select a destination folder.'); return; }
+  alert('Demo: ' + selectedIds.size + ' document(s) moved to "' + selected.textContent.trim() + '".');
+  closeModal('moveModal');
+  clearSelection();
+}
+
+function selectMoveFolder(el) {
+  document.querySelectorAll('.move-folder-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ════════════════════════════════════════════════════════
+// MODALS
+// ════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// Close on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  }
+});
+
+function createFolder() {
+  const name = document.getElementById('newFolderName').value.trim();
+  if (!name) { alert('Please enter a folder name.'); return; }
+  alert('Demo: Folder "' + name + '" created.');
+  document.getElementById('newFolderName').value = '';
+  closeModal('folderModal');
+}
+
+function addLink() {
+  const url = document.getElementById('linkUrl').value.trim();
+  const title = document.getElementById('linkTitle').value.trim();
+  if (!url || !title) { alert('Please fill in both URL and Title.'); return; }
+  alert('Demo: Link "' + title + '" added.');
+  document.getElementById('linkUrl').value = '';
+  document.getElementById('linkTitle').value = '';
+  closeModal('linkModal');
+}
+
+// ════════════════════════════════════════════════════════
+// DEV SPEC TOGGLE
+// ════════════════════════════════════════════════════════
+function toggleDevSpec() {
+  document.getElementById('devSpec').classList.toggle('collapsed');
+}
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+renderTable();
+</script>
+
+</body>
+</html>

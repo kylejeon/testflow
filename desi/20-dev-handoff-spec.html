@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Dev Handoff Spec (Compact Inner Pages)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.7; padding: 3rem 2rem; max-width: 960px; margin: 0 auto; }
+
+  h1 { font-size: 1.75rem; font-weight: 800; color: #0F172A; margin-bottom: 0.25rem; }
+  .doc-subtitle { font-size: 0.9375rem; color: #64748B; margin-bottom: 2rem; }
+  h2 { font-size: 1.25rem; font-weight: 700; color: #0F172A; margin-top: 2.5rem; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid #6366F1; }
+  h3 { font-size: 1.0625rem; font-weight: 600; color: #334155; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  h4 { font-size: 0.9375rem; font-weight: 600; color: #475569; margin-top: 1rem; margin-bottom: 0.375rem; }
+  p { margin-bottom: 0.75rem; font-size: 0.9375rem; }
+  ul, ol { margin: 0.5rem 0 1rem 1.5rem; font-size: 0.9375rem; }
+  li { margin-bottom: 0.375rem; }
+
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; background: #F1F5F9; padding: 0.125rem 0.375rem; border-radius: 0.25rem; color: #6366F1; }
+  pre { background: #1E293B; color: #E2E8F0; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 0.75rem 0 1.25rem; font-size: 0.8125rem; line-height: 1.6; font-family: 'JetBrains Mono', monospace; }
+  pre .comment { color: #64748B; }
+  pre .key { color: #7DD3FC; }
+  pre .val { color: #86EFAC; }
+  pre .num { color: #FDE68A; }
+
+  .badge { display: inline-block; font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px; }
+  .badge.file { background: #EEF2FF; color: #4338CA; }
+  .badge.new { background: #F0FDF4; color: #16A34A; }
+  .badge.unchanged { background: #F1F5F9; color: #94A3B8; }
+  .badge.route { background: #FFF7ED; color: #C2410C; }
+
+  .token-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1.25rem; font-size: 0.875rem; }
+  .token-table th { background: #F8FAFC; padding: 0.625rem 0.875rem; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #64748B; border-bottom: 2px solid #E2E8F0; }
+  .token-table td { padding: 0.5rem 0.875rem; border-bottom: 1px solid #F1F5F9; font-size: 0.8125rem; }
+  .token-table tr:hover td { background: #FAFAFF; }
+  .token-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #6366F1; }
+
+  .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 0.375rem; border: 1px solid rgba(0,0,0,0.08); }
+
+  .page-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.5rem; margin: 1rem 0; }
+  .page-card-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .page-num { width: 2rem; height: 2rem; background: #6366F1; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.8125rem; flex-shrink: 0; }
+  .page-card-title { font-size: 1rem; font-weight: 700; color: #0F172A; }
+
+  .note-box { background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #92400E; margin: 1rem 0; }
+  .note-box strong { font-weight: 600; }
+
+  .toc { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2rem; }
+  .toc-title { font-size: 0.875rem; font-weight: 700; color: #0F172A; margin-bottom: 0.625rem; }
+  .toc a { display: block; font-size: 0.875rem; color: #6366F1; text-decoration: none; padding: 0.25rem 0; }
+  .toc a:hover { text-decoration: underline; }
+
+  hr { border: none; border-top: 1px solid #E2E8F0; margin: 2rem 0; }
+</style>
+</head>
+<body>
+
+<h1>Dev Handoff Specification</h1>
+<p class="doc-subtitle">Testably — Compact Inner Pages (Files 14–18 + 19 Onboarding)<br>
+Prepared by Desi (Design) · March 25, 2026 · v1.0</p>
+
+<div class="toc">
+  <div class="toc-title">Contents</div>
+  <a href="#overview">1. Overview & Design Philosophy</a>
+  <a href="#tokens">2. Compact Design Tokens</a>
+  <a href="#shared">3. Shared Chrome (Header + Tab Bar)</a>
+  <a href="#p14">4. Page 14 — Test Cases</a>
+  <a href="#p15">5. Page 15 — Runs & Results</a>
+  <a href="#p16">6. Page 16 — Milestones</a>
+  <a href="#p17">7. Page 17 — Documents</a>
+  <a href="#p18">8. Page 18 — Discovery Log</a>
+  <a href="#p19">9. Page 19 — Onboarding Modal ("Don't Show Again")</a>
+  <a href="#i18n">10. i18n Keys</a>
+  <a href="#animations">11. Animations</a>
+  <a href="#notes">12. Implementation Notes</a>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="overview">1. Overview & Design Philosophy</h2>
+
+<p>These mockups represent an <strong>ultra-subtle compact treatment</strong> applied to the 5 inner project pages. The goal is to increase information density without making the UI feel cramped. Changes are intentionally minimal: padding reductions of 10–15% and font size reductions of only 1–2px from production values.</p>
+
+<p>The <strong>shared chrome</strong> (project header bar and tab bar) is intentionally <strong>unchanged</strong> from production. Only the inner content area below the tab bar receives the compact treatment.</p>
+
+<p>Additionally, file 19 specifies a "Don't show again" checkbox for the existing Onboarding Welcome modal.</p>
+
+<div class="note-box">
+  <strong>Key principle:</strong> If you hold the compact mockup next to the production page, the difference should be barely perceptible — just slightly tighter spacing. No layout structure changes, no color changes, no font weight changes.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="tokens">2. Compact Design Tokens</h2>
+
+<p>These are the exact values to apply. The "Production" column shows current Tailwind values; the "Compact" column shows the target.</p>
+
+<table class="token-table">
+  <thead>
+    <tr><th>Token</th><th>Production</th><th>Compact</th><th>Delta</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Content padding</td>
+      <td class="mono">p-8 (32px)</td>
+      <td class="mono">1.75rem (28px)</td>
+      <td>-12.5%</td>
+    </tr>
+    <tr>
+      <td>Page title font</td>
+      <td class="mono">text-2xl (24px)</td>
+      <td class="mono">1.375rem (22px)</td>
+      <td>-2px</td>
+    </tr>
+    <tr>
+      <td>Body / label text</td>
+      <td class="mono">text-sm (14px)</td>
+      <td class="mono">0.8125rem (13px)</td>
+      <td>-1px</td>
+    </tr>
+    <tr>
+      <td>Card padding</td>
+      <td class="mono">p-6 (24px)</td>
+      <td class="mono">1.3125rem (21px)</td>
+      <td>-12.5%</td>
+    </tr>
+    <tr>
+      <td>Section gap / stat grid gap</td>
+      <td class="mono">gap-6 (24px)</td>
+      <td class="mono">1.3125rem (21px)</td>
+      <td>-12.5%</td>
+    </tr>
+    <tr>
+      <td>Button font size</td>
+      <td class="mono">text-sm (14px)</td>
+      <td class="mono">0.8125rem (13px)</td>
+      <td>-1px</td>
+    </tr>
+    <tr>
+      <td>Button padding</td>
+      <td class="mono">py-2 px-4 (8px 16px)</td>
+      <td class="mono">0.4375rem 0.875rem (7px 14px)</td>
+      <td>-1px / -2px</td>
+    </tr>
+    <tr>
+      <td>Table cell padding</td>
+      <td class="mono">py-3 px-4 (12px 16px)</td>
+      <td class="mono">0.6875rem 1rem (11px 16px)</td>
+      <td>-1px vert</td>
+    </tr>
+    <tr>
+      <td>Stat card values</td>
+      <td class="mono">text-3xl (30px)</td>
+      <td class="mono">1.75rem (28px)</td>
+      <td>-2px</td>
+    </tr>
+    <tr>
+      <td>Badge / tag text</td>
+      <td class="mono">text-xs (12px)</td>
+      <td class="mono">0.6875rem (11px)</td>
+      <td>-1px</td>
+    </tr>
+    <tr>
+      <td>Meta / helper text</td>
+      <td class="mono">text-xs (12px)</td>
+      <td class="mono">0.75rem (12px)</td>
+      <td>0 (unchanged)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Color System (unchanged)</h3>
+<table class="token-table">
+  <thead>
+    <tr><th>Role</th><th>Value</th><th>Usage</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="color-swatch" style="background:#6366F1"></span>Primary / Indigo</td><td class="mono">#6366F1</td><td>Brand, CTA buttons, active tabs, links</td></tr>
+    <tr><td><span class="color-swatch" style="background:#8B5CF6"></span>Violet Accent</td><td class="mono">#8B5CF6</td><td>AI features gradient start, secondary accent</td></tr>
+    <tr><td><span class="color-swatch" style="background:#10B981"></span>Green / Pass</td><td class="mono">#10B981</td><td>Pass state, success indicators</td></tr>
+    <tr><td><span class="color-swatch" style="background:#EF4444"></span>Red / Fail</td><td class="mono">#EF4444</td><td>Fail state, critical priority</td></tr>
+    <tr><td><span class="color-swatch" style="background:#F59E0B"></span>Amber / Blocked</td><td class="mono">#F59E0B</td><td>Blocked/at-risk state, high priority</td></tr>
+    <tr><td><span class="color-swatch" style="background:#0F172A"></span>Slate 900</td><td class="mono">#0F172A</td><td>Page titles, card names, strong text</td></tr>
+    <tr><td><span class="color-swatch" style="background:#64748B"></span>Slate 500</td><td class="mono">#64748B</td><td>Labels, secondary text</td></tr>
+    <tr><td><span class="color-swatch" style="background:#94A3B8"></span>Slate 400</td><td class="mono">#94A3B8</td><td>Meta text, timestamps, helper text</td></tr>
+    <tr><td><span class="color-swatch" style="background:#F8FAFC"></span>Slate 50</td><td class="mono">#F8FAFC</td><td>Page background</td></tr>
+    <tr><td><span class="color-swatch" style="background:#E2E8F0"></span>Slate 200</td><td class="mono">#E2E8F0</td><td>Borders, dividers</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="shared">3. Shared Chrome (Header + Tab Bar)</h2>
+
+<p>These components are <strong>identical across all 5 pages</strong> and are <strong>not compacted</strong>. They match the current production values exactly.</p>
+
+<h4>Project Header</h4>
+<table class="token-table">
+  <thead><tr><th>Property</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Height</td><td class="mono">3.5rem (56px)</td></tr>
+    <tr><td>Horizontal padding</td><td class="mono">1.5rem (24px)</td></tr>
+    <tr><td>Logo squircle</td><td class="mono">30×30px, bg #6366F1, border-radius 8px</td></tr>
+    <tr><td>Project name font</td><td class="mono">0.875rem (14px), weight 500, color #64748B</td></tr>
+    <tr><td>Avatar</td><td class="mono">32×32px circle, bg #6366F1, initials 11px bold white</td></tr>
+  </tbody>
+</table>
+
+<h4>Tab Bar</h4>
+<table class="token-table">
+  <thead><tr><th>Property</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Height</td><td class="mono">3rem (48px)</td></tr>
+    <tr><td>Tab font</td><td class="mono">0.875rem (14px), weight 500, color #64748B</td></tr>
+    <tr><td>Active tab</td><td class="mono">color #6366F1, weight 600, 2px bottom border #6366F1</td></tr>
+    <tr><td>Count badge</td><td class="mono">0.6875rem (11px), bg #F1F5F9 (active: #EEF2FF/#6366F1)</td></tr>
+    <tr><td>Icon library</td><td class="mono">Remix Icon 4.5.0</td></tr>
+  </tbody>
+</table>
+
+<h4>Tab Icons</h4>
+<pre><span class="comment">// Tab → Remix Icon mapping</span>
+Dashboard  → <span class="val">ri-dashboard-3-line</span>
+Test Cases → <span class="val">ri-file-list-3-line</span>
+Runs       → <span class="val">ri-play-circle-line</span>
+Milestones → <span class="val">ri-flag-line</span>
+Docs       → <span class="val">ri-file-text-line</span>
+Discovery  → <span class="val">ri-flashlight-line</span></pre>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="p14">4. Page 14 — Test Cases</h2>
+
+<div class="page-card">
+  <div class="page-card-head">
+    <div class="page-num">14</div>
+    <div class="page-card-title">Test Cases</div>
+    <span class="badge file">14-testcases-compact.html</span>
+    <span class="badge route">/projects/:id/testcases</span>
+  </div>
+
+  <h4>Layout Structure</h4>
+  <p>This page uses a <strong>two-column layout</strong> with a collapsible Folders side panel on the left and the main test case table on the right.</p>
+
+  <h4>NEW: Folders Side Panel</h4>
+  <table class="token-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Panel width</td><td class="mono">220px (min-width: 220px)</td></tr>
+      <tr><td>Background</td><td class="mono">#fff, right border 1px #E2E8F0</td></tr>
+      <tr><td>Header height</td><td class="mono">auto, padding 1rem 0.875rem</td></tr>
+      <tr><td>Folder item padding</td><td class="mono">0.5rem 0.875rem</td></tr>
+      <tr><td>Sub-folder indent</td><td class="mono">padding-left: 1.5rem</td></tr>
+      <tr><td>Active folder</td><td class="mono">bg #EEF2FF, color #4338CA, font-weight 600</td></tr>
+      <tr><td>Folder icon</td><td class="mono">ri-folder-3-line, 1rem, unique color per folder</td></tr>
+      <tr><td>Count badge</td><td class="mono">0.75rem, color #94A3B8 (active: #6366F1), right-aligned</td></tr>
+      <tr><td>Collapse button</td><td class="mono">ri-arrow-left-s-line in header, toggles panel visibility</td></tr>
+      <tr><td>New Folder CTA</td><td class="mono">Bottom-pinned, full-width #6366F1 button, ri-add-line icon</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Folder Color Mapping</h4>
+  <pre><span class="comment">// Each folder gets a unique icon color</span>
+All Test Cases → <span class="val">#6366F1</span> (indigo)
+Login          → <span class="val">#8B5CF6</span> (violet)
+Patient List   → <span class="val">#10B981</span> (green)
+Viewer         → <span class="val">#EF4444</span> (red)
+Report         → <span class="val">#F59E0B</span> (amber)
+Library        → <span class="val">#94A3B8</span> (slate)</pre>
+
+  <h4>Content Right (Table Area)</h4>
+  <p>Standard card container with toolbar (search + priority filter select) and a paginated table.</p>
+
+  <table class="token-table">
+    <thead><tr><th>Element</th><th>Spec</th></tr></thead>
+    <tbody>
+      <tr><td>Page title</td><td class="mono">"Test Cases" — 1.375rem, weight 700</td></tr>
+      <tr><td>Subtitle</td><td class="mono">"{project} • {count} test cases" — 0.8125rem, #94A3B8</td></tr>
+      <tr><td>AI button</td><td class="mono">Gradient bg (linear-gradient #8B5CF6→#6366F1), ri-sparkling-2-fill</td></tr>
+      <tr><td>Table header</td><td class="mono">bg #F8FAFC, 0.6875rem uppercase, letter-spacing 0.05em</td></tr>
+      <tr><td>Table columns</td><td class="mono">Checkbox | ID | Title | Priority | Status | Folder | Assignee | Updated</td></tr>
+      <tr><td>TC-ID style</td><td class="mono">Monospace, 0.8125rem, #6366F1, bold, hover underline</td></tr>
+      <tr><td>Priority dot</td><td class="mono">8×8px circle — Critical #EF4444, High #F59E0B, Medium #6366F1, Low #94A3B8</td></tr>
+      <tr><td>Pagination</td><td class="mono">Bottom bar, "Showing 1–10 of 842", 30×30px page buttons</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Supabase Query Reference</h4>
+  <pre><span class="comment">// Folders list</span>
+<span class="key">from</span>(<span class="val">'test_case_folders'</span>)
+  .<span class="key">select</span>(<span class="val">'id, name, parent_id, color, test_case_count'</span>)
+  .<span class="key">eq</span>(<span class="val">'project_id'</span>, projectId)
+  .<span class="key">order</span>(<span class="val">'sort_order'</span>)
+
+<span class="comment">// Test cases (paginated)</span>
+<span class="key">from</span>(<span class="val">'test_cases'</span>)
+  .<span class="key">select</span>(<span class="val">'id, title, priority, status, folder_id, assignee_id, updated_at'</span>)
+  .<span class="key">eq</span>(<span class="val">'project_id'</span>, projectId)
+  .<span class="key">range</span>(offset, offset + pageSize - <span class="num">1</span>)</pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="p15">5. Page 15 — Runs & Results</h2>
+
+<div class="page-card">
+  <div class="page-card-head">
+    <div class="page-num">15</div>
+    <div class="page-card-title">Runs & Results</div>
+    <span class="badge file">15-runs-compact.html</span>
+    <span class="badge route">/projects/:id/runs</span>
+  </div>
+
+  <h4>Layout Structure</h4>
+  <p>Top stat cards (3-col grid) → Active/Closed sub-tabs → Run card list.</p>
+
+  <h4>Stat Cards (3-column grid)</h4>
+  <table class="token-table">
+    <thead><tr><th>Card</th><th>Content</th><th>Visual</th></tr></thead>
+    <tbody>
+      <tr><td>Active Runs</td><td class="mono">Count + Est. workload + Contributors avatars</td><td>Indigo icon (ri-play-circle-line)</td></tr>
+      <tr><td>Latest Results</td><td class="mono">Pass rate % + "Last 7 days"</td><td>SVG donut chart (green stroke)</td></tr>
+      <tr><td>Recently Closed</td><td class="mono">Count + "Trending upward"</td><td>SVG sparkline (green gradient)</td></tr>
+    </tbody>
+  </table>
+
+  <h4>NEW: Automated Badge</h4>
+  <pre><span class="comment">/* Appears next to status badge when run.is_automated === true */</span>
+.<span class="key">auto-badge</span> {
+  font-size: <span class="num">0.6875rem</span>;
+  font-weight: <span class="num">600</span>;
+  padding: <span class="num">0.1875rem 0.5rem</span>;
+  border-radius: <span class="num">9999px</span>;
+  background: <span class="val">#F0F9FF</span>;
+  color: <span class="val">#0284C7</span>;
+  icon: <span class="val">ri-robot-line</span>;
+}</pre>
+
+  <h4>NEW: Progress Percentage</h4>
+  <p>A <code>.progress-row</code> containing the existing <code>.progress-bar</code> plus a <code>.progress-pct</code> text label (e.g., "82%") to the right. The percentage is <code>0.8125rem</code>, weight 600, color <code>#0F172A</code>, min-width <code>2.5rem</code>, right-aligned.</p>
+
+  <h4>NEW: "Assigned to" Label + Avatars</h4>
+  <p>The <code>.run-meta</code> row now contains an <code>.run-assigned</code> wrapper:</p>
+  <pre><span class="comment">&lt;!-- Pattern for each run card bottom --&gt;</span>
+&lt;div class="<span class="val">run-meta</span>"&gt;
+  &lt;div class="<span class="val">run-assigned</span>"&gt;
+    &lt;span class="<span class="val">run-assigned-label</span>"&gt;Assigned to&lt;/span&gt;
+    &lt;div class="<span class="val">run-assignees</span>"&gt;
+      &lt;span class="<span class="val">run-av</span>" style="background:#6366F1"&gt;SK&lt;/span&gt;
+      &lt;span class="<span class="val">run-av</span>" style="background:#F59E0B"&gt;MC&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;span class="<span class="val">run-meta-sep</span>"&gt;&amp;middot;&lt;/span&gt;
+  &lt;span&gt;Started yesterday&lt;/span&gt;
+&lt;/div&gt;</pre>
+
+  <table class="token-table">
+    <thead><tr><th>Element</th><th>Spec</th></tr></thead>
+    <tbody>
+      <tr><td><code>.run-assigned-label</code></td><td class="mono">0.75rem, #94A3B8, weight 500, white-space: nowrap</td></tr>
+      <tr><td><code>.run-av</code></td><td class="mono">24×24px circle, initials 9px bold white</td></tr>
+      <tr><td><code>.run-meta-sep</code></td><td class="mono">· (middot), color #CBD5E1</td></tr>
+      <tr><td>Gap between label and avatars</td><td class="mono">0.375rem</td></tr>
+      <tr><td>Gap between assigned group and separator</td><td class="mono">0.875rem</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Run Card Status Badges</h4>
+  <pre><span class="comment">// Status color mapping</span>
+In Progress → bg <span class="val">#DBEAFE</span>, color <span class="val">#2563EB</span> + pulse-dot animation
+Completed   → bg <span class="val">#F0FDF4</span>, color <span class="val">#16A34A</span>
+Failed      → bg <span class="val">#FEF2F2</span>, color <span class="val">#DC2626</span></pre>
+
+  <h4>Progress Bar Segments</h4>
+  <pre><span class="comment">// Stacked horizontal bar segments</span>
+Pass    → <span class="val">#10B981</span> (green)
+Fail    → <span class="val">#EF4444</span> (red)
+Blocked → <span class="val">#F59E0B</span> (amber)
+Remain  → <span class="val">#E2E8F0</span> (flex: 1, fills remainder)</pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="p16">6. Page 16 — Milestones</h2>
+
+<div class="page-card">
+  <div class="page-card-head">
+    <div class="page-num">16</div>
+    <div class="page-card-title">Milestones</div>
+    <span class="badge file">16-milestones-compact.html</span>
+    <span class="badge route">/projects/:id/milestones</span>
+  </div>
+
+  <h4>Layout Structure</h4>
+  <p>Page header → Active/Completed sub-tabs → Milestone card list.</p>
+
+  <h4>Milestone Card Anatomy</h4>
+  <p>Each card contains: icon + name/date row → progress bar → pass/fail/remaining counts + assignee avatars.</p>
+
+  <h4>Status Badges</h4>
+  <pre><span class="comment">// Milestone-level status</span>
+In Progress → bg <span class="val">#DBEAFE</span>, color <span class="val">#2563EB</span>
+On Track    → bg <span class="val">#F0FDF4</span>, color <span class="val">#16A34A</span>
+At Risk     → bg <span class="val">#FEF3C7</span>, color <span class="val">#D97706</span></pre>
+
+  <h4>NEW: Action Buttons (per card)</h4>
+  <p>Three inline buttons in the <code>.ms-actions</code> container, right-aligned within the <code>.ms-top</code> row:</p>
+
+  <table class="token-table">
+    <thead><tr><th>Button</th><th>Icon</th><th>Style</th></tr></thead>
+    <tbody>
+      <tr><td>+Sub</td><td class="mono">ri-git-branch-line</td><td>Default ghost style (border #E2E8F0, color #475569)</td></tr>
+      <tr><td>Edit</td><td class="mono">ri-edit-line</td><td>Default ghost style</td></tr>
+      <tr><td>Complete</td><td class="mono">ri-check-line</td><td>Green variant (border #10B981, color #16A34A, hover bg #F0FDF4)</td></tr>
+    </tbody>
+  </table>
+
+  <pre><span class="comment">/* Action button base */</span>
+.<span class="key">ms-action-btn</span> {
+  font-size: <span class="num">0.6875rem</span>;
+  padding: <span class="num">0.25rem 0.5rem</span>;
+  border-radius: <span class="num">0.375rem</span>;
+  border: <span class="num">1px</span> solid <span class="val">#E2E8F0</span>;
+  gap: <span class="num">0.25rem</span>;
+  icon font-size: <span class="num">0.875rem</span>;
+}</pre>
+
+  <h4>Progress Bar</h4>
+  <p>Same stacked bar as Runs page: green (pass) + red (fail) + slate (remain). Below the bar: left-aligned "X% complete" (bold) and right-aligned "N of M cases executed" (slate).</p>
+
+  <h4>Assignee Avatars</h4>
+  <p>Stacked (overlapping by <code>-0.3125rem</code> margin-left), 24×24px circles with 2px white border. Bottom-right of card.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="p17">7. Page 17 — Documents</h2>
+
+<div class="page-card">
+  <div class="page-card-head">
+    <div class="page-num">17</div>
+    <div class="page-card-title">Documents</div>
+    <span class="badge file">17-documents-compact.html</span>
+    <span class="badge unchanged">No changes</span>
+    <span class="badge route">/projects/:id/documents</span>
+  </div>
+
+  <h4>Layout Structure</h4>
+  <p>Page header (with icon) → Card with toolbar (search + All/Links/Files filter pills) → Document item list.</p>
+
+  <p>This page received <strong>no feature additions</strong> beyond the standard compact token adjustments. It's the simplest of the 5 pages.</p>
+
+  <h4>Document Item Row</h4>
+  <table class="token-table">
+    <thead><tr><th>Element</th><th>Spec</th></tr></thead>
+    <tbody>
+      <tr><td>Row padding</td><td class="mono">0.875rem 1.3125rem</td></tr>
+      <tr><td>File icon</td><td class="mono">1.25rem, color #6366F1 — ri-file-word-line, ri-file-pdf-line, ri-link</td></tr>
+      <tr><td>Doc name</td><td class="mono">0.8125rem, weight 600, #0F172A</td></tr>
+      <tr><td>Description</td><td class="mono">0.75rem, #94A3B8</td></tr>
+      <tr><td>Type badge</td><td class="mono">0.6875rem pill — bg #EEF2FF, color #6366F1</td></tr>
+      <tr><td>Author avatar</td><td class="mono">22×22px circle, initials 8px</td></tr>
+      <tr><td>Size / date</td><td class="mono">0.75rem, #94A3B8</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Filter Pill Tabs</h4>
+  <pre><span class="comment">// Toolbar filter tabs</span>
+Default → border <span class="val">#E2E8F0</span>, bg <span class="val">#fff</span>, color <span class="val">#64748B</span>
+Active  → border <span class="val">#C7D2FE</span>, bg <span class="val">#EEF2FF</span>, color <span class="val">#6366F1</span></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="p18">8. Page 18 — Discovery Log</h2>
+
+<div class="page-card">
+  <div class="page-card-head">
+    <div class="page-num">18</div>
+    <div class="page-card-title">Discovery Log</div>
+    <span class="badge file">18-discovery-compact.html</span>
+    <span class="badge route">/projects/:id/sessions</span>
+  </div>
+
+  <h4>Layout Structure</h4>
+  <p>Page header → Stat cards (3-col) → Active/Closed sub-tabs → Session card list.</p>
+
+  <h4>Stat Cards</h4>
+  <table class="token-table">
+    <thead><tr><th>Card</th><th>Content</th><th>Icon</th></tr></thead>
+    <tbody>
+      <tr><td>Active Sessions</td><td class="mono">Count + "N testers currently active"</td><td class="mono">ri-flashlight-line (orange bg)</td></tr>
+      <tr><td>Bugs Found</td><td class="mono">Count + badge "+3 this week" + "From N sessions total"</td><td class="mono">ri-bug-line (green bg)</td></tr>
+      <tr><td>Avg. Session Time</td><td class="mono">Duration + "Across all team members"</td><td class="mono">ri-time-line (indigo bg)</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Session Card Anatomy</h4>
+  <p>Each session card contains (top to bottom):</p>
+  <ol>
+    <li><strong>Top row:</strong> Session name + status badge (In Progress / New)</li>
+    <li><strong>Charter:</strong> Description text (0.8125rem, #64748B)</li>
+    <li><strong>NEW: Schedule row</strong> — calendar icon + date + start time + elapsed/estimated duration</li>
+    <li><strong>Tags:</strong> Pill tags for categorization</li>
+    <li><strong>Bottom row:</strong> Meta pills (milestone, time, bugs) + assignee avatars</li>
+  </ol>
+
+  <h4>NEW: Schedule Row</h4>
+  <pre><span class="comment">&lt;!-- Inserted between charter and tags --&gt;</span>
+&lt;div class="<span class="val">sc-schedule</span>"&gt;
+  &lt;i class="<span class="val">ri-calendar-line</span>"&gt;&lt;/i&gt;
+  &lt;span&gt;Mar 25, 2026&lt;/span&gt;
+  &lt;span class="<span class="val">sc-sched-sep</span>"&gt;&amp;middot;&lt;/span&gt;
+  &lt;span&gt;10:30 AM – In Progress&lt;/span&gt;
+  &lt;span class="<span class="val">sc-sched-sep</span>"&gt;&amp;middot;&lt;/span&gt;
+  &lt;span class="<span class="val">sc-sched-duration</span>"&gt;~2h elapsed&lt;/span&gt;
+&lt;/div&gt;</pre>
+
+  <table class="token-table">
+    <thead><tr><th>Element</th><th>Spec</th></tr></thead>
+    <tbody>
+      <tr><td><code>.sc-schedule</code></td><td class="mono">flex, align-items center, gap 0.375rem, font-size 0.8125rem, color #475569, margin-bottom 0.625rem</td></tr>
+      <tr><td>Calendar icon</td><td class="mono">ri-calendar-line, 0.9375rem, color #6366F1</td></tr>
+      <tr><td>Separator (·)</td><td class="mono">color #CBD5E1, margin 0 0.125rem</td></tr>
+      <tr><td>Duration text</td><td class="mono">0.75rem, color #94A3B8</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Meta Pill Badges (Bottom Row)</h4>
+  <table class="token-table">
+    <thead><tr><th>Pill Type</th><th>Icon</th><th>Colors</th></tr></thead>
+    <tbody>
+      <tr><td>Milestone</td><td class="mono">ri-flag-line</td><td class="mono">bg #EEF2FF, color #4338CA</td></tr>
+      <tr><td>Time</td><td class="mono">ri-time-line</td><td class="mono">bg #F1F5F9, color #475569</td></tr>
+      <tr><td>Bugs (>0)</td><td class="mono">ri-bug-line</td><td class="mono">bg #FEF2F2, color #DC2626</td></tr>
+      <tr><td>Bugs (0)</td><td class="mono">ri-bug-line</td><td class="mono">bg #F1F5F9, color #94A3B8</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Session Status Badges</h4>
+  <pre>In Progress → bg <span class="val">#DBEAFE</span>, color <span class="val">#2563EB</span> + <span class="key">pulse-dot</span> animation
+New         → bg <span class="val">#F1F5F9</span>, color <span class="val">#64748B</span> (no pulse)</pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="p19">9. Page 19 — Onboarding Modal ("Don't Show Again")</h2>
+
+<div class="page-card">
+  <div class="page-card-head">
+    <div class="page-num">19</div>
+    <div class="page-card-title">Onboarding Welcome Modal</div>
+    <span class="badge file">19-onboarding-dontshow.html</span>
+    <span class="badge new">New Feature</span>
+  </div>
+
+  <h4>Context</h4>
+  <p>This modifies the existing <code>WelcomeScreen.tsx</code> component. The only addition is a "Don't show this again" checkbox row above the CTA button.</p>
+
+  <h4>NEW: "Don't show again" Checkbox</h4>
+  <table class="token-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Container</td><td class="mono">.dont-show-row — flex, align center, gap 0.5rem, margin-bottom 0.875rem</td></tr>
+      <tr><td>Checkbox</td><td class="mono">16×16px, accent-color #6366F1, border-radius 3px</td></tr>
+      <tr><td>Label text</td><td class="mono">"Don't show this again" — 0.8125rem, color #64748B</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Behavior Logic</h4>
+  <table class="token-table">
+    <thead><tr><th>Action</th><th>Checkbox Checked</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Click "Get Started"</td><td>Any</td><td class="mono">welcome_completed = true → permanent dismiss, proceed to onboarding checklist</td></tr>
+      <tr><td>Click X (close)</td><td>Checked</td><td class="mono">welcome_completed = true → permanent dismiss</td></tr>
+      <tr><td>Click X (close)</td><td>Unchecked</td><td class="mono">Temporary dismiss → modal reappears on next page load</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Supabase Schema</h4>
+  <pre><span class="comment">-- Existing table: user_onboarding</span>
+<span class="key">welcome_completed</span>: boolean <span class="comment">-- set to true on permanent dismiss</span>
+<span class="key">checklist_dismissed</span>: boolean <span class="comment">-- separate flag for checklist widget</span>
+
+<span class="comment">-- Hook: useOnboarding.ts</span>
+<span class="comment">-- Update welcome_completed via:</span>
+<span class="key">supabase</span>
+  .<span class="key">from</span>(<span class="val">'user_onboarding'</span>)
+  .<span class="key">upsert</span>({ user_id, <span class="key">welcome_completed</span>: <span class="val">true</span> })</pre>
+
+  <h4>i18n Key</h4>
+  <pre><span class="comment">// Add to src/i18n/local/en/onboarding.ts → welcome object:</span>
+<span class="key">dontShowAgain</span>: <span class="val">"Don't show this again"</span></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="i18n">10. i18n Keys</h2>
+
+<p>All user-facing strings are in <code>src/i18n/local/en/onboarding.ts</code>. For the compact pages, no new i18n keys are required (the existing keys cover all strings). The only new key needed is for the onboarding modal:</p>
+
+<pre><span class="comment">// onboarding.ts → welcome</span>
+<span class="key">dontShowAgain</span>: <span class="val">"Don't show this again"</span></pre>
+
+<p>New strings introduced in the mockup feature additions that will need i18n keys:</p>
+
+<table class="token-table">
+  <thead><tr><th>Page</th><th>String</th><th>Suggested Key</th></tr></thead>
+  <tbody>
+    <tr><td>15 - Runs</td><td>"Assigned to"</td><td class="mono">runs.assignedTo</td></tr>
+    <tr><td>15 - Runs</td><td>"Automated"</td><td class="mono">runs.automatedBadge</td></tr>
+    <tr><td>16 - Milestones</td><td>"+Sub"</td><td class="mono">milestones.addSub</td></tr>
+    <tr><td>16 - Milestones</td><td>"Edit"</td><td class="mono">milestones.edit</td></tr>
+    <tr><td>16 - Milestones</td><td>"Complete"</td><td class="mono">milestones.complete</td></tr>
+    <tr><td>14 - Test Cases</td><td>"Folders"</td><td class="mono">testcases.folders</td></tr>
+    <tr><td>14 - Test Cases</td><td>"New Folder"</td><td class="mono">testcases.newFolder</td></tr>
+    <tr><td>14 - Test Cases</td><td>"Generate with AI"</td><td class="mono">testcases.generateAi</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="animations">11. Animations</h2>
+
+<table class="token-table">
+  <thead><tr><th>Animation</th><th>Usage</th><th>Spec</th></tr></thead>
+  <tbody>
+    <tr><td><code>fadeIn</code></td><td>Content area on page load</td><td class="mono">0.3s ease-out, translateY(-6px) → 0, opacity 0→1</td></tr>
+    <tr><td><code>pulse</code></td><td>In-progress status dot</td><td class="mono">2s infinite, opacity 1→0.4→1</td></tr>
+    <tr><td><code>modalIn</code></td><td>Onboarding modal entrance</td><td class="mono">0.3s ease-out, translateY(16px) scale(0.97) → normal</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2 id="notes">12. Implementation Notes</h2>
+
+<h4>Approach: Custom Tailwind Values</h4>
+<p>Since the compact values don't map to standard Tailwind classes (e.g., 1.375rem title, 1.3125rem card padding), use one of these approaches:</p>
+<ol>
+  <li><strong>Arbitrary values</strong> in Tailwind: <code>p-[1.3125rem]</code>, <code>text-[1.375rem]</code></li>
+  <li><strong>Extend tailwind.config.js</strong> with a <code>compact</code> theme extension</li>
+  <li><strong>CSS custom properties</strong> defined at <code>:root</code> level for easy toggling between standard and compact modes</li>
+</ol>
+
+<div class="note-box">
+  <strong>Recommendation:</strong> Option 3 (CSS custom properties) gives the most flexibility if we later want to let users toggle compact mode via a preference setting. Define <code>--content-pad</code>, <code>--card-pad</code>, <code>--title-size</code>, etc. and swap values.
+</div>
+
+<h4>Responsive Considerations</h4>
+<ul>
+  <li>The Folders panel (page 14) should collapse to a hamburger on viewports below 768px</li>
+  <li>Stat card grids should stack to 1-col on mobile (<code>grid-cols-1</code> below 640px)</li>
+  <li>Run/milestone/session cards are already single-column and responsive</li>
+</ul>
+
+<h4>Accessibility</h4>
+<ul>
+  <li>All interactive elements use <code>&lt;button&gt;</code> elements (not <code>&lt;div&gt;</code> with click handlers)</li>
+  <li>Checkboxes in table and onboarding use native <code>&lt;input type="checkbox"&gt;</code> with <code>&lt;label&gt;</code> association</li>
+  <li>Color is never the sole indicator: priority dots always pair with text labels, status badges use text</li>
+  <li>Focus states should use <code>ring-2 ring-indigo-300</code> pattern consistently</li>
+</ul>
+
+<h4>File Inventory</h4>
+<table class="token-table">
+  <thead><tr><th>#</th><th>File</th><th>Page</th><th>Changes</th></tr></thead>
+  <tbody>
+    <tr><td>14</td><td class="mono">14-testcases-compact.html</td><td>Test Cases</td><td>Compact tokens + NEW Folders panel</td></tr>
+    <tr><td>15</td><td class="mono">15-runs-compact.html</td><td>Runs & Results</td><td>Compact tokens + NEW Automated badge, progress %, "Assigned to" labels</td></tr>
+    <tr><td>16</td><td class="mono">16-milestones-compact.html</td><td>Milestones</td><td>Compact tokens + NEW +Sub/Edit/Complete buttons</td></tr>
+    <tr><td>17</td><td class="mono">17-documents-compact.html</td><td>Documents</td><td>Compact tokens only (no feature additions)</td></tr>
+    <tr><td>18</td><td class="mono">18-discovery-compact.html</td><td>Discovery Log</td><td>Compact tokens + NEW schedule row, enhanced meta pills</td></tr>
+    <tr><td>19</td><td class="mono">19-onboarding-dontshow.html</td><td>Onboarding Modal</td><td>NEW "Don't show again" checkbox</td></tr>
+  </tbody>
+</table>
+
+<hr>
+<p style="font-size: 0.8125rem; color: #94A3B8; text-align: center;">End of handoff spec · Testably Design Team · v1.0 · March 25, 2026</p>
+
+</body>
+</html>

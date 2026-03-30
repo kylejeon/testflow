@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — TC List Status System (Full Mockup)</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; min-height: 100vh; display: flex; }
+
+  /* ── Shared Chrome ── */
+  .project-header { background: #fff; display: flex; align-items: center; padding: 0 1.5rem; height: 3.5rem; gap: 0.75rem; border-bottom: 1px solid #E2E8F0; }
+  .ph-logo { width: 30px; height: 30px; background: #6366F1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; flex-shrink: 0; }
+  .ph-sep { width: 1px; height: 20px; background: #E2E8F0; }
+  .ph-project { font-size: 0.875rem; color: #64748B; font-weight: 500; }
+  .ph-right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+  .ph-btn { font-size: 0.8125rem; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; }
+  .ph-avatar { width: 2rem; height: 2rem; border-radius: 50%; background: #6366F1; display: flex; align-items: center; justify-content: center; font-size: 0.6875rem; font-weight: 700; color: #fff; }
+
+  .tab-bar { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0 1.5rem; height: 3rem; gap: 0; }
+  .tab-item { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.875rem; height: 100%; font-size: 0.875rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; transition: all 0.15s; white-space: nowrap; }
+  .tab-item.active { color: #6366F1; border-bottom-color: #6366F1; font-weight: 600; }
+  .tab-item i { font-size: 1rem; }
+  .tab-count { font-size: 0.6875rem; background: #F1F5F9; color: #64748B; padding: 0.125rem 0.4375rem; border-radius: 9999px; font-weight: 600; }
+  .tab-item.active .tab-count { background: #EEF2FF; color: #6366F1; }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .content { flex: 1; padding: 1.75rem; overflow-y: auto; position: relative; }
+
+  .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.3125rem; }
+  .page-title { font-size: 1.375rem; font-weight: 700; color: #0F172A; }
+  .page-head-right { display: flex; align-items: center; gap: 0.5rem; }
+  .action-btn { font-size: 0.8125rem; padding: 0.4375rem 0.875rem; border-radius: 0.5rem; border: none; background: #6366F1; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; font-family: inherit; font-weight: 500; }
+
+  /* ── §3 Filter Tabs ── */
+  .filter-tabs { display: flex; gap: 0; border-bottom: 2px solid #E2E8F0; margin-bottom: 0; }
+  .filter-tab { padding: 0.5rem 1rem; font-size: 0.8125rem; font-weight: 500; color: #94A3B8; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 0.375rem; }
+  .filter-tab:hover { color: #475569; }
+  .filter-tab.active { color: #4338CA; border-bottom-color: #4338CA; font-weight: 600; }
+  .filter-tab .ftab-icon { font-size: 0.875rem; }
+  .filter-tab .ftab-icon.draft { color: #D97706; }
+  .filter-tab .ftab-icon.active-icon { color: #16A34A; }
+  .filter-tab .ftab-icon.depr { color: #94A3B8; }
+  .filter-tab .fcount { background: #F1F5F9; padding: 0.0625rem 0.375rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; color: #64748B; }
+  .filter-tab.active .fcount { background: #EEF2FF; color: #4338CA; }
+
+  /* ── Card + Toolbar ── */
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; overflow: visible; position: relative; }
+  .toolbar { padding: 1.3125rem; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; gap: 0.875rem; }
+  .search-wrap { flex: 1; position: relative; }
+  .search-wrap i { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 1rem; color: #94A3B8; }
+  .search-box { font-size: 0.8125rem; padding: 0.4375rem 0.875rem 0.4375rem 2.25rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #334155; outline: none; width: 100%; font-family: inherit; }
+  .filter-select { font-size: 0.8125rem; padding: 0.4375rem 0.875rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #334155; cursor: pointer; font-family: inherit; }
+
+  /* ── §1 Status Badges ── */
+  .status-badge { display: inline-flex; align-items: center; gap: 0.1875rem; padding: 0.125rem 0.375rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 600; border: 1px solid; cursor: pointer; }
+  .status-badge i { font-size: 0.6875rem; }
+  .badge-draft { background: #FEF9C3; color: #854D0E; border-color: #FDE68A; }
+  .badge-active { background: #DCFCE7; color: #166534; border-color: #BBF7D0; }
+  .badge-deprecated { background: #F1F5F9; color: #64748B; border-color: #CBD5E1; }
+
+  /* ── Table ── */
+  .tc-table { width: 100%; }
+  .tc-table table { width: 100%; border-collapse: collapse; }
+  .tc-table th { background: #F8FAFC; padding: 0.6875rem 1rem; text-align: left; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; border-bottom: 1px solid #E2E8F0; }
+  .tc-table td { padding: 0.6875rem 1rem; font-size: 0.8125rem; color: #334155; border-bottom: 1px solid #F1F5F9; }
+  .tc-table tr:last-child td { border-bottom: none; }
+  .tc-table tr:hover td { background: #FAFAFF; }
+  .tc-table .cb { width: 36px; }
+  .tc-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: #6366F1; cursor: pointer; }
+  .tc-id { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8125rem; color: #6366F1; font-weight: 600; }
+  .tc-name { font-weight: 600; color: #0F172A; font-size: 0.8125rem; }
+  .priority-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 0.375rem; vertical-align: middle; }
+  .priority-dot.critical { background: #EF4444; }
+  .priority-dot.high { background: #F59E0B; }
+  .priority-dot.medium { background: #6366F1; }
+  .priority-dot.low { background: #94A3B8; }
+  .tc-meta { font-size: 0.75rem; color: #94A3B8; }
+  .deprecated-row td { opacity: 0.55; }
+  .assignee-sm { width: 1.5rem; height: 1.5rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.5625rem; font-weight: 700; color: #fff; }
+
+  /* ── §4 Status Dropdown ── */
+  .status-dropdown { position: absolute; top: calc(100% + 4px); left: 0; background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.10); padding: 0.25rem; min-width: 10rem; z-index: 50; animation: dropIn 0.15s ease-out; }
+  .dd-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.625rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; color: #475569; cursor: pointer; transition: background 0.1s; }
+  .dd-item:hover { background: #F8FAFC; }
+  .dd-item i.dd-icon { font-size: 0.875rem; }
+  .dd-item .dd-check { margin-left: auto; color: #6366F1; font-size: 0.875rem; }
+  .dd-item.draft-item i.dd-icon { color: #D97706; }
+  .dd-item.active-item i.dd-icon { color: #16A34A; }
+  .dd-item.deprecated-item i.dd-icon { color: #94A3B8; }
+  @keyframes dropIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── §9 Context Menu ── */
+  .ctx-menu { position: absolute; background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.10); padding: 0.25rem; min-width: 11rem; z-index: 60; animation: dropIn 0.15s ease-out; }
+  .ctx-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.625rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; color: #475569; cursor: pointer; }
+  .ctx-item:hover { background: #F8FAFC; }
+  .ctx-item i { font-size: 0.875rem; color: #94A3B8; }
+  .ctx-divider { height: 1px; background: #E2E8F0; margin: 0.25rem 0.625rem; }
+  .ctx-item .ctx-arrow { margin-left: auto; font-size: 0.625rem; color: #94A3B8; }
+  .ctx-item.ctx-danger { color: #EF4444; }
+  .ctx-item.ctx-danger i { color: #EF4444; }
+  .ctx-submenu { position: absolute; left: calc(100% + 4px); top: 0; background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.10); padding: 0.25rem; min-width: 10rem; z-index: 61; animation: dropIn 0.15s ease-out; }
+
+  /* ── §6 Bulk Action Bar ── */
+  .bulk-bar { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 0.75rem; background: #1E293B; padding: 0.625rem 1.25rem; border-radius: 0.625rem; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 80; animation: bulkIn 0.25s ease-out; }
+  .bulk-count { font-size: 0.8125rem; color: #fff; font-weight: 600; }
+  .bulk-divider { width: 1px; height: 1.25rem; background: rgba(255,255,255,0.15); }
+  .bulk-btn { display: inline-flex; align-items: center; gap: 0.3125rem; padding: 0.375rem 0.75rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; color: #fff; cursor: pointer; font-family: inherit; transition: background 0.1s; white-space: nowrap; }
+  .bulk-btn:hover { background: rgba(255,255,255,0.15); }
+  .bulk-btn i { font-size: 0.875rem; }
+  .bulk-btn .caret { font-size: 0.625rem; margin-left: 0.125rem; }
+  .bulk-close { background: transparent; border: 1px solid rgba(255,255,255,0.05); border-radius: 0.375rem; padding: 0.375rem; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  @keyframes bulkIn { from { opacity: 0; transform: translateX(-50%) translateY(12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  /* ── §5 Deprecate Confirm Dialog ── */
+  .dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; display: flex; align-items: center; justify-content: center; animation: fadeOverlay 0.2s; }
+  .dialog-box { background: #fff; border-radius: 0.75rem; padding: 1.5rem; max-width: 24rem; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.15); animation: dialogIn 0.2s ease-out; }
+  .dialog-icon-wrap { width: 2.5rem; height: 2.5rem; background: #FEF9C3; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; }
+  .dialog-icon-wrap i { color: #D97706; font-size: 1.25rem; }
+  .dialog-box h4 { font-size: 0.9375rem; font-weight: 700; color: #0F172A; margin-bottom: 0.375rem; }
+  .dialog-box p { font-size: 0.8125rem; color: #64748B; margin-bottom: 0.25rem; line-height: 1.6; }
+  .dialog-box .dialog-tc-name { font-weight: 600; color: #334155; }
+  .dialog-box .dialog-info { font-size: 0.75rem; color: #94A3B8; margin-bottom: 1rem; }
+  .dialog-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+  .btn { padding: 0.4375rem 0.875rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 600; border: 1px solid; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .btn-cancel { background: #fff; border-color: #E2E8F0; color: #64748B; }
+  .btn-cancel:hover { background: #F8FAFC; }
+  .btn-deprecate { background: #F59E0B; border-color: #F59E0B; color: #fff; }
+  .btn-deprecate:hover { background: #D97706; }
+  @keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes dialogIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+  /* ── Annotations ── */
+  .ann { position: absolute; background: #FEF3C7; border: 1.5px dashed #F59E0B; border-radius: 0.5rem; padding: 0.4375rem 0.625rem; font-size: 0.625rem; color: #92400E; line-height: 1.5; z-index: 200; pointer-events: none; }
+  .ann strong { font-weight: 700; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .content { animation: fadeIn 0.3s ease-out; }
+</style>
+</head>
+<body>
+
+<div class="main">
+  <header class="project-header">
+    <div class="ph-logo">T</div>
+    <div class="ph-sep"></div>
+    <span class="ph-project">Mobile App v2</span>
+    <div class="ph-right">
+      <div class="ph-btn"><i class="ri-command-line"></i> ⌘K</div>
+      <div class="ph-btn"><i class="ri-notification-3-line"></i></div>
+      <div class="ph-avatar">SK</div>
+    </div>
+  </header>
+
+  <div class="tab-bar">
+    <div class="tab-item"><i class="ri-dashboard-3-line"></i> Dashboard</div>
+    <div class="tab-item active"><i class="ri-file-list-3-line"></i> Test Cases <span class="tab-count">147</span></div>
+    <div class="tab-item"><i class="ri-play-circle-line"></i> Runs <span class="tab-count">12</span></div>
+    <div class="tab-item"><i class="ri-flag-line"></i> Milestones <span class="tab-count">3</span></div>
+    <div class="tab-item"><i class="ri-file-text-line"></i> Docs <span class="tab-count">8</span></div>
+    <div class="tab-item"><i class="ri-flashlight-line"></i> Discovery</div>
+  </div>
+
+  <div class="content">
+    <div class="page-head">
+      <h1 class="page-title">Test Cases</h1>
+      <div class="page-head-right">
+        <button class="action-btn"><i class="ri-add-line"></i> New Test Case</button>
+      </div>
+    </div>
+
+    <!-- §3 Filter Tabs -->
+    <div class="filter-tabs">
+      <div class="filter-tab active">All <span class="fcount">140</span></div>
+      <div class="filter-tab"><i class="ri-draft-line ftab-icon draft"></i> Draft <span class="fcount">12</span></div>
+      <div class="filter-tab"><i class="ri-checkbox-circle-line ftab-icon active-icon"></i> Active <span class="fcount">128</span></div>
+      <div class="filter-tab"><i class="ri-forbid-line ftab-icon depr"></i> Deprecated <span class="fcount">7</span></div>
+    </div>
+
+    <!-- Card with table -->
+    <div class="card" style="border-top: none; border-radius: 0 0 0.5rem 0.5rem;">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <i class="ri-search-line"></i>
+          <input type="text" class="search-box" placeholder="Search test cases..." />
+        </div>
+        <select class="filter-select">
+          <option>All Priority</option>
+        </select>
+      </div>
+
+      <div class="tc-table">
+        <table>
+          <thead>
+            <tr>
+              <th class="cb"><input type="checkbox" /></th>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Lifecycle</th>
+              <th>Priority</th>
+              <th>Assignee</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cb"><input type="checkbox" checked /></td>
+              <td><span class="tc-id">TC-843</span></td>
+              <td><span class="tc-name">Biometric auth fallback on iOS 17</span></td>
+              <td>
+                <div style="position:relative; display:inline-flex;">
+                  <span class="status-badge badge-draft"><i class="ri-draft-line"></i> Draft <i class="ri-arrow-down-s-line" style="font-size:0.5625rem; margin-left:0.125rem; color:#B45309;"></i></span>
+                  <!-- §4 Status Dropdown (visible on this row for mockup) -->
+                  <div class="status-dropdown">
+                    <div class="dd-item draft-item">
+                      <i class="ri-draft-line dd-icon"></i>
+                      <span>Draft</span>
+                      <i class="ri-check-line dd-check"></i>
+                    </div>
+                    <div class="dd-item active-item">
+                      <i class="ri-checkbox-circle-line dd-icon"></i>
+                      <span>Active</span>
+                    </div>
+                    <div class="dd-item deprecated-item">
+                      <i class="ri-forbid-line dd-icon"></i>
+                      <span>Deprecated</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="priority-dot high"></span><span class="tc-meta">High</span></td>
+              <td><span class="assignee-sm" style="background:#6366F1">SK</span></td>
+              <td><span class="tc-meta">1h ago</span></td>
+            </tr>
+            <tr>
+              <td class="cb"><input type="checkbox" checked /></td>
+              <td><span class="tc-id">TC-842</span></td>
+              <td><span class="tc-name">Payment timeout handling for 3DS verification</span></td>
+              <td><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></td>
+              <td><span class="priority-dot critical"></span><span class="tc-meta">Critical</span></td>
+              <td><span class="assignee-sm" style="background:#6366F1">SK</span></td>
+              <td><span class="tc-meta">2h ago</span></td>
+            </tr>
+            <tr style="position:relative;">
+              <td class="cb"><input type="checkbox" checked /></td>
+              <td><span class="tc-id">TC-841</span></td>
+              <td><span class="tc-name">Dashboard widget drag-and-drop reordering</span></td>
+              <td><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></td>
+              <td><span class="priority-dot high"></span><span class="tc-meta">High</span></td>
+              <td><span class="assignee-sm" style="background:#F59E0B">MC</span></td>
+              <td><span class="tc-meta">3h ago</span></td>
+
+              <!-- §9 Context Menu (shown on this row for mockup) -->
+              <div class="ctx-menu" style="top: 0.25rem; right: -12.5rem;">
+                <div class="ctx-item"><i class="ri-eye-line"></i> View Details</div>
+                <div class="ctx-item"><i class="ri-edit-line"></i> Edit</div>
+                <div class="ctx-divider"></div>
+                <div class="ctx-item" style="background:#F8FAFC;">
+                  <i class="ri-arrow-left-right-line"></i> Set Status
+                  <span class="ctx-arrow"><i class="ri-arrow-right-s-line"></i></span>
+                  <!-- Submenu -->
+                  <div class="ctx-submenu" style="top: -0.25rem;">
+                    <div class="dd-item draft-item"><i class="ri-draft-line dd-icon"></i><span>Draft</span></div>
+                    <div class="dd-item active-item"><i class="ri-checkbox-circle-line dd-icon"></i><span>Active</span><i class="ri-check-line dd-check"></i></div>
+                    <div class="dd-item deprecated-item"><i class="ri-forbid-line dd-icon"></i><span>Deprecated</span></div>
+                  </div>
+                </div>
+                <div class="ctx-item"><i class="ri-folder-transfer-line"></i> Move to Folder</div>
+                <div class="ctx-divider"></div>
+                <div class="ctx-item ctx-danger"><i class="ri-delete-bin-line"></i> Delete</div>
+              </div>
+            </tr>
+            <tr>
+              <td class="cb"><input type="checkbox" /></td>
+              <td><span class="tc-id">TC-840</span></td>
+              <td><span class="tc-name">OAuth token refresh race condition under load</span></td>
+              <td><span class="status-badge badge-draft"><i class="ri-draft-line"></i> Draft</span></td>
+              <td><span class="priority-dot critical"></span><span class="tc-meta">Critical</span></td>
+              <td><span class="assignee-sm" style="background:#10B981">AP</span></td>
+              <td><span class="tc-meta">5h ago</span></td>
+            </tr>
+            <tr>
+              <td class="cb"><input type="checkbox" /></td>
+              <td><span class="tc-id">TC-839</span></td>
+              <td><span class="tc-name">Push notification deep-link navigation on iOS 17</span></td>
+              <td><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></td>
+              <td><span class="priority-dot medium"></span><span class="tc-meta">Medium</span></td>
+              <td><span class="assignee-sm" style="background:#EC4899">JL</span></td>
+              <td><span class="tc-meta">8h ago</span></td>
+            </tr>
+            <tr class="deprecated-row">
+              <td class="cb"><input type="checkbox" /></td>
+              <td><span class="tc-id">TC-835</span></td>
+              <td><span class="tc-name">Legacy OAuth 1.0 login flow</span></td>
+              <td><span class="status-badge badge-deprecated"><i class="ri-forbid-line"></i> Deprecated</span></td>
+              <td><span class="priority-dot low"></span><span class="tc-meta">Low</span></td>
+              <td><span class="assignee-sm" style="background:#94A3B8">DK</span></td>
+              <td><span class="tc-meta">3d ago</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- §6 Bulk Action Bar -->
+  <div class="bulk-bar">
+    <span class="bulk-count">3 selected</span>
+    <div class="bulk-divider"></div>
+    <button class="bulk-btn"><i class="ri-folder-transfer-line"></i> Move</button>
+    <button class="bulk-btn">
+      <i class="ri-arrow-left-right-line"></i> Set Status
+      <i class="ri-arrow-down-s-line caret"></i>
+    </button>
+    <button class="bulk-btn"><i class="ri-delete-bin-line"></i> Delete</button>
+    <div style="width: 0.5rem;"></div>
+    <button class="bulk-close"><i class="ri-close-line" style="font-size:1rem; color:#64748B;"></i></button>
+  </div>
+
+  <!-- §5 Deprecate Confirm Dialog -->
+  <div class="dialog-overlay">
+    <div class="dialog-box">
+      <div class="dialog-icon-wrap"><i class="ri-alert-line"></i></div>
+      <h4>Deprecate Test Case?</h4>
+      <p><span class="dialog-tc-name">"Dashboard widget drag-and-drop reordering"</span>을 Deprecated로 변경합니다. 새 Run에 포함되지 않습니다.</p>
+      <div class="dialog-info">현재 2개 Run에 포함되어 있으며, 기존 Run에는 영향 없습니다.</div>
+      <div class="dialog-actions">
+        <button class="btn btn-cancel">Cancel</button>
+        <button class="btn btn-deprecate">Deprecate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Annotations -->
+  <div class="ann" style="top: 7.5rem; left: 1.5rem; width: 180px;">
+    <strong>§3 Filter Tabs</strong><br>
+    All(기본): Draft+Active 표시<br>
+    Deprecated 탭 클릭해야 보임
+  </div>
+  <div class="ann" style="top: 14.5rem; right: 1rem; width: 170px;">
+    <strong>§4 Status Dropdown</strong><br>
+    배지 클릭 시 열림<br>
+    150ms ease-out 애니메이션
+  </div>
+  <div class="ann" style="top: 21rem; right: -0.5rem; width: 180px;">
+    <strong>§9 Context Menu</strong><br>
+    우클릭 → Set Status 서브메뉴<br>
+    Deprecated 선택 시 §5 다이얼로그
+  </div>
+  <div class="ann" style="bottom: 5.5rem; left: 50%; transform: translateX(-50%); width: 200px; text-align: center;">
+    <strong>§6 Bulk Action Bar</strong><br>
+    Set Status 드롭다운 §4와 동일 패널<br>
+    위쪽(bottom-placement)으로 열림
+  </div>
+</div>
+
+</body>
+</html>

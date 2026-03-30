@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dev Spec — Runs &amp; Results 서브탭 변경 + Result Filter 추가</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F8FAFC;color:#1E293B;line-height:1.7}
+    .container{max-width:900px;margin:0 auto;padding:2.5rem 2rem 4rem}
+    h1{font-size:1.5rem;font-weight:800;color:#0F172A;margin-bottom:0.3rem}
+    .subtitle{font-size:0.85rem;color:#64748B;margin-bottom:2rem}
+    .meta-row{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:2rem;font-size:0.8rem;color:#64748B}
+    .meta-row span{display:flex;align-items:center;gap:0.3rem}
+    .section-title{font-size:1.1rem;font-weight:700;color:#0F172A;margin:2.5rem 0 1rem;padding-bottom:0.5rem;border-bottom:2px solid #E2E8F0;display:flex;align-items:center;gap:0.5rem}
+    .section-num{display:inline-flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;background:#6366F1;color:#fff;border-radius:0.4rem;font-size:0.7rem;font-weight:700}
+    h3{font-size:0.95rem;font-weight:700;color:#1E293B;margin:1.5rem 0 0.5rem}
+    p,li{font-size:0.85rem;color:#334155;margin-bottom:0.5rem}
+    ul,ol{padding-left:1.5rem;margin-bottom:1rem}
+    code{background:#EEF2FF;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.78rem;color:#4338CA;font-family:'SF Mono',Consolas,monospace}
+    pre{background:#1E293B;color:#E2E8F0;padding:1.25rem;border-radius:0.75rem;overflow-x:auto;font-size:0.78rem;line-height:1.6;margin:1rem 0 1.5rem;font-family:'SF Mono',Consolas,monospace}
+    pre .comment{color:#64748B} pre .keyword{color:#C084FC} pre .string{color:#86EFAC} pre .type{color:#7DD3FC}
+    strong{color:#0F172A}
+    table{width:100%;border-collapse:collapse;margin:1rem 0 1.5rem;font-size:0.8rem}
+    th{background:#F1F5F9;color:#475569;font-weight:600;text-align:left;padding:0.6rem 0.75rem;border:1px solid #E2E8F0}
+    td{padding:0.55rem 0.75rem;border:1px solid #E2E8F0;vertical-align:top}
+    .callout{background:#EEF2FF;border-left:4px solid #6366F1;padding:1rem 1.25rem;border-radius:0 0.5rem 0.5rem 0;margin:1rem 0 1.5rem;font-size:0.82rem}
+    .callout-warn{background:#FFF7ED;border-left-color:#F59E0B}
+    .callout-green{background:#F0FDF4;border-left-color:#22C55E}
+    .tag{display:inline-block;padding:0.15rem 0.5rem;border-radius:0.25rem;font-size:0.7rem;font-weight:600}
+    .priority-p0{background:#FEE2E2;color:#B91C1C}
+    .wireframe{background:#0F172A;color:#94A3B8;font-family:'SF Mono',Consolas,monospace;font-size:0.72rem;line-height:1.6;padding:1.25rem;border-radius:0.75rem;overflow-x:auto;white-space:pre;margin:1rem 0 1.5rem}
+    .wireframe strong{color:#E2E8F0}
+    .checklist{list-style:none;padding-left:0}
+    .checklist li{padding:0.4rem 0.5rem;border-bottom:1px solid #F1F5F9;display:flex;align-items:flex-start;gap:0.5rem}
+    .checklist li::before{content:'☐';flex-shrink:0;color:#94A3B8;font-size:0.9rem}
+    .badge-new{background:#DCFCE7;color:#15803D;padding:0.1rem 0.4rem;border-radius:0.2rem;font-size:0.65rem;font-weight:700}
+    .badge-removed{background:#FEE2E2;color:#B91C1C;padding:0.1rem 0.4rem;border-radius:0.2rem;font-size:0.65rem;font-weight:700}
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1><i class="ri-play-circle-line" style="color:#6366F1"></i> Dev Spec: 서브탭 변경 + Result Filter 추가</h1>
+  <p class="subtitle">Runs &amp; Results 리스트 페이지 — CEO 확정 v1.1 변경 사항</p>
+
+  <div class="meta-row">
+    <span><i class="ri-calendar-line"></i> 2026-03-27</span>
+    <span><i class="ri-user-line"></i> From: Kyle (PM) → Dev1</span>
+    <span><i class="ri-git-branch-line"></i> 기획안 v1.1 기반</span>
+    <span><i class="ri-file-line"></i> 참고: pm-plan-runs-results-redesign.html</span>
+  </div>
+
+  <div class="callout-green callout">
+    <strong>📋 변경 요약:</strong> CEO 검토 결과, 기존 4개 서브탭(All/Active/Completed/<s>Failed</s>)에서 <strong>3개 서브탭 + Toolbar Result Filter</strong>로 변경 확정.<br>
+    <strong>근거:</strong> "Failed"는 Completed의 부분집합이라 서브탭의 상호 배타성 원칙에 위배. 필터로 전환하면 더 유연하고 크로스 탭 패턴과 일치.
+  </div>
+
+  <!-- §1 변경 전후 비교 -->
+  <div class="section-title"><span class="section-num">1</span> 변경 전후 비교</div>
+
+  <h3>1-1. 서브탭 Row (Before → After)</h3>
+  <div class="wireframe"><strong>BEFORE (v1.0):</strong>
+│ 📋 All(20) · ▶ Active(5) · ✅ Completed(12) · ❌ Failed(3)     [▶ Start New Run] │
+
+<strong>AFTER (v1.1 — CEO 확정):</strong>
+│ 📋 All(20) · ▶ Active(5) · ✅ Completed(15)                    [▶ Start New Run] │</div>
+
+  <h3>1-2. Toolbar Row (Before → After)</h3>
+  <div class="wireframe"><strong>BEFORE (v1.0):</strong>
+│ [🔍 Search runs...]                      [Milestone ▾] [Filters] [Sort] │
+
+<strong>AFTER (v1.1):</strong>
+│ [🔍 Search runs...]          [Result ▾] [Milestone ▾] [Filters] [Sort] │
+                                 ▲ 신규</div>
+
+  <!-- §2 Task A: 서브탭 변경 -->
+  <div class="section-title"><span class="section-num">2</span> Task A: 서브탭 4개 → 3개 변경</div>
+
+  <h3>2-1. 서브탭 정의</h3>
+  <table>
+    <thead><tr><th>#</th><th>서브탭</th><th>아이콘</th><th>아이콘 색상</th><th>필터 조건</th><th>Badge</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>All</td><td>ri-list-check-3</td><td>#6366F1 (Indigo)</td><td>전체 (archived 제외)</td><td>총 Run 개수</td></tr>
+      <tr><td>2</td><td>Active</td><td>ri-play-circle-fill</td><td>#3B82F6 (Blue)</td><td><code>status ∈ {'new','in_progress','paused','under_review'}</code></td><td>Active Run 개수</td></tr>
+      <tr><td>3</td><td>Completed</td><td>ri-checkbox-circle-fill</td><td>#22C55E (Green)</td><td><code>status === 'completed'</code></td><td>Completed Run 개수</td></tr>
+      <tr style="background:#FEF2F2"><td><s>4</s></td><td><s>Failed</s> <span class="badge-removed">REMOVED</span></td><td><s>ri-close-circle-fill</s></td><td><s>#EF4444</s></td><td colspan="2"><em>제거됨 — Result Filter로 이관</em></td></tr>
+    </tbody>
+  </table>
+
+  <h3>2-2. 구현 코드 변경 위치</h3>
+  <p><strong>파일:</strong> <code>src/pages/project-runs/page.tsx</code></p>
+  <div class="callout">
+    <strong>현재 코드 (line ~99):</strong> 서브탭 2개 (Active / Completed)로 구현되어 있음.<br>
+    <strong>변경:</strong> 3개 탭 (All / Active / Completed)으로 확장. 아래 코드 패턴 참고.
+  </div>
+
+<pre><span class="comment">// 서브탭 정의 (v1.1)</span>
+<span class="keyword">const</span> SUBTABS = [
+  { key: <span class="string">'all'</span>,       label: <span class="string">'All'</span>,       icon: <span class="string">'ri-list-check-3'</span>,          color: <span class="string">'#6366F1'</span> },
+  { key: <span class="string">'active'</span>,    label: <span class="string">'Active'</span>,    icon: <span class="string">'ri-play-circle-fill'</span>,     color: <span class="string">'#3B82F6'</span> },
+  { key: <span class="string">'completed'</span>, label: <span class="string">'Completed'</span>, icon: <span class="string">'ri-checkbox-circle-fill'</span>, color: <span class="string">'#22C55E'</span> },
+] <span class="keyword">as const</span>;
+
+<span class="comment">// 필터 로직</span>
+<span class="keyword">const</span> filterBySubtab = (runs: TestRun[], tab: <span class="keyword">string</span>) =&gt; {
+  <span class="keyword">if</span> (tab === <span class="string">'all'</span>) <span class="keyword">return</span> runs;
+  <span class="keyword">if</span> (tab === <span class="string">'active'</span>) <span class="keyword">return</span> runs.filter(r =&gt;
+    [<span class="string">'new'</span>, <span class="string">'in_progress'</span>, <span class="string">'paused'</span>, <span class="string">'under_review'</span>].includes(r.status)
+  );
+  <span class="keyword">if</span> (tab === <span class="string">'completed'</span>) <span class="keyword">return</span> runs.filter(r =&gt; r.status === <span class="string">'completed'</span>);
+  <span class="keyword">return</span> runs;
+};
+
+<span class="comment">// Badge count 계산</span>
+<span class="keyword">const</span> badgeCounts = {
+  all: runs.length,
+  active: runs.filter(r =&gt; r.status !== <span class="string">'completed'</span>).length,
+  completed: runs.filter(r =&gt; r.status === <span class="string">'completed'</span>).length,
+};</pre>
+
+  <!-- §3 Task B: Result Filter 드롭다운 -->
+  <div class="section-title"><span class="section-num">3</span> Task B: Result Filter 드롭다운 <span class="badge-new">NEW</span></div>
+
+  <h3>3-1. 필터 옵션 정의</h3>
+  <table>
+    <thead><tr><th>#</th><th>옵션 라벨</th><th>필터 조건</th><th>적용 탭</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>All Results</td><td>(필터 없음 — 기본값)</td><td>All, Active, Completed</td><td>드롭다운 기본 선택</td></tr>
+      <tr><td>2</td><td>Has Failures</td><td><code>run.failed &gt; 0</code></td><td>All, Completed (주 사용)</td><td>기존 Failed 서브탭 대체</td></tr>
+      <tr><td>3</td><td>All Passed</td><td><code>run.failed === 0 &amp;&amp; run.blocked === 0</code></td><td>All, Completed</td><td>100% 통과 Run만</td></tr>
+      <tr><td>4</td><td>Has Blocked</td><td><code>run.blocked &gt; 0</code></td><td>All, Active, Completed</td><td>차단된 TC 포함 Run</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3-2. 필터 적용 순서</h3>
+  <div class="callout">
+    <strong>파이프라인:</strong> <code>전체 runs → 서브탭 필터 → Result Filter → Search → Milestone Filter → Sort</code><br>
+    Result Filter는 서브탭 필터 다음, 검색어 필터 이전에 적용됩니다.
+  </div>
+
+  <h3>3-3. 구현 코드 패턴</h3>
+<pre><span class="comment">// Result Filter 타입 정의</span>
+<span class="keyword">type</span> <span class="type">ResultFilter</span> = <span class="string">'all'</span> | <span class="string">'has_failures'</span> | <span class="string">'all_passed'</span> | <span class="string">'has_blocked'</span>;
+
+<span class="keyword">const</span> RESULT_FILTERS: { key: <span class="type">ResultFilter</span>; label: <span class="keyword">string</span> }[] = [
+  { key: <span class="string">'all'</span>,          label: <span class="string">'All Results'</span> },
+  { key: <span class="string">'has_failures'</span>, label: <span class="string">'Has Failures'</span> },
+  { key: <span class="string">'all_passed'</span>,   label: <span class="string">'All Passed'</span> },
+  { key: <span class="string">'has_blocked'</span>,  label: <span class="string">'Has Blocked'</span> },
+];
+
+<span class="comment">// 필터 로직</span>
+<span class="keyword">const</span> filterByResult = (runs: TestRun[], filter: <span class="type">ResultFilter</span>) =&gt; {
+  <span class="keyword">switch</span> (filter) {
+    <span class="keyword">case</span> <span class="string">'has_failures'</span>: <span class="keyword">return</span> runs.filter(r =&gt; (r.failed || 0) &gt; 0);
+    <span class="keyword">case</span> <span class="string">'all_passed'</span>:   <span class="keyword">return</span> runs.filter(r =&gt; (r.failed || 0) === 0 &amp;&amp; (r.blocked || 0) === 0);
+    <span class="keyword">case</span> <span class="string">'has_blocked'</span>:  <span class="keyword">return</span> runs.filter(r =&gt; (r.blocked || 0) &gt; 0);
+    <span class="keyword">default</span>:              <span class="keyword">return</span> runs;
+  }
+};
+
+<span class="comment">// state 추가</span>
+<span class="keyword">const</span> [resultFilter, setResultFilter] = useState&lt;<span class="type">ResultFilter</span>&gt;(<span class="string">'all'</span>);
+
+<span class="comment">// 전체 필터 파이프라인 (useMemo 권장)</span>
+<span class="keyword">const</span> filteredRuns = useMemo(() =&gt; {
+  <span class="keyword">let</span> result = filterBySubtab(runs, activeTab);
+  result = filterByResult(result, resultFilter);
+  <span class="keyword">if</span> (searchQuery) result = result.filter(r =&gt; r.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  <span class="keyword">if</span> (milestoneFilter) result = result.filter(r =&gt; r.milestone_id === milestoneFilter);
+  <span class="keyword">return</span> sortRuns(result, sortKey);
+}, [runs, activeTab, resultFilter, searchQuery, milestoneFilter, sortKey]);</pre>
+
+  <h3>3-4. UI 스펙</h3>
+  <table>
+    <thead><tr><th>속성</th><th>비활성 (기본값 "All Results")</th><th>활성 (필터 선택됨)</th></tr></thead>
+    <tbody>
+      <tr><td>배경</td><td><code>bg-white</code></td><td><code>bg-indigo-50</code></td></tr>
+      <tr><td>텍스트</td><td><code>text-slate-500</code></td><td><code>text-indigo-700</code></td></tr>
+      <tr><td>보더</td><td><code>border-slate-200</code></td><td><code>border-indigo-200</code></td></tr>
+      <tr><td>높이</td><td colspan="2"><code>h-8</code> (32px)</td></tr>
+      <tr><td>폰트</td><td colspan="2"><code>text-xs font-medium</code> (12px, 500)</td></tr>
+      <tr><td>라운딩</td><td colspan="2"><code>rounded-md</code> (6px)</td></tr>
+      <tr><td>위치</td><td colspan="2">Toolbar 내, Search 오른쪽 / Milestone Filter 왼쪽</td></tr>
+      <tr><td>아이콘</td><td><code>ri-filter-3-line</code> (왼쪽)</td><td><code>ri-filter-3-fill</code> (왼쪽, Indigo)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout-warn callout">
+    <strong>⚠️ 주의:</strong> Result Filter 선택 시 badge count는 변하지 않습니다. Badge는 항상 서브탭의 전체 카운트를 표시합니다.<br>
+    예: Completed 탭에서 "Has Failures" 선택 시 → badge는 여전히 15 (전체 completed), 실제 표시 리스트는 3개 (failed > 0인 Run만).
+  </div>
+
+  <!-- §4 영향 범위 -->
+  <div class="section-title"><span class="section-num">4</span> 영향 받는 파일 및 변경 범위</div>
+
+  <table>
+    <thead><tr><th>파일</th><th>변경 내용</th><th>규모</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/pages/project-runs/page.tsx</code></td><td>서브탭 배열 수정 (4→3), <code>resultFilter</code> state 추가, <code>filterByResult()</code> 함수, Toolbar에 드롭다운 JSX, 필터 파이프라인 수정</td><td>~60줄</td></tr>
+      <tr><td><code>src/i18n/locales/{ko,en}/runs.ts</code></td><td>Result Filter 라벨 4개 추가: <code>filter_all_results</code>, <code>filter_has_failures</code>, <code>filter_all_passed</code>, <code>filter_has_blocked</code></td><td>~8줄씩</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>💡 변경 없는 파일:</strong> <code>ProjectHeader.tsx</code>, <code>FocusMode.tsx</code>, <code>ContinueRunPanel.tsx</code>, <code>run-detail/page.tsx</code>, DB schema — 모두 변경 불필요.
+  </div>
+
+  <!-- §5 체크리스트 -->
+  <div class="section-title"><span class="section-num">5</span> 구현 체크리스트</div>
+
+  <ul class="checklist">
+    <li>서브탭 배열에서 Failed 항목 제거 (3개: All/Active/Completed)</li>
+    <li>서브탭 컬러 아이콘 + badge count 구현</li>
+    <li><code>ResultFilter</code> 타입 및 <code>RESULT_FILTERS</code> 상수 정의</li>
+    <li><code>filterByResult()</code> 함수 구현</li>
+    <li><code>resultFilter</code> state 추가 (<code>useState('all')</code>)</li>
+    <li>Toolbar에 Result Filter 드롭다운 UI 추가 (Search 오른쪽)</li>
+    <li>드롭다운 비활성/활성 스타일 분기 (All Results=회색, 선택=Indigo)</li>
+    <li>필터 파이프라인에 Result Filter 삽입 (서브탭 → <strong>Result</strong> → Search → Milestone → Sort)</li>
+    <li>서브탭 전환 시 resultFilter를 'all'로 리셋</li>
+    <li>i18n 라벨 추가 (ko/en)</li>
+    <li>QA: Completed 탭에서 "Has Failures" 선택 → 실패 Run만 표시 확인</li>
+    <li>QA: All 탭에서 "Has Blocked" 선택 → Active+Completed 모두에서 blocked 포함 Run 표시 확인</li>
+    <li>QA: 크로스 탭 통일성 — Milestones/Discovery Log 탭과 시각적 비교</li>
+  </ul>
+
+  <!-- Footer -->
+  <div style="margin-top:3rem; padding-top:1.5rem; border-top:2px solid #E2E8F0; text-align:center; color:#94A3B8; font-size:0.8rem;">
+    <p>Testably — Runs &amp; Results 서브탭 변경 + Result Filter Dev Spec</p>
+    <p>기획안: pm-plan-runs-results-redesign.html v1.1 · CEO 확정: 2026-03-27</p>
+    <p style="margin-top:0.5rem;">Author: Kyle (PM) · Target: Dev1</p>
+  </div>
+
+</div>
+</body>
+</html>

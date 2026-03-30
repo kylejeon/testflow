@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Pass Rate Report · Chart Tooltip</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Top Header ── */
+  .top-header { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0 1.5rem; height: 3.5rem; gap: 1.5rem; flex-shrink: 0; }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+  .logo-icon { width: 28px; height: 28px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.875rem; }
+  .header-logo span { font-weight: 700; color: #0F172A; font-size: 0.9375rem; }
+  .header-nav { display: flex; align-items: center; height: 100%; margin-left: 0.5rem; }
+  .header-nav-item { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.875rem; height: 100%; font-size: 0.8125rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: #6366F1; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.625rem; }
+  .header-btn { font-size: 0.75rem; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; }
+  .header-avatar { width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700; color: #fff; cursor: pointer; }
+
+  /* ── Sub-header ── */
+  .sub-header { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0 1.5rem; height: 3rem; flex-shrink: 0; }
+  .tab-item { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.875rem; height: 100%; font-size: 0.8125rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; }
+  .tab-item.active { color: #6366F1; border-bottom-color: #6366F1; }
+  .tab-item i { font-size: 0.9375rem; }
+
+  /* ── Main ── */
+  .main { flex: 1; overflow-y: auto; padding: 1.75rem; }
+  .page-title { font-size: 1.375rem; font-weight: 700; color: #0F172A; margin-bottom: 1.3125rem; }
+
+  /* ── Summary Cards ── */
+  .summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.3125rem; }
+  .sm-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.3125rem; }
+  .sm-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; margin-bottom: 0.25rem; }
+  .sm-value { font-size: 1.75rem; font-weight: 800; color: #0F172A; line-height: 1.2; }
+  .sm-sub { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.125rem; }
+
+  /* ── Chart Card ── */
+  .chart-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.3125rem; }
+  .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .chart-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; }
+  .chart-period { display: flex; align-items: center; gap: 0.5rem; }
+  .period-btn { font-size: 0.75rem; padding: 0.3125rem 0.625rem; border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; font-family: inherit; font-weight: 500; }
+  .period-btn.active { background: #EEF2FF; color: #6366F1; border-color: #C7D2FE; font-weight: 600; }
+
+  /* ── SVG Chart ── */
+  .chart-wrap { position: relative; }
+  .chart-svg { width: 100%; display: block; }
+
+  /* Grid lines */
+  .grid-line { stroke: #F1F5F9; stroke-width: 1; }
+  .y-label { font-size: 10px; fill: #94A3B8; font-family: 'Inter', sans-serif; font-weight: 500; }
+  .x-label { font-size: 10px; fill: #64748B; font-family: 'Inter', sans-serif; font-weight: 500; text-anchor: middle; }
+
+  /* Bar groups */
+  .bar-group { cursor: pointer; }
+  .bar-group .bar-highlight { opacity: 0; transition: opacity 0.12s ease; }
+  .bar-group:hover .bar-highlight { opacity: 1; }
+  .bar-group:hover .bar-passed,
+  .bar-group:hover .bar-failed,
+  .bar-group:hover .bar-blocked { filter: brightness(1.08); }
+
+  /* Colors */
+  .bar-passed { fill: #22C55E; }
+  .bar-failed { fill: #EF4444; }
+  .bar-blocked { fill: #F59E0B; }
+
+  /* ── Tooltip ── */
+  .chart-tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: #1E293B;
+    color: #fff;
+    border-radius: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.6875rem;
+    line-height: 1.6;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 140px;
+    transform: translateX(-50%);
+  }
+  .chart-tooltip.visible { opacity: 1; }
+  .chart-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #1E293B;
+  }
+  .tt-date { font-weight: 700; font-size: 0.75rem; margin-bottom: 0.25rem; color: #fff; }
+  .tt-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .tt-label { display: flex; align-items: center; gap: 0.375rem; color: #CBD5E1; }
+  .tt-dot { width: 7px; height: 7px; border-radius: 2px; flex-shrink: 0; }
+  .tt-dot.passed { background: #22C55E; }
+  .tt-dot.failed { background: #EF4444; }
+  .tt-dot.blocked { background: #F59E0B; }
+  .tt-val { font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; }
+  .tt-divider { border: none; border-top: 1px solid #334155; margin: 0.25rem 0; }
+  .tt-total .tt-label { color: #fff; font-weight: 600; }
+
+  /* ── Legend ── */
+  .chart-legend { display: flex; align-items: center; gap: 1.25rem; margin-top: 0.875rem; padding-top: 0.75rem; border-top: 1px solid #F1F5F9; }
+  .legend-item { display: flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; color: #64748B; font-weight: 500; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* ── Design Spec Panel ── */
+  .spec-panel { margin-top: 2rem; padding-top: 1.5rem; border-top: 2px dashed #C7D2FE; }
+  .spec-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: #EEF2FF; color: #4338CA; font-size: 0.6875rem; font-weight: 700; padding: 0.25rem 0.625rem; border-radius: 9999px; margin-bottom: 1rem; }
+  .spec-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .spec-card .label { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6366F1; margin-bottom: 0.75rem; }
+  .spec-card h4 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin: 0.875rem 0 0.375rem; }
+  .spec-card h4:first-of-type { margin-top: 0; }
+  .spec-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.25rem 0; font-size: 0.75rem; border-bottom: 1px solid #F8FAFC; }
+  .spec-row .k { font-weight: 600; color: #475569; min-width: 140px; }
+  .spec-row .new { color: #059669; font-weight: 600; font-family: monospace; font-size: 0.6875rem; }
+  .rec-box { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.75rem; color: #92400E; line-height: 1.6; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+
+<!-- ══ Top Header ══ -->
+<header class="top-header">
+  <div class="header-logo">
+    <div class="logo-icon">T</div>
+    <span>Testably</span>
+  </div>
+  <nav class="header-nav">
+    <div class="header-nav-item">Dashboard</div>
+    <div class="header-nav-item active">Projects</div>
+    <div class="header-nav-item">Settings</div>
+  </nav>
+  <div class="header-right">
+    <button class="header-btn"><i class="ri-search-line"></i> Search</button>
+    <button class="header-btn"><i class="ri-notification-3-line"></i></button>
+    <div class="header-avatar">KJ</div>
+  </div>
+</header>
+
+<!-- ══ Sub-header (Project Tabs) ══ -->
+<div class="sub-header">
+  <div class="tab-item"><i class="ri-test-tube-line"></i> Test Cases</div>
+  <div class="tab-item"><i class="ri-play-circle-line"></i> Runs</div>
+  <div class="tab-item active"><i class="ri-bar-chart-grouped-line"></i> Reports</div>
+  <div class="tab-item"><i class="ri-flag-line"></i> Milestones</div>
+  <div class="tab-item"><i class="ri-file-text-line"></i> Docs</div>
+</div>
+
+<!-- ══ Main Content ══ -->
+<div class="main">
+  <div class="page-title">Pass Rate Report</div>
+
+  <!-- Summary Cards -->
+  <div class="summary-row">
+    <div class="sm-card">
+      <div class="sm-label">Total Executions</div>
+      <div class="sm-value">1,247</div>
+      <div class="sm-sub">last 14 days</div>
+    </div>
+    <div class="sm-card">
+      <div class="sm-label">Overall Pass Rate</div>
+      <div class="sm-value" style="color:#16A34A">87.2%</div>
+      <div class="sm-sub">+2.1% vs prior period</div>
+    </div>
+    <div class="sm-card">
+      <div class="sm-label">Fail Rate</div>
+      <div class="sm-value" style="color:#EF4444">9.1%</div>
+      <div class="sm-sub">−0.8% vs prior period</div>
+    </div>
+    <div class="sm-card">
+      <div class="sm-label">Blocked Rate</div>
+      <div class="sm-value" style="color:#F59E0B">3.7%</div>
+      <div class="sm-sub">−1.3% vs prior period</div>
+    </div>
+  </div>
+
+  <!-- Chart Card -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-title">Daily Pass / Fail / Blocked</div>
+      <div class="chart-period">
+        <button class="period-btn">7D</button>
+        <button class="period-btn active">14D</button>
+        <button class="period-btn">30D</button>
+      </div>
+    </div>
+
+    <div class="chart-wrap" id="chartWrap">
+      <svg class="chart-svg" id="chartSvg" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#22C55E"></div>Passed</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#EF4444"></div>Failed</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>Blocked</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- DESIGN SPEC PANEL                          -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="spec-panel">
+    <div class="spec-badge"><i class="ri-ruler-line"></i> DEV HANDOFF — Chart Tooltip Spec</div>
+
+    <!-- §1 Tooltip Structure -->
+    <div class="spec-card">
+      <div class="label">§1 Tooltip — Structure & Style</div>
+
+      <h4>Container</h4>
+      <div class="spec-row"><span class="k">Position</span><span class="new">fixed, centered above hovered bar</span></div>
+      <div class="spec-row"><span class="k">Background</span><span class="new">#1E293B (slate-800)</span></div>
+      <div class="spec-row"><span class="k">Border-radius</span><span class="new">0.5rem (8px)</span></div>
+      <div class="spec-row"><span class="k">Padding</span><span class="new">0.625rem 0.75rem (10px 12px)</span></div>
+      <div class="spec-row"><span class="k">Min-width</span><span class="new">140px</span></div>
+      <div class="spec-row"><span class="k">Shadow</span><span class="new">0 4px 12px rgba(0,0,0,0.15)</span></div>
+      <div class="spec-row"><span class="k">Transition</span><span class="new">opacity 0.12s ease</span></div>
+      <div class="spec-row"><span class="k">Pointer-events</span><span class="new">none</span></div>
+
+      <h4>Caret (::after)</h4>
+      <div class="spec-row"><span class="k">Position</span><span class="new">bottom center, 5px triangle</span></div>
+      <div class="spec-row"><span class="k">Color</span><span class="new">#1E293B (matches bg)</span></div>
+
+      <h4>Content Layout</h4>
+      <div class="spec-row"><span class="k">Date row</span><span class="new">font-weight 700, 0.75rem (12px), #fff</span></div>
+      <div class="spec-row"><span class="k">Data rows</span><span class="new">flex space-between, 0.6875rem (11px)</span></div>
+      <div class="spec-row"><span class="k">Color dots</span><span class="new">7×7px, border-radius 2px, inline left of label</span></div>
+      <div class="spec-row"><span class="k">Values</span><span class="new">font-weight 600, tabular-nums, #fff</span></div>
+      <div class="spec-row"><span class="k">Divider</span><span class="new">1px solid #334155, margin 4px 0</span></div>
+      <div class="spec-row"><span class="k">Total row</span><span class="new">bold label + bold value, #fff</span></div>
+
+      <h4>Tooltip Format Example</h4>
+      <div class="rec-box" style="font-family: monospace; font-size: 0.6875rem; white-space: pre; line-height: 1.8;">Mar 24
+● Passed    12
+● Failed     3
+● Blocked    1
+────────────
+  Total     16</div>
+    </div>
+
+    <!-- §2 Bar Hover -->
+    <div class="spec-card">
+      <div class="label">§2 Bar Hover Interaction</div>
+
+      <h4>Highlight Overlay</h4>
+      <div class="spec-row"><span class="k">Method</span><span class="new">Semi-transparent white rect over bar group</span></div>
+      <div class="spec-row"><span class="k">Overlay color</span><span class="new">rgba(255,255,255,0.15)</span></div>
+      <div class="spec-row"><span class="k">Overlay radius</span><span class="new">3px (matches bar radius)</span></div>
+      <div class="spec-row"><span class="k">Default opacity</span><span class="new">0 (hidden)</span></div>
+      <div class="spec-row"><span class="k">Hover opacity</span><span class="new">1 (visible via CSS :hover)</span></div>
+      <div class="spec-row"><span class="k">Transition</span><span class="new">opacity 0.12s ease</span></div>
+
+      <h4>Bar Brightness</h4>
+      <div class="spec-row"><span class="k">Filter on hover</span><span class="new">brightness(1.08)</span></div>
+      <div class="spec-row"><span class="k">Applies to</span><span class="new">.bar-passed, .bar-failed, .bar-blocked within group</span></div>
+
+      <h4>Tooltip Positioning</h4>
+      <div class="spec-row"><span class="k">Horizontal</span><span class="new">Centered on bar group (transform: translateX(-50%))</span></div>
+      <div class="spec-row"><span class="k">Vertical</span><span class="new">12px above top of stacked bar</span></div>
+      <div class="spec-row"><span class="k">Edge clamping</span><span class="new">Clamp left ≥ 8px, right ≤ viewport − 8px</span></div>
+    </div>
+
+    <!-- §3 Colors -->
+    <div class="spec-card">
+      <div class="label">§3 Color Reference</div>
+
+      <h4>Bar Colors</h4>
+      <div class="spec-row"><span class="k">Passed</span><span class="new">#22C55E (green-500)</span></div>
+      <div class="spec-row"><span class="k">Failed</span><span class="new">#EF4444 (red-500)</span></div>
+      <div class="spec-row"><span class="k">Blocked</span><span class="new">#F59E0B (amber-500)</span></div>
+
+      <h4>Tooltip Colors</h4>
+      <div class="spec-row"><span class="k">Background</span><span class="new">#1E293B (slate-800)</span></div>
+      <div class="spec-row"><span class="k">Date text</span><span class="new">#FFFFFF</span></div>
+      <div class="spec-row"><span class="k">Label text</span><span class="new">#CBD5E1 (slate-300)</span></div>
+      <div class="spec-row"><span class="k">Value text</span><span class="new">#FFFFFF</span></div>
+      <div class="spec-row"><span class="k">Divider</span><span class="new">#334155 (slate-700)</span></div>
+    </div>
+
+    <!-- §4 React Implementation -->
+    <div class="spec-card">
+      <div class="label">§4 React Implementation Guide</div>
+
+      <h4>Recommended Approach</h4>
+      <div class="rec-box">
+        <strong>Option A — SVG + HTML tooltip (recommended)</strong><br>
+        • Render bars as SVG &lt;rect&gt; inside &lt;g class="bar-group"&gt;<br>
+        • Tooltip as HTML div positioned via <code>position: fixed</code><br>
+        • Use <code>onMouseEnter</code> / <code>onMouseLeave</code> on &lt;g&gt; to toggle tooltip<br>
+        • Get bar position via <code>getBoundingClientRect()</code> on the &lt;g&gt; element<br>
+        • Clamp tooltip X to prevent overflow: <code>Math.max(8, Math.min(x, viewportW - tooltipW - 8))</code><br>
+        <br>
+        <strong>Option B — Recharts</strong><br>
+        • Use &lt;Tooltip&gt; component with <code>content={&lt;CustomTooltip /&gt;}</code><br>
+        • Style CustomTooltip with same dark theme tokens<br>
+        • Use &lt;Bar&gt; <code>onMouseEnter</code> for highlight effect
+      </div>
+
+      <h4>State Shape</h4>
+      <div class="rec-box" style="font-family: monospace; font-size: 0.6875rem; white-space: pre; line-height: 1.8;">interface HoveredBar {
+  date: string;       // "Mar 24"
+  passed: number;
+  failed: number;
+  blocked: number;
+  x: number;          // center X of bar group
+  y: number;          // top Y of stacked bar
+}
+const [hovered, setHovered] = useState&lt;HoveredBar | null&gt;(null);</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Tooltip (HTML, positioned via JS) ══ -->
+<div class="chart-tooltip" id="chartTooltip">
+  <div class="tt-date" id="ttDate"></div>
+  <div class="tt-row"><span class="tt-label"><span class="tt-dot passed"></span>Passed</span><span class="tt-val" id="ttPassed"></span></div>
+  <div class="tt-row"><span class="tt-label"><span class="tt-dot failed"></span>Failed</span><span class="tt-val" id="ttFailed"></span></div>
+  <div class="tt-row"><span class="tt-label"><span class="tt-dot blocked"></span>Blocked</span><span class="tt-val" id="ttBlocked"></span></div>
+  <hr class="tt-divider">
+  <div class="tt-row tt-total"><span class="tt-label">Total</span><span class="tt-val" id="ttTotal"></span></div>
+</div>
+
+<script>
+(() => {
+  // ── Data: 14 days of Passed / Failed / Blocked ──
+  const data = [
+    { date: 'Mar 13', passed: 78, failed: 8, blocked: 4 },
+    { date: 'Mar 14', passed: 65, failed: 12, blocked: 3 },
+    { date: 'Mar 15', passed: 42, failed: 5, blocked: 2 },
+    { date: 'Mar 16', passed: 30, failed: 3, blocked: 1 },
+    { date: 'Mar 17', passed: 88, failed: 10, blocked: 6 },
+    { date: 'Mar 18', passed: 95, failed: 7, blocked: 5 },
+    { date: 'Mar 19', passed: 82, failed: 11, blocked: 3 },
+    { date: 'Mar 20', passed: 91, failed: 9, blocked: 4 },
+    { date: 'Mar 21', passed: 70, failed: 14, blocked: 7 },
+    { date: 'Mar 22', passed: 55, failed: 6, blocked: 2 },
+    { date: 'Mar 23', passed: 48, failed: 4, blocked: 1 },
+    { date: 'Mar 24', passed: 99, failed: 8, blocked: 3 },
+    { date: 'Mar 25', passed: 105, failed: 12, blocked: 5 },
+    { date: 'Mar 26', passed: 87, failed: 9, blocked: 4 },
+  ];
+
+  const svg = document.getElementById('chartSvg');
+  const tooltip = document.getElementById('chartTooltip');
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // ── Chart dimensions ──
+  const W = 900, H = 320;
+  const pad = { top: 20, right: 20, bottom: 36, left: 44 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+
+  // ── Scale ──
+  const maxVal = Math.max(...data.map(d => d.passed + d.failed + d.blocked));
+  const niceMax = Math.ceil(maxVal / 20) * 20;
+  const barW = chartW / data.length * 0.55;
+  const barGap = chartW / data.length;
+
+  function yScale(v) { return pad.top + chartH - (v / niceMax) * chartH; }
+
+  // ── Grid lines & Y labels ──
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const val = (niceMax / steps) * i;
+    const y = yScale(val);
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', pad.left);
+    line.setAttribute('x2', W - pad.right);
+    line.setAttribute('y1', y);
+    line.setAttribute('y2', y);
+    line.setAttribute('class', 'grid-line');
+    svg.appendChild(line);
+
+    const label = document.createElementNS(ns, 'text');
+    label.setAttribute('x', pad.left - 8);
+    label.setAttribute('y', y + 3);
+    label.setAttribute('text-anchor', 'end');
+    label.setAttribute('class', 'y-label');
+    label.textContent = val;
+    svg.appendChild(label);
+  }
+
+  // ── Bars ──
+  data.forEach((d, i) => {
+    const cx = pad.left + i * barGap + barGap / 2;
+    const x = cx - barW / 2;
+    const total = d.passed + d.failed + d.blocked;
+
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('class', 'bar-group');
+    g.dataset.index = i;
+
+    // Stacked bars: Blocked (bottom) → Failed → Passed (top)
+    let curY = yScale(0);
+
+    // Blocked
+    const bH = (d.blocked / niceMax) * chartH;
+    curY -= bH;
+    const rBlocked = document.createElementNS(ns, 'rect');
+    rBlocked.setAttribute('x', x); rBlocked.setAttribute('y', curY);
+    rBlocked.setAttribute('width', barW); rBlocked.setAttribute('height', bH);
+    rBlocked.setAttribute('rx', 2);
+    rBlocked.setAttribute('class', 'bar-blocked');
+    g.appendChild(rBlocked);
+
+    // Failed
+    const fH = (d.failed / niceMax) * chartH;
+    curY -= fH;
+    const rFailed = document.createElementNS(ns, 'rect');
+    rFailed.setAttribute('x', x); rFailed.setAttribute('y', curY);
+    rFailed.setAttribute('width', barW); rFailed.setAttribute('height', fH);
+    rFailed.setAttribute('class', 'bar-failed');
+    g.appendChild(rFailed);
+
+    // Passed
+    const pH = (d.passed / niceMax) * chartH;
+    curY -= pH;
+    const rPassed = document.createElementNS(ns, 'rect');
+    rPassed.setAttribute('x', x); rPassed.setAttribute('y', curY);
+    rPassed.setAttribute('width', barW); rPassed.setAttribute('height', pH);
+    rPassed.setAttribute('rx', 2);
+    rPassed.setAttribute('class', 'bar-passed');
+    g.appendChild(rPassed);
+
+    // Highlight overlay (full stacked height)
+    const totalH = (total / niceMax) * chartH;
+    const topY = yScale(total);
+    const highlight = document.createElementNS(ns, 'rect');
+    highlight.setAttribute('x', x - 2); highlight.setAttribute('y', topY - 2);
+    highlight.setAttribute('width', barW + 4); highlight.setAttribute('height', totalH + 4);
+    highlight.setAttribute('rx', 3);
+    highlight.setAttribute('fill', 'rgba(255,255,255,0.15)');
+    highlight.setAttribute('stroke', 'rgba(99,102,241,0.4)');
+    highlight.setAttribute('stroke-width', '1.5');
+    highlight.setAttribute('class', 'bar-highlight');
+    g.appendChild(highlight);
+
+    svg.appendChild(g);
+
+    // ── X labels ──
+    const xLabel = document.createElementNS(ns, 'text');
+    xLabel.setAttribute('x', cx);
+    xLabel.setAttribute('y', H - pad.bottom + 20);
+    xLabel.setAttribute('class', 'x-label');
+    xLabel.textContent = d.date.replace('Mar ', '3/');
+    svg.appendChild(xLabel);
+
+    // ── Tooltip events ──
+    g.addEventListener('mouseenter', (e) => {
+      const rect = g.getBoundingClientRect();
+      const ttDate = document.getElementById('ttDate');
+      const ttPassed = document.getElementById('ttPassed');
+      const ttFailed = document.getElementById('ttFailed');
+      const ttBlocked = document.getElementById('ttBlocked');
+      const ttTotal = document.getElementById('ttTotal');
+
+      ttDate.textContent = d.date;
+      ttPassed.textContent = d.passed;
+      ttFailed.textContent = d.failed;
+      ttBlocked.textContent = d.blocked;
+      ttTotal.textContent = total;
+
+      tooltip.classList.add('visible');
+
+      // Position: centered above bar, 12px gap
+      const ttRect = tooltip.getBoundingClientRect();
+      let left = rect.left + rect.width / 2;
+      let top = rect.top - ttRect.height - 12;
+
+      // Clamp horizontal
+      left = Math.max(8 + ttRect.width / 2, Math.min(left, window.innerWidth - ttRect.width / 2 - 8));
+      // Clamp vertical (flip below if no space)
+      if (top < 8) top = rect.bottom + 12;
+
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    });
+
+    g.addEventListener('mouseleave', () => {
+      tooltip.classList.remove('visible');
+    });
+  });
+
+  // ── Baseline ──
+  const baseline = document.createElementNS(ns, 'line');
+  baseline.setAttribute('x1', pad.left);
+  baseline.setAttribute('x2', W - pad.right);
+  baseline.setAttribute('y1', yScale(0));
+  baseline.setAttribute('y2', yScale(0));
+  baseline.setAttribute('stroke', '#CBD5E1');
+  baseline.setAttribute('stroke-width', '1');
+  svg.appendChild(baseline);
+})();
+</script>
+
+</body>
+</html>

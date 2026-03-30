@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Folder Icon + Color Picker Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; min-height: 100vh; display: flex; }
+
+  /* ═══ Shared Chrome ═══ */
+  .project-header { background: #fff; display: flex; align-items: center; padding: 0 1.5rem; height: 3.5rem; gap: 0.75rem; border-bottom: 1px solid #E2E8F0; }
+  .ph-logo { width: 30px; height: 30px; background: #6366F1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; flex-shrink: 0; }
+  .ph-sep { width: 1px; height: 20px; background: #E2E8F0; }
+  .ph-project { font-size: 0.875rem; color: #64748B; font-weight: 500; }
+  .ph-right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+  .ph-btn { font-size: 0.8125rem; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; }
+  .av { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .av-md { width: 32px; height: 32px; font-size: 0.6875rem; }
+
+  .tab-bar { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0 1.5rem; height: 3rem; }
+  .tab-item { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.875rem; height: 100%; font-size: 0.875rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; }
+  .tab-item.active { color: #6366F1; border-bottom-color: #6366F1; font-weight: 600; }
+  .tab-item i { font-size: 1rem; }
+  .tab-count { font-size: 0.6875rem; background: #F1F5F9; color: #64748B; padding: 0.125rem 0.4375rem; border-radius: 9999px; font-weight: 600; }
+  .tab-item.active .tab-count { background: #EEF2FF; color: #6366F1; }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .content-layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* ═══ SIDEBAR ═══ */
+  .folders-panel { width: 220px; min-width: 220px; background: #fff; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; }
+  .folders-header { padding: 0.75rem 0.875rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; }
+  .folders-title { font-size: 0.8125rem; font-weight: 700; color: #0F172A; }
+  .sb-new-btn { display: flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; color: #6366F1; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 0.375rem; border: none; background: none; }
+  .sb-new-btn:hover { background: #EEF2FF; }
+  .sb-new-btn i { font-size: 0.875rem; }
+  .folders-list { flex: 1; overflow-y: auto; padding: 0.375rem 0; }
+
+  /* ═══ FOLDER ITEMS — With Custom Icon + Color ═══ */
+  .folder-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.875rem; font-size: 0.8125rem; color: #475569; cursor: pointer; transition: all 0.15s; position: relative; }
+  .folder-item:hover { background: #F8FAFC; }
+  .folder-item.active { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .folder-item .fi-icon { width: 22px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.8125rem; flex-shrink: 0; }
+  .folder-item .fi-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .folder-item .fi-count { font-size: 0.75rem; color: #94A3B8; font-weight: 500; }
+  .folder-item.active .fi-count { color: #6366F1; }
+  .folder-item .fi-del { position: absolute; right: 0.5rem; opacity: 0; font-size: 0.875rem; color: #94A3B8; cursor: pointer; transition: opacity 0.15s; padding: 0.125rem; border-radius: 0.25rem; }
+  .folder-item:hover .fi-del { opacity: 1; }
+  .folder-item .fi-del:hover { color: #EF4444; background: #FEF2F2; }
+
+  /* Color-coded icon backgrounds */
+  .fi-bg-indigo  { background: #EEF2FF; color: #6366F1; }
+  .fi-bg-violet  { background: #F5F3FF; color: #8B5CF6; }
+  .fi-bg-pink    { background: #FDF2F8; color: #EC4899; }
+  .fi-bg-emerald { background: #F0FDF4; color: #10B981; }
+  .fi-bg-amber   { background: #FFFBEB; color: #F59E0B; }
+  .fi-bg-cyan    { background: #ECFEFF; color: #06B6D4; }
+  .fi-bg-red     { background: #FEF2F2; color: #EF4444; }
+  .fi-bg-teal    { background: #F0FDFA; color: #14B8A6; }
+  .fi-bg-orange  { background: #FFF7ED; color: #F97316; }
+  .fi-bg-blue    { background: #EFF6FF; color: #3B82F6; }
+
+  /* Right content area */
+  .content-right { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 1.75rem; }
+
+  /* ═══ MODAL OVERLAY ═══ */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); z-index: 50; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+  .modal-card { background: #fff; border-radius: 0.75rem; width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); overflow: hidden; animation: modalIn 0.2s ease-out; }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(-10px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid #E2E8F0; }
+  .modal-title { font-size: 1rem; font-weight: 700; color: #0F172A; }
+  .modal-close { width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center; border-radius: 0.375rem; border: none; background: none; color: #94A3B8; cursor: pointer; font-size: 1.25rem; }
+  .modal-close:hover { background: #F1F5F9; color: #475569; }
+
+  .modal-body { padding: 1.5rem; }
+  .modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; padding: 1rem 1.5rem; border-top: 1px solid #E2E8F0; }
+  .btn { font-size: 0.8125rem; font-weight: 600; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-family: inherit; border: 1px solid; transition: all 0.15s; }
+  .btn-ghost { background: #fff; color: #64748B; border-color: #E2E8F0; }
+  .btn-ghost:hover { background: #F8FAFC; }
+  .btn-primary { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .btn-primary:hover { background: #4F46E5; }
+
+  /* ═══ LIVE PREVIEW BADGE ═══ */
+  .preview-area { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding: 1rem; background: #F8FAFC; border-radius: 0.625rem; border: 1px dashed #E2E8F0; }
+  .preview-badge { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; transition: all 0.2s; flex-shrink: 0; }
+  .preview-info { flex: 1; }
+  .preview-label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; margin-bottom: 0.125rem; }
+  .preview-name { font-size: 0.9375rem; font-weight: 600; color: #0F172A; min-height: 1.4em; }
+  .preview-hint { font-size: 0.6875rem; color: #94A3B8; }
+
+  /* ═══ FORM FIELD ═══ */
+  .field { margin-bottom: 1.25rem; }
+  .field-label { font-size: 0.75rem; font-weight: 600; color: #334155; margin-bottom: 0.375rem; display: flex; align-items: center; justify-content: space-between; }
+  .field-input { width: 100%; font-size: 0.875rem; padding: 0.5rem 0.75rem; border: 1px solid #E2E8F0; border-radius: 0.5rem; outline: none; font-family: inherit; color: #0F172A; }
+  .field-input:focus { border-color: #6366F1; box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
+  .field-input::placeholder { color: #CBD5E1; }
+
+  /* ═══ ICON GRID ═══ */
+  .icon-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+  .icon-btn { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 0.5rem; border: 2px solid #E2E8F0; background: #fff; cursor: pointer; font-size: 1.25rem; color: #64748B; transition: all 0.15s; }
+  .icon-btn:hover { border-color: #C7D2FE; background: #F8FAFC; color: #475569; }
+  .icon-btn.selected { border-color: #6366F1; background: #EEF2FF; color: #6366F1; }
+
+  /* ═══ COLOR GRID ═══ */
+  .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+  .color-btn { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.5rem 0; border-radius: 0.5rem; border: 2px solid transparent; background: none; cursor: pointer; transition: all 0.15s; }
+  .color-btn:hover { background: #F8FAFC; }
+  .color-btn.selected { border-color: #6366F1; background: #F8FAFC; }
+  .color-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: transform 0.15s; }
+  .color-btn.selected .color-dot { transform: scale(1.1); }
+  .color-dot .check { display: none; font-size: 0.75rem; color: #fff; }
+  .color-btn.selected .color-dot .check { display: block; }
+  .color-name { font-size: 0.5625rem; font-weight: 600; color: #94A3B8; text-transform: uppercase; }
+  .color-btn.selected .color-name { color: #6366F1; }
+
+  /* ═══ RANDOM BUTTON ═══ */
+  .random-btn { font-size: 0.6875rem; font-weight: 600; color: #6366F1; cursor: pointer; background: none; border: none; font-family: inherit; display: flex; align-items: center; gap: 0.25rem; padding: 0; }
+  .random-btn:hover { color: #4338CA; text-decoration: underline; }
+  .random-btn i { font-size: 0.8125rem; }
+
+  /* ═══ DESIGN SPEC PANEL ═══ */
+  .spec-panel { margin-top: 2rem; padding-top: 1.5rem; border-top: 2px dashed #C7D2FE; }
+  .spec-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: #EEF2FF; color: #4338CA; font-size: 0.6875rem; font-weight: 700; padding: 0.25rem: 0.625rem; border-radius: 9999px; margin-bottom: 1rem; padding: 0.25rem 0.625rem; }
+  .spec-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .spec-card .label { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6366F1; margin-bottom: 0.75rem; }
+  .spec-card h4 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin: 0.875rem 0 0.375rem; }
+  .spec-card h4:first-of-type { margin-top: 0; }
+  .spec-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.25rem 0; font-size: 0.75rem; border-bottom: 1px solid #F8FAFC; }
+  .spec-row .k { font-weight: 600; color: #475569; min-width: 140px; }
+  .spec-row .new { color: #059669; font-weight: 600; font-family: monospace; font-size: 0.6875rem; }
+  .spec-row .old { color: #94A3B8; text-decoration: line-through; font-size: 0.6875rem; }
+  .spec-row .arrow { color: #6366F1; margin: 0 0.25rem; }
+  .rec-box { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.75rem; color: #92400E; line-height: 1.6; margin-top: 0.5rem; }
+  .code-block { background: #0F172A; color: #E2E8F0; border-radius: 0.5rem; padding: 1rem 1.25rem; font-family: 'SF Mono', monospace; font-size: 0.6875rem; line-height: 1.8; overflow-x: auto; margin: 0.75rem 0; white-space: pre; }
+  .cm { color: #64748B; } .kw { color: #C084FC; } .fn { color: #38BDF8; } .st { color: #86EFAC; } .nb { color: #FDBA74; } .ty { color: #67E8F9; }
+</style>
+</head>
+<body>
+
+<div class="main">
+  <!-- ═══ Header ═══ -->
+  <header class="project-header">
+    <div class="ph-logo">T</div>
+    <div class="ph-sep"></div>
+    <span class="ph-project">Mobile App v2</span>
+    <div class="ph-right">
+      <div class="ph-btn"><i class="ri-command-line"></i> ⌘K</div>
+      <div class="ph-btn"><i class="ri-notification-3-line"></i></div>
+      <div class="av av-md" style="background:#6366F1">KJ</div>
+    </div>
+  </header>
+
+  <div class="tab-bar">
+    <div class="tab-item"><i class="ri-dashboard-3-line"></i> Dashboard</div>
+    <div class="tab-item active"><i class="ri-file-list-3-line"></i> Test Cases <span class="tab-count">203</span></div>
+    <div class="tab-item"><i class="ri-play-circle-line"></i> Runs <span class="tab-count">12</span></div>
+    <div class="tab-item"><i class="ri-flag-line"></i> Milestones</div>
+    <div class="tab-item"><i class="ri-file-text-line"></i> Docs</div>
+  </div>
+
+  <div class="content-layout">
+    <!-- ═══ Sidebar — Custom Icon + Color applied ═══ -->
+    <aside class="folders-panel">
+      <div class="folders-header">
+        <span class="folders-title">Folders</span>
+        <button class="sb-new-btn" id="openModalBtn"><i class="ri-add-line"></i> New</button>
+      </div>
+      <div class="folders-list">
+        <div class="folder-item active">
+          <div class="fi-icon fi-bg-indigo"><i class="ri-folder-line"></i></div>
+          <span class="fi-name">All Test Cases</span>
+          <span class="fi-count">203</span>
+        </div>
+        <div class="folder-item">
+          <div class="fi-icon fi-bg-blue"><i class="ri-shield-check-line"></i></div>
+          <span class="fi-name">Authentication</span>
+          <span class="fi-count">42</span>
+          <i class="ri-close-line fi-del"></i>
+        </div>
+        <div class="folder-item">
+          <div class="fi-icon fi-bg-emerald"><i class="ri-bank-card-line"></i></div>
+          <span class="fi-name">Payments</span>
+          <span class="fi-count">38</span>
+          <i class="ri-close-line fi-del"></i>
+        </div>
+        <div class="folder-item">
+          <div class="fi-icon fi-bg-red"><i class="ri-bug-line"></i></div>
+          <span class="fi-name">Bug Regression</span>
+          <span class="fi-count">27</span>
+          <i class="ri-close-line fi-del"></i>
+        </div>
+        <div class="folder-item">
+          <div class="fi-icon fi-bg-amber"><i class="ri-smartphone-line"></i></div>
+          <span class="fi-name">Mobile Native</span>
+          <span class="fi-count">31</span>
+          <i class="ri-close-line fi-del"></i>
+        </div>
+        <div class="folder-item">
+          <div class="fi-icon fi-bg-violet"><i class="ri-code-box-line"></i></div>
+          <span class="fi-name">API Integration</span>
+          <span class="fi-count">18</span>
+          <i class="ri-close-line fi-del"></i>
+        </div>
+        <div class="folder-item">
+          <div class="fi-icon fi-bg-cyan"><i class="ri-database-line"></i></div>
+          <span class="fi-name">Data Pipeline</span>
+          <span class="fi-count">12</span>
+          <i class="ri-close-line fi-del"></i>
+        </div>
+        <div class="folder-item">
+          <div class="fi-icon fi-bg-pink"><i class="ri-layout-line"></i></div>
+          <span class="fi-name">UI Components</span>
+          <span class="fi-count">35</span>
+          <i class="ri-close-line fi-del"></i>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ═══ Content Right ═══ -->
+    <div class="content-right">
+      <div style="display:flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem;">
+        <div>
+          <h1 style="font-size:1.375rem; font-weight:700; color:#0F172A;">Test Cases</h1>
+          <p style="font-size:0.8125rem; color:#94A3B8;">Mobile App v2 · 203 test cases</p>
+        </div>
+        <button class="btn btn-primary" style="display:flex; align-items:center; gap:0.375rem;"><i class="ri-add-line"></i> New Test Case</button>
+      </div>
+
+      <p style="font-size:0.875rem; color:#64748B; margin-bottom: 1.5rem;">좌측 사이드바에서 커스텀 아이콘+컬러가 적용된 폴더 목록을 확인하세요.<br>우측 상단 "<b>+ New</b>" 버튼을 클릭하면 개선된 New Folder 모달이 열립니다.</p>
+
+      <!-- ═══ DESIGN SPEC ═══ -->
+      <div class="spec-panel">
+        <div class="spec-badge"><i class="ri-ruler-line"></i> DEV HANDOFF — Folder Icon + Color</div>
+
+        <!-- §1 Modal -->
+        <div class="spec-card">
+          <div class="label">§1 New Folder Modal — 개선사항</div>
+
+          <h4>A. Live Preview Badge (신규)</h4>
+          <div class="spec-row"><span class="k">위치</span><span class="new">Modal body 상단, 이름 입력 위</span></div>
+          <div class="spec-row"><span class="k">배지 크기</span><span class="new">44 x 44px, border-radius 10px</span></div>
+          <div class="spec-row"><span class="k">배경/아이콘</span><span class="new">선택한 color의 -50 + 아이콘 color의 -500</span></div>
+          <div class="spec-row"><span class="k">아이콘 크기</span><span class="new">1.25rem (20px)</span></div>
+          <div class="spec-row"><span class="k">우측 텍스트</span><span class="new">입력 중인 폴더명 실시간 반영 (placeholder: "Folder Preview")</span></div>
+          <div class="spec-row"><span class="k">목적</span><span class="new">아이콘+컬러 조합을 사이드바 표시 형태 그대로 미리보기</span></div>
+
+          <h4>B. Icon Grid</h4>
+          <div class="spec-row"><span class="k">Layout</span><span class="new">4열 grid, gap 8px</span></div>
+          <div class="spec-row"><span class="k">Button size</span><span class="new">aspect-ratio: 1, ~72px</span></div>
+          <div class="spec-row"><span class="k">Default border</span><span class="new">2px solid #E2E8F0</span></div>
+          <div class="spec-row"><span class="k">Selected</span><span class="new">2px solid #6366F1, bg #EEF2FF</span></div>
+          <div class="spec-row"><span class="k">아이콘 8개</span><span class="new">ri-folder-line, ri-layout-line, ri-code-box-line, ri-links-line, ri-shield-check-line, ri-bug-line, ri-smartphone-line, ri-database-line</span></div>
+
+          <h4>C. Color Grid (브랜드 10색 정렬)</h4>
+          <div class="spec-row"><span class="k">Layout</span><span><span class="old">4열 grid, Tailwind 기본 8색</span> <span class="arrow">→</span> <span class="new">5열 grid, 브랜드 10색</span></span></div>
+          <div class="spec-row"><span class="k">선택 표시</span><span class="new">border 2px #6366F1 + 체크마크 오버레이</span></div>
+          <div class="spec-row"><span class="k">Color label</span><span class="new">dot 아래 색상명 (6px uppercase)</span></div>
+
+          <h4>D. Random 버튼 (신규)</h4>
+          <div class="spec-row"><span class="k">위치</span><span class="new">Color label 우측 (flex justify-between)</span></div>
+          <div class="spec-row"><span class="k">텍스트</span><span class="new">🎲 Random · font 11px weight 600 · Indigo-500</span></div>
+          <div class="spec-row"><span class="k">동작</span><span class="new">미선택 색상 중 랜덤 1개 선택 + 랜덤 아이콘</span></div>
+        </div>
+
+        <!-- §2 Sidebar -->
+        <div class="spec-card">
+          <div class="label">§2 Sidebar Folder Item — Icon + Color 표시</div>
+
+          <h4>아이콘 배지</h4>
+          <div class="spec-row"><span class="k">크기</span><span class="new">22 x 22px</span></div>
+          <div class="spec-row"><span class="k">border-radius</span><span class="new">5px (squircle 느낌)</span></div>
+          <div class="spec-row"><span class="k">아이콘 크기</span><span class="new">0.8125rem (13px)</span></div>
+          <div class="spec-row"><span class="k">배경</span><span class="new">색상별 -50 톤 (e.g. Indigo → #EEF2FF)</span></div>
+          <div class="spec-row"><span class="k">아이콘 색</span><span class="new">색상별 -500 톤 (e.g. Indigo → #6366F1)</span></div>
+          <div class="spec-row"><span class="k">기존 방식</span><span><span class="old">ri-folder-3-line + inline color</span> <span class="arrow">→</span> <span class="new">커스텀 아이콘 + color class</span></span></div>
+
+          <h4>Color Class Map</h4>
+          <div class="code-block"><span class="kw">const</span> FOLDER_COLOR_MAP = {
+  indigo:  { bg: <span class="st">'#EEF2FF'</span>, fg: <span class="st">'#6366F1'</span> },
+  violet:  { bg: <span class="st">'#F5F3FF'</span>, fg: <span class="st">'#8B5CF6'</span> },
+  pink:    { bg: <span class="st">'#FDF2F8'</span>, fg: <span class="st">'#EC4899'</span> },
+  emerald: { bg: <span class="st">'#F0FDF4'</span>, fg: <span class="st">'#10B981'</span> },
+  amber:   { bg: <span class="st">'#FFFBEB'</span>, fg: <span class="st">'#F59E0B'</span> },
+  cyan:    { bg: <span class="st">'#ECFEFF'</span>, fg: <span class="st">'#06B6D4'</span> },
+  red:     { bg: <span class="st">'#FEF2F2'</span>, fg: <span class="st">'#EF4444'</span> },
+  teal:    { bg: <span class="st">'#F0FDFA'</span>, fg: <span class="st">'#14B8A6'</span> },
+  orange:  { bg: <span class="st">'#FFF7ED'</span>, fg: <span class="st">'#F97316'</span> },
+  blue:    { bg: <span class="st">'#EFF6FF'</span>, fg: <span class="st">'#3B82F6'</span> },
+} <span class="kw">as const</span>;
+
+<span class="cm">// Replaces existing getFolderColorClass() which uses Tailwind classes</span></div>
+        </div>
+
+        <!-- §3 Auto-assign -->
+        <div class="spec-card">
+          <div class="label">§3 자동 컬러 배정 로직</div>
+
+          <div class="rec-box">
+            <b>기본값 개선:</b> 기존에는 모든 새 폴더가 gray로 생성되어 사이드바가 회색 일색이었습니다.<br><br>
+            <b>새 로직:</b> 새 폴더 생성 시, 기존 폴더들이 사용하지 않는 색상 중 순서대로 배정합니다.<br>
+            모든 색상이 사용 중이면 가장 적게 사용된 색상을 선택합니다.<br>
+            사용자가 수동으로 색상을 변경하면 해당 선택이 우선합니다.
+          </div>
+
+          <div class="code-block"><span class="kw">function</span> <span class="fn">getNextFolderColor</span>(existingFolders: Folder[]): <span class="ty">string</span> {
+  <span class="kw">const</span> allColors = Object.keys(FOLDER_COLOR_MAP);
+  <span class="kw">const</span> usedColors = existingFolders.map(f => f.color);
+
+  <span class="cm">// 1. Try unused color first</span>
+  <span class="kw">const</span> unused = allColors.filter(c => !usedColors.includes(c));
+  <span class="kw">if</span> (unused.length > <span class="nb">0</span>) <span class="kw">return</span> unused[<span class="nb">0</span>];
+
+  <span class="cm">// 2. Fall back to least-used color</span>
+  <span class="kw">const</span> counts = allColors.map(c => ({
+    color: c,
+    count: usedColors.filter(u => u === c).length
+  }));
+  counts.sort((a, b) => a.count - b.count);
+  <span class="kw">return</span> counts[<span class="nb">0</span>].color;
+}</div>
+        </div>
+
+        <!-- §4 Data model -->
+        <div class="spec-card">
+          <div class="label">§4 Data Model 변경</div>
+
+          <h4>Supabase folders 테이블</h4>
+          <div class="spec-row"><span class="k">icon</span><span><span class="old">Tailwind icon class</span> <span class="arrow">→</span> <span class="new">Remix Icon class (e.g. 'ri-bug-line')</span> — 변경 없음</span></div>
+          <div class="spec-row"><span class="k">color</span><span><span class="old">'gray' | 'blue' | ... (Tailwind 8색)</span> <span class="arrow">→</span> <span class="new">'indigo' | 'violet' | ... (브랜드 10색)</span></span></div>
+
+          <h4>Migration 필요</h4>
+          <div class="code-block"><span class="cm">-- Migrate existing color values</span>
+<span class="kw">UPDATE</span> folders <span class="kw">SET</span> color = <span class="st">'indigo'</span>  <span class="kw">WHERE</span> color = <span class="st">'blue'</span>;
+<span class="kw">UPDATE</span> folders <span class="kw">SET</span> color = <span class="st">'violet'</span>  <span class="kw">WHERE</span> color = <span class="st">'purple'</span>;
+<span class="kw">UPDATE</span> folders <span class="kw">SET</span> color = <span class="st">'emerald'</span> <span class="kw">WHERE</span> color = <span class="st">'green'</span>;
+<span class="kw">UPDATE</span> folders <span class="kw">SET</span> color = <span class="st">'amber'</span>   <span class="kw">WHERE</span> color = <span class="st">'yellow'</span>;
+<span class="kw">UPDATE</span> folders <span class="kw">SET</span> color = <span class="st">'indigo'</span>  <span class="kw">WHERE</span> color = <span class="st">'gray'</span>;
+<span class="cm">-- 'red', 'pink' 유지 (이름 동일)</span>
+<span class="cm">-- 'indigo' 유지</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL (Interactive) ═══ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title">New Folder</span>
+      <button class="modal-close" id="closeModalBtn"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Live Preview -->
+      <div class="preview-area">
+        <div class="preview-badge" id="previewBadge" style="background:#EEF2FF; color:#6366F1;">
+          <i class="ri-folder-line" id="previewIcon"></i>
+        </div>
+        <div class="preview-info">
+          <div class="preview-label">Preview</div>
+          <div class="preview-name" id="previewName">Folder Preview</div>
+          <div class="preview-hint">아이콘과 컬러를 선택하면 실시간 반영됩니다</div>
+        </div>
+      </div>
+
+      <!-- Folder Name -->
+      <div class="field">
+        <label class="field-label">Folder Name</label>
+        <input class="field-input" id="folderNameInput" type="text" placeholder="e.g., Performance Tests" />
+      </div>
+
+      <!-- Icon Picker -->
+      <div class="field">
+        <label class="field-label">Icon</label>
+        <div class="icon-grid" id="iconGrid">
+          <button class="icon-btn selected" data-icon="ri-folder-line"><i class="ri-folder-line"></i></button>
+          <button class="icon-btn" data-icon="ri-layout-line"><i class="ri-layout-line"></i></button>
+          <button class="icon-btn" data-icon="ri-code-box-line"><i class="ri-code-box-line"></i></button>
+          <button class="icon-btn" data-icon="ri-links-line"><i class="ri-links-line"></i></button>
+          <button class="icon-btn" data-icon="ri-shield-check-line"><i class="ri-shield-check-line"></i></button>
+          <button class="icon-btn" data-icon="ri-bug-line"><i class="ri-bug-line"></i></button>
+          <button class="icon-btn" data-icon="ri-smartphone-line"><i class="ri-smartphone-line"></i></button>
+          <button class="icon-btn" data-icon="ri-database-line"><i class="ri-database-line"></i></button>
+        </div>
+      </div>
+
+      <!-- Color Picker -->
+      <div class="field">
+        <div class="field-label">
+          <span>Color</span>
+          <button class="random-btn" id="randomBtn"><i class="ri-shuffle-line"></i> Random</button>
+        </div>
+        <div class="color-grid" id="colorGrid">
+          <button class="color-btn selected" data-color="indigo" data-bg="#EEF2FF" data-fg="#6366F1">
+            <div class="color-dot" style="background:#6366F1"><i class="ri-check-line check"></i></div>
+            <span class="color-name">Indigo</span>
+          </button>
+          <button class="color-btn" data-color="violet" data-bg="#F5F3FF" data-fg="#8B5CF6">
+            <div class="color-dot" style="background:#8B5CF6"><i class="ri-check-line check"></i></div>
+            <span class="color-name">Violet</span>
+          </button>
+          <button class="color-btn" data-color="pink" data-bg="#FDF2F8" data-fg="#EC4899">
+            <div class="color-dot" style="background:#EC4899"><i class="ri-check-line check"></i></div>
+            <span class="color-name">Pink</span>
+          </button>
+          <button class="color-btn" data-color="emerald" data-bg="#F0FDF4" data-fg="#10B981">
+            <div class="color-dot" style="background:#10B981"><i class="ri-check-line check"></i></div>
+            <span class="color-name">Emerald</span>
+          </button>
+          <button class="color-btn" data-color="amber" data-bg="#FFFBEB" data-fg="#F59E0B">
+            <div class="color-dot" style="background:#F59E0B"><i class="ri-check-line check"></i></div>
+            <span class="color-name">Amber</span>
+          </button>
+          <button class="color-btn" data-color="cyan" data-bg="#ECFEFF" data-fg="#06B6D4">
+            <div class="color-dot" style="background:#06B6D4"><i class="ri-check-line check"></i></div>
+            <span class="color-name">Cyan</span>
+          </button>
+          <button class="color-btn" data-color="red" data-bg="#FEF2F2" data-fg="#EF4444">
+            <div class="color-dot" style="background:#EF4444"><i class="ri-check-line check"></i></div>
+            <span class="color-name">Red</span>
+          </button>
+          <button class="color-btn" data-color="teal" data-bg="#F0FDFA" data-fg="#14B8A6">
+            <div class="color-dot" style="background:#14B8A6"><i class="ri-check-line check"></i></div>
+            <span class="color-name">Teal</span>
+          </button>
+          <button class="color-btn" data-color="orange" data-bg="#FFF7ED" data-fg="#F97316">
+            <div class="color-dot" style="background:#F97316"><i class="ri-check-line check"></i></div>
+            <span class="color-name">Orange</span>
+          </button>
+          <button class="color-btn" data-color="blue" data-bg="#EFF6FF" data-fg="#3B82F6">
+            <div class="color-dot" style="background:#3B82F6"><i class="ri-check-line check"></i></div>
+            <span class="color-name">Blue</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="cancelBtn">Cancel</button>
+      <button class="btn btn-primary">Create Folder</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const modal = document.getElementById('modal');
+  const openBtn = document.getElementById('openModalBtn');
+  const closeBtn = document.getElementById('closeModalBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const nameInput = document.getElementById('folderNameInput');
+  const previewBadge = document.getElementById('previewBadge');
+  const previewIcon = document.getElementById('previewIcon');
+  const previewName = document.getElementById('previewName');
+  const iconGrid = document.getElementById('iconGrid');
+  const colorGrid = document.getElementById('colorGrid');
+  const randomBtn = document.getElementById('randomBtn');
+
+  let selectedIcon = 'ri-folder-line';
+  let selectedBg = '#EEF2FF';
+  let selectedFg = '#6366F1';
+
+  function updatePreview() {
+    previewBadge.style.background = selectedBg;
+    previewBadge.style.color = selectedFg;
+    previewIcon.className = selectedIcon;
+    previewName.textContent = nameInput.value || 'Folder Preview';
+  }
+
+  // Name input
+  nameInput.addEventListener('input', updatePreview);
+
+  // Icon selection
+  iconGrid.querySelectorAll('.icon-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      iconGrid.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedIcon = btn.dataset.icon;
+      updatePreview();
+    });
+  });
+
+  // Color selection
+  colorGrid.querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      colorGrid.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedBg = btn.dataset.bg;
+      selectedFg = btn.dataset.fg;
+      updatePreview();
+    });
+  });
+
+  // Random
+  randomBtn.addEventListener('click', () => {
+    const icons = [...iconGrid.querySelectorAll('.icon-btn')];
+    const colors = [...colorGrid.querySelectorAll('.color-btn')];
+    const ri = Math.floor(Math.random() * icons.length);
+    const rc = Math.floor(Math.random() * colors.length);
+    icons.forEach(b => b.classList.remove('selected'));
+    colors.forEach(b => b.classList.remove('selected'));
+    icons[ri].classList.add('selected');
+    colors[rc].classList.add('selected');
+    selectedIcon = icons[ri].dataset.icon;
+    selectedBg = colors[rc].dataset.bg;
+    selectedFg = colors[rc].dataset.fg;
+    updatePreview();
+  });
+
+  // Modal open/close
+  openBtn.addEventListener('click', () => modal.style.display = 'flex');
+  closeBtn.addEventListener('click', () => modal.style.display = 'none');
+  cancelBtn.addEventListener('click', () => modal.style.display = 'none');
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+})();
+</script>
+
+</body>
+</html>

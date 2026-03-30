@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dev Handoff — Team Activity Heatmap & Summary Cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.6; }
+
+  /* ── Layout ── */
+  .doc-header { background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); color: #fff; padding: 2.5rem 3rem; }
+  .doc-header h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .doc-header p { font-size: 0.9375rem; opacity: 0.85; }
+  .doc-meta { display: flex; gap: 2rem; margin-top: 1rem; font-size: 0.8125rem; opacity: 0.75; }
+  .doc-meta span { display: flex; align-items: center; gap: 0.375rem; }
+  .doc-body { max-width: 1100px; margin: 0 auto; padding: 2rem 3rem 4rem; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 2.5rem; }
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: #6366F1; color: #fff; font-size: 0.8125rem; font-weight: 700; margin-right: 0.5rem; flex-shrink: 0; }
+  h2 { font-size: 1.25rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; margin-bottom: 1rem; }
+  h3 { font-size: 1rem; font-weight: 700; color: #334155; margin: 1.25rem 0 0.625rem; }
+  h4 { font-size: 0.875rem; font-weight: 700; color: #475569; margin: 1rem 0 0.5rem; }
+
+  /* ── Table ── */
+  .spec-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; margin: 0.75rem 0 1rem; background: #fff; border-radius: 0.625rem; overflow: hidden; border: 1px solid #E2E8F0; }
+  .spec-table th { background: #F8FAFC; font-weight: 600; text-align: left; padding: 0.625rem 1rem; color: #475569; border-bottom: 1px solid #E2E8F0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .spec-table td { padding: 0.5rem 1rem; border-bottom: 1px solid #F1F5F9; color: #334155; vertical-align: top; }
+  .spec-table tr:last-child td { border-bottom: none; }
+  .spec-table code { background: #F1F5F9; padding: 0.125rem 0.375rem; border-radius: 4px; font-size: 0.75rem; font-family: 'SF Mono', 'Fira Code', monospace; color: #6366F1; }
+
+  /* ── Code Block ── */
+  pre { background: #1E293B; color: #E2E8F0; border-radius: 0.625rem; padding: 1rem 1.25rem; font-size: 0.75rem; line-height: 1.6; overflow-x: auto; margin: 0.75rem 0 1rem; font-family: 'SF Mono', 'Fira Code', monospace; }
+  pre .comment { color: #64748B; }
+  pre .key { color: #818CF8; }
+  pre .val { color: #34D399; }
+  pre .str { color: #FBBF24; }
+  pre .num { color: #F472B6; }
+
+  /* ── Color Swatch ── */
+  .swatch-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0; }
+  .swatch { display: flex; align-items: center; gap: 0.5rem; background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; padding: 0.375rem 0.75rem; font-size: 0.75rem; }
+  .swatch-box { width: 20px; height: 20px; border-radius: 4px; flex-shrink: 0; outline: 1px solid rgba(0,0,0,0.06); }
+  .swatch-label { font-weight: 600; color: #334155; }
+  .swatch-hex { color: #94A3B8; font-family: monospace; font-size: 0.6875rem; }
+
+  /* ── Info Box ── */
+  .info-box { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 0.625rem; padding: 0.875rem 1rem; font-size: 0.8125rem; color: #1E40AF; margin: 0.75rem 0; display: flex; gap: 0.5rem; align-items: flex-start; }
+  .info-box i { font-size: 1rem; flex-shrink: 0; margin-top: 0.125rem; }
+  .warn-box { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.625rem; padding: 0.875rem 1rem; font-size: 0.8125rem; color: #92400E; margin: 0.75rem 0; display: flex; gap: 0.5rem; align-items: flex-start; }
+  .warn-box i { font-size: 1rem; flex-shrink: 0; margin-top: 0.125rem; }
+
+  /* ── Live Preview ── */
+  .preview-frame { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin: 1rem 0; }
+  .preview-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 0.75rem; }
+
+  /* ── Heatmap Preview (embedded) ── */
+  .hm-preview { display: flex; gap: 4px; }
+  .hm-preview .day-col { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+  .hm-preview .day-spacer { height: 13px; }
+  .hm-preview .day-lbl { font-size: 9px; color: #94A3B8; font-weight: 500; height: 14px; line-height: 14px; text-align: right; width: 28px; }
+  .hm-preview .day-lbl.h { visibility: hidden; }
+  .hm-preview .grid-area { flex: 1; min-width: 0; overflow: hidden; }
+  .hm-preview .month-row { display: grid; grid-template-columns: repeat(52, 1fr); gap: 2px; margin-bottom: 2px; height: 13px; align-items: end; }
+  .hm-preview .month-lbl { font-size: 9px; color: #64748B; font-weight: 500; }
+  .hm-preview .grid-inner { display: flex; flex-direction: column; gap: 2px; }
+  .hm-preview .row { display: grid; grid-template-columns: repeat(52, 1fr); gap: 2px; }
+  .hm-preview .c { aspect-ratio: 1; border-radius: 2px; outline: 1px solid rgba(27,31,35,0.06); outline-offset: -1px; }
+  .hm-preview .c:hover { outline: 2px solid rgba(27,31,35,0.3); z-index: 1; position: relative; }
+  .hm-preview .c.f { visibility: hidden; }
+  .l0 { background: #F1F5F9; } .l1 { background: #E0E7FF; } .l2 { background: #C7D2FE; }
+  .l3 { background: #A5B4FC; } .l4 { background: #818CF8; } .l5 { background: #6366F1; }
+  .hm-legend-row { display: flex; align-items: center; gap: 3px; margin-top: 0.375rem; justify-content: flex-end; }
+  .hm-legend-row .ll { font-size: 9px; color: #94A3B8; margin: 0 2px; }
+  .hm-legend-row .lc { width: 10px; height: 10px; border-radius: 2px; outline: 1px solid rgba(27,31,35,0.06); }
+
+  /* ── Summary card conditional color preview ── */
+  .cond-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin: 0.75rem 0; }
+  .cond-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1rem 1.25rem; text-align: center; }
+  .cond-card .label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 0.375rem; }
+  .cond-card .value { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+  .cond-card .sub { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.25rem; }
+  .cond-card .rule { font-size: 0.6875rem; font-weight: 600; color: #64748B; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed #E2E8F0; }
+
+  /* ── Annotation ── */
+  .anno { display: inline-flex; align-items: center; gap: 0.25rem; background: #EEF2FF; color: #6366F1; font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; }
+
+  /* ── TOC ── */
+  .toc { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2rem; }
+  .toc-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 0.625rem; }
+  .toc-list { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 2rem; }
+  .toc-list li { font-size: 0.8125rem; }
+  .toc-list a { color: #6366F1; text-decoration: none; font-weight: 500; }
+  .toc-list a:hover { text-decoration: underline; }
+  .toc-list .num { color: #94A3B8; font-weight: 600; margin-right: 0.25rem; font-size: 0.75rem; }
+
+  p { margin-bottom: 0.75rem; font-size: 0.875rem; color: #475569; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- HEADER                                              -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="doc-header">
+  <h1>Dev Handoff — Team Activity Heatmap & Summary Cards</h1>
+  <p>Design-to-code specification for the GitHub-style 52-week contribution graph and Avg Response Time summary card</p>
+  <div class="doc-meta">
+    <span><i class="ri-file-list-3-line"></i> File 27</span>
+    <span><i class="ri-calendar-line"></i> March 25, 2026</span>
+    <span><i class="ri-git-branch-line"></i> Design: 13-team-activity.html (approved)</span>
+    <span><i class="ri-user-line"></i> Page: Team Activity</span>
+  </div>
+</div>
+
+<div class="doc-body">
+
+<!-- ── TOC ── -->
+<div class="toc">
+  <div class="toc-title">Table of Contents</div>
+  <ul class="toc-list">
+    <li><span class="num">§1</span> <a href="#s1">Heatmap Overview & Layout</a></li>
+    <li><span class="num">§2</span> <a href="#s2">CSS Grid Architecture</a></li>
+    <li><span class="num">§3</span> <a href="#s3">Cell Sizing & Gap Spec</a></li>
+    <li><span class="num">§4</span> <a href="#s4">Color Scale (6 Levels)</a></li>
+    <li><span class="num">§5</span> <a href="#s5">Month & Day Labels</a></li>
+    <li><span class="num">§6</span> <a href="#s6">Header — Activity Count</a></li>
+    <li><span class="num">§7</span> <a href="#s7">Legend</a></li>
+    <li><span class="num">§8</span> <a href="#s8">Interactions — Tooltip</a></li>
+    <li><span class="num">§9</span> <a href="#s9">Avg Response Time Card</a></li>
+    <li><span class="num">§10</span> <a href="#s10">Responsive Behavior</a></li>
+    <li><span class="num">§11</span> <a href="#s11">Data Contract & Supabase</a></li>
+    <li><span class="num">§12</span> <a href="#s12">Accessibility</a></li>
+    <li><span class="num">§13</span> <a href="#s13">Live Preview</a></li>
+    <li><span class="num">§14</span> <a href="#s14">CSS Custom Properties</a></li>
+    <li><span class="num">§15</span> <a href="#s15">Summary Cards (4-up Row)</a></li>
+    <li><span class="num">§16</span> <a href="#s16">Team Members List</a></li>
+    <li><span class="num">§17</span> <a href="#s17">Live Activity Feed</a></li>
+    <li><span class="num">§18</span> <a href="#s18">Animations</a></li>
+  </ul>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §1 HEATMAP OVERVIEW                                 -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s1">
+  <h2><span class="section-num">1</span> Heatmap Overview & Layout</h2>
+
+  <p>The Team Activity heatmap follows the GitHub contribution graph pattern. It displays 52 weeks (1 year) of daily team activity, ending at the current date, inside a single card component.</p>
+
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Grid dimensions</td><td><code>52 columns</code> (weeks) × <code>7 rows</code> (Sun–Sat)</td></tr>
+    <tr><td>Total cells</td><td>364 (up to 3 future cells hidden at end of current week)</td></tr>
+    <tr><td>Orientation</td><td>Rows = days of week (Sun at top, Sat at bottom). Columns = weeks (oldest at left, newest at right).</td></tr>
+    <tr><td>Date range</td><td>52 weeks back from the current week's Saturday. Right edge = this week.</td></tr>
+    <tr><td>Container card</td><td>White card, <code>border: 1px solid #E2E8F0</code>, <code>border-radius: 0.75rem</code></td></tr>
+    <tr><td>Card padding</td><td><code>0.875rem 1rem</code> (14px 16px)</td></tr>
+    <tr><td>Card margin-bottom</td><td><code>1rem</code></td></tr>
+  </table>
+
+  <div class="info-box">
+    <i class="ri-information-line"></i>
+    <span>The heatmap uses <code>grid-template-columns: repeat(52, 1fr)</code> with <code>aspect-ratio: 1</code> on cells. This means cells auto-size to fill the container width — no fixed pixel size needed. The grid is fully fluid.</span>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §2 CSS GRID ARCHITECTURE                            -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s2">
+  <h2><span class="section-num">2</span> CSS Grid Architecture</h2>
+
+  <p>The heatmap is composed of nested layout layers:</p>
+
+  <table class="spec-table">
+    <tr><th>Layer</th><th>Element</th><th>CSS</th></tr>
+    <tr>
+      <td><code>.heatmap-wrapper</code></td>
+      <td>Outer flex container (day labels + grid)</td>
+      <td><code>display: flex; gap: 4px;</code></td>
+    </tr>
+    <tr>
+      <td><code>.hm-day-col</code></td>
+      <td>Left column with day labels</td>
+      <td><code>flex-direction: column; gap: 2px; flex-shrink: 0;</code></td>
+    </tr>
+    <tr>
+      <td><code>.heatmap-grid</code></td>
+      <td>Main grid area (months + cells)</td>
+      <td><code>flex: 1; min-width: 0; overflow: hidden;</code></td>
+    </tr>
+    <tr>
+      <td><code>.hm-month-row</code></td>
+      <td>Month labels row</td>
+      <td><code>display: grid; grid-template-columns: repeat(52, 1fr); gap: 2px;</code></td>
+    </tr>
+    <tr>
+      <td><code>.hm-grid-inner</code></td>
+      <td>Cell rows container</td>
+      <td><code>flex-direction: column; gap: 2px;</code></td>
+    </tr>
+    <tr>
+      <td><code>.hm-row</code></td>
+      <td>Single day row (52 cells)</td>
+      <td><code>display: grid; grid-template-columns: repeat(52, 1fr); gap: 2px;</code></td>
+    </tr>
+    <tr>
+      <td><code>.hm-cell</code></td>
+      <td>Individual activity cell</td>
+      <td><code>aspect-ratio: 1; border-radius: 2px;</code></td>
+    </tr>
+  </table>
+
+  <h4>DOM Structure</h4>
+<pre><span class="comment">/* Simplified DOM tree */</span>
+&lt;div class="<span class="key">heatmap-card</span>"&gt;
+  &lt;div class="<span class="key">heatmap-header</span>"&gt;...&lt;/div&gt;
+  &lt;div class="<span class="key">heatmap-wrapper</span>"&gt;
+    &lt;div class="<span class="key">hm-day-col</span>"&gt;
+      &lt;div class="<span class="key">hm-day-spacer</span>"&gt;&lt;/div&gt;  <span class="comment">/* aligns with month row */</span>
+      &lt;span class="<span class="key">hm-day-label hidden</span>"&gt;&lt;/span&gt;  <span class="comment">/* Sun — hidden */</span>
+      &lt;span class="<span class="key">hm-day-label</span>"&gt;Mon&lt;/span&gt;
+      &lt;span class="<span class="key">hm-day-label hidden</span>"&gt;&lt;/span&gt;  <span class="comment">/* Tue — hidden */</span>
+      &lt;span class="<span class="key">hm-day-label</span>"&gt;Wed&lt;/span&gt;
+      &lt;span class="<span class="key">hm-day-label hidden</span>"&gt;&lt;/span&gt;  <span class="comment">/* Thu — hidden */</span>
+      &lt;span class="<span class="key">hm-day-label</span>"&gt;Fri&lt;/span&gt;
+      &lt;span class="<span class="key">hm-day-label hidden</span>"&gt;&lt;/span&gt;  <span class="comment">/* Sat — hidden */</span>
+    &lt;/div&gt;
+    &lt;div class="<span class="key">heatmap-grid</span>"&gt;
+      &lt;div class="<span class="key">hm-month-row</span>"&gt;...52 spans...&lt;/div&gt;
+      &lt;div class="<span class="key">hm-grid-inner</span>"&gt;
+        &lt;div class="<span class="key">hm-row</span>"&gt;...52 cells (Sun)...&lt;/div&gt;
+        &lt;div class="<span class="key">hm-row</span>"&gt;...52 cells (Mon)...&lt;/div&gt;
+        <span class="comment">/* ... 5 more rows ... */</span>
+        &lt;div class="<span class="key">hm-row</span>"&gt;...52 cells (Sat)...&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="<span class="key">hm-legend</span>"&gt;...&lt;/div&gt;
+  &lt;div class="<span class="key">hm-tooltip</span>"&gt;&lt;/div&gt;
+&lt;/div&gt;</pre>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §3 CELL SIZING & GAP                               -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s3">
+  <h2><span class="section-num">3</span> Cell Sizing & Gap Spec</h2>
+
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th><th>Notes</th></tr>
+    <tr><td>Cell size</td><td><code>aspect-ratio: 1</code> (fluid square)</td><td>Auto-calculated from <code>1fr</code> grid column. Approx 14–18px at 1200px container, 10–12px at 768px.</td></tr>
+    <tr><td>Cell border-radius</td><td><code>2px</code></td><td></td></tr>
+    <tr><td>Cell outline (rest)</td><td><code>1px solid rgba(27,31,35,0.06)</code></td><td>Subtle cell border like GitHub</td></tr>
+    <tr><td>Cell outline (hover)</td><td><code>2px solid rgba(27,31,35,0.3)</code></td><td>Visible highlight on hover</td></tr>
+    <tr><td>Gap (between cells)</td><td><code>2px</code></td><td>Both horizontal and vertical</td></tr>
+    <tr><td>Gap (month row → grid)</td><td><code>2px</code> (margin-bottom on month row)</td><td></td></tr>
+    <tr><td>Gap (day col → grid)</td><td><code>4px</code> (wrapper gap)</td><td></td></tr>
+    <tr><td>Future cells</td><td><code>visibility: hidden</code></td><td>Cells after today are hidden but preserve grid structure</td></tr>
+  </table>
+
+  <div class="warn-box">
+    <i class="ri-alert-line"></i>
+    <span>Do NOT use fixed <code>width</code>/<code>height</code> on cells. The <code>repeat(52, 1fr)</code> + <code>aspect-ratio: 1</code> approach ensures the grid always fills 100% of the container regardless of viewport width.</span>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §4 COLOR SCALE                                      -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s4">
+  <h2><span class="section-num">4</span> Color Scale (6 Levels)</h2>
+
+  <p>Activity intensity is mapped to 6 discrete levels (0–5), using the Testably indigo palette:</p>
+
+  <div class="swatch-row">
+    <div class="swatch"><div class="swatch-box" style="background:#F1F5F9"></div><span class="swatch-label">Level 0</span><span class="swatch-hex">#F1F5F9</span></div>
+    <div class="swatch"><div class="swatch-box" style="background:#E0E7FF"></div><span class="swatch-label">Level 1</span><span class="swatch-hex">#E0E7FF</span></div>
+    <div class="swatch"><div class="swatch-box" style="background:#C7D2FE"></div><span class="swatch-label">Level 2</span><span class="swatch-hex">#C7D2FE</span></div>
+    <div class="swatch"><div class="swatch-box" style="background:#A5B4FC"></div><span class="swatch-label">Level 3</span><span class="swatch-hex">#A5B4FC</span></div>
+    <div class="swatch"><div class="swatch-box" style="background:#818CF8"></div><span class="swatch-label">Level 4</span><span class="swatch-hex">#818CF8</span></div>
+    <div class="swatch"><div class="swatch-box" style="background:#6366F1"></div><span class="swatch-label">Level 5</span><span class="swatch-hex">#6366F1</span></div>
+  </div>
+
+  <table class="spec-table">
+    <tr><th>Level</th><th>CSS Class</th><th>Background</th><th>Tailwind Equivalent</th><th>Meaning</th></tr>
+    <tr><td>0</td><td><code>.hm-0</code></td><td><code>#F1F5F9</code></td><td>slate-100</td><td>No activity</td></tr>
+    <tr><td>1</td><td><code>.hm-1</code></td><td><code>#E0E7FF</code></td><td>indigo-100</td><td>Low activity (1–5 actions)</td></tr>
+    <tr><td>2</td><td><code>.hm-2</code></td><td><code>#C7D2FE</code></td><td>indigo-200</td><td>Moderate (6–12 actions)</td></tr>
+    <tr><td>3</td><td><code>.hm-3</code></td><td><code>#A5B4FC</code></td><td>indigo-300</td><td>Active (13–20 actions)</td></tr>
+    <tr><td>4</td><td><code>.hm-4</code></td><td><code>#818CF8</code></td><td>indigo-400</td><td>High (21–35 actions)</td></tr>
+    <tr><td>5</td><td><code>.hm-5</code></td><td><code>#6366F1</code></td><td>indigo-500 / brand primary</td><td>Very high (36+ actions)</td></tr>
+  </table>
+
+  <h4>Level Calculation (recommended)</h4>
+<pre><span class="comment">// Quantile-based bucketing from raw daily activity count</span>
+<span class="key">function</span> getLevel(count, max) {
+  <span class="key">if</span> (count === <span class="num">0</span>) <span class="key">return</span> <span class="num">0</span>;
+  <span class="key">const</span> ratio = count / max;
+  <span class="key">if</span> (ratio &lt;= <span class="num">0.15</span>) <span class="key">return</span> <span class="num">1</span>;
+  <span class="key">if</span> (ratio &lt;= <span class="num">0.35</span>) <span class="key">return</span> <span class="num">2</span>;
+  <span class="key">if</span> (ratio &lt;= <span class="num">0.55</span>) <span class="key">return</span> <span class="num">3</span>;
+  <span class="key">if</span> (ratio &lt;= <span class="num">0.80</span>) <span class="key">return</span> <span class="num">4</span>;
+  <span class="key">return</span> <span class="num">5</span>;
+}</pre>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §5 MONTH & DAY LABELS                              -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s5">
+  <h2><span class="section-num">5</span> Month & Day Labels</h2>
+
+  <h3>Month Labels (Top)</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Container</td><td><code>.hm-month-row</code> — same 52-column grid as cell rows</td></tr>
+    <tr><td>Font</td><td><code>9px</code> / weight <code>500</code> / color <code>#64748B</code></td></tr>
+    <tr><td>Placement</td><td>Label placed at the first week column where the month starts. Use <code>grid-column</code> to position.</td></tr>
+    <tr><td>Row height</td><td><code>13px</code></td></tr>
+    <tr><td>Format</td><td>3-letter abbreviation: Jan, Feb, Mar, … Dec</td></tr>
+    <tr><td>Overflow</td><td><code>overflow: visible</code> — label text can visually extend beyond its grid cell</td></tr>
+  </table>
+
+  <h3>Day Labels (Left)</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Container</td><td><code>.hm-day-col</code> — vertical flex column</td></tr>
+    <tr><td>Font</td><td><code>9px</code> / weight <code>500</code> / color <code>#94A3B8</code></td></tr>
+    <tr><td>Visible labels</td><td>Mon, Wed, Fri only (GitHub convention)</td></tr>
+    <tr><td>Hidden labels</td><td>Sun, Tue, Thu, Sat — rendered as <code>visibility: hidden</code> spacers to maintain alignment</td></tr>
+    <tr><td>Column width</td><td><code>28px</code> / <code>text-align: right</code></td></tr>
+    <tr><td>Label height</td><td><code>var(--hm-size)</code> — dynamically synced to actual cell height via JS <code>requestAnimationFrame</code></td></tr>
+    <tr><td>Spacer</td><td><code>.hm-day-spacer</code> at top, <code>height: 13px</code> — aligns with month labels row</td></tr>
+    <tr><td>Gap</td><td><code>2px</code> between labels (matches cell row gap)</td></tr>
+  </table>
+
+  <h4>Dynamic Height Sync</h4>
+<pre><span class="comment">// After grid renders, sync day label heights with cell size</span>
+requestAnimationFrame(() => {
+  <span class="key">const</span> firstCell = gridInner.querySelector(<span class="str">'.hm-cell'</span>);
+  <span class="key">if</span> (firstCell) {
+    <span class="key">const</span> h = firstCell.offsetHeight;
+    document.documentElement.style.setProperty(<span class="str">'--hm-size'</span>, h + <span class="str">'px'</span>);
+  }
+});</pre>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §6 HEADER — ACTIVITY COUNT                         -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s6">
+  <h2><span class="section-num">6</span> Header — Activity Count</h2>
+
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Layout</td><td><code>display: flex; align-items: baseline; gap: 0.375rem;</code></td></tr>
+    <tr><td>Total count</td><td><code>.hm-total</code> — <code>13px</code> / weight <code>700</code> / color <code>#0F172A</code></td></tr>
+    <tr><td>Subtitle</td><td><code>.hm-total-sub</code> — <code>12px</code> / weight <code>400</code> / color <code>#64748B</code></td></tr>
+    <tr><td>Format</td><td><code>{count.toLocaleString()} activities in the last year</code></td></tr>
+    <tr><td>Margin-bottom</td><td><code>0.5rem</code> (8px) before wrapper</td></tr>
+  </table>
+
+  <div class="info-box">
+    <i class="ri-information-line"></i>
+    <span>The total count is the sum of all daily activity counts for the 52-week period. "Activities" includes TC executions, TC creations, comments, status changes, and run starts.</span>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §7 LEGEND                                          -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s7">
+  <h2><span class="section-num">7</span> Legend</h2>
+
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Layout</td><td><code>display: flex; align-items: center; gap: 3px; justify-content: flex-end;</code></td></tr>
+    <tr><td>Position</td><td>Below heatmap grid, <code>margin-top: 0.375rem</code></td></tr>
+    <tr><td>"Less" / "More" labels</td><td><code>9px</code> / color <code>#94A3B8</code> / <code>margin: 0 2px</code></td></tr>
+    <tr><td>Legend cells</td><td><code>10×10px</code>, <code>border-radius: 2px</code>, same outline as grid cells</td></tr>
+    <tr><td>Order</td><td>Less → hm-0 → hm-1 → hm-2 → hm-3 → hm-4 → hm-5 → More</td></tr>
+  </table>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §8 INTERACTIONS — TOOLTIP                          -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s8">
+  <h2><span class="section-num">8</span> Interactions — Tooltip</h2>
+
+  <h3>Hover Tooltip</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Trigger</td><td><code>mouseenter</code> on <code>.hm-cell</code></td></tr>
+    <tr><td>Dismiss</td><td><code>mouseleave</code></td></tr>
+    <tr><td>Position</td><td><code>position: fixed</code> — centered above cell, 8px gap</td></tr>
+    <tr><td>Background</td><td><code>#1E293B</code> (slate-800)</td></tr>
+    <tr><td>Text color</td><td><code>#fff</code></td></tr>
+    <tr><td>Font</td><td><code>11px</code> / line-height <code>1.4</code></td></tr>
+    <tr><td>Padding</td><td><code>6px 10px</code></td></tr>
+    <tr><td>Border-radius</td><td><code>6px</code></td></tr>
+    <tr><td>Caret</td><td>CSS <code>::after</code> triangle, 4px border, centered, <code>border-top-color: #1E293B</code></td></tr>
+    <tr><td>Transition</td><td><code>opacity 0.12s</code></td></tr>
+    <tr><td>Content format</td><td><code>&lt;strong&gt;{count} activities&lt;/strong&gt; on {Mon DD, YYYY}</code></td></tr>
+    <tr><td>Zero state</td><td><code>&lt;strong&gt;No activities&lt;/strong&gt; on {Mon DD, YYYY}</code></td></tr>
+  </table>
+
+  <h3>Cell Hover Effect</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Outline</td><td><code>2px solid rgba(27,31,35,0.3)</code></td></tr>
+    <tr><td>z-index</td><td><code>1</code></td></tr>
+    <tr><td>position</td><td><code>relative</code> (to lift above neighbors)</td></tr>
+  </table>
+
+  <h3>Cell Click (Future Enhancement)</h3>
+  <div class="info-box">
+    <i class="ri-information-line"></i>
+    <span>Not implemented in current design. Recommended future: clicking a cell opens a detail panel or filters the Activity Feed to show that day's activities. Add <code>cursor: pointer</code> (already set) and wire up click handler when ready.</span>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §9 AVG RESPONSE TIME CARD                          -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s9">
+  <h2><span class="section-num">9</span> Avg Response Time Card</h2>
+
+  <p>The 4th summary card in the top stats row. Shows the average time team members take to respond to blocked/failed items.</p>
+
+  <h3>Layout Spec</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Card</td><td><code>.summary-card</code> — <code>bg: #fff</code>, <code>border: 1px solid #E2E8F0</code>, <code>border-radius: 0.75rem</code>, <code>padding: 1rem 1.25rem</code></td></tr>
+    <tr><td>Label</td><td><code>.sm-label</code> — "AVG RESPONSE TIME" — <code>11px</code> / weight <code>600</code> / uppercase / <code>#94A3B8</code> / <code>letter-spacing: 0.06em</code></td></tr>
+    <tr><td>Value</td><td><code>.sm-value</code> — <code>24px</code> / weight <code>800</code> / line-height <code>1</code></td></tr>
+    <tr><td>Sub-text</td><td><code>.sm-sub</code> — "to blocked/failed items" — <code>11px</code> / <code>#94A3B8</code></td></tr>
+    <tr><td>Value format</td><td><code>{hours}h</code> (e.g., "2.4h", "0.8h", "5.2h")</td></tr>
+  </table>
+
+  <h3>Conditional Color Rules</h3>
+
+  <div class="cond-cards">
+    <div class="cond-card">
+      <div class="label">Avg Response Time</div>
+      <div class="value" style="color:#16A34A">0.8h</div>
+      <div class="sub">to blocked/failed items</div>
+      <div class="rule">< 1 hour → Green #16A34A</div>
+    </div>
+    <div class="cond-card">
+      <div class="label">Avg Response Time</div>
+      <div class="value" style="color:#F59E0B">2.4h</div>
+      <div class="sub">to blocked/failed items</div>
+      <div class="rule">1–4 hours → Amber #F59E0B</div>
+    </div>
+    <div class="cond-card">
+      <div class="label">Avg Response Time</div>
+      <div class="value" style="color:#EF4444">5.2h</div>
+      <div class="sub">to blocked/failed items</div>
+      <div class="rule">> 4 hours → Red #EF4444</div>
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <tr><th>Condition</th><th>Color</th><th>Hex</th><th>Tailwind</th></tr>
+    <tr><td><code>value < 1</code> hour</td><td style="color:#16A34A; font-weight:700">Green</td><td><code>#16A34A</code></td><td>green-600</td></tr>
+    <tr><td><code>1 ≤ value ≤ 4</code> hours</td><td style="color:#F59E0B; font-weight:700">Amber</td><td><code>#F59E0B</code></td><td>amber-500</td></tr>
+    <tr><td><code>value > 4</code> hours</td><td style="color:#EF4444; font-weight:700">Red</td><td><code>#EF4444</code></td><td>red-500</td></tr>
+  </table>
+
+  <h3>Empty State</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Condition</td><td>No blocked or failed items today</td></tr>
+    <tr><td>Value display</td><td><code>—</code> (em dash) / color <code>#0F172A</code> (default, no conditional color)</td></tr>
+    <tr><td>Sub-text</td><td><code>no blocked/failed today</code></td></tr>
+  </table>
+
+  <h4>React Implementation</h4>
+<pre><span class="key">function</span> getResponseTimeColor(hours: number | null): string {
+  <span class="key">if</span> (hours === <span class="key">null</span>) <span class="key">return</span> <span class="str">'#0F172A'</span>;  <span class="comment">// default — no data</span>
+  <span class="key">if</span> (hours &lt; <span class="num">1</span>) <span class="key">return</span> <span class="str">'#16A34A'</span>;    <span class="comment">// green</span>
+  <span class="key">if</span> (hours &lt;= <span class="num">4</span>) <span class="key">return</span> <span class="str">'#F59E0B'</span>;   <span class="comment">// amber</span>
+  <span class="key">return</span> <span class="str">'#EF4444'</span>;                    <span class="comment">// red</span>
+}
+
+<span class="key">function</span> formatResponseTime(hours: number | null): string {
+  <span class="key">if</span> (hours === <span class="key">null</span>) <span class="key">return</span> <span class="str">'—'</span>;
+  <span class="key">return</span> hours.toFixed(<span class="num">1</span>) + <span class="str">'h'</span>;
+}
+
+<span class="key">function</span> getResponseTimeSub(hours: number | null): string {
+  <span class="key">if</span> (hours === <span class="key">null</span>) <span class="key">return</span> <span class="str">'no blocked/failed today'</span>;
+  <span class="key">return</span> <span class="str">'to blocked/failed items'</span>;
+}</pre>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §10 RESPONSIVE BEHAVIOR                            -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s10">
+  <h2><span class="section-num">10</span> Responsive Behavior</h2>
+
+  <table class="spec-table">
+    <tr><th>Breakpoint</th><th>Behavior</th></tr>
+    <tr>
+      <td><code>> 1024px</code></td>
+      <td>Full layout: 52-column heatmap fills card width naturally. Cells approx 14–18px. All month labels visible.</td>
+    </tr>
+    <tr>
+      <td><code>768–1023px</code></td>
+      <td>Main grid collapses to single column. Heatmap card becomes full-width — cells shrink proportionally (approx 10–14px). Still readable. Summary cards: 2×2 grid.</td>
+    </tr>
+    <tr>
+      <td><code>< 768px</code></td>
+      <td>Cells shrink further (approx 6–10px). Consider: <code>overflow-x: auto</code> on <code>.heatmap-grid</code> with fixed minimum cell size if needed. Summary cards: single column. Month labels may overlap — consider showing every other month label.</td>
+    </tr>
+    <tr>
+      <td><code>< 480px</code></td>
+      <td>Day labels column can be hidden. Heatmap becomes horizontally scrollable with <code>min-width</code> constraint.</td>
+    </tr>
+  </table>
+
+  <h4>Existing Breakpoints (from design)</h4>
+<pre><span class="comment">/* Already in 13-team-activity.html */</span>
+<span class="key">@media</span> (max-width: <span class="num">1023px</span>) {
+  .main-grid { grid-template-columns: <span class="num">1fr</span>; }
+  .summary-row { grid-template-columns: repeat(<span class="num">2</span>, <span class="num">1fr</span>); }
+}
+<span class="key">@media</span> (max-width: <span class="num">640px</span>) {
+  .summary-row { grid-template-columns: <span class="num">1fr</span>; }
+  .member-stats { display: <span class="val">none</span>; }
+}</pre>
+
+  <h4>Recommended Addition</h4>
+<pre><span class="key">@media</span> (max-width: <span class="num">480px</span>) {
+  .hm-day-col { display: <span class="val">none</span>; }
+  .heatmap-grid { overflow-x: <span class="val">auto</span>; }
+  .hm-row { min-width: <span class="num">520px</span>; }  <span class="comment">/* force minimum for scroll */</span>
+  .hm-month-row { min-width: <span class="num">520px</span>; }
+}</pre>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §11 DATA CONTRACT & SUPABASE                       -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s11">
+  <h2><span class="section-num">11</span> Data Contract & Supabase</h2>
+
+  <h3>Heatmap Data Query</h3>
+<pre><span class="comment">-- Daily activity count for team heatmap (last 52 weeks)</span>
+<span class="key">SELECT</span>
+  DATE(created_at) <span class="key">AS</span> activity_date,
+  COUNT(*) <span class="key">AS</span> activity_count
+<span class="key">FROM</span> activity_logs
+<span class="key">WHERE</span> project_id = :project_id
+  <span class="key">AND</span> created_at >= NOW() - INTERVAL <span class="str">'52 weeks'</span>
+<span class="key">GROUP BY</span> DATE(created_at)
+<span class="key">ORDER BY</span> activity_date <span class="key">ASC</span>;</pre>
+
+  <h4>Expected Response Shape</h4>
+<pre><span class="comment">// API returns sparse array (only days with activity)</span>
+<span class="key">interface</span> HeatmapDay {
+  activity_date: <span class="str">string</span>;  <span class="comment">// "2025-04-01"</span>
+  activity_count: <span class="str">number</span>; <span class="comment">// 0–N raw count</span>
+}
+
+<span class="comment">// Client fills in missing dates as 0 and maps to levels 0–5</span></pre>
+
+  <h3>Avg Response Time Query</h3>
+<pre><span class="comment">-- Average response time to blocked/failed items today</span>
+<span class="key">SELECT</span>
+  AVG(
+    EXTRACT(EPOCH <span class="key">FROM</span> (first_response_at - status_changed_at)) / <span class="num">3600</span>
+  ) <span class="key">AS</span> avg_response_hours
+<span class="key">FROM</span> tc_executions
+<span class="key">WHERE</span> project_id = :project_id
+  <span class="key">AND</span> status <span class="key">IN</span> (<span class="str">'blocked'</span>, <span class="str">'failed'</span>)
+  <span class="key">AND</span> DATE(status_changed_at) = CURRENT_DATE
+  <span class="key">AND</span> first_response_at <span class="key">IS NOT NULL</span>;</pre>
+
+  <div class="info-box">
+    <i class="ri-information-line"></i>
+    <span>If query returns <code>null</code> (no blocked/failed items today), display the empty state: value = "—", sub = "no blocked/failed today".</span>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §12 ACCESSIBILITY                                  -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s12">
+  <h2><span class="section-num">12</span> Accessibility</h2>
+
+  <table class="spec-table">
+    <tr><th style="width:200px">Requirement</th><th>Implementation</th></tr>
+    <tr><td>Screen reader</td><td>Add <code>role="img"</code> and <code>aria-label="{total} activities in the last year"</code> to <code>.heatmap-card</code></td></tr>
+    <tr><td>Individual cells</td><td>Each cell: <code>role="gridcell"</code>, <code>aria-label="{count} activities on {date}"</code></td></tr>
+    <tr><td>Grid structure</td><td><code>.hm-grid-inner</code>: <code>role="grid"</code>; each <code>.hm-row</code>: <code>role="row"</code></td></tr>
+    <tr><td>Color contrast</td><td>Level 0–2 have low contrast — tooltip provides precise count. Acceptable per WCAG for decorative data visualization.</td></tr>
+    <tr><td>Keyboard nav</td><td>Recommended: arrow key navigation between cells, Enter/Space to select day for detail view</td></tr>
+    <tr><td>Reduced motion</td><td>Tooltip fade (<code>opacity 0.12s</code>) is minimal. No additional motion to gate.</td></tr>
+    <tr><td>Avg Response Time card</td><td>Color alone doesn't convey meaning — the numeric value (e.g., "2.4h") provides the information. Colors are supplementary.</td></tr>
+  </table>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §13 LIVE PREVIEW                                   -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s13">
+  <h2><span class="section-num">13</span> Live Preview</h2>
+
+  <div class="preview-frame">
+    <div class="preview-label">52-Week Activity Heatmap (actual rendering)</div>
+    <div style="display:flex;align-items:baseline;gap:0.375rem;margin-bottom:0.5rem">
+      <span id="pvTotal" style="font-size:0.8125rem;font-weight:700;color:#0F172A"></span>
+      <span style="font-size:0.75rem;color:#64748B">activities in the last year</span>
+    </div>
+    <div class="hm-preview">
+      <div class="day-col" id="pvDayCol"></div>
+      <div class="grid-area" id="pvGrid"></div>
+    </div>
+    <div class="hm-legend-row">
+      <span class="ll">Less</span>
+      <div class="lc l0"></div><div class="lc l1"></div><div class="lc l2"></div>
+      <div class="lc l3"></div><div class="lc l4"></div><div class="lc l5"></div>
+      <span class="ll">More</span>
+    </div>
+  </div>
+
+  <div class="preview-frame" style="margin-top:1rem">
+    <div class="preview-label">Avg Response Time — Conditional Color States</div>
+    <div class="cond-cards">
+      <div class="cond-card">
+        <div class="label">Avg Response Time</div>
+        <div class="value" style="color:#16A34A">0.8h</div>
+        <div class="sub">to blocked/failed items</div>
+      </div>
+      <div class="cond-card">
+        <div class="label">Avg Response Time</div>
+        <div class="value" style="color:#F59E0B">2.4h</div>
+        <div class="sub">to blocked/failed items</div>
+      </div>
+      <div class="cond-card">
+        <div class="label">Avg Response Time</div>
+        <div class="value" style="color:#EF4444">5.2h</div>
+        <div class="sub">to blocked/failed items</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:0.5rem">
+      <div class="cond-card" style="display:inline-block;min-width:200px">
+        <div class="label">Avg Response Time</div>
+        <div class="value" style="color:#0F172A">—</div>
+        <div class="sub">no blocked/failed today</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §14 CSS CUSTOM PROPERTIES                          -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s14">
+  <h2><span class="section-num">14</span> CSS Custom Properties (Recommended)</h2>
+
+  <p>For maintainability, extract heatmap values into CSS custom properties:</p>
+
+<pre><span class="key">:root</span> {
+  <span class="comment">/* Heatmap */</span>
+  <span class="key">--hm-gap</span>: <span class="num">2px</span>;
+  <span class="key">--hm-radius</span>: <span class="num">2px</span>;
+  <span class="key">--hm-weeks</span>: <span class="num">52</span>;
+  <span class="key">--hm-outline</span>: <span class="num">1px</span> solid rgba(<span class="num">27,31,35,0.06</span>);
+  <span class="key">--hm-outline-hover</span>: <span class="num">2px</span> solid rgba(<span class="num">27,31,35,0.3</span>);
+  <span class="key">--hm-size</span>: <span class="num">10px</span>; <span class="comment">/* fallback; overridden by JS */</span>
+
+  <span class="comment">/* Color scale */</span>
+  <span class="key">--hm-0</span>: <span class="val">#F1F5F9</span>;
+  <span class="key">--hm-1</span>: <span class="val">#E0E7FF</span>;
+  <span class="key">--hm-2</span>: <span class="val">#C7D2FE</span>;
+  <span class="key">--hm-3</span>: <span class="val">#A5B4FC</span>;
+  <span class="key">--hm-4</span>: <span class="val">#818CF8</span>;
+  <span class="key">--hm-5</span>: <span class="val">#6366F1</span>;
+
+  <span class="comment">/* Response time thresholds */</span>
+  <span class="key">--rt-green</span>: <span class="val">#16A34A</span>;   <span class="comment">/* &lt; 1h */</span>
+  <span class="key">--rt-amber</span>: <span class="val">#F59E0B</span>;   <span class="comment">/* 1–4h */</span>
+  <span class="key">--rt-red</span>: <span class="val">#EF4444</span>;     <span class="comment">/* &gt; 4h */</span>
+
+  <span class="comment">/* Tooltip */</span>
+  <span class="key">--tooltip-bg</span>: <span class="val">#1E293B</span>;
+  <span class="key">--tooltip-radius</span>: <span class="num">6px</span>;
+  <span class="key">--tooltip-font</span>: <span class="num">11px</span>;
+}</pre>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §15 SUMMARY CARDS (4-UP ROW)                        -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s15">
+  <h2><span class="section-num">15</span> Summary Cards (4-up Row)</h2>
+
+  <p>Four stat cards displayed in a single row above the heatmap. Provides today's snapshot metrics.</p>
+
+  <h3>Container Layout</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Container</td><td><code>.summary-row</code></td></tr>
+    <tr><td>Display</td><td><code>display: grid; grid-template-columns: repeat(4, 1fr);</code></td></tr>
+    <tr><td>Gap</td><td><code>0.75rem</code> (12px)</td></tr>
+    <tr><td>Margin-bottom</td><td><code>1.5rem</code> (24px)</td></tr>
+  </table>
+
+  <h3>Card Spec</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Background</td><td><code>#FFFFFF</code></td></tr>
+    <tr><td>Border</td><td><code>1px solid #E2E8F0</code></td></tr>
+    <tr><td>Border-radius</td><td><code>0.75rem</code> (12px)</td></tr>
+    <tr><td>Padding</td><td><code>1rem 1.25rem</code> (16px 20px)</td></tr>
+    <tr><td>Animation</td><td><code>fadeInUp 0.3s ease-out backwards</code> — staggered 50ms per card</td></tr>
+  </table>
+
+  <h3>Card Typography</h3>
+  <table class="spec-table">
+    <tr><th>Element</th><th>Class</th><th>Font Size</th><th>Weight</th><th>Color</th><th>Other</th></tr>
+    <tr><td>Label</td><td><code>.sm-label</code></td><td><code>0.6875rem</code> (11px)</td><td>600</td><td><code>#94A3B8</code></td><td>uppercase, <code>letter-spacing: 0.06em</code>, margin-bottom 0.375rem</td></tr>
+    <tr><td>Value</td><td><code>.sm-value</code></td><td><code>1.5rem</code> (24px)</td><td>800</td><td><code>#0F172A</code> (default)</td><td>line-height: 1</td></tr>
+    <tr><td>Sub-text</td><td><code>.sm-sub</code></td><td><code>0.6875rem</code> (11px)</td><td>400</td><td><code>#94A3B8</code></td><td>margin-top 0.25rem</td></tr>
+  </table>
+
+  <h3>Four Cards Data</h3>
+  <table class="spec-table">
+    <tr><th>#</th><th>Label</th><th>Value Example</th><th>Value Color</th><th>Sub-text</th></tr>
+    <tr><td>1</td><td>ACTIVE TODAY</td><td><code>8 / 12</code></td><td><code>#8B5CF6</code> (violet) — "/12" portion: <code>#94A3B8</code>, 14px, weight 500</td><td>team members</td></tr>
+    <tr><td>2</td><td>TC CREATED TODAY</td><td><code>14</code></td><td><code>#0F172A</code> (default)</td><td>across 4 projects</td></tr>
+    <tr><td>3</td><td>TC EXECUTED TODAY</td><td><code>89</code></td><td><code>#16A34A</code> (green)</td><td>73 passed, 12 failed, 4 blocked</td></tr>
+    <tr><td>4</td><td>AVG RESPONSE TIME</td><td><code>2.4h</code></td><td>Conditional (see §9)</td><td>to blocked/failed items</td></tr>
+  </table>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §16 TEAM MEMBERS LIST                               -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s16">
+  <h2><span class="section-num">16</span> Team Members List</h2>
+
+  <p>Left column of the two-column layout below the heatmap. Displays all team members sorted by activity (most active first).</p>
+
+  <h3>Two-Column Layout</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Container</td><td><code>.main-grid</code></td></tr>
+    <tr><td>Grid</td><td><code>grid-template-columns: 1fr 380px; gap: 1rem;</code></td></tr>
+    <tr><td>Left column</td><td>Team Members (fluid)</td></tr>
+    <tr><td>Right column</td><td>Activity Feed (fixed 380px)</td></tr>
+  </table>
+
+  <h3>Section Title</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Font</td><td><code>0.9375rem</code> (15px) / weight <code>700</code> / color <code>#0F172A</code></td></tr>
+    <tr><td>Icon</td><td><code>ri-group-line</code> / color <code>#8B5CF6</code></td></tr>
+    <tr><td>Gap</td><td><code>0.5rem</code> icon-to-text</td></tr>
+    <tr><td>Margin-bottom</td><td><code>0.75rem</code></td></tr>
+  </table>
+
+  <h3>Member Card</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Layout</td><td><code>display: flex; align-items: center; gap: 1rem;</code></td></tr>
+    <tr><td>Background</td><td><code>#FFFFFF</code></td></tr>
+    <tr><td>Border</td><td><code>1px solid #E2E8F0</code></td></tr>
+    <tr><td>Border-radius</td><td><code>0.75rem</code></td></tr>
+    <tr><td>Padding</td><td><code>1rem 1.25rem</code></td></tr>
+    <tr><td>Hover</td><td>border <code>#C7D2FE</code>, shadow <code>0 4px 16px rgba(99,102,241,0.08)</code>, <code>translateY(-1px)</code></td></tr>
+    <tr><td>Offline state</td><td><code>opacity: 0.6</code> on card</td></tr>
+    <tr><td>List gap</td><td><code>0.5rem</code> between cards</td></tr>
+    <tr><td>Animation</td><td><code>fadeInUp 0.3s ease-out</code> staggered 40ms (starting at 200ms delay)</td></tr>
+  </table>
+
+  <h3>Avatar</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Size</td><td><code>2.5rem × 2.5rem</code> (40px)</td></tr>
+    <tr><td>Shape</td><td>Circle (<code>border-radius: 50%</code>)</td></tr>
+    <tr><td>Font</td><td><code>0.875rem</code> / weight <code>700</code> / color <code>#fff</code></td></tr>
+    <tr><td>Background</td><td>Unique per member (assigned color from team palette)</td></tr>
+    <tr><td>Online dot</td><td><code>10×10px</code>, <code>#16A34A</code>, bottom-right, <code>2px solid #fff</code> border</td></tr>
+    <tr><td>Offline dot</td><td><code>10×10px</code>, <code>#CBD5E1</code>, bottom-right, <code>2px solid #fff</code> border</td></tr>
+  </table>
+
+  <h3>Member Info</h3>
+  <table class="spec-table">
+    <tr><th>Element</th><th>Class</th><th>Size</th><th>Weight</th><th>Color</th></tr>
+    <tr><td>Name</td><td><code>.member-name</code></td><td><code>0.875rem</code> (14px)</td><td>700</td><td><code>#0F172A</code></td></tr>
+    <tr><td>Role</td><td><code>.member-role</code></td><td><code>0.6875rem</code> (11px)</td><td>400</td><td><code>#94A3B8</code></td></tr>
+  </table>
+
+  <h3>Stats (Executed / Created / Failed)</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Layout</td><td><code>display: flex; gap: 1rem;</code> — 3 items, each centered</td></tr>
+    <tr><td>Count</td><td><code>.ms-count</code> — <code>1rem</code> (16px), weight <code>800</code>, color <code>#0F172A</code></td></tr>
+    <tr><td>Count colors</td><td>Created: <code>#16A34A</code>, Failed: <code>#EF4444</code>, Executed: default <code>#0F172A</code></td></tr>
+    <tr><td>Label</td><td><code>.ms-label</code> — <code>0.5625rem</code> (9px), weight <code>600</code>, uppercase, <code>#94A3B8</code>, letter-spacing 0.04em</td></tr>
+    <tr><td>Responsive</td><td>Hidden at <code>≤ 640px</code></td></tr>
+  </table>
+
+  <h3>Last Action</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Container</td><td><code>.member-last</code> — right-aligned, min-width <code>100px</code></td></tr>
+    <tr><td>Action text</td><td><code>.action</code> — <code>0.6875rem</code>, weight <code>600</code>, color <code>#475569</code>, <code>text-overflow: ellipsis</code>, max-width <code>140px</code></td></tr>
+    <tr><td>Time</td><td><code>0.6875rem</code>, color <code>#94A3B8</code></td></tr>
+    <tr><td>TC-ID format</td><td><code>TC-{number}</code> — e.g., "Executed TC-2847", "Created TC-2846"</td></tr>
+  </table>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §17 LIVE ACTIVITY FEED                              -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s17">
+  <h2><span class="section-num">17</span> Live Activity Feed</h2>
+
+  <p>Right column (380px fixed width). Displays a real-time stream of team actions.</p>
+
+  <h3>Feed Card Container</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Background</td><td><code>#FFFFFF</code></td></tr>
+    <tr><td>Border</td><td><code>1px solid #E2E8F0</code></td></tr>
+    <tr><td>Border-radius</td><td><code>0.75rem</code></td></tr>
+    <tr><td>Overflow</td><td><code>hidden</code> (clips border-radius)</td></tr>
+  </table>
+
+  <h3>Feed Header</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Layout</td><td><code>flex, space-between</code></td></tr>
+    <tr><td>Padding</td><td><code>1rem 1.25rem</code></td></tr>
+    <tr><td>Border-bottom</td><td><code>1px solid #E2E8F0</code></td></tr>
+    <tr><td>Title ("Today")</td><td><code>0.8125rem</code>, weight <code>700</code>, color <code>#0F172A</code></td></tr>
+    <tr><td>Link ("Full History →")</td><td><code>0.75rem</code>, weight <code>600</code>, color <code>#6366F1</code>, underline on hover</td></tr>
+  </table>
+
+  <h3>Feed List</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Max-height</td><td><code>480px</code> (scrollable)</td></tr>
+    <tr><td>Overflow</td><td><code>overflow-y: auto</code></td></tr>
+  </table>
+
+  <h3>Feed Item</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Layout</td><td><code>display: flex; gap: 0.75rem;</code></td></tr>
+    <tr><td>Padding</td><td><code>0.75rem 1.25rem</code></td></tr>
+    <tr><td>Border-bottom</td><td><code>1px solid #F1F5F9</code> (last item: none)</td></tr>
+    <tr><td>Hover</td><td>background <code>#FAFAFF</code></td></tr>
+  </table>
+
+  <h3>Feed Avatar</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Size</td><td><code>1.75rem × 1.75rem</code> (28px) — smaller than member avatar</td></tr>
+    <tr><td>Font</td><td><code>0.5625rem</code> (9px) / weight <code>700</code> / color <code>#fff</code></td></tr>
+    <tr><td>Shape</td><td>Circle</td></tr>
+    <tr><td>margin-top</td><td><code>0.125rem</code> (aligns with text baseline)</td></tr>
+  </table>
+
+  <h3>Feed Text & TC-ID Format</h3>
+  <table class="spec-table">
+    <tr><th>Element</th><th>Class</th><th>Size</th><th>Weight</th><th>Color</th></tr>
+    <tr><td>Text body</td><td><code>.feed-text</code></td><td><code>0.8125rem</code> (13px)</td><td>400</td><td><code>#334155</code></td></tr>
+    <tr><td>User name</td><td><code>strong</code></td><td>inherit</td><td>600</td><td><code>#0F172A</code></td></tr>
+    <tr><td>Action verb</td><td><code>.action</code></td><td>inherit</td><td>600</td><td><code>#6366F1</code> (indigo)</td></tr>
+    <tr><td>TC target</td><td><code>.target</code></td><td>inherit</td><td>400</td><td><code>#475569</code></td></tr>
+    <tr><td>Timestamp</td><td><code>.feed-time</code></td><td><code>0.625rem</code> (10px)</td><td>400</td><td><code>#94A3B8</code></td></tr>
+  </table>
+
+  <div class="info-box">
+    <i class="ri-information-line"></i>
+    <span><strong>TC-ID format:</strong> <code>TC-{number}</code> — displayed as monospace-style text within <code>.target</code> span. Example: "Sarah Kim <em style="color:#6366F1">executed</em> <em style="color:#475569">TC-2847</em>". For run targets, use run name: "Sprint 24 — Regression".</span>
+  </div>
+
+  <h3>Feed Badges</h3>
+  <table class="spec-table">
+    <tr><th>Type</th><th>Class</th><th>Background</th><th>Text Color</th></tr>
+    <tr><td>New (created)</td><td><code>.feed-badge.created</code></td><td><code>#EEF2FF</code></td><td><code>#6366F1</code></td></tr>
+    <tr><td>Passed (executed)</td><td><code>.feed-badge.executed</code></td><td><code>#ECFDF5</code></td><td><code>#10B981</code></td></tr>
+    <tr><td>Failed / Blocked</td><td><code>.feed-badge.failed</code></td><td><code>#FEF2F2</code></td><td><code>#EF4444</code></td></tr>
+    <tr><td>Comment</td><td><code>.feed-badge.commented</code></td><td><code>#FEF3C7</code></td><td><code>#D97706</code></td></tr>
+  </table>
+
+  <table class="spec-table">
+    <tr><th style="width:200px">Badge Property</th><th>Value</th></tr>
+    <tr><td>Font size</td><td><code>0.625rem</code> (10px)</td></tr>
+    <tr><td>Font weight</td><td><code>500</code></td></tr>
+    <tr><td>Padding</td><td><code>1px 6px</code></td></tr>
+    <tr><td>Border-radius</td><td><code>9999px</code> (pill)</td></tr>
+    <tr><td>Margin-left</td><td><code>0.375rem</code></td></tr>
+  </table>
+
+  <h3>Feed Text Pattern (timestamp)</h3>
+  <table class="spec-table">
+    <tr><th style="width:200px">Property</th><th>Value</th></tr>
+    <tr><td>Format</td><td><code>{relative time} · {project name}</code></td></tr>
+    <tr><td>Examples</td><td>"4 min ago · Payment Integration", "1h ago · Mobile App v2"</td></tr>
+    <tr><td>Separator</td><td>Middle dot <code>·</code></td></tr>
+  </table>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- §18 ANIMATIONS                                      -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="s18">
+  <h2><span class="section-num">18</span> Animations</h2>
+
+  <table class="spec-table">
+    <tr><th>Element</th><th>Animation</th><th>Duration</th><th>Easing</th><th>Stagger</th></tr>
+    <tr><td>Summary cards (×4)</td><td><code>fadeInUp</code> (opacity 0→1, translateY 12→0)</td><td>0.3s</td><td>ease-out</td><td>50ms per card (0, 50, 100, 150ms)</td></tr>
+    <tr><td>Member cards (×8)</td><td><code>fadeInUp</code></td><td>0.3s</td><td>ease-out</td><td>40ms per card (starting at 200ms)</td></tr>
+    <tr><td>Heatmap cells</td><td>None (instant render)</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td>Tooltip</td><td><code>opacity 0→1</code></td><td>0.12s</td><td>linear</td><td>—</td></tr>
+    <tr><td>Member card hover</td><td><code>translateY(-1px)</code> + border color + shadow</td><td>0.2s</td><td>ease</td><td>—</td></tr>
+    <tr><td>Feed item hover</td><td>Background color change</td><td>0.15s</td><td>linear</td><td>—</td></tr>
+  </table>
+
+<pre><span class="comment">/* fadeInUp keyframes */</span>
+<span class="key">@keyframes</span> fadeInUp {
+  <span class="key">from</span> { opacity: <span class="num">0</span>; transform: translateY(<span class="num">12px</span>); }
+  <span class="key">to</span>   { opacity: <span class="num">1</span>; transform: translateY(<span class="num">0</span>); }
+}</pre>
+
+  <div class="info-box">
+    <i class="ri-information-line"></i>
+    <span>All animations use <code>backwards</code> fill mode so elements are hidden before their delay completes. Consider gating all animations behind <code>@media (prefers-reduced-motion: no-preference)</code> for accessibility.</span>
+  </div>
+</div>
+
+
+</div><!-- /doc-body -->
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- LIVE PREVIEW SCRIPT                                 -->
+<!-- ════════════════════════════════════════════════════ -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const WEEKS = 52;
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  const today = new Date(2026, 2, 25);
+  const todayDow = today.getDay();
+  const endSat = new Date(today);
+  endSat.setDate(endSat.getDate() + (6 - todayDow));
+  const startSun = new Date(endSat);
+  startSun.setDate(startSun.getDate() - (WEEKS * 7) + 1);
+
+  let seed = 42;
+  function rand() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+
+  const data = [];
+  let total = 0;
+  const cMap = [0, 3, 8, 15, 25, 40];
+  for (let w = 0; w < WEEKS; w++) {
+    data[w] = [];
+    for (let d = 0; d < 7; d++) {
+      const cd = new Date(startSun);
+      cd.setDate(cd.getDate() + w * 7 + d);
+      if (cd > today) { data[w][d] = -1; continue; }
+      let lvl;
+      if (d === 0 || d === 6) { lvl = rand() < 0.55 ? 0 : (rand() < 0.5 ? 1 : 2); }
+      else { const r = rand(); lvl = r < 0.06 ? 0 : r < 0.18 ? 1 : r < 0.38 ? 2 : r < 0.62 ? 3 : r < 0.82 ? 4 : 5; }
+      if (w > 42 && lvl > 0 && rand() < 0.25) lvl = Math.min(5, lvl + 1);
+      data[w][d] = lvl;
+      total += cMap[lvl];
+    }
+  }
+  document.getElementById('pvTotal').textContent = total.toLocaleString();
+
+  // Day labels
+  const dayCol = document.getElementById('pvDayCol');
+  const spacer = document.createElement('div');
+  spacer.className = 'day-spacer';
+  dayCol.appendChild(spacer);
+  for (let d = 0; d < 7; d++) {
+    const lbl = document.createElement('span');
+    lbl.className = 'day-lbl' + ([1,3,5].includes(d) ? '' : ' h');
+    lbl.textContent = [1,3,5].includes(d) ? dayNames[d] : '';
+    dayCol.appendChild(lbl);
+  }
+
+  // Grid
+  const grid = document.getElementById('pvGrid');
+  const mRow = document.createElement('div');
+  mRow.className = 'month-row';
+  let lastM = -1;
+  for (let w = 0; w < WEEKS; w++) {
+    const ws = new Date(startSun);
+    ws.setDate(ws.getDate() + w * 7);
+    const m = ws.getMonth();
+    const sp = document.createElement('span');
+    sp.className = 'month-lbl';
+    if (m !== lastM) { sp.textContent = monthNames[m]; lastM = m; }
+    sp.style.gridColumn = w + 1;
+    mRow.appendChild(sp);
+  }
+  grid.appendChild(mRow);
+
+  const inner = document.createElement('div');
+  inner.className = 'grid-inner';
+  for (let d = 0; d < 7; d++) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    for (let w = 0; w < WEEKS; w++) {
+      const cell = document.createElement('div');
+      const lvl = data[w][d];
+      cell.className = lvl === -1 ? 'c f' : 'c l' + lvl;
+      row.appendChild(cell);
+    }
+    inner.appendChild(row);
+  }
+  grid.appendChild(inner);
+
+  // Sync day label heights
+  requestAnimationFrame(() => {
+    const fc = inner.querySelector('.c');
+    if (fc) {
+      const h = fc.offsetHeight + 'px';
+      dayCol.querySelectorAll('.day-lbl').forEach(l => { l.style.height = h; l.style.lineHeight = h; });
+    }
+  });
+});
+</script>
+
+</body>
+</html>

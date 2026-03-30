@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably vs TestRail — Testably</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #0F172A; color: #CBD5E1; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  .wrap { max-width: 76rem; margin: 0 auto; padding: 0 2rem; }
+  .gt { background: linear-gradient(135deg, #818CF8, #C084FC); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .mesh { position: relative; overflow: hidden; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(100px); pointer-events: none; opacity: 0.55; }
+  @keyframes blobFloat { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(15px,-20px) scale(1.03)} 66%{transform:translate(-10px,15px) scale(0.97)} }
+
+  .sh-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: #818CF8; margin-bottom: 0.75rem; }
+  .sh-label i { font-size: 0.875rem; }
+  .sh-title { font-size: 2.5rem; font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -0.025em; }
+  .sh-desc { font-size: 1.0625rem; color: #94A3B8; margin-top: 0.75rem; max-width: 38rem; line-height: 1.6; }
+  .sh-center { text-align: center; }
+  .sh-center .sh-desc { margin-left: auto; margin-right: auto; }
+  .sh-center .sh-label { justify-content: center; }
+
+  .btn-p { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem; background: #6366F1; color: #fff; font-size: 0.9375rem; font-weight: 600; border-radius: 9999px; transition: all 0.25s; box-shadow: 0 4px 20px rgba(99,102,241,0.3); border: none; cursor: pointer; }
+  .btn-p:hover { background: #4F46E5; box-shadow: 0 6px 30px rgba(99,102,241,0.45); transform: translateY(-2px); }
+  .btn-s { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem; border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 0.9375rem; font-weight: 500; border-radius: 9999px; transition: all 0.25s; background: transparent; cursor: pointer; }
+  .btn-s:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.25); }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 0.875rem 2rem; display: flex; align-items: center; justify-content: space-between; transition: all 0.35s; background: rgba(15,23,42,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .nb { display: flex; align-items: center; gap: 0.5rem; }
+  .nl { width: 34px; height: 34px; background: #6366F1; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .nl span { font-family: 'Pacifico', cursive; color: #fff; font-size: 1.125rem; line-height: 1; }
+  .nn { font-weight: 700; color: #fff; font-size: 1.0625rem; }
+  .nk { display: flex; align-items: center; gap: 1.75rem; }
+  .nk a { color: rgba(255,255,255,0.55); font-size: 0.8125rem; font-weight: 500; transition: color 0.2s; }
+  .nk a:hover { color: #fff; }
+  .nk .nc { padding: 0.5rem 1.25rem; background: #6366F1; color: #fff !important; border-radius: 9999px; font-weight: 600; transition: all 0.25s; }
+  .nk .nc:hover { background: #4F46E5; box-shadow: 0 0 24px rgba(99,102,241,0.35); }
+
+  .page-hero { padding: 8rem 2rem 4rem; text-align: center; position: relative; overflow: hidden; }
+  .page-hero .blob { width: 500px; height: 500px; }
+  .page-hero .b1 { background: rgba(99,102,241,0.15); top: -20%; left: -10%; animation: blobFloat 8s ease-in-out infinite; }
+  .page-hero .b2 { background: rgba(139,92,246,0.1); bottom: -15%; right: -8%; animation: blobFloat 10s ease-in-out infinite 3s; }
+  .page-hero h1 { font-size: 3rem; font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -0.025em; position: relative; z-index: 2; }
+  .page-hero .hero-desc { font-size: 1.125rem; color: #94A3B8; margin-top: 1rem; max-width: 40rem; margin-left: auto; margin-right: auto; line-height: 1.7; position: relative; z-index: 2; }
+  .page-hero .sh-label { justify-content: center; position: relative; z-index: 2; }
+  .page-hero .hero-btns { display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; position: relative; z-index: 2; }
+
+  .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 1.75rem; transition: all 0.35s; position: relative; overflow: hidden; }
+  .card:hover { background: rgba(255,255,255,0.05); border-color: rgba(99,102,241,0.2); transform: translateY(-4px); }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #6366F1, transparent); opacity: 0; transition: opacity 0.35s; }
+  .card:hover::before { opacity: 1; }
+  .card h3 { font-size: 1.0625rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+  .card p { font-size: 0.8125rem; color: #94A3B8; line-height: 1.6; }
+
+  .content-section { padding: 5rem 2rem; }
+  .content-section + .content-section { padding-top: 0; }
+
+  /* Compare-specific styles */
+  .quick-cards { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.25rem; margin-top: 3rem; }
+  .qc { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 1.75rem; transition: all 0.35s; }
+  .qc:hover { background: rgba(255,255,255,0.05); border-color: rgba(99,102,241,0.2); transform: translateY(-4px); }
+  .qc-icon { width: 2.75rem; height: 2.75rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 1rem; }
+  .qc h3 { font-size: 1.0625rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem; }
+  .qc-vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.75rem; align-items: start; }
+  .qc-side { font-size: 0.8125rem; line-height: 1.6; }
+  .qc-side.ours { color: #10B981; }
+  .qc-side.theirs { color: #94A3B8; }
+  .qc-side strong { display: block; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.25rem; }
+  .qc-side.ours strong { color: #34D399; }
+  .qc-side.theirs strong { color: #64748B; }
+  .qc-divider { width: 1px; background: rgba(255,255,255,0.08); align-self: stretch; margin: 0 0.25rem; }
+  .qc-highlight { font-size: 0.6875rem; font-weight: 700; color: #10B981; margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem; background: rgba(16,185,129,0.1); padding: 0.2rem 0.625rem; border-radius: 9999px; }
+
+  /* Comparison table */
+  .comp-wrap { overflow-x: auto; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.06); margin-top: 3rem; }
+  .comp-table { width: 100%; border-collapse: collapse; }
+  .comp-table th, .comp-table td { padding: 0.875rem 1.25rem; font-size: 0.8125rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .comp-table th { color: #fff; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(255,255,255,0.03); }
+  .comp-table th:first-child { border-radius: 0.5rem 0 0 0; }
+  .comp-table th:last-child { border-radius: 0 0.5rem 0 0; }
+  .comp-table td { color: #94A3B8; }
+  .comp-table td:first-child { color: #CBD5E1; font-weight: 500; }
+  .comp-table .win { color: #10B981; font-weight: 600; }
+  .comp-table .lose { color: #64748B; }
+  .comp-table .tie { color: #94A3B8; }
+  .comp-table .cat-row td { background: rgba(99,102,241,0.06); color: #818CF8; font-weight: 700; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.625rem 1.25rem; }
+
+  /* Pricing comparison */
+  .price-comp { margin-top: 3rem; }
+  .price-comp table { width: 100%; border-collapse: collapse; }
+  .price-comp th, .price-comp td { padding: 1rem 1.25rem; font-size: 0.875rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .price-comp th { color: #fff; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(255,255,255,0.03); }
+  .price-comp td { color: #94A3B8; }
+  .price-comp .savings { color: #10B981; font-weight: 700; }
+  .price-comp .our-price { color: #818CF8; font-weight: 700; }
+  .price-comp .their-price { color: #94A3B8; }
+
+  /* Advantage cards */
+  .adv-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-top: 3rem; }
+  .adv-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 2rem; text-align: center; transition: all 0.35s; }
+  .adv-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(99,102,241,0.2); transform: translateY(-4px); }
+  .adv-card i { font-size: 2rem; color: #818CF8; margin-bottom: 1rem; display: block; }
+  .adv-card h3 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+  .adv-card p { font-size: 0.8125rem; color: #94A3B8; line-height: 1.6; }
+
+  /* Migration CTA */
+  .migration { padding: 5rem 2rem; }
+  .mig-inner { max-width: 76rem; margin: 0 auto; background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); border: 1px solid rgba(99,102,241,0.2); border-radius: 1.5rem; padding: 4rem 3rem; text-align: center; position: relative; overflow: hidden; }
+  .mig-inner::before { content: ''; position: absolute; width: 500px; height: 500px; background: rgba(99,102,241,0.12); border-radius: 50%; filter: blur(80px); top: -40%; right: -10%; pointer-events: none; }
+  .mig-inner h2 { font-size: 2.5rem; font-weight: 800; color: #fff; line-height: 1.15; position: relative; z-index: 2; }
+  .mig-inner p { font-size: 1.0625rem; color: #94A3B8; margin-top: 1rem; max-width: 32rem; margin-left: auto; margin-right: auto; line-height: 1.6; position: relative; z-index: 2; }
+  .mig-btns { display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; position: relative; z-index: 2; }
+
+  /* Testimonial/Why switch */
+  .why-switch { margin-top: 3rem; }
+  .ws-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 2rem; margin-bottom: 1.25rem; }
+  .ws-card blockquote { font-size: 0.9375rem; color: #CBD5E1; line-height: 1.7; font-style: italic; margin-bottom: 1rem; }
+  .ws-card .ws-author { font-size: 0.8125rem; color: #64748B; }
+  .ws-card .ws-author strong { color: #94A3B8; }
+
+  footer { border-top: 1px solid rgba(255,255,255,0.04); padding: 3.5rem 2rem 2rem; }
+  .fgr { max-width: 76rem; margin: 0 auto; display: grid; grid-template-columns: 2fr repeat(4,1fr); gap: 2.5rem; }
+  .fbr p { font-size: 0.8125rem; color: #64748B; margin-top: 0.75rem; line-height: 1.6; max-width: 18rem; }
+  .fso { display: flex; gap: 0.75rem; margin-top: 1rem; }
+  .fso a { width: 2rem; height: 2rem; border-radius: 0.5rem; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: #64748B; font-size: 0.9375rem; transition: all 0.2s; }
+  .fso a:hover { background: rgba(99,102,241,0.15); color: #818CF8; }
+  .fcol h4 { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: #94A3B8; margin-bottom: 1rem; }
+  .fcol a { display: block; font-size: 0.8125rem; color: #64748B; margin-bottom: 0.625rem; transition: color 0.2s; }
+  .fcol a:hover { color: #CBD5E1; }
+  .fbot { max-width: 76rem; margin: 2rem auto 0; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; align-items: center; }
+  .fbot span { font-size: 0.75rem; color: #475569; }
+
+  @media (max-width:1024px) {
+    .fgr { grid-template-columns: repeat(2,1fr); }
+    .quick-cards { grid-template-columns: 1fr; }
+    .adv-grid { grid-template-columns: 1fr; }
+    .page-hero h1 { font-size: 2.25rem; }
+  }
+  @media (max-width:640px) {
+    .fgr { grid-template-columns: 1fr; }
+    .nk a:not(.nc) { display: none; }
+    .fbot { flex-direction: column; gap: 0.5rem; text-align: center; }
+    .page-hero h1 { font-size: 1.875rem; }
+    .sh-title { font-size: 2rem; }
+    .mig-inner h2 { font-size: 2rem; }
+    .hero-btns, .mig-btns { flex-direction: column; align-items: center; }
+    .qc-vs { grid-template-columns: 1fr; gap: 0.5rem; }
+    .qc-divider { width: 100%; height: 1px; }
+    .comp-table th, .comp-table td { padding: 0.625rem 0.75rem; font-size: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="mainNav">
+  <a href="/" class="nb">
+    <div class="nl"><span>T</span></div>
+    <span class="nn">Testably</span>
+  </a>
+  <div class="nk">
+    <a href="/page-features-final.html">Features</a>
+    <a href="/#how">How It Works</a>
+    <a href="/page-pricing-final.html">Pricing</a>
+    <a href="/#why">Why Testably</a>
+    <a href="/#faq">FAQ</a>
+    <a href="#">Log in</a>
+    <a href="#" class="nc">Get Started</a>
+  </div>
+</nav>
+
+<section class="page-hero mesh">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="sh-label"><i class="ri-exchange-line"></i> Compare</div>
+  <h1>Testably vs TestRail<br><span class="gt">Modern QA, without the legacy overhead</span></h1>
+  <p class="hero-desc">TestRail was built for a different era. Testably brings test management into 2026 with AI, keyboard-first UX, and flat-rate pricing.</p>
+  <div class="hero-btns">
+    <a href="#" class="btn-p">Try Testably Free <i class="ri-arrow-right-line"></i></a>
+    <a href="#comparison" class="btn-s">See Full Comparison <i class="ri-arrow-down-line"></i></a>
+  </div>
+</section>
+
+<!-- Quick Comparison Cards -->
+<section class="content-section mesh">
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label"><i class="ri-flashlight-line"></i> At a Glance</div>
+      <h2 class="sh-title">Why teams <span class="gt">switch</span></h2>
+      <p class="sh-desc">Four key areas where Testably outperforms TestRail.</p>
+    </div>
+    <div class="quick-cards">
+      <div class="qc">
+        <div class="qc-icon" style="background:rgba(16,185,129,0.12);color:#34D399"><i class="ri-price-tag-3-line"></i></div>
+        <h3>Pricing</h3>
+        <div class="qc-vs">
+          <div class="qc-side ours"><strong>Testably</strong>$0&ndash;99/mo flat-rate<br>Up to 20 users included</div>
+          <div class="qc-divider"></div>
+          <div class="qc-side theirs"><strong>TestRail</strong>$38&ndash;74/user/month<br>20 users = $760&ndash;1,480/mo</div>
+        </div>
+        <div class="qc-highlight"><i class="ri-arrow-down-s-line" style="font-size:0.75rem"></i> Save up to 93% with Testably</div>
+      </div>
+      <div class="qc">
+        <div class="qc-icon" style="background:rgba(99,102,241,0.12);color:#818CF8"><i class="ri-sparkling-line"></i></div>
+        <h3>AI Capabilities</h3>
+        <div class="qc-vs">
+          <div class="qc-side ours"><strong>Testably</strong>Plain text, Jira, Discovery Logs &rarr; test cases<br>AI edge case suggestions</div>
+          <div class="qc-divider"></div>
+          <div class="qc-side theirs"><strong>TestRail</strong>User story &rarr; test generation only<br>Limited AI scope</div>
+        </div>
+      </div>
+      <div class="qc">
+        <div class="qc-icon" style="background:rgba(245,158,11,0.12);color:#FBBF24"><i class="ri-keyboard-line"></i></div>
+        <h3>UX &amp; Speed</h3>
+        <div class="qc-vs">
+          <div class="qc-side ours"><strong>Testably</strong>Cmd+K palette, G-chord nav, Focus Mode<br>Keyboard-first, zero mouse required</div>
+          <div class="qc-divider"></div>
+          <div class="qc-side theirs"><strong>TestRail</strong>Traditional click-based UI<br>No command palette or Focus Mode</div>
+        </div>
+      </div>
+      <div class="qc">
+        <div class="qc-icon" style="background:rgba(139,92,246,0.12);color:#C084FC"><i class="ri-timer-line"></i></div>
+        <h3>Setup Time</h3>
+        <div class="qc-vs">
+          <div class="qc-side ours"><strong>Testably</strong>First test run in under 5 minutes<br>No admin training needed</div>
+          <div class="qc-divider"></div>
+          <div class="qc-side theirs"><strong>TestRail</strong>Complex initial setup<br>Admin training often required</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Full Feature Comparison Table -->
+<section class="content-section" id="comparison">
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label"><i class="ri-table-line"></i> Feature Comparison</div>
+      <h2 class="sh-title">Full <span class="gt">comparison</span></h2>
+    </div>
+    <div class="comp-wrap">
+      <table class="comp-table">
+        <thead><tr><th style="width:40%">Feature</th><th style="width:30%">Testably</th><th style="width:30%">TestRail</th></tr></thead>
+        <tbody>
+          <tr class="cat-row"><td colspan="3">Pricing &amp; Plans</td></tr>
+          <tr><td>Pricing model</td><td class="win">Flat-rate</td><td class="lose">Per-seat</td></tr>
+          <tr><td>Starting price</td><td class="win">$0 (Free plan)</td><td class="lose">$38/user/mo</td></tr>
+          <tr><td>20-user team cost</td><td class="win">$99/mo</td><td class="lose">$760+/mo</td></tr>
+          <tr class="cat-row"><td colspan="3">AI &amp; Automation</td></tr>
+          <tr><td>AI test generation</td><td class="win">Multi-source (text, Jira, Discovery)</td><td class="lose">User story only</td></tr>
+          <tr><td>AI edge case suggestions</td><td class="win"><i class='ri-check-line'></i> Built-in</td><td class="lose"><i class='ri-close-line'></i> No</td></tr>
+          <tr><td>Discovery Logs</td><td class="win"><i class='ri-check-line'></i> Built-in</td><td class="lose"><i class='ri-close-line'></i> No</td></tr>
+          <tr class="cat-row"><td colspan="3">UX &amp; Productivity</td></tr>
+          <tr><td>Focus Mode</td><td class="win"><i class='ri-check-line'></i> Yes</td><td class="lose"><i class='ri-close-line'></i> No</td></tr>
+          <tr><td>Cmd+K Command Palette</td><td class="win"><i class='ri-check-line'></i> Yes</td><td class="lose"><i class='ri-close-line'></i> No</td></tr>
+          <tr><td>Keyboard shortcuts</td><td class="win">Comprehensive</td><td class="lose">Limited</td></tr>
+          <tr><td>Modern dark theme</td><td class="win"><i class='ri-check-line'></i> Yes</td><td class="lose"><i class='ri-close-line'></i> No</td></tr>
+          <tr class="cat-row"><td colspan="3">Integrations</td></tr>
+          <tr><td>Jira integration</td><td class="tie">Bidirectional sync</td><td class="tie">Bidirectional sync</td></tr>
+          <tr><td>CI/CD integration</td><td class="tie">REST API</td><td class="tie">REST API</td></tr>
+          <tr><td>Setup time</td><td class="win">&lt; 5 minutes</td><td class="lose">Hours to days</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing Comparison by Team Size -->
+<section class="content-section">
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label"><i class="ri-funds-line"></i> Cost Comparison</div>
+      <h2 class="sh-title">See how much you <span class="gt">save</span></h2>
+      <p class="sh-desc">Compare monthly costs by team size. Testably&rsquo;s flat-rate pricing means bigger teams save more.</p>
+    </div>
+    <div class="comp-wrap price-comp">
+      <table>
+        <thead><tr><th>Team Size</th><th>Testably</th><th>TestRail Pro</th><th>You Save</th></tr></thead>
+        <tbody>
+          <tr><td>3 users</td><td class="our-price">$0/mo (Free)</td><td class="their-price">$114/mo</td><td class="savings">100%</td></tr>
+          <tr><td>5 users</td><td class="our-price">$49/mo</td><td class="their-price">$190/mo</td><td class="savings">74%</td></tr>
+          <tr><td>20 users</td><td class="our-price">$99/mo</td><td class="their-price">$760/mo</td><td class="savings">87%</td></tr>
+          <tr><td>50 users</td><td class="our-price">$249/mo</td><td class="their-price">$1,900/mo</td><td class="savings">87%</td></tr>
+          <tr><td>100 users</td><td class="our-price">$499/mo</td><td class="their-price">$3,800/mo</td><td class="savings">87%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Why Teams Switch -->
+<section class="content-section">
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label"><i class="ri-chat-quote-line"></i> Why Teams Switch</div>
+      <h2 class="sh-title">From TestRail <span class="gt">to Testably</span></h2>
+    </div>
+    <div class="why-switch">
+      <div class="ws-card">
+        <blockquote>&ldquo;We were paying over $1,400/month for TestRail with our 20-person QA team. Switching to Testably cut that to $99/month and the keyboard shortcuts actually made our testers faster.&rdquo;</blockquote>
+        <div class="ws-author"><strong>Sarah K.</strong> &middot; QA Lead at a mid-size SaaS company</div>
+      </div>
+      <div class="ws-card">
+        <blockquote>&ldquo;TestRail felt like it was built in 2010. The UI was clunky and everything required multiple clicks. Testably&rsquo;s Focus Mode and Cmd+K palette completely changed how we execute test runs.&rdquo;</blockquote>
+        <div class="ws-author"><strong>Marcus T.</strong> &middot; Senior QA Engineer</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Migration -->
+<section class="content-section">
+  <div class="wrap">
+    <div class="adv-grid">
+      <div class="adv-card">
+        <i class="ri-download-cloud-line"></i>
+        <h3>Easy Migration</h3>
+        <p>TestRail Import tool (coming soon): CSV export &rarr; Testably auto-mapping for test cases, folder structure, and run history.</p>
+      </div>
+      <div class="adv-card">
+        <i class="ri-time-line"></i>
+        <h3>5-Minute Setup</h3>
+        <p>No complex configuration or admin training. Sign up, create a project, and run your first test in under 5 minutes.</p>
+      </div>
+      <div class="adv-card">
+        <i class="ri-hand-coin-line"></i>
+        <h3>Free to Start</h3>
+        <p>Start with the Free plan for up to 3 users. Upgrade only when your team grows. No credit card required.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="migration">
+  <div class="mig-inner">
+    <h2>Ready to switch?<br><span class="gt">We&rsquo;ll help you migrate.</span></h2>
+    <p>Start your free trial today and see the difference. We&rsquo;ll help you import your TestRail data.</p>
+    <div class="mig-btns">
+      <a href="#" class="btn-p">Start Free Trial <i class="ri-arrow-right-line"></i></a>
+      <a href="/page-contact-final.html" class="btn-s">Talk to Us About Migration <i class="ri-chat-1-line"></i></a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="fgr">
+    <div class="fbr">
+      <a href="/" class="nb"><div class="nl"><span>T</span></div><span class="nn">Testably</span></a>
+      <p>All-in-one test management platform. Build better software, ship with confidence.</p>
+      <div class="fso">
+        <a href="#"><i class="ri-twitter-x-line"></i></a>
+        <a href="#"><i class="ri-github-line"></i></a>
+        <a href="#"><i class="ri-linkedin-line"></i></a>
+      </div>
+    </div>
+    <div class="fcol">
+      <h4>Product</h4>
+      <a href="/page-features-final.html">Features</a>
+      <a href="/page-pricing-final.html">Pricing</a>
+      <a href="/page-changelog-final.html">Changelog</a>
+      <a href="/page-roadmap-final.html">Roadmap</a>
+    </div>
+    <div class="fcol">
+      <h4>Resources</h4>
+      <a href="/page-documentation-final.html">Documentation</a>
+      <a href="/page-api-reference-final.html">API Reference</a>
+    </div>
+    <div class="fcol">
+      <h4>Company</h4>
+      <a href="/page-about-final.html">About</a>
+      <a href="/page-contact-final.html">Contact</a>
+      <a href="/page-privacy-policy-final.html">Privacy Policy</a>
+      <a href="/page-terms-of-service-final.html">Terms of Service</a>
+    </div>
+    <div class="fcol">
+      <h4>Compare</h4>
+      <a href="/page-compare-testrail-final.html">Testably vs TestRail</a>
+      <a href="/page-compare-zephyr-final.html">Testably vs Zephyr</a>
+      <a href="/page-compare-qase-final.html">Testably vs Qase</a>
+    </div>
+  </div>
+  <div class="fbot">
+    <span>&copy; 2026 Testably. All rights reserved.</span>
+    <span style="font-size:0.6875rem;color:#334155">Design Mockup &middot; Desi (Designer) &middot; March 2026</span>
+  </div>
+</footer>
+
+<script>
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.qc,.adv-card,.ws-card').forEach(el => {
+  el.style.opacity='0'; el.style.transform='translateY(20px)'; el.style.transition='opacity 0.6s ease, transform 0.6s ease'; obs.observe(el);
+});
+</script>
+
+</body>
+</html>

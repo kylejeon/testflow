@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desi Handoff — Keyboard Shortcuts Guide Popup</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1e293b; --muted: #64748b; --border: #e2e8f0;
+    --accent: #6366f1; --accent-bg: #eef2ff; --green: #22c55e; --green-bg: #f0fdf4;
+    --red: #ef4444; --red-bg: #fef2f2; --amber: #f59e0b; --amber-bg: #fffbeb;
+    --violet: #8b5cf6; --violet-bg: #f5f3ff; --blue: #3b82f6; --blue-bg: #eff6ff;
+    --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--fg); background: #f8fafc; line-height: 1.7; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  .doc-badge { display: inline-flex; align-items: center; gap: 6px; background: #fce7f3; color: #be185d; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+  h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  .meta-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; font-size: 13px; color: var(--muted); }
+
+  .section { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; box-shadow: var(--shadow); }
+  .section h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .section h3 { font-size: 15px; font-weight: 700; margin: 20px 0 10px; color: var(--fg); }
+  .section p, .section li { font-size: 14px; line-height: 1.75; }
+  .section ul { padding-left: 20px; margin: 8px 0; }
+  .section li { margin-bottom: 4px; }
+
+  .num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #be185d; color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .4px; padding: 8px 10px; border-bottom: 2px solid var(--border); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tag-pink { background: #fce7f3; color: #be185d; }
+  .tag-info { background: var(--blue-bg); color: #2563eb; }
+  .tag-ok { background: var(--green-bg); color: #15803d; }
+  .tag-violet { background: var(--violet-bg); color: var(--violet); }
+
+  kbd { display: inline-block; padding: 2px 7px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; background: #f1f5f9; border: 1px solid var(--border); border-radius: 4px; color: var(--fg); font-weight: 500; line-height: 1.5; }
+
+  .callout { padding: 14px 18px; border-radius: 8px; font-size: 13px; margin: 12px 0; }
+  .callout-pink { background: #fdf2f8; border-left: 3px solid #ec4899; }
+  .callout-info { background: var(--blue-bg); border-left: 3px solid var(--blue); }
+  .callout-ok { background: var(--green-bg); border-left: 3px solid var(--green); }
+
+  .color-swatch { display: inline-block; width: 16px; height: 16px; border-radius: 3px; vertical-align: middle; margin-right: 4px; border: 1px solid rgba(0,0,0,.1); }
+
+  .wireframe { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0; margin: 16px 0; overflow: hidden; }
+  .wireframe-title { background: #f1f5f9; padding: 8px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); letter-spacing: .4px; border-bottom: 1px solid var(--border); }
+  .wireframe-body { padding: 20px; }
+
+  /* Live Preview Styles */
+  .modal-preview { background: #fff; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.15); max-width: 520px; margin: 0 auto; overflow: hidden; border: 1px solid var(--border); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .modal-header h4 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .modal-close { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: pointer; font-size: 16px; }
+  .modal-search { padding: 12px 20px; border-bottom: 1px solid var(--border); }
+  .modal-search input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px 8px 36px; font-size: 13px; color: var(--fg); outline: none; background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 10px center no-repeat; }
+  .modal-body { padding: 8px 0; max-height: 380px; overflow-y: auto; }
+  .sc-category { padding: 8px 20px 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+  .sc-row { display: flex; align-items: center; padding: 6px 20px; gap: 12px; }
+  .sc-row:hover { background: #f8fafc; }
+  .sc-key { min-width: 80px; display: flex; gap: 4px; }
+  .sc-key kbd { font-size: 11px; padding: 1px 6px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; color: var(--fg); min-width: 22px; text-align: center; }
+  .sc-action { font-size: 13px; color: var(--fg); }
+  .modal-footer { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+  .toggle-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .toggle-track { width: 32px; height: 18px; border-radius: 9px; background: #cbd5e1; position: relative; display: inline-block; }
+  .toggle-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; position: absolute; top: 2px; left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+
+  .header-preview { display: flex; align-items: center; gap: 12px; padding: 10px 20px; background: #fff; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+  .header-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 18px; cursor: pointer; }
+  .header-icon:hover { background: #f1f5f9; color: var(--fg); }
+  .header-icon.active { background: var(--accent-bg); color: var(--accent); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .spec-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .spec-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .spec-card p { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="doc-badge">🎨 Desi Handoff</div>
+<h1>Keyboard Shortcuts Guide — Popup Modal Design</h1>
+<p class="subtitle">단축키 가이드 팝업 기능의 디자인 시안 요청서</p>
+
+<div class="meta-row">
+  <span>📅 2026-03-26</span>
+  <span>👤 From: PM Kyle → To: Desi</span>
+  <span>📋 디자인 항목 6건</span>
+  <span>🔖 Priority: Phase 1</span>
+</div>
+
+<div class="callout callout-pink">
+  <strong>🎯 디자인 목표:</strong> 사용자가 <kbd>?</kbd> 키 또는 헤더 아이콘을 통해 모든 단축키를 즉시 확인할 수 있는 모달 팝업. GitHub, Linear, Gmail의 패턴을 참고하되, Testably의 디자인 시스템에 맞게 제작.
+</div>
+
+<!-- §1 Overview -->
+<div class="section" id="s1">
+  <h2><span class="num">1</span> 기능 개요 &amp; 컨텍스트</h2>
+
+  <h3>현재 상태</h3>
+  <ul>
+    <li>Testably에는 50+개 키보드 단축키가 구현되어 있으나, 사용자에게 노출되는 곳이 Focus Mode의 <kbd>kbd</kbd> 힌트뿐입니다.</li>
+    <li><kbd>?</kbd> 키 핸들러가 이미 코드에 존재하지만 (<code>useKeyboardShortcuts.ts</code> Line 61), 연결된 UI가 없습니다.</li>
+    <li>TestRail, Qase, Zephyr 등 QA 도구 중 인앱 단축키 가이드를 제공하는 제품이 없어, Testably가 선도할 수 있습니다.</li>
+  </ul>
+
+  <h3>레퍼런스 제품</h3>
+  <div class="grid-2">
+    <div class="spec-card">
+      <h4>GitHub (Primary Reference)</h4>
+      <p><kbd>?</kbd> → 모달 오버레이. 페이지별 컨텍스트 단축키 표시. 단일키 비활성화 옵션.</p>
+    </div>
+    <div class="spec-card">
+      <h4>Linear (Secondary Reference)</h4>
+      <p><kbd>?</kbd> + 사이드바 메뉴. 모달 + 검색 기능. G-chord 네비게이션 (우리와 동일 패턴).</p>
+    </div>
+    <div class="spec-card">
+      <h4>Gmail</h4>
+      <p><kbd>?</kbd> → 카테고리별(Inbox/Conversation/Compose). 새 창 열기 옵션. ON/OFF 토글.</p>
+    </div>
+    <div class="spec-card">
+      <h4>Figma</h4>
+      <p>하단 패널 (비모달). 검색 가능. 작업 중 열어둘 수 있음. 키 입력 시 하이라이트.</p>
+    </div>
+  </div>
+</div>
+
+<!-- §2 접근 방법 -->
+<div class="section" id="s2">
+  <h2><span class="num">2</span> Design Item 1 — 접근 방법 (Dual Access)</h2>
+
+  <h3>트리거 A: <kbd>?</kbd> 키</h3>
+  <ul>
+    <li>INPUT/TEXTAREA/SELECT 내에서는 비활성</li>
+    <li>어떤 페이지에서든 동작 (글로벌)</li>
+    <li>Focus Mode에서도 동작</li>
+  </ul>
+
+  <h3>트리거 B: 헤더 아이콘 버튼</h3>
+  <div class="wireframe">
+    <div class="wireframe-title">Header — 아이콘 위치</div>
+    <div class="wireframe-body">
+      <div class="header-preview">
+        <div style="flex:1; font-weight:700;">🏠 Testably</div>
+        <div style="display:flex; align-items:center; gap:4px;">
+          <div class="header-icon" title="Notifications">🔔</div>
+          <div class="header-icon active" title="Keyboard Shortcuts" style="position:relative;">
+            ⌨
+            <div style="position:absolute; bottom:-28px; left:50%; transform:translateX(-50%); background:#1e293b; color:#fff; font-size:10px; padding:3px 8px; border-radius:4px; white-space:nowrap;">Keyboard Shortcuts <kbd style="background:#334155; border-color:#475569; color:#e2e8f0; font-size:9px;">?</kbd></div>
+          </div>
+          <div class="header-icon" title="Profile">👤</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>속성</th><th>스펙</th></tr>
+    <tr><td>아이콘</td><td><code>ri-keyboard-line</code> (Remix Icons) — 20px</td></tr>
+    <tr><td>위치</td><td>알림 벨(🔔) 오른쪽, 프로필 아바타 왼쪽</td></tr>
+    <tr><td>크기</td><td>32×32px 터치 영역, 아이콘 20px</td></tr>
+    <tr><td>상태</td><td>Default: <code>#64748b</code> → Hover: <code>#1e293b</code> + <code>bg: #f1f5f9</code> → Active(모달 열림): <code>#6366f1</code> + <code>bg: #eef2ff</code></td></tr>
+    <tr><td>Tooltip</td><td>"Keyboard Shortcuts" + <kbd>?</kbd> badge — hover 시 아래로 표시</td></tr>
+    <tr><td>border-radius</td><td>6px</td></tr>
+  </table>
+</div>
+
+<!-- §3 모달 디자인 -->
+<div class="section" id="s3">
+  <h2><span class="num">3</span> Design Item 2 — Shortcuts Modal</h2>
+
+  <h3>3-1. 라이브 와이어프레임</h3>
+  <div class="wireframe">
+    <div class="wireframe-title">Keyboard Shortcuts Modal — Full Layout</div>
+    <div class="wireframe-body" style="background:#0f172a40; padding:40px 20px;">
+      <div class="modal-preview">
+        <!-- Header -->
+        <div class="modal-header">
+          <h4>⌨ Keyboard Shortcuts</h4>
+          <div class="modal-close">✕</div>
+        </div>
+        <!-- Search -->
+        <div class="modal-search">
+          <input type="text" placeholder="Search shortcuts..." disabled>
+        </div>
+        <!-- Body -->
+        <div class="modal-body">
+          <!-- Current Page -->
+          <div class="sc-category">📍 Current Page</div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>N</kbd></div>
+            <div class="sc-action">New Test Case</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>R</kbd></div>
+            <div class="sc-action">Continue Run</div>
+          </div>
+
+          <!-- Global -->
+          <div class="sc-category" style="margin-top:8px">🌐 Global</div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>⌘</kbd><kbd>K</kbd></div>
+            <div class="sc-action">Command Palette</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></div>
+            <div class="sc-action">Focus Mode</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>?</kbd></div>
+            <div class="sc-action">This help</div>
+          </div>
+
+          <!-- Navigation -->
+          <div class="sc-category" style="margin-top:8px">🧭 Navigation</div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>G</kbd> <span style="color:var(--muted);font-size:11px">then</span> <kbd>T</kbd></div>
+            <div class="sc-action">Test Cases</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>G</kbd> <span style="color:var(--muted);font-size:11px">then</span> <kbd>R</kbd></div>
+            <div class="sc-action">Test Runs</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>G</kbd> <span style="color:var(--muted);font-size:11px">then</span> <kbd>D</kbd></div>
+            <div class="sc-action">Discovery Logs</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>G</kbd> <span style="color:var(--muted);font-size:11px">then</span> <kbd>M</kbd></div>
+            <div class="sc-action">Milestones</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>G</kbd> <span style="color:var(--muted);font-size:11px">then</span> <kbd>P</kbd></div>
+            <div class="sc-action">All Projects</div>
+          </div>
+
+          <!-- Focus Mode -->
+          <div class="sc-category" style="margin-top:8px">🎯 Focus Mode</div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd style="background:#f0fdf4;border-color:#bbf7d0;color:#16a34a">P</kbd></div>
+            <div class="sc-action">Pass & Next</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd style="background:#fef2f2;border-color:#fecaca;color:#dc2626">F</kbd></div>
+            <div class="sc-action">Fail (opens note)</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd style="background:#fffbeb;border-color:#fde68a;color:#b45309">B</kbd></div>
+            <div class="sc-action">Block & Next</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd style="background:#f5f3ff;border-color:#ddd6fe;color:#7c3aed">R</kbd></div>
+            <div class="sc-action">Retest & Next</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>S</kbd></div>
+            <div class="sc-action">Skip & Next</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>J</kbd> <span style="color:var(--muted);font-size:11px">/</span> <kbd>→</kbd></div>
+            <div class="sc-action">Next Test</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>K</kbd> <span style="color:var(--muted);font-size:11px">/</span> <kbd>←</kbd></div>
+            <div class="sc-action">Previous Test</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>N</kbd></div>
+            <div class="sc-action">Focus Note</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>C</kbd></div>
+            <div class="sc-action">Toggle Comments</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>H</kbd></div>
+            <div class="sc-action">Toggle History</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>⌘</kbd><kbd>↵</kbd></div>
+            <div class="sc-action">Save Note & Next</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>Esc</kbd></div>
+            <div class="sc-action">Exit Focus Mode</div>
+          </div>
+
+          <!-- Editing -->
+          <div class="sc-category" style="margin-top:8px">✏️ Editing</div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>Enter</kbd></div>
+            <div class="sc-action">Save / Submit</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>Esc</kbd></div>
+            <div class="sc-action">Cancel / Close</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>⌘</kbd><kbd>↵</kbd></div>
+            <div class="sc-action">Save (multiline)</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>Tab</kbd></div>
+            <div class="sc-action">Next field</div>
+          </div>
+          <div class="sc-row">
+            <div class="sc-key"><kbd>⇧</kbd><kbd>Tab</kbd></div>
+            <div class="sc-action">Previous field</div>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div class="modal-footer">
+          <label class="toggle-label">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            Single-key shortcuts
+          </label>
+          <span><kbd style="font-size:10px">Esc</kbd> to close</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>3-2. 모달 스펙</h3>
+  <table>
+    <tr><th>속성</th><th>값</th></tr>
+    <tr><td>너비</td><td><strong>520px</strong> (고정)</td></tr>
+    <tr><td>최대 높이</td><td><strong>70vh</strong></td></tr>
+    <tr><td>border-radius</td><td>12px</td></tr>
+    <tr><td>shadow</td><td><code>0 20px 60px rgba(0,0,0,.15)</code></td></tr>
+    <tr><td>overlay</td><td><code>rgba(15, 23, 42, 0.25)</code> — 클릭 시 닫기</td></tr>
+    <tr><td>애니메이션</td><td>opacity 0→1 + translateY(8px→0) — 150ms ease-out</td></tr>
+    <tr><td>닫기</td><td><kbd>Esc</kbd> 키 / ✕ 버튼 / overlay 클릭</td></tr>
+    <tr><td>포커스 트랩</td><td>모달 내부에 포커스 유지 (접근성)</td></tr>
+  </table>
+
+  <h3>3-3. 내부 구성 요소</h3>
+
+  <h3>① Header</h3>
+  <table>
+    <tr><th>요소</th><th>스펙</th></tr>
+    <tr><td>타이틀 아이콘</td><td><code>ri-keyboard-line</code> 18px, <code>color: #6366f1</code></td></tr>
+    <tr><td>타이틀 텍스트</td><td>"Keyboard Shortcuts" — font-weight: 700, 15px</td></tr>
+    <tr><td>닫기 버튼</td><td>28×28px, <code>ri-close-line</code> 16px, hover: <code>bg: #f1f5f9</code>, border-radius: 6px</td></tr>
+    <tr><td>패딩</td><td>16px 20px</td></tr>
+    <tr><td>구분선</td><td>1px solid <code>#e2e8f0</code></td></tr>
+  </table>
+
+  <h3>② Search Input</h3>
+  <table>
+    <tr><th>요소</th><th>스펙</th></tr>
+    <tr><td>아이콘</td><td><code>ri-search-line</code> 16px, <code>color: #94a3b8</code>, 왼쪽 12px</td></tr>
+    <tr><td>Placeholder</td><td>"Search shortcuts..." — <code>color: #94a3b8</code></td></tr>
+    <tr><td>입력 필드</td><td>height: 36px, border: 1px solid <code>#e2e8f0</code>, border-radius: 8px, <code>bg: #f8fafc</code></td></tr>
+    <tr><td>포커스</td><td>ring: 2px <code>#6366f1</code> + border: <code>#6366f1</code></td></tr>
+    <tr><td>동작</td><td>실시간 필터링 — 입력 시 매칭되지 않는 행 숨김. 매칭 텍스트 볼드 처리.</td></tr>
+    <tr><td>빈 결과</td><td>"No shortcuts match your search" — 중앙 정렬, <code>color: #94a3b8</code></td></tr>
+  </table>
+
+  <h3>③ Category Sections</h3>
+  <table>
+    <tr><th>요소</th><th>스펙</th></tr>
+    <tr><td>카테고리 라벨</td><td>11px, font-weight: 600, uppercase, letter-spacing: 0.5px, <code>color: #64748b</code></td></tr>
+    <tr><td>카테고리 순서</td><td>① Current Page → ② Global → ③ Navigation → ④ Focus Mode → ⑤ Editing</td></tr>
+    <tr><td>컨텍스트 인식</td><td>"Current Page" 섹션은 현재 URL에 따라 다른 단축키 표시:<br>
+      • Dashboard → N(New TC), R(Continue Run)<br>
+      • Run Detail → Focus Mode 진입 관련<br>
+      • Focus Mode → Focus 단축키가 "Current Page"로 승격<br>
+      • 없는 경우 → 섹션 숨김
+    </td></tr>
+    <tr><td>행 padding</td><td>6px 20px</td></tr>
+    <tr><td>행 hover</td><td><code>bg: #f8fafc</code></td></tr>
+  </table>
+
+  <h3>④ Key Badge 스타일</h3>
+  <table>
+    <tr><th>타입</th><th>스펙</th><th>예시</th></tr>
+    <tr><td>일반 키</td><td><code>bg: #f1f5f9</code>, <code>border: #e2e8f0</code>, <code>color: #1e293b</code>, 11px, padding: 1px 6px, border-radius: 4px, min-width: 22px</td><td><kbd>N</kbd></td></tr>
+    <tr>
+      <td>Pass 키</td>
+      <td><code>bg: #f0fdf4</code>, <code>border: #bbf7d0</code>, <code>color: #16a34a</code></td>
+      <td><kbd style="background:#f0fdf4;border-color:#bbf7d0;color:#16a34a">P</kbd></td>
+    </tr>
+    <tr>
+      <td>Fail 키</td>
+      <td><code>bg: #fef2f2</code>, <code>border: #fecaca</code>, <code>color: #dc2626</code></td>
+      <td><kbd style="background:#fef2f2;border-color:#fecaca;color:#dc2626">F</kbd></td>
+    </tr>
+    <tr>
+      <td>Block 키</td>
+      <td><code>bg: #fffbeb</code>, <code>border: #fde68a</code>, <code>color: #b45309</code></td>
+      <td><kbd style="background:#fffbeb;border-color:#fde68a;color:#b45309">B</kbd></td>
+    </tr>
+    <tr>
+      <td>Retest 키</td>
+      <td><code>bg: #f5f3ff</code>, <code>border: #ddd6fe</code>, <code>color: #7c3aed</code></td>
+      <td><kbd style="background:#f5f3ff;border-color:#ddd6fe;color:#7c3aed">R</kbd></td>
+    </tr>
+    <tr><td>수정자 키</td><td>동일 스타일 + 여러 badge 사이 gap: 4px</td><td><kbd>⌘</kbd><kbd>K</kbd></td></tr>
+    <tr><td>Chord (G→)</td><td>키 사이에 "then" 텍스트, 11px, <code>color: #94a3b8</code></td><td><kbd>G</kbd> <span style="color:#94a3b8;font-size:11px">then</span> <kbd>T</kbd></td></tr>
+    <tr><td>대체 키</td><td>키 사이에 "/" 텍스트, 11px, <code>color: #94a3b8</code></td><td><kbd>J</kbd> <span style="color:#94a3b8;font-size:11px">/</span> <kbd>→</kbd></td></tr>
+  </table>
+
+  <h3>⑤ Footer</h3>
+  <table>
+    <tr><th>요소</th><th>스펙</th></tr>
+    <tr><td>토글</td><td>"Single-key shortcuts" — 32×18px track (<code>#cbd5e1</code>), 14px thumb, ON: track <code>#6366f1</code>, thumb right</td></tr>
+    <tr><td>닫기 힌트</td><td><kbd style="font-size:10px">Esc</kbd> to close — 12px, <code>color: #94a3b8</code></td></tr>
+    <tr><td>구분선</td><td>1px solid <code>#e2e8f0</code></td></tr>
+    <tr><td>패딩</td><td>10px 20px</td></tr>
+  </table>
+</div>
+
+<!-- §4 OS 감지 -->
+<div class="section" id="s4">
+  <h2><span class="num">4</span> Design Item 3 — OS-aware Key Labels</h2>
+
+  <table>
+    <tr><th>macOS</th><th>Windows/Linux</th><th>표시 위치</th></tr>
+    <tr><td><kbd>⌘</kbd></td><td><kbd>Ctrl</kbd></td><td>수정자 키 전체</td></tr>
+    <tr><td><kbd>⌥</kbd></td><td><kbd>Alt</kbd></td><td>해당 시 표시</td></tr>
+    <tr><td><kbd>⇧</kbd></td><td><kbd>Shift</kbd></td><td>Shift 조합</td></tr>
+    <tr><td><kbd>↵</kbd></td><td><kbd>Enter</kbd></td><td>Enter 키</td></tr>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>구현 참고:</strong> <code>navigator.platform.includes('Mac')</code> 또는 <code>navigator.userAgentData?.platform</code> 활용. macOS면 기호(⌘⌥⇧) 사용, Windows/Linux면 텍스트(Ctrl, Alt, Shift) 사용.
+  </div>
+</div>
+
+<!-- §5 Focus Mode 전용 -->
+<div class="section" id="s5">
+  <h2><span class="num">5</span> Design Item 4 — Focus Mode 내 가이드 접근</h2>
+
+  <p>Focus Mode는 전체 화면 오버레이이므로 헤더 버튼이 보이지 않습니다. 별도 접근 방법이 필요합니다.</p>
+
+  <h3>방법 A: 기존 kbd 힌트 영역에 <kbd>?</kbd> 추가</h3>
+  <div class="wireframe">
+    <div class="wireframe-title">Focus Mode Header — ? 키 힌트 추가</div>
+    <div class="wireframe-body" style="font-family:monospace; font-size:12px; line-height:1.8;">
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  ← Exit    Test 3 of 12                          ⌨ ?  Help │
+│                                                             │
+│  TC-042: Login with valid credentials                       │
+│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   │
+│                                                             │
+│  Shortcuts:                                                 │
+│  [P] Pass  [F] Fail  [B] Block  [R] Retest  [S] Skip       │
+│  [J/→] Next  [K/←] Prev  [N] Note  [C] Comments  [H] Hist  │
+│  [?] Help                          ← 이 줄 추가             │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>요소</th><th>스펙</th></tr>
+    <tr><td>위치</td><td>Focus Mode 상단 우측 — "← Exit" 반대편, 또는 기존 kbd 힌트 행 끝</td></tr>
+    <tr><td>아이콘</td><td><code>ri-keyboard-line</code> 16px + "?" 텍스트</td></tr>
+    <tr><td>스타일</td><td>기존 kbd 힌트와 동일 (monospace 0.6875rem, <code>color: #94a3b8</code>)</td></tr>
+    <tr><td>동작</td><td>클릭 또는 <kbd>?</kbd> 키 → 동일 모달 오버레이 표시 (Focus Mode 위에)</td></tr>
+    <tr><td>z-index</td><td>모달 > Focus Mode 오버레이 (z-index: 60 이상)</td></tr>
+  </table>
+</div>
+
+<!-- §6 인터랙션 -->
+<div class="section" id="s6">
+  <h2><span class="num">6</span> Design Item 5 — Interaction Flows</h2>
+
+  <h3>6-1. 열기 플로우</h3>
+  <table>
+    <tr><th>트리거</th><th>애니메이션</th><th>초기 상태</th></tr>
+    <tr><td><kbd>?</kbd> 키</td><td>overlay fade-in(150ms) + modal slide-up(150ms)</td><td>검색 필드에 포커스, "Current Page" 섹션 펼침</td></tr>
+    <tr><td>헤더 ⌨ 클릭</td><td>동일</td><td>동일</td></tr>
+  </table>
+
+  <h3>6-2. 검색 인터랙션</h3>
+  <ul>
+    <li>타이핑 즉시 필터링 (debounce 없이 실시간)</li>
+    <li>매칭: 키 이름 또는 액션 이름에서 검색 (예: "pass" → P — Pass & Next 행 표시)</li>
+    <li>매칭 텍스트에 <strong>볼드</strong> 하이라이트</li>
+    <li>매칭 없는 카테고리는 통째로 숨김</li>
+    <li>모든 텍스트 삭제 시 전체 목록 복원</li>
+    <li>빈 결과: 중앙에 "No shortcuts match your search" + <code>ri-search-line</code> 아이콘 48px, <code>color: #cbd5e1</code></li>
+  </ul>
+
+  <h3>6-3. 닫기 플로우</h3>
+  <table>
+    <tr><th>방법</th><th>애니메이션</th></tr>
+    <tr><td><kbd>Esc</kbd> 키</td><td>overlay fade-out(100ms) + modal slide-down(100ms)</td></tr>
+    <tr><td>✕ 버튼 클릭</td><td>동일</td></tr>
+    <tr><td>Overlay 클릭</td><td>동일</td></tr>
+  </table>
+
+  <h3>6-4. 토글 인터랙션</h3>
+  <ul>
+    <li>"Single-key shortcuts" 토글 OFF → 수정자 없는 단축키 행에 <code>opacity: 0.4</code> + strikethrough 적용</li>
+    <li>토글 상태는 <code>localStorage</code>에 저장 (세션 유지)</li>
+    <li>토글 OFF 시 실제 단축키도 비활성화됨 (코드 연동 필요)</li>
+  </ul>
+</div>
+
+<!-- §7 디자인 토큰 -->
+<div class="section" id="s7">
+  <h2><span class="num">7</span> Design Item 6 — 디자인 토큰 &amp; 컬러</h2>
+
+  <table>
+    <tr><th>토큰</th><th>값</th><th>용도</th></tr>
+    <tr><td><code>modal-bg</code></td><td><span class="color-swatch" style="background:#fff"></span> <code>#ffffff</code></td><td>모달 배경</td></tr>
+    <tr><td><code>modal-overlay</code></td><td><span class="color-swatch" style="background:rgba(15,23,42,.25)"></span> <code>rgba(15,23,42,0.25)</code></td><td>배경 딤</td></tr>
+    <tr><td><code>modal-shadow</code></td><td><code>0 20px 60px rgba(0,0,0,.15)</code></td><td>모달 그림자</td></tr>
+    <tr><td><code>search-bg</code></td><td><span class="color-swatch" style="background:#f8fafc"></span> <code>#f8fafc</code></td><td>검색 필드 배경</td></tr>
+    <tr><td><code>category-text</code></td><td><span class="color-swatch" style="background:#64748b"></span> <code>#64748b</code></td><td>카테고리 라벨</td></tr>
+    <tr><td><code>action-text</code></td><td><span class="color-swatch" style="background:#1e293b"></span> <code>#1e293b</code></td><td>액션 텍스트</td></tr>
+    <tr><td><code>key-bg</code></td><td><span class="color-swatch" style="background:#f1f5f9"></span> <code>#f1f5f9</code></td><td>일반 kbd 배경</td></tr>
+    <tr><td><code>key-border</code></td><td><span class="color-swatch" style="background:#e2e8f0"></span> <code>#e2e8f0</code></td><td>일반 kbd 테두리</td></tr>
+    <tr><td><code>key-pass-bg</code></td><td><span class="color-swatch" style="background:#f0fdf4"></span> <code>#f0fdf4</code></td><td>Pass 키 배경</td></tr>
+    <tr><td><code>key-pass-border</code></td><td><span class="color-swatch" style="background:#bbf7d0"></span> <code>#bbf7d0</code></td><td>Pass 키 테두리</td></tr>
+    <tr><td><code>key-pass-text</code></td><td><span class="color-swatch" style="background:#16a34a"></span> <code>#16a34a</code></td><td>Pass 키 텍스트</td></tr>
+    <tr><td><code>key-fail-bg</code></td><td><span class="color-swatch" style="background:#fef2f2"></span> <code>#fef2f2</code></td><td>Fail 키 배경</td></tr>
+    <tr><td><code>key-fail-border</code></td><td><span class="color-swatch" style="background:#fecaca"></span> <code>#fecaca</code></td><td>Fail 키 테두리</td></tr>
+    <tr><td><code>key-fail-text</code></td><td><span class="color-swatch" style="background:#dc2626"></span> <code>#dc2626</code></td><td>Fail 키 텍스트</td></tr>
+    <tr><td><code>key-block-bg</code></td><td><span class="color-swatch" style="background:#fffbeb"></span> <code>#fffbeb</code></td><td>Block 키 배경</td></tr>
+    <tr><td><code>key-block-border</code></td><td><span class="color-swatch" style="background:#fde68a"></span> <code>#fde68a</code></td><td>Block 키 테두리</td></tr>
+    <tr><td><code>key-block-text</code></td><td><span class="color-swatch" style="background:#b45309"></span> <code>#b45309</code></td><td>Block 키 텍스트</td></tr>
+    <tr><td><code>key-retest-bg</code></td><td><span class="color-swatch" style="background:#f5f3ff"></span> <code>#f5f3ff</code></td><td>Retest 키 배경</td></tr>
+    <tr><td><code>key-retest-border</code></td><td><span class="color-swatch" style="background:#ddd6fe"></span> <code>#ddd6fe</code></td><td>Retest 키 테두리</td></tr>
+    <tr><td><code>key-retest-text</code></td><td><span class="color-swatch" style="background:#7c3aed"></span> <code>#7c3aed</code></td><td>Retest 키 텍스트</td></tr>
+    <tr><td><code>toggle-track-off</code></td><td><span class="color-swatch" style="background:#cbd5e1"></span> <code>#cbd5e1</code></td><td>토글 OFF 트랙</td></tr>
+    <tr><td><code>toggle-track-on</code></td><td><span class="color-swatch" style="background:#6366f1"></span> <code>#6366f1</code></td><td>토글 ON 트랙</td></tr>
+    <tr><td><code>row-hover</code></td><td><span class="color-swatch" style="background:#f8fafc"></span> <code>#f8fafc</code></td><td>행 호버 배경</td></tr>
+  </table>
+</div>
+
+<!-- §8 구현 참고 -->
+<div class="section" id="s8">
+  <h2><span class="num">8</span> 구현 참고 &amp; 디자인 체크리스트</h2>
+
+  <h3>디자인 시안 제작 체크리스트 (Desi용)</h3>
+  <table>
+    <tr><th>#</th><th>시안</th><th>상태</th><th>설명</th></tr>
+    <tr><td>1</td><td>Shortcuts Modal — Default State</td><td><span class="tag tag-pink">Required</span></td><td>모든 카테고리 펼침, 검색 비어있음</td></tr>
+    <tr><td>2</td><td>Shortcuts Modal — Search Active</td><td><span class="tag tag-pink">Required</span></td><td>"pass" 검색 중, 필터링된 결과</td></tr>
+    <tr><td>3</td><td>Shortcuts Modal — Empty Search</td><td><span class="tag tag-pink">Required</span></td><td>검색 결과 없음 상태</td></tr>
+    <tr><td>4</td><td>Shortcuts Modal — Toggle OFF</td><td><span class="tag tag-pink">Required</span></td><td>단일키 비활성화 시 dim 처리된 행</td></tr>
+    <tr><td>5</td><td>Header Button — States</td><td><span class="tag tag-pink">Required</span></td><td>Default / Hover / Active(모달 열림) 3-state</td></tr>
+    <tr><td>6</td><td>Focus Mode — ? 힌트</td><td><span class="tag tag-pink">Required</span></td><td>Focus Mode 내 ? 키/아이콘 위치</td></tr>
+    <tr><td>7</td><td>Mobile Responsive</td><td><span class="tag tag-info">Optional</span></td><td>모바일에서는 바텀시트 또는 전체화면 모달</td></tr>
+    <tr><td>8</td><td>Dark Mode 대비</td><td><span class="tag tag-info">Optional</span></td><td>향후 다크모드 지원 시 컬러 토큰</td></tr>
+  </table>
+
+  <h3>기존 디자인 시스템과의 일관성</h3>
+  <ul>
+    <li><strong>모달 패턴</strong>: 기존 QuickCreateTC, AI Assist 모달과 동일한 overlay + 중앙 정렬 + Esc 닫기</li>
+    <li><strong>검색 패턴</strong>: Command Palette의 검색 UI 참조 (동일한 input 스타일)</li>
+    <li><strong>kbd 스타일</strong>: Focus Mode의 기존 kbd 힌트 스타일 재사용 (monospace, light bg)</li>
+    <li><strong>컬러</strong>: 기존 STATUS_CONFIG 컬러 토큰 활용 (Pass: green, Fail: red, Block: amber, Retest: violet)</li>
+    <li><strong>아이콘</strong>: Remix Icons 사용 (ri-keyboard-line, ri-search-line, ri-close-line)</li>
+  </ul>
+
+  <h3>예상 작업량</h3>
+  <table>
+    <tr><th>담당</th><th>작업</th><th>예상 시간</th></tr>
+    <tr><td>Desi</td><td>6개 필수 시안 + 2개 선택 시안</td><td>~4시간</td></tr>
+    <tr><td>Dev</td><td>KeyboardShortcutsModal 컴포넌트 + shortcuts.ts + 헤더 연결</td><td>~5시간</td></tr>
+    <tr><td><strong>합계</strong></td><td></td><td><strong>~9시간 (Desi 4h + Dev 5h)</strong></td></tr>
+  </table>
+</div>
+
+</div><!-- .wrap -->
+</body>
+</html>

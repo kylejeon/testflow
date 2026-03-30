@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably Documentation 콘텐츠 가이드 — 5개 사용 가이드 페이지</title>
+<style>
+  :root {
+    --primary: #6366f1;
+    --primary-bg: #eef2ff;
+    --success: #22c55e;
+    --success-bg: #f0fdf4;
+    --warning: #f59e0b;
+    --warning-bg: #fffbeb;
+    --danger: #ef4444;
+    --danger-bg: #fef2f2;
+    --info: #3b82f6;
+    --info-bg: #eff6ff;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --border: #e5e7eb;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 32px; }
+
+  .doc-header {
+    background: linear-gradient(135deg, #059669, #0d9488);
+    color: white;
+    padding: 48px 40px;
+    border-radius: 16px;
+    margin-bottom: 32px;
+  }
+  .doc-header h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+  .doc-header .subtitle { font-size: 16px; opacity: 0.85; margin-bottom: 20px; }
+  .doc-meta { display: flex; gap: 24px; font-size: 13px; opacity: 0.8; flex-wrap: wrap; }
+
+  .toc {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 32px;
+  }
+  .toc h2 { font-size: 18px; margin-bottom: 16px; color: var(--gray-700); }
+  .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .toc-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--gray-900);
+    transition: all 0.15s;
+  }
+  .toc-card:hover { border-color: var(--primary); background: var(--primary-bg); }
+  .toc-card .num {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .toc-card h3 { font-size: 14px; font-weight: 600; }
+  .toc-card p { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+
+  /* Page section (each doc page) */
+  .page-section {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+  .page-header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .page-header .page-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: white; flex-shrink: 0;
+  }
+  .page-header h2 { font-size: 20px; font-weight: 700; }
+  .page-header .page-route {
+    font-size: 13px; color: var(--gray-500); font-family: 'SF Mono', monospace;
+    background: var(--gray-100); padding: 2px 10px; border-radius: 6px; margin-left: auto;
+  }
+  .page-body { padding: 28px 32px; }
+  .page-body h3 {
+    font-size: 17px; font-weight: 700; color: var(--gray-900);
+    margin: 28px 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .page-body h3:first-child { margin-top: 0; }
+  .page-body h4 {
+    font-size: 15px; font-weight: 600; color: var(--gray-700);
+    margin: 20px 0 8px 0;
+  }
+  .page-body p { margin-bottom: 12px; color: var(--gray-700); font-size: 14px; }
+
+  /* Content block */
+  .content-block {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin: 12px 0;
+    font-size: 14px;
+    color: var(--gray-700);
+    line-height: 1.8;
+  }
+  .content-block .block-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--primary); margin-bottom: 8px;
+  }
+  .content-block.hero { background: var(--primary-bg); border-color: #c7d2fe; }
+  .content-block.screenshot {
+    background: #fefce8; border-color: #fde68a;
+    font-style: italic; color: #92400e;
+  }
+
+  /* Callout */
+  .callout {
+    border-radius: 8px; padding: 14px 18px; margin: 14px 0;
+    font-size: 13px; line-height: 1.6;
+  }
+  .callout-title { font-weight: 600; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .callout.info { background: var(--info-bg); border-left: 4px solid var(--info); }
+  .callout.info .callout-title { color: var(--info); }
+  .callout.warning { background: var(--warning-bg); border-left: 4px solid var(--warning); }
+  .callout.warning .callout-title { color: var(--warning); }
+  .callout.success { background: var(--success-bg); border-left: 4px solid var(--success); }
+  .callout.success .callout-title { color: var(--success); }
+  .callout.tip { background: #f5f3ff; border-left: 4px solid #7c3aed; }
+  .callout.tip .callout-title { color: #7c3aed; }
+
+  /* Step flow */
+  .step-flow { margin: 16px 0; }
+  .step {
+    display: flex; gap: 14px; margin-bottom: 0; position: relative;
+  }
+  .step:last-child .step-line { display: none; }
+  .step-marker { display: flex; flex-direction: column; align-items: center; width: 32px; flex-shrink: 0; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--primary);
+    color: white; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .step-num.green { background: var(--success); }
+  .step-line { width: 2px; flex: 1; background: var(--gray-200); min-height: 8px; }
+  .step-body { flex: 1; padding-bottom: 16px; }
+  .step-title { font-weight: 600; font-size: 14px; color: var(--gray-900); margin-bottom: 4px; }
+  .step-desc { font-size: 13px; color: var(--gray-500); line-height: 1.6; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  th {
+    background: var(--gray-100); text-align: left; padding: 9px 14px;
+    font-weight: 600; font-size: 12px; color: var(--gray-700);
+    border-bottom: 2px solid var(--gray-200);
+  }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); vertical-align: top; }
+  tr:hover td { background: var(--gray-50); }
+
+  .tag {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 600;
+  }
+  .tag-screenshot { background: #fef3c7; color: #92400e; }
+  .tag-text { background: #dbeafe; color: #1d4ed8; }
+  .tag-interactive { background: #f0fdf4; color: #166534; }
+  .tag-code { background: #f3e8ff; color: #7c3aed; }
+
+  hr.divider { border: none; border-top: 1px solid var(--gray-200); margin: 24px 0; }
+  ul, ol { margin: 8px 0 8px 20px; }
+  li { margin-bottom: 4px; font-size: 13px; color: var(--gray-700); }
+
+  .field-spec {
+    display: grid; grid-template-columns: 140px 1fr; gap: 0;
+    border: 1px solid var(--gray-200); border-radius: 6px; overflow: hidden;
+    margin: 8px 0; font-size: 13px;
+  }
+  .field-spec dt {
+    padding: 8px 12px; background: var(--gray-50); font-weight: 600;
+    color: var(--gray-700); border-bottom: 1px solid var(--gray-200);
+  }
+  .field-spec dd {
+    padding: 8px 12px; color: var(--gray-500);
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .field-spec dt:last-of-type,
+  .field-spec dd:last-of-type { border-bottom: none; }
+
+  @media (max-width: 768px) {
+    .toc-grid { grid-template-columns: 1fr; }
+    .container { padding: 20px 16px; }
+    .page-header { flex-wrap: wrap; }
+    .page-header .page-route { margin-left: 0; margin-top: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ========== HEADER ========== -->
+<div class="doc-header">
+  <h1>Testably Documentation 콘텐츠 가이드</h1>
+  <p class="subtitle">5개 사용 가이드 페이지의 제목, 섹션 구조, 핵심 콘텐츠 텍스트 — Dev1 개발용</p>
+  <div class="doc-meta">
+    <span>PM 기획서</span>
+    <span>|</span>
+    <span>작성일: 2026-03-29</span>
+    <span>|</span>
+    <span>담당: Dev1</span>
+    <span>|</span>
+    <span>소스 코드 분석 기반 작성</span>
+  </div>
+</div>
+
+<!-- ========== TOC ========== -->
+<div class="toc">
+  <h2>5개 문서 페이지 개요</h2>
+  <div class="toc-grid">
+    <a href="#page1" class="toc-card">
+      <div class="num" style="background: #6366f1;">1</div>
+      <div>
+        <h3>Test Cases</h3>
+        <p>/docs/test-cases — TC 생성, 폴더, 태그, AI 생성, 벌크 작업</p>
+      </div>
+    </a>
+    <a href="#page2" class="toc-card">
+      <div class="num" style="background: #8b5cf6;">2</div>
+      <div>
+        <h3>Test Runs</h3>
+        <p>/docs/test-runs — 런 생성, 배정, Focus Mode, 결과 입력</p>
+      </div>
+    </a>
+    <a href="#page3" class="toc-card">
+      <div class="num" style="background: #0891b2;">3</div>
+      <div>
+        <h3>Milestones</h3>
+        <p>/docs/milestones — 마일스톤, Sub Milestone, 진행률 추적</p>
+      </div>
+    </a>
+    <a href="#page4" class="toc-card">
+      <div class="num" style="background: #ea580c;">4</div>
+      <div>
+        <h3>Discovery Logs</h3>
+        <p>/docs/discovery-logs — 탐색적 테스트, 관찰 기록, TC 변환</p>
+      </div>
+    </a>
+    <a href="#page5" class="toc-card" style="grid-column: span 2;">
+      <div class="num" style="background: #16a34a;">5</div>
+      <div>
+        <h3>Team & Permissions</h3>
+        <p>/docs/team-permissions — 멤버 초대, 역할(Owner/Admin/Member/Viewer), 접근 제어, Viewer 무료 정책</p>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 1: TEST CASES                                                        -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page-section" id="page1">
+  <div class="page-header">
+    <div class="page-icon" style="background: #6366f1;">📝</div>
+    <div>
+      <h2>Page 1: Test Cases</h2>
+      <p style="font-size: 13px; color: var(--gray-500); margin-top: 2px;">테스트 케이스의 생성, 구성, 관리에 관한 완전한 가이드</p>
+    </div>
+    <span class="page-route">/docs/test-cases</span>
+  </div>
+  <div class="page-body">
+
+    <!-- Hero -->
+    <div class="content-block hero">
+      <div class="block-label">Page Hero 텍스트</div>
+      <strong style="font-size: 16px;">Test Cases</strong><br>
+      Test cases are the building blocks of your QA process. Learn how to create, organize, and manage test cases effectively — manually, in bulk, or with AI assistance.
+    </div>
+
+    <!-- Section 1 -->
+    <h3>Section 1: Creating Test Cases</h3>
+    <h4>1-1. 수동 생성 (Manual Creation)</h4>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>To create a new test case, navigate to your project's <strong>Test Cases</strong> tab and click the <strong>"+ New Test Case"</strong> button in the top-right corner. This opens the test case editor where you can fill in the following fields:</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Field</th><th>Required</th><th>Description</th><th>Dev1 참고 (실제 코드 기반)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Title</strong></td><td>Yes</td><td>A clear, concise description of what is being tested. Example: "User can login with valid credentials"</td><td><code>test_cases.title</code> — 필수 필드, 최대 500자</td></tr>
+        <tr><td><strong>Custom ID</strong></td><td>Auto</td><td>Automatically generated based on project prefix (e.g., PRJ-1, PRJ-2). Cannot be manually set.</td><td><code>test_cases.custom_id</code> — prefix + auto-increment</td></tr>
+        <tr><td><strong>Folder</strong></td><td>No</td><td>Organize test cases into folders. Select an existing folder or create a new one.</td><td><code>test_cases.folder</code> — text field, folder name</td></tr>
+        <tr><td><strong>Priority</strong></td><td>No</td><td>Set importance level: <strong>Critical</strong>, <strong>High</strong>, <strong>Medium</strong> (default), or <strong>Low</strong>.</td><td><code>test_cases.priority</code> — enum, default 'medium'</td></tr>
+        <tr><td><strong>Type</strong></td><td>No</td><td><strong>Manual</strong> (default) or <strong>Automated</strong>. Indicates how the test case is executed.</td><td><code>test_cases.is_automated</code> — boolean, false=Manual</td></tr>
+        <tr><td><strong>Lifecycle Status</strong></td><td>No</td><td><strong>Draft</strong> → <strong>Active</strong> → <strong>Deprecated</strong>. New test cases start as Draft.</td><td>필터: <code>lifecycleFilter</code> — draft / active / deprecated</td></tr>
+        <tr><td><strong>Precondition</strong></td><td>No</td><td>Any prerequisites or setup needed before executing the test.</td><td><code>test_cases.precondition</code></td></tr>
+        <tr><td><strong>Steps</strong></td><td>No</td><td>Step-by-step instructions for executing the test. Each step describes a single action.</td><td><code>test_cases.steps</code> — text/JSON</td></tr>
+        <tr><td><strong>Expected Result</strong></td><td>No</td><td>What should happen when the test is executed correctly.</td><td><code>test_cases.expected_result</code></td></tr>
+        <tr><td><strong>Tags</strong></td><td>No</td><td>Free-form labels for categorization (e.g., "login", "regression", "smoke").</td><td><code>test_cases.tags</code> — string/array</td></tr>
+      </tbody>
+    </table>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요</div>
+      TC 생성 에디터 전체 화면. 모든 필드가 보이도록 — Title, Folder selector, Priority dropdown, Steps 영역 등.
+    </div>
+
+    <h4>1-2. AI 생성 (AI-Powered Generation)</h4>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Testably can automatically generate test cases using AI. Click the <strong>"AI Generate"</strong> button to open the AI generation wizard.</p>
+      <p><strong>Two generation modes are available:</strong></p>
+      <p><strong>Mode 1 — Text-based:</strong> Describe a feature or requirement in natural language, and AI will generate relevant test cases. Example: "User registration with email, Google SSO, and password validation."</p>
+      <p><strong>Mode 2 — Session-based (Professional+):</strong> Select an existing Discovery Log session, and AI will analyze the session's observations to generate structured test cases.</p>
+      <p><strong>The generation flow has 4 steps:</strong></p>
+      <ol>
+        <li><strong>Choose mode</strong> — Text-based or Session-based</li>
+        <li><strong>Provide input</strong> — Type feature description or select a session</li>
+        <li><strong>Review titles</strong> — AI generates suggested test case titles. Edit, remove, or add more.</li>
+        <li><strong>Review details</strong> — AI fills in full details (steps, expected results, priority). Edit as needed, then save.</li>
+      </ol>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-title">Plan Limits — AI Generation</div>
+      Free: 5 generations/month &nbsp;|&nbsp; Starter: 30/month &nbsp;|&nbsp; Professional: 150/month &nbsp;|&nbsp; Enterprise: Unlimited<br>
+      Session-based mode requires Professional plan or above.<br>
+      <em>(Source: <code>AIGenerateModal.tsx</code> — PLAN_INFO)</em>
+    </div>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요 (2장)</div>
+      1) AI Generate Modal — Mode selection step (Text vs Session)<br>
+      2) AI Generate Modal — Review details step with generated test cases
+    </div>
+
+    <!-- Section 2: Folders -->
+    <h3>Section 2: Organizing with Folders</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Folders help you organize test cases into logical groups. You can structure them by feature, module, sprint, or any system that fits your team.</p>
+      <p><strong>Creating a folder:</strong> When creating or editing a test case, type a new folder name in the Folder field — it will be created automatically. Folders can have custom <strong>icons</strong> and <strong>colors</strong> for visual distinction.</p>
+      <p><strong>Available folder colors:</strong> Indigo, Violet, Pink, Emerald, Amber, Cyan, Red, Teal, Orange, Blue (10 colors).</p>
+      <p><strong>Sidebar navigation:</strong> The test case list shows a left sidebar with all folders. Click a folder to filter test cases. The count next to each folder shows how many test cases it contains.</p>
+      <p><strong>Moving test cases to folders:</strong> Select one or more test cases → use the Bulk Action Bar's "Move" button → choose the target folder.</p>
+    </div>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요</div>
+      Test Cases 목록 화면 — 좌측 폴더 사이드바 + 우측 TC 리스트가 보이도록
+    </div>
+
+    <!-- Section 3: Tags & Priority -->
+    <h3>Section 3: Tags and Priority</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p><strong>Tags</strong> are free-form labels you can attach to any test case for categorization and filtering. Common tag examples: <code>smoke</code>, <code>regression</code>, <code>login</code>, <code>payment</code>, <code>P1</code>.</p>
+      <p><strong>Priority</strong> levels help you focus on the most important test cases first:</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Priority</th><th>When to Use</th><th>Visual</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Critical</strong></td><td>Core functionality that must always work (e.g., login, checkout, payment)</td><td>Red badge</td></tr>
+        <tr><td><strong>High</strong></td><td>Important features that significantly impact users</td><td>Orange badge</td></tr>
+        <tr><td><strong>Medium</strong></td><td>Standard functionality (default for new test cases)</td><td>Blue badge</td></tr>
+        <tr><td><strong>Low</strong></td><td>Nice-to-have features, edge cases, cosmetic issues</td><td>Gray badge</td></tr>
+      </tbody>
+    </table>
+
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트 (계속)</div>
+      <p><strong>Filtering:</strong> Use the filter bar above the test case list to filter by priority level. You can also filter by <strong>Lifecycle Status</strong> (Draft / Active / Deprecated) to focus on test cases in a specific stage.</p>
+    </div>
+
+    <!-- Section 4: Bulk Operations -->
+    <h3>Section 4: Bulk Operations</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>When working with many test cases, bulk operations save time. Select multiple test cases using the checkboxes, and the <strong>Bulk Action Bar</strong> appears at the bottom of the screen.</p>
+      <p><strong>Available bulk actions:</strong></p>
+    </div>
+
+    <table>
+      <thead><tr><th>Action</th><th>Description</th><th>Dev1 참고</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Assign</strong></td><td>Assign selected test cases to a team member. Choose from project members list.</td><td><code>handleBulkAssign(assigneeName)</code></td></tr>
+        <tr><td><strong>Move to Folder</strong></td><td>Move selected test cases to a different folder. Opens folder selection modal.</td><td><code>handleBulkAddToFolder(folderName)</code></td></tr>
+        <tr><td><strong>Remove from Folder</strong></td><td>Remove folder assignment from selected test cases.</td><td><code>handleBulkRemoveFromFolder()</code></td></tr>
+        <tr><td><strong>Change Lifecycle</strong></td><td>Change lifecycle status: Draft → Active → Deprecated. Bulk deprecation shows confirmation dialog.</td><td><code>handleBulkLifecycleChange(newStatus)</code></td></tr>
+        <tr><td><strong>Delete</strong></td><td>Permanently delete selected test cases. Shows confirmation modal with count.</td><td><code>showBulkDeleteModal</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트 (계속)</div>
+      <p><strong>Select all:</strong> Use the header checkbox to select all visible test cases on the current page. The Bulk Action Bar shows the count of selected items.</p>
+    </div>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요</div>
+      여러 TC가 선택된 상태에서 하단 Bulk Action Bar가 보이는 화면
+    </div>
+
+    <!-- Section 5: Editing Details -->
+    <h3>Section 5: Editing Test Case Details</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Click any test case to open its detail view. Here you can edit all fields, add steps, and manage attachments.</p>
+      <p><strong>Steps & Expected Results:</strong> Break down your test into numbered steps. Each step describes a single user action. The expected result describes what should happen after all steps are completed successfully.</p>
+      <p><strong>Step format example:</strong></p>
+      <ol>
+        <li>Navigate to the login page</li>
+        <li>Enter valid email address</li>
+        <li>Enter valid password</li>
+        <li>Click the "Sign In" button</li>
+      </ol>
+      <p><strong>Expected Result:</strong> User is redirected to the dashboard and sees a welcome message.</p>
+      <p><strong>Attachments:</strong> You can attach screenshots, documents, or any files to a test case for additional context.</p>
+      <p><strong>Lifecycle transitions:</strong> Move a test case through its lifecycle: <strong>Draft</strong> (initial creation) → <strong>Active</strong> (ready for test runs) → <strong>Deprecated</strong> (no longer relevant). Deprecated cases are hidden by default but can be viewed using the lifecycle filter.</p>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">Tip</div>
+      Write test case titles as user actions: "User can [action]" or "Verify that [behavior]". This makes test cases self-documenting and easier to understand during execution.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 2: TEST RUNS                                                         -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page-section" id="page2">
+  <div class="page-header">
+    <div class="page-icon" style="background: #8b5cf6;">▶️</div>
+    <div>
+      <h2>Page 2: Test Runs</h2>
+      <p style="font-size: 13px; color: var(--gray-500); margin-top: 2px;">테스트 실행의 생성, 배정, Focus Mode 사용, 결과 기록 가이드</p>
+    </div>
+    <span class="page-route">/docs/test-runs</span>
+  </div>
+  <div class="page-body">
+
+    <div class="content-block hero">
+      <div class="block-label">Page Hero 텍스트</div>
+      <strong style="font-size: 16px;">Test Runs</strong><br>
+      A test run is a single execution of a set of test cases. Create runs tied to milestones, assign test cases to team members, and execute them in Focus Mode for a distraction-free testing experience.
+    </div>
+
+    <!-- Section 1: Creating a Run -->
+    <h3>Section 1: Creating a Test Run</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Navigate to your project's <strong>Test Runs</strong> tab and click <strong>"+ New Run"</strong>.</p>
+    </div>
+
+    <div class="step-flow">
+      <div class="step">
+        <div class="step-marker"><div class="step-num">1</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Name your run</div>
+          <div class="step-desc">Give the run a descriptive name (e.g., "Sprint 12 Regression", "Release 2.5 Smoke Test").</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num">2</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Link to a Milestone (optional)</div>
+          <div class="step-desc">Select a milestone to associate this run with a release or sprint target. This contributes to the milestone's progress tracking.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num">3</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Select Test Cases</div>
+          <div class="step-desc">Choose which test cases to include. You can select individually, by folder, or select all. The run shows a count of selected cases.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num">4</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Assign to team members (optional)</div>
+          <div class="step-desc">Assign specific test cases to team members. Each assignee sees their assigned cases when they open the run.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num green">5</div></div>
+        <div class="step-body">
+          <div class="step-title">Create the run</div>
+          <div class="step-desc">Click "Create" to start the run. Status begins as <strong>New</strong>.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요</div>
+      Run 생성 모달/화면 — 이름 입력, Milestone 선택, TC 선택 체크박스 영역
+    </div>
+
+    <!-- Section 2: Run Status Flow -->
+    <h3>Section 2: Run Status Flow</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Every test run goes through a defined lifecycle:</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Status</th><th>Code</th><th>Description</th><th>Transitions To</th></tr></thead>
+      <tbody>
+        <tr><td><strong>New</strong></td><td><code>new</code></td><td>Run has been created but not started. No results recorded yet.</td><td>In Progress</td></tr>
+        <tr><td><strong>In Progress</strong></td><td><code>in_progress</code></td><td>Testing is underway. At least one result has been recorded.</td><td>Paused, Under Review, Completed</td></tr>
+        <tr><td><strong>Paused</strong></td><td><code>paused</code></td><td>Testing is temporarily on hold (e.g., blocked by a dependency).</td><td>In Progress</td></tr>
+        <tr><td><strong>Under Review</strong></td><td><code>under_review</code></td><td>Testing is complete but results are being reviewed by a lead.</td><td>Completed, In Progress</td></tr>
+        <tr><td><strong>Completed</strong></td><td><code>completed</code></td><td>All testing is done and results are final.</td><td>(Terminal state)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트 (계속)</div>
+      <p><strong>Automated runs (CI/CD):</strong> Runs created through the CI/CD API are marked with an automation badge. These runs receive results from your pipeline automatically.</p>
+    </div>
+
+    <!-- Section 3: Assignees -->
+    <h3>Section 3: Assigning Test Cases</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Within a test run, each test case can be assigned to a specific team member. This is useful for distributing work across the QA team.</p>
+      <p><strong>How to assign:</strong> Open the run detail page → click the assignee icon next to any test case → select a team member from the dropdown. Only project members with <strong>Owner</strong>, <strong>Admin</strong>, or <strong>Member</strong> roles appear in the assignee list.</p>
+      <p><strong>Filtering by assignee:</strong> On the run detail page, use the contributor filter to see only test cases assigned to a specific person.</p>
+    </div>
+
+    <!-- Section 4: Focus Mode -->
+    <h3>Section 4: Focus Mode</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p><strong>Focus Mode</strong> is Testably's distraction-free testing interface. It's designed for efficient test execution with everything you need on one screen.</p>
+      <p><strong>Layout:</strong></p>
+      <ul>
+        <li><strong>Left panel:</strong> List of all test cases in the run. Shows status indicators (passed/failed/blocked/retest/untested) for each case. Click a case to load it.</li>
+        <li><strong>Right panel:</strong> The active test case's full details — title, steps, expected result, preconditions, and attachments. Below is the result input area.</li>
+      </ul>
+      <p><strong>To enter Focus Mode:</strong> Open a test run → click the <strong>"Focus Mode"</strong> button (or click any individual test case). The URL includes a <code>?focus=true</code> parameter.</p>
+    </div>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요</div>
+      Focus Mode 전체 화면 — 좌측 TC 리스트 (상태 아이콘 포함) + 우측 TC 상세/결과 입력 영역
+    </div>
+
+    <!-- Section 5: Recording Results -->
+    <h3>Section 5: Recording Results</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>In Focus Mode, record the result of each test case execution:</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Status</th><th>Icon</th><th>When to Use</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Passed</strong></td><td>✅ Green</td><td>The test case executed as expected. All steps completed successfully.</td></tr>
+        <tr><td><strong>Failed</strong></td><td>❌ Red</td><td>The actual result differs from the expected result. A defect exists.</td></tr>
+        <tr><td><strong>Blocked</strong></td><td>⛔ Yellow</td><td>The test cannot be executed due to a dependency, environment issue, or prerequisite failure.</td></tr>
+        <tr><td><strong>Retest</strong></td><td>🔄 Blue</td><td>A previously failed test needs to be re-executed after a fix.</td></tr>
+        <tr><td><strong>Untested</strong></td><td>⬜ Gray</td><td>The test has not been executed yet (default state).</td></tr>
+      </tbody>
+    </table>
+
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트 (계속)</div>
+      <p><strong>Additional result fields:</strong></p>
+      <ul>
+        <li><strong>Note:</strong> Add a comment explaining the result (e.g., "Failed on step 3 — button not clickable").</li>
+        <li><strong>Elapsed time:</strong> Record how long the test took to execute.</li>
+        <li><strong>Step-level status:</strong> Mark individual steps as passed or failed for granular tracking.</li>
+        <li><strong>Issues:</strong> Link Jira issues directly to failed test results (requires Jira integration).</li>
+        <li><strong>Attachments:</strong> Attach screenshots or evidence files to the result.</li>
+      </ul>
+      <p><strong>Run progress:</strong> As you record results, the run's progress bar updates in real-time. The run detail page shows a breakdown: X passed, Y failed, Z blocked, W retest, V untested.</p>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">Tip</div>
+      Use keyboard shortcuts in Focus Mode for faster execution. Navigate between test cases and record results without touching the mouse.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 3: MILESTONES                                                        -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page-section" id="page3">
+  <div class="page-header">
+    <div class="page-icon" style="background: #0891b2;">🏁</div>
+    <div>
+      <h2>Page 3: Milestones</h2>
+      <p style="font-size: 13px; color: var(--gray-500); margin-top: 2px;">릴리스 관리와 진행률 추적을 위한 마일스톤 가이드</p>
+    </div>
+    <span class="page-route">/docs/milestones</span>
+  </div>
+  <div class="page-body">
+
+    <div class="content-block hero">
+      <div class="block-label">Page Hero 텍스트</div>
+      <strong style="font-size: 16px;">Milestones</strong><br>
+      Milestones represent release targets or sprint goals. Link test runs to milestones to track testing progress toward a release, and use sub-milestones to break large releases into manageable phases.
+    </div>
+
+    <!-- Section 1: Creating -->
+    <h3>Section 1: Creating a Milestone</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Navigate to your project's <strong>Milestones</strong> tab and click <strong>"+ New Milestone"</strong>.</p>
+      <p><strong>Required fields:</strong></p>
+      <ul>
+        <li><strong>Name:</strong> Descriptive name (e.g., "Release v2.5", "Sprint 12", "MVP Launch")</li>
+        <li><strong>Start Date:</strong> When testing for this milestone begins</li>
+        <li><strong>End Date:</strong> Target completion date</li>
+      </ul>
+      <p>Once created, the milestone starts in <strong>Upcoming</strong> status and transitions automatically based on dates and progress.</p>
+    </div>
+
+    <h4>Milestone Status Flow</h4>
+    <table>
+      <thead><tr><th>Status</th><th>Code</th><th>Trigger</th><th>Visual</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Upcoming</strong></td><td><code>upcoming</code></td><td>Start date is in the future</td><td>Blue badge</td></tr>
+        <tr><td><strong>In Progress</strong></td><td><code>started</code></td><td>Start date has passed, not yet completed</td><td>Indigo badge</td></tr>
+        <tr><td><strong>Overdue</strong></td><td><code>past_due</code></td><td>End date has passed but not all tests are complete</td><td>Red badge</td></tr>
+        <tr><td><strong>Completed</strong></td><td><code>completed</code></td><td>Manually marked as complete</td><td>Green badge</td></tr>
+      </tbody>
+    </table>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요</div>
+      Milestones 목록 페이지 — 여러 상태의 마일스톤 카드들 + 진행률 바
+    </div>
+
+    <!-- Section 2: Linking Runs -->
+    <h3>Section 2: Linking Test Runs</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Link test runs to a milestone to track testing progress. You can link a run when creating it (by selecting a milestone in the creation form) or afterward from the run detail page.</p>
+      <p><strong>How progress is calculated:</strong> The milestone's progress is based on the combined results of all linked test runs. Specifically, it shows the ratio of test cases with a final result (passed, failed, blocked) to the total number of test cases across all linked runs.</p>
+      <p><strong>Milestone detail page</strong> shows:</p>
+      <ul>
+        <li>Overall progress bar with passed/failed/blocked breakdown</li>
+        <li>All linked test runs with individual progress</li>
+        <li>Linked discovery sessions</li>
+        <li>Activity timeline</li>
+        <li>Failed and blocked test cases listed for quick triage</li>
+        <li>Jira issues linked from failed test results</li>
+      </ul>
+    </div>
+
+    <!-- Section 3: Sub-Milestones -->
+    <h3>Section 3: Sub-Milestones</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>For large releases, you can create <strong>sub-milestones</strong> to organize testing into phases.</p>
+      <p><strong>Creating a sub-milestone:</strong> On the Milestones page, click the <strong>"+ Sub"</strong> button on an existing milestone. The sub-milestone is visually nested under its parent and inherits the parent's timeline context.</p>
+      <p><strong>Example structure:</strong></p>
+      <ul>
+        <li>Release v3.0 (parent)
+          <ul>
+            <li>Phase 1: Core Features</li>
+            <li>Phase 2: Integrations</li>
+            <li>Phase 3: Performance Testing</li>
+          </ul>
+        </li>
+      </ul>
+      <p><strong>Parent-child relationship:</strong> The parent milestone's progress reflects the aggregate progress of all its sub-milestones. You can expand/collapse sub-milestones in the list view.</p>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-title">Dev1 참고</div>
+      Sub-milestone은 <code>parent_milestone_id</code> 필드로 구현됨. <code>expandedMilestones</code> state (Set)으로 UI 접기/펼치기 관리. Milestone 인터페이스의 <code>subMilestones?: MilestoneWithProgress[]</code> 배열.
+    </div>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요</div>
+      Sub-milestone이 펼쳐진 상태의 마일스톤 목록
+    </div>
+
+    <!-- Section 4: Progress Dashboard -->
+    <h3>Section 4: Progress Tracking Dashboard</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>The <strong>Milestone Detail</strong> page serves as a progress dashboard for your release:</p>
+      <p><strong>Key metrics displayed:</strong></p>
+      <ul>
+        <li><strong>Overall progress bar:</strong> Visual percentage with color-coded segments (green=passed, red=failed, yellow=blocked)</li>
+        <li><strong>Test summary:</strong> Total tests, passed count, failed count, blocked count</li>
+        <li><strong>Time tracking:</strong> Days remaining, days elapsed, overdue indicator</li>
+        <li><strong>Run contributors:</strong> Avatar stack showing all team members involved in the milestone's test runs</li>
+      </ul>
+      <p><strong>Activity timeline:</strong> Shows the most recent test results, run completions, and status changes in chronological order.</p>
+      <p><strong>Failed & Blocked list:</strong> A dedicated section lists all test cases that failed or are blocked, grouped by run name, with the author and timestamp — making it easy to prioritize fixes.</p>
+    </div>
+
+    <!-- Section 5: Release Management -->
+    <h3>Section 5: Release Management</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p><strong>Best practices for using milestones as release gates:</strong></p>
+      <ol>
+        <li><strong>Create a milestone per release</strong> — Name it after the release version (e.g., "v2.5.0").</li>
+        <li><strong>Set realistic dates</strong> — Align start/end dates with your sprint or release cycle.</li>
+        <li><strong>Create focused test runs</strong> — Separate regression, smoke, and feature-specific runs. Link all to the milestone.</li>
+        <li><strong>Monitor the dashboard</strong> — Check progress daily. Triage failed and blocked cases promptly.</li>
+        <li><strong>Complete the milestone</strong> — Once all critical tests pass and you're confident in the release, mark the milestone as Completed.</li>
+      </ol>
+      <p><strong>Overdue milestones</strong> automatically change to <strong>Overdue</strong> status and trigger notifications (if configured) to alert the team.</p>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">Notification Events</div>
+      Milestone-related webhook events: <code>milestone_started</code>, <code>milestone_completed</code>, <code>milestone_past_due</code>.<br>
+      Configure these in Settings → Integrations to get Slack/Teams alerts.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 4: DISCOVERY LOGS                                                    -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page-section" id="page4">
+  <div class="page-header">
+    <div class="page-icon" style="background: #ea580c;">🔍</div>
+    <div>
+      <h2>Page 4: Discovery Logs</h2>
+      <p style="font-size: 13px; color: var(--gray-500); margin-top: 2px;">탐색적 테스트 세션의 시작, 관찰 기록, TC 변환 가이드</p>
+    </div>
+    <span class="page-route">/docs/discovery-logs</span>
+  </div>
+  <div class="page-body">
+
+    <div class="content-block hero">
+      <div class="block-label">Page Hero 텍스트</div>
+      <strong style="font-size: 16px;">Discovery Logs</strong><br>
+      Discovery Logs are Testably's tool for exploratory testing. Start a session, freely explore your application, and record observations as you go — notes, bugs, and test steps. Later, convert your findings into formal test cases.
+    </div>
+
+    <!-- Section 1: Starting a Session -->
+    <h3>Section 1: Starting an Exploratory Session</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Navigate to your project's <strong>Sessions</strong> tab and click <strong>"+ New Session"</strong>.</p>
+    </div>
+
+    <div class="step-flow">
+      <div class="step">
+        <div class="step-marker"><div class="step-num">1</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Name your session</div>
+          <div class="step-desc">Give it a descriptive name that reflects what you're exploring (e.g., "Checkout Flow Exploration", "Mobile Navigation Edge Cases").</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num">2</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Define the mission (Charter)</div>
+          <div class="step-desc">Write a brief charter describing what you plan to explore and what you're looking for. Example: "Explore the checkout flow for edge cases: empty cart, expired coupon, address validation."</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num">3</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Set time estimate (optional)</div>
+          <div class="step-desc">Set a time box for the session (e.g., 30 minutes, 1 hour). A live timer tracks your session duration.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num">4</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Assign participants (optional)</div>
+          <div class="step-desc">Assign one or more team members to the session. Multiple assignees can contribute observations.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num">5</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Link to milestone (optional)</div>
+          <div class="step-desc">Associate the session with a milestone for progress tracking.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num green">6</div></div>
+        <div class="step-body">
+          <div class="step-title">Start exploring</div>
+          <div class="step-desc">Click "Create" and the session begins. A live timer starts counting. You can pause and resume at any time.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요</div>
+      세션 생성 모달/폼 — 이름, 미션, 시간 설정, assignee 영역
+    </div>
+
+    <!-- Section 2: Recording Observations -->
+    <h3>Section 2: Recording Observations</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Once a session is active, you can record observations in real-time. Each entry is timestamped and added to a chronological timeline.</p>
+      <p><strong>Four types of entries:</strong></p>
+    </div>
+
+    <table>
+      <thead><tr><th>Type</th><th>Icon</th><th>Purpose</th><th>Dev1 참고</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Step</strong></td><td>🧪 Purple</td><td>Record a test step or observed behavior that works correctly. Use for documenting what you tested.</td><td><code>type: 'passed'</code>, label: 'Step'</td></tr>
+        <tr><td><strong>Bug</strong></td><td>🐛 Red</td><td>Record a defect or unexpected behavior found during exploration.</td><td><code>type: 'failed'</code>, label: 'Bug'</td></tr>
+        <tr><td><strong>Blocked</strong></td><td>⛔ Amber</td><td>Record a scenario you couldn't test due to an environment or dependency issue.</td><td><code>type: 'blocked'</code></td></tr>
+        <tr><td><strong>Note</strong></td><td>📝 Indigo</td><td>General observations, improvement ideas, or questions to investigate later.</td><td><code>type: 'note'</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트 (계속)</div>
+      <p><strong>Adding an entry:</strong></p>
+      <ol>
+        <li>Select the entry type from the bottom toolbar (Step / Bug / Blocked / Note)</li>
+        <li>Write your observation in the rich text editor (supports formatting, code blocks, lists)</li>
+        <li>Optionally add screenshots or attachments</li>
+        <li>Press Enter or click Submit — the entry appears in the timeline</li>
+      </ol>
+      <p><strong>Rich text editor:</strong> The observation editor supports full rich text formatting powered by Quill. You can use bold, italic, lists, code blocks, and more.</p>
+      <p><strong>Editing entries:</strong> Click the edit icon on any existing entry to modify its content or type after submission.</p>
+    </div>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요</div>
+      세션 상세 화면 — 타임라인 뷰에 여러 타입의 엔트리가 표시된 상태 + 하단 입력 영역
+    </div>
+
+    <!-- Section 3: Timeline View -->
+    <h3>Section 3: Timeline View</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>All session entries are displayed in a <strong>chronological timeline</strong>. Each entry shows:</p>
+      <ul>
+        <li><strong>Type indicator:</strong> Color-coded icon (Step/Bug/Blocked/Note)</li>
+        <li><strong>Content:</strong> The observation text with rich formatting</li>
+        <li><strong>Timestamp:</strong> When the entry was recorded</li>
+        <li><strong>Attachments:</strong> Any screenshots or files attached</li>
+        <li><strong>Issues:</strong> Linked Jira issues (if any)</li>
+      </ul>
+      <p><strong>Live timer:</strong> At the top of the session detail, a live timer shows elapsed time in HH:MM:SS format. The timer pauses when the session is paused and stops when completed.</p>
+    </div>
+
+    <!-- Section 4: About Section -->
+    <h3>Section 4: About Section (Session Metadata)</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>The right sidebar (or header area) shows session metadata:</p>
+      <ul>
+        <li><strong>Status:</strong> Active (green, timer running) / Paused (yellow, timer stopped) / Completed (gray, session ended)</li>
+        <li><strong>Mission:</strong> The charter or goal of the exploration</li>
+        <li><strong>Assignees:</strong> Team members participating in the session (avatar display)</li>
+        <li><strong>Time Box:</strong> The estimated duration set during creation</li>
+        <li><strong>Duration:</strong> Actual elapsed time (excludes paused time)</li>
+        <li><strong>Milestone:</strong> Linked milestone (if any)</li>
+        <li><strong>Tags:</strong> Session tags for categorization</li>
+      </ul>
+      <p><strong>Session controls:</strong></p>
+      <ul>
+        <li><strong>Pause/Resume:</strong> Pause the timer during breaks. Paused duration is tracked separately.</li>
+        <li><strong>Complete:</strong> End the session. Timer stops, status changes to Completed.</li>
+        <li><strong>Edit:</strong> Modify session name, mission, assignees, or milestone after creation.</li>
+      </ul>
+    </div>
+
+    <!-- Section 5: TC Conversion -->
+    <h3>Section 5: Converting to Test Cases</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>The most powerful feature of Discovery Logs is converting your exploratory findings into formal test cases.</p>
+      <p><strong>Manual conversion:</strong> From a session entry, click the "Convert to Test Case" action. This creates a new test case with the entry's content as the description/steps.</p>
+      <p><strong>AI-assisted conversion (Professional+):</strong> Use the AI Generate feature with "Session-based" mode. Select a completed session, and AI will analyze all entries to generate structured test cases with proper steps, expected results, and priorities.</p>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">Best Practice</div>
+      Run a 30-minute exploratory session on a new feature, record all observations, then use AI to generate test cases from the session. This is the fastest way to build comprehensive test coverage for a new feature.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 5: TEAM & PERMISSIONS                                                -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page-section" id="page5">
+  <div class="page-header">
+    <div class="page-icon" style="background: #16a34a;">👥</div>
+    <div>
+      <h2>Page 5: Team & Permissions</h2>
+      <p style="font-size: 13px; color: var(--gray-500); margin-top: 2px;">멤버 초대, 역할 관리, 접근 제어 규칙 가이드</p>
+    </div>
+    <span class="page-route">/docs/team-permissions</span>
+  </div>
+  <div class="page-body">
+
+    <div class="content-block hero">
+      <div class="block-label">Page Hero 텍스트</div>
+      <strong style="font-size: 16px;">Team & Permissions</strong><br>
+      Collaborate with your team by inviting members to your projects. Testably offers four roles — Owner, Admin, Member, and Viewer — to control who can do what. The project creator is automatically assigned the Owner role. When inviting new members, you can assign Admin, Member, or Viewer. Viewers are always free, making it easy to include stakeholders without increasing costs.
+    </div>
+
+    <!-- Section 1: Inviting Members -->
+    <h3>Section 1: Inviting Team Members</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Invite team members from <strong>Settings → Members</strong> or from the project detail page.</p>
+    </div>
+
+    <div class="step-flow">
+      <div class="step">
+        <div class="step-marker"><div class="step-num">1</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Click "Invite Member"</div>
+          <div class="step-desc">Opens the invitation modal.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num">2</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Enter email address</div>
+          <div class="step-desc">Type the email of the person you want to invite. They don't need a Testably account yet — one will be created when they accept.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num">3</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Choose a role</div>
+          <div class="step-desc">Select <strong>Admin</strong>, <strong>Member</strong>, or <strong>Viewer</strong>. The role determines what the person can do in the project (see role comparison below).</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num">4</div><div class="step-line"></div></div>
+        <div class="step-body">
+          <div class="step-title">Send invitation</div>
+          <div class="step-desc">Click "Invite". The person receives an email invitation with a link to join the project.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-marker"><div class="step-num green">5</div></div>
+        <div class="step-body">
+          <div class="step-title">Invitation accepted</div>
+          <div class="step-desc">When the person clicks the invitation link, they join the project with the assigned role. Their status changes from "Pending" to "Active" in the members list.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요</div>
+      Invite Member 모달 — 이메일 입력 필드 + 3가지 역할 라디오 버튼 (Admin/Member/Viewer)
+    </div>
+
+    <!-- Section 2: Role Comparison -->
+    <h3>Section 2: Roles Comparison</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p>Testably has four roles. The Owner role is automatically assigned to the project creator and cannot be assigned via invitation. Admin, Member, and Viewer are available when inviting new members. Each role builds on the previous one:</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 200px;">Permission</th>
+          <th style="text-align: center;">Viewer</th>
+          <th style="text-align: center;">Member</th>
+          <th style="text-align: center;">Admin</th>
+          <th style="text-align: center;">Owner</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>View test cases, runs, milestones</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>View test results & reports</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>View discovery sessions</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Create & edit test cases</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Create & execute test runs</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Record test results</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Create discovery sessions</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Create milestones</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Invite new members</td><td style="text-align:center;">❌</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Change member roles</td><td style="text-align:center;">❌</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Remove members</td><td style="text-align:center;">❌</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Manage project settings</td><td style="text-align:center;">❌</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Configure integrations</td><td style="text-align:center;">❌</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Delete project</td><td style="text-align:center;">❌</td><td style="text-align:center;">❌</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td></tr>
+        <tr><td>Transfer ownership</td><td style="text-align:center;">❌</td><td style="text-align:center;">❌</td><td style="text-align:center;">❌</td><td style="text-align:center;">✅</td></tr>
+      </tbody>
+    </table>
+
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트 (역할별 요약)</div>
+      <p><strong>Owner</strong> <span style="color:#7C3AED; font-size:12px; font-weight:600;">(보라 뱃지)</span><strong>:</strong> The project creator is automatically assigned the Owner role. Has all Admin permissions plus exclusive rights: delete the project, transfer ownership. Only one Owner per project. Cannot be assigned via invitation — only through ownership transfer.</p>
+      <p><strong>Admin</strong> <span style="color:#C2410C; font-size:12px; font-weight:600;">(오렌지 뱃지)</span><strong>:</strong> Full management access. Can invite/remove members, change roles, configure settings and integrations. Can do everything except delete the project or transfer ownership. Best for: team leads, senior QA managers.</p>
+      <p><strong>Member</strong> <span style="color:#4338CA; font-size:12px; font-weight:600;">(인디고 뱃지)</span><strong>:</strong> Can create and edit test cases, run tests, record results, and use all QA features. Cannot manage team or project settings. Best for: QA engineers, developers who write/execute tests.</p>
+      <p><strong>Viewer</strong> <span style="color:#64748B; font-size:12px; font-weight:600;">(회색 뱃지)</span><strong>:</strong> Read-only access. Can view test cases, runs, results, milestones, and sessions — but cannot create or modify anything. Best for: project managers, product owners, stakeholders who need visibility.</p>
+    </div>
+
+    <!-- Section 3: Access Control -->
+    <h3>Section 3: Access Control Rules</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p><strong>Project-level access:</strong> Members are invited per project. A person can have different roles in different projects (e.g., Admin in Project A, Viewer in Project B).</p>
+      <p><strong>Changing roles:</strong> Owners and Admins can change a member's role at any time from the Members section. Select a new role from the dropdown next to the member's name (options: Admin, Member, Viewer). The Owner's role cannot be changed via dropdown. The change takes effect immediately.</p>
+      <p><strong>Removing members:</strong> Owners and Admins can remove members from a project. The member loses access immediately. Their previously recorded test results and contributions remain in the project.</p>
+      <p><strong>Self-removal:</strong> Any member can leave a project by themselves (removing their own access). This is useful when someone transitions off a project.</p>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-title">Dev1 참고</div>
+      역할 변경은 <code>ProjectMembersPanel.tsx</code>의 <code>handleRoleChange(memberId, newRole)</code> — Supabase <code>project_members</code> 테이블 직접 업데이트. <code>isAdminOrOwner = currentUserRole === 'admin' || currentUserRole === 'owner'</code>으로 Owner와 Admin만 드롭다운이 활성화됨 (일반 Member/Viewer에게는 텍스트만 표시). Owner의 role은 드롭다운에 표시되지 않음 (변경 불가).
+    </div>
+
+    <!-- Section 4: Viewer Free Policy -->
+    <h3>Section 4: Viewer Free Policy</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p><strong>Viewers are always free</strong> — they don't count toward your plan's seat limit. This means you can invite unlimited stakeholders, managers, and executives to view testing progress without any additional cost.</p>
+      <p><strong>How seat counting works:</strong></p>
+      <ul>
+        <li>Your plan has a seat limit (e.g., Free = 1 seat, Starter = 5 seats, Professional = 15 seats)</li>
+        <li>Only <strong>Owner</strong>, <strong>Admin</strong>, and <strong>Member</strong> roles count as "seats"</li>
+        <li><strong>Viewer</strong> roles are excluded from the seat count entirely</li>
+        <li>When inviting a new member, the system checks the seat limit — but only against non-Viewer members</li>
+      </ul>
+      <p><strong>Why this matters:</strong> Include your entire team — developers, product managers, executives — in the testing process without worrying about plan costs. Viewers get full read access to stay informed about quality status.</p>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-title">Example</div>
+      On the Starter plan (5 seats), you could have: 1 Owner + 1 Admin + 3 Members + <strong>unlimited Viewers</strong>. Your entire company can observe testing progress.
+    </div>
+
+    <div class="callout info">
+      <div class="callout-title">Dev1 참고</div>
+      <code>InviteMemberModal.tsx</code> line 67-72에서 seat 계산 시 <code>.neq('role', 'viewer')</code>로 Viewer를 제외함. 문서에서 이 정책을 명확히 안내해야 함 — 사용자들이 가장 궁금해하는 부분.
+    </div>
+
+    <!-- Section 5: Managing Members -->
+    <h3>Section 5: Managing Your Team</h3>
+    <div class="content-block">
+      <div class="block-label">콘텐츠 텍스트</div>
+      <p><strong>Members list view:</strong> Settings → Members shows all project members with:</p>
+      <ul>
+        <li>Name and email</li>
+        <li>Role (Owner / Admin / Member / Viewer)</li>
+        <li>Join date</li>
+        <li>Last active date</li>
+        <li>Actions: Change role (Owner/Admin only), Remove (Owner/Admin only)</li>
+      </ul>
+      <p><strong>Pending invitations:</strong> Invitations that haven't been accepted yet show as "Pending" with the option to resend or cancel.</p>
+      <p><strong>Tips for team setup:</strong></p>
+      <ol>
+        <li>Owner 외에 1명 이상의 Admin을 추가 지정해 redundancy 확보</li>
+        <li>Give QA engineers the Member role</li>
+        <li>Invite product managers and stakeholders as Viewers</li>
+        <li>Review roles periodically as team members change responsibilities</li>
+      </ol>
+    </div>
+
+    <div class="content-block screenshot">
+      <div class="block-label">📸 스크린샷 필요</div>
+      Settings → Members 화면 — 여러 역할의 멤버 목록 + 역할 드롭다운 + 삭제 버튼
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- DEVELOPMENT SUMMARY                                                       -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div class="page-section">
+  <div class="page-header">
+    <div class="page-icon" style="background: var(--gray-700);">⚙️</div>
+    <div>
+      <h2>Dev1 개발 요약</h2>
+      <p style="font-size: 13px; color: var(--gray-500); margin-top: 2px;">5개 페이지 공통 사항 및 개발 가이드</p>
+    </div>
+  </div>
+  <div class="page-body">
+
+    <h3>공통 레이아웃</h3>
+    <div class="content-block">
+      <div class="block-label">모든 문서 페이지 공통</div>
+      <p>모든 문서 페이지는 <code>DocsLayout</code> 컴포넌트를 사용하며, 다음 구조를 따릅니다:</p>
+      <ul>
+        <li><strong>좌측 사이드바 (~240px):</strong> 문서 네비게이션 트리. 현재 페이지 하이라이트.</li>
+        <li><strong>중앙 콘텐츠 (~740px):</strong> 실제 문서 내용. 이 기획서의 텍스트가 여기에 들어갑니다.</li>
+        <li><strong>우측 TOC (~200px, 선택사항):</strong> 현재 페이지의 섹션 목차. 스크롤 추적.</li>
+      </ul>
+    </div>
+
+    <h3>콘텐츠 타입별 구현 가이드</h3>
+    <table>
+      <thead><tr><th>타입</th><th>태그</th><th>구현 방법</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-text">텍스트</span></td><td>일반 설명 문단</td><td>이 문서의 "콘텐츠 텍스트" 블록 내용을 <code>&lt;p&gt;</code> 태그로 렌더링</td></tr>
+        <tr><td><span class="tag tag-screenshot">스크린샷</span></td><td>UI 캡처 이미지</td><td><code>&lt;img&gt;</code> 태그. public/docs/ 폴더에 스크린샷 저장. 노란 블록에 표시된 설명 참고하여 캡처</td></tr>
+        <tr><td><span class="tag tag-interactive">테이블</span></td><td>비교/정보 표</td><td>이 문서의 테이블을 그대로 HTML <code>&lt;table&gt;</code> 또는 컴포넌트로 구현</td></tr>
+        <tr><td><span class="tag tag-code">코드 블록</span></td><td>코드 예시</td><td><code>CodeBlock</code> 컴포넌트 사용. 복사 버튼 포함</td></tr>
+        <tr><td><span class="tag tag-interactive">Step Flow</span></td><td>단계별 안내</td><td>번호가 매겨진 스텝 컴포넌트. 이 문서의 step-flow 구조 참고</td></tr>
+        <tr><td><span class="tag tag-text">Callout</span></td><td>팁/경고/정보</td><td>Info/Warning/Tip 알림 박스 컴포넌트</td></tr>
+      </tbody>
+    </table>
+
+    <h3>스크린샷 필요 목록 (총 12장)</h3>
+    <table>
+      <thead><tr><th>#</th><th>페이지</th><th>캡처 대상</th><th>파일명 권장</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Test Cases</td><td>TC 생성 에디터 전체 화면</td><td>docs-tc-editor.png</td></tr>
+        <tr><td>2</td><td>Test Cases</td><td>AI Generate Modal — Mode 선택</td><td>docs-tc-ai-mode.png</td></tr>
+        <tr><td>3</td><td>Test Cases</td><td>AI Generate Modal — 상세 리뷰</td><td>docs-tc-ai-review.png</td></tr>
+        <tr><td>4</td><td>Test Cases</td><td>TC 목록 + 폴더 사이드바</td><td>docs-tc-folders.png</td></tr>
+        <tr><td>5</td><td>Test Cases</td><td>Bulk Action Bar (선택 상태)</td><td>docs-tc-bulk.png</td></tr>
+        <tr><td>6</td><td>Test Runs</td><td>Run 생성 화면</td><td>docs-run-create.png</td></tr>
+        <tr><td>7</td><td>Test Runs</td><td>Focus Mode 전체 화면</td><td>docs-run-focus.png</td></tr>
+        <tr><td>8</td><td>Milestones</td><td>마일스톤 목록 (여러 상태)</td><td>docs-ms-list.png</td></tr>
+        <tr><td>9</td><td>Milestones</td><td>Sub-milestone 펼침 상태</td><td>docs-ms-sub.png</td></tr>
+        <tr><td>10</td><td>Discovery Logs</td><td>세션 생성 폼</td><td>docs-session-create.png</td></tr>
+        <tr><td>11</td><td>Discovery Logs</td><td>세션 타임라인 뷰</td><td>docs-session-timeline.png</td></tr>
+        <tr><td>12</td><td>Team & Permissions</td><td>Invite Member 모달 + Members 목록</td><td>docs-team-invite.png</td></tr>
+      </tbody>
+    </table>
+
+    <h3>라우팅 추가</h3>
+    <div class="content-block">
+      <div class="block-label">router/config.tsx에 추가할 라우트</div>
+      <code>/docs/test-cases</code> → <code>pages/docs/test-cases/page.tsx</code><br>
+      <code>/docs/test-runs</code> → <code>pages/docs/test-runs/page.tsx</code><br>
+      <code>/docs/milestones</code> → <code>pages/docs/milestones/page.tsx</code><br>
+      <code>/docs/discovery-logs</code> → <code>pages/docs/discovery-logs/page.tsx</code><br>
+      <code>/docs/team-permissions</code> → <code>pages/docs/team-permissions/page.tsx</code>
+    </div>
+
+    <h3>기존 /docs 페이지 링크 업데이트</h3>
+    <div class="content-block">
+      <div class="block-label">docs/page.tsx 수정 사항</div>
+      <code>categories</code> 배열의 <code>href="#"</code> 값을 실제 라우트로 교체:<br><br>
+      "Test Cases" → <code>/docs/test-cases</code><br>
+      "Test Runs" → <code>/docs/test-runs</code><br>
+      "Milestones" → <code>/docs/milestones</code><br>
+      "Discovery Logs" → <code>/docs/discovery-logs</code><br>
+      "Team & Permissions" → <code>/docs/team-permissions</code>
+    </div>
+
+    <h3>예상 일정</h3>
+    <table>
+      <thead><tr><th>페이지</th><th>콘텐츠 복잡도</th><th>예상 기간</th></tr></thead>
+      <tbody>
+        <tr><td>DocsLayout + DocsSidebar (공통)</td><td>레이아웃 + 네비게이션</td><td><strong>1-2일</strong></td></tr>
+        <tr><td>Test Cases</td><td>높음 (5개 섹션, 스크린샷 5장)</td><td><strong>1일</strong></td></tr>
+        <tr><td>Test Runs</td><td>높음 (Focus Mode 설명)</td><td><strong>1일</strong></td></tr>
+        <tr><td>Milestones</td><td>중간 (Sub-milestone 포함)</td><td><strong>0.5일</strong></td></tr>
+        <tr><td>Discovery Logs</td><td>중간 (세션 + 타임라인)</td><td><strong>0.5일</strong></td></tr>
+        <tr><td>Team & Permissions</td><td>낮음 (테이블 위주)</td><td><strong>0.5일</strong></td></tr>
+        <tr><td colspan="2" style="text-align: right;"><strong>합계</strong></td><td><strong>4.5-5.5일</strong></td></tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+</div><!-- /container -->
+</body>
+</html>

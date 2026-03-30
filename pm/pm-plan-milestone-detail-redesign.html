@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM 기획안 — Milestone Detail 화면 분석 + 개선안</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F8FAFC;color:#1E293B;line-height:1.7}
+    .container{max-width:960px;margin:0 auto;padding:2.5rem 2rem 4rem}
+    h1{font-size:1.6rem;font-weight:800;color:#0F172A;margin-bottom:0.3rem}
+    .subtitle{font-size:0.85rem;color:#64748B;margin-bottom:2rem}
+    .meta-row{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:2rem;font-size:0.8rem;color:#64748B}
+    .meta-row span{display:flex;align-items:center;gap:0.3rem}
+    .section-title{font-size:1.15rem;font-weight:700;color:#0F172A;margin:2.5rem 0 1rem;padding-bottom:0.5rem;border-bottom:2px solid #E2E8F0;display:flex;align-items:center;gap:0.5rem}
+    .section-num{display:inline-flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;background:#6366F1;color:#fff;border-radius:0.4rem;font-size:0.75rem;font-weight:700}
+    h3{font-size:0.95rem;font-weight:700;color:#1E293B;margin:1.5rem 0 0.5rem}
+    p,li{font-size:0.85rem;color:#334155;margin-bottom:0.5rem}
+    ul,ol{padding-left:1.5rem;margin-bottom:1rem}
+    li{margin-bottom:0.4rem}
+    code{background:#EEF2FF;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.8rem;color:#4338CA;font-family:'SF Mono',Consolas,monospace}
+    strong{color:#0F172A}
+    table{width:100%;border-collapse:collapse;margin:1rem 0 1.5rem;font-size:0.8rem}
+    th{background:#F1F5F9;color:#475569;font-weight:600;text-align:left;padding:0.6rem 0.75rem;border:1px solid #E2E8F0}
+    td{padding:0.55rem 0.75rem;border:1px solid #E2E8F0;vertical-align:top}
+    .wireframe{background:#0F172A;color:#94A3B8;font-family:'SF Mono',Consolas,monospace;font-size:0.72rem;line-height:1.6;padding:1.25rem;border-radius:0.75rem;overflow-x:auto;white-space:pre;margin:1rem 0 1.5rem}
+    .wireframe strong{color:#E2E8F0}
+    .tag{display:inline-block;padding:0.15rem 0.5rem;border-radius:0.25rem;font-size:0.7rem;font-weight:600}
+    .priority-p0{background:#FEE2E2;color:#B91C1C}
+    .priority-p1{background:#FEF3C7;color:#92400E}
+    .priority-p2{background:#DBEAFE;color:#1E40AF}
+    .callout{background:#EEF2FF;border-left:4px solid #6366F1;padding:1rem 1.25rem;border-radius:0 0.5rem 0.5rem 0;margin:1rem 0 1.5rem;font-size:0.82rem}
+    .callout-warn{background:#FFF7ED;border-left-color:#F59E0B}
+    .callout-green{background:#F0FDF4;border-left-color:#22C55E}
+    .callout-red{background:#FEF2F2;border-left-color:#EF4444}
+    .gap-badge{display:inline-block;padding:0.1rem 0.45rem;border-radius:0.2rem;font-size:0.65rem;font-weight:700;margin-right:0.3rem}
+    .gap-missing{background:#FEE2E2;color:#B91C1C}
+    .gap-diff{background:#FEF3C7;color:#92400E}
+    .gap-ok{background:#DCFCE7;color:#15803D}
+    .checklist{list-style:none;padding-left:0}
+    .checklist li{padding:0.4rem 0.5rem;border-bottom:1px solid #F1F5F9;display:flex;align-items:flex-start;gap:0.5rem}
+    .checklist li::before{content:'☐';flex-shrink:0;color:#94A3B8;font-size:0.9rem}
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1><i class="ri-flag-line" style="color:#6366F1"></i> Milestone Detail 화면 분석 + 개선안</h1>
+  <p class="subtitle">공통 디자인 패턴 적용 및 정보 적절성 개선 기획</p>
+
+  <div class="meta-row">
+    <span><i class="ri-calendar-line"></i> 2026-03-27</span>
+    <span><i class="ri-user-line"></i> Author: Kyle (PM)</span>
+    <span><i class="ri-git-branch-line"></i> v1.0</span>
+    <span><i class="ri-file-line"></i> 소스: milestone-detail/page.tsx (1,651줄)</span>
+    <span><i class="ri-palette-line"></i> 참고: all-tabs-unified-header-design.html</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §1 현재 상태 분석 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">1</span><i class="ri-search-eye-line"></i> 현재 Milestone Detail 화면 분석</div>
+
+  <h3>1-1. 현재 레이아웃 구조</h3>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────────────┐
+│ <strong>자체 Header (커스텀, ~52px)</strong>                                         │
+│ [T] Logo · | · Project Name · | · Milestone Name           [👤 Avatar] │
+│ (Breadcrumb 스타일. ProjectHeader.tsx 미사용. 6개 탭 Nav 없음.)        │
+├─────────────────────────────────────────────────────────────────────┤
+│ <strong>Milestone Info Card (bg: white, rounded-lg, border, p-6)</strong>            │
+│ 🏁 Milestone Name              Date Range   [Badge]  [Edit] [Complete]│
+│ ███████████████░░░░░░ 72%                                             │
+├─────────────────────────────────────────────────────────────────────┤
+│ <strong>Content Tabs (카드 내부 탭, text-only, UPPERCASE)</strong>                   │
+│ ┌──────────────────────────────────────────────────────────────────┐ │
+│ │ RESULTS · STATUS · ACTIVITY · ISSUES                            │ │
+│ ├──────────────────────────────────────────────────────────────────┤ │
+│ │                                                                  │ │
+│ │  [Results 탭]                                                    │ │
+│ │  ┌─ RUNS &amp; SESSIONS ──┐ ┌─ MILESTONE ACTIVITY ──┐               │ │
+│ │  │ 🍩 Donut Chart     │ │ Runs: ████ 3         │               │ │
+│ │  │  72% Completed     │ │ DL:   ██░░ 2         │               │ │
+│ │  │  Runs: 3, DL: 2   │ │ Auto: ░░░░ 0         │               │ │
+│ │  └────────────────────┘ └──────────────────────┘               │ │
+│ │                                                                  │ │
+│ │  SUB MILESTONES (Sub 있을 때만)                                  │ │
+│ │  ┌─ Sub1 ─── [Started] ──────────────────────────────┐          │ │
+│ │  ┌─ Sub2 ─── [Upcoming] ─────────────────────────────┐          │ │
+│ │                                                                  │ │
+│ │  RUNS                                                            │ │
+│ │  ┌─ Run1 ─── ██████░░ 72% ──────────────────────────┐          │ │
+│ │  ┌─ Run2 ─── ███░░░░░ 45% ──────────────────────────┐          │ │
+│ │                                                                  │ │
+│ │  SESSIONS (Discovery Logs)                                       │ │
+│ │  ┌─ Session1 ─── [In progress] ─ ▮▮▮▮▮▮ ───────────┐          │ │
+│ │                                                                  │ │
+│ │  [Status 탭] → "Status view coming soon" (미구현)               │ │
+│ │  [Activity 탭] → 14일 차트 + 타임라인 목록                     │ │
+│ │  [Issues 탭] → Jira 이슈 목록                                  │ │
+│ └──────────────────────────────────────────────────────────────────┘ │
+│                                                                      │
+│ <strong>About Card</strong>                                                          │
+│ 📅 Timeline: Date Range                                              │
+│ 👥 Contributors: [Avatar1] [Avatar2]                                 │
+└──────────────────────────────────────────────────────────────────────┘</div>
+
+  <h3>1-2. 현재 표시 정보 목록</h3>
+  <table>
+    <thead><tr><th>영역</th><th>표시 정보</th><th>데이터 소스</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>Header</td><td>Logo, Project Name (링크), Milestone Name, Avatar</td><td>project, milestone</td><td>자체 breadcrumb 헤더. ProjectHeader 미사용.</td></tr>
+      <tr><td>Info Card</td><td>이름, 날짜 범위, 상태 배지, 진행률 바, Edit/Complete 버튼</td><td>milestone</td><td>상태 자동보정 로직 포함 (upcoming→started, →past_due)</td></tr>
+      <tr><td>Results 탭</td><td>Runs &amp; Sessions 도넛 차트, Milestone Activity 바 차트, Sub Milestones 목록, Runs 목록 (진행률 바), Sessions 목록 (활동 바)</td><td>runs, sessions, subMilestones</td><td>가장 정보가 풍부한 탭</td></tr>
+      <tr><td>Status 탭</td><td>"Status view coming soon"</td><td>없음</td><td><span class="gap-badge gap-missing">미구현</span> 플레이스홀더</td></tr>
+      <tr><td>Activity 탭</td><td>14일 라인 차트 (Notes/Passed/Failed/Retest), 타임라인 목록 (날짜 그룹, 페이지네이션, 상태 필터)</td><td>test_results, test_result_logs</td><td>잘 구현됨. 페이지네이션 10개씩.</td></tr>
+      <tr><td>Issues 탭</td><td>Jira 이슈 카드 (제목, 상태, Run명, TC명, 날짜, 외부 링크)</td><td>test_results.jira_issue_*</td><td>Jira 연동 의존</td></tr>
+      <tr><td>About Card</td><td>Timeline (날짜 범위), Contributors (아바타 목록)</td><td>milestone, test_result_logs</td><td>페이지 하단 고정</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1-3. 데이터 Fetch 구조</h3>
+  <table>
+    <thead><tr><th>데이터</th><th>쿼리</th><th>용도</th></tr></thead>
+    <tbody>
+      <tr><td>project</td><td><code>projects.select('*').eq('id', projectId)</code></td><td>프로젝트 이름 + jira_project_key</td></tr>
+      <tr><td>milestone</td><td><code>milestones.select('*').eq('id', milestoneId)</code></td><td>기본 정보 + 상태 자동보정</td></tr>
+      <tr><td>subMilestones</td><td><code>milestones.eq('parent_milestone_id', milestoneId)</code></td><td>Sub Milestone 목록</td></tr>
+      <tr><td>runs</td><td><code>test_runs.eq('milestone_id', milestoneId)</code></td><td>Run 목록 + TC 통계</td></tr>
+      <tr><td>sessions</td><td><code>discovery_sessions.eq('milestone_id', milestoneId)</code></td><td>Discovery Log 목록</td></tr>
+      <tr><td>issues</td><td><code>test_results → jira_issue_* 필드 추출</code></td><td>Jira 이슈 리스트</td></tr>
+      <tr><td>activityLogs</td><td><code>test_result_logs.in('test_result_id', resultIds)</code></td><td>Activity 타임라인 + 차트</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §2 공통 UI 패턴 적용 갭 분석 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">2</span><i class="ri-contrast-2-line"></i> 공통 UI 패턴 적용 — 갭 분석</div>
+
+  <p>Testably의 공통 디자인 패턴(2-Row Unified Header, 42px 서브탭 Row, Toolbar, 컬러 아이콘 등)과 현재 Milestone Detail 구현의 불일치를 분석합니다.</p>
+
+  <h3>2-1. 항목별 갭 비교</h3>
+  <table>
+    <thead><tr><th>패턴 요소</th><th>공통 기준 (다른 탭)</th><th>Milestone Detail 현재</th><th>갭</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Row 1 (ProjectHeader)</strong></td>
+        <td>공유 <code>ProjectHeader.tsx</code> (56px), Logo + Project Selector + 6개 Nav 탭 + 알림 + 키보드 + Avatar</td>
+        <td>자체 breadcrumb 헤더 (~52px). Logo > Project > Milestone. 6개 Nav 탭 없음. 알림/키보드 없음.</td>
+        <td><span class="gap-badge gap-missing">MISSING</span> ProjectHeader 미사용. 다른 탭 네비게이션 불가.</td>
+      </tr>
+      <tr>
+        <td><strong>Row 2 (Subtab Row)</strong></td>
+        <td>42px, 3~4개 탭, 컬러 아이콘 + Badge count, 우측 Action 버튼</td>
+        <td>카드 내부에 텍스트 전용 탭 (RESULTS/STATUS/ACTIVITY/ISSUES). 아이콘 없음. Badge 없음. 우측 Action 없음.</td>
+        <td><span class="gap-badge gap-missing">MISSING</span> 서브탭 Row 패턴 미적용. 카드 안에 내장.</td>
+      </tr>
+      <tr>
+        <td><strong>서브탭 아이콘</strong></td>
+        <td>각 탭마다 컬러 Remix 아이콘 (Indigo/Blue/Green/Red 등)</td>
+        <td>텍스트만. 아이콘 없음.</td>
+        <td><span class="gap-badge gap-missing">MISSING</span></td>
+      </tr>
+      <tr>
+        <td><strong>서브탭 Badge</strong></td>
+        <td>각 탭에 count badge (pill 스타일)</td>
+        <td>Badge 없음</td>
+        <td><span class="gap-badge gap-missing">MISSING</span></td>
+      </tr>
+      <tr>
+        <td><strong>Toolbar</strong></td>
+        <td>Search + Filters + Sort (44px, border-bottom)</td>
+        <td>Toolbar 없음. 검색/정렬/필터 없음.</td>
+        <td><span class="gap-badge gap-missing">MISSING</span></td>
+      </tr>
+      <tr>
+        <td><strong>콘텐츠 영역</strong></td>
+        <td>bg: #F8FAFC, 패딩 있는 카드 리스트</td>
+        <td>bg: gray-50/30, 단일 카드 안에 모든 콘텐츠</td>
+        <td><span class="gap-badge gap-diff">유사</span> 배경색 근접하나 구조 상이</td>
+      </tr>
+      <tr>
+        <td><strong>Detail 페이지 패턴</strong></td>
+        <td>Run Detail: ProjectHeader + 자체 상단 Info + 탭/콘텐츠</td>
+        <td>자체 헤더 + Info Card + 카드 내 탭 + About</td>
+        <td><span class="gap-badge gap-diff">부분 일치</span> Info Card 패턴은 유사</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>2-2. 핵심 갭 요약</h3>
+  <div class="callout-red callout">
+    <strong>🔺 총 6개 불일치 항목:</strong><br>
+    ① ProjectHeader.tsx 미사용 → 6개 탭 Nav 접근 불가, 프로젝트 전환 불가<br>
+    ② 서브탭 Row (42px) 미적용 → 카드 내부 텍스트 탭, 공통 패턴 완전 이탈<br>
+    ③ 서브탭 아이콘/Badge 없음 → 시각적 통일성 깨짐<br>
+    ④ Toolbar(Search/Filter/Sort) 없음 → Runs/Issues가 많아지면 탐색 어려움<br>
+    ⑤ STATUS 탭 미구현 → "coming soon" 플레이스홀더 상태<br>
+    ⑥ Milestone Info가 단순 → D-day, TC 통계 요약, 위험도 표시 없음
+  </div>
+
+  <div class="callout">
+    <strong>💡 Detail 페이지 vs List 페이지 차이점:</strong><br>
+    Milestone Detail은 <em>리스트 페이지가 아닌 Detail 페이지</em>입니다. Run Detail도 ProjectHeader를 사용하지만, 서브탭 Row는 리스트 페이지와 다른 패턴을 씁니다. 따라서 Detail 페이지에 맞는 <strong>2-Row Header + Detail Info Bar + Content Tabs</strong> 패턴을 적용합니다.
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §3 표시 정보 적절성 검토 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">3</span><i class="ri-checkbox-multiple-line"></i> 표시 정보 적절성 검토</div>
+
+  <h3>3-1. 있어야 하는데 없는 정보</h3>
+  <table>
+    <thead><tr><th>#</th><th>누락 정보</th><th>필요 이유</th><th>우선순위</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>D-day (마감까지 남은 일수)</strong></td><td>Milestone 관리의 핵심. end_date 대비 오늘 계산. "D-3" 등 즉각적 긴박감 전달.</td><td><span class="tag priority-p0">P0</span></td></tr>
+      <tr><td>2</td><td><strong>TC 통계 요약 (Passed/Failed/Blocked/Untested)</strong></td><td>Info Card에 전체 TC 실행 현황이 없음. 도넛 차트는 Results 탭 안에 숨어있어 한눈에 파악 불가.</td><td><span class="tag priority-p0">P0</span></td></tr>
+      <tr><td>3</td><td><strong>Pass Rate (%)</strong></td><td>Coverage 진행률과 별개로, 실행된 TC 중 Pass 비율이 핵심 지표.</td><td><span class="tag priority-p0">P0</span></td></tr>
+      <tr><td>4</td><td><strong>Risk/Warning 인디케이터</strong></td><td>D-day ≤3d + Pass Rate &lt;70% 같은 위험 상태 시각적 경고.</td><td><span class="tag priority-p1">P1</span></td></tr>
+      <tr><td>5</td><td><strong>Assignee 정보 (Run별)</strong></td><td>Run 카드에 담당자가 표시되지 않음. 누가 어떤 Run을 맡고 있는지 파악 불가.</td><td><span class="tag priority-p1">P1</span></td></tr>
+      <tr><td>6</td><td><strong>Status 탭 콘텐츠</strong></td><td>"Coming soon" 상태. 전체 TC 상태 분포, Sub-Milestone별 진행률 비교 등 필요.</td><td><span class="tag priority-p1">P1</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>3-2. 있지만 개선이 필요한 정보</h3>
+  <table>
+    <thead><tr><th>#</th><th>현재 정보</th><th>문제점</th><th>개선 방향</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Runs &amp; Sessions 도넛 차트</td><td>Run 수 + Session 수만 표시. TC 실행 현황과 무관한 "진행률" 도넛.</td><td>TC 상태별 도넛 (Passed/Failed/Blocked/Untested)으로 변경</td></tr>
+      <tr><td>2</td><td>Milestone Activity 바 차트</td><td>Runs/DL/Automation 개수만 표시. 활동 추이 파악 불가.</td><td>§Activity 탭의 14일 라인 차트를 Summary 위젯으로 올리거나, Stats Bar로 대체</td></tr>
+      <tr><td>3</td><td>Run 카드</td><td>이름 + 진행률 바만. 상태 배지, 담당자, TC 통계 숫자 없음.</td><td>Run 카드에 상태 배지 + 담당자 아바타 + passed/failed/untested 수 추가</td></tr>
+      <tr><td>4</td><td>About Card (하단)</td><td>Timeline, Contributors만. Milestone의 핵심 메타 정보(생성일, 연결 Run 수 등) 부족.</td><td>Info Bar에 통합하고 별도 About Card 제거 검토</td></tr>
+      <tr><td>5</td><td>Status 탭</td><td>"Coming soon" 플레이스홀더</td><td>TC 상태 분포 테이블, Sub-Milestone 진행률 비교, 위험 지표 등 구현</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §4 개선 방향 및 와이어프레임 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">4</span><i class="ri-pencil-ruler-2-line"></i> 개선 방향 및 와이어프레임</div>
+
+  <h3>4-1. 개선 원칙</h3>
+  <ul>
+    <li><strong>원칙 1:</strong> ProjectHeader.tsx 적용 — 다른 탭 네비게이션을 Milestone Detail에서도 가능하게</li>
+    <li><strong>원칙 2:</strong> Detail Info Bar — Milestone 핵심 정보(이름, D-day, 상태, 진행률, TC 통계)를 헤더 아래에 상시 노출</li>
+    <li><strong>원칙 3:</strong> Content Tabs — 카드 내부가 아닌 독립 탭 Row로 분리, 컬러 아이콘 + Badge 적용</li>
+    <li><strong>원칙 4:</strong> 기존 콘텐츠 유지 — Activity 탭, Issues 탭은 잘 구현됨. 구조만 통일하고 콘텐츠는 보존</li>
+  </ul>
+
+  <h3>4-2. 개선 후 와이어프레임</h3>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────────────┐
+│ <strong>Row 1 — ProjectHeader (56px, 공유 컴포넌트)</strong>                          │
+│ [T] Testably · ▾ Project Name · Dashboard · TC · Runs · <strong>MS</strong> · Docs · DL │ 🔔 ⌨ 👤 │
+├─────────────────────────────────────────────────────────────────────┤
+│ <strong>Detail Info Bar (bg: white, border-bottom, ~80px)</strong>                    │
+│                                                                     │
+│  🏁 <strong>Milestone 1.0.0</strong>  [● Started]  Mar 1 – Mar 31  <strong>D-4</strong>            │
+│  ████████████░░░░ 72%                                               │
+│                                                                     │
+│  📊 TC Summary: ✅38 Passed · ❌15 Failed · 🔶3 Blocked · ⬜20 Untested │
+│  Pass Rate: <strong>71.7%</strong>     │  Total TCs: <strong>76</strong>                             │
+│                                                    [Edit] [Complete] │
+├─────────────────────────────────────────────────────────────────────┤
+│ <strong>Content Tab Row (42px, border-bottom)</strong>                               │
+│ 📊 Results(3) · 🔄 Status · 📋 Activity(24) · 🐛 Issues(5)        │
+├─────────────────────────────────────────────────────────────────────┤
+│ <strong>Scrollable Content Area (bg: #F8FAFC)</strong>                               │
+│                                                                     │
+│  [Results 탭 — 기존 콘텐츠 개선]                                    │
+│  ┌─ SUB MILESTONES ──────────────────────────────────────────────┐ │
+│  │ Sub1 [Started] ███████░░ 65%   Sub2 [Upcoming] ░░░░░░░░░ 0% │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  ┌─ RUNS ────────────────────────────────────────────────────────┐ │
+│  │ Run1 [In Progress] ████░░ 72%  ✅38 ❌15 ⬜20  [SK][JD]     │ │
+│  │ Run2 [New]         ██░░░░ 25%  ✅5  ❌2  ⬜13  [MR]         │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  ┌─ DISCOVERY LOGS ─────────────────────────────────────────────┐ │
+│  │ Session1 [In progress] ▮▮▮▮▮                                 │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  [Status 탭 — 신규 구현]                                           │
+│  TC 상태 분포 테이블 + Sub-Milestone 진행률 비교 차트              │
+│                                                                     │
+│  [Activity 탭 — 기존 유지]                                         │
+│  14일 라인 차트 + 타임라인 목록 (기존 그대로)                      │
+│                                                                     │
+│  [Issues 탭 — 기존 유지]                                           │
+│  Jira 이슈 카드 목록 (기존 그대로)                                 │
+└─────────────────────────────────────────────────────────────────────┘</div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §5 구체적 변경 사항 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">5</span><i class="ri-list-settings-line"></i> 구체적 변경 사항</div>
+
+  <h3>A. Header 변경: 자체 Breadcrumb → ProjectHeader.tsx</h3>
+  <table>
+    <thead><tr><th>항목</th><th>현재</th><th>변경 후</th></tr></thead>
+    <tbody>
+      <tr><td>컴포넌트</td><td>자체 <code>&lt;header&gt;</code> (breadcrumb)</td><td><code>ProjectHeader.tsx</code> 공유 컴포넌트</td></tr>
+      <tr><td>높이</td><td>~52px</td><td>56px (공통)</td></tr>
+      <tr><td>Nav 탭</td><td>없음</td><td>6개 탭 (Dashboard, TC, Runs, <strong>MS</strong>, Docs, DL). MS 탭 active.</td></tr>
+      <tr><td>기능</td><td>Logo + Project 링크만</td><td>프로젝트 전환, 알림, 키보드 단축키, Avatar 메뉴</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>💡 뒤로가기 패턴:</strong> ProjectHeader의 MS 탭 클릭 → Milestones 리스트로 이동. 별도 Back 버튼 불필요. Milestone 이름은 Detail Info Bar에 표시.
+  </div>
+
+  <h3>B. Detail Info Bar (신규)</h3>
+  <p>Milestone 핵심 정보를 헤더 아래에 상시 노출하는 영역. 기존 Info Card + About Card 정보를 통합합니다.</p>
+  <table>
+    <thead><tr><th>요소</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>배경</td><td><code>bg-white border-b border-slate-200</code></td></tr>
+      <tr><td>높이</td><td>자동 (콘텐츠 기반, ~100px)</td></tr>
+      <tr><td>패딩</td><td><code>px-6 py-4</code></td></tr>
+      <tr><td>Row 1</td><td>🏁 아이콘 + <strong>Milestone Name</strong> (text-xl font-bold) + Status Badge + Date Range + <strong>D-day Badge</strong> + [Edit] [Complete] 버튼</td></tr>
+      <tr><td>Row 2</td><td>Progress Bar (h-2, full width) + percentage label</td></tr>
+      <tr><td>Row 3</td><td>TC Summary: ✅ Passed(N) · ❌ Failed(N) · 🔶 Blocked(N) · ⬜ Untested(N) │ Pass Rate: <strong>N%</strong> │ Total TCs: <strong>N</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h3>B-2. D-day Badge 스펙</h3>
+  <table>
+    <thead><tr><th>조건</th><th>텍스트</th><th>스타일</th></tr></thead>
+    <tbody>
+      <tr><td>남은 일수 ≤ 3일</td><td>D-3, D-2, D-1, D-Day</td><td><code>bg-red-100 text-red-700 font-bold</code></td></tr>
+      <tr><td>남은 일수 4~7일</td><td>D-7 ~ D-4</td><td><code>bg-amber-100 text-amber-700</code></td></tr>
+      <tr><td>남은 일수 8~14일</td><td>D-14 ~ D-8</td><td><code>bg-blue-100 text-blue-700</code></td></tr>
+      <tr><td>남은 일수 > 14일</td><td>D-N</td><td><code>bg-slate-100 text-slate-600</code></td></tr>
+      <tr><td>마감 초과</td><td>D+N (overdue)</td><td><code>bg-red-500 text-white font-bold</code> (강조)</td></tr>
+      <tr><td>마감일 없음</td><td>No deadline</td><td><code>bg-slate-100 text-slate-500</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>C. Content Tab Row 변경</h3>
+  <table>
+    <thead><tr><th>#</th><th>탭</th><th>아이콘</th><th>아이콘 색상</th><th>Badge</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Results</td><td>ri-bar-chart-box-fill</td><td>#6366F1 (Indigo)</td><td>Run 수</td><td>기본 탭</td></tr>
+      <tr><td>2</td><td>Status</td><td>ri-pie-chart-2-fill</td><td>#3B82F6 (Blue)</td><td>—</td><td>신규 구현 (P1)</td></tr>
+      <tr><td>3</td><td>Activity</td><td>ri-history-fill</td><td>#8B5CF6 (Violet)</td><td>최근 14일 변경 수</td><td>기존 유지</td></tr>
+      <tr><td>4</td><td>Issues</td><td>ri-bug-fill</td><td>#EF4444 (Red)</td><td>이슈 수</td><td>기존 유지</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>탭 Row 스타일:</strong> 카드 내부가 아닌 <strong>독립 Row</strong>로 분리. <code>h-[42px] border-b border-slate-200 bg-white px-6</code>. 활성 탭은 <code>border-b-2 border-indigo-600 text-indigo-600</code>.
+  </div>
+
+  <h3>D. Results 탭 개선</h3>
+  <table>
+    <thead><tr><th>요소</th><th>현재</th><th>변경 후</th></tr></thead>
+    <tbody>
+      <tr><td>Runs &amp; Sessions 도넛 차트</td><td>Run/Session 수 기반 도넛</td><td><strong>제거.</strong> TC Summary가 Info Bar로 이동했으므로 중복.</td></tr>
+      <tr><td>Milestone Activity 바 차트</td><td>Run/DL/Auto 개수 바</td><td><strong>제거.</strong> Activity 탭에 14일 차트가 이미 있음.</td></tr>
+      <tr><td>Sub Milestones</td><td>이름 + 상태 배지만</td><td>이름 + 상태 배지 + <strong>진행률 바</strong> + <strong>날짜</strong> 추가</td></tr>
+      <tr><td>Run 카드</td><td>이름 + 진행률 바만</td><td>이름 + <strong>상태 배지</strong> + 진행률 바 + <strong>✅N ❌N ⬜N</strong> + <strong>담당자 아바타</strong></td></tr>
+      <tr><td>Session 카드</td><td>이름 + 상태 + 활동 바</td><td>유지 (변경 없음)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>E. Status 탭 신규 구현 (P1)</h3>
+  <p>현재 "Coming soon" 플레이스홀더를 실제 콘텐츠로 교체합니다.</p>
+  <table>
+    <thead><tr><th>위젯</th><th>내용</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>TC 상태 분포</td><td>Passed / Failed / Blocked / Retest / Untested 각 개수 + 비율 + 수평 바 차트</td><td>모든 Run의 TC 결과 합산</td></tr>
+      <tr><td>Sub-Milestone 비교</td><td>Sub-Milestone별 진행률 바 비교 (부모 포함)</td><td>Sub 없으면 이 섹션 숨김</td></tr>
+      <tr><td>Risk 인디케이터</td><td>D-day ≤3d + Pass Rate &lt;70% → "At Risk" 경고 배너, D-day ≤7d + Pass Rate &lt;50% → "Critical" 경고</td><td>P1</td></tr>
+      <tr><td>Contributors</td><td>기존 About Card의 Contributors를 이동. 역할별 기여도 (실행한 TC 수) 표시.</td><td>About Card 제거</td></tr>
+    </tbody>
+  </table>
+
+  <h3>F. About Card 처리</h3>
+  <div class="callout-warn callout">
+    <strong>⚠️ About Card 제거:</strong> Timeline 정보는 Detail Info Bar로 이동, Contributors는 Status 탭으로 이동. 별도 About Card는 제거하여 페이지 길이를 줄입니다.
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §6 PM 권장사항 + 우선순위 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">6</span><i class="ri-star-line"></i> PM 권장사항 및 우선순위</div>
+
+  <h3>6-1. 우선순위 매트릭스</h3>
+  <table>
+    <thead><tr><th>우선순위</th><th>항목</th><th>근거</th><th>규모</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag priority-p0">P0</span></td><td>ProjectHeader.tsx 적용</td><td>네비게이션 단절 해소. 다른 모든 페이지와 통일.</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p0">P0</span></td><td>Detail Info Bar (D-day + TC Summary + Pass Rate)</td><td>핵심 정보 즉시 파악. 기존 Info Card 대체.</td><td>M</td></tr>
+      <tr><td><span class="tag priority-p0">P0</span></td><td>Content Tab Row 독립화 + 아이콘/Badge</td><td>크로스 탭 통일성. 카드 내부 탭에서 독립 Row로.</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p0">P0</span></td><td>Run 카드 정보 강화 (상태 배지 + TC 통계 + 담당자)</td><td>Run 현황 즉시 파악.</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p1">P1</span></td><td>Status 탭 구현</td><td>"Coming soon" 해소. TC 분포 + Risk 인디케이터.</td><td>L</td></tr>
+      <tr><td><span class="tag priority-p1">P1</span></td><td>Results 탭 도넛/바 차트 제거 → 간소화</td><td>중복 정보 제거 (Info Bar로 이동).</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p1">P1</span></td><td>About Card 제거 → Info Bar/Status 탭 통합</td><td>페이지 길이 감소.</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p2">P2</span></td><td>Sub-Milestone 진행률 비교 차트</td><td>복수 Sub 운영 시 유용.</td><td>M</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6-2. 구현 로드맵</h3>
+  <table>
+    <thead><tr><th>Phase</th><th>내용</th><th>기간</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Phase 1</strong></td><td>P0 전체: ProjectHeader + Detail Info Bar + Tab Row 독립화 + Run 카드 강화</td><td>1~1.5 스프린트</td></tr>
+      <tr><td><strong>Phase 2</strong></td><td>P1: Status 탭 구현 + Results 간소화 + About 통합</td><td>1 스프린트</td></tr>
+      <tr><td><strong>Phase 3</strong></td><td>P2: Sub-Milestone 비교 차트</td><td>0.5 스프린트</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §7 Desi Handoff 스펙 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">7</span><i class="ri-palette-line"></i> Desi Handoff — 디자인 요구사항</div>
+
+  <div class="callout-green callout">
+    <strong>Desi에게:</strong> 아래 스펙을 기반으로 Milestone Detail 디자인 목업을 만들어주세요.<br>
+    <strong>참고 파일:</strong> <code>all-tabs-unified-header-design.html</code> (공통 헤더 패턴), <code>pm-plan-milestone-detail-redesign.html</code> (본 기획안)<br>
+    <strong>디자인 범위:</strong> Phase 1 (P0) 위주, Status 탭(P1)은 와이어프레임 수준으로.
+  </div>
+
+  <h3>A. 페이지 전체 구조</h3>
+  <table>
+    <thead><tr><th>ID</th><th>요구사항</th></tr></thead>
+    <tbody>
+      <tr><td>A-1</td><td><strong>Row 1:</strong> <code>ProjectHeader.tsx</code> 공유 컴포넌트. 56px. MS 탭 active 상태로 표현. <code>all-tabs-unified-header-design.html</code> 참고.</td></tr>
+      <tr><td>A-2</td><td><strong>Row 2:</strong> Detail Info Bar. bg-white, border-bottom. Milestone 핵심 정보 상시 노출. 스크롤해도 고정되지 않음 (non-sticky).</td></tr>
+      <tr><td>A-3</td><td><strong>Row 3:</strong> Content Tab Row. 42px. 4개 탭 (Results/Status/Activity/Issues). 컬러 아이콘 + Badge count.</td></tr>
+      <tr><td>A-4</td><td><strong>콘텐츠 영역:</strong> bg #F8FAFC. 탭별 콘텐츠.</td></tr>
+      <tr><td>A-5</td><td><strong>About Card:</strong> 제거. Timeline→Info Bar, Contributors→Status 탭으로 이동.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B. Detail Info Bar 디자인</h3>
+  <table>
+    <thead><tr><th>ID</th><th>요구사항</th></tr></thead>
+    <tbody>
+      <tr><td>B-1</td><td><strong>레이아웃:</strong> 3행 구조. Row1: 아이콘+이름+상태+날짜+D-day+버튼. Row2: 진행률 바. Row3: TC Summary.</td></tr>
+      <tr><td>B-2</td><td><strong>Milestone 이름:</strong> <code>text-xl font-bold text-slate-900</code>. 왼쪽 🏁 아이콘 (ri-flag-line, 32x32, bg-slate-100 rounded-lg).</td></tr>
+      <tr><td>B-3</td><td><strong>상태 배지:</strong> Upcoming(blue-100), Started(green-100), Past due(orange-500 text-white), Completed(gray-100). 기존 스타일 유지.</td></tr>
+      <tr><td>B-4</td><td><strong>D-day Badge:</strong> §5 B-2 색상 스펙 참고. pill 스타일 (<code>rounded-full px-3 py-1 text-sm font-bold</code>).</td></tr>
+      <tr><td>B-5</td><td><strong>진행률 바:</strong> <code>h-2 rounded-full bg-slate-200</code>. 채움색: started→green-500, past_due→orange-500. 우측에 N% 텍스트.</td></tr>
+      <tr><td>B-6</td><td><strong>TC Summary:</strong> 4개 dot-label (✅ Passed N · ❌ Failed N · 🔶 Blocked N · ⬜ Untested N) + 구분선 + Pass Rate N% + Total TCs N. <code>text-sm</code>.</td></tr>
+      <tr><td>B-7</td><td><strong>버튼:</strong> [Edit] = ghost 스타일, [Complete] = indigo-500 solid. 우상단 배치.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>C. Content Tab Row 디자인</h3>
+  <table>
+    <thead><tr><th>ID</th><th>요구사항</th></tr></thead>
+    <tbody>
+      <tr><td>C-1</td><td><strong>높이:</strong> 42px. <code>bg-white border-b border-slate-200 px-6</code>.</td></tr>
+      <tr><td>C-2</td><td><strong>탭 구성:</strong> Results (ri-bar-chart-box-fill #6366F1), Status (ri-pie-chart-2-fill #3B82F6), Activity (ri-history-fill #8B5CF6), Issues (ri-bug-fill #EF4444).</td></tr>
+      <tr><td>C-3</td><td><strong>활성 탭:</strong> <code>border-b-2 border-indigo-600 text-indigo-600</code>. 비활성: <code>text-slate-500 hover:text-slate-900</code>.</td></tr>
+      <tr><td>C-4</td><td><strong>Badge:</strong> pill 스타일 <code>ml-1.5 px-1.5 py-0.5 text-[10px] rounded-full bg-slate-100 text-slate-600</code>. 활성 시: <code>bg-indigo-50 text-indigo-600</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>D. Results 탭 콘텐츠 디자인</h3>
+  <table>
+    <thead><tr><th>ID</th><th>요구사항</th></tr></thead>
+    <tbody>
+      <tr><td>D-1</td><td><strong>도넛/바 차트 제거:</strong> 기존 "Runs &amp; Sessions" 도넛, "Milestone Activity" 바 차트 삭제. Info Bar의 TC Summary가 대체.</td></tr>
+      <tr><td>D-2</td><td><strong>Sub Milestones 섹션:</strong> 카드에 진행률 바 추가. [이름] [상태 배지] [███░░ N%] [날짜]. 클릭 시 해당 Sub Detail로 이동.</td></tr>
+      <tr><td>D-3</td><td><strong>Run 카드 강화:</strong> 기존 이름+진행률만 → [이름] [상태 배지] [진행률 바] [✅N ❌N ⬜N] [담당자 아바타(들)]. 클릭 시 Run Detail로 이동.</td></tr>
+      <tr><td>D-4</td><td><strong>Run 카드 상태 배지:</strong> In Progress(blue), New(slate), Paused(amber), Under Review(violet), Completed(green). <code>text-xs font-semibold px-2 py-0.5 rounded</code>.</td></tr>
+      <tr><td>D-5</td><td><strong>Session 카드:</strong> 기존 유지. 변경 없음.</td></tr>
+      <tr><td>D-6</td><td><strong>섹션 간격:</strong> 각 섹션(Sub Milestones, Runs, Sessions) 사이 <code>mb-6</code>. 섹션 헤더: <code>text-sm font-semibold text-slate-600 uppercase mb-4</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>E. Status 탭 디자인 (P1, 와이어프레임 수준)</h3>
+  <table>
+    <thead><tr><th>ID</th><th>요구사항</th></tr></thead>
+    <tbody>
+      <tr><td>E-1</td><td><strong>TC 상태 분포:</strong> 수평 스택 바 (Passed green / Failed red / Blocked orange / Retest amber / Untested gray) + 각 상태별 수치 테이블.</td></tr>
+      <tr><td>E-2</td><td><strong>Sub-Milestone 비교:</strong> 부모 + Sub별 수평 진행률 바 비교. Sub 없으면 숨김.</td></tr>
+      <tr><td>E-3</td><td><strong>Risk 배너:</strong> "At Risk" (amber bg) 또는 "Critical" (red bg). 조건: D-day≤3d + Pass Rate&lt;70% / D-day≤7d + Pass Rate&lt;50%. 해당 없으면 숨김.</td></tr>
+      <tr><td>E-4</td><td><strong>Contributors:</strong> 아바타 + 이름 + 실행 TC 수. 기존 About Card Contributors 이동.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>F. 디자인 토큰 참고</h3>
+  <table>
+    <thead><tr><th>토큰</th><th>값</th><th>용도</th></tr></thead>
+    <tbody>
+      <tr><td>Primary</td><td>#6366F1 (Indigo-500)</td><td>활성 탭, 주요 버튼, 링크</td></tr>
+      <tr><td>Background</td><td>#F8FAFC (Slate-50)</td><td>콘텐츠 영역 배경</td></tr>
+      <tr><td>Border</td><td>#E2E8F0 (Slate-200)</td><td>카드/섹션 보더</td></tr>
+      <tr><td>Text Primary</td><td>#0F172A (Slate-900)</td><td>제목, 강조 텍스트</td></tr>
+      <tr><td>Text Secondary</td><td>#64748B (Slate-500)</td><td>보조 텍스트, 레이블</td></tr>
+      <tr><td>Success</td><td>#22C55E (Green-500)</td><td>Passed, Started, Completed</td></tr>
+      <tr><td>Danger</td><td>#EF4444 (Red-500)</td><td>Failed, Issues, Critical</td></tr>
+      <tr><td>Warning</td><td>#F59E0B (Amber-500)</td><td>Past due, Blocked, At Risk</td></tr>
+    </tbody>
+  </table>
+
+  <h3>G. 영향 받는 파일</h3>
+  <table>
+    <thead><tr><th>파일</th><th>변경 내용</th><th>규모</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/pages/milestone-detail/page.tsx</code></td><td>Header→ProjectHeader, Info Card→Detail Info Bar, Tab Row 독립화, Run 카드 강화, 도넛/바 차트 제거, About Card 제거</td><td>~300줄 변경</td></tr>
+      <tr><td><code>src/components/ProjectHeader.tsx</code></td><td>변경 없음 (기존 공유 컴포넌트 그대로 사용)</td><td>0줄</td></tr>
+      <tr><td><code>src/router/config.tsx</code></td><td>변경 없음 (기존 라우트 유지)</td><td>0줄</td></tr>
+      <tr><td><code>src/utils/dday.ts</code> (신규)</td><td>D-day 계산 유틸 함수 (<code>calculateDday(endDate)</code>)</td><td>~20줄</td></tr>
+      <tr><td><code>src/i18n/locales/{ko,en}/milestone.ts</code></td><td>D-day 라벨, TC Summary 라벨, 탭 라벨 i18n</td><td>~15줄씩</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §8 구현 체크리스트 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">8</span><i class="ri-checkbox-multiple-line"></i> 구현 체크리스트</div>
+
+  <ul class="checklist">
+    <li>자체 breadcrumb 헤더 제거 → <code>ProjectHeader.tsx</code> 적용 (MS 탭 active)</li>
+    <li>Detail Info Bar 구현: Milestone 이름 + 상태 배지 + Date Range + D-day Badge</li>
+    <li>Detail Info Bar: 진행률 바 (h-2) + percentage</li>
+    <li>Detail Info Bar: TC Summary (Passed/Failed/Blocked/Untested + Pass Rate + Total TCs)</li>
+    <li><code>calculateDday()</code> 유틸 함수 구현 (D-N/D+N 계산 + 색상 분기)</li>
+    <li>Content Tab Row를 카드 내부에서 독립 Row (42px)로 분리</li>
+    <li>탭에 컬러 아이콘 + Badge count 추가</li>
+    <li>Results 탭: 도넛 차트 + Milestone Activity 바 차트 제거</li>
+    <li>Results 탭: Sub Milestone 카드에 진행률 바 + 날짜 추가</li>
+    <li>Results 탭: Run 카드에 상태 배지 + TC 통계(✅❌⬜) + 담당자 아바타 추가</li>
+    <li>Status 탭: "Coming soon" → TC 상태 분포 + Sub 비교 + Risk 배너 + Contributors (P1)</li>
+    <li>About Card 제거 (Timeline→Info Bar, Contributors→Status 탭)</li>
+    <li>Activity 탭: 기존 유지 (변경 없음)</li>
+    <li>Issues 탭: 기존 유지 (변경 없음)</li>
+    <li>i18n 라벨 추가 (ko/en)</li>
+    <li>크로스 탭 통일성 QA: Run Detail, Milestones 리스트와 시각적 비교</li>
+  </ul>
+
+
+  <!-- ═══ FOOTER ═══ -->
+  <div style="margin-top:3rem; padding-top:1.5rem; border-top:2px solid #E2E8F0; text-align:center; color:#94A3B8; font-size:0.8rem;">
+    <p>Testably — Milestone Detail 화면 분석 + 개선안 v1.0</p>
+    <p>참고: all-tabs-unified-header-design.html · milestone-detail/page.tsx (1,651줄)</p>
+    <p style="margin-top:0.5rem;">Last updated: 2026-03-27 · Author: Kyle (PM) · Target: Desi (디자인), Dev1 (구현)</p>
+  </div>
+
+</div>
+</body>
+</html>

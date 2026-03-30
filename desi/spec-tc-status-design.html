@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — TC Lifecycle Status Design Spec (Desi Request)</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; padding: 2rem; line-height: 1.6; }
+  .spec { max-width: 960px; margin: 0 auto; }
+  .spec-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid #E2E8F0; }
+  .spec-header h1 { font-size: 1.5rem; font-weight: 800; color: #0F172A; margin-bottom: 0.25rem; }
+  .spec-header .meta { font-size: 0.8125rem; color: #64748B; }
+  .spec-header .meta span { margin-right: 1.5rem; }
+  h2 { font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #E2E8F0; }
+  h3 { font-size: 0.9375rem; font-weight: 600; color: #334155; margin: 1.5rem 0 0.75rem; }
+  p, li { font-size: 0.875rem; color: #475569; margin-bottom: 0.5rem; }
+  ul { padding-left: 1.25rem; margin-bottom: 1rem; }
+  .note { background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #4338CA; margin: 1rem 0; }
+  .note i { margin-right: 0.375rem; }
+  .warn { background: #FEF9C3; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #854D0E; margin: 1rem 0; }
+
+  .spec-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.8125rem; }
+  .spec-table th, .spec-table td { padding: 0.625rem 0.875rem; text-align: left; border: 1px solid #E2E8F0; }
+  .spec-table th { background: #F8FAFC; font-weight: 600; color: #334155; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .spec-table td { color: #475569; vertical-align: top; }
+  .spec-table code { background: #F1F5F9; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.75rem; color: #6366F1; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+  /* ─── Badge demos ─── */
+  .badge-row { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; margin: 1rem 0; }
+  .badge-demo { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+  .badge-demo .label { font-size: 0.625rem; color: #94A3B8; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .status-badge { display: inline-flex; align-items: center; gap: 0.3125rem; padding: 0.1875rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; border: 1px solid; line-height: 1.4; }
+  .status-badge i { font-size: 0.75rem; }
+  .badge-draft { background: #FEF9C3; color: #854D0E; border-color: #FDE68A; }
+  .badge-active { background: #DCFCE7; color: #166534; border-color: #BBF7D0; }
+  .badge-deprecated { background: #F1F5F9; color: #64748B; border-color: #CBD5E1; }
+
+  /* ─── Mock UI sections ─── */
+  .mock-container { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; overflow: hidden; margin: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .mock-header { background: #F8FAFC; border-bottom: 1px solid #E2E8F0; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem; }
+  .mock-header .mock-title { font-size: 0.75rem; font-weight: 600; color: #334155; }
+  .mock-body { padding: 1rem; }
+
+  /* ─── Table row mocks ─── */
+  .tc-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0.875rem; border-bottom: 1px solid #F1F5F9; font-size: 0.8125rem; }
+  .tc-row:last-child { border-bottom: none; }
+  .tc-row .tc-checkbox { width: 1rem; height: 1rem; border: 1.5px solid #CBD5E1; border-radius: 0.25rem; flex-shrink: 0; }
+  .tc-row .tc-title { flex: 1; color: #1E293B; font-weight: 500; }
+  .tc-row .tc-priority { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.625rem; font-weight: 600; }
+  .tc-row .tc-priority.high { background: #FEE2E2; color: #991B1B; }
+  .tc-row .tc-priority.medium { background: #FEF3C7; color: #92400E; }
+  .tc-row .tc-priority.low { background: #DBEAFE; color: #1E40AF; }
+  .tc-row.deprecated-row { opacity: 0.55; }
+
+  /* ─── Filter tabs mock ─── */
+  .filter-tabs { display: flex; gap: 0; border-bottom: 2px solid #E2E8F0; margin-bottom: 1rem; }
+  .filter-tab { padding: 0.5rem 1rem; font-size: 0.75rem; font-weight: 500; color: #94A3B8; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 0.375rem; }
+  .filter-tab:hover { color: #475569; }
+  .filter-tab.active { color: #4338CA; border-bottom-color: #4338CA; font-weight: 600; }
+  .filter-tab .count { background: #F1F5F9; padding: 0.0625rem 0.375rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 600; }
+  .filter-tab.active .count { background: #EEF2FF; color: #4338CA; }
+
+  /* ─── Dropdown mock ─── */
+  .dropdown-mock { display: inline-flex; flex-direction: column; position: relative; }
+  .dropdown-trigger { display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer; }
+  .dropdown-trigger .caret { font-size: 0.625rem; color: #94A3B8; margin-left: 0.125rem; }
+  .dropdown-panel { position: absolute; top: calc(100% + 0.375rem); left: 0; background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); padding: 0.25rem; min-width: 10rem; z-index: 10; }
+  .dropdown-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.625rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; color: #475569; cursor: pointer; transition: background 0.1s; }
+  .dropdown-item:hover { background: #F8FAFC; }
+  .dropdown-item i.status-icon { font-size: 0.875rem; }
+  .dropdown-item .check { margin-left: auto; color: #6366F1; font-size: 0.875rem; }
+  .dropdown-item.draft-item i.status-icon { color: #D97706; }
+  .dropdown-item.active-item i.status-icon { color: #16A34A; }
+  .dropdown-item.deprecated-item i.status-icon { color: #94A3B8; }
+
+  /* ─── Confirm dialog mock ─── */
+  .dialog-overlay { background: rgba(0,0,0,0.25); border-radius: 0.75rem; padding: 2rem; display: flex; align-items: center; justify-content: center; margin: 1rem 0; }
+  .dialog-box { background: #fff; border-radius: 0.75rem; padding: 1.5rem; max-width: 24rem; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+  .dialog-box .dialog-icon { width: 2.5rem; height: 2.5rem; background: #FEF9C3; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; }
+  .dialog-box .dialog-icon i { color: #D97706; font-size: 1.25rem; }
+  .dialog-box h4 { font-size: 0.875rem; font-weight: 700; color: #1E293B; margin-bottom: 0.375rem; }
+  .dialog-box p { font-size: 0.8125rem; color: #64748B; margin-bottom: 1rem; }
+  .dialog-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+  .dialog-actions .btn { padding: 0.4375rem 0.875rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; border: 1px solid; cursor: pointer; }
+  .dialog-actions .btn-cancel { background: #fff; border-color: #E2E8F0; color: #64748B; }
+  .dialog-actions .btn-confirm { background: #F59E0B; border-color: #F59E0B; color: #fff; }
+
+  /* ─── Bulk action bar mock ─── */
+  .bulk-bar { display: flex; align-items: center; gap: 0.75rem; background: #1E293B; padding: 0.5rem 1rem; border-radius: 0.5rem; margin: 1rem 0; }
+  .bulk-bar .bulk-count { font-size: 0.75rem; color: #fff; font-weight: 600; }
+  .bulk-bar .bulk-btn { display: inline-flex; align-items: center; gap: 0.3125rem; padding: 0.3125rem 0.625rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.375rem; font-size: 0.6875rem; font-weight: 500; color: #fff; cursor: pointer; }
+  .bulk-bar .bulk-btn:hover { background: rgba(255,255,255,0.15); }
+  .bulk-bar .bulk-divider { width: 1px; height: 1.25rem; background: rgba(255,255,255,0.15); }
+
+  /* ─── Run warning mock ─── */
+  .run-warning { display: flex; align-items: flex-start; gap: 0.625rem; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.8125rem; color: #92400E; }
+  .run-warning i { font-size: 1rem; margin-top: 0.125rem; flex-shrink: 0; }
+
+  /* ─── Toggle switch mock ─── */
+  .toggle-row { display: flex; align-items: center; gap: 0.625rem; margin: 0.75rem 0; }
+  .toggle-switch { width: 2.25rem; height: 1.25rem; border-radius: 9999px; background: #CBD5E1; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+  .toggle-switch.on { background: #6366F1; }
+  .toggle-switch .toggle-knob { width: 0.875rem; height: 0.875rem; border-radius: 50%; background: #fff; position: absolute; top: 0.1875rem; left: 0.1875rem; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .toggle-switch.on .toggle-knob { transform: translateX(1rem); }
+  .toggle-label { font-size: 0.8125rem; color: #475569; font-weight: 500; }
+
+  /* ─── Toast mock ─── */
+  .toast-mock { display: inline-flex; align-items: center; gap: 0.625rem; background: #1E293B; color: #fff; padding: 0.625rem 1rem; border-radius: 0.5rem; font-size: 0.8125rem; box-shadow: 0 8px 24px rgba(0,0,0,0.2); margin: 1rem 0; }
+  .toast-mock i { font-size: 1rem; }
+  .toast-mock .toast-link { color: #818CF8; font-weight: 600; text-decoration: underline; cursor: pointer; margin-left: 0.25rem; }
+
+  /* ─── Context menu mock ─── */
+  .ctx-menu { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); padding: 0.25rem; min-width: 11rem; display: inline-flex; flex-direction: column; }
+  .ctx-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.625rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; color: #475569; cursor: pointer; }
+  .ctx-item:hover { background: #F8FAFC; }
+  .ctx-item i { font-size: 0.875rem; color: #94A3B8; }
+  .ctx-divider { height: 1px; background: #E2E8F0; margin: 0.25rem 0.625rem; }
+  .ctx-item.ctx-sub { display: flex; }
+  .ctx-item .ctx-arrow { margin-left: auto; font-size: 0.625rem; color: #94A3B8; }
+  .ctx-submenu { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); padding: 0.25rem; min-width: 10rem; display: inline-flex; flex-direction: column; margin-left: 0.5rem; }
+
+  /* ─── Info banner ─── */
+  .info-banner { display: flex; align-items: flex-start; gap: 0.625rem; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 0.5rem; padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.8125rem; color: #1E40AF; }
+  .info-banner i { font-size: 1rem; margin-top: 0.125rem; flex-shrink: 0; }
+
+  /* ─── Run TC selection mock ─── */
+  .tc-select-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid #F1F5F9; font-size: 0.8125rem; }
+  .tc-select-row:last-child { border-bottom: none; }
+  .tc-select-check { width: 1rem; height: 1rem; border: 1.5px solid #CBD5E1; border-radius: 0.25rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .tc-select-check.checked { background: #6366F1; border-color: #6366F1; }
+  .tc-select-check.checked i { color: #fff; font-size: 0.75rem; }
+  .tc-select-title { flex: 1; color: #1E293B; font-weight: 500; }
+  .tc-select-row.draft-row { background: #FFFBEB; }
+
+  /* CSS token ref */
+  .token-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
+  .token-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; padding: 0.75rem; }
+  .token-card .token-name { font-size: 0.6875rem; font-weight: 600; color: #334155; margin-bottom: 0.375rem; font-family: monospace; }
+  .token-card .token-swatch { display: flex; align-items: center; gap: 0.5rem; }
+  .token-card .swatch { width: 1.5rem; height: 1.5rem; border-radius: 0.25rem; border: 1px solid rgba(0,0,0,0.08); }
+  .token-card .token-val { font-size: 0.6875rem; color: #64748B; font-family: monospace; }
+</style>
+</head>
+<body>
+<div class="spec">
+
+  <!-- ═══ Header ═══ -->
+  <div class="spec-header">
+    <h1>TC Lifecycle Status — Design Request</h1>
+    <div class="meta">
+      <span><strong>From:</strong> Kyle (PM)</span>
+      <span><strong>To:</strong> Desi (Design)</span>
+      <span><strong>Date:</strong> 2026-03-25</span>
+      <span><strong>Priority:</strong> P0</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <i class="ri-information-line"></i>
+    <strong>배경:</strong> CEO 승인 완료. TC에 Draft / Active / Deprecated 라이프사이클 상태를 추가합니다.
+    이 문서는 디자인이 필요한 UI 요소를 정리한 것입니다. 기능 기획 상세는 <code>TestCase_Status_System_Spec.docx</code>, 워크플로우 상세는 <code>TC_Status_Workflow_DetailSpec.docx</code>를 참조하세요.
+  </div>
+
+  <!-- ═══ 1. Badge Design ═══ -->
+  <h2>1. 상태 배지 (Status Badge)</h2>
+  <p>3가지 라이프사이클 상태를 표시하는 pill 형태의 배지입니다. TC 리스트 행, 상세 패널 헤더, 검색 결과 등에서 사용됩니다.</p>
+
+  <h3>1.1 배지 라이브 프리뷰</h3>
+  <div class="badge-row">
+    <div class="badge-demo">
+      <span class="status-badge badge-draft"><i class="ri-draft-line"></i> Draft</span>
+      <span class="label">작성 중</span>
+    </div>
+    <div class="badge-demo">
+      <span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span>
+      <span class="label">사용 가능</span>
+    </div>
+    <div class="badge-demo">
+      <span class="status-badge badge-deprecated"><i class="ri-forbid-line"></i> Deprecated</span>
+      <span class="label">폐기됨</span>
+    </div>
+  </div>
+
+  <h3>1.2 배지 토큰 테이블</h3>
+  <table class="spec-table">
+    <thead>
+      <tr><th>Status</th><th>Background</th><th>Text Color</th><th>Border</th><th>Icon</th><th>Icon Size</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="status-badge badge-draft"><i class="ri-draft-line"></i> Draft</span></td>
+        <td><code>#FEF9C3</code> yellow-100</td>
+        <td><code>#854D0E</code> yellow-800</td>
+        <td><code>#FDE68A</code> yellow-300</td>
+        <td><code>ri-draft-line</code></td>
+        <td>14px (0.875rem)</td>
+      </tr>
+      <tr>
+        <td><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></td>
+        <td><code>#DCFCE7</code> green-100</td>
+        <td><code>#166534</code> green-800</td>
+        <td><code>#BBF7D0</code> green-300</td>
+        <td><code>ri-checkbox-circle-line</code></td>
+        <td>14px (0.875rem)</td>
+      </tr>
+      <tr>
+        <td><span class="status-badge badge-deprecated"><i class="ri-forbid-line"></i> Deprecated</span></td>
+        <td><code>#F1F5F9</code> slate-100</td>
+        <td><code>#64748B</code> slate-500</td>
+        <td><code>#CBD5E1</code> slate-300</td>
+        <td><code>ri-forbid-line</code></td>
+        <td>14px (0.875rem)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Padding</td><td><code>3px 8px</code> (py-0.5 px-2)</td></tr>
+      <tr><td>Border radius</td><td><code>9999px</code> (full pill)</td></tr>
+      <tr><td>Font size</td><td><code>0.6875rem</code> (11px)</td></tr>
+      <tr><td>Font weight</td><td><code>600</code> (semibold)</td></tr>
+      <tr><td>Gap (icon → text)</td><td><code>5px</code></td></tr>
+      <tr><td>Border width</td><td><code>1px</code></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══ 2. TC List Row ═══ -->
+  <h2>2. TC 리스트 행 — 배지 위치</h2>
+  <p>배지는 TC 제목 오른쪽, Priority 배지와 같은 줄에 위치합니다. Deprecated 행은 <code>opacity: 0.55</code> 처리합니다.</p>
+
+  <div class="mock-container">
+    <div class="mock-header">
+      <div class="mock-title">Test Cases — Authentication Module</div>
+    </div>
+    <div class="mock-body" style="padding: 0;">
+      <div class="tc-row">
+        <div class="tc-checkbox"></div>
+        <span class="tc-title">User registration with valid email</span>
+        <span class="status-badge badge-active" style="font-size:0.625rem; padding: 0.125rem 0.375rem;"><i class="ri-checkbox-circle-line" style="font-size:0.6875rem;"></i> Active</span>
+        <span class="tc-priority high">High</span>
+      </div>
+      <div class="tc-row">
+        <div class="tc-checkbox"></div>
+        <span class="tc-title">Login with correct credentials</span>
+        <span class="status-badge badge-draft" style="font-size:0.625rem; padding: 0.125rem 0.375rem;"><i class="ri-draft-line" style="font-size:0.6875rem;"></i> Draft</span>
+        <span class="tc-priority medium">Medium</span>
+      </div>
+      <div class="tc-row">
+        <div class="tc-checkbox"></div>
+        <span class="tc-title">Password reset flow</span>
+        <span class="status-badge badge-active" style="font-size:0.625rem; padding: 0.125rem 0.375rem;"><i class="ri-checkbox-circle-line" style="font-size:0.6875rem;"></i> Active</span>
+        <span class="tc-priority high">High</span>
+      </div>
+      <div class="tc-row deprecated-row">
+        <div class="tc-checkbox"></div>
+        <span class="tc-title">Legacy OAuth 1.0 login</span>
+        <span class="status-badge badge-deprecated" style="font-size:0.625rem; padding: 0.125rem 0.375rem;"><i class="ri-forbid-line" style="font-size:0.6875rem;"></i> Deprecated</span>
+        <span class="tc-priority low">Low</span>
+      </div>
+      <div class="tc-row">
+        <div class="tc-checkbox"></div>
+        <span class="tc-title">Social login (Google OAuth 2.0)</span>
+        <span class="status-badge badge-active" style="font-size:0.625rem; padding: 0.125rem 0.375rem;"><i class="ri-checkbox-circle-line" style="font-size:0.6875rem;"></i> Active</span>
+        <span class="tc-priority medium">Medium</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <i class="ri-information-line"></i>
+    <strong>리스트 행 배지 크기:</strong> 리스트 행에서는 배지를 약간 작게 표시합니다 — font-size <code>0.625rem</code> (10px), padding <code>2px 6px</code>.
+    상세 패널에서는 §1의 기본 크기를 사용합니다.
+  </div>
+
+  <!-- ═══ 3. Filter Tabs ═══ -->
+  <h2>3. 필터 탭</h2>
+  <p>TC 리스트 상단에 라이프사이클 상태별 필터 탭을 추가합니다. 기본값: <strong>All</strong> (Draft + Active 표시, Deprecated 숨김).</p>
+
+  <div class="mock-container">
+    <div class="mock-body">
+      <div class="filter-tabs">
+        <div class="filter-tab active">All <span class="count">140</span></div>
+        <div class="filter-tab"><i class="ri-draft-line" style="font-size:0.875rem; color:#D97706;"></i> Draft <span class="count">12</span></div>
+        <div class="filter-tab"><i class="ri-checkbox-circle-line" style="font-size:0.875rem; color:#16A34A;"></i> Active <span class="count">128</span></div>
+        <div class="filter-tab"><i class="ri-forbid-line" style="font-size:0.875rem; color:#94A3B8;"></i> Deprecated <span class="count">7</span></div>
+      </div>
+      <div style="padding: 1rem; text-align: center; color: #94A3B8; font-size: 0.8125rem;">
+        (TC 리스트가 여기에 렌더링됨)
+      </div>
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>탭 상태</th><th>기본 동작</th></tr></thead>
+    <tbody>
+      <tr><td><strong>All</strong> (기본 선택)</td><td>Draft + Active 표시. Deprecated <strong>숨김</strong>.</td></tr>
+      <tr><td><strong>Draft</strong></td><td>Draft만 표시.</td></tr>
+      <tr><td><strong>Active</strong></td><td>Active만 표시.</td></tr>
+      <tr><td><strong>Deprecated</strong></td><td>Deprecated만 표시. 사용자가 명시적으로 탭 클릭해야 보임.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══ 4. Status Dropdown ═══ -->
+  <h2>4. 상태 변경 드롭다운</h2>
+  <p>TC 상세 패널 상단에서 배지를 클릭하면 상태 변경 드롭다운이 열립니다.</p>
+
+  <h3>4.1 드롭다운 프리뷰</h3>
+  <div class="mock-container">
+    <div class="mock-body" style="padding: 1.5rem; display: flex; gap: 3rem; align-items: flex-start;">
+      <!-- Trigger state -->
+      <div>
+        <div style="font-size: 0.6875rem; color: #94A3B8; margin-bottom: 0.5rem; font-weight: 500;">클릭 전</div>
+        <div class="dropdown-mock">
+          <div class="dropdown-trigger">
+            <span class="status-badge badge-draft"><i class="ri-draft-line"></i> Draft</span>
+            <span class="caret"><i class="ri-arrow-down-s-line"></i></span>
+          </div>
+        </div>
+      </div>
+      <!-- Open state -->
+      <div>
+        <div style="font-size: 0.6875rem; color: #94A3B8; margin-bottom: 0.5rem; font-weight: 500;">클릭 후 (드롭다운 열림)</div>
+        <div class="dropdown-mock">
+          <div class="dropdown-trigger">
+            <span class="status-badge badge-draft"><i class="ri-draft-line"></i> Draft</span>
+            <span class="caret"><i class="ri-arrow-up-s-line"></i></span>
+          </div>
+          <div class="dropdown-panel" style="position: relative; top: 0.375rem;">
+            <div class="dropdown-item draft-item">
+              <i class="ri-draft-line status-icon"></i>
+              <span>Draft</span>
+              <i class="ri-check-line check"></i>
+            </div>
+            <div class="dropdown-item active-item">
+              <i class="ri-checkbox-circle-line status-icon"></i>
+              <span>Active</span>
+            </div>
+            <div class="dropdown-item deprecated-item">
+              <i class="ri-forbid-line status-icon"></i>
+              <span>Deprecated</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Trigger</td><td>현재 상태 배지 + <code>ri-arrow-down-s-line</code> caret (9px, slate-400)</td></tr>
+      <tr><td>Panel width</td><td><code>min-width: 160px</code></td></tr>
+      <tr><td>Panel shadow</td><td><code>0 4px 16px rgba(0,0,0,0.10)</code></td></tr>
+      <tr><td>Panel border</td><td><code>1px solid #E2E8F0</code>, radius <code>8px</code></td></tr>
+      <tr><td>Item padding</td><td><code>7px 10px</code></td></tr>
+      <tr><td>Item hover</td><td><code>bg #F8FAFC</code></td></tr>
+      <tr><td>Active item</td><td>체크 아이콘 <code>ri-check-line</code> (indigo-500) 오른쪽 정렬</td></tr>
+      <tr><td>Animation</td><td>Panel: opacity 0→1 + translateY(-4px→0), <code>150ms ease-out</code></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══ 5. Confirm Dialog ═══ -->
+  <h2>5. Deprecated 전환 확인 다이얼로그</h2>
+  <p>Active 또는 Draft → Deprecated로 변경 시 표시되는 확인 대화 상자입니다.</p>
+
+  <div class="dialog-overlay">
+    <div class="dialog-box">
+      <div class="dialog-icon"><i class="ri-alert-line"></i></div>
+      <h4>Deprecate Test Case?</h4>
+      <p>"User registration with valid email" 을 Deprecated로 변경합니다. 새 Run에 포함되지 않습니다.</p>
+      <div class="dialog-actions">
+        <button class="btn btn-cancel">Cancel</button>
+        <button class="btn btn-confirm">Deprecate</button>
+      </div>
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>요소</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>Overlay</td><td><code>rgba(0,0,0,0.4)</code>, 클릭 시 닫힘</td></tr>
+      <tr><td>Dialog width</td><td><code>max-width: 384px</code> (24rem), 중앙 정렬</td></tr>
+      <tr><td>Icon circle</td><td>40px, bg <code>#FEF9C3</code>, icon <code>ri-alert-line</code> (amber-500)</td></tr>
+      <tr><td>Title</td><td>14px bold, <code>#1E293B</code></td></tr>
+      <tr><td>Body</td><td>13px regular, <code>#64748B</code>. TC 이름을 굵게 표시.</td></tr>
+      <tr><td>Cancel button</td><td>Ghost: bg white, border slate-200, text slate-500</td></tr>
+      <tr><td>Confirm button</td><td>Solid: bg <code>#F59E0B</code> (amber-500), text white. Hover: <code>#D97706</code></td></tr>
+      <tr><td>Animation</td><td>Overlay: opacity 0→1 200ms. Dialog: scale(0.95→1) + opacity 200ms</td></tr>
+      <tr><td>Keyboard</td><td>Escape = Cancel. Enter = Confirm (focus on Cancel by default for safety).</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══ 6. Bulk Action Bar ═══ -->
+  <h2>6. 벌크 액션 바 — Set Status 버튼</h2>
+  <p>여러 TC 선택 시 표시되는 BulkActionBar에 'Set Status' 드롭다운을 추가합니다.</p>
+
+  <div class="bulk-bar">
+    <span class="bulk-count">3 selected</span>
+    <div class="bulk-divider"></div>
+    <button class="bulk-btn"><i class="ri-folder-transfer-line"></i> Move</button>
+    <button class="bulk-btn"><i class="ri-arrow-left-right-line"></i> Set Status <i class="ri-arrow-down-s-line" style="font-size:0.625rem;"></i></button>
+    <button class="bulk-btn"><i class="ri-delete-bin-line"></i> Delete</button>
+    <div style="flex:1;"></div>
+    <button class="bulk-btn" style="border-color:rgba(255,255,255,0.05); background:transparent;"><i class="ri-close-line"></i></button>
+  </div>
+
+  <div class="note">
+    <i class="ri-information-line"></i>
+    <strong>Set Status 드롭다운:</strong> §4의 상태 드롭다운과 동일한 패널 디자인을 재사용합니다. 단, 배경이 어두운 바 위에 표시되므로 패널은 위쪽으로 열립니다 (bottom-placement).
+  </div>
+
+  <!-- ═══ 7. Run Warning ═══ -->
+  <h2>7. Run에 Draft TC 포함 경고</h2>
+  <p>Run 생성 시 선택된 TC 중 Draft 상태가 있으면 경고 메시지를 표시합니다.</p>
+
+  <div class="run-warning">
+    <i class="ri-error-warning-line"></i>
+    <div>
+      <strong>Draft TC 포함:</strong> 이 Run에 Draft 상태의 TC 3개가 포함되어 있습니다. Draft TC는 아직 미완성일 수 있습니다. 계속하시겠습니까?
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Background</td><td><code>#FFFBEB</code> (amber-50)</td></tr>
+      <tr><td>Border</td><td><code>1px solid #FDE68A</code> (amber-200)</td></tr>
+      <tr><td>Text</td><td><code>#92400E</code> (amber-800)</td></tr>
+      <tr><td>Icon</td><td><code>ri-error-warning-line</code>, 16px</td></tr>
+      <tr><td>위치</td><td>Run 생성 모달 — TC 선택 섹션 바로 아래</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══ 8. TC 생성 Toast — "Mark as Active" 링크 ═══ -->
+  <h2>8. TC 생성 Toast — "Mark as Active" 링크</h2>
+  <p>TC가 새로 생성되면 <code>lifecycle_status: draft</code>로 생성됩니다. Toast 알림에 <strong>"Mark as Active"</strong> 링크를 추가하여 즉시 Active로 전환할 수 있게 합니다.</p>
+
+  <h3>8.1 Toast 프리뷰</h3>
+  <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+    <div class="toast-mock">
+      <i class="ri-check-line" style="color:#4ADE80;"></i>
+      <span>Test case created as Draft.</span>
+      <span class="toast-link">Mark as Active</span>
+    </div>
+    <div class="toast-mock" style="background:#166534;">
+      <i class="ri-checkbox-circle-line" style="color:#86EFAC;"></i>
+      <span>Test case marked as Active.</span>
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Toast background</td><td><code>#1E293B</code> (slate-800)</td></tr>
+      <tr><td>Toast text</td><td>13px, white</td></tr>
+      <tr><td>"Mark as Active" link</td><td><code>#818CF8</code> (indigo-400), 600 weight, underline</td></tr>
+      <tr><td>Success icon</td><td><code>ri-check-line</code>, green-400</td></tr>
+      <tr><td>Position</td><td>화면 하단 중앙, 기존 toast 위치</td></tr>
+      <tr><td>Duration</td><td>5초 (링크 클릭 시 즉시 사라지고 확인 toast 표시)</td></tr>
+      <tr><td>Confirmed toast bg</td><td><code>#166534</code> (green-800), 3초</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══ 9. Right-Click Context Menu — Set Status ═══ -->
+  <h2>9. 우클릭 컨텍스트 메뉴 — Set Status</h2>
+  <p>TC 리스트 행에서 우클릭하면 컨텍스트 메뉴에 "Set Status" 서브메뉴가 표시됩니다. 기존 메뉴 항목(Move, Delete 등) 사이에 추가됩니다.</p>
+
+  <h3>9.1 컨텍스트 메뉴 프리뷰</h3>
+  <div class="mock-container">
+    <div class="mock-body" style="padding: 1.5rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+      <div class="ctx-menu">
+        <div class="ctx-item"><i class="ri-eye-line"></i> View Details</div>
+        <div class="ctx-item"><i class="ri-edit-line"></i> Edit</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item ctx-sub"><i class="ri-arrow-left-right-line"></i> Set Status <span class="ctx-arrow"><i class="ri-arrow-right-s-line"></i></span></div>
+        <div class="ctx-item"><i class="ri-folder-transfer-line"></i> Move to Folder</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" style="color:#EF4444;"><i class="ri-delete-bin-line" style="color:#EF4444;"></i> Delete</div>
+      </div>
+      <div class="ctx-submenu" style="margin-top: 3.5rem;">
+        <div class="dropdown-item draft-item">
+          <i class="ri-draft-line status-icon"></i> <span>Draft</span>
+          <i class="ri-check-line check"></i>
+        </div>
+        <div class="dropdown-item active-item">
+          <i class="ri-checkbox-circle-line status-icon"></i> <span>Active</span>
+        </div>
+        <div class="dropdown-item deprecated-item">
+          <i class="ri-forbid-line status-icon"></i> <span>Deprecated</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>메뉴 위치</td><td>Edit 아래, Move to Folder 위 (구분선 사이)</td></tr>
+      <tr><td>서브메뉴 방향</td><td>오른쪽으로 열림 (<code>left: 100% + 4px</code>)</td></tr>
+      <tr><td>서브메뉴 패널</td><td>§4 상태 드롭다운과 동일한 디자인 재사용</td></tr>
+      <tr><td>현재 상태 표시</td><td>체크 아이콘 <code>ri-check-line</code> (indigo-500)</td></tr>
+      <tr><td>Deprecated 선택 시</td><td>§5 확인 다이얼로그 표시 (메뉴 먼저 닫힘)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══ 10. Run TC 선택 화면 — "Include Draft TCs" 토글 ═══ -->
+  <h2>10. Run TC 선택 — "Include Draft TCs" 토글</h2>
+  <p>Run 생성 시 TC 선택 화면입니다. <strong>Deprecated TC는 완전히 숨김</strong> 처리하고, Draft TC는 기본 숨김이지만 토글로 표시할 수 있습니다.</p>
+
+  <h3>10.1 TC 선택 화면 프리뷰 (토글 OFF — 기본)</h3>
+  <div class="mock-container">
+    <div class="mock-header">
+      <div class="mock-title">Select Test Cases for Run</div>
+      <div style="flex:1;"></div>
+      <div style="font-size:0.6875rem; color:#64748B;">32 Active TCs available</div>
+    </div>
+    <div class="mock-body" style="padding: 0.75rem 1rem;">
+      <div class="toggle-row">
+        <div class="toggle-switch">
+          <div class="toggle-knob"></div>
+        </div>
+        <span class="toggle-label">Include Draft TCs</span>
+        <span style="font-size:0.6875rem; color:#94A3B8; margin-left:auto;">5 draft TCs hidden</span>
+      </div>
+    </div>
+    <div class="mock-body" style="padding: 0; border-top: 1px solid #E2E8F0;">
+      <div class="tc-select-row">
+        <div class="tc-select-check checked"><i class="ri-check-line"></i></div>
+        <span class="tc-select-title">User registration with valid email</span>
+        <span class="status-badge badge-active" style="font-size:0.5625rem; padding: 0.0625rem 0.3125rem;"><i class="ri-checkbox-circle-line" style="font-size:0.625rem;"></i> Active</span>
+      </div>
+      <div class="tc-select-row">
+        <div class="tc-select-check checked"><i class="ri-check-line"></i></div>
+        <span class="tc-select-title">Login with correct credentials</span>
+        <span class="status-badge badge-active" style="font-size:0.5625rem; padding: 0.0625rem 0.3125rem;"><i class="ri-checkbox-circle-line" style="font-size:0.625rem;"></i> Active</span>
+      </div>
+      <div class="tc-select-row">
+        <div class="tc-select-check"></div>
+        <span class="tc-select-title">Password reset flow</span>
+        <span class="status-badge badge-active" style="font-size:0.5625rem; padding: 0.0625rem 0.3125rem;"><i class="ri-checkbox-circle-line" style="font-size:0.625rem;"></i> Active</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>10.2 TC 선택 화면 프리뷰 (토글 ON — Draft 표시)</h3>
+  <div class="mock-container">
+    <div class="mock-header">
+      <div class="mock-title">Select Test Cases for Run</div>
+      <div style="flex:1;"></div>
+      <div style="font-size:0.6875rem; color:#64748B;">32 Active + 5 Draft TCs</div>
+    </div>
+    <div class="mock-body" style="padding: 0.75rem 1rem;">
+      <div class="toggle-row">
+        <div class="toggle-switch on">
+          <div class="toggle-knob"></div>
+        </div>
+        <span class="toggle-label">Include Draft TCs</span>
+      </div>
+    </div>
+    <div class="mock-body" style="padding: 0; border-top: 1px solid #E2E8F0;">
+      <div class="tc-select-row">
+        <div class="tc-select-check checked"><i class="ri-check-line"></i></div>
+        <span class="tc-select-title">User registration with valid email</span>
+        <span class="status-badge badge-active" style="font-size:0.5625rem; padding: 0.0625rem 0.3125rem;"><i class="ri-checkbox-circle-line" style="font-size:0.625rem;"></i> Active</span>
+      </div>
+      <div class="tc-select-row draft-row">
+        <div class="tc-select-check"></div>
+        <span class="tc-select-title">Multi-factor auth setup</span>
+        <span class="status-badge badge-draft" style="font-size:0.5625rem; padding: 0.0625rem 0.3125rem;"><i class="ri-draft-line" style="font-size:0.625rem;"></i> Draft</span>
+      </div>
+      <div class="tc-select-row">
+        <div class="tc-select-check checked"><i class="ri-check-line"></i></div>
+        <span class="tc-select-title">Login with correct credentials</span>
+        <span class="status-badge badge-active" style="font-size:0.5625rem; padding: 0.0625rem 0.3125rem;"><i class="ri-checkbox-circle-line" style="font-size:0.625rem;"></i> Active</span>
+      </div>
+      <div class="tc-select-row draft-row">
+        <div class="tc-select-check"></div>
+        <span class="tc-select-title">Biometric login flow</span>
+        <span class="status-badge badge-draft" style="font-size:0.5625rem; padding: 0.0625rem 0.3125rem;"><i class="ri-draft-line" style="font-size:0.625rem;"></i> Draft</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="run-warning">
+    <i class="ri-error-warning-line"></i>
+    <div>
+      <strong>Draft TC 포함:</strong> 이 Run에 Draft 상태의 TC 2개가 포함되어 있습니다. Draft TC는 아직 미완성일 수 있습니다.
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>요소</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>Toggle switch</td><td>36×20px, off: <code>#CBD5E1</code>, on: <code>#6366F1</code> (indigo-500). Knob 14px white circle.</td></tr>
+      <tr><td>Toggle 기본 상태</td><td><strong>OFF</strong> — Draft TC 숨김, Active TC만 표시</td></tr>
+      <tr><td>"N draft TCs hidden" 텍스트</td><td>toggle OFF일 때만 표시. 11px, <code>#94A3B8</code> (slate-400), 오른쪽 정렬</td></tr>
+      <tr><td>Draft TC 행 배경</td><td><code>#FFFBEB</code> (amber-50) — 시각적으로 구분</td></tr>
+      <tr><td>Deprecated TC</td><td><strong>완전히 숨김</strong> — TC 선택 목록에 표시하지 않음, 토글도 없음</td></tr>
+      <tr><td>Draft TC 선택 시</td><td>§7 Run 경고 배너 표시 (TC 선택 영역 하단)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══ 11. 기존 Run — Deprecated TC 안내 배너 ═══ -->
+  <h2>11. 기존 Run — Deprecated TC 안내 배너</h2>
+  <p>이미 생성된 Run에 포함된 TC가 이후에 Deprecated 되면, Run 상세 페이지에서 안내 배너를 표시합니다. TC 자체는 유지하지만, 상태 아이콘 옆에 Deprecated 배지를 추가합니다.</p>
+
+  <h3>11.1 배너 프리뷰</h3>
+  <div class="info-banner">
+    <i class="ri-information-line"></i>
+    <div>
+      <strong>일부 TC가 Deprecated 상태입니다.</strong> 이 Run에 포함된 TC 2개가 이후에 Deprecated로 변경되었습니다. 실행 결과는 유지되며, 향후 새 Run에는 포함되지 않습니다.
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Background</td><td><code>#EFF6FF</code> (blue-50)</td></tr>
+      <tr><td>Border</td><td><code>1px solid #BFDBFE</code> (blue-200)</td></tr>
+      <tr><td>Text color</td><td><code>#1E40AF</code> (blue-800)</td></tr>
+      <tr><td>Icon</td><td><code>ri-information-line</code>, blue-600</td></tr>
+      <tr><td>위치</td><td>Run 상세 페이지, TC 리스트 상단</td></tr>
+      <tr><td>표시 조건</td><td>Run에 포함된 TC 중 1개 이상이 <code>lifecycle_status = 'deprecated'</code></td></tr>
+      <tr><td>행 내 Deprecated TC 표시</td><td>TC 행에 Deprecated 배지(sm) 표시 + <code>opacity: 0.65</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <i class="ri-information-line"></i>
+    <strong>기존 Run 데이터 보존 원칙:</strong> 이미 실행된 Run의 TC 데이터와 결과는 절대 삭제하지 않습니다. Deprecated 배너는 정보 제공 목적만 가집니다.
+  </div>
+
+  <!-- ═══ 12. CSS Token Reference ═══ -->
+  <h2>12. CSS Token Reference</h2>
+  <div class="token-grid">
+    <div class="token-card">
+      <div class="token-name">--status-draft-bg</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#FEF9C3;"></div>
+        <span class="token-val">#FEF9C3</span>
+      </div>
+    </div>
+    <div class="token-card">
+      <div class="token-name">--status-draft-text</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#854D0E;"></div>
+        <span class="token-val">#854D0E</span>
+      </div>
+    </div>
+    <div class="token-card">
+      <div class="token-name">--status-draft-border</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#FDE68A;"></div>
+        <span class="token-val">#FDE68A</span>
+      </div>
+    </div>
+    <div class="token-card">
+      <div class="token-name">--status-draft-icon</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#D97706;"></div>
+        <span class="token-val">#D97706 (amber-600)</span>
+      </div>
+    </div>
+    <div class="token-card">
+      <div class="token-name">--status-active-bg</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#DCFCE7;"></div>
+        <span class="token-val">#DCFCE7</span>
+      </div>
+    </div>
+    <div class="token-card">
+      <div class="token-name">--status-active-text</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#166534;"></div>
+        <span class="token-val">#166534</span>
+      </div>
+    </div>
+    <div class="token-card">
+      <div class="token-name">--status-active-border</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#BBF7D0;"></div>
+        <span class="token-val">#BBF7D0</span>
+      </div>
+    </div>
+    <div class="token-card">
+      <div class="token-name">--status-active-icon</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#16A34A;"></div>
+        <span class="token-val">#16A34A (green-600)</span>
+      </div>
+    </div>
+    <div class="token-card">
+      <div class="token-name">--status-deprecated-bg</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#F1F5F9;"></div>
+        <span class="token-val">#F1F5F9</span>
+      </div>
+    </div>
+    <div class="token-card">
+      <div class="token-name">--status-deprecated-text</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#64748B;"></div>
+        <span class="token-val">#64748B</span>
+      </div>
+    </div>
+    <div class="token-card">
+      <div class="token-name">--status-deprecated-border</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#CBD5E1;"></div>
+        <span class="token-val">#CBD5E1</span>
+      </div>
+    </div>
+    <div class="token-card">
+      <div class="token-name">--status-deprecated-icon</div>
+      <div class="token-swatch">
+        <div class="swatch" style="background:#94A3B8;"></div>
+        <span class="token-val">#94A3B8 (slate-400)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 13. Design Deliverables Checklist ═══ -->
+  <h2>13. Desi 디자인 산출물 체크리스트</h2>
+  <table class="spec-table">
+    <thead><tr><th>#</th><th>산출물</th><th>우선순위</th><th>참고</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>Status Badge 3종</strong> — Draft(노랑), Active(초록), Deprecated(회색). 2가지 크기(sm/md).</td><td>P0</td><td>§1, §2 참조. 이 문서의 프리뷰를 그대로 사용해도 됨.</td></tr>
+      <tr><td>2</td><td><strong>필터 탭 디자인</strong> — All / Draft / Active / Deprecated 탭 + 카운트 배지.</td><td>P0</td><td>§3 참조. 기존 Priority 필터 옆에 위치.</td></tr>
+      <tr><td>3</td><td><strong>상태 변경 드롭다운</strong> — 배지 클릭 시 열리는 패널. 3개 옵션 + 체크 표시.</td><td>P0</td><td>§4 참조.</td></tr>
+      <tr><td>4</td><td><strong>Deprecated 확인 다이얼로그</strong> — 경고 아이콘 + 확인/취소 버튼.</td><td>P1</td><td>§5 참조.</td></tr>
+      <tr><td>5</td><td><strong>BulkActionBar — Set Status 버튼</strong> — 기존 바에 추가.</td><td>P1</td><td>§6 참조.</td></tr>
+      <tr><td>6</td><td><strong>Run Draft 경고 배너</strong> — amber 배경 경고 메시지.</td><td>P1</td><td>§7 참조.</td></tr>
+      <tr><td>7</td><td><strong>TC 생성 Toast — "Mark as Active" 링크</strong> — Draft 생성 후 즉시 전환 가능한 토스트.</td><td>P0</td><td>§8 참조. 기존 toast 디자인 확장.</td></tr>
+      <tr><td>8</td><td><strong>우클릭 컨텍스트 메뉴 — Set Status 서브메뉴</strong></td><td>P1</td><td>§9 참조. 기존 컨텍스트 메뉴에 추가.</td></tr>
+      <tr><td>9</td><td><strong>Run TC 선택 — "Include Draft TCs" 토글</strong> — 토글 스위치 + Draft 행 시각 구분.</td><td>P0</td><td>§10 참조. Run 생성 플로우 변경.</td></tr>
+      <tr><td>10</td><td><strong>기존 Run — Deprecated TC 안내 배너</strong> — 파란 info 배너 + 행 내 배지.</td><td>P1</td><td>§11 참조.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn">
+    <i class="ri-error-warning-line"></i>
+    <strong>주의:</strong> 이 문서의 목업은 PM이 제작한 참고용입니다. 최종 디자인은 Desi의 판단에 따라 조정해주세요.
+    특히 배지 크기, 간격, 드롭다운 애니메이션은 기존 Testably 디자인 시스템과 일관성을 맞춰주세요.
+  </div>
+
+</div>
+</body>
+</html>

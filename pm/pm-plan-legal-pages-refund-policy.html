@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM 기획서 — Legal 페이지 정비 및 Refund Policy 추가</title>
+<style>
+  :root {
+    --indigo: #4338CA; --indigo-light: #EEF2FF;
+    --red: #DC2626; --red-light: #FEF2F2;
+    --green: #16A34A; --green-light: #F0FDF4;
+    --amber: #D97706; --amber-light: #FFFBEB;
+    --slate-900: #0F172A; --slate-700: #334155; --slate-500: #64748B; --slate-200: #E2E8F0; --slate-50: #F8FAFC;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--slate-700); line-height:1.7; background:#fff; }
+  .container { max-width:960px; margin:0 auto; padding:48px 32px; }
+  h1 { font-size:28px; font-weight:800; color:var(--slate-900); margin-bottom:8px; }
+  .subtitle { font-size:15px; color:var(--slate-500); margin-bottom:32px; }
+  h2 { font-size:20px; font-weight:700; color:var(--slate-900); margin-top:40px; margin-bottom:16px; padding-bottom:8px; border-bottom:2px solid var(--indigo); }
+  h3 { font-size:16px; font-weight:700; color:var(--slate-900); margin-top:24px; margin-bottom:10px; }
+  h4 { font-size:14px; font-weight:600; color:var(--slate-700); margin-top:16px; margin-bottom:8px; }
+  p { margin-bottom:12px; font-size:14px; }
+  .meta { display:flex; gap:24px; margin-bottom:32px; font-size:13px; color:var(--slate-500); }
+
+  .card { border:1px solid var(--slate-200); border-radius:12px; padding:20px; margin-bottom:16px; }
+  .badge { display:inline-flex; align-items:center; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:700; margin-right:6px; }
+  .badge-red { background:var(--red-light); color:var(--red); }
+  .badge-green { background:var(--green-light); color:var(--green); }
+  .badge-amber { background:var(--amber-light); color:var(--amber); }
+  .badge-indigo { background:var(--indigo-light); color:var(--indigo); }
+
+  .alert { border-radius:10px; padding:16px 20px; margin-bottom:16px; font-size:13px; }
+  .alert-red { background:var(--red-light); border-left:4px solid var(--red); }
+  .alert-amber { background:var(--amber-light); border-left:4px solid var(--amber); }
+  .alert-green { background:var(--green-light); border-left:4px solid var(--green); }
+  .alert-indigo { background:var(--indigo-light); border-left:4px solid var(--indigo); }
+  .alert strong { color:var(--slate-900); }
+
+  table { width:100%; border-collapse:collapse; margin-bottom:16px; font-size:13px; }
+  th { background:var(--slate-50); font-weight:700; color:var(--slate-900); text-align:left; padding:10px 14px; border-bottom:2px solid var(--slate-200); }
+  td { padding:10px 14px; border-bottom:1px solid var(--slate-200); vertical-align:top; }
+  tr:hover td { background:#FAFAFF; }
+
+  code { background:var(--slate-50); border:1px solid var(--slate-200); border-radius:4px; padding:1px 6px; font-size:12px; font-family:'SF Mono','Fira Code',monospace; color:var(--indigo); }
+
+  .summary-box { background:linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%); border:1px solid #C7D2FE; border-radius:12px; padding:24px; margin-bottom:24px; }
+  .summary-box h3 { margin-top:0; color:var(--indigo); }
+
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:768px) { .two-col { grid-template-columns:1fr; } }
+
+  ul, ol { margin-left:20px; margin-bottom:12px; font-size:14px; }
+  li { margin-bottom:4px; }
+  .divider { height:1px; background:var(--slate-200); margin:32px 0; }
+
+  .draft-section { background:var(--slate-50); border:1px solid var(--slate-200); border-radius:12px; padding:24px; margin-bottom:16px; }
+  .draft-section h4 { margin-top:0; color:var(--indigo); font-size:15px; }
+  .draft-section p { font-size:13px; line-height:1.8; }
+  .draft-section ul { font-size:13px; }
+  .draft-label { display:inline-flex; align-items:center; gap:4px; background:var(--indigo); color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; margin-bottom:8px; letter-spacing:0.5px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Legal 페이지 정비 및 Refund Policy 추가</h1>
+<p class="subtitle">CEO 피드백 기반 — Footer Legal 섹션 분석 + 누락 페이지 식별 + Refund Policy 초안</p>
+
+<div class="meta">
+  <span>📅 2026-03-30</span>
+  <span>👤 PM</span>
+  <span>🏷️ Legal / Policy</span>
+  <span>⏱️ 예상 개발: 2–3일</span>
+</div>
+
+<!-- ===== Executive Summary ===== -->
+<div class="summary-box">
+  <h3>Executive Summary</h3>
+  <p style="margin-bottom:8px;">현재 Testably에는 <strong>2개의 법적 페이지</strong>(Terms of Service, Privacy Policy)만 존재합니다. SaaS 제품 기준으로 Refund Policy(독립 페이지), Cookie Policy, Acceptable Use Policy, DPA(Data Processing Agreement) 등이 누락되어 있습니다.</p>
+  <p style="margin-bottom:8px;">Terms of Service 페이지 내부에 4줄짜리 환불 조항이 포함되어 있으나, 독립 페이지로 분리하여 Footer에 노출해야 합니다. 또한 Paddle(MoR) 결제 특성을 반영한 환불 정책 상세화가 필요합니다.</p>
+  <p style="margin-bottom:0;">Footer Legal 섹션에 추가해야 할 링크: <strong>Refund Policy, Cookie Policy</strong> (최소). DPA와 AUP는 후순위.</p>
+</div>
+
+<!-- ===== 1. Current State ===== -->
+<h2>1. 현재 상태 분석</h2>
+
+<h3>1.1 Footer Legal 섹션 — 두 곳에 존재</h3>
+<table>
+  <tr>
+    <th>위치</th>
+    <th>파일</th>
+    <th>현재 Legal 링크</th>
+  </tr>
+  <tr>
+    <td>홈페이지 Footer</td>
+    <td><code>src/pages/home/page.tsx</code> (line 1758–1765)</td>
+    <td>Privacy Policy (<code>/privacy</code>), Terms of Service (<code>/terms</code>)</td>
+  </tr>
+  <tr>
+    <td>마케팅 페이지 공통 Footer</td>
+    <td><code>src/components/marketing/MarketingFooter.tsx</code></td>
+    <td>Privacy Policy (<code>/privacy</code>), Terms of Service (<code>/terms</code>)</td>
+  </tr>
+  <tr>
+    <td>회원가입 페이지</td>
+    <td><code>src/pages/auth/page.tsx</code> (line 811)</td>
+    <td>"By continuing, you agree to our Terms of Service and Privacy Policy" (텍스트 링크)</td>
+  </tr>
+</table>
+
+<h3>1.2 기존 법적 페이지 상세</h3>
+<table>
+  <tr>
+    <th>페이지</th>
+    <th>라우트</th>
+    <th>파일</th>
+    <th>내용 요약</th>
+    <th>이중 언어</th>
+  </tr>
+  <tr>
+    <td><strong>Terms of Service</strong></td>
+    <td><code>/terms</code></td>
+    <td><code>src/pages/terms/page.tsx</code></td>
+    <td>12개 섹션: 목적, 정의, 약관 변경, 회원가입, 서비스 이용, 유료 서비스(환불 포함), 사용자 의무, 지적재산권, 이용 제한, 면책, 분쟁 해결, 연락처</td>
+    <td><span class="badge badge-green">EN + KO</span></td>
+  </tr>
+  <tr>
+    <td><strong>Privacy Policy</strong></td>
+    <td><code>/privacy</code></td>
+    <td><code>src/pages/privacy/page.tsx</code></td>
+    <td>11개 섹션: 총칙, 수집 항목, 처리 목적, 보유 기간, 제3자 제공, 위탁, 이용자 권리, 쿠키, 보안 조치, 보호책임자, 방침 변경</td>
+    <td><span class="badge badge-green">EN + KO</span></td>
+  </tr>
+</table>
+
+<h3>1.3 Terms 내 기존 환불 조항 (현재)</h3>
+<div class="draft-section">
+  <span class="draft-label">현재 내용 — 섹션 6. Paid Services and Payment 내부</span>
+  <h4>Refund Policy (4줄)</h4>
+  <ul>
+    <li>No charges are incurred if canceled during the 14-day free trial period.</li>
+    <li>A full refund is available if no usage has occurred within 7 days of payment.</li>
+    <li>No refund is provided for the remaining period after 7 days.</li>
+    <li>Enterprise plan refunds are subject to separate contract terms.</li>
+  </ul>
+  <p style="margin-bottom:0; color:var(--red);"><strong>문제:</strong> 너무 간략하고, Paddle MoR 특성(Paddle이 환불 처리 주체)이 반영되지 않음. 독립 페이지가 아닌 Terms 내부에 묻혀 있어 사용자가 찾기 어려움.</p>
+</div>
+
+<!-- ===== 2. Gap Analysis ===== -->
+<h2>2. 누락 법적 페이지 분석</h2>
+
+<h3>2.1 SaaS 제품 필수/권장 법적 페이지</h3>
+<table>
+  <tr>
+    <th>페이지</th>
+    <th>필요성</th>
+    <th>현재 상태</th>
+    <th>우선순위</th>
+  </tr>
+  <tr>
+    <td><strong>Terms of Service</strong></td>
+    <td>필수 — 서비스 이용 조건</td>
+    <td><span class="badge badge-green">✅ 존재</span></td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td><strong>Privacy Policy</strong></td>
+    <td>필수 — GDPR/CCPA 법적 요구</td>
+    <td><span class="badge badge-green">✅ 존재</span></td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td><strong>Refund Policy</strong></td>
+    <td>필수 — 결제 서비스의 투명성, 분쟁 예방</td>
+    <td><span class="badge badge-amber">⚠️ Terms 내부에 4줄만 존재</span></td>
+    <td><span class="badge badge-red">P0</span></td>
+  </tr>
+  <tr>
+    <td><strong>Cookie Policy</strong></td>
+    <td>권장 — ePrivacy Directive (EU), GDPR 쿠키 동의 요구</td>
+    <td><span class="badge badge-red">❌ 없음</span> (Privacy Policy에 1개 섹션만)</td>
+    <td><span class="badge badge-amber">P1</span></td>
+  </tr>
+  <tr>
+    <td><strong>Acceptable Use Policy (AUP)</strong></td>
+    <td>권장 — 서비스 남용 방지 (특히 AI 기능)</td>
+    <td><span class="badge badge-red">❌ 없음</span> (Terms 내 "User Obligations"로 부분 커버)</td>
+    <td><span class="badge badge-indigo">P2</span></td>
+  </tr>
+  <tr>
+    <td><strong>Data Processing Agreement (DPA)</strong></td>
+    <td>권장 — B2B/Enterprise 고객 필수 (GDPR Article 28)</td>
+    <td><span class="badge badge-red">❌ 없음</span></td>
+    <td><span class="badge badge-indigo">P2</span></td>
+  </tr>
+  <tr>
+    <td><strong>SLA (Service Level Agreement)</strong></td>
+    <td>선택 — Enterprise 플랜용</td>
+    <td><span class="badge badge-red">❌ 없음</span></td>
+    <td><span class="badge badge-indigo">P3</span></td>
+  </tr>
+  <tr>
+    <td><strong>Security Policy / Trust Center</strong></td>
+    <td>선택 — Enterprise 영업용</td>
+    <td><span class="badge badge-red">❌ 없음</span></td>
+    <td><span class="badge badge-indigo">P3</span></td>
+  </tr>
+</table>
+
+<!-- ===== 3. Paddle MoR Considerations ===== -->
+<h2>3. Paddle MoR(Merchant of Record) 환불 특성</h2>
+
+<div class="alert alert-indigo">
+  <strong>💡 핵심: Paddle이 결제의 "판매자(Merchant of Record)"입니다.</strong><br>
+  Testably가 직접 결제를 처리하는 것이 아니라, Paddle이 세금 징수, 결제 처리, 청구서 발행, 환불 처리를 담당합니다. 따라서 Refund Policy에 Paddle 역할을 명시해야 합니다.
+</div>
+
+<h3>3.1 Paddle 환불 처리 특성</h3>
+<table>
+  <tr><th>항목</th><th>Paddle 기본 정책</th><th>Testably 적용</th></tr>
+  <tr>
+    <td>환불 처리 주체</td>
+    <td>Paddle이 MoR로서 환불 처리</td>
+    <td>사용자에게 Paddle을 통해 결제됨을 안내</td>
+  </tr>
+  <tr>
+    <td>카드 환불 소요 시간</td>
+    <td>3~5 영업일</td>
+    <td>동일 적용</td>
+  </tr>
+  <tr>
+    <td>PayPal 환불 소요 시간</td>
+    <td>최대 48시간</td>
+    <td>동일 적용</td>
+  </tr>
+  <tr>
+    <td>카드 결제 환불 기한</td>
+    <td>결제일로부터 120일 이내</td>
+    <td>환불 요청 기한 제한에 반영</td>
+  </tr>
+  <tr>
+    <td>구독 중간 취소</td>
+    <td>Paddle은 미사용 기간 자동 환불하지 않음</td>
+    <td>Pro-rata 환불 없음 명시</td>
+  </tr>
+  <tr>
+    <td>자동 환불 승인</td>
+    <td>$400 이하 자동 승인 (인증 계정)</td>
+    <td>내부 처리 — 사용자에게 미노출</td>
+  </tr>
+</table>
+
+<!-- ===== 4. Refund Policy Draft ===== -->
+<h2>4. Refund Policy 콘텐츠 초안</h2>
+
+<div class="alert alert-green">
+  <strong>참고:</strong> 이 초안은 법적 검토 전 PM 기획 단계입니다. 최종 배포 전 법률 자문 검토를 권장합니다.
+</div>
+
+<!-- EN Draft -->
+<div class="draft-section" style="border-left:4px solid var(--indigo);">
+  <span class="draft-label">ENGLISH DRAFT</span>
+  <h4>Refund Policy</h4>
+  <p><em>Last Updated: [배포일]</em></p>
+
+  <h4 style="margin-top:16px;">1. Overview</h4>
+  <p>This Refund Policy applies to all paid subscription plans for Testably ("Service") offered by Testably Inc. ("Company"). Payments for the Service are processed by Paddle.com Market Limited ("Paddle"), which acts as the Merchant of Record for all transactions. By subscribing to a paid plan, you agree to the terms outlined in this policy.</p>
+
+  <h4>2. Free Plan and Free Trial</h4>
+  <p>Testably offers a Free plan with limited features at no cost. No payment information is required, and no charges are incurred. If a free trial is offered for paid plans, you will not be charged until the trial period ends. You may cancel at any time during the trial without being charged.</p>
+
+  <h4>3. Subscription Plans and Billing</h4>
+  <p>Testably offers the following paid plans:</p>
+  <ul>
+    <li><strong>Starter</strong> — $49/month (or $499/year, ~15% discount)</li>
+    <li><strong>Professional</strong> — $99/month (or $1,009/year, ~15% discount)</li>
+    <li><strong>Enterprise S</strong> — $249/month (or $2,540/year)</li>
+    <li><strong>Enterprise M</strong> — $499/month (or $5,090/year)</li>
+    <li><strong>Enterprise L</strong> — Custom pricing (contact sales)</li>
+  </ul>
+  <p>Subscriptions are billed in advance on a monthly or annual basis. Viewer seats are free and do not incur charges regardless of plan.</p>
+
+  <h4>4. Refund Eligibility</h4>
+  <table style="font-size:12px;">
+    <tr><th>Scenario</th><th>Refund Available?</th><th>Details</th></tr>
+    <tr>
+      <td>Cancel during free trial</td>
+      <td><strong>N/A (no charge)</strong></td>
+      <td>No payment is collected during the trial period.</td>
+    </tr>
+    <tr>
+      <td>Cancel within 7 days of first payment (no significant usage)</td>
+      <td><strong>Full refund</strong></td>
+      <td>If you have not created any projects or test cases, a full refund is available upon request.</td>
+    </tr>
+    <tr>
+      <td>Cancel within 7 days of first payment (with usage)</td>
+      <td><strong>Case-by-case</strong></td>
+      <td>If you have actively used the service, refund eligibility will be reviewed on a case-by-case basis.</td>
+    </tr>
+    <tr>
+      <td>Cancel after 7 days</td>
+      <td><strong>No refund</strong></td>
+      <td>No refund for the current billing period. Your subscription remains active until the end of the billing cycle.</td>
+    </tr>
+    <tr>
+      <td>Annual plan — cancel mid-term</td>
+      <td><strong>No pro-rata refund</strong></td>
+      <td>Annual subscriptions are not eligible for partial refunds. Service access continues until the end of the annual billing period.</td>
+    </tr>
+    <tr>
+      <td>Plan downgrade</td>
+      <td><strong>No refund</strong></td>
+      <td>Downgrading takes effect at the next billing cycle. No refund is issued for the difference.</td>
+    </tr>
+    <tr>
+      <td>Service outage (Company fault)</td>
+      <td><strong>Credit or extension</strong></td>
+      <td>If the Service experiences extended downtime (24+ hours) due to Company fault, service credit or billing extension will be provided.</td>
+    </tr>
+    <tr>
+      <td>Enterprise L plan</td>
+      <td><strong>Per contract</strong></td>
+      <td>Enterprise L plans are governed by individual contract terms.</td>
+    </tr>
+  </table>
+
+  <h4>5. How to Request a Refund</h4>
+  <p>To request a refund, please contact our support team at <strong>support@testably.app</strong> with the following information:</p>
+  <ul>
+    <li>Your account email address</li>
+    <li>The date of the transaction</li>
+    <li>Reason for the refund request</li>
+  </ul>
+  <p>We will review your request and respond within <strong>3 business days</strong>. Approved refunds are processed through Paddle and typically appear in your account within 5–10 business days, depending on your payment method and financial institution.</p>
+
+  <h4>6. Payment Processing</h4>
+  <p>All payments are processed by <strong>Paddle.com Market Limited</strong>, which acts as our Merchant of Record. Paddle handles payment processing, tax collection, and invoicing. Your credit card statement will show a charge from Paddle, not from Testably directly. For payment-related inquiries, you may also contact Paddle directly through their <a href="https://www.paddle.com/about/cancel-subscription" style="color:var(--indigo);">buyer support page</a>.</p>
+
+  <h4>7. Chargebacks</h4>
+  <p>We encourage you to contact us before initiating a chargeback with your bank or payment provider. Filing a chargeback without contacting us first may result in the suspension of your account. We are committed to resolving payment disputes promptly and fairly.</p>
+
+  <h4>8. Changes to This Policy</h4>
+  <p>We reserve the right to update this Refund Policy at any time. Changes will be posted on this page with an updated "Last Updated" date. Continued use of the Service after changes constitutes acceptance of the revised policy.</p>
+
+  <h4>9. Contact</h4>
+  <p>For questions about this Refund Policy, please contact us at <strong>support@testably.app</strong>.</p>
+</div>
+
+<!-- KO Draft -->
+<div class="draft-section" style="border-left:4px solid #16A34A;">
+  <span class="draft-label" style="background:#16A34A;">한국어 DRAFT</span>
+  <h4>환불 정책</h4>
+  <p><em>최종 수정일: [배포일]</em></p>
+
+  <h4 style="margin-top:16px;">1. 개요</h4>
+  <p>본 환불 정책은 Testably(이하 "회사")가 제공하는 유료 구독 서비스에 적용됩니다. 서비스의 결제는 Paddle.com Market Limited(이하 "Paddle")가 판매 대행자(Merchant of Record)로서 처리합니다. 유료 플랜을 구독함으로써 본 정책의 조건에 동의하는 것으로 간주됩니다.</p>
+
+  <h4>2. 무료 플랜 및 무료 체험</h4>
+  <p>Testably는 제한된 기능의 무료 플랜(Free Plan)을 제공합니다. 결제 정보 입력이 불필요하며 요금이 청구되지 않습니다. 유료 플랜의 무료 체험이 제공되는 경우, 체험 기간 중 언제든지 취소할 수 있으며 요금이 청구되지 않습니다.</p>
+
+  <h4>3. 구독 플랜 및 결제</h4>
+  <p>Testably는 다음 유료 플랜을 제공합니다:</p>
+  <ul>
+    <li><strong>Starter</strong> — 월 $49 (연 $499, 약 15% 할인)</li>
+    <li><strong>Professional</strong> — 월 $99 (연 $1,009, 약 15% 할인)</li>
+    <li><strong>Enterprise S</strong> — 월 $249 (연 $2,540)</li>
+    <li><strong>Enterprise M</strong> — 월 $499 (연 $5,090)</li>
+    <li><strong>Enterprise L</strong> — 맞춤 가격 (영업팀 문의)</li>
+  </ul>
+  <p>구독 요금은 월간 또는 연간 단위로 선결제됩니다. Viewer 시트는 플랜에 관계없이 무료입니다.</p>
+
+  <h4>4. 환불 조건</h4>
+  <table style="font-size:12px;">
+    <tr><th>상황</th><th>환불 가능 여부</th><th>상세</th></tr>
+    <tr>
+      <td>무료 체험 중 취소</td>
+      <td><strong>해당 없음 (미청구)</strong></td>
+      <td>체험 기간 중에는 결제가 발생하지 않습니다.</td>
+    </tr>
+    <tr>
+      <td>첫 결제 후 7일 이내 취소 (미사용)</td>
+      <td><strong>전액 환불</strong></td>
+      <td>프로젝트나 테스트 케이스를 생성하지 않은 경우, 요청 시 전액 환불됩니다.</td>
+    </tr>
+    <tr>
+      <td>첫 결제 후 7일 이내 취소 (사용 이력 있음)</td>
+      <td><strong>개별 심사</strong></td>
+      <td>서비스를 적극적으로 사용한 경우 개별 검토를 통해 환불 여부를 결정합니다.</td>
+    </tr>
+    <tr>
+      <td>7일 초과 후 취소</td>
+      <td><strong>환불 불가</strong></td>
+      <td>현재 결제 주기에 대한 환불은 제공되지 않으며, 결제 주기 종료까지 서비스를 이용할 수 있습니다.</td>
+    </tr>
+    <tr>
+      <td>연간 플랜 — 중도 취소</td>
+      <td><strong>일할 환불 불가</strong></td>
+      <td>연간 구독은 부분 환불 대상이 아닙니다. 연간 결제 기간 종료까지 서비스를 계속 이용할 수 있습니다.</td>
+    </tr>
+    <tr>
+      <td>플랜 다운그레이드</td>
+      <td><strong>환불 불가</strong></td>
+      <td>다운그레이드는 다음 결제 주기부터 적용됩니다. 차액 환불은 제공되지 않습니다.</td>
+    </tr>
+    <tr>
+      <td>서비스 장애 (회사 귀책)</td>
+      <td><strong>크레딧 또는 기간 연장</strong></td>
+      <td>회사 귀책 사유로 24시간 이상 서비스 중단 시, 서비스 크레딧 또는 결제 기간 연장을 제공합니다.</td>
+    </tr>
+    <tr>
+      <td>Enterprise L 플랜</td>
+      <td><strong>개별 계약 조건</strong></td>
+      <td>Enterprise L 플랜은 개별 계약 조건에 따릅니다.</td>
+    </tr>
+  </table>
+
+  <h4>5. 환불 요청 방법</h4>
+  <p>환불을 요청하시려면 <strong>support@testably.app</strong>으로 다음 정보와 함께 연락해 주세요:</p>
+  <ul>
+    <li>계정 이메일 주소</li>
+    <li>결제 일자</li>
+    <li>환불 요청 사유</li>
+  </ul>
+  <p>요청을 검토하여 <strong>영업일 기준 3일 이내</strong> 답변드립니다. 승인된 환불은 Paddle을 통해 처리되며, 결제 수단과 금융기관에 따라 5~10 영업일 내에 반영됩니다.</p>
+
+  <h4>6. 결제 처리</h4>
+  <p>모든 결제는 <strong>Paddle.com Market Limited</strong>가 판매 대행자(Merchant of Record)로서 처리합니다. Paddle이 결제, 세금 징수, 청구서 발행을 담당합니다. 신용카드 명세서에는 Testably가 아닌 Paddle로 청구 내역이 표시됩니다.</p>
+
+  <h4>7. 차지백(결제 이의신청)</h4>
+  <p>은행이나 결제사에 차지백을 신청하기 전에 먼저 저희에게 연락해 주시기 바랍니다. 사전 연락 없이 차지백을 신청하면 계정이 정지될 수 있습니다.</p>
+
+  <h4>8. 정책 변경</h4>
+  <p>회사는 본 환불 정책을 언제든지 변경할 수 있습니다. 변경 시 본 페이지에 업데이트된 "최종 수정일"과 함께 게시됩니다.</p>
+
+  <h4>9. 문의</h4>
+  <p>본 환불 정책에 관한 문의: <strong>support@testably.app</strong></p>
+</div>
+
+<!-- ===== 5. Cookie Policy Draft ===== -->
+<h2>5. Cookie Policy 초안 (요약)</h2>
+
+<div class="alert alert-amber">
+  <strong>참고:</strong> Privacy Policy 내에 "쿠키(Cookie) 운영" 섹션이 이미 1개 존재하지만, GDPR ePrivacy Directive 요건을 충족하기에는 부족합니다. 독립 Cookie Policy 페이지를 권장합니다.
+</div>
+
+<div class="draft-section" style="border-left:4px solid var(--amber);">
+  <span class="draft-label" style="background:var(--amber);">COOKIE POLICY — 구성 개요</span>
+  <h4>포함 내용</h4>
+  <ol>
+    <li><strong>What are cookies</strong> — 쿠키 정의 및 작동 방식</li>
+    <li><strong>Types of cookies we use</strong>
+      <ul>
+        <li>Essential cookies — 인증, 세션 관리 (Supabase auth)</li>
+        <li>Analytics cookies — 사용 통계 (있을 경우)</li>
+        <li>Preference cookies — 언어 설정, 테마</li>
+      </ul>
+    </li>
+    <li><strong>Third-party cookies</strong> — Paddle (결제), Google (OAuth), 분석 도구</li>
+    <li><strong>Cookie duration</strong> — 세션 vs 영구 쿠키 기간</li>
+    <li><strong>How to manage cookies</strong> — 브라우저별 쿠키 설정 방법</li>
+    <li><strong>Cookie consent</strong> — 동의 배너 구현 (EU 사용자 대상)</li>
+    <li><strong>Contact</strong></li>
+  </ol>
+  <p style="margin-bottom:0;"><strong>참고:</strong> Cookie Policy 전체 초안은 Refund Policy 배포 후 Phase 2에서 작성합니다.</p>
+</div>
+
+<!-- ===== 6. Implementation Plan ===== -->
+<h2>6. 구현 계획</h2>
+
+<h3>6.1 Phase 1 — Refund Policy 독립 페이지 추가 (P0, 1일)</h3>
+<table>
+  <tr><th>작업</th><th>파일</th><th>상세</th></tr>
+  <tr>
+    <td>Refund Policy 페이지 생성</td>
+    <td><code>src/pages/refund/page.tsx</code> (신규)</td>
+    <td>Terms/Privacy 페이지와 동일한 MarketingLayout + 이중 언어(EN/KO) 구조. 위 초안 콘텐츠 반영</td>
+  </tr>
+  <tr>
+    <td>라우터 등록</td>
+    <td><code>src/router/config.tsx</code></td>
+    <td><code>path: '/refund'</code> 추가, lazy import</td>
+  </tr>
+  <tr>
+    <td>홈페이지 Footer Legal에 링크 추가</td>
+    <td><code>src/pages/home/page.tsx</code></td>
+    <td>content.en.footer 및 content.ko.footer에 <code>refund: 'Refund Policy'</code> / <code>refund: '환불 정책'</code> 추가, footer JSX에 Link 추가</td>
+  </tr>
+  <tr>
+    <td>MarketingFooter Legal에 링크 추가</td>
+    <td><code>src/components/marketing/MarketingFooter.tsx</code></td>
+    <td>footerLinks.Legal 배열에 <code>{ label: 'Refund Policy', to: '/refund' }</code> 추가</td>
+  </tr>
+  <tr>
+    <td>Terms 페이지에서 Refund Policy 크로스 링크</td>
+    <td><code>src/pages/terms/page.tsx</code></td>
+    <td>섹션 6의 환불 조항 아래에 "자세한 내용은 Refund Policy를 참조하세요" 링크 추가</td>
+  </tr>
+</table>
+
+<h3>6.2 Phase 2 — Cookie Policy 추가 (P1, 1일)</h3>
+<table>
+  <tr><th>작업</th><th>파일</th><th>상세</th></tr>
+  <tr>
+    <td>Cookie Policy 페이지 생성</td>
+    <td><code>src/pages/cookies/page.tsx</code> (신규)</td>
+    <td>동일 MarketingLayout 구조, EN/KO 이중 언어</td>
+  </tr>
+  <tr>
+    <td>라우터 등록</td>
+    <td><code>src/router/config.tsx</code></td>
+    <td><code>path: '/cookies'</code></td>
+  </tr>
+  <tr>
+    <td>Footer에 링크 추가</td>
+    <td>home/page.tsx + MarketingFooter.tsx</td>
+    <td>Legal 섹션에 Cookie Policy 링크</td>
+  </tr>
+</table>
+
+<h3>6.3 Phase 3 — AUP + DPA (P2, 향후)</h3>
+<table>
+  <tr><th>작업</th><th>설명</th></tr>
+  <tr>
+    <td>Acceptable Use Policy</td>
+    <td>AI 기능 남용 방지, 데이터 스크래핑 금지 등 규정. Terms의 "User Obligations"를 확장한 독립 페이지.</td>
+  </tr>
+  <tr>
+    <td>Data Processing Agreement</td>
+    <td>Enterprise 고객 요구. GDPR Article 28 준수. 다운로드 가능한 PDF 또는 웹 페이지 형태.</td>
+  </tr>
+</table>
+
+<h3>6.4 Footer 변경 전후 비교</h3>
+
+<div class="two-col">
+  <div class="card" style="background:var(--red-light); border-color:#FECACA;">
+    <h4 style="margin-top:0; color:var(--red);">현재 (Before)</h4>
+    <p style="font-size:13px; font-weight:700; margin-bottom:8px;">Legal</p>
+    <ul style="font-size:13px;">
+      <li>Privacy Policy</li>
+      <li>Terms of Service</li>
+    </ul>
+  </div>
+  <div class="card" style="background:var(--green-light); border-color:#BBF7D0;">
+    <h4 style="margin-top:0; color:var(--green);">Phase 1+2 완료 후 (After)</h4>
+    <p style="font-size:13px; font-weight:700; margin-bottom:8px;">Legal</p>
+    <ul style="font-size:13px;">
+      <li>Privacy Policy</li>
+      <li>Terms of Service</li>
+      <li><strong>Refund Policy</strong> ← 신규</li>
+      <li><strong>Cookie Policy</strong> ← 신규</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== 7. Code Changes Detail ===== -->
+<h2>7. 코드 변경 상세</h2>
+
+<h3>7.1 MarketingFooter.tsx 변경</h3>
+<pre style="background:var(--slate-50); border:1px solid var(--slate-200); border-radius:8px; padding:16px; font-size:12px; overflow-x:auto; margin-bottom:16px;">
+// Before
+Legal: [
+  { label: 'Privacy Policy', to: '/privacy' },
+  { label: 'Terms of Service', to: '/terms' },
+],
+
+// After
+Legal: [
+  { label: 'Privacy Policy', to: '/privacy' },
+  { label: 'Terms of Service', to: '/terms' },
+  { label: 'Refund Policy', to: '/refund' },      // Phase 1
+  { label: 'Cookie Policy', to: '/cookies' },      // Phase 2
+],
+</pre>
+
+<h3>7.2 home/page.tsx footer content 변경</h3>
+<pre style="background:var(--slate-50); border:1px solid var(--slate-200); border-radius:8px; padding:16px; font-size:12px; overflow-x:auto; margin-bottom:16px;">
+// content.en.footer — 추가
+refund: 'Refund Policy',
+cookie: 'Cookie Policy',
+
+// content.ko.footer — 추가
+refund: '환불 정책',
+cookie: '쿠키 정책',
+
+// Footer JSX (line ~1760) — Legal 섹션 내 추가
+&lt;li&gt;
+  &lt;Link to="/refund" className="text-gray-500 text-sm hover:text-gray-300 transition-colors"&gt;
+    {t.footer.refund}
+  &lt;/Link&gt;
+&lt;/li&gt;
+&lt;li&gt;
+  &lt;Link to="/cookies" className="text-gray-500 text-sm hover:text-gray-300 transition-colors"&gt;
+    {t.footer.cookie}
+  &lt;/Link&gt;
+&lt;/li&gt;
+</pre>
+
+<h3>7.3 router/config.tsx 변경</h3>
+<pre style="background:var(--slate-50); border:1px solid var(--slate-200); border-radius:8px; padding:16px; font-size:12px; overflow-x:auto; margin-bottom:16px;">
+// 추가
+const RefundPage = lazy(() =&gt; import('../pages/refund/page'));
+const CookiePage = lazy(() =&gt; import('../pages/cookies/page'));
+
+// routes 배열에 추가
+{ path: '/refund', element: &lt;RefundPage /&gt; },
+{ path: '/cookies', element: &lt;CookiePage /&gt; },
+</pre>
+
+<h3>7.4 회원가입 페이지 업데이트 (선택)</h3>
+<pre style="background:var(--slate-50); border:1px solid var(--slate-200); border-radius:8px; padding:16px; font-size:12px; overflow-x:auto; margin-bottom:16px;">
+// src/pages/auth/page.tsx (line 811) — Before
+By continuing, you agree to our Terms of Service and Privacy Policy.
+
+// After (환불 정책 링크 추가는 선택사항)
+By continuing, you agree to our Terms of Service and Privacy Policy.
+</pre>
+
+<!-- ===== 8. Additional Notes ===== -->
+<h2>8. 추가 참고 사항</h2>
+
+<h3>8.1 Paddle Checkout Buyer Terms 연동</h3>
+<div class="alert alert-indigo">
+  <strong>Paddle은 자체 Checkout Buyer Terms를 제공합니다.</strong><br>
+  Paddle 결제 창에서 사용자는 Paddle의 Buyer Terms에도 동의합니다. Testably의 Refund Policy는 Paddle의 Buyer Terms를 보완하는 역할이며, 충돌 시 Paddle Buyer Terms가 우선할 수 있습니다. 이 점을 Refund Policy 개요에 명시했습니다.
+</div>
+
+<h3>8.2 Terms 내 기존 환불 조항 처리</h3>
+<p>Terms of Service 페이지의 섹션 6에 있는 기존 4줄 환불 조항은 <strong>삭제하지 않고 유지</strong>하되, 하단에 "For the full Refund Policy, please visit <a href="/refund">/refund</a>" 링크를 추가하여 독립 페이지로 안내합니다.</p>
+
+<h3>8.3 Pricing 페이지 연동</h3>
+<p>Pricing 페이지(또는 Settings 내 View All Plans 모달) 하단에도 "14-day free trial. See our <a href="/refund">Refund Policy</a>" 텍스트를 추가하여 환불 정책 접근성을 높입니다.</p>
+
+<div class="divider"></div>
+
+<!-- ===== 9. Summary ===== -->
+<h2>9. Dev1 전달 요약</h2>
+
+<div class="summary-box" style="background:linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%); border-color:#FECACA;">
+  <h3 style="margin-top:0; color:var(--red);">🔴 P0 — 즉시 (1일)</h3>
+  <ol style="font-size:14px;">
+    <li><strong>Refund Policy 페이지 생성</strong> — <code>src/pages/refund/page.tsx</code>, Terms/Privacy와 동일 구조, EN/KO 이중 언어</li>
+    <li><strong>라우터 등록</strong> — <code>/refund</code></li>
+    <li><strong>Footer 3곳에 링크 추가</strong> — home/page.tsx, MarketingFooter.tsx, Terms 크로스링크</li>
+  </ol>
+</div>
+
+<div class="summary-box" style="background:var(--amber-light); border-color:#FDE68A;">
+  <h3 style="margin-top:0; color:var(--amber);">🟡 P1 — 후속 (1일)</h3>
+  <ol style="font-size:14px;">
+    <li><strong>Cookie Policy 페이지 생성</strong> — <code>src/pages/cookies/page.tsx</code></li>
+    <li><strong>Footer에 Cookie Policy 링크 추가</strong></li>
+  </ol>
+</div>
+
+<div class="summary-box">
+  <h3 style="margin-top:0; color:var(--indigo);">🔵 P2 — 향후</h3>
+  <ol style="font-size:14px;">
+    <li>Acceptable Use Policy 작성</li>
+    <li>Data Processing Agreement (Enterprise 고객용)</li>
+    <li>SLA 페이지 (Enterprise 플랜용)</li>
+    <li>쿠키 동의 배너 UI 구현 (EU 사용자 대상)</li>
+  </ol>
+</div>
+
+<div style="margin-top:40px; padding-top:16px; border-top:1px solid var(--slate-200); font-size:12px; color:var(--slate-500);">
+  <p>문서 작성: PM | 날짜: 2026-03-30 | 버전: 1.0</p>
+  <p>분석 대상: home/page.tsx (footer), MarketingFooter.tsx, terms/page.tsx, privacy/page.tsx, auth/page.tsx, router/config.tsx</p>
+  <p>참고 자료: Paddle Help Center (refund processing), Paddle Checkout Buyer Terms, GDPR/CCPA SaaS compliance guides</p>
+</div>
+
+</div>
+</body>
+</html>

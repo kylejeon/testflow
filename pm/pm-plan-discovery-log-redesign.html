@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Discovery Log 탭 UI 개선 기획안</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.7; }
+  .doc { max-width: 960px; margin: 0 auto; padding: 3rem 2rem 4rem; }
+
+  /* Header */
+  .doc-header { margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 2px solid #E2E8F0; }
+  .doc-badge { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; font-weight: 700;
+    color: #6366F1; background: #EEF2FF; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem;
+    text-transform: uppercase; letter-spacing: 0.04em; }
+  .doc-badge i { font-size: 0.875rem; }
+  .doc-title { font-size: 2rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+  .doc-subtitle { font-size: 1rem; color: #64748B; margin-bottom: 1.25rem; }
+  .doc-meta { display: flex; gap: 1.5rem; font-size: 0.8125rem; color: #94A3B8; flex-wrap: wrap; }
+  .doc-meta span { display: flex; align-items: center; gap: 0.25rem; }
+  .doc-meta i { font-size: 0.9375rem; }
+</style>
+<style>
+  /* Section styles */
+  .section { margin-bottom: 3rem; }
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem;
+    border-radius: 50%; background: #6366F1; color: #fff; font-size: 0.75rem; font-weight: 800; margin-right: 0.5rem; vertical-align: middle; }
+  .section-title { font-size: 1.375rem; font-weight: 800; color: #0F172A; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+    padding-bottom: 0.75rem; border-bottom: 1px solid #E2E8F0; }
+  .section-title i { font-size: 1.25rem; color: #6366F1; }
+  h3 { font-size: 1rem; font-weight: 700; color: #1E293B; margin: 1.5rem 0 0.75rem; }
+  p { margin-bottom: 0.875rem; color: #334155; font-size: 0.9375rem; }
+
+  /* Cards */
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+  .card-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.375rem; }
+  .card-title i { font-size: 1rem; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.8125rem; }
+  th { background: #F8FAFC; font-weight: 600; color: #64748B; text-transform: uppercase; font-size: 0.6875rem; letter-spacing: 0.04em;
+    padding: 0.625rem 0.875rem; text-align: left; border-bottom: 1px solid #E2E8F0; }
+  td { padding: 0.625rem 0.875rem; border-bottom: 1px solid #F1F5F9; color: #334155; vertical-align: top; }
+  tr:hover { background: #FAFAFF; }
+</style>
+<style>
+  /* Tags & badges */
+  .tag { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600;
+    padding: 0.1875rem 0.5rem; border-radius: 9999px; }
+  .tag-indigo { background: #EEF2FF; color: #4338CA; }
+  .tag-green { background: #F0FDF4; color: #166534; }
+  .tag-amber { background: #FEF3C7; color: #92400E; }
+  .tag-red { background: #FEF2F2; color: #991B1B; }
+  .tag-blue { background: #DBEAFE; color: #1E40AF; }
+  .tag-gray { background: #F1F5F9; color: #475569; }
+
+  /* Pros/Cons */
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .pros, .cons { padding: 1rem 1.25rem; border-radius: 0.625rem; }
+  .pros { background: #F0FDF4; border: 1px solid #BBF7D0; }
+  .cons { background: #FEF2F2; border: 1px solid #FECACA; }
+  .pros h4 { color: #166534; font-size: 0.8125rem; margin-bottom: 0.5rem; }
+  .cons h4 { color: #991B1B; font-size: 0.8125rem; margin-bottom: 0.5rem; }
+  .pros li, .cons li { font-size: 0.8125rem; margin-bottom: 0.25rem; color: #334155; }
+
+  /* Recommendation highlight */
+  .rec-box { background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); border: 2px solid #6366F1;
+    border-radius: 0.75rem; padding: 1.5rem; margin: 1.5rem 0; position: relative; }
+  .rec-box::before { content: '★ PM 추천안'; position: absolute; top: -0.75rem; left: 1.25rem;
+    background: #6366F1; color: #fff; font-size: 0.6875rem; font-weight: 700; padding: 0.1875rem 0.75rem;
+    border-radius: 9999px; }
+  .rec-box p { color: #312E81; }
+</style>
+<style>
+  /* Comparison grid */
+  .compare-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.5rem 0; }
+  .compare-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; position: relative; }
+  .compare-card.recommended { border-color: #6366F1; border-width: 2px; }
+  .compare-card.recommended::after { content: '추천'; position: absolute; top: -0.5rem; right: 0.75rem;
+    background: #6366F1; color: #fff; font-size: 0.5625rem; font-weight: 700; padding: 0.125rem 0.5rem;
+    border-radius: 9999px; }
+  .compare-card h4 { font-size: 0.9375rem; font-weight: 700; color: #0F172A; margin-bottom: 0.25rem; }
+  .compare-card .desc { font-size: 0.8125rem; color: #64748B; margin-bottom: 0.75rem; }
+  .score-row { display: flex; align-items: center; gap: 0.375rem; margin-bottom: 0.375rem; font-size: 0.75rem; }
+  .score-label { width: 5rem; color: #64748B; }
+  .score-bar { flex: 1; height: 6px; background: #F1F5F9; border-radius: 3px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 3px; }
+  .score-val { width: 2rem; text-align: right; font-weight: 700; color: #0F172A; font-size: 0.6875rem; }
+
+  /* Mockup placeholder */
+  .mockup { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; overflow: hidden; margin: 1.5rem 0; }
+  .mockup-header { background: #F8FAFC; padding: 0.625rem 1rem; border-bottom: 1px solid #E2E8F0;
+    font-size: 0.6875rem; font-weight: 600; color: #64748B; display: flex; align-items: center; gap: 0.375rem; }
+  .mockup-body { padding: 1.25rem; }
+
+  /* List styling */
+  ul, ol { padding-left: 1.25rem; margin-bottom: 0.875rem; }
+  li { font-size: 0.9375rem; color: #334155; margin-bottom: 0.375rem; }
+
+  /* Footer */
+  .doc-footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 2px solid #E2E8F0;
+    display: flex; justify-content: space-between; font-size: 0.75rem; color: #94A3B8; }
+
+  /* Flow diagram */
+  .flow { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0; flex-wrap: wrap; }
+  .flow-step { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem; font-weight: 500; color: #334155; }
+  .flow-arrow { color: #CBD5E1; font-size: 1rem; }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <!-- ═══ HEADER ═══ -->
+  <div class="doc-header">
+    <div class="doc-badge"><i class="ri-flashlight-fill"></i> PM 기획안</div>
+    <h1 class="doc-title">Discovery Log 탭 UI 개선 기획안</h1>
+    <p class="doc-subtitle">탐색적 테스팅 세션 관리를 위한 Discovery Log UI 리디자인 방향 수립</p>
+    <div class="doc-meta">
+      <span><i class="ri-user-line"></i> Author: Kyle (PM)</span>
+      <span><i class="ri-calendar-line"></i> 2026-03-27</span>
+      <span><i class="ri-git-branch-line"></i> v1.0</span>
+      <span><i class="ri-lock-line"></i> Internal — CEO Review</span>
+    </div>
+  </div>
+  <!-- ═══ SECTION 1 ═══ -->
+  <div class="section" id="s1">
+    <div class="section-title"><span class="section-num">1</span><i class="ri-focus-3-line"></i> Discovery Log의 목적과 사용 시나리오 분석</div>
+
+    <h3>1-1. Discovery Log란?</h3>
+    <p>Discovery Log는 탐색적 테스팅(Exploratory Testing) 세션을 구조화하여 관리하는 Testably의 핵심 탭입니다. 사전에 정의된 Test Case를 실행하는 것과 달리, 테스터가 자유롭게 제품을 탐색하면서 발견한 버그, 이슈, 관찰 사항을 실시간으로 기록합니다.</p>
+
+    <h3>1-2. 핵심 사용 시나리오</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-search-eye-line" style="color:#6366F1"></i> 시나리오 A: 타임박스 탐색 세션</div>
+      <p>QA 엔지니어가 1~2시간의 타임박스를 설정하고, 특정 영역(예: 결제 플로우)을 자유 탐색합니다. 세션 중 발견한 버그를 즉시 기록하고, 세션 종료 시 요약 리포트를 생성합니다.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ri-team-line" style="color:#F59E0B"></i> 시나리오 B: 팀 기반 탐색</div>
+      <p>여러 테스터가 동시에 다른 영역을 탐색합니다. PM/리드는 대시보드에서 진행 상황, 발견 버그 수, 활성 세션을 모니터링합니다.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ri-bug-line" style="color:#EF4444"></i> 시나리오 C: 버그 트리아지 연동</div>
+      <p>탐색 세션에서 발견된 버그를 Jira/Linear 티켓으로 자동 연동하고, 마일스톤과 연결하여 릴리스 판단 근거로 활용합니다.</p>
+    </div>
+    <h3>1-3. 현재 UI 구조 (As-Is)</h3>
+    <p>현재 Discovery Log 탭(<code>18-discovery-compact.html</code> 기준)은 다음과 같은 구조입니다:</p>
+    <table>
+      <thead><tr><th>영역</th><th>현재 구현</th><th>개선 필요 사항</th></tr></thead>
+      <tbody>
+        <tr><td>헤더</td><td>단독 page-title + "New Session" 버튼</td><td>2-row 통일 헤더 미적용</td></tr>
+        <tr><td>통계 카드</td><td>3개 stat-card (Active/Bugs/Avg Time)</td><td>유지 가능, 위치 재검토</td></tr>
+        <tr><td>서브탭</td><td>Active / Closed (단순 2탭)</td><td>All / Open / Resolved / Dismissed 4탭으로 확장</td></tr>
+        <tr><td>콘텐츠</td><td>카드 형태 세션 리스트</td><td>카드 vs 테이블 vs 하이브리드 검토 필요</td></tr>
+        <tr><td>검색/필터</td><td>없음</td><td>검색, 필터, 정렬 필요</td></tr>
+        <tr><td>세션 상세</td><td>카드 내 인라인 표시</td><td>사이드 패널 또는 모달 검토</td></tr>
+      </tbody>
+    </table>
+
+    <h3>1-4. 핵심 데이터 필드</h3>
+    <p>각 Discovery Log 항목이 가져야 하는 필드:</p>
+    <table>
+      <thead><tr><th>필드</th><th>타입</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>DL-ID</td><td>Auto</td><td>자동 부여 고유 번호 (DL-001, DL-002...)</td></tr>
+        <tr><td>세션 이름</td><td>Text</td><td>탐색 세션의 제목</td></tr>
+        <tr><td>Charter/Mission</td><td>Text</td><td>세션의 목적과 범위 설명</td></tr>
+        <tr><td>상태</td><td>Enum</td><td>Open / In Progress / Resolved / Dismissed</td></tr>
+        <tr><td>담당자</td><td>User[]</td><td>세션 수행 테스터 (복수 가능)</td></tr>
+        <tr><td>태그</td><td>Tag[]</td><td>자유 태그 (payments, auth, edge-case 등)</td></tr>
+        <tr><td>마일스톤</td><td>Ref</td><td>연결된 마일스톤</td></tr>
+        <tr><td>발견 버그 수</td><td>Number</td><td>세션 중 기록된 버그 카운트</td></tr>
+        <tr><td>시작/종료 시간</td><td>DateTime</td><td>타임박스 추적용</td></tr>
+        <tr><td>소요 시간</td><td>Duration</td><td>자동 계산 (종료 - 시작)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- ═══ SECTION 2 ═══ -->
+  <div class="section" id="s2">
+    <div class="section-title"><span class="section-num">2</span><i class="ri-bar-chart-grouped-line"></i> 경쟁사 벤치마킹</div>
+
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4><i class="ri-test-tube-line" style="color:#3B82F6"></i> TestRail</h4>
+        <p class="desc">업계 표준 테스트 관리 도구. 2025년 AI 기반 탐색적 테스팅 기능 추가.</p>
+        <div class="score-row">
+          <span class="score-label">탐색 지원</span>
+          <div class="score-bar"><div class="score-fill" style="width:75%;background:#3B82F6"></div></div>
+          <span class="score-val">7.5</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">UI/UX</span>
+          <div class="score-bar"><div class="score-fill" style="width:60%;background:#3B82F6"></div></div>
+          <span class="score-val">6.0</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">세션 관리</span>
+          <div class="score-bar"><div class="score-fill" style="width:70%;background:#3B82F6"></div></div>
+          <span class="score-val">7.0</span>
+        </div>
+      </div>
+      <div class="compare-card">
+        <h4><i class="ri-links-line" style="color:#8B5CF6"></i> Zephyr Scale</h4>
+        <p class="desc">Jira 네이티브 통합. Capture 확장으로 탐색적 테스팅 지원.</p>
+        <div class="score-row">
+          <span class="score-label">탐색 지원</span>
+          <div class="score-bar"><div class="score-fill" style="width:65%;background:#8B5CF6"></div></div>
+          <span class="score-val">6.5</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">UI/UX</span>
+          <div class="score-bar"><div class="score-fill" style="width:55%;background:#8B5CF6"></div></div>
+          <span class="score-val">5.5</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">세션 관리</span>
+          <div class="score-bar"><div class="score-fill" style="width:60%;background:#8B5CF6"></div></div>
+          <span class="score-val">6.0</span>
+        </div>
+      </div>
+
+      <div class="compare-card recommended">
+        <h4><i class="ri-sparkling-2-fill" style="color:#6366F1"></i> Qase</h4>
+        <p class="desc">모던 UI/UX 중심. 구조화된 탐색적 테스팅 세션 기본 지원.</p>
+        <div class="score-row">
+          <span class="score-label">탐색 지원</span>
+          <div class="score-bar"><div class="score-fill" style="width:85%;background:#6366F1"></div></div>
+          <span class="score-val">8.5</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">UI/UX</span>
+          <div class="score-bar"><div class="score-fill" style="width:90%;background:#6366F1"></div></div>
+          <span class="score-val">9.0</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">세션 관리</span>
+          <div class="score-bar"><div class="score-fill" style="width:80%;background:#6366F1"></div></div>
+          <span class="score-val">8.0</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>2-1. 경쟁사별 핵심 특징 비교</h3>
+    <table>
+      <thead><tr><th>기능</th><th>TestRail</th><th>Zephyr Scale</th><th>Qase</th><th>Testably (목표)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>탐색적 세션 생성</td>
+          <td><span class="tag tag-green">지원</span></td>
+          <td><span class="tag tag-amber">Capture 필요</span></td>
+          <td><span class="tag tag-green">기본 지원</span></td>
+          <td><span class="tag tag-indigo">강화 예정</span></td>
+        </tr>
+        <tr>
+          <td>타임박스 관리</td>
+          <td><span class="tag tag-green">지원</span></td>
+          <td><span class="tag tag-red">미지원</span></td>
+          <td><span class="tag tag-green">지원</span></td>
+          <td><span class="tag tag-indigo">지원 예정</span></td>
+        </tr>
+        <tr>
+          <td>세션 중 버그 기록</td>
+          <td><span class="tag tag-green">지원</span></td>
+          <td><span class="tag tag-green">Jira 연동</span></td>
+          <td><span class="tag tag-green">인라인 기록</span></td>
+          <td><span class="tag tag-indigo">인라인 + 연동</span></td>
+        </tr>
+        <tr>
+          <td>Charter/Mission 정의</td>
+          <td><span class="tag tag-green">지원</span></td>
+          <td><span class="tag tag-red">미지원</span></td>
+          <td><span class="tag tag-green">지원</span></td>
+          <td><span class="tag tag-indigo">지원 예정</span></td>
+        </tr>
+        <tr>
+          <td>AI 요약/분석</td>
+          <td><span class="tag tag-green">2025 추가</span></td>
+          <td><span class="tag tag-red">미지원</span></td>
+          <td><span class="tag tag-amber">베타</span></td>
+          <td><span class="tag tag-indigo">차별화 포인트</span></td>
+        </tr>
+        <tr>
+          <td>마일스톤 연결</td>
+          <td><span class="tag tag-amber">제한적</span></td>
+          <td><span class="tag tag-green">Jira 연동</span></td>
+          <td><span class="tag tag-amber">제한적</span></td>
+          <td><span class="tag tag-green">네이티브 지원</span></td>
+        </tr>
+        <tr>
+          <td>콘텐츠 표시</td>
+          <td>테이블</td>
+          <td>테이블 (Jira 리스트)</td>
+          <td>카드 + 리스트 혼합</td>
+          <td>검토 중 (본 기획안)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>2-2. 벤치마킹 인사이트</h3>
+    <p><strong>Qase가 UX 벤치마크:</strong> 모던 UI, 구조화된 세션, 직관적 워크플로우. 다만 대규모 팀 사용 시 확장성 부족.</p>
+    <p><strong>TestRail은 기능 벤치마크:</strong> AI 기반 탐색적 테스팅 분석이 강점이나, 레거시 UI가 사용성을 저해.</p>
+    <p><strong>Testably의 기회:</strong> Qase 수준의 UX + TestRail 수준의 기능 + 네이티브 마일스톤/런 연동으로 차별화 가능.</p>
+  </div>
+  <!-- ═══ SECTION 3: OPTION A — CARD ═══ -->
+  <div class="section" id="s3">
+    <div class="section-title"><span class="section-num">3</span><i class="ri-layout-masonry-line"></i> 옵션 A: 카드 형태 유지 + 통일 헤더</div>
+
+    <p>현재 <code>18-discovery-compact.html</code>의 카드 레이아웃을 유지하면서, 2-row 통일 헤더를 적용하고 검색/필터를 추가하는 방안입니다.</p>
+
+    <div class="mockup">
+      <div class="mockup-header"><i class="ri-artboard-line"></i> 와이어프레임 — 카드 형태</div>
+      <div class="mockup-body" style="background:#F8FAFC; font-family: 'SF Mono','Fira Code',monospace; font-size:0.75rem; color:#64748B; line-height:1.8;">
+        ┌─────────────────────────────────────────────────────────────────┐<br>
+        │ <strong style="color:#6366F1">Row 1</strong>: [T] Testably · Stellar Health EMR · Dashboard · TC · Runs · MS · Docs · <strong style="color:#6366F1">Discovery</strong> │<br>
+        │ <strong style="color:#8B5CF6">Row 2</strong>: All(15) · Open(6) · Resolved(7) · Dismissed(2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[15 entries] [+ New Entry] │<br>
+        ├─────────────────────────────────────────────────────────────────┤<br>
+        │ 🔍 Search sessions...&nbsp;&nbsp;&nbsp;[Filter ▾] [Sort ▾]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        ├─────────────────────────────────────────────────────────────────┤<br>
+        │ ┌───────────────────────────────────────────────────────────┐  │<br>
+        │ │ <strong style="color:#0F172A">Payment Flow Edge Cases</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🔵 In Progress  │  │<br>
+        │ │ Explore edge cases in 3DS verification...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│  │<br>
+        │ │ 📅 Mar 25 · 10:30 AM – In Progress · ~2h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│  │<br>
+        │ │ [payments] [3ds] [edge-case]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│  │<br>
+        │ │ 🏁 Sprint 24 · ⏱ 2h ago · 🐛 3 bugs&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SK] │  │<br>
+        │ └───────────────────────────────────────────────────────────┘  │<br>
+        │ ┌───────────────────────────────────────────────────────────┐  │<br>
+        │ │ <strong style="color:#0F172A">OAuth Token Refresh Scenarios</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🔵 In Progress  │  │<br>
+        │ │ ...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│  │<br>
+        │ └───────────────────────────────────────────────────────────┘  │<br>
+        └─────────────────────────────────────────────────────────────────┘<br>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>✅ 장점 (Pros)</h4>
+        <ul>
+          <li>기존 디자인 자산 재활용 → 개발 비용 최소</li>
+          <li>Charter/Mission 텍스트를 자연스럽게 표시 가능</li>
+          <li>세션의 "스토리" 성격과 카드 UI가 잘 맞음</li>
+          <li>태그, 마일스톤 등 메타데이터 시각적 표현 용이</li>
+          <li>모바일/태블릿 반응형 대응 쉬움</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>❌ 단점 (Cons)</h4>
+        <ul>
+          <li>세션이 50개 이상일 때 스크롤 과다 → 정보 밀도 낮음</li>
+          <li>열 기준 정렬이 불가 (날짜순, 버그 수순 등)</li>
+          <li>대량 데이터 비교/스캔 시 비효율적</li>
+          <li>일괄 작업(다중 선택, 상태 일괄 변경) 구현 어려움</li>
+          <li>Testably 다른 탭(TC, Runs)이 테이블인데 일관성 저해</li>
+        </ul>
+      </div>
+    </div>
+
+    <p><strong>적합 대상:</strong> 세션 수가 적고(30개 이하), Charter 중심으로 세션을 관리하는 소규모 팀.</p>
+  </div>
+  <!-- ═══ SECTION 4: OPTION B — TABLE ═══ -->
+  <div class="section" id="s4">
+    <div class="section-title"><span class="section-num">4</span><i class="ri-table-line"></i> 옵션 B: 테이블 형태</div>
+
+    <p>Test Cases, Runs & Results 탭과 동일한 테이블 레이아웃을 적용합니다. 좌측 사이드바에는 태그 또는 마일스톤 기반 필터 트리를 배치합니다.</p>
+
+    <div class="mockup">
+      <div class="mockup-header"><i class="ri-artboard-line"></i> 와이어프레임 — 테이블 형태</div>
+      <div class="mockup-body" style="background:#F8FAFC; font-family: 'SF Mono','Fira Code',monospace; font-size:0.75rem; color:#64748B; line-height:1.8;">
+        ┌─────────────────────────────────────────────────────────────────┐<br>
+        │ <strong style="color:#6366F1">Row 1</strong>: [T] Testably · Stellar Health EMR · ... · <strong style="color:#6366F1">Discovery</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │ <strong style="color:#8B5CF6">Row 2</strong>: All(15) · Open(6) · Resolved(7) · Dismissed(2)&nbsp;&nbsp;&nbsp;[+ New Entry] │<br>
+        ├──────────┬──────────────────────────────────────────────────────┤<br>
+        │ Sidebar  │ 🔍 Search...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Filter ▾] [Sort ▾]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │──────────│──────────────────────────────────────────────────────│<br>
+        │ All (15) │ ☐ ID&nbsp;&nbsp;&nbsp;SESSION&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;STATUS&nbsp;&nbsp;BUGS&nbsp;&nbsp;ASSIGNEE&nbsp;&nbsp;UPDATED │<br>
+        │ Sprint24 │ ☐ DL-15 Payment Flow..&nbsp;&nbsp;🔵 Open&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;&nbsp;[SK]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2h ago  │<br>
+        │ Sprint23 │ ☐ DL-14 OAuth Token..&nbsp;&nbsp;&nbsp;🔵 Open&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;&nbsp;[AP]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5h ago  │<br>
+        │ payments │ ☐ DL-13 Deep Link Nav..&nbsp;🟡 New&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;&nbsp;[JL,MC]&nbsp;&nbsp;&nbsp;today   │<br>
+        │ auth     │ ☐ DL-12 Cart Edge..&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🟢 Resolved 5&nbsp;&nbsp;[SK]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1d ago  │<br>
+        │ mobile   │ ☐ DL-11 API Timeout..&nbsp;&nbsp;&nbsp;🟢 Resolved 1&nbsp;&nbsp;[JL]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2d ago  │<br>
+        └──────────┴──────────────────────────────────────────────────────┘<br>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>✅ 장점 (Pros)</h4>
+        <ul>
+          <li>높은 정보 밀도 → 한 화면에 15~25개 세션 표시 가능</li>
+          <li>열 기준 정렬 (날짜, 버그 수, 상태) 네이티브 지원</li>
+          <li>다중 선택 + 일괄 작업 자연스러움</li>
+          <li>TC, Runs 탭과 동일한 패턴 → 사용자 학습 비용 제로</li>
+          <li>좌측 사이드바로 태그/마일스톤 필터링 가능</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>❌ 단점 (Cons)</h4>
+        <ul>
+          <li>Charter/Mission 텍스트를 테이블 셀에 표시하기 어려움</li>
+          <li>세션의 "스토리/컨텍스트" 전달력 약화</li>
+          <li>태그가 많을 경우 셀 너비 초과 문제</li>
+          <li>카드 대비 시각적 풍부함 감소</li>
+        </ul>
+      </div>
+    </div>
+
+    <p><strong>적합 대상:</strong> 세션이 많고(50개 이상), 데이터 기반으로 세션을 관리/비교하는 대규모 QA 팀.</p>
+  </div>
+  <!-- ═══ SECTION 5: OPTION C — HYBRID ═══ -->
+  <div class="section" id="s5">
+    <div class="section-title"><span class="section-num">5</span><i class="ri-layout-column-line"></i> 옵션 C: 하이브리드 (테이블 기본 + 확장 카드)</div>
+
+    <p>기본 뷰는 테이블이되, 각 행을 클릭/확장하면 카드 형태의 상세 패널이 인라인으로 펼쳐지는 하이브리드 방식입니다. Qase의 접근법을 참고하되 Testably만의 패턴으로 발전시킵니다.</p>
+
+    <div class="mockup">
+      <div class="mockup-header"><i class="ri-artboard-line"></i> 와이어프레임 — 하이브리드</div>
+      <div class="mockup-body" style="background:#F8FAFC; font-family: 'SF Mono','Fira Code',monospace; font-size:0.75rem; color:#64748B; line-height:1.8;">
+        ┌──────────┬──────────────────────────────────────────────────────┐<br>
+        │ Sidebar  │ ☐ ID&nbsp;&nbsp;&nbsp;SESSION&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;STATUS&nbsp;&nbsp;BUGS&nbsp;&nbsp;ASSIGNEE&nbsp;&nbsp;UPDATED │<br>
+        │──────────│──────────────────────────────────────────────────────│<br>
+        │ All (15) │ ☐ DL-15 Payment Flow..&nbsp;&nbsp;🔵 Open&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;&nbsp;[SK]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2h ago  │<br>
+        │ Sprint24 │ ▼ ─────────────────────────────────────────────── ▼ │<br>
+        │ Sprint23 │ │ <strong style="color:#0F172A">Charter:</strong> Explore edge cases in 3DS verification │ │<br>
+        │ payments │ │ timeouts, concurrent payment sessions, and...  │ │<br>
+        │ auth     │ │ 📅 Mar 25, 10:30 AM · ⏱ 2h elapsed&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ │<br>
+        │ mobile   │ │ 🏷 [payments] [3ds] [edge-case]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ │<br>
+        │          │ │ 🏁 Sprint 24 Release · 🐛 3 bugs linked&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ │<br>
+        │          │ │ [View Detail →]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ │<br>
+        │          │ ▲ ─────────────────────────────────────────────── ▲ │<br>
+        │          │ ☐ DL-14 OAuth Token..&nbsp;&nbsp;&nbsp;🔵 Open&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;&nbsp;[AP]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5h ago  │<br>
+        │          │ ☐ DL-13 Deep Link..&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🟡 New&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;&nbsp;[JL,MC]&nbsp;&nbsp;&nbsp;today   │<br>
+        └──────────┴──────────────────────────────────────────────────────┘<br>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>✅ 장점 (Pros)</h4>
+        <ul>
+          <li>테이블의 정보 밀도 + 카드의 컨텍스트 전달력 동시 확보</li>
+          <li>기본 뷰는 깔끔한 테이블 → 확장 시 풍부한 정보 제공</li>
+          <li>정렬, 다중 선택, 일괄 작업 모두 가능</li>
+          <li>Charter를 확장 영역에서 전체 표시 가능</li>
+          <li>TC/Runs 탭과 기본 패턴 일치 + Discovery만의 확장 차별화</li>
+          <li>사이드바 필터 트리 동일 적용 가능</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>❌ 단점 (Cons)</h4>
+        <ul>
+          <li>확장/접기 인터랙션 구현 비용 추가</li>
+          <li>동시에 여러 행이 확장되면 레이아웃 복잡해질 수 있음</li>
+          <li>키보드 내비게이션 설계 필요 (확장 상태에서 J/K 동작)</li>
+        </ul>
+      </div>
+    </div>
+
+    <p><strong>적합 대상:</strong> 다양한 규모의 팀 모두. 테이블의 효율성과 카드의 표현력을 모두 원하는 경우.</p>
+  </div>
+  <!-- ═══ SECTION 6: PM RECOMMENDATION ═══ -->
+  <div class="section" id="s6">
+    <div class="section-title"><span class="section-num">6</span><i class="ri-star-fill"></i> PM 추천안 + 근거</div>
+
+    <div class="rec-box">
+      <h3 style="color:#312E81; margin-top:0.5rem;">옵션 C: 하이브리드 (테이블 기본 + 확장 카드) 추천</h3>
+      <p>Discovery Log의 특성상 "세션의 컨텍스트(Charter)"가 중요하면서도, 다른 Testably 탭과의 UI 일관성이 필요합니다. 하이브리드 방식은 두 요구사항을 모두 충족합니다.</p>
+    </div>
+
+    <h3>6-1. 추천 근거 매트릭스</h3>
+    <table>
+      <thead><tr><th>평가 기준 (가중치)</th><th>옵션 A 카드</th><th>옵션 B 테이블</th><th>옵션 C 하이브리드</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>UI 일관성</strong> (25%)</td>
+          <td><span class="tag tag-red">3/10</span> 다른 탭과 불일치</td>
+          <td><span class="tag tag-green">9/10</span> 완전 일치</td>
+          <td><span class="tag tag-green">8/10</span> 기본 뷰 일치</td>
+        </tr>
+        <tr>
+          <td><strong>정보 밀도</strong> (20%)</td>
+          <td><span class="tag tag-red">4/10</span> 스크롤 과다</td>
+          <td><span class="tag tag-green">9/10</span> 매우 높음</td>
+          <td><span class="tag tag-green">8/10</span> 높음+확장</td>
+        </tr>
+        <tr>
+          <td><strong>컨텍스트 전달</strong> (20%)</td>
+          <td><span class="tag tag-green">9/10</span> Charter 전체 표시</td>
+          <td><span class="tag tag-red">3/10</span> 셀 제한</td>
+          <td><span class="tag tag-green">8/10</span> 확장 시 전체</td>
+        </tr>
+        <tr>
+          <td><strong>확장성</strong> (15%)</td>
+          <td><span class="tag tag-amber">5/10</span> 50개+ 시 문제</td>
+          <td><span class="tag tag-green">9/10</span> 제한 없음</td>
+          <td><span class="tag tag-green">9/10</span> 제한 없음</td>
+        </tr>
+        <tr>
+          <td><strong>개발 비용</strong> (10%)</td>
+          <td><span class="tag tag-green">9/10</span> 기존 재활용</td>
+          <td><span class="tag tag-green">8/10</span> 기존 패턴</td>
+          <td><span class="tag tag-amber">6/10</span> 확장 로직 추가</td>
+        </tr>
+        <tr>
+          <td><strong>차별화</strong> (10%)</td>
+          <td><span class="tag tag-amber">5/10</span> 일반적</td>
+          <td><span class="tag tag-red">3/10</span> 평범</td>
+          <td><span class="tag tag-green">9/10</span> 독특한 UX</td>
+        </tr>
+        <tr style="background:#EEF2FF; font-weight:700;">
+          <td><strong>가중 합산</strong></td>
+          <td><span class="tag tag-gray">5.65</span></td>
+          <td><span class="tag tag-blue">7.15</span></td>
+          <td><span class="tag tag-indigo">8.05</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>6-2. 구현 로드맵</h3>
+    <div class="flow">
+      <div class="flow-step" style="background:#EEF2FF; border-color:#C7D2FE;"><strong>Phase 1</strong> (2주)<br>테이블 기본 뷰 + 2-row 헤더</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step" style="background:#F0FDF4; border-color:#BBF7D0;"><strong>Phase 2</strong> (1주)<br>확장 카드 인터랙션</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step" style="background:#FEF3C7; border-color:#FDE68A;"><strong>Phase 3</strong> (1주)<br>검색/필터/정렬 + 사이드바</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step" style="background:#FCE7F3; border-color:#FBCFE8;"><strong>Phase 4</strong> (1주)<br>키보드 단축키 + 폴리싱</div>
+    </div>
+  </div>
+  <!-- ═══ SECTION 7: UNIFIED HEADER ═══ -->
+  <div class="section" id="s7">
+    <div class="section-title"><span class="section-num">7</span><i class="ri-layout-top-line"></i> 2-Row 통일 헤더 적용</div>
+
+    <p><code>all-tabs-unified-header-design.html</code>에 정의된 Testably 2-row 통일 헤더 패턴을 Discovery Log에 그대로 적용합니다.</p>
+
+    <h3>7-1. Row 1 — 글로벌 내비게이션</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-layout-top-2-line" style="color:#6366F1"></i> 상단 헤더 (height: 3.25rem)</div>
+      <table>
+        <thead><tr><th>영역</th><th>구성 요소</th><th>스펙</th></tr></thead>
+        <tbody>
+          <tr><td>왼쪽</td><td>로고 + 프로젝트 셀렉터</td><td>[T] Testably · "Stellar Health EMR" ▾</td></tr>
+          <tr><td>중앙</td><td>6개 탭 내비게이션</td><td>Dashboard · Test Cases · Runs · Milestones · Documents · <strong>Discovery Log</strong></td></tr>
+          <tr><td>오른쪽</td><td>유틸리티 아이콘</td><td>🔍 검색 · 🔔 알림 · ⌨ 단축키 · 👤 아바타</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:0.5rem; font-size:0.8125rem; color:#64748B;">Discovery Log 탭 아이콘: <code>ri-search-eye-line</code> (컬러 아이콘 스타일 적용)</p>
+    </div>
+
+    <h3>7-2. Row 2 — Discovery Log 서브탭</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-menu-line" style="color:#8B5CF6"></i> 서브탭 행 (height: 2.625rem)</div>
+      <table>
+        <thead><tr><th>위치</th><th>요소</th><th>디자인 토큰</th></tr></thead>
+        <tbody>
+          <tr><td>왼쪽 탭</td><td>All <span class="tag tag-indigo">15</span></td><td><code>ri-list-check-3</code> color: #6366F1</td></tr>
+          <tr><td></td><td>Open <span class="tag tag-amber">6</span></td><td><code>ri-radar-fill</code> color: #F59E0B</td></tr>
+          <tr><td></td><td>Resolved <span class="tag tag-green">7</span></td><td><code>ri-checkbox-circle-fill</code> color: #22C55E</td></tr>
+          <tr><td></td><td>Dismissed <span class="tag tag-gray">2</span></td><td><code>ri-close-circle-fill</code> color: #94A3B8</td></tr>
+          <tr><td>오른쪽</td><td>카운트 칩</td><td>"15 entries" · border: #E2E8F0, bg: #F8FAFC</td></tr>
+          <tr><td></td><td>CTA 버튼</td><td>"+ New Entry" · bg: #6366F1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>7-3. 헤더 절약 효과</h3>
+    <p>기존 Discovery Log는 별도 <code>page-head</code>(~56px) + <code>sub-tabs</code>(~40px) = <strong>96px</strong>을 헤더에 사용했습니다. 2-row 통일 헤더 적용 시 Row 2(42px)에 서브탭과 액션 버튼을 모두 통합하므로, 약 <strong>54px</strong>의 수직 공간을 절약합니다. 이는 테이블 뷰에서 약 1.5개 행을 추가로 표시할 수 있는 공간입니다.</p>
+  </div>
+  <!-- ═══ SECTION 8: SEARCH / FILTER / SORT ═══ -->
+  <div class="section" id="s8">
+    <div class="section-title"><span class="section-num">8</span><i class="ri-filter-3-line"></i> 검색 / 필터 / 정렬 기능</div>
+
+    <h3>8-1. 검색 (Search)</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-search-line" style="color:#6366F1"></i> 검색 바 스펙</div>
+      <table>
+        <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+        <tbody>
+          <tr><td>위치</td><td>콘텐츠 영역 상단 toolbar (서브탭 행 바로 아래)</td></tr>
+          <tr><td>Placeholder</td><td>"Search sessions by name, charter, or tag..."</td></tr>
+          <tr><td>검색 대상</td><td>세션 이름, Charter/Mission 텍스트, 태그, DL-ID</td></tr>
+          <tr><td>동작</td><td>입력 시 실시간 필터링 (debounce 300ms)</td></tr>
+          <tr><td>단축키</td><td><kbd>/</kbd> 키로 검색창 포커스 (Focus Mode와 동일 패턴)</td></tr>
+          <tr><td>디자인</td><td>TC/Runs 탭의 <code>list-search</code> 컴포넌트 재사용</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8-2. 필터 (Filter)</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-filter-3-line" style="color:#F59E0B"></i> 필터 옵션</div>
+      <table>
+        <thead><tr><th>필터 기준</th><th>타입</th><th>옵션</th></tr></thead>
+        <tbody>
+          <tr><td>상태 (Status)</td><td>Multi-select</td><td>Open, In Progress, Resolved, Dismissed</td></tr>
+          <tr><td>담당자 (Assignee)</td><td>Multi-select</td><td>팀 멤버 목록 (아바타 표시)</td></tr>
+          <tr><td>마일스톤</td><td>Single-select</td><td>연결된 마일스톤 목록</td></tr>
+          <tr><td>태그</td><td>Multi-select</td><td>프로젝트 내 모든 태그</td></tr>
+          <tr><td>기간</td><td>Date range</td><td>시작일 ~ 종료일 (프리셋: 오늘/이번 주/이번 달)</td></tr>
+          <tr><td>버그 수</td><td>Range</td><td>최소 ~ 최대</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:0.5rem; font-size:0.8125rem; color:#64748B;">필터 팝오버 디자인은 TC 탭의 기존 필터 패턴을 재사용합니다. 활성 필터 수는 버튼 옆 뱃지로 표시합니다.</p>
+    </div>
+    <h3>8-3. 정렬 (Sort)</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-sort-desc" style="color:#8B5CF6"></i> 정렬 옵션</div>
+      <table>
+        <thead><tr><th>정렬 기준</th><th>방향</th><th>기본값</th></tr></thead>
+        <tbody>
+          <tr><td>최근 수정일</td><td>내림차순 (최신 먼저)</td><td><span class="tag tag-indigo">기본 정렬</span></td></tr>
+          <tr><td>생성일</td><td>내림차순 / 오름차순</td><td></td></tr>
+          <tr><td>세션 이름</td><td>A→Z / Z→A</td><td></td></tr>
+          <tr><td>발견 버그 수</td><td>내림차순 (많은 순)</td><td></td></tr>
+          <tr><td>소요 시간</td><td>내림차순 (긴 순)</td><td></td></tr>
+          <tr><td>상태</td><td>Open → In Progress → Resolved → Dismissed</td><td></td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:0.5rem; font-size:0.8125rem; color:#64748B;">테이블 헤더 클릭으로 해당 열 기준 정렬 토글. 현재 정렬 기준은 화살표 아이콘(▲/▼)으로 표시.</p>
+    </div>
+
+    <h3>8-4. 좌측 사이드바 필터 트리</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-node-tree" style="color:#16A34A"></i> 사이드바 구성 (width: 220px)</div>
+      <p>TC, Runs 탭과 동일한 사이드바 패턴을 적용합니다. Discovery Log에서는 마일스톤과 태그를 기준으로 트리를 구성합니다.</p>
+      <table>
+        <thead><tr><th>그룹</th><th>항목 예시</th></tr></thead>
+        <tbody>
+          <tr><td>전체 보기</td><td>All Sessions (15)</td></tr>
+          <tr><td>마일스톤별</td><td>Sprint 24 Release (5) · API v3 Certification (3) · ...</td></tr>
+          <tr><td>태그별</td><td>payments (4) · auth (3) · mobile (2) · edge-case (6)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- ═══ FOOTER ═══ -->
+  <div class="doc-footer">
+    <span>Testably PM Plan — Discovery Log UI 개선 기획안 v1.1 (세션 상세 페이지 추가)</span>
+    <span>From: Kyle (PM) · To: CEO Review + Desi Handoff · 2026-03-27</span>
+  </div>
+
+</div>
+</body>
+</html>
+
+  <!-- ═══ SECTION 9: SESSION DETAIL PAGE ═══ -->
+  <div class="section" id="s9">
+    <div class="section-title"><span class="section-num">9</span><i class="ri-pages-line"></i> 세션 상세 페이지 (Session Detail View)</div>
+
+    <p>Discovery Log 리스트에서 세션을 클릭하면 진입하는 전용 상세 페이지입니다. 테스터가 탐색적 테스팅을 실제로 수행하면서 실시간으로 발견 내용을 기록하는 핵심 워크스페이스입니다.</p>
+
+    <!-- 9-1. Layout -->
+    <h3>9-1. 전체 레이아웃</h3>
+    <div class="mockup">
+      <div class="mockup-header"><i class="ri-artboard-line"></i> 세션 상세 페이지 — 2컬럼 레이아웃</div>
+      <div class="mockup-body" style="background:#F8FAFC; font-family: 'SF Mono','Fira Code',monospace; font-size:0.7rem; color:#64748B; line-height:1.8;">
+        ┌─────────────────────────────────────────────────────────────────────┐<br>
+        │ <strong style="color:#6366F1">Row 1</strong>: [T] Testably · Stellar Health EMR · ... · <strong style="color:#6366F1">Discovery</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │ <strong style="color:#8B5CF6">Row 2</strong>: ← Discovery Log · 1.0.0 &nbsp;&nbsp;&nbsp;&nbsp;"Payment Flow Edge Cases"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        ├──────────────────────────────────────────────────┬──────────────────┤<br>
+        │ <strong style="color:#0F172A">LEFT — Main Content (flex:1)</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ <strong style="color:#0F172A">RIGHT — Sidebar</strong> │<br>
+        │──────────────────────────────────────────────────│ <strong style="color:#64748B">(width: 320px)</strong>&nbsp;&nbsp;│<br>
+        │ <strong style="color:#334155">Session Name</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│──────────────────│<br>
+        │ "Payment Flow Edge Cases"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ <strong style="color:#6366F1">About</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │──────────────────────────────────────────────────│ Status: 🔵 Active│<br>
+        │ <strong style="color:#334155">Mission</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ Created: Mar 25 │<br>
+        │ Explore edge cases in 3DS verification&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ Milestone: 1.0.0│<br>
+        │ timeouts, concurrent payment sessions...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ Assignee: [SK]  │<br>
+        │──────────────────────────────────────────────────│──────────────────│<br>
+        │ <strong style="color:#334155">Session Log</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ <strong style="color:#6366F1">Activity</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │ ┌──────────────────────────────────────────────┐ │ ⏱ 01:23:45&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │ │ [H1][B][I][U][S][Code][Align][Img][Table]   │ │ (Total Elapsed) │<br>
+        │ │────────────────────────────────────────────── │ │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │ │ Found that 3DS timeout after 30s causes...   │ │ ░▓░▓▓░░▓▓▓░░   │<br>
+        │ │ Screenshot: [payment-error.png]              │ │ ░░▓░░▓▓░▓░▓░   │<br>
+        │ │ Bug: Currency rounding shows $0.001...       │ │ (Heatmap Grid)  │<br>
+        │ │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ │──────────────────│<br>
+        │ └──────────────────────────────────────────────┘ │ [▶ Start]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │──────────────────────────────────────────────────│──────────────────│<br>
+        │ [Issues ▾]&nbsp;&nbsp;[📎 Attach]&nbsp;&nbsp;[📷 Screenshot]&nbsp;&nbsp;[Passed ▾]&nbsp;&nbsp;[+ Add]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        └──────────────────────────────────────────────────┴──────────────────┘<br>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ri-layout-column-line" style="color:#6366F1"></i> 레이아웃 스펙</div>
+      <table>
+        <thead><tr><th>영역</th><th>너비</th><th>구성 요소</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Row 2 (Breadcrumb)</strong></td><td>100%</td><td>← 뒤로가기 · "Discovery Log · {Milestone}" · 세션 이름 (편집 가능)</td></tr>
+          <tr><td><strong>좌측 — Main Content</strong></td><td>flex: 1 (calc(100% - 320px))</td><td>Session Name · Mission · Session Log 에디터 · 하단 액션 바</td></tr>
+          <tr><td><strong>우측 — Sidebar</strong></td><td>320px (고정)</td><td>About 패널 · Activity 패널 · Start/Stop 버튼</td></tr>
+          <tr><td><strong>하단 액션 바</strong></td><td>좌측 영역 하단 고정</td><td>Issues · Attach · Screenshot · 상태 드롭다운 · Add 버튼</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 9-2. Session Log Rich Text Editor -->
+    <h3>9-2. Session Log 리치 텍스트 에디터</h3>
+    <p>테스터가 탐색 중 발견한 내용을 실시간으로 기록하는 핵심 영역입니다. 리치 텍스트 에디터는 노트 작성에 최적화된 도구 모음을 제공합니다.</p>
+
+    <div class="card">
+      <div class="card-title"><i class="ri-edit-2-line" style="color:#8B5CF6"></i> 에디터 툴바 서식 목록</div>
+      <table>
+        <thead><tr><th>카테고리</th><th>서식</th><th>아이콘/단축키</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="3"><strong>텍스트 블록</strong></td>
+            <td>Heading 1</td><td><kbd>Ctrl+Alt+1</kbd></td><td>주요 섹션 제목</td></tr>
+          <tr><td>Heading 2</td><td><kbd>Ctrl+Alt+2</kbd></td><td>하위 섹션 제목</td></tr>
+          <tr><td>Paragraph</td><td>기본값</td><td>일반 텍스트 블록</td></tr>
+          <tr><td rowspan="4"><strong>인라인 서식</strong></td>
+            <td>Bold</td><td><kbd>Ctrl+B</kbd> / <code>ri-bold</code></td><td>굵은 글씨</td></tr>
+          <tr><td>Italic</td><td><kbd>Ctrl+I</kbd> / <code>ri-italic</code></td><td>기울임</td></tr>
+          <tr><td>Underline</td><td><kbd>Ctrl+U</kbd> / <code>ri-underline</code></td><td>밑줄</td></tr>
+          <tr><td>Strikethrough</td><td><kbd>Ctrl+Shift+X</kbd> / <code>ri-strikethrough</code></td><td>취소선</td></tr>
+          <tr><td rowspan="3"><strong>코드/기술</strong></td>
+            <td>Inline Code</td><td><kbd>Ctrl+E</kbd> / <code>ri-code-line</code></td><td>인라인 코드 스니펫</td></tr>
+          <tr><td>Code Block</td><td><code>ri-code-box-line</code></td><td>멀티라인 코드 블록 (언어 선택 가능)</td></tr>
+          <tr><td>Blockquote</td><td><code>ri-double-quotes-l</code></td><td>인용문 블록</td></tr>
+          <tr><td rowspan="3"><strong>리스트</strong></td>
+            <td>Bullet List</td><td><code>ri-list-unordered</code></td><td>순서 없는 목록</td></tr>
+          <tr><td>Numbered List</td><td><code>ri-list-ordered</code></td><td>순서 있는 목록</td></tr>
+          <tr><td>Checklist</td><td><code>ri-checkbox-line</code></td><td>체크리스트 (발견 항목 추적용)</td></tr>
+          <tr><td rowspan="4"><strong>미디어/삽입</strong></td>
+            <td>Image</td><td><code>ri-image-line</code></td><td>이미지 삽입 (드래그앤드롭 / 붙여넣기 지원)</td></tr>
+          <tr><td>Table</td><td><code>ri-table-line</code></td><td>테이블 삽입 (행/열 추가/삭제)</td></tr>
+          <tr><td>Horizontal Rule</td><td><code>ri-separator</code></td><td>구분선</td></tr>
+          <tr><td>Link</td><td><kbd>Ctrl+K</kbd> / <code>ri-link</code></td><td>하이퍼링크 삽입</td></tr>
+          <tr><td rowspan="2"><strong>정렬</strong></td>
+            <td>Text Align</td><td><code>ri-align-left/center/right</code></td><td>좌/중앙/우 정렬</td></tr>
+          <tr><td>Indent</td><td><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd></td><td>들여쓰기/내어쓰기</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:0.75rem; font-size:0.8125rem; color:#64748B;"><strong>기술 구현 참고:</strong> TipTap 또는 ProseMirror 기반 에디터 권장. Clipboard paste로 이미지 자동 업로드, Markdown 단축키 지원 (/slash 커맨드 가능).</p>
+    </div>
+
+    <!-- 9-3. Issues Integration -->
+    <h3>9-3. Issues 추가 기능 — 버그 연결</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-bug-line" style="color:#EF4444"></i> Issues 드롭다운 기능 정의</div>
+      <p>하단 액션 바의 "Issues" 드롭다운을 클릭하면, 현재 세션에서 발견된 이슈를 관리할 수 있습니다.</p>
+      <table>
+        <thead><tr><th>기능</th><th>동작</th><th>상세</th></tr></thead>
+        <tbody>
+          <tr><td><strong>새 이슈 생성</strong></td><td>인라인 폼 팝오버</td><td>제목, 심각도(Critical/Major/Minor/Trivial), 설명, 스크린샷 첨부</td></tr>
+          <tr><td><strong>기존 이슈 연결</strong></td><td>검색 드롭다운</td><td>프로젝트 내 기존 이슈를 검색하여 세션에 연결</td></tr>
+          <tr><td><strong>외부 연동</strong></td><td>Jira/Linear 링크</td><td>외부 이슈 트래커의 티켓 URL을 붙여넣어 연결</td></tr>
+          <tr><td><strong>이슈 카운트</strong></td><td>뱃지 표시</td><td>"Issues" 버튼 옆에 현재 세션의 이슈 수 <span class="tag tag-red">3</span> 표시</td></tr>
+          <tr><td><strong>이슈 목록 보기</strong></td><td>드롭다운 펼침</td><td>연결된 이슈 리스트 (제목, 심각도, 상태) · 클릭 시 상세 이동</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1rem; font-size:0.875rem; color:#1E293B;">이슈 생성 플로우</h4>
+      <div class="flow">
+        <div class="flow-step">[Issues ▾] 클릭</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">"+ New Issue" 선택</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">인라인 폼 작성<br><span style="font-size:0.6875rem;color:#94A3B8">제목 · 심각도 · 설명</span></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">스크린샷 자동 첨부<br><span style="font-size:0.6875rem;color:#94A3B8">(선택사항)</span></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step" style="background:#F0FDF4; border-color:#BBF7D0;">이슈 생성 완료<br><span style="font-size:0.6875rem;color:#16A34A">Session Log에 자동 기록</span></div>
+      </div>
+    </div>
+
+    <!-- 9-4. Screenshot Capture -->
+    <h3>9-4. Screenshot 캡처 기능</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-screenshot-line" style="color:#3B82F6"></i> 스크린샷 캡처 스펙</div>
+      <table>
+        <thead><tr><th>기능</th><th>동작</th><th>상세</th></tr></thead>
+        <tbody>
+          <tr><td><strong>버튼 클릭 캡처</strong></td><td>하단 [📷 Screenshot] 클릭</td><td>브라우저 탭 또는 전체 화면 캡처 선택 모달</td></tr>
+          <tr><td><strong>단축키 캡처</strong></td><td><kbd>Ctrl+Shift+S</kbd></td><td>즉시 캡처 후 Session Log에 자동 삽입</td></tr>
+          <tr><td><strong>클립보드 붙여넣기</strong></td><td><kbd>Ctrl+V</kbd> (에디터 내)</td><td>클립보드의 이미지를 에디터에 직접 붙여넣기</td></tr>
+          <tr><td><strong>캡처 후 편집</strong></td><td>어노테이션 오버레이</td><td>빨간 화살표, 사각형 강조, 텍스트 메모 추가 후 저장</td></tr>
+          <tr><td><strong>저장 위치</strong></td><td>세션 첨부파일 자동 추가</td><td>파일명: <code>session-{DL-ID}-{timestamp}.png</code></td></tr>
+          <tr><td><strong>썸네일 표시</strong></td><td>Session Log 인라인</td><td>삽입 시 자동 리사이즈 (max-width: 100%), 클릭 시 라이트박스</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 9-5. File Attach -->
+    <h3>9-5. Attach 파일 첨부 기능</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-attachment-2" style="color:#F59E0B"></i> 파일 첨부 스펙</div>
+      <table>
+        <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+        <tbody>
+          <tr><td>트리거</td><td>하단 [📎 Attach] 버튼 클릭 또는 에디터 영역에 파일 드래그앤드롭</td></tr>
+          <tr><td>지원 형식</td><td>이미지(PNG, JPG, GIF, WebP), 비디오(MP4, WebM), 문서(PDF, DOCX), 로그파일(TXT, LOG, HAR), 기타(ZIP)</td></tr>
+          <tr><td>파일 크기 제한</td><td>개별 50MB, 세션 당 총 500MB</td></tr>
+          <tr><td>표시 방식</td><td>이미지 → 인라인 썸네일, 기타 → 파일 아이콘 + 파일명 + 크기 칩</td></tr>
+          <tr><td>삭제</td><td>첨부 파일 호버 시 ✕ 버튼, 확인 모달 후 삭제</td></tr>
+          <tr><td>다운로드</td><td>첨부 파일 클릭 시 다운로드 또는 미리보기 (이미지/PDF)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 9-6. Status Change -->
+    <h3>9-6. 상태 변경 (Session Status)</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-checkbox-circle-line" style="color:#22C55E"></i> 세션 상태 시스템</div>
+      <p>하단 액션 바의 상태 드롭다운으로 세션의 최종 결과를 기록합니다. 이 상태는 Discovery Log 리스트의 필터/서브탭과 연동됩니다.</p>
+      <table>
+        <thead><tr><th>상태</th><th>컬러</th><th>아이콘</th><th>의미</th><th>전환 조건</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Not Started</strong></td><td><span class="tag tag-gray">●</span> #94A3B8</td><td><code>ri-time-line</code></td><td>세션 생성 후 아직 시작 안 함</td><td>기본 상태. Start 클릭 시 자동 → Active</td></tr>
+          <tr><td><strong>Active</strong></td><td><span class="tag tag-blue">●</span> #3B82F6</td><td><code>ri-loader-4-line</code> (spin)</td><td>세션 진행 중 (타이머 가동)</td><td>Start 클릭 시. Stop 시 → Paused/완료 선택</td></tr>
+          <tr><td><strong>Paused</strong></td><td><span class="tag tag-amber">●</span> #F59E0B</td><td><code>ri-pause-circle-line</code></td><td>세션 일시 중지</td><td>Pause 클릭 시. Resume으로 Active 복귀</td></tr>
+          <tr><td><strong>Passed</strong></td><td><span class="tag tag-green">●</span> #22C55E</td><td><code>ri-checkbox-circle-fill</code></td><td>탐색 완료, 주요 이슈 없음</td><td>상태 드롭다운에서 선택</td></tr>
+          <tr><td><strong>Failed</strong></td><td><span class="tag tag-red">●</span> #EF4444</td><td><code>ri-close-circle-fill</code></td><td>심각한 이슈 발견, 추가 조치 필요</td><td>상태 드롭다운에서 선택</td></tr>
+          <tr><td><strong>Blocked</strong></td><td><span class="tag tag-amber">●</span> #F59E0B</td><td><code>ri-forbid-line</code></td><td>환경/의존성 문제로 탐색 불가</td><td>상태 드롭다운에서 선택</td></tr>
+          <tr><td><strong>Dismissed</strong></td><td><span class="tag tag-gray">●</span> #94A3B8</td><td><code>ri-close-circle-line</code></td><td>세션 취소/무효 처리</td><td>상태 드롭다운에서 선택</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:0.75rem; font-size:0.8125rem; color:#64748B;"><strong>상태 전환 규칙:</strong> Passed/Failed/Blocked 선택 시 세션 타이머가 자동 정지되고, 세션 종료 시각이 기록됩니다. Dismissed는 언제든 선택 가능하며, 통계에서 제외됩니다.</p>
+    </div>
+
+    <!-- 9-7. Activity Timer + Heatmap -->
+    <h3>9-7. Activity 타이머 + 히트맵</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-timer-line" style="color:#6366F1"></i> 타이머 기능</div>
+      <table>
+        <thead><tr><th>요소</th><th>스펙</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Total Elapsed</strong></td><td>HH:MM:SS 형식, 세션 Active 상태에서만 카운트. Paused 시 정지, Resume 시 재개.</td></tr>
+          <tr><td><strong>표시 위치</strong></td><td>우측 사이드바 Activity 섹션 상단, 큰 글씨(font-size: 1.75rem, font-weight: 800, color: #0F172A)</td></tr>
+          <tr><td><strong>타임박스 알림</strong></td><td>세션 생성 시 목표 시간 설정 가능 (예: 2시간). 목표의 80%, 100% 도달 시 토스트 알림.</td></tr>
+          <tr><td><strong>구간 기록</strong></td><td>Start/Pause/Resume 이벤트별 타임스탬프 기록. Activity 로그에 자동 표시.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="ri-grid-line" style="color:#8B5CF6"></i> 히트맵 그리드</div>
+      <table>
+        <thead><tr><th>요소</th><th>스펙</th></tr></thead>
+        <tbody>
+          <tr><td><strong>데이터 소스</strong></td><td>Session Log 편집 활동량 (키 입력, 이미지 삽입, 이슈 생성 등 이벤트)</td></tr>
+          <tr><td><strong>시간 단위</strong></td><td>5분 단위 블록. 세션 시작부터 현재까지의 활동을 시각화.</td></tr>
+          <tr><td><strong>색상 매핑</strong></td><td>활동 없음: #F1F5F9 → 낮음: #C7D2FE → 중간: #818CF8 → 높음: #6366F1 → 매우 높음: #4338CA</td></tr>
+          <tr><td><strong>그리드 크기</strong></td><td>가로 6칸 × 세로 N줄 (30분 단위 행). 각 셀 16×16px, gap: 3px</td></tr>
+          <tr><td><strong>호버 툴팁</strong></td><td>"10:30 – 10:35 · 12 events (3 edits, 1 screenshot, 8 keystrokes)"</td></tr>
+          <tr><td><strong>의미</strong></td><td>테스터의 집중도와 활동 패턴을 시각적으로 파악. 빈 구간 = 탐색 또는 비활동.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 9-8. Start/Stop/Pause Session Flow -->
+    <h3>9-8. Start / Stop / Pause 세션 흐름</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-play-circle-line" style="color:#22C55E"></i> 세션 라이프사이클</div>
+
+      <div class="flow">
+        <div class="flow-step" style="background:#F1F5F9; border-color:#CBD5E1;"><strong>Not Started</strong><br><span style="font-size:0.6875rem;color:#94A3B8">세션 생성 직후</span></div>
+        <span class="flow-arrow">→ <span style="font-size:0.625rem;color:#16A34A">Start</span></span>
+        <div class="flow-step" style="background:#DBEAFE; border-color:#93C5FD;"><strong>Active</strong><br><span style="font-size:0.6875rem;color:#3B82F6">타이머 가동 중</span></div>
+        <span class="flow-arrow">→ <span style="font-size:0.625rem;color:#F59E0B">Pause</span></span>
+        <div class="flow-step" style="background:#FEF3C7; border-color:#FDE68A;"><strong>Paused</strong><br><span style="font-size:0.6875rem;color:#92400E">타이머 정지</span></div>
+        <span class="flow-arrow">→ <span style="font-size:0.625rem;color:#3B82F6">Resume</span></span>
+        <div class="flow-step" style="background:#DBEAFE; border-color:#93C5FD;"><strong>Active</strong><br><span style="font-size:0.6875rem;color:#3B82F6">타이머 재개</span></div>
+      </div>
+
+      <div class="flow" style="margin-top:0.5rem;">
+        <div class="flow-step" style="background:#DBEAFE; border-color:#93C5FD;"><strong>Active / Paused</strong></div>
+        <span class="flow-arrow">→ <span style="font-size:0.625rem;color:#64748B">Complete</span></span>
+        <div class="flow-step" style="background:#F0FDF4; border-color:#BBF7D0;"><strong>Passed</strong></div>
+        <span style="color:#CBD5E1; margin:0 0.25rem;">/</span>
+        <div class="flow-step" style="background:#FEF2F2; border-color:#FECACA;"><strong>Failed</strong></div>
+        <span style="color:#CBD5E1; margin:0 0.25rem;">/</span>
+        <div class="flow-step" style="background:#FEF3C7; border-color:#FDE68A;"><strong>Blocked</strong></div>
+      </div>
+
+      <table style="margin-top:1rem;">
+        <thead><tr><th>버튼 상태</th><th>우측 사이드바 표시</th><th>동작</th></tr></thead>
+        <tbody>
+          <tr><td>Not Started</td><td><span class="tag tag-green" style="font-size:0.8125rem; padding:0.375rem 1rem;">▶ Start</span> (큰 녹색 버튼)</td><td>타이머 시작, 상태 → Active, 시작 시각 기록</td></tr>
+          <tr><td>Active</td><td><span class="tag tag-amber" style="font-size:0.8125rem; padding:0.375rem 1rem;">⏸ Pause</span> + <span class="tag tag-red" style="font-size:0.8125rem; padding:0.375rem 1rem;">⏹ Stop</span></td><td>Pause: 타이머 정지, Stop: 완료 모달 표시 (상태 선택)</td></tr>
+          <tr><td>Paused</td><td><span class="tag tag-blue" style="font-size:0.8125rem; padding:0.375rem 1rem;">▶ Resume</span> + <span class="tag tag-red" style="font-size:0.8125rem; padding:0.375rem 1rem;">⏹ Stop</span></td><td>Resume: 타이머 재개, Stop: 완료 모달 표시</td></tr>
+          <tr><td>Completed</td><td><span class="tag tag-gray" style="font-size:0.8125rem; padding:0.375rem 1rem;">Completed ✓</span> (비활성)</td><td>상태 드롭다운으로만 재변경 가능</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>9-9. 우측 사이드바 — About 패널</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-information-line" style="color:#6366F1"></i> About 섹션 필드</div>
+      <table>
+        <thead><tr><th>필드</th><th>표시</th><th>편집</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Status</strong></td><td>컬러 뱃지 (Active / Not Started 등)</td><td>상태 드롭다운과 연동 (읽기 전용 표시)</td></tr>
+          <tr><td><strong>Created</strong></td><td>"Mar 25, 2026" 형식</td><td>읽기 전용</td></tr>
+          <tr><td><strong>Milestone</strong></td><td>연결된 마일스톤 이름 + 링크</td><td>클릭 시 마일스톤 셀렉터 팝오버</td></tr>
+          <tr><td><strong>Assignees</strong></td><td>아바타 스택 + 이름</td><td>클릭 시 멤버 셀렉터 (복수 선택 가능)</td></tr>
+          <tr><td><strong>Tags</strong></td><td>태그 칩 리스트</td><td>클릭 시 태그 입력 필드 (자동완성)</td></tr>
+          <tr><td><strong>Time Box</strong></td><td>"2h (goal)" 또는 미설정</td><td>클릭 시 시간 입력 팝오버</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 10: DESI DESIGN HANDOFF ═══ -->
+  <div class="section" id="s10">
+    <div class="section-title"><span class="section-num">10</span><i class="ri-palette-line"></i> Desi 디자인 핸드오프 — 세션 상세 페이지</div>
+
+    <p>아래는 Desi에게 전달할 세션 상세 페이지 디자인 요구사항 요약입니다. 기존 Discovery Log 리스트 디자인(섹션 3~8)과 함께 진행해야 합니다.</p>
+
+    <div class="card" style="border-color:#6366F1; border-width:2px;">
+      <div class="card-title" style="font-size:1rem;"><i class="ri-draft-line" style="color:#6366F1"></i> Desi 디자인 요청 — Session Detail Page</div>
+
+      <h4 style="margin-top:1rem; color:#4338CA; font-size:0.875rem;">📐 A. 전체 레이아웃</h4>
+      <table>
+        <thead><tr><th>#</th><th>요청 항목</th><th>참고</th></tr></thead>
+        <tbody>
+          <tr><td>A-1</td><td>2컬럼 레이아웃: 좌측 Main (flex:1) + 우측 Sidebar (320px 고정)</td><td>기획안 §9-1 와이어프레임 참고</td></tr>
+          <tr><td>A-2</td><td>Row 2를 Breadcrumb로 교체: ← Discovery Log · {Milestone} · 세션명</td><td>뒤로가기 화살표 + 세션명 인라인 편집</td></tr>
+          <tr><td>A-3</td><td>하단 액션 바: 좌측 영역 하단 고정 (sticky bottom)</td><td>Issues · Attach · Screenshot · Status · Add</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1rem; color:#4338CA; font-size:0.875rem;">✏️ B. Session Log 에디터</h4>
+      <table>
+        <thead><tr><th>#</th><th>요청 항목</th><th>참고</th></tr></thead>
+        <tbody>
+          <tr><td>B-1</td><td>리치 텍스트 에디터 툴바: H1/H2, B, I, U, S, Code, CodeBlock, Quote, Lists, Checklist, Image, Table, Link, Align</td><td>기획안 §9-2 전체 서식 목록</td></tr>
+          <tr><td>B-2</td><td>툴바 디자인: 아이콘 버튼 그룹, 구분선으로 카테고리 분리, 높이 40px</td><td>Notion/Linear 에디터 참고</td></tr>
+          <tr><td>B-3</td><td>에디터 영역: min-height 400px, 스크롤 가능, placeholder "Start typing your session notes..."</td><td></td></tr>
+          <tr><td>B-4</td><td>이미지 삽입 시 인라인 썸네일 + 라이트박스 클릭 동작 목업</td><td></td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1rem; color:#4338CA; font-size:0.875rem;">🐛 C. 하단 액션 바 — 개별 요소</h4>
+      <table>
+        <thead><tr><th>#</th><th>요청 항목</th><th>참고</th></tr></thead>
+        <tbody>
+          <tr><td>C-1</td><td>Issues 드롭다운: 뱃지 카운트 + 팝오버 (새 이슈 생성 폼, 기존 이슈 검색 연결, 외부 Jira/Linear URL 연결)</td><td>기획안 §9-3</td></tr>
+          <tr><td>C-2</td><td>Attach 버튼: 파일 선택 다이얼로그 트리거, 드래그앤드롭 영역 표시</td><td>기획안 §9-5</td></tr>
+          <tr><td>C-3</td><td>Screenshot 버튼: 캡처 모달 (탭/전체화면 선택) + 어노테이션 오버레이 목업</td><td>기획안 §9-4</td></tr>
+          <tr><td>C-4</td><td>Status 드롭다운: 7개 상태 (Not Started → Active → Paused → Passed/Failed/Blocked/Dismissed), 각각 컬러 뱃지</td><td>기획안 §9-6 컬러 토큰</td></tr>
+          <tr><td>C-5</td><td>Add 버튼: Session Log에 현재 시각 타임스탬프 + 새 블록 자동 삽입</td><td>CTA 스타일 (#6366F1)</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1rem; color:#4338CA; font-size:0.875rem;">📊 D. 우측 사이드바</h4>
+      <table>
+        <thead><tr><th>#</th><th>요청 항목</th><th>참고</th></tr></thead>
+        <tbody>
+          <tr><td>D-1</td><td>About 패널: Status 뱃지, Created 날짜, Milestone 링크, Assignees 아바타, Tags 칩, Time Box 설정</td><td>기획안 §9-9</td></tr>
+          <tr><td>D-2</td><td>Activity 패널: 대형 타이머 (HH:MM:SS, 1.75rem), 5분 단위 히트맵 그리드 (6열 × N행)</td><td>기획안 §9-7</td></tr>
+          <tr><td>D-3</td><td>히트맵 컬러 스케일: #F1F5F9 → #C7D2FE → #818CF8 → #6366F1 → #4338CA (5단계)</td><td>셀 16×16px, gap 3px</td></tr>
+          <tr><td>D-4</td><td>Start/Pause/Resume/Stop 버튼 3가지 상태별 목업</td><td>기획안 §9-8 플로우 참고</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1rem; color:#4338CA; font-size:0.875rem;">🎨 E. 디자인 토큰 (기존 Testably 시스템 준수)</h4>
+      <table>
+        <thead><tr><th>토큰</th><th>값</th></tr></thead>
+        <tbody>
+          <tr><td>Primary</td><td>#6366F1 (Indigo 500)</td></tr>
+          <tr><td>Background</td><td>#F8FAFC (Slate 50)</td></tr>
+          <tr><td>Card BG</td><td>#FFFFFF</td></tr>
+          <tr><td>Border</td><td>#E2E8F0 (Slate 200)</td></tr>
+          <tr><td>Text Primary</td><td>#0F172A (Slate 900)</td></tr>
+          <tr><td>Text Secondary</td><td>#64748B (Slate 500)</td></tr>
+          <tr><td>Text Muted</td><td>#94A3B8 (Slate 400)</td></tr>
+          <tr><td>Font Family</td><td>Inter, sans-serif</td></tr>
+          <tr><td>Border Radius</td><td>0.5rem (카드), 0.375rem (버튼), 9999px (뱃지)</td></tr>
+          <tr><td>Sidebar Width</td><td>320px</td></tr>
+          <tr><td>Editor Toolbar Height</td><td>40px</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin-top:1.25rem; color:#991B1B; font-size:0.875rem;">⚠️ F. 디자인 체크리스트</h4>
+      <ul style="font-size:0.8125rem;">
+        <li>☐ 세션 상세 전체 레이아웃 (2컬럼) 시안</li>
+        <li>☐ Session Log 리치 텍스트 에디터 툴바 디자인</li>
+        <li>☐ 하단 액션 바 5개 요소 개별 디자인 + 호버/활성 상태</li>
+        <li>☐ Issues 드롭다운 팝오버 (새 이슈 생성 폼 + 이슈 리스트)</li>
+        <li>☐ Screenshot 캡처 모달 + 어노테이션 오버레이</li>
+        <li>☐ 우측 사이드바 About 패널 (6개 필드)</li>
+        <li>☐ Activity 타이머 + 히트맵 그리드 디자인</li>
+        <li>☐ Start/Pause/Resume/Stop 버튼 4개 상태</li>
+        <li>☐ 상태 드롭다운 7개 상태 컬러 뱃지</li>
+        <li>☐ 반응형: 사이드바 collapse (≤1024px 시 하단으로 이동)</li>
+        <li>☐ 다크 모드 대응 (향후)</li>
+      </ul>
+    </div>
+  </div>

@@ -1,0 +1,2042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Overview — Testably</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #F8FAFC;
+            color: #0F172A;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* DEMO BAR */
+        .demo-bar {
+            background: #FEF08A;
+            border-bottom: 1px solid #EAB308;
+            padding: 8px 20px;
+            font-size: 13px;
+            color: #854D0E;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .demo-chip {
+            background: #FCD34D;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .demo-bar-content {
+            flex: 1;
+        }
+
+        .demo-bar-right {
+            margin-left: auto;
+            font-size: 12px;
+        }
+
+        /* TOP HEADER */
+        .header {
+            background: white;
+            border-bottom: 1px solid #E2E8F0;
+            padding: 0 20px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-squircle {
+            width: 26px;
+            height: 26px;
+            background: #6366F1;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Pacifico', cursive;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .project-selector {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0F172A;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .project-selector:hover {
+            background: #F1F5F9;
+        }
+
+        .nav-items {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            flex: 1;
+        }
+
+        .nav-item {
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748B;
+            padding: 6px 12px;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-item.active {
+            color: #6366F1;
+            font-weight: 600;
+            border-bottom: 2.5px solid #6366F1;
+            border-radius: 1px 1px 0 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-left: auto;
+        }
+
+        .header-icon {
+            font-size: 18px;
+            color: #64748B;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .header-icon:hover {
+            color: #6366F1;
+        }
+
+        .avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #E0E7FF;
+            color: #6366F1;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* SUBTAB ROW */
+        .subtab-row {
+            background: white;
+            border-bottom: 1px solid #E2E8F0;
+            padding: 0 20px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .subtab-group {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+        }
+
+        .subtab {
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748B;
+            padding: 6px 12px;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .subtab.active {
+            color: #6366F1;
+            font-weight: 600;
+            border-bottom: 2.5px solid #6366F1;
+        }
+
+        .subtab i {
+            font-size: 16px;
+        }
+
+        .subtab-badge {
+            background: #EEF2FF;
+            color: #6366F1;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 9999px;
+            margin-left: 2px;
+        }
+
+        .subtab-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+        }
+
+        .count-chip {
+            background: #F1F5F9;
+            color: #64748B;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #6366F1;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #4F46E5;
+        }
+
+        /* MAIN LAYOUT */
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 24px;
+            gap: 20px;
+            min-width: 0;
+        }
+
+        .sidebar {
+            width: 340px;
+            border-left: 1px solid #E2E8F0;
+            overflow-y: auto;
+            padding: 20px;
+            gap: 20px;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        /* CARDS */
+        .card {
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .card-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0F172A;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-header-right {
+            margin-left: auto;
+            font-size: 12px;
+            font-weight: 500;
+            color: #94A3B8;
+        }
+
+        /* RELEASE READINESS */
+        .release-readiness {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .release-score {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            min-width: 120px;
+        }
+
+        .score-circle {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .score-number {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0F172A;
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 11px;
+            font-weight: 600;
+            background: #FEFCE8;
+            color: #854D0E;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .traffic-light {
+            width: 60px;
+            height: 60px;
+            background: #FEF3C7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: #F59E0B;
+        }
+
+        .formula-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 180px;
+        }
+
+        .formula-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .formula-items {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .formula-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #475569;
+        }
+
+        .formula-weight {
+            font-weight: 700;
+            color: #6366F1;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        .formula-divider {
+            height: 1px;
+            background: #E2E8F0;
+            margin: 4px 0;
+        }
+
+        .formula-signals {
+            display: flex;
+            gap: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            flex-wrap: wrap;
+        }
+
+        .signal-go {
+            color: #16A34A;
+        }
+
+        .signal-conditional {
+            color: #D97706;
+        }
+
+        .signal-not-ready {
+            color: #DC2626;
+        }
+
+        .metrics-row {
+            display: flex;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .metric-card {
+            flex: 1;
+            background: #FAFAFF;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #F1F5F9;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: #94A3B8;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0F172A;
+            margin-bottom: 8px;
+        }
+
+        .metric-value.critical {
+            color: #EF4444;
+        }
+
+        .metric-sub {
+            font-size: 11px;
+            color: #64748B;
+            margin-bottom: 6px;
+        }
+
+        .progress-mini {
+            width: 100%;
+            height: 4px;
+            background: #E2E8F0;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-mini-bar {
+            height: 100%;
+            background: #22C55E;
+        }
+
+        .gap-label {
+            font-size: 10px;
+            color: #EF4444;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        /* MY RUNS */
+        .my-runs-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .my-runs-header .card-header {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .run-count {
+            font-weight: 800;
+            color: #0F172A;
+        }
+
+        .run-count-sub {
+            color: #94A3B8;
+        }
+
+        .run-filters {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .filter-btn {
+            background: #F1F5F9;
+            border: 1px solid #E2E8F0;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #64748B;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: #E2E8F0;
+        }
+
+        .show-all-link {
+            color: #6366F1;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .show-all-link:hover {
+            text-decoration: underline;
+        }
+
+        .priority-group {
+            margin-bottom: 0;
+        }
+
+        .priority-header {
+            font-size: 12px;
+            font-weight: 700;
+            uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 14px;
+            border-radius: 6px;
+            border-left: 3px solid;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s;
+            margin-bottom: 8px;
+        }
+
+        .priority-header.critical {
+            background: #FEE2E2;
+            border-left-color: #EF4444;
+            color: #991B1B;
+        }
+
+        .priority-header.high {
+            background: #FEF3C7;
+            border-left-color: #F59E0B;
+            color: #92400E;
+        }
+
+        .priority-header.medium {
+            background: #FFFBEB;
+            border-left-color: #FBBF24;
+            color: #78350F;
+        }
+
+        .priority-header.low {
+            background: #F0FDF4;
+            border-left-color: #22C55E;
+            color: #166534;
+        }
+
+        .priority-header:hover {
+            opacity: 0.8;
+        }
+
+        .priority-header.collapsed::after {
+            content: '▶';
+            font-size: 10px;
+        }
+
+        .priority-header.expanded::after {
+            content: '▼';
+            font-size: 10px;
+        }
+
+        .priority-runs {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .priority-runs.hidden {
+            display: none;
+        }
+
+        .run-card {
+            padding: 12px 14px;
+            border-bottom: 1px solid #F1F5F9;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .run-card:hover {
+            background: #FAFAFF;
+        }
+
+        .run-card-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .run-card-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0F172A;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .run-card-continue {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: #6366F1;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .run-card-continue:hover {
+            background: #4F46E5;
+        }
+
+        .run-card-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .run-card-bar {
+            flex: 1;
+            height: 6px;
+            background: #E2E8F0;
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .run-card-bar .seg-pass {
+            background: #22C55E;
+            height: 100%;
+        }
+
+        .run-card-bar .seg-fail {
+            background: #EF4444;
+            height: 100%;
+        }
+
+        .run-card-bar .seg-remain {
+            background: #E2E8F0;
+            height: 100%;
+            flex: 1;
+        }
+
+        .run-card-pct {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0F172A;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        .run-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 11px;
+            color: #64748B;
+        }
+
+        .run-card-meta i {
+            font-size: 12px;
+            margin-right: 2px;
+        }
+
+        .run-card-meta .due-imminent {
+            color: #EF4444;
+            font-weight: 600;
+        }
+
+        .run-card-priority {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
+        }
+
+        .run-card-priority.p-critical {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .run-card-priority.p-high {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .run-card-priority.p-medium {
+            background: #FFFBEB;
+            color: #78350F;
+        }
+
+        .run-card-priority.p-low {
+            background: #F0FDF4;
+            color: #166534;
+        }
+
+        .run-card-priority .due-basis {
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .manual-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 9px;
+            font-weight: 600;
+            color: #8B5CF6;
+            background: #EDE9FE;
+            padding: 1px 5px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+
+        .manual-badge i {
+            font-size: 9px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: #64748B;
+            min-width: 40px;
+        }
+
+        .progress-bar-mini {
+            width: 48px;
+            height: 4px;
+            background: #E2E8F0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar-mini-fill {
+            height: 100%;
+            background: #22C55E;
+        }
+
+        .task-tag {
+            background: #E0E7FF;
+            color: #4338CA;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        .task-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 9px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .avatar-sk {
+            background: #EC4899;
+        }
+
+        .avatar-jd {
+            background: #3B82F6;
+        }
+
+        .avatar-mr {
+            background: #F59E0B;
+        }
+
+        .due-date {
+            font-size: 11px;
+            color: #94A3B8;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .due-date.imminent {
+            color: #EF4444;
+            font-weight: 600;
+        }
+
+        /* TREND CHART */
+        .trend-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .period-tabs {
+            display: flex;
+            gap: 6px;
+        }
+
+        .period-tab {
+            background: #F1F5F9;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748B;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .period-tab.active {
+            background: #6366F1;
+            color: white;
+        }
+
+        .chart-container {
+            height: 220px;
+            position: relative;
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            font-size: 12px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+
+        /* ATTENTION NEEDED */
+        .attention-card {
+            border-left: 3px solid #EF4444;
+        }
+
+        .attention-badge {
+            background: #FEE2E2;
+            color: #991B1B;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 4px;
+        }
+
+        .attention-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #F1F5F9;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .attention-item:last-child {
+            border-bottom: none;
+        }
+
+        .attention-icon {
+            font-size: 18px;
+            min-width: 20px;
+            margin-top: 2px;
+        }
+
+        .attention-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .attention-text {
+            font-size: 13px;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+
+        .attention-link {
+            color: #6366F1;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .attention-link:hover {
+            text-decoration: underline;
+        }
+
+        /* RECENT ACTIVITY */
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .activity-filter {
+            background: #F1F5F9;
+            border: 1px solid #E2E8F0;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #64748B;
+            cursor: pointer;
+        }
+
+        .activity-section-header {
+            font-size: 11px;
+            font-weight: 700;
+            uppercase;
+            color: #94A3B8;
+            margin-top: 12px;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .activity-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #F1F5F9;
+            display: flex;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            font-size: 16px;
+            min-width: 20px;
+            margin-top: 2px;
+        }
+
+        .activity-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .activity-user {
+            font-weight: 600;
+            color: #0F172A;
+        }
+
+        .activity-action {
+            color: #334155;
+        }
+
+        .activity-tc {
+            font-weight: 500;
+            color: #0F172A;
+        }
+
+        .activity-time {
+            color: #94A3B8;
+            font-size: 12px;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+
+        .show-more-btn {
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+            color: #6366F1;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            background: none;
+            margin-top: 8px;
+        }
+
+        .show-more-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* SIDEBAR WIDGETS */
+        .summary-row {
+            padding: 14px 0;
+            border-bottom: 1px solid #F1F5F9;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: #94A3B8;
+            font-weight: 500;
+        }
+
+        .summary-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0F172A;
+        }
+
+        .summary-change {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 9999px;
+        }
+
+        .summary-change.up {
+            background: #DCFCE7;
+            color: #166534;
+        }
+
+        .summary-change.down {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .summary-change.neutral {
+            background: #F3F4F6;
+            color: #6B7280;
+        }
+
+        .summary-sub {
+            font-size: 11px;
+            color: #94A3B8;
+        }
+
+        .sparkline {
+            width: 60px;
+            height: 16px;
+        }
+
+        .donut-container {
+            width: 50px;
+            height: 50px;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .donut-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* RUN PROGRESS */
+        .run-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #F1F5F9;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .run-item:last-child {
+            border-bottom: none;
+        }
+
+        .run-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #0F172A;
+            max-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .run-bar {
+            flex: 1;
+            height: 8px;
+            background: #E2E8F0;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            min-width: 0;
+        }
+
+        .run-segment {
+            height: 100%;
+        }
+
+        .run-segment.passed {
+            background: #22C55E;
+        }
+
+        .run-segment.failed {
+            background: #EF4444;
+        }
+
+        .run-percent {
+            font-size: 12px;
+            font-weight: 700;
+            color: #0F172A;
+            min-width: 35px;
+            text-align: right;
+        }
+
+        /* MILESTONES */
+        .milestone-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .milestone-item:last-child {
+            border-bottom: none;
+        }
+
+        .milestone-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #0F172A;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .milestone-bar {
+            width: 100%;
+            height: 8px;
+            background: #E2E8F0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .milestone-bar-fill {
+            height: 100%;
+            background: #22C55E;
+        }
+
+        .milestone-meta {
+            font-size: 11px;
+            color: #94A3B8;
+            margin-bottom: 4px;
+        }
+
+        .milestone-meta.urgent {
+            color: #EF4444;
+            font-weight: 600;
+        }
+
+        .milestone-summary {
+            font-size: 10px;
+            color: #64748B;
+            display: flex;
+            gap: 6px;
+        }
+
+        .milestone-stat {
+            font-weight: 600;
+        }
+
+        .milestone-stat.passed {
+            color: #22C55E;
+        }
+
+        .milestone-stat.failed {
+            color: #EF4444;
+        }
+
+        .milestone-stat.blocked {
+            color: #F59E0B;
+        }
+
+        .milestone-stat.untested {
+            color: #94A3B8;
+        }
+
+        /* AI USAGE */
+        .ai-usage-big {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0F172A;
+            margin-bottom: 4px;
+        }
+
+        .ai-usage-breakdown {
+            font-size: 11px;
+            color: #64748B;
+            margin-bottom: 10px;
+        }
+
+        .ai-usage-bar {
+            width: 100%;
+            height: 6px;
+            background: #E2E8F0;
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+            margin-bottom: 8px;
+        }
+
+        .ai-segment-pro {
+            background: #6366F1;
+            flex: 0.25;
+        }
+
+        .ai-segment-advanced {
+            background: #8B5CF6;
+            flex: 0.75;
+        }
+
+        .ai-usage-link {
+            color: #6366F1;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .ai-usage-link:hover {
+            text-decoration: underline;
+        }
+
+        /* SCROLLBARS */
+        .main-content::-webkit-scrollbar,
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .main-content::-webkit-scrollbar-track,
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .main-content::-webkit-scrollbar-thumb,
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        .main-content::-webkit-scrollbar-thumb:hover,
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+    </style>
+</head>
+<body>
+    <!-- DEMO BAR -->
+    <div class="demo-bar">
+        <div class="demo-chip">DESIGN MOCKUP</div>
+        <div class="demo-bar-content">Project Overview — Redesigned dashboard with Release Readiness</div>
+        <div class="demo-bar-right">Desi × Kyle</div>
+    </div>
+
+    <!-- TOP HEADER -->
+    <div class="header">
+        <div class="logo-section">
+            <div class="logo-squircle">S</div>
+            <div class="project-selector">Stellar Health EMR ▼</div>
+        </div>
+        <div class="nav-items">
+            <div class="nav-item active">Dashboard</div>
+            <div class="nav-item">Test Cases</div>
+            <div class="nav-item">Runs & Results</div>
+            <div class="nav-item">Milestones</div>
+            <div class="nav-item">Documents</div>
+            <div class="nav-item">Discovery Log</div>
+        </div>
+        <div class="header-right">
+            <div class="header-icon"><i class="ri-notification-2-line"></i></div>
+            <div class="avatar">KJ</div>
+        </div>
+    </div>
+
+    <!-- SUBTAB ROW -->
+    <div class="subtab-row">
+        <div class="subtab-group">
+            <div class="subtab active"><i class="ri-dashboard-line"></i> Overview</div>
+            <div class="subtab"><i class="ri-bar-chart-box-line"></i> Analytics</div>
+            <div class="subtab"><i class="ri-time-line"></i> Activity Feed</div>
+        </div>
+        <div class="subtab-right">
+            <div class="count-chip"><i class="ri-health-check-line"></i> Project Health</div>
+            <button class="btn-primary">Generate Report</button>
+        </div>
+    </div>
+
+    <!-- MAIN LAYOUT -->
+    <div class="main-container">
+        <div class="main-content">
+            <!-- WIDGET 1: RELEASE READINESS -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="ri-shield-check-line" style="color: #22C55E; font-size: 18px;"></i>
+                    Release Readiness
+                    <div class="card-header-right">Updated 2h ago</div>
+                </div>
+                <div class="release-readiness">
+                    <div class="release-score">
+                        <div class="score-circle">
+                            <svg class="score-svg" width="80" height="80" viewBox="0 0 80 80" style="transform: rotate(-90deg);">
+                                <circle cx="40" cy="40" r="35" fill="none" stroke="#E2E8F0" stroke-width="6"></circle>
+                                <circle cx="40" cy="40" r="35" fill="none" stroke="#F59E0B" stroke-width="6" stroke-dasharray="152.75" stroke-dashoffset="0" stroke-linecap="round"></circle>
+                            </svg>
+                            <span class="score-number" style="position: absolute;">72</span>
+                        </div>
+                        <div class="score-label">Conditional</div>
+                    </div>
+                    <div class="traffic-light"><i class="ri-alert-line"></i></div>
+                    <div class="formula-panel">
+                        <div class="formula-title">Score Calculation</div>
+                        <div class="formula-items">
+                            <div class="formula-row"><span>Pass Rate</span><span class="formula-weight">40%</span></div>
+                            <div class="formula-row"><span>Critical Bug Resolution</span><span class="formula-weight">25%</span></div>
+                            <div class="formula-row"><span>Coverage</span><span class="formula-weight">20%</span></div>
+                            <div class="formula-row"><span>Milestone Progress</span><span class="formula-weight">15%</span></div>
+                        </div>
+                        <div class="formula-divider"></div>
+                        <div class="formula-signals">
+                            <span class="signal-go">&#9679; ≥80 Go</span>
+                            <span class="signal-conditional">&#9679; 60-79 Conditional</span>
+                            <span class="signal-not-ready">&#9679; &lt;60 Not Ready</span>
+                        </div>
+                    </div>
+                    <div class="metrics-row">
+                        <div class="metric-card">
+                            <div class="metric-label">Pass Rate</div>
+                            <div class="metric-value">68%</div>
+                            <div class="metric-sub">Target: 80%</div>
+                            <div class="progress-mini">
+                                <div class="progress-mini-bar" style="width: 68%;"></div>
+                            </div>
+                            <div class="gap-label">gap 12%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Critical Bugs</div>
+                            <div class="metric-value critical">2</div>
+                            <div class="metric-sub">open</div>
+                            <i class="ri-bug-line" style="font-size: 20px; color: #EF4444;"></i>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Untested TCs</div>
+                            <div class="metric-value">8</div>
+                            <div class="metric-sub">of 40 total</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Milestone</div>
+                            <div class="metric-value">72%</div>
+                            <div class="metric-sub">Sprint 12</div>
+                            <div class="progress-mini">
+                                <div class="progress-mini-bar" style="width: 72%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WIDGET 2: MY RUNS -->
+            <div class="card">
+                <div class="my-runs-header">
+                    <i class="ri-play-circle-line" style="font-size: 18px; color: #6366F1;"></i>
+                    <span class="card-header" style="margin: 0;">My Runs</span>
+                    <span class="run-count">6</span>
+                    <span class="run-count-sub"> assigned</span>
+                    <div class="run-filters">
+                        <div class="filter-btn">Status ▾</div>
+                        <div class="filter-btn">Sort: Priority ▾</div>
+                        <a class="show-all-link">View all runs</a>
+                    </div>
+                </div>
+
+                <!-- CRITICAL -->
+                <div class="priority-group">
+                    <div class="priority-header critical expanded" onclick="togglePriority(this)">
+                        <span><span style="color: #EF4444;">●</span> Critical (2) <span style="font-weight: 500; font-size: 10px; opacity: 0.7;">— milestone ≤3d</span></span>
+                    </div>
+                    <div class="priority-runs">
+                        <div class="run-card">
+                            <div class="run-card-top">
+                                <span class="run-card-name">RUN-014: Payment 3DS Regression</span>
+                                <span class="run-card-priority p-critical">Critical <span class="due-basis">· 1d left</span></span>
+                                <button class="run-card-continue"><i class="ri-play-fill"></i> Continue</button>
+                            </div>
+                            <div class="run-card-progress">
+                                <div class="run-card-bar">
+                                    <div class="seg-pass" style="width: 37.5%;"></div>
+                                    <div class="seg-fail" style="width: 12.5%;"></div>
+                                    <div class="seg-remain"></div>
+                                </div>
+                                <span class="run-card-pct">38%</span>
+                            </div>
+                            <div class="run-card-meta">
+                                <span><i class="ri-flag-line"></i>Sprint 12 Release</span>
+                                <span class="due-imminent"><i class="ri-calendar-line"></i>Due Mar 28</span>
+                                <span>4/8 passed · 1 failed · 3 remaining</span>
+                            </div>
+                        </div>
+                        <div class="run-card">
+                            <div class="run-card-top">
+                                <span class="run-card-name">RUN-018: DB Migration Rollback Suite</span>
+                                <span class="run-card-priority p-critical">Critical <span class="due-basis">· 2d left</span></span>
+                                <button class="run-card-continue"><i class="ri-play-fill"></i> Continue</button>
+                            </div>
+                            <div class="run-card-progress">
+                                <div class="run-card-bar">
+                                    <div class="seg-pass" style="width: 0%;"></div>
+                                    <div class="seg-fail" style="width: 20%;"></div>
+                                    <div class="seg-remain"></div>
+                                </div>
+                                <span class="run-card-pct">0%</span>
+                            </div>
+                            <div class="run-card-meta">
+                                <span><i class="ri-flag-line"></i>Sprint 12 Release</span>
+                                <span class="due-imminent"><i class="ri-calendar-line"></i>Due Mar 29</span>
+                                <span>0/5 passed · 1 failed · 4 remaining</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HIGH -->
+                <div class="priority-group">
+                    <div class="priority-header high expanded" onclick="togglePriority(this)">
+                        <span><span style="color: #F59E0B;">●</span> High (2) <span style="font-weight: 500; font-size: 10px; opacity: 0.7;">— milestone 4~7d</span></span>
+                    </div>
+                    <div class="priority-runs">
+                        <div class="run-card">
+                            <div class="run-card-top">
+                                <span class="run-card-name">RUN-011: Login Smoke Test</span>
+                                <span class="run-card-priority p-high">High <span class="due-basis">· 5d left</span></span>
+                                <button class="run-card-continue"><i class="ri-play-fill"></i> Continue</button>
+                            </div>
+                            <div class="run-card-progress">
+                                <div class="run-card-bar">
+                                    <div class="seg-pass" style="width: 60%;"></div>
+                                    <div class="seg-fail" style="width: 0%;"></div>
+                                    <div class="seg-remain"></div>
+                                </div>
+                                <span class="run-card-pct">60%</span>
+                            </div>
+                            <div class="run-card-meta">
+                                <span><i class="ri-flag-line"></i>Sprint 12 Release</span>
+                                <span><i class="ri-calendar-line"></i>Due Apr 1</span>
+                                <span>3/5 passed · 0 failed · 2 remaining</span>
+                            </div>
+                        </div>
+                        <div class="run-card">
+                            <div class="run-card-top">
+                                <span class="run-card-name">RUN-019: Patient Record Search Suite</span>
+                                <span class="run-card-priority p-high">High <span class="due-basis">· 7d left</span></span>
+                                <span class="manual-badge"><i class="ri-lock-line"></i>Manual</span>
+                                <button class="run-card-continue"><i class="ri-play-fill"></i> Continue</button>
+                            </div>
+                            <div class="run-card-progress">
+                                <div class="run-card-bar">
+                                    <div class="seg-pass" style="width: 41.7%;"></div>
+                                    <div class="seg-fail" style="width: 8.3%;"></div>
+                                    <div class="seg-remain"></div>
+                                </div>
+                                <span class="run-card-pct">42%</span>
+                            </div>
+                            <div class="run-card-meta">
+                                <span><i class="ri-flag-line"></i>Sprint 13 — API v3</span>
+                                <span><i class="ri-calendar-line"></i>Due Apr 3</span>
+                                <span>5/12 passed · 1 failed · 6 remaining</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MEDIUM -->
+                <div class="priority-group">
+                    <div class="priority-header medium expanded" onclick="togglePriority(this)">
+                        <span><span style="color: #FBBF24;">●</span> Medium (1) <span style="font-weight: 500; font-size: 10px; opacity: 0.7;">— milestone 8~14d</span></span>
+                    </div>
+                    <div class="priority-runs">
+                        <div class="run-card">
+                            <div class="run-card-top">
+                                <span class="run-card-name">RUN-022: API Sanity Check</span>
+                                <span class="run-card-priority p-medium">Medium <span class="due-basis">· 12d left</span></span>
+                                <button class="run-card-continue"><i class="ri-play-fill"></i> Continue</button>
+                            </div>
+                            <div class="run-card-progress">
+                                <div class="run-card-bar">
+                                    <div class="seg-pass" style="width: 15%;"></div>
+                                    <div class="seg-fail" style="width: 0%;"></div>
+                                    <div class="seg-remain"></div>
+                                </div>
+                                <span class="run-card-pct">15%</span>
+                            </div>
+                            <div class="run-card-meta">
+                                <span><i class="ri-flag-line"></i>Sprint 13 — API v3</span>
+                                <span><i class="ri-calendar-line"></i>Due Apr 8</span>
+                                <span>3/20 passed · 0 failed · 17 remaining</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOW -->
+                <div class="priority-group">
+                    <div class="priority-header low collapsed" onclick="togglePriority(this)">
+                        <span><span style="color: #22C55E;">●</span> Low (1) <span style="font-weight: 500; font-size: 10px; opacity: 0.7;">— milestone >14d</span></span>
+                    </div>
+                    <div class="priority-runs hidden">
+                        <div class="run-card">
+                            <div class="run-card-top">
+                                <span class="run-card-name">RUN-025: UI Accessibility Audit</span>
+                                <span class="run-card-priority p-low">Low <span class="due-basis">· 24d left</span></span>
+                                <button class="run-card-continue"><i class="ri-play-fill"></i> Continue</button>
+                            </div>
+                            <div class="run-card-progress">
+                                <div class="run-card-bar">
+                                    <div class="seg-pass" style="width: 0%;"></div>
+                                    <div class="seg-fail" style="width: 0%;"></div>
+                                    <div class="seg-remain"></div>
+                                </div>
+                                <span class="run-card-pct">0%</span>
+                            </div>
+                            <div class="run-card-meta">
+                                <span><i class="ri-flag-line"></i>Sprint 13 — API v3</span>
+                                <span><i class="ri-calendar-line"></i>Due Apr 20</span>
+                                <span>0/5 passed · 0 failed · 5 remaining</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WIDGET 3: TEST EXECUTION TREND -->
+            <div class="card">
+                <div class="trend-header">
+                    <div class="card-header" style="margin: 0;"><i class="ri-line-chart-line" style="font-size: 18px;"></i>Test Execution Trend</div>
+                    <div class="period-tabs">
+                        <button class="period-tab active" onclick="switchPeriod(this, '7d')">7d</button>
+                        <button class="period-tab" onclick="switchPeriod(this, '14d')">14d</button>
+                        <button class="period-tab" onclick="switchPeriod(this, '30d')">30d</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChart" width="600" height="200"></canvas>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item"><div class="legend-dot" style="background: #22C55E;"></div>Passed</div>
+                    <div class="legend-item"><div class="legend-dot" style="background: #EF4444;"></div>Failed</div>
+                    <div class="legend-item"><div class="legend-dot" style="background: #F59E0B;"></div>Blocked</div>
+                </div>
+            </div>
+
+            <!-- WIDGET 4: ATTENTION NEEDED -->
+            <div class="card attention-card">
+                <div class="card-header">
+                    <i class="ri-error-warning-fill" style="color: #EF4444; font-size: 18px;"></i>
+                    Attention Needed
+                    <span class="attention-badge">(4)</span>
+                </div>
+                <div class="attention-item">
+                    <i class="ri-error-warning-fill attention-icon" style="color: #EF4444;"></i>
+                    <div class="attention-content">
+                        <div class="attention-text">TC-043 failed 3 consecutive runs</div>
+                        <a class="attention-link">View TC-043</a>
+                    </div>
+                </div>
+                <div class="attention-item">
+                    <i class="ri-pause-circle-fill attention-icon" style="color: #F59E0B;"></i>
+                    <div class="attention-content">
+                        <div class="attention-text">TC-046 blocked for 3+ days</div>
+                        <a class="attention-link">View TC-046</a>
+                    </div>
+                </div>
+                <div class="attention-item">
+                    <i class="ri-alarm-warning-fill attention-icon" style="color: #EF4444;"></i>
+                    <div class="attention-content">
+                        <div class="attention-text">Sprint 12 milestone — 9 days left, 72% complete</div>
+                        <a class="attention-link">View Milestone</a>
+                    </div>
+                </div>
+                <div class="attention-item">
+                    <i class="ri-time-line attention-icon" style="color: #94A3B8;"></i>
+                    <div class="attention-content">
+                        <div class="attention-text">8 test cases untested for 7+ days</div>
+                        <a class="attention-link">View Untested</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WIDGET 5: RECENT ACTIVITY -->
+            <div class="card">
+                <div class="activity-header">
+                    <div class="card-header" style="margin: 0;"><i class="ri-time-line" style="font-size: 18px;"></i>Recent Activity</div>
+                    <select class="activity-filter">
+                        <option>All Types ▾</option>
+                        <option>Passed</option>
+                        <option>Failed</option>
+                    </select>
+                </div>
+
+                <div class="activity-section-header">Today</div>
+                <div class="activity-item">
+                    <i class="ri-checkbox-circle-fill activity-icon" style="color: #22C55E;"></i>
+                    <div class="activity-text">
+                        <span class="activity-user">Jake Kim</span>
+                        <span class="activity-action"> passed </span>
+                        <span class="activity-tc">TC-041 — Session Timeout</span>
+                    </div>
+                    <div class="activity-time">2h ago</div>
+                </div>
+                <div class="activity-item">
+                    <i class="ri-file-add-line activity-icon" style="color: #3B82F6;"></i>
+                    <div class="activity-text">
+                        <span class="activity-user">Sarah Park</span>
+                        <span class="activity-action"> created </span>
+                        <span class="activity-tc">TC-048 — New Payment Edge Case</span>
+                    </div>
+                    <div class="activity-time">5h ago</div>
+                </div>
+                <div class="activity-item">
+                    <i class="ri-close-circle-fill activity-icon" style="color: #EF4444;"></i>
+                    <div class="activity-text">
+                        <span class="activity-user">Mike Roe</span>
+                        <span class="activity-action"> failed </span>
+                        <span class="activity-tc">TC-043 — DB Migration Rollback</span>
+                    </div>
+                    <div class="activity-time">6h ago</div>
+                </div>
+                <div class="activity-item">
+                    <i class="ri-bug-line activity-icon" style="color: #F59E0B;"></i>
+                    <div class="activity-text">
+                        <span class="activity-user">Sarah Park</span>
+                        <span class="activity-action"> reported Bug </span>
+                        <span class="activity-tc">#B-024 — 3DS Timeout</span>
+                    </div>
+                    <div class="activity-time">7h ago</div>
+                </div>
+
+                <div class="activity-section-header">Yesterday</div>
+                <div class="activity-item">
+                    <i class="ri-checkbox-circle-fill activity-icon" style="color: #22C55E;"></i>
+                    <div class="activity-text">
+                        <span class="activity-user">Sarah Park</span>
+                        <span class="activity-action"> passed </span>
+                        <span class="activity-tc">TC-039 — API Rate Limiting</span>
+                    </div>
+                    <div class="activity-time">1d ago</div>
+                </div>
+                <div class="activity-item">
+                    <i class="ri-refresh-line activity-icon" style="color: #8B5CF6;"></i>
+                    <div class="activity-text">
+                        <span class="activity-user">Jake Kim</span>
+                        <span class="activity-action"> retested </span>
+                        <span class="activity-tc">TC-035 — Token Refresh</span>
+                    </div>
+                    <div class="activity-time">1d ago</div>
+                </div>
+                <div class="activity-item">
+                    <i class="ri-file-add-line activity-icon" style="color: #3B82F6;"></i>
+                    <div class="activity-text">
+                        <span class="activity-user">Mike Roe</span>
+                        <span class="activity-action"> created </span>
+                        <span class="activity-tc">TC-047 — Localization RTL</span>
+                    </div>
+                    <div class="activity-time">1d ago</div>
+                </div>
+
+                <button class="show-more-btn" onclick="toggleActivityShow(this)">Show more</button>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR -->
+        <div class="sidebar">
+            <!-- SUMMARY -->
+            <div class="card">
+                <div class="card-header"><i class="ri-layout-grid-line"></i>Summary</div>
+                <div class="summary-row">
+                    <div>
+                        <div class="summary-label">Test Cases</div>
+                        <div class="summary-value">40</div>
+                        <div class="summary-sub">vs last week</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="summary-change up">↑3</span>
+                        <svg class="sparkline" viewBox="0 0 60 16" preserveAspectRatio="none">
+                            <polyline points="0,14 10,10 20,12 30,8 40,9 50,6 60,5" stroke="#22C55E" stroke-width="1.5" fill="none"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="summary-row">
+                    <div>
+                        <div class="summary-label">Pass Rate</div>
+                        <div class="summary-value">68%</div>
+                        <div class="summary-sub">vs last run</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="summary-change up">↑4%</span>
+                        <div class="donut-container">
+                            <svg class="donut-svg" viewBox="0 0 50 50">
+                                <circle cx="25" cy="25" r="18" fill="none" stroke="#E2E8F0" stroke-width="4"></circle>
+                                <circle cx="25" cy="25" r="18" fill="none" stroke="#22C55E" stroke-width="4" stroke-dasharray="54.432" stroke-dashoffset="0"></circle>
+                                <circle cx="25" cy="25" r="12" fill="white"></circle>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-row">
+                    <div>
+                        <div class="summary-label">Active Runs</div>
+                        <div class="summary-value">4</div>
+                        <div class="summary-sub">vs last week</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="summary-change down">↓1</span>
+                        <svg class="sparkline" viewBox="0 0 60 16" preserveAspectRatio="none">
+                            <polyline points="0,4 10,6 20,5 30,8 40,7 50,10 60,12" stroke="#EF4444" stroke-width="1.5" fill="none"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="summary-row">
+                    <div>
+                        <div class="summary-label">Open Bugs</div>
+                        <div class="summary-value">2</div>
+                        <div class="summary-sub">no change</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="summary-change neutral">━</span>
+                        <svg class="sparkline" viewBox="0 0 60 16" preserveAspectRatio="none">
+                            <polyline points="0,8 10,8 20,8 30,8 40,8 50,8 60,8" stroke="#94A3B8" stroke-width="1.5" fill="none"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RUN PROGRESS -->
+            <div class="card">
+                <div class="card-header"><i class="ri-play-circle-line"></i>Run Progress<span class="subtab-badge">(4 active)</span></div>
+                <div class="run-item">
+                    <div class="run-name">Sprint 12 Regr.</div>
+                    <div class="run-bar">
+                        <div class="run-segment passed" style="width: 71.7%;"></div>
+                        <div class="run-segment failed" style="width: 7.5%;"></div>
+                        <div class="run-segment" style="width: 20.8%; background: #E2E8F0;"></div>
+                    </div>
+                    <div class="run-percent">72%</div>
+                </div>
+                <div class="run-item">
+                    <div class="run-name">Login Smoke</div>
+                    <div class="run-bar">
+                        <div class="run-segment passed" style="width: 45%;"></div>
+                        <div class="run-segment failed" style="width: 10%;"></div>
+                        <div class="run-segment" style="width: 45%; background: #E2E8F0;"></div>
+                    </div>
+                    <div class="run-percent">55%</div>
+                </div>
+                <div class="run-item">
+                    <div class="run-name">API Sanity</div>
+                    <div class="run-bar">
+                        <div class="run-segment passed" style="width: 15%;"></div>
+                        <div class="run-segment failed" style="width: 0%;"></div>
+                        <div class="run-segment" style="width: 85%; background: #E2E8F0;"></div>
+                    </div>
+                    <div class="run-percent">15%</div>
+                </div>
+                <div class="run-item">
+                    <div class="run-name">Patient Viewer</div>
+                    <div class="run-bar">
+                        <div class="run-segment passed" style="width: 96%;"></div>
+                        <div class="run-segment failed" style="width: 4%;"></div>
+                    </div>
+                    <div class="run-percent"><i class="ri-check-line" style="color: #22C55E; margin-right: 2px;"></i>100%</div>
+                </div>
+            </div>
+
+            <!-- MILESTONES -->
+            <div class="card">
+                <div class="card-header"><i class="ri-flag-line"></i>Milestones<a class="show-all-link" style="margin-left: auto;">View all</a></div>
+                <div class="milestone-item">
+                    <div class="milestone-title">
+                        <span>Sprint 12 Release</span>
+                        <span>72%</span>
+                    </div>
+                    <div class="milestone-bar">
+                        <div class="milestone-bar-fill" style="width: 72%;"></div>
+                    </div>
+                    <div class="milestone-meta urgent">Due: Apr 5 (9 days left)</div>
+                    <div class="milestone-summary">
+                        <span class="milestone-stat passed">P:28</span>
+                        <span class="milestone-stat failed">F:4</span>
+                        <span class="milestone-stat blocked">B:1</span>
+                        <span class="milestone-stat untested">U:7</span>
+                    </div>
+                </div>
+                <div class="milestone-item">
+                    <div class="milestone-title">
+                        <span>Sprint 13 — API v3</span>
+                        <span>18%</span>
+                    </div>
+                    <div class="milestone-bar">
+                        <div class="milestone-bar-fill" style="width: 18%;"></div>
+                    </div>
+                    <div class="milestone-meta">Due: May 1 (35 days left)</div>
+                    <div class="milestone-summary">
+                        <span class="milestone-stat passed">P:5</span>
+                        <span class="milestone-stat failed">F:1</span>
+                        <span class="milestone-stat blocked">B:0</span>
+                        <span class="milestone-stat untested">U:22</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI USAGE -->
+            <div class="card">
+                <div class="card-header"><i class="ri-lightbulb-flash-line"></i>AI Usage<span style="font-weight: 400; color: #94A3B8; font-size: 12px; margin-left: auto;">This month</span></div>
+                <div class="ai-usage-big">12 generations</div>
+                <div class="ai-usage-breakdown">3 Pro · 9 Advanced</div>
+                <div class="ai-usage-bar">
+                    <div class="ai-segment-pro"></div>
+                    <div class="ai-segment-advanced"></div>
+                </div>
+                <a class="ai-usage-link">View history</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle priority groups
+        function togglePriority(header) {
+            const runs = header.nextElementSibling;
+            const isHidden = runs.classList.contains('hidden');
+            if (isHidden) {
+                runs.classList.remove('hidden');
+                header.classList.remove('collapsed');
+                header.classList.add('expanded');
+            } else {
+                runs.classList.add('hidden');
+                header.classList.remove('expanded');
+                header.classList.add('collapsed');
+            }
+        }
+
+        // Switch period on trend chart
+        function switchPeriod(btn, period) {
+            document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            drawTrendChart(period);
+        }
+
+        // Draw trend chart with canvas
+        function drawTrendChart(period = '7d') {
+            const canvas = document.getElementById('trendChart');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.parentElement.offsetWidth - 40;
+            const height = 200;
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const data = {
+                '7d': [
+                    { date: 'Mar 21', passed: 8, failed: 2, blocked: 1 },
+                    { date: 'Mar 22', passed: 10, failed: 3, blocked: 1 },
+                    { date: 'Mar 23', passed: 12, failed: 2, blocked: 2 },
+                    { date: 'Mar 24', passed: 11, failed: 4, blocked: 1 },
+                    { date: 'Mar 25', passed: 14, failed: 3, blocked: 1 },
+                    { date: 'Mar 26', passed: 13, failed: 2, blocked: 2 },
+                    { date: 'Mar 27', passed: 15, failed: 3, blocked: 1 }
+                ]
+            };
+
+            const d = data[period];
+            const maxVal = 25;
+            const padding = 40;
+            const chartWidth = width - padding * 2;
+            const chartHeight = height - padding * 2;
+            const pointSpacing = chartWidth / (d.length - 1);
+
+            // Clear canvas
+            ctx.fillStyle = '#F8FAFC';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw grid lines
+            ctx.strokeStyle = '#E2E8F0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (chartHeight / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+            }
+
+            // Draw axes
+            ctx.strokeStyle = '#CBD5E1';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+
+            // Draw stacked areas
+            const colors = {
+                passed: 'rgba(34, 197, 94, 0.2)',
+                failed: 'rgba(239, 68, 68, 0.2)',
+                blocked: 'rgba(245, 158, 11, 0.2)'
+            };
+
+            const lineColors = {
+                passed: '#22C55E',
+                failed: '#EF4444',
+                blocked: '#F59E0B'
+            };
+
+            // Calculate points for each series
+            const points = {
+                passed: [],
+                failed: [],
+                blocked: [],
+                total: []
+            };
+
+            d.forEach((item, idx) => {
+                const x = padding + idx * pointSpacing;
+                const total = item.passed + item.failed + item.blocked;
+                const passedY = height - padding - (item.passed / maxVal) * chartHeight;
+                const failedY = height - padding - ((item.passed + item.failed) / maxVal) * chartHeight;
+                const blockedY = height - padding - ((item.passed + item.failed + item.blocked) / maxVal) * chartHeight;
+
+                points.passed.push({ x, y: passedY });
+                points.failed.push({ x, y: failedY });
+                points.blocked.push({ x, y: blockedY });
+                points.total.push({ x, y: blockedY });
+            });
+
+            // Draw blocked area
+            ctx.fillStyle = colors.blocked;
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            points.blocked.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(width - padding, height - padding);
+            ctx.fill();
+
+            // Draw failed area
+            ctx.fillStyle = colors.failed;
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            points.failed.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(width - padding, height - padding);
+            ctx.fill();
+
+            // Draw passed area
+            ctx.fillStyle = colors.passed;
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            points.passed.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(width - padding, height - padding);
+            ctx.fill();
+
+            // Draw lines
+            Object.keys(lineColors).forEach(key => {
+                ctx.strokeStyle = lineColors[key];
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                points[key].forEach((p, idx) => {
+                    if (idx === 0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                });
+                ctx.stroke();
+            });
+
+            // Draw axis labels
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = '11px Inter';
+            ctx.textAlign = 'center';
+            d.forEach((item, idx) => {
+                const x = padding + idx * pointSpacing;
+                ctx.fillText(item.date.split(' ')[1], x, height - 15);
+            });
+
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const val = Math.round((maxVal / 5) * i);
+                const y = padding + (chartHeight / 5) * (5 - i);
+                ctx.fillText(val, padding - 10, y + 4);
+            }
+        }
+
+        // Toggle activity show more
+        function toggleActivityShow(btn) {
+            btn.textContent = btn.textContent === 'Show more' ? 'Show less' : 'Show more';
+        }
+
+        // Initialize chart on load
+        window.addEventListener('DOMContentLoaded', () => {
+            drawTrendChart('7d');
+        });
+
+        // Redraw chart on window resize
+        window.addEventListener('resize', () => {
+            drawTrendChart('7d');
+        });
+    </script>
+</body>
+</html>

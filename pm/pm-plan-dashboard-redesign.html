@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Project Dashboard 개선 기획안</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.7; }
+  .doc { max-width: 960px; margin: 0 auto; padding: 3rem 2rem 4rem; }
+
+  .doc-header { margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 2px solid #E2E8F0; }
+  .doc-badge { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; font-weight: 700;
+    color: #6366F1; background: #EEF2FF; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem;
+    text-transform: uppercase; letter-spacing: 0.04em; }
+  .doc-badge i { font-size: 0.875rem; }
+  .doc-title { font-size: 2rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+  .doc-subtitle { font-size: 1rem; color: #64748B; margin-bottom: 1.25rem; }
+  .doc-meta { display: flex; gap: 1.5rem; font-size: 0.8125rem; color: #94A3B8; flex-wrap: wrap; }
+  .doc-meta span { display: flex; align-items: center; gap: 0.25rem; }
+  .doc-meta i { font-size: 0.9375rem; }
+</style>
+<style>
+  .section { margin-bottom: 3rem; }
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem;
+    border-radius: 50%; background: #6366F1; color: #fff; font-size: 0.75rem; font-weight: 800; margin-right: 0.5rem; vertical-align: middle; }
+  .section-title { font-size: 1.375rem; font-weight: 800; color: #0F172A; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+    padding-bottom: 0.75rem; border-bottom: 1px solid #E2E8F0; }
+  .section-title i { font-size: 1.25rem; color: #6366F1; }
+  h3 { font-size: 1rem; font-weight: 700; color: #1E293B; margin: 1.5rem 0 0.75rem; }
+  p { margin-bottom: 0.875rem; color: #334155; font-size: 0.9375rem; }
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+  .card-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.375rem; }
+  .card-title i { font-size: 1rem; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.8125rem; }
+  th { background: #F8FAFC; font-weight: 600; color: #64748B; text-transform: uppercase; font-size: 0.6875rem; letter-spacing: 0.04em;
+    padding: 0.625rem 0.875rem; text-align: left; border-bottom: 1px solid #E2E8F0; }
+  td { padding: 0.625rem 0.875rem; border-bottom: 1px solid #F1F5F9; color: #334155; vertical-align: top; }
+  tr:hover { background: #FAFAFF; }
+  .tag { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600;
+    padding: 0.1875rem 0.5rem; border-radius: 9999px; }
+  .tag-indigo { background: #EEF2FF; color: #4338CA; }
+  .tag-green { background: #F0FDF4; color: #166534; }
+  .tag-amber { background: #FEF3C7; color: #92400E; }
+  .tag-red { background: #FEF2F2; color: #991B1B; }
+  .tag-blue { background: #DBEAFE; color: #1E40AF; }
+  .tag-gray { background: #F1F5F9; color: #475569; }
+</style>
+<style>
+  .priority-p0 { background: #FEF2F2; color: #991B1B; font-weight: 700; }
+  .priority-p1 { background: #FEF3C7; color: #92400E; font-weight: 700; }
+  .priority-p2 { background: #DBEAFE; color: #1E40AF; font-weight: 700; }
+  .rec-box { background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); border: 2px solid #6366F1;
+    border-radius: 0.75rem; padding: 1.5rem; margin: 1.5rem 0; position: relative; }
+  .rec-box::before { content: '★ PM 추천'; position: absolute; top: -0.75rem; left: 1.25rem;
+    background: #6366F1; color: #fff; font-size: 0.6875rem; font-weight: 700; padding: 0.1875rem 0.75rem;
+    border-radius: 9999px; }
+  .rec-box p { color: #312E81; }
+  .compare-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 1.5rem 0; }
+  .compare-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1rem; }
+  .compare-card h4 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin-bottom: 0.375rem; }
+  .compare-card .desc { font-size: 0.75rem; color: #64748B; margin-bottom: 0.5rem; }
+  .score-row { display: flex; align-items: center; gap: 0.375rem; margin-bottom: 0.375rem; font-size: 0.6875rem; }
+  .score-label { width: 4.5rem; color: #64748B; }
+  .score-bar { flex: 1; height: 5px; background: #F1F5F9; border-radius: 3px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 3px; }
+  .score-val { width: 1.5rem; text-align: right; font-weight: 700; color: #0F172A; font-size: 0.625rem; }
+  .widget-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 1rem 0; }
+  .widget-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem; padding: 1rem; }
+  .widget-card.new { border-left: 3px solid #22C55E; }
+  .widget-card.improve { border-left: 3px solid #F59E0B; }
+  .widget-card.keep { border-left: 3px solid #6366F1; }
+  .widget-card h5 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.25rem; }
+  .widget-card p { font-size: 0.75rem; color: #64748B; margin-bottom: 0; }
+  ul, ol { padding-left: 1.25rem; margin-bottom: 0.875rem; }
+  li { font-size: 0.9375rem; color: #334155; margin-bottom: 0.375rem; }
+  .doc-footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 2px solid #E2E8F0;
+    display: flex; justify-content: space-between; font-size: 0.75rem; color: #94A3B8; }
+  .gap-callout { background: #FEF2F2; border: 1px solid #FECACA; border-radius: 0.625rem; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .gap-callout h4 { color: #991B1B; font-size: 0.8125rem; margin-bottom: 0.5rem; }
+  .gap-callout li { font-size: 0.8125rem; color: #7F1D1D; }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <div class="doc-header">
+    <div class="doc-badge"><i class="ri-dashboard-3-line"></i> PM 기획안</div>
+    <h1 class="doc-title">Project Dashboard 개선 기획안</h1>
+    <p class="doc-subtitle">프로젝트 건강 상태를 한눈에 파악 — Dashboard가 답해야 할 핵심 질문 재정의</p>
+    <div class="doc-meta">
+      <span><i class="ri-user-line"></i> Author: Kyle (PM)</span>
+      <span><i class="ri-calendar-line"></i> 2026-03-27</span>
+      <span><i class="ri-git-branch-line"></i> v1.0</span>
+      <span><i class="ri-lock-line"></i> Internal — CEO Review</span>
+    </div>
+  </div>
+  <!-- ═══ SECTION 1 ═══ -->
+  <div class="section" id="s1">
+    <div class="section-title"><span class="section-num">1</span><i class="ri-focus-3-line"></i> Dashboard의 핵심 목적 재정의</div>
+
+    <h3>1-1. Dashboard가 답해야 할 핵심 질문</h3>
+    <p>PM이나 QA 리드가 Dashboard를 열었을 때, 30초 안에 다음 질문들에 대한 답을 얻을 수 있어야 합니다:</p>
+
+    <div class="card">
+      <div class="card-title"><i class="ri-question-line" style="color:#6366F1"></i> 6가지 핵심 질문</div>
+      <table>
+        <thead><tr><th>#</th><th>질문</th><th>필요 데이터</th><th>현재 제공 여부</th></tr></thead>
+        <tbody>
+          <tr><td>Q1</td><td><strong>"지금 릴리스할 수 있나?"</strong></td><td>전체 Pass Rate, 미실행 TC 수, Critical 버그 수, Blocker 이슈 현황</td><td><span class="tag tag-amber">부분 제공</span> Pass Rate만 있음</td></tr>
+          <tr><td>Q2</td><td><strong>"테스트 진행 상황이 어떤가?"</strong></td><td>활성 Run 진행률, 일일/주간 실행 트렌드, 완료 예상 시각</td><td><span class="tag tag-amber">부분 제공</span> Active Runs 수만 있음</td></tr>
+          <tr><td>Q3</td><td><strong>"어디에 문제가 집중되어 있나?"</strong></td><td>모듈별 실패율, 최근 실패한 TC 목록, 반복 실패 TC</td><td><span class="tag tag-red">미제공</span></td></tr>
+          <tr><td>Q4</td><td><strong>"팀이 잘 움직이고 있나?"</strong></td><td>팀원별 활동량, 일일 TC 실행 수, 병목 지점</td><td><span class="tag tag-red">미제공</span></td></tr>
+          <tr><td>Q5</td><td><strong>"탐색적 테스팅에서 뭐가 나왔나?"</strong></td><td>활성 세션 수, 발견 버그 수, 세션 커버리지</td><td><span class="tag tag-amber">부분 제공</span> Open Discoveries만 있음</td></tr>
+          <tr><td>Q6</td><td><strong>"지난주 대비 나아졌나?"</strong></td><td>주간 Pass Rate 변화, 버그 발견/해결 비율, 테스트 속도 추이</td><td><span class="tag tag-red">미제공</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>1-2. 현재 Dashboard As-Is 분석</h3>
+    <p>현재 <code>all-tabs-unified-header-design.html</code> 기준 Dashboard 구성:</p>
+    <table>
+      <thead><tr><th>영역</th><th>현재 구현</th><th>정보량 평가</th></tr></thead>
+      <tbody>
+        <tr><td><strong>서브탭</strong></td><td>Overview · Analytics · Activity Feed (3탭)</td><td><span class="tag tag-green">적절</span></td></tr>
+        <tr><td><strong>통계 카드 (4개)</strong></td><td>Total Test Cases (40) · Pass Rate (87.5%) · Active Runs (3) · Open Discoveries (6)</td><td><span class="tag tag-red">부족</span> 숫자만 표시, 맥락 없음</td></tr>
+        <tr><td><strong>차트 (1개)</strong></td><td>Test Execution Trend (7 days) — 바 차트</td><td><span class="tag tag-red">부족</span> 1개 차트로는 인사이트 제한</td></tr>
+        <tr><td><strong>활동 로그 (1개)</strong></td><td>Recent Activity — 5개 항목 리스트</td><td><span class="tag tag-amber">개선 필요</span> 필터/유형 구분 없음</td></tr>
+      </tbody>
+    </table>
+
+    <div class="gap-callout">
+      <h4>⚠️ CEO 피드백 핵심: "각 항목마다 보여주는 정보가 너무 적다"</h4>
+      <ul>
+        <li>통계 카드가 <strong>단일 숫자</strong>만 보여줌 → 트렌드, 비교, 맥락 없음</li>
+        <li>차트가 <strong>1개</strong>뿐 → 다양한 관점의 분석 불가</li>
+        <li>Activity Feed가 <strong>단순 리스트</strong> → 필터, 유형 구분, 시간대 분석 없음</li>
+        <li><strong>모듈별/팀원별 브레이크다운</strong> 전무 → "어디에 문제가 있나" 답 불가</li>
+        <li><strong>릴리스 준비 상태</strong> 지표 없음 → "릴리스 가능한가" 판단 불가</li>
+        <li><strong>비교 분석</strong> (전주 대비, 전 Run 대비) 없음 → 개선/악화 판단 불가</li>
+      </ul>
+    </div>
+
+    <h3>1-3. 대상 사용자별 니즈</h3>
+    <table>
+      <thead><tr><th>페르소나</th><th>주요 질문</th><th>원하는 정보</th></tr></thead>
+      <tbody>
+        <tr><td><strong>PM / 프로젝트 매니저</strong></td><td>릴리스 가능한가? 일정 괜찮은가?</td><td>릴리스 준비도, 마일스톤 진행률, Critical 버그 수, 완료 예측</td></tr>
+        <tr><td><strong>QA 리드</strong></td><td>팀이 잘 돌아가고 있나? 어디서 막히나?</td><td>팀원별 실행량, 모듈별 실패율, 반복 실패 TC, 병목 지점</td></tr>
+        <tr><td><strong>개발 리드</strong></td><td>어떤 모듈이 불안정한가?</td><td>모듈별 Pass/Fail 분포, 최근 Regression 현황, 버그 히트맵</td></tr>
+        <tr><td><strong>경영진 (CEO)</strong></td><td>프로젝트 전체 건강 상태는?</td><td>한눈에 보는 요약: 녹/황/적 신호등, 핵심 KPI 트렌드</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- ═══ SECTION 2 ═══ -->
+  <div class="section" id="s2">
+    <div class="section-title"><span class="section-num">2</span><i class="ri-eye-line"></i> Overview 탭 분석 + 개선안</div>
+
+    <h3>2-1. 현재 → 개선 통계 카드</h3>
+    <p>현재 4개 카드를 <strong>6개 고밀도 카드</strong>로 확장하고, 각 카드에 트렌드/맥락 정보를 추가합니다.</p>
+
+    <div class="widget-grid">
+      <div class="widget-card improve">
+        <h5><i class="ri-checkbox-circle-fill" style="color:#22C55E"></i> Pass Rate <span class="tag tag-amber">개선</span></h5>
+        <p><strong>현재:</strong> 87.5% + "↑ 3.2% vs last run"</p>
+        <p><strong>개선:</strong> 87.5% + 스파크라인(7일 추이) + "vs 목표 95%: 7.5% gap" + 전주 대비 ↑/↓ + Passed/Failed/Blocked/Untested 미니 스택바</p>
+      </div>
+      <div class="widget-card improve">
+        <h5><i class="ri-play-circle-fill" style="color:#3B82F6"></i> Active Runs <span class="tag tag-amber">개선</span></h5>
+        <p><strong>현재:</strong> 3 + "2 in progress · 1 queued"</p>
+        <p><strong>개선:</strong> 3개 Run 각각의 이름 + 진행률 미니바 + 예상 완료 시각 + 담당자</p>
+      </div>
+      <div class="widget-card improve">
+        <h5><i class="ri-file-list-3-line" style="color:#6366F1"></i> Test Cases <span class="tag tag-amber">개선</span></h5>
+        <p><strong>현재:</strong> 40 + "↑ 12% vs last week"</p>
+        <p><strong>개선:</strong> 40 (Active 39 + Draft 1) + 상태별 도넛 차트 + 이번 주 신규 TC 수 + 자동화율 (Automated vs Manual 비율)</p>
+      </div>
+      <div class="widget-card improve">
+        <h5><i class="ri-search-eye-line" style="color:#F59E0B"></i> Discovery <span class="tag tag-amber">개선</span></h5>
+        <p><strong>현재:</strong> 6 + "↑ 2 since yesterday"</p>
+        <p><strong>개선:</strong> Open 6 / Resolved 7 / Total 15 + 이번 주 발견 버그 수 + 가장 활발한 세션 이름</p>
+      </div>
+      <div class="widget-card new">
+        <h5><i class="ri-shield-check-line" style="color:#22C55E"></i> Release Readiness <span class="tag tag-green">신규</span></h5>
+        <p><strong>신규 추가:</strong> 릴리스 준비도 점수 (0~100%) + 신호등 (🟢🟡🔴) + Critical/Blocker 버그 수 + 미실행 TC 수 + 마일스톤 진행률</p>
+      </div>
+      <div class="widget-card new">
+        <h5><i class="ri-bug-line" style="color:#EF4444"></i> Bug Snapshot <span class="tag tag-green">신규</span></h5>
+        <p><strong>신규 추가:</strong> 전체 버그 수 (Open/Resolved/Closed) + 심각도 분포 미니 차트 + 이번 주 신규 vs 해결 비율 + 평균 해결 시간</p>
+      </div>
+    </div>
+
+    <h3>2-2. 차트 영역 확장</h3>
+    <p>현재 1개 차트 + 1개 Activity 리스트를 <strong>4개 차트 위젯</strong>으로 확장합니다.</p>
+
+    <div class="widget-grid">
+      <div class="widget-card improve">
+        <h5><i class="ri-line-chart-line" style="color:#6366F1"></i> Test Execution Trend <span class="tag tag-amber">개선</span></h5>
+        <p><strong>현재:</strong> 7일 바 차트 (실행 수만 표시)</p>
+        <p><strong>개선:</strong> 스택 에어리어 차트 — Passed(녹) + Failed(적) + Blocked(황) + Untested(회) 일별 누적. 기간 셀렉터 (7d/14d/30d/Custom). 호버 시 상세 툴팁.</p>
+      </div>
+      <div class="widget-card new">
+        <h5><i class="ri-pie-chart-line" style="color:#8B5CF6"></i> Module Health Map <span class="tag tag-green">신규</span></h5>
+        <p>폴더(모듈)별 Pass/Fail 비율 트리맵 또는 히트맵. 크기 = TC 수, 색상 = Pass Rate. 문제 모듈을 시각적으로 즉시 식별.</p>
+      </div>
+      <div class="widget-card new">
+        <h5><i class="ri-bar-chart-grouped-line" style="color:#3B82F6"></i> Run Progress Overview <span class="tag tag-green">신규</span></h5>
+        <p>활성 Run들의 실시간 진행률 비교. 수평 바 차트로 각 Run의 Passed/Failed/Remaining 비율 표시. 예상 완료 시각 포함.</p>
+      </div>
+      <div class="widget-card new">
+        <h5><i class="ri-bug-line" style="color:#EF4444"></i> Bug Trend (Open vs Resolved) <span class="tag tag-green">신규</span></h5>
+        <p>일별 신규 버그 발견 수 vs 해결 수 라인 차트. 갭이 벌어지면 ⚠️ 경고. 버그 누적 추이도 함께 표시.</p>
+      </div>
+    </div>
+
+    <h3>2-3. 추가 위젯 — 상세 정보 패널</h3>
+    <div class="widget-grid">
+      <div class="widget-card new">
+        <h5><i class="ri-alert-line" style="color:#EF4444"></i> Attention Needed <span class="tag tag-green">신규</span></h5>
+        <p>즉시 조치 필요 항목 리스트: 반복 실패 TC (3회+), Blocked TC, 기한 초과 마일스톤, 7일 이상 미실행 TC. 각 항목 클릭 시 해당 페이지로 이동.</p>
+      </div>
+      <div class="widget-card new">
+        <h5><i class="ri-flag-line" style="color:#F59E0B"></i> Milestone Tracker <span class="tag tag-green">신규</span></h5>
+        <p>활성 마일스톤 리스트: 이름 + 진행률 바 + 남은 일수 + TC 상태 요약. 기한 임박 시 경고 색상.</p>
+      </div>
+    </div>
+
+    <h3>2-4. Overview 탭 전체 레이아웃 (개선 후)</h3>
+    <table>
+      <thead><tr><th>행</th><th>영역</th><th>구성</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Row A</strong></td><td>통계 카드 (3열 × 2행)</td><td>Pass Rate · Active Runs · Test Cases · Discovery · Release Readiness · Bug Snapshot</td></tr>
+        <tr><td><strong>Row B</strong></td><td>차트 (2열)</td><td>[좌] Test Execution Trend (넓은) + [우] Module Health Map</td></tr>
+        <tr><td><strong>Row C</strong></td><td>차트 (2열)</td><td>[좌] Run Progress Overview + [우] Bug Trend</td></tr>
+        <tr><td><strong>Row D</strong></td><td>패널 (2열)</td><td>[좌] Attention Needed 리스트 + [우] Milestone Tracker</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══ SECTION 3 ═══ -->
+  <div class="section" id="s3">
+    <div class="section-title"><span class="section-num">3</span><i class="ri-bar-chart-2-fill"></i> Analytics 탭 분석 + 개선안</div>
+
+    <p>Analytics 탭은 Overview보다 <strong>깊이 있는 데이터 분석</strong>을 제공합니다. 기간별 비교, 팀 퍼포먼스, 테스트 커버리지 등 의사결정에 필요한 심층 분석 위젯을 배치합니다.</p>
+
+    <h3>3-1. 분석 카테고리별 위젯</h3>
+
+    <div class="card">
+      <div class="card-title"><i class="ri-line-chart-line" style="color:#6366F1"></i> A. 트렌드 분석 (Trend Analysis)</div>
+      <table>
+        <thead><tr><th>위젯</th><th>차트 타입</th><th>데이터</th><th>기간 옵션</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Pass Rate Trend</strong></td><td>라인 차트</td><td>일별/주별 Pass Rate 변화 추이</td><td>7d / 14d / 30d / 90d / Custom</td></tr>
+          <tr><td><strong>Execution Volume</strong></td><td>스택 바 차트</td><td>일별 TC 실행 수 (Passed/Failed/Blocked/Skipped)</td><td>7d / 14d / 30d</td></tr>
+          <tr><td><strong>Bug Discovery Rate</strong></td><td>에어리어 차트</td><td>일별 신규 버그 발견 + 누적 곡선</td><td>30d / 90d</td></tr>
+          <tr><td><strong>Test Coverage Growth</strong></td><td>라인 차트</td><td>전체 TC 수 변화 추이 + 자동화 TC 비율</td><td>30d / 90d / 6m</td></tr>
+          <tr><td><strong>Cycle Time</strong></td><td>라인 차트</td><td>Run 평균 소요 시간 변화 추이</td><td>30d / 90d</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="ri-team-line" style="color:#8B5CF6"></i> B. 팀 퍼포먼스 (Team Performance)</div>
+      <table>
+        <thead><tr><th>위젯</th><th>차트 타입</th><th>데이터</th><th>인사이트</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Team Activity Heatmap</strong></td><td>히트맵 (7일×멤버수)</td><td>팀원별 일별 TC 실행 수</td><td>누가 활발한가, 누가 비활성인가</td></tr>
+          <tr><td><strong>Member Leaderboard</strong></td><td>수평 바 차트</td><td>팀원별 실행 TC 수, Pass Rate, 발견 버그 수</td><td>팀원별 기여도 비교</td></tr>
+          <tr><td><strong>Workload Distribution</strong></td><td>도넛 차트</td><td>팀원별 할당된 TC 수 비율</td><td>업무 균형 확인, 과부하 식별</td></tr>
+          <tr><td><strong>Avg. Execution Speed</strong></td><td>바 차트</td><td>팀원별 TC당 평균 실행 시간</td><td>효율성 비교 (주의: 벤치마크용, 평가용 아님)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="ri-shield-check-line" style="color:#22C55E"></i> C. 테스트 커버리지 (Test Coverage)</div>
+      <table>
+        <thead><tr><th>위젯</th><th>차트 타입</th><th>데이터</th><th>인사이트</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Module Coverage Matrix</strong></td><td>히트맵 테이블</td><td>모듈(폴더) × 상태 (Passed/Failed/Untested)</td><td>어떤 모듈이 충분히 테스트되었나</td></tr>
+          <tr><td><strong>Priority Coverage</strong></td><td>스택 바</td><td>Priority별 (High/Med/Low) TC 실행률</td><td>High priority TC 미실행 경고</td></tr>
+          <tr><td><strong>Untested TC Aging</strong></td><td>히스토그램</td><td>미실행 TC의 나이 분포 (1일/1주/1월/3월+)</td><td>오래된 미실행 TC 식별</td></tr>
+          <tr><td><strong>Requirements Traceability</strong></td><td>Sankey 다이어그램</td><td>요구사항 → TC → 실행 결과 매핑</td><td>요구사항별 테스트 커버리지</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="ri-bug-line" style="color:#EF4444"></i> D. 결함 분석 (Defect Analysis)</div>
+      <table>
+        <thead><tr><th>위젯</th><th>차트 타입</th><th>데이터</th><th>인사이트</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Bug Severity Distribution</strong></td><td>도넛 차트</td><td>Critical / Major / Minor / Trivial 비율</td><td>심각도 분포 한눈에 파악</td></tr>
+          <tr><td><strong>Bug Resolution Funnel</strong></td><td>퍼널 차트</td><td>Open → In Progress → Fixed → Verified → Closed</td><td>어디서 병목이 생기나</td></tr>
+          <tr><td><strong>Flaky Tests</strong></td><td>테이블 리스트</td><td>최근 5회 Run에서 결과가 불안정한 TC 목록</td><td>신뢰할 수 없는 TC 관리</td></tr>
+          <tr><td><strong>Repeat Failures</strong></td><td>테이블 리스트</td><td>3회 이상 연속 실패 TC + 연결 이슈</td><td>지속적 문제 식별</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>3-2. Analytics 탭 레이아웃</h3>
+    <p>Analytics 탭은 Qase의 커스텀 대시보드 방식을 참고하여, 사용자가 위젯을 자유롭게 배치하는 <strong>드래그앤드롭 그리드</strong>를 장기 목표로 하되, 초기에는 아래 고정 레이아웃으로 제공합니다.</p>
+    <table>
+      <thead><tr><th>행</th><th>구성</th></tr></thead>
+      <tbody>
+        <tr><td><strong>기간 셀렉터 바</strong></td><td>[7d] [14d] [30d] [90d] [Custom] — 전체 Analytics 위젯에 공통 적용</td></tr>
+        <tr><td><strong>Row A</strong></td><td>[좌] Pass Rate Trend + [우] Execution Volume (2열)</td></tr>
+        <tr><td><strong>Row B</strong></td><td>[좌] Team Activity Heatmap + [우] Member Leaderboard (2열)</td></tr>
+        <tr><td><strong>Row C</strong></td><td>[좌] Module Coverage Matrix (넓은) + [우] Priority Coverage (2열)</td></tr>
+        <tr><td><strong>Row D</strong></td><td>[좌] Bug Severity Distribution + [우] Bug Discovery Rate (2열)</td></tr>
+        <tr><td><strong>Row E</strong></td><td>[좌] Flaky Tests 리스트 + [우] Repeat Failures 리스트 (2열)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══ SECTION 4 ═══ -->
+  <div class="section" id="s4">
+    <div class="section-title"><span class="section-num">4</span><i class="ri-time-fill"></i> Activity Feed 탭 분석 + 개선안</div>
+
+    <h3>4-1. 현재 vs 개선</h3>
+    <table>
+      <thead><tr><th>항목</th><th>현재</th><th>개선안</th></tr></thead>
+      <tbody>
+        <tr><td><strong>형태</strong></td><td>단순 리스트 (5개 항목)</td><td>타임라인 + 필터링 가능한 피드</td></tr>
+        <tr><td><strong>정보량</strong></td><td>이름 + 동작 + 시간</td><td>이름 + 동작 + 대상 + 변경 내용 요약 + 시간 + 아바타</td></tr>
+        <tr><td><strong>필터</strong></td><td>없음</td><td>사용자별 / 활동 유형별 / 기간별</td></tr>
+        <tr><td><strong>그루핑</strong></td><td>없음</td><td>날짜별 섹션 구분 (Today / Yesterday / This week)</td></tr>
+        <tr><td><strong>표시 수</strong></td><td>5개 고정</td><td>무한 스크롤 (lazy load)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4-2. 활동 유형 정의</h3>
+    <div class="card">
+      <div class="card-title"><i class="ri-list-check-3" style="color:#6366F1"></i> 추적할 활동 유형</div>
+      <table>
+        <thead><tr><th>유형</th><th>아이콘</th><th>컬러</th><th>예시</th></tr></thead>
+        <tbody>
+          <tr><td><strong>TC 생성/수정</strong></td><td><code>ri-file-add-line</code></td><td>#6366F1 (Indigo)</td><td>Jake Lee created TC-048 "API returns 401..."</td></tr>
+          <tr><td><strong>TC 실행 (Passed)</strong></td><td><code>ri-checkbox-circle-fill</code></td><td>#22C55E (Green)</td><td>Sarah Kim passed TC-041 in Run #R-015</td></tr>
+          <tr><td><strong>TC 실행 (Failed)</strong></td><td><code>ri-close-circle-fill</code></td><td>#EF4444 (Red)</td><td>Mike Chen failed TC-043 in Run #R-015</td></tr>
+          <tr><td><strong>TC 실행 (Blocked)</strong></td><td><code>ri-forbid-line</code></td><td>#F59E0B (Amber)</td><td>Mike Chen blocked TC-046 — dependency issue</td></tr>
+          <tr><td><strong>Run 시작/완료</strong></td><td><code>ri-play-circle-fill</code></td><td>#3B82F6 (Blue)</td><td>Sarah Kim started Run #R-015 "Sprint 12 Regression"</td></tr>
+          <tr><td><strong>Discovery 로그</strong></td><td><code>ri-search-eye-line</code></td><td>#F59E0B (Amber)</td><td>Mike Chen logged discovery #DL-009 (2 bugs)</td></tr>
+          <tr><td><strong>버그 등록</strong></td><td><code>ri-bug-line</code></td><td>#EF4444 (Red)</td><td>Sarah Kim reported bug "3DS timeout error"</td></tr>
+          <tr><td><strong>댓글</strong></td><td><code>ri-chat-3-line</code></td><td>#64748B (Gray)</td><td>You commented on TC-043: "Needs env fix"</td></tr>
+          <tr><td><strong>마일스톤 변경</strong></td><td><code>ri-flag-line</code></td><td>#8B5CF6 (Purple)</td><td>You updated Milestone "Sprint 12" to 72%</td></tr>
+          <tr><td><strong>상태 변경</strong></td><td><code>ri-arrow-left-right-line</code></td><td>#475569 (Slate)</td><td>Jake Lee changed TC-048 status: Draft → Active</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>4-3. 필터 시스템</h3>
+    <table>
+      <thead><tr><th>필터</th><th>타입</th><th>옵션</th></tr></thead>
+      <tbody>
+        <tr><td><strong>사용자</strong></td><td>Multi-select (아바타)</td><td>All / 개별 팀원 선택</td></tr>
+        <tr><td><strong>활동 유형</strong></td><td>Multi-select (칩)</td><td>TC 생성 · 실행 · Run · Discovery · 버그 · 댓글 · 마일스톤 · 상태 변경</td></tr>
+        <tr><td><strong>기간</strong></td><td>프리셋 + Custom</td><td>Today / Yesterday / This week / This month / Custom range</td></tr>
+        <tr><td><strong>대상</strong></td><td>검색 입력</td><td>특정 TC, Run, Milestone 등 검색으로 해당 항목의 활동만 필터</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4-4. Activity Feed 레이아웃</h3>
+    <table>
+      <thead><tr><th>영역</th><th>구성</th></tr></thead>
+      <tbody>
+        <tr><td><strong>상단 필터 바</strong></td><td>[사용자 필터] [유형 필터] [기간 필터] [검색] — 수평 배치</td></tr>
+        <tr><td><strong>날짜 헤더</strong></td><td>"Today — Mar 27, 2026" / "Yesterday — Mar 26, 2026" 구분선</td></tr>
+        <tr><td><strong>활동 항목</strong></td><td>아바타 + 이름 + 동작 텍스트 + 대상 링크 + 변경 요약 + 상대 시간</td></tr>
+        <tr><td><strong>하단</strong></td><td>무한 스크롤 (25개씩 lazy load) + "Load more" 폴백</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>추가 기능:</strong> 각 활동 항목에 "Pin" 기능을 추가하여 중요 이벤트를 상단에 고정 가능. 팀 미팅 시 주요 변경 사항 빠르게 확인용.</p>
+  </div>
+
+  <!-- ═══ SECTION 5 ═══ -->
+  <div class="section" id="s5">
+    <div class="section-title"><span class="section-num">5</span><i class="ri-bar-chart-grouped-line"></i> 경쟁사 벤치마킹</div>
+
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4><i class="ri-test-tube-line" style="color:#3B82F6"></i> TestRail</h4>
+        <p class="desc">17개 표준 리포트 템플릿, AI 기반 예측 분석, 완료 시각 예측 알고리즘</p>
+        <div class="score-row"><span class="score-label">위젯 다양성</span><div class="score-bar"><div class="score-fill" style="width:80%;background:#3B82F6"></div></div><span class="score-val">8</span></div>
+        <div class="score-row"><span class="score-label">커스터마이징</span><div class="score-bar"><div class="score-fill" style="width:70%;background:#3B82F6"></div></div><span class="score-val">7</span></div>
+        <div class="score-row"><span class="score-label">실시간성</span><div class="score-bar"><div class="score-fill" style="width:85%;background:#3B82F6"></div></div><span class="score-val">8.5</span></div>
+      </div>
+      <div class="compare-card">
+        <h4><i class="ri-links-line" style="color:#8B5CF6"></i> Zephyr Scale</h4>
+        <p class="desc">70+ 빌트인 리포트, Jira 대시보드 가젯 네이티브 통합, Confluence 리포팅</p>
+        <div class="score-row"><span class="score-label">위젯 다양성</span><div class="score-bar"><div class="score-fill" style="width:85%;background:#8B5CF6"></div></div><span class="score-val">8.5</span></div>
+        <div class="score-row"><span class="score-label">커스터마이징</span><div class="score-bar"><div class="score-fill" style="width:60%;background:#8B5CF6"></div></div><span class="score-val">6</span></div>
+        <div class="score-row"><span class="score-label">실시간성</span><div class="score-bar"><div class="score-fill" style="width:75%;background:#8B5CF6"></div></div><span class="score-val">7.5</span></div>
+      </div>
+      <div class="compare-card">
+        <h4><i class="ri-sparkling-2-fill" style="color:#6366F1"></i> Qase</h4>
+        <p class="desc">100+ 드래그앤드롭 위젯, 커스텀 QQL 쿼리, 프로젝트 간 비교 지원</p>
+        <div class="score-row"><span class="score-label">위젯 다양성</span><div class="score-bar"><div class="score-fill" style="width:95%;background:#6366F1"></div></div><span class="score-val">9.5</span></div>
+        <div class="score-row"><span class="score-label">커스터마이징</span><div class="score-bar"><div class="score-fill" style="width:95%;background:#6366F1"></div></div><span class="score-val">9.5</span></div>
+        <div class="score-row"><span class="score-label">실시간성</span><div class="score-bar"><div class="score-fill" style="width:80%;background:#6366F1"></div></div><span class="score-val">8</span></div>
+      </div>
+      <div class="compare-card">
+        <h4><i class="ri-shield-star-line" style="color:#22C55E"></i> PractiTest</h4>
+        <p class="desc">무제한 탭 대시보드, 외부 임베드 지원, 자동 스케줄 리포트, 공유 링크</p>
+        <div class="score-row"><span class="score-label">위젯 다양성</span><div class="score-bar"><div class="score-fill" style="width:80%;background:#22C55E"></div></div><span class="score-val">8</span></div>
+        <div class="score-row"><span class="score-label">커스터마이징</span><div class="score-bar"><div class="score-fill" style="width:85%;background:#22C55E"></div></div><span class="score-val">8.5</span></div>
+        <div class="score-row"><span class="score-label">실시간성</span><div class="score-bar"><div class="score-fill" style="width:75%;background:#22C55E"></div></div><span class="score-val">7.5</span></div>
+      </div>
+    </div>
+
+    <h3>5-1. 핵심 기능 비교</h3>
+    <table>
+      <thead><tr><th>기능</th><th>TestRail</th><th>Zephyr</th><th>Qase</th><th>PractiTest</th><th>Testably (목표)</th></tr></thead>
+      <tbody>
+        <tr><td>릴리스 준비도 지표</td><td><span class="tag tag-green">있음</span></td><td><span class="tag tag-amber">제한적</span></td><td><span class="tag tag-green">있음</span></td><td><span class="tag tag-green">있음</span></td><td><span class="tag tag-indigo">신규 추가</span></td></tr>
+        <tr><td>완료 시각 예측</td><td><span class="tag tag-green">AI 기반</span></td><td><span class="tag tag-red">없음</span></td><td><span class="tag tag-red">없음</span></td><td><span class="tag tag-red">없음</span></td><td><span class="tag tag-indigo">차별화 포인트</span></td></tr>
+        <tr><td>모듈별 히트맵</td><td><span class="tag tag-red">없음</span></td><td><span class="tag tag-red">없음</span></td><td><span class="tag tag-amber">제한적</span></td><td><span class="tag tag-red">없음</span></td><td><span class="tag tag-indigo">차별화 포인트</span></td></tr>
+        <tr><td>팀 퍼포먼스 뷰</td><td><span class="tag tag-amber">기본</span></td><td><span class="tag tag-amber">Jira 연동</span></td><td><span class="tag tag-green">있음</span></td><td><span class="tag tag-green">있음</span></td><td><span class="tag tag-indigo">강화 예정</span></td></tr>
+        <tr><td>커스텀 위젯</td><td><span class="tag tag-amber">제한적</span></td><td><span class="tag tag-amber">가젯 기반</span></td><td><span class="tag tag-green">100+위젯</span></td><td><span class="tag tag-green">유연함</span></td><td><span class="tag tag-indigo">Phase 2</span></td></tr>
+        <tr><td>외부 공유/임베드</td><td><span class="tag tag-green">있음</span></td><td><span class="tag tag-green">Confluence</span></td><td><span class="tag tag-green">공개 링크</span></td><td><span class="tag tag-green">임베드+링크</span></td><td><span class="tag tag-indigo">Phase 3</span></td></tr>
+        <tr><td>자동 리포트 발송</td><td><span class="tag tag-green">있음</span></td><td><span class="tag tag-amber">제한적</span></td><td><span class="tag tag-red">없음</span></td><td><span class="tag tag-green">스케줄 지원</span></td><td><span class="tag tag-indigo">Phase 3</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>5-2. Testably 차별화 전략</h3>
+    <div class="rec-box">
+      <p style="margin-top:0.5rem;"><strong>3가지 차별화 포인트:</strong></p>
+      <p><strong>① 릴리스 준비도 스코어:</strong> TestRail의 예측 기능을 넘어, Pass Rate + Critical 버그 + 미실행 TC + 마일스톤 진행률을 종합한 단일 점수(0~100)와 신호등 표시. 경쟁사 중 이를 단일 지표로 제공하는 곳 없음.</p>
+      <p><strong>② Module Health Map:</strong> 폴더(모듈)별 테스트 상태를 트리맵/히트맵으로 시각화. 문제 모듈을 1초 만에 식별. Qase가 유사한 시도를 했으나 Testably가 더 직관적으로 구현 가능.</p>
+      <p><strong>③ Discovery 통합 대시보드:</strong> 구조적 테스팅(TC/Run)과 탐색적 테스팅(Discovery)을 하나의 Dashboard에서 동시에 모니터링. 경쟁사들은 이 두 영역을 분리해서 보여줌.</p>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 6 ═══ -->
+  <div class="section" id="s6">
+    <div class="section-title"><span class="section-num">6</span><i class="ri-star-fill"></i> PM 추천안 — 탭별 위젯 구성 + 우선순위</div>
+
+    <h3>6-1. Overview 탭 위젯 우선순위</h3>
+    <table>
+      <thead><tr><th>우선순위</th><th>위젯</th><th>이유</th><th>개발 규모</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag priority-p0">P0</span></td><td>Pass Rate 카드 개선 (스파크라인 + 목표 대비 + 미니 스택바)</td><td>CEO 피드백 직접 대응 — "정보가 너무 적다"</td><td>S</td></tr>
+        <tr><td><span class="tag priority-p0">P0</span></td><td>Active Runs 카드 개선 (개별 Run 진행률 + 예상 완료)</td><td>Q2 "테스트 진행 상황" 직접 답변</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p0">P0</span></td><td>Release Readiness 카드 신규</td><td>Q1 "릴리스 가능한가" — 경쟁사 차별화</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p0">P0</span></td><td>Bug Snapshot 카드 신규</td><td>버그 현황 전무 → 필수 정보 보완</td><td>S</td></tr>
+        <tr><td><span class="tag priority-p1">P1</span></td><td>Test Execution Trend 차트 개선 (스택 에어리어 + 기간 셀렉터)</td><td>기존 차트 정보량 확장</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p1">P1</span></td><td>Module Health Map 신규</td><td>Q3 "문제 집중 영역" 직접 답변 — 차별화</td><td>L</td></tr>
+        <tr><td><span class="tag priority-p1">P1</span></td><td>Attention Needed 패널 신규</td><td>즉시 조치 항목 가시성 확보</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p2">P2</span></td><td>Run Progress Overview 차트 신규</td><td>Overview 차트 다양화</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p2">P2</span></td><td>Bug Trend (Open vs Resolved) 차트 신규</td><td>버그 추이 가시화</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p2">P2</span></td><td>Milestone Tracker 패널 신규</td><td>마일스톤 진행 상황 모니터링</td><td>S</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6-2. Analytics 탭 위젯 우선순위</h3>
+    <table>
+      <thead><tr><th>우선순위</th><th>위젯</th><th>이유</th><th>개발 규모</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag priority-p0">P0</span></td><td>기간 셀렉터 바 (공통 적용)</td><td>모든 분석 위젯의 기반 인프라</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p0">P0</span></td><td>Pass Rate Trend 라인 차트</td><td>Q6 "나아졌나?" 직접 답변</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p0">P0</span></td><td>Module Coverage Matrix 히트맵</td><td>커버리지 가시화 — 핵심 분석</td><td>L</td></tr>
+        <tr><td><span class="tag priority-p1">P1</span></td><td>Team Activity Heatmap</td><td>Q4 "팀이 잘 움직이고 있나" 답변</td><td>L</td></tr>
+        <tr><td><span class="tag priority-p1">P1</span></td><td>Bug Severity Distribution 도넛</td><td>결함 분석 기초</td><td>S</td></tr>
+        <tr><td><span class="tag priority-p1">P1</span></td><td>Flaky Tests + Repeat Failures 리스트</td><td>품질 안정성 관리</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p2">P2</span></td><td>Member Leaderboard</td><td>팀 퍼포먼스 심화</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p2">P2</span></td><td>Requirements Traceability Sankey</td><td>고급 분석 — 장기 목표</td><td>XL</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6-3. Activity Feed 탭 위젯 우선순위</h3>
+    <table>
+      <thead><tr><th>우선순위</th><th>위젯</th><th>이유</th><th>개발 규모</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag priority-p0">P0</span></td><td>활동 유형 아이콘 + 컬러 시스템</td><td>현재 단순 리스트 → 시각적 구분 필수</td><td>S</td></tr>
+        <tr><td><span class="tag priority-p0">P0</span></td><td>날짜별 그루핑 (Today / Yesterday / This week)</td><td>시간 맥락 제공</td><td>S</td></tr>
+        <tr><td><span class="tag priority-p1">P1</span></td><td>사용자별 / 유형별 필터</td><td>대규모 팀에서 필수</td><td>M</td></tr>
+        <tr><td><span class="tag priority-p1">P1</span></td><td>무한 스크롤 (lazy load)</td><td>5개 고정 → 확장</td><td>S</td></tr>
+        <tr><td><span class="tag priority-p2">P2</span></td><td>Pin(고정) 기능</td><td>중요 이벤트 강조</td><td>S</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6-4. 구현 로드맵</h3>
+    <table>
+      <thead><tr><th>Phase</th><th>기간</th><th>목표</th><th>산출물</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-red">Phase 1</span></td><td>2주</td><td>P0 위젯 구현 (Overview 4개 카드 개선 + 신규)</td><td>Pass Rate/Runs/Release Readiness/Bug 카드 고밀도화</td></tr>
+        <tr><td><span class="tag tag-amber">Phase 2</span></td><td>2주</td><td>P0 차트 + Analytics 기반</td><td>기간 셀렉터 + Pass Rate Trend + Module Coverage Matrix</td></tr>
+        <tr><td><span class="tag tag-blue">Phase 3</span></td><td>2주</td><td>P1 위젯 전체 + Activity Feed 개선</td><td>Module Health Map + Team Heatmap + Activity 필터/그루핑</td></tr>
+        <tr><td><span class="tag tag-indigo">Phase 4</span></td><td>2주</td><td>P2 + 폴리싱</td><td>나머지 위젯 + 커스텀 위젯 기반 설계 + 외부 공유 기능</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6-5. 핵심 원칙</h3>
+    <div class="card" style="border-color:#6366F1; border-width:2px;">
+      <div class="card-title" style="font-size:1rem;"><i class="ri-lightbulb-flash-line" style="color:#F59E0B"></i> Dashboard 개선 3대 원칙</div>
+      <p><strong>① 30초 룰:</strong> Dashboard를 열고 30초 안에 "프로젝트 건강 상태"에 대한 답을 얻을 수 있어야 한다. 모든 카드/차트는 이 기준으로 정보량을 설계한다.</p>
+      <p><strong>② 맥락 있는 숫자:</strong> 단일 숫자만 보여주지 않는다. 반드시 트렌드(↑↓), 비교 기준(vs 목표/vs 전주), 상태 분포(미니 차트)를 함께 제공한다.</p>
+      <p><strong>③ 점진적 공개:</strong> Overview에서 요약 → Analytics에서 심화 → 개별 탭(TC/Runs/Discovery)에서 상세. 같은 데이터를 다른 깊이로 보여준다.</p>
+    </div>
+  </div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <div class="doc-footer">
+    <span>Testably PM Plan — Project Dashboard 개선 기획안 v1.0</span>
+    <span>From: Kyle (PM) · To: CEO Review · 2026-03-27</span>
+  </div>
+
+</div>
+</body>
+</html>

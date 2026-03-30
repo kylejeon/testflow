@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
 import { supabase, type Project } from '../../../lib/supabase';
+import { loadProjectDetailData } from '../../project-detail/queryFns';
 import CreateProjectModal from './CreateProjectModal';
 import EditProjectModal from './EditProjectModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
@@ -45,20 +47,238 @@ function timeAgo(dateString: string): string {
   return new Date(dateString).toLocaleDateString();
 }
 
+// ── ProjectsData type ───────────────────────────────────────────────────────
+type ProjectsData = {
+  projects: Project[];
+  testCaseCounts: Record<string, number>;
+  testRunCounts: Record<string, number>;
+  activeRunCount: number;
+  testCasesThisWeek: number;
+  projectPassRates: Record<string, number | null>;
+  passRateDelta: number | null;
+  passRateDeltaLabel: string | null;
+  projectMembers: Record<string, Array<{ initials: string; color: string; userId?: string; name?: string }>>;
+  currentUserId: string | null;
+  userProjectRoles: Record<string, string>;
+};
+
+// ── Standalone data loader (no setState) ───────────────────────────────────
+async function loadProjectsData(): Promise<ProjectsData> {
+  const period = (localStorage.getItem('passrate_period') ?? 'active_run') as 'active_run' | '7d' | '30d' | 'all';
+
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session) throw new Error('UNAUTHENTICATED');
+
+  const user = session.user;
+  const currentUserId = user.id;
+
+  // Critical path: get project IDs
+  const { data: memberData, error: memberError } = await supabase
+    .from('project_members')
+    .select('project_id')
+    .eq('user_id', user.id);
+
+  if (memberError) throw memberError;
+
+  const projectIds = memberData?.map(m => m.project_id) || [];
+
+  // Get roles
+  const userProjectRoles: Record<string, string> = {};
+  try {
+    const { data: roleData } = await supabase
+      .from('project_members')
+      .select('project_id, role')
+      .eq('user_id', user.id);
+    roleData?.forEach((m: { project_id: string; role: string }) => { userProjectRoles[m.project_id] = m.role; });
+  } catch { /* role check failed */ }
+
+  if (projectIds.length === 0) {
+    return {
+      projects: [], testCaseCounts: {}, testRunCounts: {}, activeRunCount: 0,
+      testCasesThisWeek: 0, projectPassRates: {}, passRateDelta: null,
+      passRateDeltaLabel: null, projectMembers: {}, currentUserId, userProjectRoles,
+    };
+  }
+
+  const [
+    { data: projectsData, error: projectsError },
+    { data: testCasesData, error: testCasesError },
+    { data: testRunsData, error: testRunsError },
+  ] = await Promise.all([
+    supabase.from('projects').select('*').in('id', projectIds).order('created_at', { ascending: false }),
+    supabase.from('test_cases').select('project_id').in('project_id', projectIds),
+    supabase.from('test_runs').select('project_id').in('project_id', projectIds),
+  ]);
+
+  if (projectsError) throw projectsError;
+
+  const testCaseCounts: Record<string, number> = {};
+  if (!testCasesError && testCasesData) {
+    testCasesData.forEach(tc => { testCaseCounts[tc.project_id] = (testCaseCounts[tc.project_id] || 0) + 1; });
+  }
+
+  const testRunCounts: Record<string, number> = {};
+  if (!testRunsError && testRunsData) {
+    testRunsData.forEach(tr => { testRunCounts[tr.project_id] = (testRunCounts[tr.project_id] || 0) + 1; });
+  }
+
+  // Compute pass rates
+  const now = new Date();
+  const activeStatuses = ['new', 'in_progress', 'paused', 'under_review'];
+
+  let runsQuery = supabase.from('test_runs').select('id, project_id').in('project_id', projectIds);
+  if (period === 'active_run') {
+    runsQuery = (runsQuery as any).in('status', activeStatuses);
+  }
+  const { data: allRunsForStats } = await runsQuery;
+
+  let projectPassRates: Record<string, number | null> = {};
+  let passRateDelta: number | null = null;
+  let passRateDeltaLabel: string | null = null;
+
+  if (allRunsForStats && allRunsForStats.length > 0) {
+    const runIds = allRunsForStats.map((r: { id: string; project_id: string }) => r.id);
+    const runProjectMap: Record<string, string> = {};
+    allRunsForStats.forEach((r: { id: string; project_id: string }) => { runProjectMap[r.id] = r.project_id; });
+
+    let startDate: string | null = null;
+    let prevStartDate: string | null = null;
+    let prevEndDate: string | null = null;
+    if (period === '7d') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      prevStartDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      prevEndDate = startDate;
+    } else if (period === '30d') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      prevStartDate = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString();
+      prevEndDate = startDate;
+    }
+
+    let resultsQuery = supabase
+      .from('test_results')
+      .select('run_id, test_case_id, status, created_at')
+      .in('run_id', runIds)
+      .order('created_at', { ascending: false });
+    if (startDate) resultsQuery = (resultsQuery as any).gte('created_at', startDate);
+
+    const { data: resultsData } = await resultsQuery;
+
+    const computeRate = (rows: Array<{ run_id: string; test_case_id: string; status: string }>) => {
+      const seen: Record<string, string> = {};
+      rows.forEach(r => { const k = `${r.run_id}::${r.test_case_id}`; if (!(k in seen)) seen[k] = r.status; });
+      let passed = 0, total = 0;
+      Object.values(seen).forEach(s => { if (s !== 'untested') { total++; if (s === 'passed') passed++; } });
+      return total > 0 ? (passed / total) * 100 : null;
+    };
+
+    if (resultsData) {
+      const latestByKey: Record<string, string> = {};
+      resultsData.forEach((r: { run_id: string; test_case_id: string; status: string }) => {
+        const key = `${r.run_id}::${r.test_case_id}`;
+        if (!(key in latestByKey)) latestByKey[key] = r.status;
+      });
+
+      const projectCounts: Record<string, { passed: number; total: number }> = {};
+      Object.entries(latestByKey).forEach(([key, status]) => {
+        const runId = key.split('::')[0];
+        const pid = runProjectMap[runId];
+        if (!pid) return;
+        if (!projectCounts[pid]) projectCounts[pid] = { passed: 0, total: 0 };
+        if (status !== 'untested') {
+          projectCounts[pid].total++;
+          if (status === 'passed') projectCounts[pid].passed++;
+        }
+      });
+      for (const [pid, counts] of Object.entries(projectCounts)) {
+        projectPassRates[pid] = counts.total > 0 ? Math.round((counts.passed / counts.total) * 100) : null;
+      }
+
+      if (prevStartDate && prevEndDate) {
+        const allRunIdsForDelta = (
+          await supabase.from('test_runs').select('id').in('project_id', projectIds)
+        ).data?.map((r: { id: string }) => r.id) ?? [];
+
+        if (allRunIdsForDelta.length > 0) {
+          const { data: prevData } = await supabase
+            .from('test_results')
+            .select('run_id, test_case_id, status')
+            .in('run_id', allRunIdsForDelta)
+            .gte('created_at', prevStartDate)
+            .lt('created_at', prevEndDate);
+
+          const currentRate = computeRate(resultsData);
+          const prevRate = computeRate(prevData ?? []);
+          const delta = currentRate !== null && prevRate !== null
+            ? parseFloat((currentRate - prevRate).toFixed(1))
+            : null;
+          passRateDelta = delta;
+          passRateDeltaLabel = period === '7d' ? 'vs prev week' : 'vs prev 30d';
+        }
+      } else if (period === 'active_run') {
+        passRateDelta = null;
+        passRateDeltaLabel = 'vs prev run';
+      }
+    }
+  }
+
+  // Active runs count
+  const { data: activeRunsData } = await supabase
+    .from('test_runs')
+    .select('id')
+    .in('project_id', projectIds)
+    .in('status', ['new', 'in_progress', 'paused', 'under_review']);
+  const activeRunCount = activeRunsData?.length ?? 0;
+
+  // Test cases created in the last 7 days
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recentTCData } = await supabase
+    .from('test_cases')
+    .select('id')
+    .in('project_id', projectIds)
+    .gte('created_at', sevenDaysAgo);
+  const testCasesThisWeek = recentTCData?.length ?? 0;
+
+  const { data: memberData2 } = await supabase
+    .from('project_members')
+    .select('project_id, user_id, profiles(full_name, email)')
+    .in('project_id', projectIds);
+
+  const projectMembers: Record<string, Array<{ initials: string; color: string; userId?: string; name?: string }>> = {};
+  if (memberData2) {
+    const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#3B82F6'];
+    memberData2.forEach((m) => {
+      if (!projectMembers[m.project_id]) projectMembers[m.project_id] = [];
+      const profile = (m as { project_id: string; user_id: string; profiles?: { full_name?: string; email?: string } | null }).profiles;
+      const name = profile?.full_name || profile?.email || 'U';
+      const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+      projectMembers[m.project_id].push({
+        initials,
+        color: COLORS[projectMembers[m.project_id].length % COLORS.length],
+        userId: m.user_id,
+        name: profile?.full_name || undefined,
+      });
+    });
+  }
+
+  return {
+    projects: projectsData || [],
+    testCaseCounts,
+    testRunCounts,
+    activeRunCount,
+    testCasesThisWeek,
+    projectPassRates,
+    passRateDelta,
+    passRateDeltaLabel,
+    projectMembers,
+    currentUserId,
+    userProjectRoles,
+  };
+}
+
 export default function ProjectsContent() {
   const { t } = useTranslation(['projects', 'common']);
   const navigate = useNavigate();
   const { createSampleProject } = useSampleProject();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [testCaseCounts, setTestCaseCounts] = useState<Record<string, number>>({});
-  const [testRunCounts, setTestRunCounts] = useState<Record<string, number>>({});
-  const [activeRunCount, setActiveRunCount] = useState(0);
-  const [testCasesThisWeek, setTestCasesThisWeek] = useState(0);
-  const [projectPassRates, setProjectPassRates] = useState<Record<string, number | null>>({});
-  const [passRateDelta, setPassRateDelta] = useState<number | null>(null);
-  const [passRateDeltaLabel, setPassRateDeltaLabel] = useState<string | null>(null);
-  const [projectMembers, setProjectMembers] = useState<Record<string, Array<{ initials: string; color: string; userId?: string; name?: string }>>>({});
-  const [loading, setLoading] = useState(true);
   const [sampleLoading, setSampleLoading] = useState(false);
   const [tipsSampleLoading, setTipsSampleLoading] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -69,13 +289,29 @@ export default function ProjectsContent() {
   const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'activity' | 'name' | 'health' | 'created'>('activity');
-  const [error, setError] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [userProjectRoles, setUserProjectRoles] = useState<Record<string, string>>({});
   const { toasts, showToast, dismiss } = useToast();
   const menuRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const queryClient = useQueryClient();
+  const { data, isLoading, error: queryError } = useQuery({
+    queryKey: ['projects'],
+    queryFn: loadProjectsData,
+  });
+
+  // Destructure from query data
+  const projects = data?.projects ?? [];
+  const testCaseCounts = data?.testCaseCounts ?? {};
+  const testRunCounts = data?.testRunCounts ?? {};
+  const activeRunCount = data?.activeRunCount ?? 0;
+  const testCasesThisWeek = data?.testCasesThisWeek ?? 0;
+  const projectPassRates = data?.projectPassRates ?? {};
+  const passRateDelta = data?.passRateDelta ?? null;
+  const passRateDeltaLabel = data?.passRateDeltaLabel ?? null;
+  const projectMembers = data?.projectMembers ?? {};
+  const currentUserId = data?.currentUserId ?? null;
+  const userProjectRoles = data?.userProjectRoles ?? {};
 
   const clearActionParam = () => {
     setSearchParams((prev) => {
@@ -103,233 +339,8 @@ export default function ProjectsContent() {
   }, []);
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  const fetchProjects = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const period = (localStorage.getItem('passrate_period') ?? 'active_run') as 'active_run' | '7d' | '30d' | 'all';
-
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        setError('세션을 확인할 수 없습니다.');
-        navigate('/auth');
-        return;
-      }
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-
-      const user = session.user;
-      setCurrentUserId(user.id);
-
-      // Critical path: get project IDs (must succeed)
-      const { data: memberData, error: memberError } = await supabase
-        .from('project_members')
-        .select('project_id')
-        .eq('user_id', user.id);
-
-      if (memberError) throw memberError;
-
-      const projectIds = memberData?.map(m => m.project_id) || [];
-
-      // Optional: get roles for permission check (failure won't block project list)
-      supabase
-        .from('project_members')
-        .select('project_id, role')
-        .eq('user_id', user.id)
-        .then(({ data: roleData }) => {
-          const roles: Record<string, string> = {};
-          roleData?.forEach((m: { project_id: string; role: string }) => { roles[m.project_id] = m.role; });
-          setUserProjectRoles(roles);
-        })
-        .catch(() => { /* role check failed, menu permissions won't be available */ });
-
-      if (projectIds.length === 0) {
-        setProjects([]);
-        setLoading(false);
-        return;
-      }
-
-      const [
-        { data: projectsData, error: projectsError },
-        { data: testCasesData, error: testCasesError },
-        { data: testRunsData, error: testRunsError },
-      ] = await Promise.all([
-        supabase.from('projects').select('*').in('id', projectIds).order('created_at', { ascending: false }),
-        supabase.from('test_cases').select('project_id').in('project_id', projectIds),
-        supabase.from('test_runs').select('project_id').in('project_id', projectIds),
-      ]);
-
-      if (projectsError) throw projectsError;
-      setProjects(projectsData || []);
-
-      if (!testCasesError && testCasesData) {
-        const counts: Record<string, number> = {};
-        testCasesData.forEach(tc => { counts[tc.project_id] = (counts[tc.project_id] || 0) + 1; });
-        setTestCaseCounts(counts);
-      }
-
-      if (!testRunsError && testRunsData) {
-        const counts: Record<string, number> = {};
-        testRunsData.forEach(tr => { counts[tr.project_id] = (counts[tr.project_id] || 0) + 1; });
-        setTestRunCounts(counts);
-      }
-
-      // Compute pass rates from test_results — period-aware
-      const now = new Date();
-      const activeStatuses = ['new', 'in_progress', 'paused', 'under_review'];
-
-      let runsQuery = supabase.from('test_runs').select('id, project_id').in('project_id', projectIds);
-      if (period === 'active_run') {
-        runsQuery = (runsQuery as any).in('status', activeStatuses);
-      }
-      const { data: allRunsForStats } = await runsQuery;
-
-      if (allRunsForStats && allRunsForStats.length > 0) {
-        const runIds = allRunsForStats.map((r: { id: string; project_id: string }) => r.id);
-        const runProjectMap: Record<string, string> = {};
-        allRunsForStats.forEach((r: { id: string; project_id: string }) => { runProjectMap[r.id] = r.project_id; });
-
-        // Date range for current period
-        let startDate: string | null = null;
-        let prevStartDate: string | null = null;
-        let prevEndDate: string | null = null;
-        if (period === '7d') {
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-          prevStartDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
-          prevEndDate = startDate;
-        } else if (period === '30d') {
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-          prevStartDate = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString();
-          prevEndDate = startDate;
-        }
-
-        let resultsQuery = supabase
-          .from('test_results')
-          .select('run_id, test_case_id, status, created_at')
-          .in('run_id', runIds)
-          .order('created_at', { ascending: false });
-        if (startDate) resultsQuery = (resultsQuery as any).gte('created_at', startDate);
-
-        const { data: resultsData } = await resultsQuery;
-
-        // Helper: dedup by (run_id, tc_id) and compute overall pass rate
-        const computeRate = (rows: Array<{ run_id: string; test_case_id: string; status: string }>) => {
-          const seen: Record<string, string> = {};
-          rows.forEach(r => { const k = `${r.run_id}::${r.test_case_id}`; if (!(k in seen)) seen[k] = r.status; });
-          let passed = 0, total = 0;
-          Object.values(seen).forEach(s => { if (s !== 'untested') { total++; if (s === 'passed') passed++; } });
-          return total > 0 ? (passed / total) * 100 : null;
-        };
-
-        if (resultsData) {
-          // Per-project pass rates
-          const latestByKey: Record<string, string> = {};
-          resultsData.forEach((r: { run_id: string; test_case_id: string; status: string }) => {
-            const key = `${r.run_id}::${r.test_case_id}`;
-            if (!(key in latestByKey)) latestByKey[key] = r.status;
-          });
-
-          const passRates: Record<string, number | null> = {};
-          const projectCounts: Record<string, { passed: number; total: number }> = {};
-          Object.entries(latestByKey).forEach(([key, status]) => {
-            const runId = key.split('::')[0];
-            const pid = runProjectMap[runId];
-            if (!pid) return;
-            if (!projectCounts[pid]) projectCounts[pid] = { passed: 0, total: 0 };
-            if (status !== 'untested') {
-              projectCounts[pid].total++;
-              if (status === 'passed') projectCounts[pid].passed++;
-            }
-          });
-          for (const [pid, counts] of Object.entries(projectCounts)) {
-            passRates[pid] = counts.total > 0 ? Math.round((counts.passed / counts.total) * 100) : null;
-          }
-          setProjectPassRates(passRates);
-
-          // Delta calculation for 7d / 30d periods
-          if (prevStartDate && prevEndDate) {
-            const allRunIdsForDelta = (
-              await supabase.from('test_runs').select('id').in('project_id', projectIds)
-            ).data?.map((r: { id: string }) => r.id) ?? [];
-
-            if (allRunIdsForDelta.length > 0) {
-              const { data: prevData } = await supabase
-                .from('test_results')
-                .select('run_id, test_case_id, status')
-                .in('run_id', allRunIdsForDelta)
-                .gte('created_at', prevStartDate)
-                .lt('created_at', prevEndDate);
-
-              const currentRate = computeRate(resultsData);
-              const prevRate = computeRate(prevData ?? []);
-              const delta = currentRate !== null && prevRate !== null
-                ? parseFloat((currentRate - prevRate).toFixed(1))
-                : null;
-              setPassRateDelta(delta);
-              setPassRateDeltaLabel(period === '7d' ? 'vs prev week' : 'vs prev 30d');
-            }
-          } else if (period === 'active_run') {
-            setPassRateDelta(null);
-            setPassRateDeltaLabel('vs prev run');
-          } else {
-            setPassRateDelta(null);
-            setPassRateDeltaLabel(null);
-          }
-        }
-      }
-
-      // Active runs count
-      const { data: activeRunsData } = await supabase
-        .from('test_runs')
-        .select('id')
-        .in('project_id', projectIds)
-        .in('status', ['new', 'in_progress', 'paused', 'under_review']);
-      setActiveRunCount(activeRunsData?.length ?? 0);
-
-      // Test cases created in the last 7 days
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: recentTCData } = await supabase
-        .from('test_cases')
-        .select('id')
-        .in('project_id', projectIds)
-        .gte('created_at', sevenDaysAgo);
-      setTestCasesThisWeek(recentTCData?.length ?? 0);
-
-      const { data: memberData2 } = await supabase
-        .from('project_members')
-        .select('project_id, user_id, profiles(full_name, email)')
-        .in('project_id', projectIds);
-
-      if (memberData2) {
-        const membersByProject: Record<string, Array<{ initials: string; color: string; userId?: string; name?: string }>> = {};
-        const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#3B82F6'];
-        memberData2.forEach((m) => {
-          if (!membersByProject[m.project_id]) membersByProject[m.project_id] = [];
-          const profile = (m as { project_id: string; user_id: string; profiles?: { full_name?: string; email?: string } | null }).profiles;
-          const name = profile?.full_name || profile?.email || 'U';
-          const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-          membersByProject[m.project_id].push({
-            initials,
-            color: COLORS[membersByProject[m.project_id].length % COLORS.length],
-            userId: m.user_id,
-            name: profile?.full_name || undefined,
-          });
-        });
-        setProjectMembers(membersByProject);
-      }
-    } catch (error) {
-      console.error('프로젝트 로딩 오류:', error);
-      setError('프로젝트를 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    if ((queryError as Error)?.message === 'UNAUTHENTICATED') navigate('/auth');
+  }, [queryError]);
 
   /** Check if a sample project already exists for the current user */
   const findExistingSample = async (): Promise<string | null> => {
@@ -445,7 +456,7 @@ export default function ProjectsContent() {
         if (memberError) throw memberError;
       }
 
-      await fetchProjects();
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
       setShowCreateModal(false);
       void markOnboardingStep('createProject');
     } catch (error: any) {
@@ -468,7 +479,7 @@ export default function ProjectsContent() {
         })
         .eq('id', id);
       if (error) throw error;
-      setProjects(projects.map(p => p.id === id ? { ...p, ...data, jira_project_key: data.jiraProjectKey || null, updated_at: new Date().toISOString() } : p));
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
       setEditingProject(null);
     } catch (error) {
       console.error('Error updating project:', error);
@@ -480,7 +491,7 @@ export default function ProjectsContent() {
     try {
       const { error } = await supabase.from('projects').delete().eq('id', id);
       if (error) throw error;
-      await fetchProjects();
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
       setDeletingProject(null);
     } catch (error: any) {
       console.error('프로젝트 삭제 오류:', error);
@@ -646,7 +657,7 @@ export default function ProjectsContent() {
   );
 
   // ── Loading ───────────────────────────────────────────────────────────────
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex flex-col h-full">
         {SubHeader}
@@ -681,12 +692,12 @@ export default function ProjectsContent() {
   }
 
   // ── Error ─────────────────────────────────────────────────────────────────
-  if (error) {
+  if (queryError && (queryError as Error)?.message !== 'UNAUTHENTICATED') {
     return (
       <div className="flex flex-col">
         {SubHeader}
         <div className="flex items-center justify-center" style={{ padding: '4rem 2rem' }}>
-          <p className="text-red-500">{error}</p>
+          <p className="text-red-500">프로젝트를 불러오는 중 오류가 발생했습니다.</p>
         </div>
       </div>
     );
@@ -770,7 +781,7 @@ export default function ProjectsContent() {
         )}
         {showImportModal && (
           <TestRailImportModal
-            onClose={() => { setShowImportModal(false); fetchProjects(); }}
+            onClose={() => { setShowImportModal(false); queryClient.invalidateQueries({ queryKey: ['projects'] }); }}
             onOpenCSV={() => { /* CSV import is project-specific; guide to a project first */ showToast('Select a project first to use CSV import', 'info'); }}
           />
         )}
@@ -833,6 +844,11 @@ export default function ProjectsContent() {
                       el.style.borderColor = '#C7D2FE';
                       el.style.boxShadow = '0 4px 16px rgba(99,102,241,0.08)';
                       el.style.transform = 'translateY(-1px)';
+                      queryClient.prefetchQuery({
+                        queryKey: ['project-detail', project.id],
+                        queryFn: () => loadProjectDetailData(project.id),
+                        staleTime: 30_000,
+                      });
                     }}
                     onMouseLeave={(e) => {
                       const el = e.currentTarget as HTMLDivElement;

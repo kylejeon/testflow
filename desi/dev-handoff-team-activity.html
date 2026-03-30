@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dev Handoff — Team Activity 페이지 개선</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; padding: 2rem; line-height: 1.6; }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 800; color: #0F172A; margin-bottom: 0.25rem; }
+  .subtitle { font-size: 0.875rem; color: #64748B; margin-bottom: 2rem; }
+  h2 { font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E2E8F0; }
+  h3 { font-size: 0.9375rem; font-weight: 700; color: #334155; margin: 1.25rem 0 0.5rem; }
+  p, li { font-size: 0.8125rem; color: #475569; }
+  ul { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+  li { margin-bottom: 0.375rem; }
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.75rem; background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 4px; padding: 0.125rem 0.375rem; color: #6366F1; }
+  pre { background: #1E293B; color: #E2E8F0; border-radius: 0.5rem; padding: 1rem 1.25rem; font-size: 0.75rem; line-height: 1.6; overflow-x: auto; margin: 0.75rem 0; font-family: 'SF Mono', 'Fira Code', monospace; }
+  pre .comment { color: #64748B; }
+  pre .keyword { color: #818CF8; }
+  pre .string { color: #34D399; }
+  pre .type { color: #F59E0B; }
+
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin: 0.75rem 0; }
+  .badge { display: inline-block; font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .badge-new { background: #DBEAFE; color: #2563EB; }
+  .badge-change { background: #FEF3C7; color: #D97706; }
+  .badge-db { background: #F3E8FF; color: #7C3AED; }
+  .badge-remove { background: #FEE2E2; color: #DC2626; }
+
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8125rem; }
+  th { background: #F8FAFC; font-weight: 600; color: #334155; text-align: left; padding: 0.625rem 0.75rem; border: 1px solid #E2E8F0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  td { padding: 0.625rem 0.75rem; border: 1px solid #E2E8F0; color: #475569; vertical-align: top; }
+  td code { font-size: 0.6875rem; }
+
+  .file-tag { display: inline-block; font-size: 0.6875rem; font-weight: 600; color: #6366F1; background: #EEF2FF; border-radius: 4px; padding: 0.125rem 0.5rem; margin-bottom: 0.25rem; }
+
+  .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 4px; border: 1px solid rgba(0,0,0,0.08); }
+
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; background: #6366F1; color: #fff; border-radius: 50%; font-size: 0.75rem; font-weight: 700; margin-right: 0.5rem; }
+
+  .priority-p0 { color: #DC2626; font-weight: 700; }
+  .priority-p1 { color: #D97706; font-weight: 700; }
+
+  .divider { border: none; border-top: 1px dashed #CBD5E1; margin: 1.5rem 0; }
+
+  /* Heatmap demo */
+  .hm-demo { display: flex; gap: 4px; align-items: flex-start; margin: 0.75rem 0; }
+  .hm-demo-labels { display: flex; flex-direction: column; gap: 2px; padding-top: 16px; }
+  .hm-demo-labels span { font-size: 9px; color: #94A3B8; font-weight: 500; height: 12px; line-height: 12px; text-align: right; width: 28px; }
+  .hm-demo-grid { flex: 1; }
+  .hm-demo-months { display: flex; gap: 2px; margin-bottom: 2px; height: 14px; }
+  .hm-demo-months span { font-size: 9px; color: #64748B; font-weight: 500; }
+  .hm-demo-row { display: flex; gap: 2px; margin-bottom: 2px; }
+  .hm-cell-demo { width: 12px; height: 12px; border-radius: 2px; outline: 1px solid rgba(27,31,35,0.06); outline-offset: -1px; }
+
+  /* Summary card mock */
+  .mock-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 0.75rem 0; }
+  .mock-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 0.875rem 1rem; }
+  .mock-card.highlight { border-color: #F59E0B; border-width: 2px; background: #FFFBEB; }
+  .mc-label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 0.25rem; }
+  .mc-value { font-size: 1.25rem; font-weight: 800; line-height: 1; }
+  .mc-sub { font-size: 0.625rem; color: #94A3B8; margin-top: 0.25rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Dev Handoff — Team Activity 페이지 개선</h1>
+<p class="subtitle">PM: Kyle &nbsp;|&nbsp; 작성일: 2026-03-25 &nbsp;|&nbsp; 대상 파일: TeamActivityPage.tsx, useTeamActivity.ts &nbsp;|&nbsp; DB: test_results ALTER</p>
+
+<!-- ================================================================== -->
+<h2><span class="section-num">1</span>히트맵 구현 스펙 — 52주 GitHub-style</h2>
+
+<p>현재 React 구현은 4주(28셀) 단순 그리드. CEO 승인된 디자인 시안(<code>13-team-activity.html</code>)은 52주 GitHub-style 기여 그래프. 디자인 시안 기준으로 리팩터링 필요.</p>
+
+<h3>1.1 그리드 구조</h3>
+<table>
+  <tr><th>항목</th><th>스펙</th><th>참고</th></tr>
+  <tr><td>기간</td><td>52주 (364일) — 오늘 포함, 과거 방향</td><td>오늘이 수요일이면 이번 주 목~토는 <code>.future</code> (visibility: hidden)</td></tr>
+  <tr><td>레이아웃</td><td>52 columns(주) × 7 rows(요일) — <strong>column = 1주, row = 요일</strong></td><td>GitHub과 동일. 행: Sun(0)→Sat(6) 또는 Mon(0)→Sun(6)</td></tr>
+  <tr><td>셀 크기</td><td><code>aspect-ratio: 1</code>, 그리드가 컨테이너에 맞춰 자동 조절</td><td>약 10~12px 정도. 컨테이너 max-width: 1200px 기준</td></tr>
+  <tr><td>셀 gap</td><td><code>2px</code></td><td>행(row) 간, 열(column) 간 동일</td></tr>
+  <tr><td>셀 border-radius</td><td><code>2px</code></td><td></td></tr>
+  <tr><td>셀 outline</td><td><code>1px solid rgba(27,31,35,0.06)</code>, offset <code>-1px</code></td><td>GitHub과 동일한 미세 테두리</td></tr>
+  <tr><td>Hover</td><td><code>outline: 2px solid rgba(27,31,35,0.3)</code> + <code>z-index: 1</code></td><td></td></tr>
+</table>
+
+<h3>1.2 색상 레벨 (6단계, 0–5)</h3>
+<table>
+  <tr><th>Level</th><th>색상</th><th>의미</th><th>CSS class</th></tr>
+  <tr><td>0</td><td><span class="color-swatch" style="background:#F1F5F9"></span><code>#F1F5F9</code></td><td>활동 없음</td><td><code>.hm-0</code></td></tr>
+  <tr><td>1</td><td><span class="color-swatch" style="background:#E0E7FF"></span><code>#E0E7FF</code></td><td>최소 활동</td><td><code>.hm-1</code></td></tr>
+  <tr><td>2</td><td><span class="color-swatch" style="background:#C7D2FE"></span><code>#C7D2FE</code></td><td>낮은 활동</td><td><code>.hm-2</code></td></tr>
+  <tr><td>3</td><td><span class="color-swatch" style="background:#A5B4FC"></span><code>#A5B4FC</code></td><td>보통</td><td><code>.hm-3</code></td></tr>
+  <tr><td>4</td><td><span class="color-swatch" style="background:#818CF8"></span><code>#818CF8</code></td><td>높은 활동</td><td><code>.hm-4</code></td></tr>
+  <tr><td>5</td><td><span class="color-swatch" style="background:#6366F1"></span><code>#6366F1</code></td><td>최대 활동</td><td><code>.hm-5</code></td></tr>
+</table>
+<p>Intensity 매핑: <code>count === 0 ? 0 : Math.min(5, Math.ceil((count / maxCount) * 5))</code> — maxCount는 52주 범위 내 일별 최대값</p>
+
+<h3>1.3 라벨</h3>
+<table>
+  <tr><th>라벨</th><th>위치</th><th>표시</th><th>스타일</th></tr>
+  <tr><td>요일</td><td>그리드 왼쪽</td><td>Mon, Wed, Fri만 표시 (나머지 hidden)</td><td><code>font-size: 9px; color: #94A3B8; font-weight: 500</code></td></tr>
+  <tr><td>월</td><td>그리드 상단 (첫 번째 행 위)</td><td>각 월의 첫 주가 시작되는 column에 Jan~Dec</td><td><code>font-size: 9px; color: #64748B; font-weight: 500</code></td></tr>
+</table>
+
+<h3>1.4 툴팁</h3>
+<div class="card">
+  <p><strong>트리거:</strong> 셀 hover 시 마우스 위에 표시</p>
+  <p><strong>내용:</strong> <code>{count} activities on {Mon, Mar 25, 2026}</code></p>
+  <p><strong>0건일 때:</strong> <code>No activities on {날짜}</code></p>
+  <p><strong>스타일:</strong></p>
+  <ul>
+    <li>배경: <code>#1E293B</code>, 텍스트: <code>#fff</code></li>
+    <li>font-size: <code>0.6875rem</code>, padding: <code>0.375rem 0.625rem</code></li>
+    <li>border-radius: <code>0.375rem</code>, 하단 삼각형 화살표 (border trick)</li>
+    <li>position: fixed, pointer-events: none</li>
+    <li>opacity transition: <code>0.12s</code></li>
+  </ul>
+</div>
+
+<h3>1.5 Legend</h3>
+<p>그리드 하단 오른쪽: <code>Less</code> — [6개 색상 셀 10×10px] — <code>More</code></p>
+
+<h3>1.6 헤더</h3>
+<p>카드 상단: <code>{총 활동 수} activities in the last year</code> — font-weight: 700, font-size: 0.8125rem</p>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">2</span>Avg Response Time 카드 스펙</h2>
+
+<p><span class="badge badge-change">CHANGE</span> 4번째 Summary Card를 <code>Pass Rate Today</code> → <code>Avg Response Time</code>으로 교체</p>
+
+<h3>2.1 Before → After 비교</h3>
+<div class="mock-cards">
+  <div class="mock-card">
+    <div class="mc-label">Active Today</div>
+    <div class="mc-value" style="color:#8B5CF6">8 <span style="font-size:0.75rem;font-weight:500;color:#94A3B8">/ 12</span></div>
+    <div class="mc-sub">team members</div>
+  </div>
+  <div class="mock-card">
+    <div class="mc-label">TC Created Today</div>
+    <div class="mc-value">14</div>
+    <div class="mc-sub">new test cases</div>
+  </div>
+  <div class="mock-card">
+    <div class="mc-label">TC Executed Today</div>
+    <div class="mc-value" style="color:#16A34A">89</div>
+    <div class="mc-sub">73 passed, 12 failed, 4 blocked</div>
+  </div>
+  <div class="mock-card highlight">
+    <div class="mc-label">Avg Response Time</div>
+    <div class="mc-value" style="color:#F59E0B">2.4h</div>
+    <div class="mc-sub">to blocked/failed items</div>
+  </div>
+</div>
+
+<h3>2.2 표시 형식</h3>
+<table>
+  <tr><th>조건</th><th>표시</th><th>예시</th></tr>
+  <tr><td>60분 미만</td><td><code>{분}m</code></td><td><code>32m</code></td></tr>
+  <tr><td>1시간 ~ 24시간</td><td><code>{시간, 소수점1자리}h</code></td><td><code>2.4h</code></td></tr>
+  <tr><td>24시간 초과</td><td><code>{일, 소수점1자리}d</code></td><td><code>1.2d</code></td></tr>
+  <tr><td>데이터 없음 (failed/blocked 0건)</td><td><code>—</code> (em dash)</td><td>서브텍스트: <code>no blocked/failed today</code></td></tr>
+</table>
+
+<h3>2.3 조건부 색상</h3>
+<table>
+  <tr><th>응답 시간</th><th>색상</th><th>의미</th></tr>
+  <tr><td>&lt; 1시간</td><td><span class="color-swatch" style="background:#16A34A"></span><code>#16A34A</code> (green)</td><td>빠른 대응</td></tr>
+  <tr><td>1 ~ 4시간</td><td><span class="color-swatch" style="background:#F59E0B"></span><code>#F59E0B</code> (amber)</td><td>보통</td></tr>
+  <tr><td>&gt; 4시간</td><td><span class="color-swatch" style="background:#EF4444"></span><code>#EF4444</code> (red)</td><td>느린 대응</td></tr>
+  <tr><td>데이터 없음</td><td><code>#0F172A</code> (기본 dark)</td><td>— 표시</td></tr>
+</table>
+
+<h3>2.4 계산 로직</h3>
+<div class="card">
+  <p><strong>정의:</strong> 오늘 resolved된 failed/blocked 건들의 평균 (발견→해결) 시간</p>
+  <pre><span class="comment">// Avg Response Time 계산 (resolved_at 기반)</span>
+<span class="keyword">const</span> resolvedToday = results.filter(r =&gt;
+  r.resolved_at &amp;&amp;
+  r.resolved_at &gt;= todayISO &amp;&amp;
+  r.status !== <span class="string">'failed'</span> &amp;&amp;
+  r.status !== <span class="string">'blocked'</span>  <span class="comment">// 현재 상태가 passed/retest (= 해결됨)</span>
+);
+
+<span class="keyword">if</span> (resolvedToday.length === 0) <span class="keyword">return</span> <span class="string">'—'</span>;
+
+<span class="keyword">const</span> totalMs = resolvedToday.reduce((sum, r) =&gt; {
+  <span class="keyword">return</span> sum + (<span class="keyword">new</span> Date(r.resolved_at).getTime() - <span class="keyword">new</span> Date(r.created_at).getTime());
+}, 0);
+
+<span class="keyword">const</span> avgMs = totalMs / resolvedToday.length;
+<span class="keyword">const</span> avgMins = avgMs / 60000;
+
+<span class="comment">// 포맷팅</span>
+<span class="keyword">if</span> (avgMins &lt; 60) <span class="keyword">return</span> <span class="string">`${Math.round(avgMins)}m`</span>;
+<span class="keyword">if</span> (avgMins &lt; 1440) <span class="keyword">return</span> <span class="string">`${(avgMins / 60).toFixed(1)}h`</span>;
+<span class="keyword">return</span> <span class="string">`${(avgMins / 1440).toFixed(1)}d`</span>;</pre>
+</div>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">3</span>Supabase 데이터 소스 및 쿼리 방향</h2>
+
+<h3>3.1 DB 마이그레이션 <span class="badge badge-db">DB CHANGE</span></h3>
+<div class="card">
+  <p><strong class="priority-p0">P0 선행 작업</strong> — 코드 변경 전 반드시 적용</p>
+  <pre><span class="comment">-- Migration: test_results에 resolved_at 컬럼 추가</span>
+<span class="keyword">ALTER TABLE</span> test_results
+  <span class="keyword">ADD COLUMN</span> resolved_at <span class="type">TIMESTAMPTZ</span> <span class="keyword">NULL</span>;</pre>
+  <p>nullable이므로 기존 데이터에 영향 없음. RLS 정책 수정 불필요 (기존 test_results 정책이 모든 컬럼 커버).</p>
+</div>
+
+<h3>3.2 resolved_at 기록 로직</h3>
+<p>test_results upsert 시, 이전 상태가 <code>failed</code>/<code>blocked</code>이고 새 상태가 <code>passed</code>/<code>retest</code>이면 <code>resolved_at = now()</code> 세팅.</p>
+
+<table>
+  <tr><th>파일</th><th>위치</th><th>변경 내용</th></tr>
+  <tr>
+    <td><span class="file-tag">run-detail/page.tsx</span></td>
+    <td>Lines 764–778 (result upsert)</td>
+    <td>upsert 전에 기존 result를 SELECT하여 이전 status 확인 → failed/blocked에서 passed/retest로 변경 시 <code>resolved_at: new Date().toISOString()</code> 추가</td>
+  </tr>
+  <tr>
+    <td><span class="file-tag">supabase/functions/upload-ci-results/index.ts</span></td>
+    <td>Line 232 (CI/CD bulk upsert)</td>
+    <td>동일 로직 적용 — bulk upsert 전 기존 results를 batch SELECT 후 조건부 resolved_at 세팅</td>
+  </tr>
+</table>
+
+<h3>3.3 히트맵 데이터 쿼리 확장</h3>
+<table>
+  <tr><th>데이터</th><th>현재</th><th>변경</th></tr>
+  <tr>
+    <td>기간</td>
+    <td><code>28일</code> (4주)</td>
+    <td><code>365일</code> (52주)</td>
+  </tr>
+  <tr>
+    <td>test_results</td>
+    <td><code>.gte('created_at', twentyEightDaysAgo).limit(100)</code></td>
+    <td><code>.gte('created_at', oneYearAgo)</code> — limit 제거, 일별 count만 필요하므로 <strong>Supabase RPC 함수 권장</strong></td>
+  </tr>
+  <tr>
+    <td>test_cases</td>
+    <td><code>.gte('created_at', thirtyDaysAgo).limit(50)</code></td>
+    <td><code>.gte('created_at', oneYearAgo)</code> — 동일하게 확장</td>
+  </tr>
+</table>
+
+<div class="card">
+  <p><strong>성능 권장:</strong> 52주분 raw 데이터를 클라이언트로 가져오면 수천 건이 될 수 있음. Supabase RPC 함수로 일별 count를 서버사이드에서 집계하는 것을 권장:</p>
+  <pre><span class="comment">-- Supabase RPC 함수 (권장)</span>
+<span class="keyword">CREATE OR REPLACE FUNCTION</span> get_daily_activity_counts(
+  p_project_ids <span class="type">UUID[]</span>,
+  p_start_date <span class="type">DATE</span>
+) <span class="keyword">RETURNS TABLE</span> (activity_date <span class="type">DATE</span>, activity_count <span class="type">BIGINT</span>) <span class="keyword">AS</span> $$
+  <span class="keyword">SELECT</span> d.activity_date, COALESCE(r.cnt, 0) + COALESCE(tc.cnt, 0)
+  <span class="keyword">FROM</span> generate_series(p_start_date, CURRENT_DATE, <span class="string">'1 day'</span>) d(activity_date)
+  <span class="keyword">LEFT JOIN</span> (
+    <span class="keyword">SELECT</span> DATE(created_at) <span class="keyword">AS</span> dt, COUNT(*) <span class="keyword">AS</span> cnt
+    <span class="keyword">FROM</span> test_results tr
+    <span class="keyword">JOIN</span> test_runs trun <span class="keyword">ON</span> tr.run_id = trun.id
+    <span class="keyword">WHERE</span> trun.project_id = <span class="keyword">ANY</span>(p_project_ids)
+      <span class="keyword">AND</span> tr.created_at &gt;= p_start_date
+    <span class="keyword">GROUP BY</span> DATE(created_at)
+  ) r <span class="keyword">ON</span> r.dt = d.activity_date
+  <span class="keyword">LEFT JOIN</span> (
+    <span class="keyword">SELECT</span> DATE(created_at) <span class="keyword">AS</span> dt, COUNT(*) <span class="keyword">AS</span> cnt
+    <span class="keyword">FROM</span> test_cases
+    <span class="keyword">WHERE</span> project_id = <span class="keyword">ANY</span>(p_project_ids)
+      <span class="keyword">AND</span> created_at &gt;= p_start_date
+    <span class="keyword">GROUP BY</span> DATE(created_at)
+  ) tc <span class="keyword">ON</span> tc.dt = d.activity_date
+$$ <span class="keyword">LANGUAGE SQL STABLE</span>;</pre>
+  <p>호출: <code>supabase.rpc('get_daily_activity_counts', { p_project_ids: projectIds, p_start_date: oneYearAgo })</code></p>
+</div>
+
+<h3>3.4 Avg Response Time 쿼리</h3>
+<div class="card">
+  <pre><span class="comment">// useTeamActivity.ts에 추가</span>
+<span class="keyword">const</span> { data: resolvedResults } = <span class="keyword">await</span> supabase
+  .from(<span class="string">'test_results'</span>)
+  .select(<span class="string">'created_at, resolved_at'</span>)
+  .in(<span class="string">'run_id'</span>, runIds)
+  .not(<span class="string">'resolved_at'</span>, <span class="string">'is'</span>, <span class="keyword">null</span>)
+  .gte(<span class="string">'resolved_at'</span>, todayISO);</pre>
+</div>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">4</span>React 코드 변경 포인트</h2>
+
+<h3>4.1 useTeamActivity.ts <span class="badge badge-change">CHANGE</span></h3>
+<table>
+  <tr><th>#</th><th>변경</th><th>상세</th></tr>
+  <tr>
+    <td>1</td>
+    <td><code>TeamActivityData</code> 인터페이스 수정</td>
+    <td>
+      <span class="badge badge-change">CHANGE</span> <code>heatmapData: number[]</code> — 주석을 <code>364 cells: 52 weeks × 7 days</code>로 변경<br>
+      <span class="badge badge-new">NEW</span> <code>avgResponseTime: string</code> — 포맷된 값 ("2.4h", "32m", "—")<br>
+      <span class="badge badge-new">NEW</span> <code>avgResponseTimeColor: string</code> — 조건부 hex color<br>
+      <span class="badge badge-new">NEW</span> <code>avgResponseTimeSub: string</code> — 서브텍스트<br>
+      <span class="badge badge-new">NEW</span> <code>heatmapDailyData: { date: string; count: number }[]</code> — 툴팁용 raw 데이터
+    </td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>히트맵 데이터 기간 확장</td>
+    <td>
+      <code>twentyEightDaysAgo</code> → <code>oneYearAgo</code>로 변경<br>
+      RPC 함수 사용 시: <code>supabase.rpc('get_daily_activity_counts', ...)</code><br>
+      클라이언트 사이드 유지 시: limit 제거 + 52주 날짜 매핑
+    </td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>히트맵 intensity 매핑 변경</td>
+    <td>
+      현재: 28셀 순차 배열 → <strong>변경:</strong> 52열 × 7행 (column-major) 배열 생성<br>
+      시작: 52주 전 일요일 (또는 월요일) → 끝: 오늘<br>
+      미래 날짜 셀: intensity <code>-1</code> (또는 별도 flag)로 <code>.future</code> class 적용
+    </td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Avg Response Time 계산 추가</td>
+    <td>
+      §2.4의 로직을 <code>load()</code> 함수 내에 추가<br>
+      <code>resolved_at</code> 기반 쿼리 (§3.4) → 평균 계산 → 포맷팅 → 색상 결정
+    </td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><code>empty()</code> 함수 수정</td>
+    <td>
+      <code>heatmapData: Array(364).fill(0)</code>, <code>avgResponseTime: '—'</code>, <code>avgResponseTimeColor: '#0F172A'</code>, <code>avgResponseTimeSub: 'no blocked/failed today'</code>
+    </td>
+  </tr>
+</table>
+
+<h3>4.2 TeamActivityPage.tsx <span class="badge badge-change">CHANGE</span></h3>
+<table>
+  <tr><th>#</th><th>변경</th><th>상세</th></tr>
+  <tr>
+    <td>1</td>
+    <td>4번째 Summary Card 교체 (Line 133)</td>
+    <td>
+      <span class="badge badge-remove">REMOVE</span> <code>{ label: 'Pass Rate Today', value: ... }</code><br>
+      <span class="badge badge-new">NEW</span> <code>{ label: 'Avg Response Time', value: data.avgResponseTime, sub: data.avgResponseTimeSub, color: data.avgResponseTimeColor }</code>
+    </td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>Heatmap</code> 컴포넌트 리팩터링 (Lines 15–34)</td>
+    <td>
+      현재: <code>gridTemplateColumns: repeat(7, 1fr)</code> (7열, 4주 행)<br>
+      <strong>변경:</strong> 52열 × 7행 구조로 리팩터링<br>
+      <ul style="margin-top:0.375rem">
+        <li>월 라벨 행 추가 (상단)</li>
+        <li>요일 라벨 열 추가 (왼쪽, Mon/Wed/Fri만)</li>
+        <li>미래 날짜 셀 <code>visibility: hidden</code></li>
+        <li>hover 시 툴팁 표시 — <code>position: fixed</code>, 마우스 좌표 기반</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>히트맵 카드 헤더 변경 (Line 148)</td>
+    <td>
+      <span class="badge badge-change">CHANGE</span> <code>"Team Activity — Last 4 Weeks"</code><br>
+      → <code>"{총 활동 수} activities in the last year"</code>
+    </td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>요일 라벨 변경 (Lines 150–154)</td>
+    <td>
+      현재: 그리드 하단 7열 라벨 <code>Mon~Sun</code><br>
+      <strong>변경:</strong> 그리드 왼쪽 세로 라벨로 이동 — Mon, Wed, Fri만 표시
+    </td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><code>heatmapColors</code> 배열 유지 (Line 13)</td>
+    <td>색상 값 동일 — 변경 불필요</td>
+  </tr>
+</table>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">5</span>구현 순서 권장</h2>
+
+<table>
+  <tr><th>순서</th><th>작업</th><th>우선순위</th><th>예상 시간</th></tr>
+  <tr>
+    <td>1</td>
+    <td>Supabase migration: <code>resolved_at</code> 컬럼 추가</td>
+    <td><span class="priority-p0">P0</span></td>
+    <td>5분</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>run-detail/page.tsx</code>: result upsert에 resolved_at 로직 추가</td>
+    <td><span class="priority-p0">P0</span></td>
+    <td>30분</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><code>upload-ci-results/index.ts</code>: CI/CD upsert에 동일 로직</td>
+    <td><span class="priority-p0">P0</span></td>
+    <td>20분</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>(선택) Supabase RPC 함수 <code>get_daily_activity_counts</code> 생성</td>
+    <td><span class="priority-p1">P1</span></td>
+    <td>15분</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><code>useTeamActivity.ts</code>: 인터페이스 + 쿼리 + 계산 로직 업데이트</td>
+    <td><span class="priority-p0">P0</span></td>
+    <td>1시간</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td><code>TeamActivityPage.tsx</code>: Summary Card 교체 + Heatmap 리팩터링</td>
+    <td><span class="priority-p0">P0</span></td>
+    <td>2시간</td>
+  </tr>
+</table>
+
+<p style="margin-top:1rem; font-size:0.8125rem; color:#64748B;"><strong>총 예상:</strong> 약 4시간 (RPC 포함 시 4.5시간) &nbsp;|&nbsp; <strong>참조 디자인:</strong> <code>13-team-activity.html</code> &nbsp;|&nbsp; <strong>질문:</strong> Kyle(PM)에게 Slack</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Settings Redesign (7-Tab)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ═══ ROW 1 — TOP HEADER (3.25rem) ═══ */
+  .top-header {
+    background: #fff; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; padding: 0 1.25rem; height: 3.25rem; gap: 0; flex-shrink: 0;
+  }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding-right: 1.25rem; border-right: 1px solid #E2E8F0; margin-right: 1rem; }
+  .logo-icon { width: 26px; height: 26px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; }
+  .logo-text { font-family: 'Pacifico', cursive; font-size: 1rem; color: #6366F1; letter-spacing: -0.01em; }
+  .back-btn {
+    display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 500;
+    color: #6366F1; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 0.375rem;
+    border: none; background: none; font-family: inherit; margin-right: 0.75rem; transition: all 0.15s;
+  }
+  .back-btn:hover { background: #EEF2FF; }
+  .back-btn i { font-size: 0.875rem; }
+  .header-page-label { font-size: 0.8125rem; font-weight: 600; color: #0F172A; display: flex; align-items: center; gap: 0.375rem; }
+  .header-page-label i { font-size: 0.9375rem; color: #64748B; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .header-icon-btn {
+    width: 2rem; height: 2rem; border-radius: 0.375rem; border: none; background: none;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.125rem; position: relative;
+  }
+  .header-icon-btn:hover { background: #F1F5F9; color: #475569; }
+  .notif-dot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; border: 1.5px solid #fff; }
+  .header-avatar { width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1; display: flex; align-items: center; justify-content: center; font-size: 0.5625rem; font-weight: 700; color: #fff; cursor: pointer; }
+
+  /* ═══ ROW 2 — SUBTAB ROW (2.625rem / 42px) ═══ */
+  .subtab-row {
+    display: flex; align-items: center; padding: 0 1.25rem; gap: 0;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; height: 2.625rem; position: relative;
+  }
+  .st-group { display: flex; align-items: center; height: 100%; gap: 0; }
+  .st-tab {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; font-weight: 500; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; white-space: nowrap; transition: color 0.15s; position: relative;
+  }
+  .st-tab:hover { color: #475569; }
+  .st-tab.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .st-tab.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .st-tab i { font-size: 0.875rem; }
+  .st-badge {
+    font-size: 0.625rem; font-weight: 700; padding: 0.0625rem 0.375rem;
+    border-radius: 9999px; background: #F1F5F9; color: #64748B; min-width: 1.25rem; text-align: center;
+  }
+  .st-tab.active .st-badge { background: #EEF2FF; color: #6366F1; }
+
+  /* ═══ CONTENT ═══ */
+  .content-area { flex: 1; overflow-y: auto; background: #F8FAFC; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn 0.15s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .settings-content { max-width: 800px; margin: 0 auto; padding: 1.5rem 2rem 3rem; }
+
+  /* ═══ SHARED COMPONENTS ═══ */
+  .section-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem; padding: 1.5rem; margin-bottom: 1.25rem; }
+  .section-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.375rem; }
+  .section-title i { font-size: 1rem; }
+  .section-desc { font-size: 0.8125rem; color: #64748B; margin-bottom: 1.25rem; }
+  .form-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
+  .form-group { flex: 1; display: flex; flex-direction: column; gap: 0.375rem; }
+  .form-label { font-size: 0.8125rem; font-weight: 600; color: #334155; }
+  .form-input {
+    font-size: 0.8125rem; padding: 0.5rem 0.75rem; border: 1px solid #E2E8F0;
+    border-radius: 0.375rem; background: #F8FAFC; font-family: inherit; color: #1E293B; outline: none; width: 100%;
+  }
+  .form-input:focus { border-color: #C7D2FE; background: #fff; }
+  .form-select {
+    font-size: 0.8125rem; padding: 0.5rem 0.75rem; border: 1px solid #E2E8F0;
+    border-radius: 0.375rem; background: #F8FAFC; font-family: inherit; color: #1E293B; outline: none; cursor: pointer; width: 100%;
+  }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 0.3125rem; font-size: 0.8125rem; font-weight: 600;
+    padding: 0.4375rem 1rem; border-radius: 0.375rem; border: none; background: #6366F1; color: #fff;
+    cursor: pointer; font-family: inherit; box-shadow: 0 1px 3px rgba(99,102,241,0.3); transition: all 0.15s;
+  }
+  .btn-primary:hover { background: #4F46E5; }
+  .btn-primary i { font-size: 0.875rem; }
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 0.3125rem; font-size: 0.8125rem; font-weight: 500;
+    padding: 0.4375rem 0.875rem; border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; color: #475569;
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .btn-ghost:hover { background: #F8FAFC; border-color: #CBD5E1; }
+  .btn-danger {
+    display: inline-flex; align-items: center; gap: 0.3125rem; font-size: 0.8125rem; font-weight: 600;
+    padding: 0.4375rem 1rem; border-radius: 0.375rem; border: none; background: #EF4444; color: #fff;
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .btn-danger:hover { background: #DC2626; }
+
+  /* Toggle switch */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #F1F5F9; }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 0.8125rem; font-weight: 500; color: #334155; }
+  .toggle-desc { font-size: 0.6875rem; color: #94A3B8; }
+  .toggle-switch {
+    width: 2.5rem; height: 1.375rem; border-radius: 9999px; background: #E2E8F0;
+    position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s;
+  }
+  .toggle-switch.on { background: #6366F1; }
+  .toggle-switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 1.125rem; height: 1.125rem; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: transform 0.2s;
+  }
+  .toggle-switch.on::after { transform: translateX(1.125rem); }
+
+  /* Danger Zone */
+  .danger-card { background: #FEF2F2; border: 1px solid #FECACA; border-radius: 0.625rem; padding: 1.5rem; margin-bottom: 1.25rem; }
+  .danger-title { font-size: 0.9375rem; font-weight: 700; color: #DC2626; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.375rem; }
+  .danger-title i { font-size: 1rem; }
+  .danger-desc { font-size: 0.8125rem; color: #991B1B; margin-bottom: 1rem; }
+
+  /* Plan card */
+  .plan-current { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border: 2px solid #C7D2FE; border-radius: 0.625rem; background: #EEF2FF; margin-bottom: 1rem; }
+  .plan-icon { width: 2.75rem; height: 2.75rem; border-radius: 0.625rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; }
+  .plan-info { flex: 1; }
+  .plan-name { font-size: 1rem; font-weight: 700; color: #0F172A; }
+  .plan-price { font-size: 0.8125rem; color: #64748B; }
+  .plan-badge { font-size: 0.625rem; font-weight: 700; padding: 0.125rem 0.5rem; border-radius: 9999px; background: #6366F1; color: #fff; }
+
+  /* Integration cards */
+  .integ-card { display: flex; align-items: center; gap: 0.875rem; padding: 1rem; border: 1px solid #E2E8F0; border-radius: 0.5rem; margin-bottom: 0.75rem; }
+  .integ-card:last-child { margin-bottom: 0; }
+  .integ-icon { width: 2.5rem; height: 2.5rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; }
+  .integ-info { flex: 1; min-width: 0; }
+  .integ-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .integ-desc { font-size: 0.6875rem; color: #94A3B8; }
+  .integ-status { font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.4375rem; border-radius: 9999px; flex-shrink: 0; }
+  .integ-status.connected { background: #DCFCE7; color: #166534; }
+  .integ-status.off { background: #F1F5F9; color: #64748B; }
+
+  /* Token / Key card */
+  .key-card { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1rem; border: 1px solid #E2E8F0; border-radius: 0.5rem; background: #F8FAFC; margin-bottom: 0.75rem; }
+  .key-mono { font-family: 'SF Mono',Consolas,monospace; font-size: 0.75rem; color: #334155; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .key-btn { width: 1.75rem; height: 1.75rem; border-radius: 0.25rem; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; flex-shrink: 0; }
+  .key-btn:hover { background: #F1F5F9; color: #475569; }
+  .key-btn.danger:hover { background: #FEE2E2; color: #EF4444; border-color: #FECACA; }
+  .key-warn { font-size: 0.6875rem; color: #92400E; display: flex; align-items: center; gap: 0.25rem; margin-top: 0.5rem; }
+  .key-warn i { font-size: 0.75rem; color: #F59E0B; }
+
+  /* Members table */
+  .members-table { width: 100%; border-collapse: collapse; }
+  .members-table thead th { background: #F8FAFC; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; padding: 0.625rem 0.75rem; text-align: left; border-bottom: 1px solid #E2E8F0; }
+  .members-table tbody td { padding: 0.625rem 0.75rem; font-size: 0.8125rem; color: #334155; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+  .members-table tbody tr:last-child td { border-bottom: none; }
+  .members-table tbody tr:hover { background: #FAFAFF; }
+  .tbl-user { display: flex; align-items: center; gap: 0.625rem; }
+  .tbl-avatar { width: 1.75rem; height: 1.75rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.5rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .tbl-name { font-weight: 600; color: #0F172A; }
+  .tbl-email { font-size: 0.6875rem; color: #94A3B8; }
+  .tbl-role { font-size: 0.75rem; font-weight: 500; padding: 0.25rem 0.5rem; border: 1px solid #E2E8F0; border-radius: 0.375rem; background: #fff; font-family: inherit; color: #475569; cursor: pointer; outline: none; }
+  .tbl-remove { width: 1.5rem; height: 1.5rem; border-radius: 0.25rem; border: none; background: none; color: #CBD5E1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; }
+  .tbl-remove:hover { background: #FEE2E2; color: #EF4444; }
+
+  /* Checkbox */
+  .check-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.625rem; }
+  .check-box { width: 1rem; height: 1rem; border: 1.5px solid #CBD5E1; border-radius: 0.25rem; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #fff; }
+  .check-box.checked { background: #6366F1; border-color: #6366F1; }
+  .check-box.checked::after { content: ''; width: 0.375rem; height: 0.25rem; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) translateY(-0.5px); }
+  .check-label { font-size: 0.8125rem; color: #334155; }
+
+  /* Preview text */
+  .preview-text { font-size: 0.75rem; color: #6366F1; background: #EEF2FF; padding: 0.375rem 0.625rem; border-radius: 0.25rem; display: inline-flex; align-items: center; gap: 0.25rem; margin-top: 0.375rem; }
+
+  /* CI/CD platform tabs */
+  .cicd-tab { display:inline-flex; align-items:center; gap:0.375rem; padding:0.4375rem 0.875rem; border-radius:0.375rem; font-size:0.75rem; font-weight:500; color:#475569; background:#F1F5F9; border:1px solid #E2E8F0; cursor:pointer; transition:all 0.15s; }
+  .cicd-tab:hover { background:#E2E8F0; }
+  .cicd-tab-active { background:#6366F1 !important; color:#fff !important; border-color:#6366F1 !important; }
+
+  /* Code block */
+  .code-block-wrap { position:relative; margin-top:0.75rem; }
+  .code-block-wrap .copy-code-btn { position:absolute; top:0.5rem; right:0.5rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); color:#94A3B8; border-radius:0.375rem; padding:0.3125rem 0.625rem; font-size:0.6875rem; cursor:pointer; display:flex; align-items:center; gap:0.25rem; transition:all 0.15s; z-index:1; }
+  .code-block-wrap .copy-code-btn:hover { background:rgba(255,255,255,0.2); color:#E2E8F0; }
+  .code-block { background: #1E293B; color: #E2E8F0; font-family: 'SF Mono',Consolas,monospace; font-size: 0.75rem; line-height: 1.6; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+  .code-block .cm { color: #64748B; }
+  .code-block .ck { color: #7DD3FC; } /* keys */
+  .code-block .cv { color: #86EFAC; } /* values/strings */
+  .code-block .cb { color: #C4B5FD; } /* booleans/special */
+  .code-block .ct { color: #FDE68A; } /* shell/commands */
+
+  /* Section divider */
+  .section-divider { border-top: 1px solid #E2E8F0; margin: 1.5rem 0; }
+
+  /* Delete confirmation modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45);
+    z-index: 999; align-items: center; justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: #fff; border-radius: 0.75rem; width: 420px; max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2); overflow: hidden; animation: fadeIn 0.15s ease-out;
+  }
+  .modal-header { padding: 1.25rem 1.5rem 0; display: flex; align-items: center; gap: 0.5rem; }
+  .modal-header i { font-size: 1.25rem; color: #EF4444; }
+  .modal-header span { font-size: 1rem; font-weight: 700; color: #0F172A; }
+  .modal-close {
+    margin-left: auto; width: 1.75rem; height: 1.75rem; border-radius: 0.375rem;
+    border: none; background: none; color: #94A3B8; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; font-size: 1.125rem;
+  }
+  .modal-close:hover { background: #F1F5F9; color: #64748B; }
+  .modal-body { padding: 1rem 1.5rem 1.5rem; }
+  .modal-warn-text { font-size: 0.8125rem; color: #64748B; line-height: 1.5; margin-bottom: 1rem; }
+  .modal-warn-text strong { color: #DC2626; }
+  .modal-confirm-input {
+    width: 100%; font-size: 0.8125rem; padding: 0.5rem 0.75rem; border: 1px solid #E2E8F0;
+    border-radius: 0.375rem; font-family: inherit; color: #1E293B; outline: none; margin-bottom: 1rem;
+  }
+  .modal-confirm-input:focus { border-color: #FECACA; }
+  .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+  .btn-danger-lg {
+    display: inline-flex; align-items: center; gap: 0.3125rem; font-size: 0.8125rem; font-weight: 600;
+    padding: 0.5rem 1.25rem; border-radius: 0.375rem; border: none; background: #EF4444; color: #fff;
+    cursor: pointer; font-family: inherit; opacity: 0.5; pointer-events: none; transition: all 0.15s;
+  }
+  .btn-danger-lg.enabled { opacity: 1; pointer-events: auto; }
+  .btn-danger-lg.enabled:hover { background: #DC2626; }
+
+  /* Project select */
+  .project-select { width: 100%; max-width: 320px; height: 2.25rem; padding: 0 0.75rem; font-size: 0.8125rem; font-family: inherit; color: #1E293B; border: 1px solid #E2E8F0; border-radius: 0.375rem; background: #fff; outline: none; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- ═══ ROW 1 — TOP HEADER ═══ -->
+<div class="top-header">
+  <div class="header-logo"><div class="logo-icon">T</div><span class="logo-text">Testably</span></div>
+  <button class="back-btn"><i class="ri-arrow-left-s-line"></i> Projects</button>
+  <div class="header-page-label"><i class="ri-settings-3-line"></i> Settings</div>
+  <div class="header-right">
+    <button class="header-icon-btn"><i class="ri-search-line"></i></button>
+    <button class="header-icon-btn"><i class="ri-notification-3-line"></i><span class="notif-dot"></span></button>
+    <button class="header-icon-btn"><i class="ri-keyboard-line"></i></button>
+    <div class="header-avatar">KJ</div>
+  </div>
+</div>
+
+<!-- ═══ ROW 2 — SUBTAB ROW (7 tabs) ═══ -->
+<div class="subtab-row">
+  <div class="st-group">
+    <div class="st-tab active" data-tab="profile" onclick="switchTab('profile')">
+      <i class="ri-user-settings-fill" style="color:#8B5CF6"></i> Profile
+    </div>
+    <div class="st-tab" data-tab="billing" onclick="switchTab('billing')">
+      <i class="ri-bank-card-fill" style="color:#6366F1"></i> Billing
+    </div>
+    <div class="st-tab" data-tab="preferences" onclick="switchTab('preferences')">
+      <i class="ri-equalizer-fill" style="color:#3B82F6"></i> Preferences
+    </div>
+    <div class="st-tab" data-tab="members" onclick="switchTab('members')">
+      <i class="ri-team-fill" style="color:#22C55E"></i> Members <span class="st-badge">4</span>
+    </div>
+    <div class="st-tab" data-tab="integrations" onclick="switchTab('integrations')">
+      <i class="ri-plug-fill" style="color:#F59E0B"></i> Integrations <span class="st-badge">3</span>
+    </div>
+    <div class="st-tab" data-tab="api" onclick="switchTab('api')">
+      <i class="ri-key-2-fill" style="color:#EC4899"></i> API &amp; Tokens
+    </div>
+    <div class="st-tab" data-tab="notifications" onclick="switchTab('notifications')">
+      <i class="ri-notification-3-fill" style="color:#EF4444"></i> Notifications
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CONTENT ═══ -->
+<div class="content-area">
+
+  <!-- ══════════ 1. PROFILE ══════════ -->
+  <div class="tab-panel active" id="panel-profile">
+    <div class="settings-content">
+      <!-- Profile Info -->
+      <div class="section-card">
+        <div class="section-title">Profile Information</div>
+        <div class="section-desc">Update your personal information and avatar.</div>
+        <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.25rem;">
+          <div style="position:relative; cursor:pointer;" onclick="document.getElementById('avatarUpload').click()">
+            <div style="width:3.5rem; height:3.5rem; border-radius:50%; background:#6366F1; display:flex; align-items:center; justify-content:center; font-size:1.125rem; font-weight:700; color:#fff;">KJ</div>
+            <div style="position:absolute; bottom:-2px; right:-2px; width:1.25rem; height:1.25rem; border-radius:50%; background:#fff; border:1.5px solid #E2E8F0; display:flex; align-items:center; justify-content:center;">
+              <i class="ri-camera-line" style="font-size:0.625rem; color:#64748B;"></i>
+            </div>
+            <input type="file" id="avatarUpload" accept="image/*" style="display:none;">
+          </div>
+          <div>
+            <div style="font-size:0.8125rem; font-weight:600; color:#0F172A;">Kyle Jeon</div>
+            <div style="font-size:0.6875rem; color:#94A3B8;">Click to upload profile photo</div>
+            <button style="margin-top:0.375rem; font-size:0.6875rem; color:#DC2626; cursor:pointer; border:none; background:none; padding:0;">Remove</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" type="text" value="Kyle Jeon"></div>
+          <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" value="kyle@testably.app" disabled style="opacity:0.6;"></div>
+        </div>
+        <button class="btn-primary" style="margin-top:0.25rem;"><i class="ri-save-line"></i> Save Changes</button>
+      </div>
+
+      <!-- Password -->
+      <div class="section-card">
+        <div class="section-title">Password</div>
+        <div class="section-desc">Change your account password. Not available for Google SSO accounts.</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input class="form-input" type="password" placeholder="Enter new password">
+            <div style="margin-top:0.375rem; display:flex; align-items:center; gap:0.5rem;">
+              <div style="flex:1; height:0.25rem; background:#E2E8F0; border-radius:9999px; overflow:hidden; display:flex; gap:2px;">
+                <div style="width:33%; height:100%; background:#F59E0B; border-radius:9999px;"></div>
+                <div style="width:33%; height:100%; background:#F59E0B; border-radius:9999px;"></div>
+                <div style="width:33%; height:100%; background:#E2E8F0; border-radius:9999px;"></div>
+              </div>
+              <span style="font-size:0.6875rem; font-weight:600; color:#F59E0B;">Fair</span>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Confirm Password</label><input class="form-input" type="password" placeholder="Confirm new password"></div>
+        </div>
+        <button class="btn-primary"><i class="ri-lock-line"></i> Change Password</button>
+      </div>
+
+      <!-- Google SSO Alternative (shown when authProvider === 'google') -->
+      <div class="section-card" style="display:none; background:#F8FAFC;">
+        <div class="section-title">Password</div>
+        <div style="display:flex; align-items:center; gap:1rem; padding:1.25rem; border:1px solid #E2E8F0; border-radius:0.5rem; background:#fff;">
+          <div style="width:2.5rem; height:2.5rem; border-radius:0.5rem; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <svg width="24" height="24" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:0.8125rem; font-weight:600; color:#0F172A;">Signed in with Google</div>
+            <div style="font-size:0.75rem; color:#64748B;">Password management is handled by your Google account.</div>
+          </div>
+          <a href="https://myaccount.google.com/security" target="_blank" style="font-size:0.75rem; font-weight:600; color:#6366F1; text-decoration:none; white-space:nowrap;"><i class="ri-external-link-line"></i> Google Account Settings</a>
+        </div>
+      </div>
+
+      <!-- Data Export -->
+      <div class="section-card">
+        <div class="section-title"><i class="ri-download-2-line" style="color:#3B82F6;"></i> Data Export</div>
+        <div class="section-desc">Download all your data including test cases, runs, and results. Available in JSON or CSV format.</div>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn-ghost"><i class="ri-file-code-line"></i> Export as JSON</button>
+          <button class="btn-ghost"><i class="ri-file-excel-2-line"></i> Export as CSV</button>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="danger-card">
+        <div class="danger-title"><i class="ri-error-warning-fill"></i> Danger Zone</div>
+        <div class="danger-desc">Once you delete your account, there is no going back. All data will be permanently removed after a 30-day grace period.</div>
+        <button class="btn-danger" onclick="document.getElementById('deleteModal').classList.add('show')"><i class="ri-delete-bin-line"></i> Delete Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 2. BILLING ══════════ -->
+  <div class="tab-panel" id="panel-billing">
+    <div class="settings-content">
+      <div class="section-card">
+        <div class="section-title">Current Plan</div>
+        <div class="section-desc">View and manage your subscription.</div>
+        <div class="plan-current">
+          <div class="plan-icon" style="background:#EEF2FF; color:#6366F1;"><i class="ri-vip-crown-line"></i></div>
+          <div class="plan-info"><div class="plan-name">Professional</div><div class="plan-price">$99 / month · Renews Apr 15, 2026</div></div>
+          <span class="plan-badge">Current Plan</span>
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn-primary"><i class="ri-arrow-up-circle-line"></i> Upgrade</button>
+          <button class="btn-ghost">View All Plans</button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">Invoice History</div>
+        <div class="section-desc">View and download your past invoices.</div>
+        <table class="members-table">
+          <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th><th style="text-align:right">Invoice</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="font-size:0.75rem; color:#94A3B8;">Mar 15, 2026</td>
+              <td>Professional — Monthly</td>
+              <td style="font-weight:600;">$99.00</td>
+              <td><span style="font-size:0.625rem; font-weight:600; padding:0.125rem 0.4375rem; border-radius:9999px; background:#DCFCE7; color:#166534;">Paid</span></td>
+              <td style="text-align:right"><button class="key-btn" title="Download PDF"><i class="ri-download-2-line"></i></button></td>
+            </tr>
+            <tr>
+              <td style="font-size:0.75rem; color:#94A3B8;">Feb 15, 2026</td>
+              <td>Professional — Monthly</td>
+              <td style="font-weight:600;">$99.00</td>
+              <td><span style="font-size:0.625rem; font-weight:600; padding:0.125rem 0.4375rem; border-radius:9999px; background:#DCFCE7; color:#166534;">Paid</span></td>
+              <td style="text-align:right"><button class="key-btn" title="Download PDF"><i class="ri-download-2-line"></i></button></td>
+            </tr>
+            <tr>
+              <td style="font-size:0.75rem; color:#94A3B8;">Jan 15, 2026</td>
+              <td>Professional — Monthly</td>
+              <td style="font-weight:600;">$99.00</td>
+              <td><span style="font-size:0.625rem; font-weight:600; padding:0.125rem 0.4375rem; border-radius:9999px; background:#DCFCE7; color:#166534;">Paid</span></td>
+              <td style="text-align:right"><button class="key-btn" title="Download PDF"><i class="ri-download-2-line"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 3. PREFERENCES (NEW) ══════════ -->
+  <div class="tab-panel" id="panel-preferences">
+    <div class="settings-content">
+      <div class="section-card">
+        <!-- Language -->
+        <div class="section-title">Language</div>
+        <div class="section-desc">Choose your preferred language for the Testably interface.</div>
+        <select class="form-select" style="max-width:320px;">
+          <option selected>English</option>
+          <option>한국어</option>
+        </select>
+
+        <div class="section-divider"></div>
+
+        <!-- Timezone -->
+        <div class="section-title">Timezone</div>
+        <div class="section-desc">Set your timezone for accurate timestamps in activity logs and reports.</div>
+        <div class="check-row">
+          <div class="check-box checked" onclick="this.classList.toggle('checked')"></div>
+          <span class="check-label">Use browser timezone <span style="color:#94A3B8;">(Asia/Seoul detected)</span></span>
+        </div>
+        <select class="form-select" style="max-width:320px; margin-top:0.5rem; opacity:0.5;">
+          <option selected>Asia/Seoul (UTC+9)</option>
+          <option>America/New_York (UTC-5)</option>
+          <option>Europe/London (UTC+0)</option>
+          <option>America/Los_Angeles (UTC-8)</option>
+        </select>
+
+        <div class="section-divider"></div>
+
+        <!-- Date & Time Format -->
+        <div class="section-title">Date &amp; Time Format</div>
+        <div class="section-desc">Choose how dates and times are displayed throughout the app.</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date Format</label>
+            <select class="form-select"><option>YYYY-MM-DD</option><option>MM/DD/YYYY</option><option>DD/MM/YYYY</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time Format</label>
+            <select class="form-select"><option>24-hour</option><option>12-hour (AM/PM)</option></select>
+          </div>
+        </div>
+        <div class="preview-text"><i class="ri-eye-line"></i> Preview: 2026-03-27 14:30</div>
+
+        <div class="section-divider"></div>
+
+        <!-- Default Project -->
+        <div class="section-title">Default Project</div>
+        <div class="section-desc">Open this project automatically when you log in.</div>
+        <select class="form-select" style="max-width:320px;">
+          <option selected>None (show project list)</option>
+          <option>Acme Healthcare</option>
+          <option>Stellar Health EMR</option>
+          <option>Nexus Platform</option>
+        </select>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
+          <button class="btn-primary"><i class="ri-save-line"></i> Save Preferences</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 4. MEMBERS ══════════ -->
+  <div class="tab-panel" id="panel-members">
+    <div class="settings-content">
+      <div class="section-card">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.25rem;">
+          <div><div class="section-title" style="margin-bottom:0.25rem;">Project Members</div><div class="section-desc" style="margin-bottom:0;">Manage team members and their roles for each project.</div></div>
+          <button class="btn-primary"><i class="ri-user-add-line"></i> Invite Member</button>
+        </div>
+        <div style="margin-bottom:1.25rem;"><select class="project-select"><option>Acme Healthcare</option><option>Stellar Health EMR</option><option>Nexus Platform</option></select></div>
+        <table class="members-table">
+          <thead><tr><th style="width:38%">Member</th><th style="width:14%">Role</th><th style="width:18%">Joined</th><th style="width:16%">Last Active</th><th style="width:14%; text-align:right">Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div class="tbl-user"><div class="tbl-avatar" style="background:#6366F1">KJ</div><div><div class="tbl-name">Kyle Jeon</div><div class="tbl-email">kyle@testably.app</div></div></div></td>
+              <td><select class="tbl-role" disabled><option selected>Admin</option></select></td>
+              <td style="font-size:0.75rem; color:#94A3B8;">Jan 15, 2026</td>
+              <td style="font-size:0.75rem; color:#94A3B8;">Today</td>
+              <td style="text-align:right"><span style="font-size:0.625rem; color:#CBD5E1;">Owner</span></td>
+            </tr>
+            <tr>
+              <td><div class="tbl-user"><div class="tbl-avatar" style="background:#EC4899">SK</div><div><div class="tbl-name">Sarah Kim</div><div class="tbl-email">sarah@testably.app</div></div></div></td>
+              <td><select class="tbl-role"><option>Admin</option><option selected>Member</option><option>Viewer</option></select></td>
+              <td style="font-size:0.75rem; color:#94A3B8;">Feb 3, 2026</td>
+              <td style="font-size:0.75rem; color:#94A3B8;">2 hours ago</td>
+              <td style="text-align:right"><button class="tbl-remove"><i class="ri-delete-bin-line"></i></button></td>
+            </tr>
+            <tr>
+              <td><div class="tbl-user"><div class="tbl-avatar" style="background:#F59E0B">JD</div><div><div class="tbl-name">John Doe</div><div class="tbl-email">john@testably.app</div></div></div></td>
+              <td><select class="tbl-role"><option>Admin</option><option selected>Member</option><option>Viewer</option></select></td>
+              <td style="font-size:0.75rem; color:#94A3B8;">Feb 20, 2026</td>
+              <td style="font-size:0.75rem; color:#94A3B8;">Yesterday</td>
+              <td style="text-align:right"><button class="tbl-remove"><i class="ri-delete-bin-line"></i></button></td>
+            </tr>
+            <tr>
+              <td><div class="tbl-user"><div class="tbl-avatar" style="background:#22C55E">AL</div><div><div class="tbl-name">Amy Lee</div><div class="tbl-email">amy@testably.app</div></div></div></td>
+              <td><select class="tbl-role"><option>Admin</option><option>Member</option><option selected>Viewer</option></select></td>
+              <td style="font-size:0.75rem; color:#94A3B8;">Mar 10, 2026</td>
+              <td style="font-size:0.75rem; color:#94A3B8;">3 days ago</td>
+              <td style="text-align:right"><button class="tbl-remove"><i class="ri-delete-bin-line"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+        <!-- Empty state (shown when no project selected) -->
+        <div style="display:none; text-align:center; padding:3rem 1.5rem;">
+          <div style="width:3rem; height:3rem; background:#F1F5F9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 0.75rem;">
+            <i class="ri-team-line" style="font-size:1.5rem; color:#94A3B8;"></i>
+          </div>
+          <div style="font-size:0.9375rem; font-weight:600; color:#0F172A; margin-bottom:0.25rem;">Select a project</div>
+          <div style="font-size:0.8125rem; color:#94A3B8;">Select a project to view and manage its members.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 5. INTEGRATIONS (merged with CI/CD) ══════════ -->
+  <div class="tab-panel" id="panel-integrations">
+    <div class="settings-content">
+      <!-- Jira -->
+      <div class="section-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.25rem;">
+          <div class="section-title"><i class="ri-links-fill" style="color:#1E40AF;"></i> Jira Integration</div>
+          <span style="padding:0.1875rem 0.625rem; background:#FEF9C3; color:#854D0E; border:1px solid #FDE68A; border-radius:9999px; font-size:0.625rem; font-weight:600; display:flex; align-items:center; gap:0.25rem;"><i class="ri-star-line"></i> Requires Starter or above</span>
+        </div>
+        <div class="section-desc">Connect your Jira account to create issues directly from test results.</div>
+
+        <!-- Tier-gate banner (shown for Free tier) -->
+        <div style="padding:1rem; background:linear-gradient(to right,#FEF9C3,#FEF3C7); border:1px solid #FDE68A; border-radius:0.75rem; margin-bottom:1rem; display:flex; align-items:flex-start; gap:0.75rem;">
+          <div style="width:2.5rem; height:2.5rem; background:#FEF08A; border-radius:0.5rem; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><i class="ri-lock-line" style="color:#CA8A04; font-size:1.25rem;"></i></div>
+          <div style="flex:1;">
+            <div style="font-size:0.8125rem; font-weight:600; color:#0F172A; margin-bottom:0.25rem;">Jira Integration is available on Starter and above</div>
+            <div style="font-size:0.75rem; color:#64748B; margin-bottom:0.625rem;">Create Jira issues directly from test results and enhance team collaboration.</div>
+            <a href="mailto:hello@testably.app" class="btn-primary" style="font-size:0.75rem; padding:0.375rem 0.875rem; background:#CA8A04;"><i class="ri-arrow-up-circle-line"></i> Contact Us to Upgrade</a>
+          </div>
+        </div>
+
+        <!-- Jira connection status -->
+        <div class="integ-card" style="margin-bottom:1rem;">
+          <div class="integ-icon" style="background:#DBEAFE; color:#1E40AF;"><i class="ri-links-fill"></i></div>
+          <div class="integ-info"><div class="integ-name">acme-health.atlassian.net</div><div class="integ-desc">Issue type: Bug · Linked issue creation enabled</div></div>
+          <span class="integ-status connected">Connected</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Jira Domain <span style="color:#EF4444;">*</span></label>
+            <div style="display:flex; align-items:center; gap:0.375rem;"><span style="font-size:0.8125rem; color:#94A3B8;">https://</span><input class="form-input" type="text" value="acme-health.atlassian.net"></div>
+            <span style="font-size:0.6875rem; color:#94A3B8;">e.g. your-domain.atlassian.net</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Jira Email <span style="color:#EF4444;">*</span></label>
+            <input class="form-input" type="email" value="kyle@testably.app">
+            <span style="font-size:0.6875rem; color:#94A3B8;">Your Jira account email address</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Jira API Token <span style="color:#EF4444;">*</span></label>
+            <input class="form-input" type="password" value="••••••••••••">
+            <a href="https://id.atlassian.com/manage-profile/security/api-tokens" style="font-size:0.6875rem; color:#6366F1; text-decoration:none;">Generate API token here ↗</a>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Default Issue Type</label>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <select class="form-select" style="width:200px;"><option selected>Bug</option><option>Task</option><option>Story</option><option>Epic</option></select>
+            <button class="btn-ghost"><i class="ri-link"></i> Test Connection</button>
+            <button class="btn-primary"><i class="ri-save-line"></i> Save Settings</button>
+          </div>
+          <span style="font-size:0.6875rem; color:#94A3B8; margin-top:0.25rem; display:block;">Default issue type when creating new issues</span>
+        </div>
+        <!-- Test connection result -->
+        <div style="padding:0.625rem 0.875rem; border-radius:0.5rem; background:#F0FDF4; border:1px solid #BBF7D0; margin-top:0.5rem; display:flex; align-items:center; gap:0.375rem; font-size:0.8125rem; color:#166534;">
+          <i class="ri-checkbox-circle-line"></i> Jira connection successful!
+        </div>
+      </div>
+
+      <!-- Slack & Teams Webhooks -->
+      <div class="section-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.25rem;">
+          <div class="section-title"><i class="ri-webhook-fill" style="color:#F59E0B;"></i> Slack &amp; Teams Webhooks</div>
+          <span style="padding:0.1875rem 0.625rem; background:#FEF9C3; color:#854D0E; border:1px solid #FDE68A; border-radius:9999px; font-size:0.625rem; font-weight:600; display:flex; align-items:center; gap:0.25rem;"><i class="ri-star-line"></i> Requires Starter or above</span>
+        </div>
+        <div class="section-desc" style="margin-bottom:0.75rem;">Send real-time notifications to Slack or Microsoft Teams when events occur in your projects.</div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+          <span style="font-size:0.8125rem; color:#64748B;">2 webhooks configured across all projects</span>
+          <button class="btn-primary" onclick="document.getElementById('webhookModal').classList.add('show')"><i class="ri-add-line"></i> Add Integration</button>
+        </div>
+
+        <!-- Webhook Card 1 -->
+        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:0.75rem; padding:1rem; margin-bottom:0.75rem;">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem;">
+            <div style="display:flex; align-items:flex-start; gap:0.75rem; flex:1; min-width:0;">
+              <div style="width:2.25rem; height:2.25rem; border-radius:0.5rem; background:#F3E8FF; color:#7C3AED; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><i class="ri-slack-line" style="font-size:1.125rem;"></i></div>
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:0.375rem; flex-wrap:wrap;">
+                  <span style="font-size:0.8125rem; font-weight:600; color:#0F172A;">Slack</span>
+                  <span style="font-size:0.8125rem; color:#64748B;">#testing-alerts</span>
+                  <span style="padding:0.0625rem 0.375rem; font-size:0.625rem; font-weight:600; border-radius:9999px; background:#DCFCE7; color:#166534;">Active</span>
+                  <span style="padding:0.0625rem 0.375rem; font-size:0.625rem; font-weight:600; border-radius:9999px; background:#FFF7ED; color:#C2410C; border:1px solid #FFEDD5;"><i class="ri-folder-line" style="margin-right:0.125rem;"></i>Acme Healthcare</span>
+                </div>
+                <div style="font-size:0.6875rem; color:#94A3B8; margin-top:0.25rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">https://hooks.slack.com/services/T01.../B02.../xxx</div>
+                <div style="display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:0.375rem;">
+                  <span style="padding:0.0625rem 0.375rem; font-size:0.625rem; background:#EEF2FF; color:#4338CA; border-radius:9999px; border:1px solid #C7D2FE;">Run Created</span>
+                  <span style="padding:0.0625rem 0.375rem; font-size:0.625rem; background:#EEF2FF; color:#4338CA; border-radius:9999px; border:1px solid #C7D2FE;">Run Completed</span>
+                  <span style="padding:0.0625rem 0.375rem; font-size:0.625rem; background:#EEF2FF; color:#4338CA; border-radius:9999px; border:1px solid #C7D2FE;">Milestone Completed</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.25rem; flex-shrink:0;">
+              <button class="key-btn" title="Test" style="font-size:0.6875rem;"><i class="ri-send-plane-line"></i></button>
+              <button class="key-btn" title="Logs" style="font-size:0.6875rem;"><i class="ri-history-line"></i></button>
+              <button class="key-btn" title="Pause" style="font-size:0.6875rem;"><i class="ri-pause-line"></i></button>
+              <button class="key-btn" title="Edit" style="font-size:0.6875rem;"><i class="ri-edit-line"></i></button>
+              <button class="key-btn danger" title="Delete" style="font-size:0.6875rem;"><i class="ri-delete-bin-line"></i></button>
+            </div>
+          </div>
+          <!-- Delivery Logs (expanded) -->
+          <div style="margin-top:0.75rem; border-top:1px solid #E2E8F0; padding-top:0.75rem;">
+            <div style="font-size:0.8125rem; font-weight:600; color:#334155; margin-bottom:0.5rem;">Delivery Logs (last 50)</div>
+            <table class="members-table" style="font-size:0.75rem;">
+              <thead><tr><th>Event</th><th>Status</th><th>Code</th><th>Time</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td style="font-family:monospace; font-size:0.6875rem; color:#64748B;">run_completed</td>
+                  <td><span style="padding:0.0625rem 0.375rem; font-size:0.625rem; font-weight:600; border-radius:9999px; background:#DCFCE7; color:#166534;">success</span></td>
+                  <td style="color:#94A3B8;">200</td>
+                  <td style="color:#94A3B8; font-size:0.6875rem; white-space:nowrap;">Mar 27, 02:30 PM</td>
+                </tr>
+                <tr>
+                  <td style="font-family:monospace; font-size:0.6875rem; color:#64748B;">milestone_completed</td>
+                  <td><span style="padding:0.0625rem 0.375rem; font-size:0.625rem; font-weight:600; border-radius:9999px; background:#DCFCE7; color:#166534;">success</span></td>
+                  <td style="color:#94A3B8;">200</td>
+                  <td style="color:#94A3B8; font-size:0.6875rem; white-space:nowrap;">Mar 26, 11:15 AM</td>
+                </tr>
+                <tr>
+                  <td style="font-family:monospace; font-size:0.6875rem; color:#64748B;">run_created</td>
+                  <td><span style="padding:0.0625rem 0.375rem; font-size:0.625rem; font-weight:600; border-radius:9999px; background:#FEE2E2; color:#991B1B;">failed</span></td>
+                  <td style="color:#94A3B8;">404</td>
+                  <td style="color:#94A3B8; font-size:0.6875rem; white-space:nowrap;">Mar 25, 09:00 AM</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Webhook Card 2 -->
+        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:0.75rem; padding:1rem; margin-bottom:0.75rem;">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem;">
+            <div style="display:flex; align-items:flex-start; gap:0.75rem; flex:1; min-width:0;">
+              <div style="width:2.25rem; height:2.25rem; border-radius:0.5rem; background:#DBEAFE; color:#1D4ED8; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><i class="ri-microsoft-line" style="font-size:1.125rem;"></i></div>
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:0.375rem; flex-wrap:wrap;">
+                  <span style="font-size:0.8125rem; font-weight:600; color:#0F172A;">Microsoft Teams</span>
+                  <span style="font-size:0.8125rem; color:#64748B;">#qa-bugs</span>
+                  <span style="padding:0.0625rem 0.375rem; font-size:0.625rem; font-weight:600; border-radius:9999px; background:#F1F5F9; color:#64748B;">Paused</span>
+                  <span style="padding:0.0625rem 0.375rem; font-size:0.625rem; font-weight:600; border-radius:9999px; background:#FFF7ED; color:#C2410C; border:1px solid #FFEDD5;"><i class="ri-folder-line" style="margin-right:0.125rem;"></i>Stellar Health EMR</span>
+                </div>
+                <div style="font-size:0.6875rem; color:#94A3B8; margin-top:0.25rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">https://prod-xx.westus.logic.azure.com/workflows/...</div>
+                <div style="display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:0.375rem;">
+                  <span style="padding:0.0625rem 0.375rem; font-size:0.625rem; background:#EEF2FF; color:#4338CA; border-radius:9999px; border:1px solid #C7D2FE;">Run Completed</span>
+                  <span style="padding:0.0625rem 0.375rem; font-size:0.625rem; background:#EEF2FF; color:#4338CA; border-radius:9999px; border:1px solid #C7D2FE;">Milestone Started</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.25rem; flex-shrink:0;">
+              <button class="key-btn" title="Test" style="font-size:0.6875rem;"><i class="ri-send-plane-line"></i></button>
+              <button class="key-btn" title="Logs" style="font-size:0.6875rem;"><i class="ri-history-line"></i></button>
+              <button class="key-btn" title="Resume" style="font-size:0.6875rem;"><i class="ri-play-line"></i></button>
+              <button class="key-btn" title="Edit" style="font-size:0.6875rem;"><i class="ri-edit-line"></i></button>
+              <button class="key-btn danger" title="Delete" style="font-size:0.6875rem;"><i class="ri-delete-bin-line"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CI/CD Pipelines (moved from CI/CD tab) — ★ Full integration guide -->
+      <div class="section-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.25rem;">
+          <div class="section-title"><i class="ri-git-branch-fill" style="color:#22C55E;"></i> CI/CD Pipelines</div>
+          <span style="padding:0.1875rem 0.625rem; background:#EEF2FF; color:#4338CA; border:1px solid #C7D2FE; border-radius:9999px; font-size:0.625rem; font-weight:600; display:flex; align-items:center; gap:0.25rem;"><i class="ri-vip-crown-line"></i> Requires Professional or above</span>
+        </div>
+        <div class="section-desc">Connect your CI/CD pipeline to automatically report test results.</div>
+
+        <!-- 3-platform tabs -->
+        <div style="display:flex; gap:0.375rem; margin-bottom:1rem;">
+          <button class="cicd-tab cicd-tab-active" onclick="showPlatform('github',this)"><i class="ri-github-fill"></i> GitHub Actions</button>
+          <button class="cicd-tab" onclick="showPlatform('gitlab',this)"><i class="ri-gitlab-fill"></i> GitLab CI</button>
+          <button class="cicd-tab" onclick="showPlatform('python',this)"><i class="ri-code-s-slash-line"></i> Python</button>
+        </div>
+
+        <!-- Environment Variables Guide -->
+        <div style="padding:1rem; background:#EEF2FF; border:1px solid #C7D2FE; border-radius:0.75rem; margin-bottom:1rem;">
+          <div style="display:flex; align-items:center; gap:0.375rem; margin-bottom:0.75rem;">
+            <i class="ri-settings-4-line" style="color:#4F46E5;"></i>
+            <span class="platform-env-label" style="font-size:0.8125rem; font-weight:700; color:#3730A3;">Register in your GitHub Secrets</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:0.5rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem; background:#fff; border:1px solid #C7D2FE; border-radius:0.375rem; padding:0.5rem 0.75rem;">
+              <span style="font-size:0.6875rem; font-weight:700; font-family:monospace; color:#4338CA; width:8rem; flex-shrink:0;">TESTABLY_URL</span>
+              <span style="font-size:0.6875rem; color:#94A3B8; font-family:monospace; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">https://api.testably.app/functions/v1/upload-ci-results</span>
+              <button class="key-btn" title="Copy" style="width:1.5rem; height:1.5rem;"><i class="ri-file-copy-line" style="font-size:0.75rem;"></i></button>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem; background:#fff; border:1px solid #C7D2FE; border-radius:0.375rem; padding:0.5rem 0.75rem;">
+              <span style="font-size:0.6875rem; font-weight:700; font-family:monospace; color:#4338CA; width:8rem; flex-shrink:0;">TESTABLY_TOKEN</span>
+              <span style="font-size:0.6875rem; color:#94A3B8; font-family:monospace; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">testably_a1b2c3d4e5f6g7h8...</span>
+              <button class="key-btn" title="Copy" style="width:1.5rem; height:1.5rem;"><i class="ri-file-copy-line" style="font-size:0.75rem;"></i></button>
+            </div>
+          </div>
+          <div style="font-size:0.6875rem; color:#4338CA; margin-top:0.5rem;"><i class="ri-information-line" style="margin-right:0.25rem;"></i>Registering both values as environment variables keeps them secure without modifying your code.</div>
+        </div>
+
+        <!-- GitHub Actions YAML (default visible) -->
+        <div id="guide-github" class="platform-guide">
+          <div class="code-block-wrap">
+          <button class="copy-code-btn" onclick="copyCode(this)"><i class="ri-file-copy-line"></i> Copy</button>
+          <div class="code-block"><span class="cm"># .github/workflows/testably.yml</span>
+<span class="ck">name:</span> <span class="cv">Upload Test Results to Testably</span>
+
+<span class="ck">on:</span>
+  <span class="ck">push:</span>
+    <span class="ck">branches:</span> [ <span class="cv">main</span> ]
+  <span class="ck">pull_request:</span>
+    <span class="ck">branches:</span> [ <span class="cv">main</span> ]
+
+<span class="ck">jobs:</span>
+  <span class="ck">test:</span>
+    <span class="ck">runs-on:</span> <span class="cv">ubuntu-latest</span>
+    <span class="ck">steps:</span>
+      - <span class="ck">uses:</span> <span class="cv">actions/checkout@v3</span>
+
+      - <span class="ck">name:</span> <span class="cv">Run Tests</span>
+        <span class="ck">run:</span> <span class="ct">npm test</span>
+
+      - <span class="ck">name:</span> <span class="cv">Upload Results to Testably</span>
+        <span class="ck">if:</span> <span class="cb">always()</span>
+        <span class="ck">env:</span>
+          <span class="ck">TESTABLY_URL:</span> <span class="cv">${{ secrets.TESTABLY_URL }}</span>
+          <span class="ck">TESTABLY_TOKEN:</span> <span class="cv">${{ secrets.TESTABLY_TOKEN }}</span>
+        <span class="ck">run:</span> |
+          <span class="ct">curl -X POST "$TESTABLY_URL" \
+            -H "Authorization: Bearer $TESTABLY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "run_id": "YOUR_RUN_ID",
+              "results": [
+                {
+                  "test_case_id": "SUI-1",
+                  "status": "passed",
+                  "note": "Test passed successfully",
+                  "elapsed": 1.5,
+                  "author": "GitHub Actions"
+                }
+              ]
+            }'</span></div>
+          </div>
+          <div style="margin-top:0.75rem; padding:0.75rem; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:0.5rem;">
+            <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+              <i class="ri-information-line" style="color:#64748B; flex-shrink:0; margin-top:0.125rem;"></i>
+              <div style="font-size:0.75rem; color:#475569;">
+                <div style="font-weight:600; margin-bottom:0.375rem;">How to use:</div>
+                <div style="color:#64748B; line-height:1.6;">1. Register the environment variables in GitHub Secrets<br>2. Copy the YAML code and add to your CI/CD config<br>3. Set <code>test_case_id</code> to your test case ID (e.g. SUI-1)<br>4. Set status to passed/failed/blocked based on test outcome</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GitLab CI YAML (hidden) -->
+        <div id="guide-gitlab" class="platform-guide" style="display:none;">
+          <div class="code-block-wrap">
+          <button class="copy-code-btn" onclick="copyCode(this)"><i class="ri-file-copy-line"></i> Copy</button>
+          <div class="code-block"><span class="cm"># .gitlab-ci.yml</span>
+<span class="ck">stages:</span>
+  - <span class="cv">test</span>
+  - <span class="cv">upload</span>
+
+<span class="ck">variables:</span>
+  <span class="ck">TESTABLY_URL:</span> <span class="cv">$TESTABLY_URL</span>
+  <span class="ck">TESTABLY_TOKEN:</span> <span class="cv">$TESTABLY_TOKEN</span>
+
+<span class="ck">test:</span>
+  <span class="ck">stage:</span> <span class="cv">test</span>
+  <span class="ck">script:</span>
+    - <span class="ct">npm test</span>
+  <span class="ck">artifacts:</span>
+    <span class="ck">reports:</span>
+      <span class="ck">junit:</span> <span class="cv">test-results.xml</span>
+
+<span class="ck">upload_results:</span>
+  <span class="ck">stage:</span> <span class="cv">upload</span>
+  <span class="ck">script:</span>
+    - |
+      <span class="ct">curl -X POST "$TESTABLY_URL" \
+        -H "Authorization: Bearer $TESTABLY_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "run_id": "'$CI_PIPELINE_ID'",
+          "results": [
+            {
+              "test_case_id": "SUI-1",
+              "status": "passed",
+              "note": "Test passed successfully",
+              "elapsed": 1.5,
+              "author": "GitLab CI"
+            }
+          ]
+        }'</span>
+  <span class="ck">when:</span> <span class="cb">always</span></div>
+          </div>
+          <div style="margin-top:0.75rem; padding:0.75rem; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:0.5rem;">
+            <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+              <i class="ri-information-line" style="color:#64748B; flex-shrink:0; margin-top:0.125rem;"></i>
+              <div style="font-size:0.75rem; color:#475569;">
+                <div style="font-weight:600; margin-bottom:0.375rem;">How to use:</div>
+                <div style="color:#64748B; line-height:1.6;">1. Register the environment variables in GitLab CI/CD Variables<br>2. Copy the YAML code and add to your .gitlab-ci.yml<br>3. Set <code>test_case_id</code> to your test case ID (e.g. SUI-1)<br>4. Set status to passed/failed/blocked based on test outcome</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Python Guide (hidden) -->
+        <div id="guide-python" class="platform-guide" style="display:none;">
+          <!-- Method 1: Function-based -->
+          <div style="margin-bottom:1.5rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+              <span style="width:1.5rem; height:1.5rem; background:#6366F1; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.6875rem; font-weight:700; flex-shrink:0;">1</span>
+              <div style="font-size:0.8125rem; font-weight:700; color:#0F172A;">Function-based approach <span style="font-weight:400; color:#94A3B8;">— suitable for simple scripts</span></div>
+            </div>
+            <div style="font-size:0.75rem; color:#64748B; margin-left:2rem; margin-bottom:0.5rem;">Collect results using the <code>report_result()</code> function and upload them all at once at the end.</div>
+            <div class="code-block-wrap">
+            <button class="copy-code-btn" onclick="copyCode(this)"><i class="ri-file-copy-line"></i> Copy</button>
+            <div class="code-block"><span class="cm"># testably_report.py</span>
+<span class="cb">import</span> requests, os
+
+<span class="ck">TESTABLY_URL</span> = os.environ.get(<span class="cv">"TESTABLY_URL"</span>)
+<span class="ck">TESTABLY_TOKEN</span> = os.environ.get(<span class="cv">"TESTABLY_TOKEN"</span>)
+results = []
+
+<span class="cb">def</span> <span class="ct">report_result</span>(test_case_id, status, note=<span class="cv">""</span>, elapsed=0):
+    results.append({
+        <span class="cv">"test_case_id"</span>: test_case_id,
+        <span class="cv">"status"</span>: status,  <span class="cm"># "passed"|"failed"|"blocked"|"retest"</span>
+        <span class="cv">"note"</span>: note, <span class="cv">"elapsed"</span>: elapsed, <span class="cv">"author"</span>: <span class="cv">"pytest"</span>
+    })
+
+<span class="cm"># Example</span>
+<span class="cb">def</span> <span class="ct">test_login</span>():
+    report_result(<span class="cv">"SUI-1"</span>, <span class="cv">"passed"</span>, note=<span class="cv">"Login test passed"</span>)
+<span class="cb">def</span> <span class="ct">test_signup</span>():
+    report_result(<span class="cv">"SUI-2"</span>, <span class="cv">"passed"</span>, note=<span class="cv">"Signup flow verified"</span>)
+
+<span class="cb">if</span> __name__ == <span class="cv">"__main__"</span>:
+    test_login(); test_signup()
+    resp = requests.post(TESTABLY_URL,
+        headers={<span class="cv">"Authorization"</span>: f<span class="cv">"Bearer {TESTABLY_TOKEN}"</span>},
+        json={<span class="cv">"run_id"</span>: <span class="cv">"YOUR_RUN_ID"</span>, <span class="cv">"results"</span>: results})
+    print(<span class="cv">"Status:"</span>, resp.status_code)</div>
+            </div>
+          </div>
+
+          <!-- Method 2: conftest.py -->
+          <div style="margin-bottom:1rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+              <span style="width:1.5rem; height:1.5rem; background:#6366F1; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.6875rem; font-weight:700; flex-shrink:0;">2</span>
+              <div style="font-size:0.8125rem; font-weight:700; color:#0F172A;">conftest.py approach <span style="font-weight:400; color:#94A3B8;">— suitable for pytest projects</span></div>
+            </div>
+            <div style="font-size:0.75rem; color:#64748B; margin-left:2rem; margin-bottom:0.5rem;">Uses pytest hooks to automatically collect and upload results without modifying test code.</div>
+            <div class="code-block-wrap">
+            <button class="copy-code-btn" onclick="copyCode(this)"><i class="ri-file-copy-line"></i> Copy</button>
+            <div class="code-block"><span class="cm"># conftest.py — save in your project root</span>
+<span class="cb">import</span> pytest, requests, os, time
+
+<span class="ck">TESTABLY_URL</span> = os.environ.get(<span class="cv">"TESTABLY_URL"</span>)
+<span class="ck">TESTABLY_TOKEN</span> = os.environ.get(<span class="cv">"TESTABLY_TOKEN"</span>)
+<span class="ck">RUN_ID</span> = os.environ.get(<span class="cv">"TESTABLY_RUN_ID"</span>, <span class="cv">"YOUR_RUN_ID"</span>)
+
+TEST_CASE_MAP = {
+    <span class="cv">"test_login"</span>: <span class="cv">"SUI-1"</span>,
+    <span class="cv">"test_signup"</span>: <span class="cv">"SUI-2"</span>,
+}
+
+_results, _timings = [], {}
+
+<span class="ct">@pytest.hookimpl</span>(hookwrapper=<span class="cb">True</span>)
+<span class="cb">def</span> <span class="ct">pytest_runtest_call</span>(item):
+    start = time.time()
+    <span class="cb">yield</span>
+    _timings[item.name] = round(time.time() - start, 2)
+
+<span class="ct">@pytest.hookimpl</span>(tryfirst=<span class="cb">True</span>, hookwrapper=<span class="cb">True</span>)
+<span class="cb">def</span> <span class="ct">pytest_runtest_makereport</span>(item, call):
+    outcome = <span class="cb">yield</span>
+    report = outcome.get_result()
+    <span class="cb">if</span> report.when == <span class="cv">"call"</span>:
+        tc_id = TEST_CASE_MAP.get(item.name)
+        <span class="cb">if not</span> tc_id: <span class="cb">return</span>
+        status = <span class="cv">"passed"</span> <span class="cb">if</span> report.passed <span class="cb">else</span> <span class="cv">"failed"</span> <span class="cb">if</span> report.failed <span class="cb">else</span> <span class="cv">"blocked"</span>
+        _results.append({<span class="cv">"test_case_id"</span>: tc_id, <span class="cv">"status"</span>: status,
+            <span class="cv">"note"</span>: str(report.longrepr)[:300] <span class="cb">if</span> report.failed <span class="cb">else</span> <span class="cv">""</span>,
+            <span class="cv">"elapsed"</span>: _timings.get(item.name, 0), <span class="cv">"author"</span>: <span class="cv">"pytest"</span>})
+
+<span class="cb">def</span> <span class="ct">pytest_sessionfinish</span>(session, exitstatus):
+    <span class="cb">if</span> _results <span class="cb">and</span> TESTABLY_TOKEN:
+        requests.post(TESTABLY_URL,
+            headers={<span class="cv">"Authorization"</span>: f<span class="cv">"Bearer {TESTABLY_TOKEN}"</span>},
+            json={<span class="cv">"run_id"</span>: RUN_ID, <span class="cv">"results"</span>: _results})</div>
+            </div>
+          </div>
+
+          <!-- How to use -->
+          <div style="padding:0.75rem; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:0.5rem;">
+            <div style="display:flex; align-items:flex-start; gap:0.5rem;">
+              <i class="ri-information-line" style="color:#64748B; flex-shrink:0; margin-top:0.125rem;"></i>
+              <div style="font-size:0.75rem; color:#475569;">
+                <div style="font-weight:600; margin-bottom:0.375rem;">How to use:</div>
+                <div style="color:#64748B; line-height:1.6;">1. Register your token in the <code>TESTABLY_TOKEN</code> environment variable<br>2. <b>Method 1</b>: Pass the test case ID and result to <code>report_result()</code><br>3. <b>Method 2</b>: Save <code>conftest.py</code> to your project root and map function names to IDs<br>4. Replace <code>run_id</code> with the Run ID from Testably<br>5. Status values: <code>passed</code> / <code>failed</code> / <code>blocked</code> / <code>retest</code></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 6. API & TOKENS (NEW) ══════════ -->
+  <div class="tab-panel" id="panel-api">
+    <div class="settings-content">
+
+      <!-- Tier-gate banner -->
+      <div style="padding:1rem; background:linear-gradient(to right,#EEF2FF,#F5F3FF); border:1px solid #C7D2FE; border-radius:0.75rem; margin-bottom:1.25rem; display:flex; align-items:flex-start; gap:0.75rem;">
+        <div style="width:2.5rem; height:2.5rem; background:#C7D2FE; border-radius:0.5rem; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><i class="ri-lock-line" style="color:#4F46E5; font-size:1.25rem;"></i></div>
+        <div style="flex:1;">
+          <div style="font-size:0.8125rem; font-weight:600; color:#0F172A; margin-bottom:0.25rem;">CI/CD Integration is available on Professional and above</div>
+          <div style="font-size:0.75rem; color:#64748B; margin-bottom:0.625rem;">Upload results directly from your automated test pipelines and enhance team collaboration.</div>
+          <a href="mailto:hello@testably.app" class="btn-primary" style="font-size:0.75rem; padding:0.375rem 0.875rem;"><i class="ri-arrow-up-circle-line"></i> Contact Us to Upgrade</a>
+        </div>
+      </div>
+
+      <!-- API Tokens Section -->
+      <div class="section-card">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1rem;">
+          <div><div class="section-title">API Tokens</div><div class="section-desc" style="margin-bottom:0;">Manage API tokens for your CI/CD pipeline.</div></div>
+          <button class="btn-primary" onclick="document.getElementById('newTokenModal').classList.add('show')"><i class="ri-add-line"></i> New Token</button>
+        </div>
+
+        <!-- Empty state (no tokens) -->
+        <div style="display:none; text-align:center; padding:3rem; background:#F8FAFC; border:2px dashed #E2E8F0; border-radius:0.75rem;">
+          <div style="width:4rem; height:4rem; background:#F1F5F9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;"><i class="ri-key-2-line" style="font-size:1.75rem; color:#94A3B8;"></i></div>
+          <div style="font-size:1rem; font-weight:600; color:#0F172A; margin-bottom:0.375rem;">No tokens created yet</div>
+          <div style="font-size:0.8125rem; color:#64748B; margin-bottom:1rem;">Create an API token to start integrating with your CI/CD pipeline</div>
+          <button class="btn-primary" onclick="document.getElementById('newTokenModal').classList.add('show')"><i class="ri-add-line"></i> Create First Token</button>
+        </div>
+
+        <!-- Token 1 (full token visible like source) -->
+        <div style="padding:1rem; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:0.5rem; margin-bottom:0.75rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              <div style="width:2.5rem; height:2.5rem; background:#EEF2FF; border-radius:0.5rem; display:flex; align-items:center; justify-content:center;"><i class="ri-key-2-line" style="color:#4F46E5; font-size:1.125rem;"></i></div>
+              <div>
+                <div style="font-size:0.8125rem; font-weight:600; color:#0F172A;">GitHub Actions — Main</div>
+                <div style="font-size:0.6875rem; color:#94A3B8;">Created: Mar 15, 2026 · Last used: 2 hours ago</div>
+              </div>
+            </div>
+            <button style="padding:0.25rem 0.625rem; color:#DC2626; background:none; border:none; font-size:0.8125rem; font-weight:600; cursor:pointer; font-family:inherit; border-radius:0.375rem;" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background='none'"><i class="ri-delete-bin-line" style="margin-right:0.25rem;"></i>Delete</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <input type="text" value="testably_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6" readonly style="flex:1; padding:0.5rem 0.75rem; background:#fff; border:1px solid #E2E8F0; border-radius:0.375rem; font-size:0.75rem; font-family:monospace; color:#475569;">
+            <button class="key-btn" title="Copy"><i class="ri-file-copy-line"></i></button>
+          </div>
+        </div>
+
+        <!-- Token 2 -->
+        <div style="padding:1rem; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:0.5rem; margin-bottom:0.75rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              <div style="width:2.5rem; height:2.5rem; background:#EEF2FF; border-radius:0.5rem; display:flex; align-items:center; justify-content:center;"><i class="ri-key-2-line" style="color:#4F46E5; font-size:1.125rem;"></i></div>
+              <div>
+                <div style="font-size:0.8125rem; font-weight:600; color:#0F172A;">GitLab CI — Staging</div>
+                <div style="font-size:0.6875rem; color:#94A3B8;">Created: Mar 20, 2026 · Never used</div>
+              </div>
+            </div>
+            <button style="padding:0.25rem 0.625rem; color:#DC2626; background:none; border:none; font-size:0.8125rem; font-weight:600; cursor:pointer; font-family:inherit; border-radius:0.375rem;" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background='none'"><i class="ri-delete-bin-line" style="margin-right:0.25rem;"></i>Delete</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <input type="text" value="testably_x9y8w7v6u5t4s3r2q1p0o9n8m7l6k5j4" readonly style="flex:1; padding:0.5rem 0.75rem; background:#fff; border:1px solid #E2E8F0; border-radius:0.375rem; font-size:0.75rem; font-family:monospace; color:#475569;">
+            <button class="key-btn" title="Copy"><i class="ri-file-copy-line"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Token Scope Guide -->
+      <div class="section-card">
+        <div class="section-title"><i class="ri-shield-keyhole-line" style="color:#6366F1;"></i> API Token Scope Configuration Guide</div>
+        <div class="section-desc">When using a Personal Access Token (PAT) or Fine-grained Token in GitHub, only the following permissions are needed.</div>
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+          <button class="btn-ghost" style="font-size:0.75rem; background:#0F172A; color:#fff; border-color:#0F172A;"><i class="ri-github-fill"></i> GitHub</button>
+          <button class="btn-ghost" style="font-size:0.75rem;"><i class="ri-gitlab-fill"></i> GitLab</button>
+        </div>
+        <div style="font-size:0.6875rem; font-weight:600; color:#94A3B8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.5rem;">Minimum Required Scopes</div>
+        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+          <div style="display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem; background:#F8FAFC; border-radius:0.5rem;">
+            <span style="padding:0.125rem 0.5rem; font-size:0.6875rem; font-weight:700; font-family:monospace; background:#EEF2FF; color:#4338CA; border-radius:0.25rem; white-space:nowrap;">repo</span>
+            <div style="flex:1;"><div style="font-size:0.8125rem; color:#334155;">Repository read access (required for private repos)</div></div>
+            <span style="font-size:0.6875rem; font-weight:600; color:#4F46E5; white-space:nowrap;">Required</span>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem; background:#F8FAFC; border-radius:0.5rem;">
+            <span style="padding:0.125rem 0.5rem; font-size:0.6875rem; font-weight:700; font-family:monospace; background:#EEF2FF; color:#4338CA; border-radius:0.25rem; white-space:nowrap;">workflow</span>
+            <div style="flex:1;"><div style="font-size:0.8125rem; color:#334155;">GitHub Actions workflow execution permission</div></div>
+            <span style="font-size:0.6875rem; font-weight:600; color:#4F46E5; white-space:nowrap;">Required</span>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem; background:#F8FAFC; border-radius:0.5rem;">
+            <span style="padding:0.125rem 0.5rem; font-size:0.6875rem; font-weight:700; font-family:monospace; background:#F1F5F9; color:#64748B; border-radius:0.25rem; white-space:nowrap;">read:org</span>
+            <div style="flex:1;"><div style="font-size:0.8125rem; color:#334155;">Read organization info (for org repositories)</div><div style="font-size:0.6875rem; color:#94A3B8;">Optional</div></div>
+          </div>
+        </div>
+        <div style="padding:0.75rem; background:#FFFBEB; border:1px solid #FDE68A; border-radius:0.5rem; margin-top:0.75rem; display:flex; align-items:flex-start; gap:0.375rem;">
+          <i class="ri-error-warning-line" style="color:#F59E0B; flex-shrink:0; margin-top:0.125rem;"></i>
+          <div style="font-size:0.6875rem; color:#92400E;"><strong>Recommended:</strong> Using the automatically provided <code style="background:#FEF3C7; padding:0.0625rem 0.25rem; border-radius:0.1875rem; font-size:0.6875rem;">GITHUB_TOKEN</code> within GitHub Actions workflows is the safest approach — no separate PAT creation needed.</div>
+        </div>
+        <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" style="display:inline-flex; align-items:center; gap:0.25rem; font-size:0.6875rem; color:#6366F1; text-decoration:none; margin-top:0.625rem;"><i class="ri-external-link-line"></i> GitHub Token Official Documentation</a>
+
+        <!-- GitLab Scope Guide (toggled) -->
+        <div style="display:none; margin-top:1rem; padding-top:1rem; border-top:1px solid #E2E8F0;">
+          <div style="font-size:0.6875rem; font-weight:600; color:#94A3B8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.5rem;">GitLab — Minimum Required Scopes</div>
+          <div style="display:flex; flex-direction:column; gap:0.5rem;">
+            <div style="display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem; background:#F8FAFC; border-radius:0.5rem;">
+              <span style="padding:0.125rem 0.5rem; font-size:0.6875rem; font-weight:700; font-family:monospace; background:#FFF7ED; color:#C2410C; border-radius:0.25rem; white-space:nowrap;">api</span>
+              <div style="flex:1;"><div style="font-size:0.8125rem; color:#334155;">Full API access (pipeline triggers and result uploads)</div></div>
+              <span style="font-size:0.6875rem; font-weight:600; color:#EA580C; white-space:nowrap;">Required</span>
+            </div>
+            <div style="display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem; background:#F8FAFC; border-radius:0.5rem;">
+              <span style="padding:0.125rem 0.5rem; font-size:0.6875rem; font-weight:700; font-family:monospace; background:#FFF7ED; color:#C2410C; border-radius:0.25rem; white-space:nowrap;">read_repository</span>
+              <div style="flex:1;"><div style="font-size:0.8125rem; color:#334155;">Repository read access</div></div>
+              <span style="font-size:0.6875rem; font-weight:600; color:#EA580C; white-space:nowrap;">Required</span>
+            </div>
+            <div style="display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem; background:#F8FAFC; border-radius:0.5rem;">
+              <span style="padding:0.125rem 0.5rem; font-size:0.6875rem; font-weight:700; font-family:monospace; background:#F1F5F9; color:#64748B; border-radius:0.25rem; white-space:nowrap;">write_repository</span>
+              <div style="flex:1;"><div style="font-size:0.8125rem; color:#334155;">Repository write access (required for committing results)</div><div style="font-size:0.6875rem; color:#94A3B8;">Optional</div></div>
+            </div>
+          </div>
+          <div style="padding:0.75rem; background:#FFFBEB; border:1px solid #FDE68A; border-radius:0.5rem; margin-top:0.75rem; display:flex; align-items:flex-start; gap:0.375rem;">
+            <i class="ri-error-warning-line" style="color:#F59E0B; flex-shrink:0; margin-top:0.125rem;"></i>
+            <div style="font-size:0.6875rem; color:#92400E;"><strong>Recommended:</strong> Using the automatically provided <code style="background:#FEF3C7; padding:0.0625rem 0.25rem; border-radius:0.1875rem; font-size:0.6875rem;">CI_JOB_TOKEN</code> within GitLab CI pipelines is the safest approach — no separate token creation needed.</div>
+          </div>
+          <a href="https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html" style="display:inline-flex; align-items:center; gap:0.25rem; font-size:0.6875rem; color:#6366F1; text-decoration:none; margin-top:0.625rem;"><i class="ri-external-link-line"></i> GitLab Token Official Documentation</a>
+        </div>
+      </div>
+
+      <!-- API Docs Link -->
+      <div class="section-card">
+        <div class="section-title">API Documentation</div>
+        <div class="section-desc">Explore the full REST API reference for building custom integrations.</div>
+        <a href="#" style="font-size:0.8125rem; font-weight:600; color:#6366F1; text-decoration:none; display:inline-flex; align-items:center; gap:0.25rem;">
+          <i class="ri-external-link-line"></i> View full API reference →
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 7. NOTIFICATIONS ══════════ -->
+  <div class="tab-panel" id="panel-notifications">
+    <div class="settings-content">
+      <!-- Email / In-App Notifications (from source NotificationSettingsPanel) -->
+      <div class="section-card">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:0.75rem;">
+          <div>
+            <div class="section-title"><i class="ri-notification-3-line" style="color:#6366F1;"></i> Notification Settings</div>
+            <div class="section-desc" style="margin-bottom:0;">Choose which in-app notifications you want to receive. <span style="font-weight:600; color:#6366F1;">7/7</span> notifications enabled.</div>
+          </div>
+          <div style="display:flex; gap:0.375rem;">
+            <button class="btn-ghost" style="font-size:0.6875rem; padding:0.3125rem 0.625rem; opacity:0.4;">Disable All</button>
+            <button class="btn-ghost" style="font-size:0.6875rem; padding:0.3125rem 0.625rem; background:#EEF2FF; color:#4338CA; border-color:#C7D2FE;">Enable All</button>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div style="height:0.375rem; background:#F1F5F9; border-radius:9999px; overflow:hidden; margin-bottom:1.25rem;">
+          <div style="height:100%; width:100%; background:#6366F1; border-radius:9999px; transition:width 0.5s;"></div>
+        </div>
+
+        <!-- Group: Team Activity -->
+        <div style="border:1px solid #E2E8F0; border-radius:0.75rem; overflow:hidden; margin-bottom:1rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:0.875rem 1.25rem; background:#FAFAFA; border-bottom:1px solid #E2E8F0;">
+            <div style="display:flex; align-items:center; gap:0.625rem;">
+              <div style="width:2rem; height:2rem; background:#EEF2FF; border-radius:0.5rem; display:flex; align-items:center; justify-content:center;"><i class="ri-team-line" style="color:#4F46E5; font-size:0.875rem;"></i></div>
+              <div>
+                <div style="font-size:0.8125rem; font-weight:700; color:#0F172A;">Team Activity</div>
+                <div style="font-size:0.6875rem; color:#94A3B8;">2/2 enabled</div>
+              </div>
+            </div>
+            <button class="btn-ghost" style="font-size:0.6875rem; padding:0.25rem 0.625rem;">Disable group</button>
+          </div>
+          <div class="toggle-row" style="padding:0.75rem 1.25rem; border-bottom:1px solid #F1F5F9;">
+            <div>
+              <div class="toggle-label" style="display:flex; align-items:center; gap:0.375rem;">Invitation Received <span style="padding:0.0625rem 0.25rem; background:#EEF2FF; color:#4338CA; font-size:0.5625rem; font-weight:700; border-radius:9999px;">ON</span></div>
+              <div class="toggle-desc">Get notified when you are invited to a project</div>
+            </div>
+            <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-row" style="padding:0.75rem 1.25rem;">
+            <div>
+              <div class="toggle-label" style="display:flex; align-items:center; gap:0.375rem;">New Member Joined <span style="padding:0.0625rem 0.25rem; background:#EEF2FF; color:#4338CA; font-size:0.5625rem; font-weight:700; border-radius:9999px;">ON</span></div>
+              <div class="toggle-desc">Get notified when a new member joins your project</div>
+            </div>
+            <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+
+        <!-- Group: Test Runs -->
+        <div style="border:1px solid #E2E8F0; border-radius:0.75rem; overflow:hidden; margin-bottom:1rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:0.875rem 1.25rem; background:#FAFAFA; border-bottom:1px solid #E2E8F0;">
+            <div style="display:flex; align-items:center; gap:0.625rem;">
+              <div style="width:2rem; height:2rem; background:#FFF7ED; border-radius:0.5rem; display:flex; align-items:center; justify-content:center;"><i class="ri-play-circle-line" style="color:#EA580C; font-size:0.875rem;"></i></div>
+              <div>
+                <div style="font-size:0.8125rem; font-weight:700; color:#0F172A;">Test Runs</div>
+                <div style="font-size:0.6875rem; color:#94A3B8;">2/2 enabled</div>
+              </div>
+            </div>
+            <button class="btn-ghost" style="font-size:0.6875rem; padding:0.25rem 0.625rem;">Disable group</button>
+          </div>
+          <div class="toggle-row" style="padding:0.75rem 1.25rem; border-bottom:1px solid #F1F5F9;">
+            <div>
+              <div class="toggle-label" style="display:flex; align-items:center; gap:0.375rem;">New Run Created <span style="padding:0.0625rem 0.25rem; background:#EEF2FF; color:#4338CA; font-size:0.5625rem; font-weight:700; border-radius:9999px;">ON</span></div>
+              <div class="toggle-desc">Get notified when a new test run is created in your project</div>
+            </div>
+            <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-row" style="padding:0.75rem 1.25rem;">
+            <div>
+              <div class="toggle-label" style="display:flex; align-items:center; gap:0.375rem;">Run Completed <span style="padding:0.0625rem 0.25rem; background:#EEF2FF; color:#4338CA; font-size:0.5625rem; font-weight:700; border-radius:9999px;">ON</span></div>
+              <div class="toggle-desc">Get notified when a test run is marked as completed</div>
+            </div>
+            <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+
+        <!-- Group: Milestones -->
+        <div style="border:1px solid #E2E8F0; border-radius:0.75rem; overflow:hidden; margin-bottom:1rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:0.875rem 1.25rem; background:#FAFAFA; border-bottom:1px solid #E2E8F0;">
+            <div style="display:flex; align-items:center; gap:0.625rem;">
+              <div style="width:2rem; height:2rem; background:#F5F3FF; border-radius:0.5rem; display:flex; align-items:center; justify-content:center;"><i class="ri-flag-line" style="color:#7C3AED; font-size:0.875rem;"></i></div>
+              <div>
+                <div style="font-size:0.8125rem; font-weight:700; color:#0F172A;">Milestones</div>
+                <div style="font-size:0.6875rem; color:#94A3B8;">3/3 enabled</div>
+              </div>
+            </div>
+            <button class="btn-ghost" style="font-size:0.6875rem; padding:0.25rem 0.625rem;">Disable group</button>
+          </div>
+          <div class="toggle-row" style="padding:0.75rem 1.25rem; border-bottom:1px solid #F1F5F9;">
+            <div>
+              <div class="toggle-label" style="display:flex; align-items:center; gap:0.375rem;">Milestone Started <span style="padding:0.0625rem 0.25rem; background:#EEF2FF; color:#4338CA; font-size:0.5625rem; font-weight:700; border-radius:9999px;">ON</span></div>
+              <div class="toggle-desc">Get notified when a milestone is set to in progress</div>
+            </div>
+            <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-row" style="padding:0.75rem 1.25rem; border-bottom:1px solid #F1F5F9;">
+            <div>
+              <div class="toggle-label" style="display:flex; align-items:center; gap:0.375rem;">Milestone Completed <span style="padding:0.0625rem 0.25rem; background:#EEF2FF; color:#4338CA; font-size:0.5625rem; font-weight:700; border-radius:9999px;">ON</span></div>
+              <div class="toggle-desc">Get notified when a milestone is marked as completed</div>
+            </div>
+            <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="toggle-row" style="padding:0.75rem 1.25rem;">
+            <div>
+              <div class="toggle-label" style="display:flex; align-items:center; gap:0.375rem;">Milestone Past Due <span style="padding:0.0625rem 0.25rem; background:#EEF2FF; color:#4338CA; font-size:0.5625rem; font-weight:700; border-radius:9999px;">ON</span></div>
+              <div class="toggle-desc">Get notified when a milestone deadline has passed</div>
+            </div>
+            <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+
+        <!-- Info Box (from source) -->
+        <div style="display:flex; align-items:flex-start; gap:0.75rem; padding:1rem; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:0.75rem; margin-bottom:1rem;">
+          <i class="ri-information-line" style="color:#94A3B8; font-size:1.125rem; flex-shrink:0; margin-top:0.125rem;"></i>
+          <div style="font-size:0.8125rem; color:#64748B;">
+            <div style="font-weight:600; color:#475569; margin-bottom:0.375rem;">About Notifications</div>
+            <div style="font-size:0.75rem; line-height:1.6; color:#94A3B8;">
+              Notifications are delivered in real-time via the notification bell <i class="ri-notification-3-line"></i> in the app. Disabling a setting will stop new notifications from being created for that event. Existing notifications will not be affected.
+            </div>
+          </div>
+        </div>
+
+        <!-- Save Button (from source) -->
+        <div style="display:flex; align-items:center; gap:0.75rem; padding-top:0.75rem; border-top:1px solid #E2E8F0;">
+          <button class="btn-primary"><i class="ri-save-line"></i> Save Settings</button>
+        </div>
+      </div>
+
+      <!-- Future Features (PM plan — not yet implemented) -->
+      <div style="position:relative;">
+        <div style="position:absolute; top:0.75rem; right:0.75rem; padding:0.25rem 0.75rem; background:#F59E0B; color:#fff; font-size:0.625rem; font-weight:700; border-radius:9999px; z-index:1;">COMING SOON</div>
+        <div class="section-card" style="opacity:0.6;">
+          <div class="section-title"><i class="ri-mail-line" style="color:#6366F1;"></i> Email Notifications</div>
+          <div class="section-desc">Email notification delivery — planned for a future release.</div>
+        </div>
+      </div>
+
+      <div style="position:relative;">
+        <div style="position:absolute; top:0.75rem; right:0.75rem; padding:0.25rem 0.75rem; background:#F59E0B; color:#fff; font-size:0.625rem; font-weight:700; border-radius:9999px; z-index:1;">COMING SOON</div>
+        <div class="section-card" style="opacity:0.6;">
+          <div class="section-title"><i class="ri-computer-line" style="color:#F59E0B;"></i> Desktop Push Notifications</div>
+          <div class="section-desc">Browser push notifications for critical events — planned for a future release.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Webhook Add/Edit Modal -->
+<div class="modal-overlay" id="webhookModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal-box" style="width:520px;">
+    <div class="modal-header" style="padding-bottom:1rem;">
+      <div style="display:flex; align-items:center; gap:0.625rem;">
+        <div style="width:2.5rem; height:2.5rem; background:#EEF2FF; border-radius:0.5rem; display:flex; align-items:center; justify-content:center;"><i class="ri-plug-line" style="font-size:1.125rem; color:#4F46E5;"></i></div>
+        <div><span style="font-size:1rem; font-weight:700; color:#0F172A;">Add Integration</span><div style="font-size:0.75rem; color:#94A3B8;">Configure a Slack or Teams webhook</div></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('webhookModal').classList.remove('show')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body" style="padding-top:0;">
+      <!-- Project -->
+      <div style="margin-bottom:1rem;">
+        <label class="form-label">Project <span style="color:#EF4444;">*</span></label>
+        <select class="form-select"><option value="">Select a project...</option><option>Acme Healthcare</option><option>Stellar Health EMR</option><option>Nexus Platform</option></select>
+      </div>
+      <!-- Platform -->
+      <div style="margin-bottom:1rem;">
+        <label class="form-label">Platform</label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.375rem;">
+          <label style="display:flex; align-items:center; gap:0.625rem; padding:0.75rem; border:2px solid #C7D2FE; background:#EEF2FF; border-radius:0.5rem; cursor:pointer;">
+            <input type="radio" name="wh-platform" checked style="accent-color:#6366F1;">
+            <div style="width:1.75rem; height:1.75rem; background:#F3E8FF; color:#7C3AED; border-radius:0.25rem; display:flex; align-items:center; justify-content:center;"><i class="ri-slack-line"></i></div>
+            <span style="font-size:0.8125rem; font-weight:600; color:#0F172A;">Slack</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:0.625rem; padding:0.75rem; border:1px solid #E2E8F0; border-radius:0.5rem; cursor:pointer;">
+            <input type="radio" name="wh-platform" style="accent-color:#6366F1;">
+            <div style="width:1.75rem; height:1.75rem; background:#DBEAFE; color:#1D4ED8; border-radius:0.25rem; display:flex; align-items:center; justify-content:center;"><i class="ri-microsoft-line"></i></div>
+            <span style="font-size:0.8125rem; font-weight:600; color:#0F172A;">Microsoft Teams</span>
+          </label>
+        </div>
+      </div>
+      <!-- Webhook URL -->
+      <div style="margin-bottom:1rem;">
+        <label class="form-label">Webhook URL <span style="color:#EF4444;">*</span></label>
+        <input class="form-input" type="url" placeholder="https://hooks.slack.com/services/...">
+      </div>
+      <!-- Channel Name -->
+      <div style="margin-bottom:1rem;">
+        <label class="form-label">Channel Name <span style="color:#94A3B8; font-weight:400;">(optional)</span></label>
+        <input class="form-input" type="text" placeholder="e.g. qa-alerts">
+        <span style="font-size:0.6875rem; color:#94A3B8; margin-top:0.25rem; display:block;">Display label only — does not affect delivery.</span>
+      </div>
+      <!-- Events -->
+      <div style="margin-bottom:1rem;">
+        <label class="form-label">Notify on <span style="color:#EF4444;">*</span></label>
+        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:0.375rem;">
+          <label style="display:flex; align-items:flex-start; gap:0.625rem; padding:0.625rem; border:1px solid #E2E8F0; border-radius:0.5rem; cursor:pointer;">
+            <input type="checkbox" checked style="margin-top:0.1875rem; accent-color:#6366F1;">
+            <div><div style="font-size:0.8125rem; font-weight:600; color:#0F172A;">Invitation Received</div><div style="font-size:0.6875rem; color:#94A3B8;">When a user is invited to this project</div></div>
+          </label>
+          <label style="display:flex; align-items:flex-start; gap:0.625rem; padding:0.625rem; border:1px solid #E2E8F0; border-radius:0.5rem; cursor:pointer;">
+            <input type="checkbox" checked style="margin-top:0.1875rem; accent-color:#6366F1;">
+            <div><div style="font-size:0.8125rem; font-weight:600; color:#0F172A;">New Member Joined</div><div style="font-size:0.6875rem; color:#94A3B8;">When a new member accepts an invitation</div></div>
+          </label>
+          <label style="display:flex; align-items:flex-start; gap:0.625rem; padding:0.625rem; border:1px solid #E2E8F0; border-radius:0.5rem; cursor:pointer;">
+            <input type="checkbox" checked style="margin-top:0.1875rem; accent-color:#6366F1;">
+            <div><div style="font-size:0.8125rem; font-weight:600; color:#0F172A;">New Run Created</div><div style="font-size:0.6875rem; color:#94A3B8;">When a new test run is created</div></div>
+          </label>
+          <label style="display:flex; align-items:flex-start; gap:0.625rem; padding:0.625rem; border:1px solid #E2E8F0; border-radius:0.5rem; cursor:pointer;">
+            <input type="checkbox" checked style="margin-top:0.1875rem; accent-color:#6366F1;">
+            <div><div style="font-size:0.8125rem; font-weight:600; color:#0F172A;">Run Completed</div><div style="font-size:0.6875rem; color:#94A3B8;">When a test run is marked as completed</div></div>
+          </label>
+          <label style="display:flex; align-items:flex-start; gap:0.625rem; padding:0.625rem; border:1px solid #E2E8F0; border-radius:0.5rem; cursor:pointer;">
+            <input type="checkbox" checked style="margin-top:0.1875rem; accent-color:#6366F1;">
+            <div><div style="font-size:0.8125rem; font-weight:600; color:#0F172A;">Milestone Started</div><div style="font-size:0.6875rem; color:#94A3B8;">When a milestone is set to in progress</div></div>
+          </label>
+          <label style="display:flex; align-items:flex-start; gap:0.625rem; padding:0.625rem; border:1px solid #E2E8F0; border-radius:0.5rem; cursor:pointer;">
+            <input type="checkbox" checked style="margin-top:0.1875rem; accent-color:#6366F1;">
+            <div><div style="font-size:0.8125rem; font-weight:600; color:#0F172A;">Milestone Completed</div><div style="font-size:0.6875rem; color:#94A3B8;">When a milestone is marked as completed</div></div>
+          </label>
+          <label style="display:flex; align-items:flex-start; gap:0.625rem; padding:0.625rem; border:1px solid #E2E8F0; border-radius:0.5rem; cursor:pointer;">
+            <input type="checkbox" checked style="margin-top:0.1875rem; accent-color:#6366F1;">
+            <div><div style="font-size:0.8125rem; font-weight:600; color:#0F172A;">Milestone Past Due</div><div style="font-size:0.6875rem; color:#94A3B8;">When a milestone deadline has passed</div></div>
+          </label>
+        </div>
+      </div>
+      <!-- Actions -->
+      <div style="display:flex; gap:0.75rem; padding-top:0.5rem;">
+        <button class="btn-ghost" style="flex:1;" onclick="document.getElementById('webhookModal').classList.remove('show')">Cancel</button>
+        <button class="btn-primary" style="flex:1;"><i class="ri-save-line"></i> Add Integration</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Token Modal -->
+<div class="modal-overlay" id="newTokenModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal-box" style="width:440px;">
+    <div class="modal-header">
+      <span style="font-size:1rem; font-weight:700; color:#0F172A;">Create New API Token</span>
+      <button class="modal-close" onclick="document.getElementById('newTokenModal').classList.remove('show')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:0.8125rem; color:#64748B; margin-bottom:1rem;">Generate a token for your CI/CD pipeline</div>
+      <label class="form-label">Token Name <span style="color:#EF4444;">*</span></label>
+      <input class="form-input" type="text" placeholder="e.g. GitHub Actions Token" style="margin-bottom:0.375rem;">
+      <div style="font-size:0.6875rem; color:#94A3B8; display:flex; align-items:center; gap:0.25rem; margin-bottom:1.25rem;"><i class="ri-information-line"></i> Store this token in a safe place — it cannot be viewed again after creation</div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="document.getElementById('newTokenModal').classList.remove('show')">Cancel</button>
+        <button class="btn-primary"><i class="ri-add-line"></i> Create Token</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Account Confirmation Modal (B-3) -->
+<div class="modal-overlay" id="deleteModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <i class="ri-error-warning-fill"></i>
+      <span>Delete Account</span>
+      <button class="modal-close" onclick="document.getElementById('deleteModal').classList.remove('show')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-warn-text">This will <strong>permanently delete your account</strong> and all associated data after a 30-day grace period. This action cannot be undone.</div>
+      <label class="form-label" style="margin-bottom:0.375rem; display:block;">Type <strong style="color:#DC2626;">DELETE</strong> to confirm</label>
+      <input class="modal-confirm-input" type="text" placeholder="DELETE" oninput="document.getElementById('confirmDeleteBtn').classList.toggle('enabled', this.value==='DELETE')">
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="document.getElementById('deleteModal').classList.remove('show')">Cancel</button>
+        <button class="btn-danger-lg" id="confirmDeleteBtn"><i class="ri-delete-bin-line"></i> Delete My Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(tabId) {
+  document.querySelectorAll('.st-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.st-tab[data-tab="${tabId}"]`).classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${tabId}`).classList.add('active');
+}
+
+function showPlatform(platform, btn) {
+  document.querySelectorAll('.platform-guide').forEach(g => g.style.display = 'none');
+  var el = document.getElementById('guide-' + platform);
+  if (el) el.style.display = 'block';
+  btn.parentElement.querySelectorAll('.cicd-tab').forEach(b => b.classList.remove('cicd-tab-active'));
+  btn.classList.add('cicd-tab-active');
+  var envLabel = document.querySelector('.platform-env-label');
+  if (envLabel) {
+    var labels = {github:'Register in your GitHub Secrets', gitlab:'Register in your GitLab CI/CD Variables', python:'Register in your environment variables'};
+    envLabel.textContent = labels[platform] || labels.github;
+  }
+}
+function copyCode(btn) {
+  var wrap = btn.closest('.code-block-wrap');
+  var code = wrap.querySelector('.code-block');
+  var text = code.innerText || code.textContent;
+  navigator.clipboard.writeText(text).then(function(){
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<i class="ri-check-line"></i> Copied';
+    setTimeout(function(){ btn.innerHTML = orig; }, 1500);
+  });
+}
+</script>
+</body>
+</html>

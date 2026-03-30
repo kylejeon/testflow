@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Add Run Modal Redesign (Step 1 + Step 2)</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; min-height: 100vh; }
+
+  /* ── Page backdrop (faded) ── */
+  .backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); z-index: 40; display: flex; align-items: flex-start; justify-content: center; padding: 3vh 1rem; overflow-y: auto; }
+
+  /* ── Modal Shell ── */
+  .modal { background: #fff; border-radius: 0.75rem; width: 100%; box-shadow: 0 16px 64px rgba(0,0,0,0.18); animation: modalIn 0.25s ease-out; overflow: hidden; }
+  .modal.step1 { max-width: 560px; }
+  .modal.step2 { max-width: 840px; }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  /* ── Modal Header ── */
+  .modal-head { padding: 1.125rem 1.5rem; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: space-between; }
+  .modal-head-left { display: flex; align-items: center; gap: 0.75rem; }
+  .modal-icon { width: 2rem; height: 2rem; background: #EEF2FF; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; }
+  .modal-icon i { color: #6366F1; font-size: 1.125rem; }
+  .modal-title { font-size: 1rem; font-weight: 700; color: #0F172A; }
+  .close-btn { background: none; border: none; cursor: pointer; color: #94A3B8; font-size: 1.25rem; padding: 0.25rem; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; }
+  .close-btn:hover { background: #F1F5F9; color: #64748B; }
+
+  /* ── Step Indicator ── */
+  .step-bar { padding: 0 1.5rem; border-bottom: 1px solid #E2E8F0; display: flex; gap: 0; }
+  .step-tab { padding: 0.75rem 0; font-size: 0.8125rem; font-weight: 500; color: #94A3B8; border-bottom: 2px solid transparent; margin-right: 1.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; }
+  .step-tab.active { color: #6366F1; border-bottom-color: #6366F1; font-weight: 600; }
+  .step-tab.done { color: #10B981; }
+  .step-num { width: 1.25rem; height: 1.25rem; border-radius: 50%; font-size: 0.625rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1.5px solid; }
+  .step-tab.active .step-num { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .step-tab.done .step-num { background: #10B981; color: #fff; border-color: #10B981; }
+  .step-tab:not(.active):not(.done) .step-num { border-color: #CBD5E1; color: #94A3B8; }
+
+  /* ── Form Body ── */
+  .modal-body { padding: 1.25rem 1.5rem; max-height: 65vh; overflow-y: auto; }
+
+  /* ── Form Fields ── */
+  .field { margin-bottom: 1rem; }
+  .field:last-child { margin-bottom: 0; }
+  .field-label { font-size: 0.75rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3125rem; display: flex; align-items: center; gap: 0.25rem; }
+  .field-label .req { color: #EF4444; }
+  .field-hint { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.1875rem; }
+  .text-input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #E2E8F0; border-radius: 0.5rem; font-size: 0.8125rem; font-family: inherit; color: #334155; outline: none; transition: all 0.15s; }
+  .text-input:focus { border-color: #6366F1; box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
+  .text-input::placeholder { color: #CBD5E1; }
+  textarea.text-input { resize: vertical; min-height: 3.5rem; }
+  select.text-input { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%2394A3B8' d='M12 16l-6-6h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem; }
+
+  /* ── Two-Column Row ── */
+  .field-row { display: flex; gap: 1rem; }
+  .field-row .field { flex: 1; }
+
+  /* ── Tags Input ── */
+  .tags-wrap { display: flex; flex-wrap: wrap; gap: 0.375rem; padding: 0.375rem 0.5rem; border: 1px solid #E2E8F0; border-radius: 0.5rem; min-height: 2.25rem; align-items: center; cursor: text; }
+  .tags-wrap:focus-within { border-color: #6366F1; box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
+  .tag-chip { display: inline-flex; align-items: center; gap: 0.25rem; background: #EEF2FF; color: #4338CA; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 500; }
+  .tag-chip i { font-size: 0.75rem; cursor: pointer; color: #818CF8; }
+  .tags-input { border: none; outline: none; font-size: 0.8125rem; font-family: inherit; color: #334155; flex: 1; min-width: 80px; padding: 0.125rem 0; }
+  .tags-input::placeholder { color: #CBD5E1; }
+
+  /* ── CI/CD Toggle ── */
+  .cicd-section { background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 0.5rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem; }
+  .cicd-icon { width: 2rem; height: 2rem; background: #8B5CF6; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cicd-icon i { color: #fff; font-size: 1rem; }
+  .cicd-text { flex: 1; }
+  .cicd-title { font-size: 0.8125rem; font-weight: 600; color: #4C1D95; }
+  .cicd-desc { font-size: 0.6875rem; color: #7C3AED; }
+  .toggle-switch { width: 2.25rem; height: 1.25rem; border-radius: 9999px; background: #CBD5E1; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+  .toggle-switch.on { background: #8B5CF6; }
+  .toggle-knob { width: 0.875rem; height: 0.875rem; border-radius: 50%; background: #fff; position: absolute; top: 0.1875rem; left: 0.1875rem; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .toggle-switch.on .toggle-knob { transform: translateX(1rem); }
+
+  /* ── Modal Footer ── */
+  .modal-foot { padding: 1rem 1.5rem; border-top: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: space-between; }
+  .foot-left { font-size: 0.75rem; color: #94A3B8; }
+  .foot-left strong { color: #334155; font-weight: 600; }
+  .foot-right { display: flex; gap: 0.5rem; }
+  .btn { padding: 0.4375rem 0.875rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 600; border: 1px solid; cursor: pointer; font-family: inherit; transition: all 0.15s; display: flex; align-items: center; gap: 0.375rem; }
+  .btn-ghost { background: #fff; border-color: #E2E8F0; color: #64748B; }
+  .btn-ghost:hover { background: #F8FAFC; }
+  .btn-primary { background: #6366F1; border-color: #6366F1; color: #fff; }
+  .btn-primary:hover { background: #4F46E5; }
+  .btn i { font-size: 1rem; }
+
+  /* ═══════════════════════════════════════════════════
+     STEP 2: Select Cases
+     ═══════════════════════════════════════════════════ */
+
+  /* ── Filter Toolbar (replaces right sidebar) ── */
+  .filter-bar { display: flex; align-items: center; gap: 0.625rem; padding: 0.75rem 1.25rem; border-bottom: 1px solid #E2E8F0; background: #F8FAFC; flex-wrap: wrap; }
+  .filter-search { flex: 1; min-width: 180px; position: relative; }
+  .filter-search i { position: absolute; left: 0.625rem; top: 50%; transform: translateY(-50%); font-size: 0.875rem; color: #94A3B8; }
+  .filter-search input { width: 100%; padding: 0.375rem 0.625rem 0.375rem 2rem; border: 1px solid #E2E8F0; border-radius: 0.375rem; font-size: 0.75rem; font-family: inherit; color: #334155; outline: none; }
+  .filter-search input:focus { border-color: #6366F1; box-shadow: 0 0 0 2px rgba(99,102,241,0.12); }
+
+  .filter-dropdown { position: relative; }
+  .filter-btn { display: inline-flex; align-items: center; gap: 0.3125rem; padding: 0.375rem 0.625rem; border: 1px solid #E2E8F0; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; color: #475569; background: #fff; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .filter-btn:hover { background: #F8FAFC; border-color: #CBD5E1; }
+  .filter-btn.active-filter { background: #EEF2FF; border-color: #C7D2FE; color: #4338CA; }
+  .filter-btn i { font-size: 0.8125rem; }
+  .filter-btn .filter-count { background: #6366F1; color: #fff; padding: 0 0.3125rem; border-radius: 9999px; font-size: 0.5625rem; font-weight: 700; min-width: 1rem; text-align: center; }
+
+  /* ── Draft Toggle (inline in filter bar) ── */
+  .draft-toggle { display: flex; align-items: center; gap: 0.375rem; margin-left: auto; }
+  .draft-toggle-label { font-size: 0.6875rem; color: #475569; font-weight: 500; }
+  .draft-toggle .toggle-switch { width: 1.75rem; height: 1rem; }
+  .draft-toggle .toggle-knob { width: 0.625rem; height: 0.625rem; top: 0.1875rem; left: 0.1875rem; }
+  .draft-toggle .toggle-switch.on .toggle-knob { transform: translateX(0.75rem); }
+  .draft-hint { font-size: 0.625rem; color: #94A3B8; }
+
+  /* ── Folder Breadcrumb (replaces sidebar) ── */
+  .folder-nav { display: flex; align-items: center; gap: 0; padding: 0 1.25rem; border-bottom: 1px solid #E2E8F0; overflow-x: auto; }
+  .folder-chip { padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 500; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; display: flex; align-items: center; gap: 0.3125rem; transition: all 0.15s; }
+  .folder-chip:hover { color: #334155; }
+  .folder-chip.active { color: #4338CA; border-bottom-color: #4338CA; font-weight: 600; }
+  .folder-chip i { font-size: 0.875rem; }
+  .folder-chip .fc-count { font-size: 0.625rem; color: #94A3B8; font-weight: 400; }
+  .folder-chip.active .fc-count { color: #818CF8; }
+
+  /* ── TC Select Table ── */
+  .tc-select-area { max-height: 45vh; overflow-y: auto; }
+  .tc-sel-table { width: 100%; border-collapse: collapse; }
+  .tc-sel-table th { position: sticky; top: 0; z-index: 5; background: #F8FAFC; padding: 0.5rem 1rem; text-align: left; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; border-bottom: 1px solid #E2E8F0; }
+  .tc-sel-table td { padding: 0.5rem 1rem; font-size: 0.8125rem; color: #334155; border-bottom: 1px solid #F1F5F9; }
+  .tc-sel-table tr:hover td { background: #FAFAFF; }
+  .tc-sel-table .cb { width: 2.25rem; }
+  .tc-sel-table input[type="checkbox"] { width: 15px; height: 15px; accent-color: #6366F1; cursor: pointer; }
+  .tc-id { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.75rem; color: #6366F1; font-weight: 600; }
+  .tc-name { font-weight: 500; color: #0F172A; font-size: 0.8125rem; }
+  .tc-folder-tag { font-size: 0.5625rem; color: #94A3B8; background: #F1F5F9; padding: 0.0625rem 0.3125rem; border-radius: 9999px; margin-left: 0.375rem; font-weight: 500; }
+
+  /* Status badges */
+  .lc-badge { display: inline-flex; align-items: center; gap: 0.125rem; padding: 0.0625rem 0.3125rem; border-radius: 9999px; font-size: 0.5625rem; font-weight: 600; border: 1px solid; }
+  .lc-badge i { font-size: 0.625rem; }
+  .lc-badge.draft { background: #FEF9C3; color: #854D0E; border-color: #FDE68A; }
+  .lc-badge.active { background: #DCFCE7; color: #166534; border-color: #BBF7D0; }
+  .lc-badge.deprecated { background: #F1F5F9; color: #64748B; border-color: #CBD5E1; }
+
+  .priority-badge { font-size: 0.625rem; font-weight: 600; padding: 0.0625rem 0.3125rem; border-radius: 0.25rem; }
+  .priority-badge.critical { background: #FEE2E2; color: #991B1B; }
+  .priority-badge.high { background: #FEF3C7; color: #92400E; }
+  .priority-badge.medium { background: #EEF2FF; color: #4338CA; }
+  .priority-badge.low { background: #F1F5F9; color: #64748B; }
+
+  /* Draft row highlight */
+  .draft-row td { background: #FFFBEB; }
+  .draft-row:hover td { background: #FEF9C3; }
+
+  /* ── Selection Summary ── */
+  .sel-summary { padding: 0.625rem 1.25rem; background: #F8FAFC; border-top: 1px solid #E2E8F0; display: flex; align-items: center; gap: 0.75rem; font-size: 0.75rem; color: #64748B; }
+  .sel-count { font-weight: 700; color: #0F172A; font-size: 0.875rem; }
+  .sel-breakdown { display: flex; gap: 0.5rem; }
+  .sel-tag { display: inline-flex; align-items: center; gap: 0.1875rem; padding: 0.125rem 0.375rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 600; }
+  .sel-tag.active-tag { background: #DCFCE7; color: #166534; }
+  .sel-tag.draft-tag { background: #FEF9C3; color: #854D0E; }
+
+  /* ── Draft Warning (inline) ── */
+  .draft-warning { display: flex; align-items: flex-start; gap: 0.5rem; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.375rem; padding: 0.5rem 0.75rem; margin: 0.5rem 1.25rem; font-size: 0.75rem; color: #92400E; }
+  .draft-warning i { font-size: 0.875rem; margin-top: 0.0625rem; flex-shrink: 0; }
+  .draft-warning strong { font-weight: 600; }
+  .dw-actions { display: inline-flex; gap: 0.375rem; margin-left: 0.5rem; }
+  .dw-btn { padding: 0.1875rem 0.4375rem; border-radius: 0.25rem; font-size: 0.625rem; font-weight: 600; border: 1px solid; cursor: pointer; font-family: inherit; }
+  .dw-btn.convert { background: #FEF9C3; border-color: #FDE68A; color: #92400E; }
+  .dw-btn.proceed { background: #fff; border-color: #E2E8F0; color: #64748B; }
+
+  /* ── Annotations ── */
+  .ann-strip { background: #FEF9C3; border-top: 2px dashed #F59E0B; padding: 1.25rem 1.5rem; font-size: 0.6875rem; color: #92400E; line-height: 1.7; }
+  .ann-strip h3 { font-size: 0.8125rem; font-weight: 700; color: #78350F; margin-bottom: 0.5rem; border: none; margin-top: 0; }
+  .ann-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1.5rem; }
+  .ann-item { }
+  .ann-item strong { font-weight: 600; display: block; margin-bottom: 0.125rem; }
+
+  /* ── Empty state ── */
+  .empty-state { padding: 2.5rem 1.5rem; text-align: center; }
+  .empty-state i { font-size: 2rem; color: #CBD5E1; margin-bottom: 0.5rem; }
+  .empty-state p { font-size: 0.8125rem; color: #94A3B8; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION A: STEP 1 — Run Configuration
+     ══════════════════════════════════════════════════════════ -->
+
+<div class="backdrop" style="padding-bottom: 2vh;">
+  <div class="modal step1" style="margin-top: 3vh;">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-icon"><i class="ri-play-circle-line"></i></div>
+        <span class="modal-title">Add Run</span>
+      </div>
+      <button class="close-btn"><i class="ri-close-line"></i></button>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="step-bar">
+      <div class="step-tab active">
+        <span class="step-num">1</span> Run Details
+      </div>
+      <div class="step-tab">
+        <span class="step-num">2</span> Select Cases
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <!-- Name (Required) -->
+      <div class="field">
+        <label class="field-label">Run Name <span class="req">*</span></label>
+        <input type="text" class="text-input" placeholder="e.g. Sprint 24 Regression" value="Sprint 24 — Regression Run" />
+      </div>
+
+      <!-- Description -->
+      <div class="field">
+        <label class="field-label">Description</label>
+        <textarea class="text-input" placeholder="Optional description for this run...">Full regression test covering payment, auth, and mobile features for Sprint 24 release.</textarea>
+      </div>
+
+      <!-- Milestone + Status (2-col) -->
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Milestone</label>
+          <select class="text-input">
+            <option>Sprint 24 Release</option>
+            <option>API v3 Certification</option>
+            <option>+ Add milestone...</option>
+          </select>
+          <div class="field-hint">Choose a milestone or create new</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Status <span class="req">*</span></label>
+          <select class="text-input">
+            <option>🌟 New</option>
+            <option>In Progress</option>
+            <option>Under Review</option>
+            <option>Completed</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Configuration + Issues (2-col) -->
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Configuration</label>
+          <select class="text-input">
+            <option value="">None</option>
+            <option>Chrome / macOS</option>
+            <option>iOS 17 / Safari</option>
+          </select>
+          <div class="field-hint">Environment to test against</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Issues</label>
+          <select class="text-input">
+            <option value="">None</option>
+            <option>JIRA-1234</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tags -->
+      <div class="field">
+        <label class="field-label">Tags</label>
+        <div class="tags-wrap">
+          <span class="tag-chip">regression <i class="ri-close-line"></i></span>
+          <span class="tag-chip">sprint-24 <i class="ri-close-line"></i></span>
+          <input type="text" class="tags-input" placeholder="Add tag..." />
+        </div>
+      </div>
+
+      <!-- CI/CD -->
+      <div class="cicd-section">
+        <div class="cicd-icon"><i class="ri-robot-line"></i></div>
+        <div class="cicd-text">
+          <div class="cicd-title">CI/CD Run</div>
+          <div class="cicd-desc">Mark as automated run for CI/CD pipeline</div>
+        </div>
+        <div class="toggle-switch">
+          <div class="toggle-knob"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <div class="foot-left"></div>
+      <div class="foot-right">
+        <button class="btn btn-ghost">Cancel</button>
+        <button class="btn btn-primary">Next: Select Cases <i class="ri-arrow-right-s-line"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION B: STEP 2 — Select Test Cases (Wider Modal)
+     ══════════════════════════════════════════════════════════ -->
+
+<div style="padding: 2rem 1rem; display: flex; justify-content: center;">
+  <div class="modal step2" style="position: relative;">
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-icon"><i class="ri-play-circle-line"></i></div>
+        <span class="modal-title">Add Run</span>
+      </div>
+      <button class="close-btn"><i class="ri-close-line"></i></button>
+    </div>
+
+    <!-- Step Indicator (Step 2 active) -->
+    <div class="step-bar">
+      <div class="step-tab done">
+        <span class="step-num"><i class="ri-check-line" style="font-size:0.625rem;"></i></span> Run Details
+      </div>
+      <div class="step-tab active">
+        <span class="step-num">2</span> Select Cases
+      </div>
+    </div>
+
+    <!-- Filter Toolbar (replaces right sidebar) -->
+    <div class="filter-bar">
+      <div class="filter-search">
+        <i class="ri-search-line"></i>
+        <input type="text" placeholder="Search test cases..." />
+      </div>
+      <button class="filter-btn active-filter">
+        <i class="ri-filter-3-line"></i> Priority
+        <span class="filter-count">2</span>
+      </button>
+      <button class="filter-btn">
+        <i class="ri-price-tag-3-line"></i> Tags
+      </button>
+
+      <!-- §10 Draft Toggle (inline) -->
+      <div class="draft-toggle">
+        <div class="toggle-switch on" style="width:1.75rem; height:1rem; background:#6366F1;">
+          <div class="toggle-knob" style="width:0.625rem; height:0.625rem; transform:translateX(0.75rem);"></div>
+        </div>
+        <span class="draft-toggle-label">Include Draft</span>
+      </div>
+    </div>
+
+    <!-- Folder Navigation (horizontal chips, replaces sidebar) -->
+    <div class="folder-nav">
+      <div class="folder-chip active">
+        <i class="ri-folder-3-line" style="color:#6366F1;"></i>
+        All Cases <span class="fc-count">(38)</span>
+      </div>
+      <div class="folder-chip">
+        <i class="ri-folder-3-line" style="color:#94A3B8;"></i>
+        Uncategorized <span class="fc-count">(7)</span>
+      </div>
+      <div class="folder-chip">
+        <i class="ri-folder-3-line" style="color:#8B5CF6;"></i>
+        Login <span class="fc-count">(10)</span>
+      </div>
+      <div class="folder-chip">
+        <i class="ri-folder-3-line" style="color:#10B981;"></i>
+        Patient List <span class="fc-count">(12)</span>
+      </div>
+      <div class="folder-chip">
+        <i class="ri-folder-3-line" style="color:#EF4444;"></i>
+        Viewer <span class="fc-count">(4)</span>
+      </div>
+      <div class="folder-chip">
+        <i class="ri-folder-3-line" style="color:#F59E0B;"></i>
+        Report <span class="fc-count">(5)</span>
+      </div>
+    </div>
+
+    <!-- TC Selection Table -->
+    <div class="tc-select-area">
+      <table class="tc-sel-table">
+        <thead>
+          <tr>
+            <th class="cb"><input type="checkbox" checked /></th>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Lifecycle</th>
+            <th>Priority</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="cb"><input type="checkbox" checked /></td>
+            <td><span class="tc-id">TC-842</span></td>
+            <td>
+              <span class="tc-name">Payment timeout handling for 3DS verification</span>
+              <span class="tc-folder-tag">Login</span>
+            </td>
+            <td><span class="lc-badge active"><i class="ri-checkbox-circle-line"></i> Active</span></td>
+            <td><span class="priority-badge critical">Critical</span></td>
+          </tr>
+          <tr>
+            <td class="cb"><input type="checkbox" checked /></td>
+            <td><span class="tc-id">TC-841</span></td>
+            <td>
+              <span class="tc-name">Dashboard widget drag-and-drop reordering</span>
+              <span class="tc-folder-tag">Viewer</span>
+            </td>
+            <td><span class="lc-badge active"><i class="ri-checkbox-circle-line"></i> Active</span></td>
+            <td><span class="priority-badge high">High</span></td>
+          </tr>
+          <tr class="draft-row">
+            <td class="cb"><input type="checkbox" checked /></td>
+            <td><span class="tc-id">TC-843</span></td>
+            <td>
+              <span class="tc-name">Biometric auth fallback on iOS 17</span>
+              <span class="tc-folder-tag">Login</span>
+            </td>
+            <td><span class="lc-badge draft"><i class="ri-draft-line"></i> Draft</span></td>
+            <td><span class="priority-badge high">High</span></td>
+          </tr>
+          <tr>
+            <td class="cb"><input type="checkbox" checked /></td>
+            <td><span class="tc-id">TC-840</span></td>
+            <td>
+              <span class="tc-name">OAuth token refresh race condition under load</span>
+              <span class="tc-folder-tag">Login</span>
+            </td>
+            <td><span class="lc-badge active"><i class="ri-checkbox-circle-line"></i> Active</span></td>
+            <td><span class="priority-badge critical">Critical</span></td>
+          </tr>
+          <tr>
+            <td class="cb"><input type="checkbox" /></td>
+            <td><span class="tc-id">TC-839</span></td>
+            <td>
+              <span class="tc-name">Push notification deep-link navigation on iOS 17</span>
+              <span class="tc-folder-tag">Patient List</span>
+            </td>
+            <td><span class="lc-badge active"><i class="ri-checkbox-circle-line"></i> Active</span></td>
+            <td><span class="priority-badge medium">Medium</span></td>
+          </tr>
+          <tr class="draft-row">
+            <td class="cb"><input type="checkbox" /></td>
+            <td><span class="tc-id">TC-838</span></td>
+            <td>
+              <span class="tc-name">Multi-factor auth setup validation</span>
+              <span class="tc-folder-tag">Login</span>
+            </td>
+            <td><span class="lc-badge draft"><i class="ri-draft-line"></i> Draft</span></td>
+            <td><span class="priority-badge medium">Medium</span></td>
+          </tr>
+          <tr>
+            <td class="cb"><input type="checkbox" checked /></td>
+            <td><span class="tc-id">TC-837</span></td>
+            <td>
+              <span class="tc-name">User avatar upload with WebP conversion fallback</span>
+              <span class="tc-folder-tag">Patient List</span>
+            </td>
+            <td><span class="lc-badge active"><i class="ri-checkbox-circle-line"></i> Active</span></td>
+            <td><span class="priority-badge medium">Medium</span></td>
+          </tr>
+          <tr>
+            <td class="cb"><input type="checkbox" /></td>
+            <td><span class="tc-id">TC-836</span></td>
+            <td>
+              <span class="tc-name">Dark mode toggle persistence after logout/login cycle</span>
+              <span class="tc-folder-tag">Viewer</span>
+            </td>
+            <td><span class="lc-badge active"><i class="ri-checkbox-circle-line"></i> Active</span></td>
+            <td><span class="priority-badge low">Low</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- §7 Draft Warning -->
+    <div class="draft-warning">
+      <i class="ri-error-warning-line"></i>
+      <div>
+        <strong>Draft TC 포함:</strong> 선택된 TC 중 1개가 Draft 상태입니다. 미완성 상태일 수 있습니다.
+        <span class="dw-actions">
+          <button class="dw-btn convert"><i class="ri-checkbox-circle-line" style="font-size:0.625rem;"></i> Active로 변경</button>
+          <button class="dw-btn proceed">유지</button>
+        </span>
+      </div>
+    </div>
+
+    <!-- Selection Summary -->
+    <div class="sel-summary">
+      <span class="sel-count">5 / 38</span>
+      <span>selected</span>
+      <div class="sel-breakdown">
+        <span class="sel-tag active-tag"><i class="ri-checkbox-circle-line" style="font-size:0.5625rem;"></i> 4 Active</span>
+        <span class="sel-tag draft-tag"><i class="ri-draft-line" style="font-size:0.5625rem;"></i> 1 Draft</span>
+      </div>
+      <span style="margin-left: auto; font-size: 0.6875rem; color: #94A3B8;"><i class="ri-forbid-line" style="font-size: 0.75rem;"></i> 3 Deprecated hidden</span>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-foot">
+      <div class="foot-left">
+        <button class="btn btn-ghost" style="font-size:0.75rem; padding: 0.3125rem 0.625rem;">
+          <i class="ri-arrow-left-s-line"></i> Back to Details
+        </button>
+      </div>
+      <div class="foot-right">
+        <button class="btn btn-ghost">Cancel</button>
+        <button class="btn btn-primary"><i class="ri-play-circle-line"></i> Create Run</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     DESIGN ANNOTATIONS
+     ══════════════════════════════════════════════════════════ -->
+<div class="ann-strip">
+  <h3>Design Annotations — Add Run Modal Redesign</h3>
+  <div class="ann-grid">
+    <div class="ann-item">
+      <strong>1. 2-Step Wizard 패턴</strong>
+      Step 1 (560px): Run 기본 정보만 집중. Step 2 (840px): TC 선택에 넓은 공간 확보. 단일 모달 안에서 스텝 전환하므로 컨텍스트 유지됨. Step 1에서 "Include all cases" 선택 시 Step 2 스킵 가능 (바로 Create Run).
+    </div>
+    <div class="ann-item">
+      <strong>2. 폴더 탐색: 사이드바 → 가로 탭</strong>
+      좌측 사이드바(w-80) 제거. 가로 스크롤 가능한 folder chip 탭으로 변경하여 TC 테이블 전체 너비 활용. 폴더 아이콘 색상은 기존 14-testcases의 폴더 컬러 매핑 재사용. 전체 카운트가 칩 옆에 표시.
+    </div>
+    <div class="ann-item">
+      <strong>3. 필터: 우측 패널 → 인라인 툴바</strong>
+      Priority/Tags 필터를 드롭다운 버튼으로 축소. 활성 필터 수 표시 (badge count). "Include Draft" 토글을 필터바 우측에 인라인 배치하여 §10 기획 반영. 검색창은 flex-1로 남은 공간 채움.
+    </div>
+    <div class="ann-item">
+      <strong>4. Lifecycle 열 + Draft 행 강조</strong>
+      테이블에 Lifecycle 열 추가 (§1 badge sm 사용). Draft TC 행은 #FFFBEB 배경으로 시각 구분. Deprecated TC는 완전 숨김 — 하단 summary에 "N Deprecated hidden" 표시로 사용자에게 안내.
+    </div>
+    <div class="ann-item">
+      <strong>5. 선택 상태 Summary Bar</strong>
+      하단 summary: 전체 선택 수 (bold) + Active/Draft 내역 breakdown + Deprecated hidden 안내. 기존 "0/31 selected"보다 훨씬 정보 밀도 높음. Draft 경고(§7)는 summary 위에 인라인 표시.
+    </div>
+    <div class="ann-item">
+      <strong>6. Step 1 Form 개선</strong>
+      2-column 레이아웃으로 Milestone+Status, Configuration+Issues 쌍 배치하여 수직 공간 절약. Tags는 chip 입력 방식 (기존 텍스트 → chip). CI/CD 토글은 보라색 하이라이트 섹션으로 시각적 구분. Description은 textarea로 변경.
+    </div>
+    <div class="ann-item">
+      <strong>7. "Include All Cases" 숏컷</strong>
+      Step 1 footer에 "Include all cases" 체크박스 추가 가능 (선택 시 Step 2 스킵하고 바로 Create Run). 이렇게 하면 기존 라디오 버튼 UX를 보존하면서 2-step 플로우도 자연스러움.
+    </div>
+    <div class="ann-item">
+      <strong>8. Animation Spec</strong>
+      Modal entrance: translateY(10px) scale(0.98) → normal, 250ms ease-out. Step transition: crossfade (Step 1 out → Step 2 in), 200ms. Draft rows toggle: fadeSlideIn 200ms ease-out. Warning banner: slideDown 200ms. Filter dropdown: §4 dropdown과 동일 패턴.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desi Handoff — Run Workflow Usability Enhancement</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.6; }
+
+  /* ── Container ── */
+  .container { max-width: 1060px; margin: 0 auto; padding: 2rem 2.5rem 4rem; }
+
+  /* ── Header ── */
+  .doc-header { background: linear-gradient(135deg, #7C3AED 0%, #6366F1 50%, #818CF8 100%); color: #fff; border-radius: 1rem; padding: 2.5rem; margin-bottom: 2rem; }
+  .doc-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: rgba(255,255,255,0.2); font-size: 0.625rem; font-weight: 700; padding: 0.25rem 0.625rem; border-radius: 9999px; margin-bottom: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  .doc-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .doc-subtitle { font-size: 0.875rem; opacity: 0.9; }
+  .doc-meta { display: flex; gap: 2rem; margin-top: 0.75rem; font-size: 0.75rem; opacity: 0.8; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 2.5rem; }
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 0.5rem; background: #6366F1; color: #fff; font-size: 0.8125rem; font-weight: 800; margin-right: 0.5rem; flex-shrink: 0; }
+  .section-title { display: flex; align-items: center; font-size: 1.0625rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem; padding-bottom: 0.625rem; border-bottom: 2px solid #6366F1; }
+  .section-desc { font-size: 0.8125rem; color: #475569; margin-bottom: 0.75rem; line-height: 1.65; }
+
+  /* ── Card ── */
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .card-label { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6366F1; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.375rem; }
+  .card h4 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin: 1rem 0 0.375rem; }
+  .card h4:first-of-type { margin-top: 0; }
+
+  /* ── Spec Row ── */
+  .spec-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.3125rem 0; font-size: 0.75rem; border-bottom: 1px solid #F8FAFC; gap: 1rem; }
+  .spec-row .k { font-weight: 600; color: #475569; min-width: 180px; flex-shrink: 0; }
+  .spec-row .v { color: #059669; font-weight: 600; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.6875rem; text-align: right; }
+  .spec-row .old { color: #94A3B8; text-decoration: line-through; font-size: 0.6875rem; margin-right: 0.5rem; }
+
+  /* ── Tags ── */
+  .tag { display: inline-flex; align-items: center; gap: 0.1875rem; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; font-size: 0.5625rem; font-weight: 700; }
+  .tag-new { background: #DCFCE7; color: #166534; }
+  .tag-change { background: #FEF3C7; color: #92400E; }
+  .tag-remove { background: #FEE2E2; color: #991B1B; }
+  .tag-phase { background: #EEF2FF; color: #4338CA; }
+
+  /* ── Alert ── */
+  .alert { border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.75rem; line-height: 1.6; margin: 0.625rem 0; }
+  .alert strong { font-weight: 700; }
+  .alert-info { background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; }
+  .alert-info strong { color: #1E3A8A; }
+  .alert-warn { background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; }
+  .alert-warn strong { color: #78350F; }
+  .alert-success { background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; }
+  .alert-success strong { color: #14532D; }
+  .alert-tip { background: #FAF5FF; border: 1px solid #E9D5FF; color: #6B21A8; }
+  .alert-tip strong { color: #581C87; }
+
+  /* ── Wireframe ── */
+  .wireframe { background: #F8FAFC; border: 2px dashed #CBD5E1; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin: 0.75rem 0; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.6875rem; line-height: 2; color: #475569; overflow-x: auto; white-space: pre; }
+  .wireframe .hl { color: #6366F1; font-weight: 700; }
+  .wireframe .red { color: #EF4444; font-weight: 700; }
+  .wireframe .green { color: #22C55E; font-weight: 700; }
+  .wireframe .amber { color: #F59E0B; font-weight: 700; }
+  .wireframe .violet { color: #8B5CF6; font-weight: 700; }
+  .wireframe .muted { color: #94A3B8; font-style: italic; }
+  .wireframe .label { color: #94A3B8; font-style: italic; font-weight: 400; }
+
+  /* ── Table ── */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin: 0.5rem 0; }
+  .tbl th { background: #F8FAFC; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; color: #64748B; border-bottom: 1px solid #E2E8F0; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tbl td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #F1F5F9; color: #334155; vertical-align: top; }
+  .tbl .feature { font-weight: 600; color: #0F172A; }
+
+  /* ── Interaction Flow ── */
+  .flow { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin: 0.75rem 0; }
+  .flow-title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6366F1; margin-bottom: 0.625rem; }
+  .flow-step { display: flex; align-items: flex-start; gap: 0.625rem; margin-bottom: 0.5rem; font-size: 0.75rem; }
+  .flow-num { width: 1.375rem; height: 1.375rem; border-radius: 50%; background: #EEF2FF; color: #4338CA; font-size: 0.625rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 0.0625rem; }
+  .flow-text { color: #334155; line-height: 1.5; }
+  .flow-text strong { color: #0F172A; }
+  .flow-arrow { text-align: center; color: #CBD5E1; font-size: 0.875rem; margin: 0.25rem 0; }
+
+  /* ── Color swatch ── */
+  .swatch-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0; font-size: 0.75rem; }
+  .swatch { width: 2.5rem; height: 1.5rem; border-radius: 0.25rem; border: 1px solid #E2E8F0; flex-shrink: 0; }
+
+  /* ── Priority ── */
+  .p-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 700; }
+  .p-p1 { background: #FEE2E2; color: #991B1B; }
+  .p-p2 { background: #FEF3C7; color: #92400E; }
+  .p-p3 { background: #DBEAFE; color: #1D4ED8; }
+
+  /* ── TOC ── */
+  .toc { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 2rem; }
+  .toc-title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 0.5rem; }
+  .toc-list { list-style: none; padding: 0; columns: 2; gap: 1.5rem; }
+  .toc-list li { font-size: 0.75rem; padding: 0.1875rem 0; break-inside: avoid; }
+  .toc-list a { color: #6366F1; text-decoration: none; font-weight: 500; }
+  .toc-list a:hover { text-decoration: underline; }
+
+  /* ── Keyboard ── */
+  kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 1.375rem; height: 1.375rem; padding: 0 0.375rem; background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 0.25rem; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.625rem; font-weight: 700; color: #475569; box-shadow: 0 1px 0 #CBD5E1; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- HEADER                                 -->
+<!-- ═══════════════════════════════════════ -->
+<header class="doc-header">
+  <div class="doc-badge"><i class="ri-palette-line" style="font-size:0.75rem"></i> DESI DESIGN HANDOFF</div>
+  <h1 class="doc-title">Run Workflow Usability Enhancement</h1>
+  <p class="doc-subtitle">Quick Status Bar 확장 · Step-level Inline Results · Add Result 모달 간소화 · 키보드 단축키</p>
+  <div class="doc-meta">
+    <span><i class="ri-calendar-line"></i> 2026-03-26</span>
+    <span><i class="ri-file-list-3-line"></i> Based on: pm-analysis-run-workflow-usability.html</span>
+    <span><i class="ri-checkbox-circle-line"></i> CEO Approved</span>
+  </div>
+</header>
+
+<!-- ═══ TOC ═══ -->
+<div class="toc">
+  <div class="toc-title">Design Items</div>
+  <ol class="toc-list">
+    <li><a href="#d1">① Quick Status Bar 확장 (4-Button)</a></li>
+    <li><a href="#d2">② Fail/Block 인라인 노트 팝업</a></li>
+    <li><a href="#d3">③ Step-level Inline 결과 기록</a></li>
+    <li><a href="#d4">④ Add Result 모달 간소화 (조건부 UI)</a></li>
+    <li><a href="#d5">⑤ 키보드 단축키 시스템</a></li>
+    <li><a href="#d6">⑥ Auto-Advance 설정 & "Add & Next"</a></li>
+    <li><a href="#d7">⑦ 경쟁사 벤치마크 & 디자인 원칙</a></li>
+    <li><a href="#d8">⑧ 구현 우선순위 & 전체 인터랙션 플로우</a></li>
+  </ol>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- ① QUICK STATUS BAR                     -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="d1">
+  <h2 class="section-title"><span class="section-num">1</span> Quick Status Bar 확장</h2>
+
+  <p class="section-desc">
+    현재 "Pass & Next" 단일 버튼을 <strong>Pass · Fail · Block · Retest 4-버튼 바</strong>로 확장합니다.
+    Pass만 1-클릭이 가능했던 기존 구조를 모든 상태에 대해 1-클릭 Quick Status로 개선합니다.
+  </p>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-layout-right-line"></i> 현재 → 개선 비교</div>
+
+    <h4>AS-IS (현재)</h4>
+<div class="wireframe"><span class="label">Run Detail 패널 — Action Buttons</span>
+
+┌──────────────────────────────────────────────────────────────┐
+│  ┌───────────────┐  ┌───────────────┐  ┌─────┐  ┌─────┐    │
+│  │   Add result   │  │  <span class="green">Pass & Next</span>  │  │  ←  │  │  →  │    │
+│  │   (gray bg)    │  │  (green bg)   │  │     │  │     │    │
+│  └───────────────┘  └───────────────┘  └─────┘  └─────┘    │
+└──────────────────────────────────────────────────────────────┘
+  <span class="muted">↑ Pass만 1-클릭. Fail/Block은 모달 필수 (3+ 클릭)</span></div>
+
+    <h4>TO-BE (개선 후)</h4>
+<div class="wireframe"><span class="label">Run Detail 패널 — Quick Status Bar (확장)</span>
+
+┌──────────────────────────────────────────────────────────────┐
+│                                                              │
+│  ┌─────────────┐   ┌────────┐ ┌────────┐ ┌──────┐ ┌──────┐ │
+│  │ <span class="hl">✎ Add result</span>│   │ <span class="green">✓ Pass</span> │ │ <span class="red">✗ Fail</span> │ │<span class="amber">⊘ Blck</span>│ │<span class="violet">↻ Rtst</span>│ │
+│  │  (outline)  │   │& Next  │ │& Next  │ │      │ │      │ │
+│  └─────────────┘   └────────┘ └────────┘ └──────┘ └──────┘ │
+│                    <span class="muted">── Primary ──  ── Secondary ──</span>           │
+│                                                 ┌───┐ ┌───┐ │
+│  <span class="muted">Keyboard: A        P         F        B      R</span> │ ↑ │ │ ↓ │ │
+│                                                 └───┘ └───┘ │
+└──────────────────────────────────────────────────────────────┘
+  <span class="muted">↑ 모든 상태 1-클릭. Fail/Block 클릭 시 인라인 노트 팝업</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-paint-brush-line"></i> 버튼 스타일 스펙</div>
+
+    <h4>Primary Buttons (Pass · Fail)</h4>
+    <table class="tbl">
+      <thead><tr><th>속성</th><th>Pass</th><th>Fail</th></tr></thead>
+      <tbody>
+        <tr><td class="feature">Background</td><td>#22C55E (green-500)</td><td>#EF4444 (red-500)</td></tr>
+        <tr><td class="feature">Hover</td><td>#16A34A (green-600)</td><td>#DC2626 (red-600)</td></tr>
+        <tr><td class="feature">Text</td><td>#fff</td><td>#fff</td></tr>
+        <tr><td class="feature">Icon</td><td>ri-check-line</td><td>ri-close-line</td></tr>
+        <tr><td class="feature">Min-width</td><td>80px</td><td>80px</td></tr>
+        <tr><td class="feature">Height</td><td>32px</td><td>32px</td></tr>
+        <tr><td class="feature">Font</td><td>0.75rem, 600</td><td>0.75rem, 600</td></tr>
+        <tr><td class="feature">Border-radius</td><td>0.375rem (6px)</td><td>0.375rem (6px)</td></tr>
+        <tr><td class="feature">Label</td><td>"✓ Pass" (& Next 숨김, tooltip)</td><td>"✗ Fail" (& Next 숨김, tooltip)</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Secondary Buttons (Block · Retest)</h4>
+    <table class="tbl">
+      <thead><tr><th>속성</th><th>Block</th><th>Retest</th></tr></thead>
+      <tbody>
+        <tr><td class="feature">Background</td><td>#fff</td><td>#fff</td></tr>
+        <tr><td class="feature">Border</td><td>1px solid #FDE68A (amber-200)</td><td>1px solid #DDD6FE (violet-200)</td></tr>
+        <tr><td class="feature">Hover bg</td><td>#FFFBEB (amber-50)</td><td>#F5F3FF (violet-50)</td></tr>
+        <tr><td class="feature">Text</td><td>#92400E (amber-800)</td><td>#5B21B6 (violet-800)</td></tr>
+        <tr><td class="feature">Icon</td><td>ri-forbid-line</td><td>ri-refresh-line</td></tr>
+        <tr><td class="feature">Min-width</td><td>60px</td><td>60px</td></tr>
+        <tr><td class="feature">Height</td><td>32px</td><td>32px</td></tr>
+        <tr><td class="feature">Font</td><td>0.75rem, 600</td><td>0.75rem, 600</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Add Result Button (Outline)</h4>
+    <div class="spec-row"><span class="k">Background</span><span class="v">#fff</span></div>
+    <div class="spec-row"><span class="k">Border</span><span class="v">1px solid #E2E8F0</span></div>
+    <div class="spec-row"><span class="k">Hover</span><span class="v">bg #F1F5F9, border #C7D2FE</span></div>
+    <div class="spec-row"><span class="k">Text</span><span class="v">#475569, 0.75rem 600</span></div>
+    <div class="spec-row"><span class="k">Icon</span><span class="v">ri-edit-line</span></div>
+    <div class="spec-row"><span class="k">Height</span><span class="v">32px</span></div>
+
+    <h4>Navigation Buttons (↑ ↓)</h4>
+    <div class="spec-row"><span class="k">Size</span><span class="v">28px × 28px</span></div>
+    <div class="spec-row"><span class="k">Icon</span><span class="v">ri-arrow-up-s-line / ri-arrow-down-s-line</span></div>
+    <div class="spec-row"><span class="k">Border</span><span class="v">1px solid #E2E8F0</span></div>
+    <div class="spec-row"><span class="k">Disabled</span><span class="v">opacity: 0.5, cursor: not-allowed</span></div>
+    <div class="spec-row"><span class="k">Hover</span><span class="v">bg #F1F5F9</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-git-branch-line"></i> 상태별 클릭 동작</div>
+    <table class="tbl">
+      <thead><tr><th>버튼</th><th>클릭 시 동작</th><th>노트 요구</th><th>Auto-advance</th></tr></thead>
+      <tbody>
+        <tr><td class="feature"><span style="color:#22C55E">✓</span> Pass</td><td>즉시 Passed 결과 생성 → DB 저장</td><td>없음</td><td>✅ 500ms → Next TC</td></tr>
+        <tr><td class="feature"><span style="color:#EF4444">✗</span> Fail</td><td>인라인 노트 팝업 표시 (§2)</td><td>권장 (빈 가능)</td><td>✅ 제출 후 500ms → Next</td></tr>
+        <tr><td class="feature"><span style="color:#F59E0B">⊘</span> Block</td><td>인라인 노트 팝업 표시 (§2)</td><td>권장 (빈 가능)</td><td>✅ 제출 후 500ms → Next</td></tr>
+        <tr><td class="feature"><span style="color:#8B5CF6">↻</span> Retest</td><td>즉시 Retest 결과 생성 → DB 저장</td><td>없음</td><td>✅ 500ms → Next TC</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-ruler-line"></i> 레이아웃 스펙</div>
+    <div class="spec-row"><span class="k">Bar 위치</span><span class="v">Header 바로 아래 (dp-actions-bar)</span></div>
+    <div class="spec-row"><span class="k">Padding</span><span class="v">0.625rem 1.25rem</span></div>
+    <div class="spec-row"><span class="k">Gap (버튼 간)</span><span class="v">0.375rem (6px)</span></div>
+    <div class="spec-row"><span class="k">Border bottom</span><span class="v">1px solid #F1F5F9</span></div>
+    <div class="spec-row"><span class="k">Flex layout</span><span class="v">[Add Result] gap [Pass] [Fail] [Block] [Retest] flex-spacer [↑] [↓]</span></div>
+    <div class="spec-row"><span class="k">Add Result 우측 separator</span><span class="v">1px solid #E2E8F0, height: 20px, margin: 0 0.375rem</span></div>
+
+    <div class="alert alert-tip">
+      <strong>디자인 원칙:</strong> Pass와 Fail은 Primary (컬러 배경), Block과 Retest는 Secondary (아웃라인)로 시각적 계층을 만들어 가장 빈번한 두 동작이 눈에 먼저 들어오도록 합니다.
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- ② INLINE NOTE POPUP                    -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="d2">
+  <h2 class="section-title"><span class="section-num">2</span> Fail/Block 인라인 노트 팝업</h2>
+
+  <p class="section-desc">
+    Fail 또는 Block 클릭 시, 풀 모달 대신 <strong>가벼운 인라인 팝업</strong>이 해당 버튼 아래에 나타납니다.
+    빠른 메모 입력 후 바로 다음 TC로 넘어갈 수 있되, 상세 기록이 필요하면 풀 모달로 진입할 수 있는 <strong>2-tier Escalation Path</strong>입니다.
+  </p>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-layout-bottom-line"></i> 와이어프레임</div>
+
+<div class="wireframe"><span class="label">[Fail 버튼 클릭 시 — 인라인 노트 팝업]</span>
+
+                  ┌──────────────────────────────────────────┐
+                  │ <span class="red">✗</span> <span class="red">Failed</span> — Add a note (optional)        │
+  ▼ arrow         ├──────────────────────────────────────────┤
+  pointing to     │                                          │
+  Fail button     │  ┌──────────────────────────────────────┐│
+                  │  │ <span class="muted">What went wrong?</span>                     ││
+                  │  │                                      ││
+                  │  │                                      ││
+                  │  └──────────────────────────────────────┘│
+                  │                                          │
+                  │  ┌────────────┐   ┌────────────────┐     │
+                  │  │ Skip & Next│   │ <span class="red">✗ Save & Next</span> │     │
+                  │  │  (outline) │   │   (red bg)     │     │
+                  │  └────────────┘   └────────────────┘     │
+                  │                                          │
+                  │  <span class="muted">Need more details?</span> <span class="hl">Open full modal →</span>    │
+                  └──────────────────────────────────────────┘
+
+<span class="label">[Block 버튼 클릭 시 — 동일 구조, amber 테마]</span>
+
+                  ┌──────────────────────────────────────────┐
+                  │ <span class="amber">⊘</span> <span class="amber">Blocked</span> — Add a note (optional)      │
+                  ├──────────────────────────────────────────┤
+                  │  ┌──────────────────────────────────────┐│
+                  │  │ <span class="muted">What's blocking this test?</span>             ││
+                  │  │                                      ││
+                  │  └──────────────────────────────────────┘│
+                  │  ┌────────────┐   ┌────────────────┐     │
+                  │  │ Skip & Next│   │<span class="amber">⊘ Save & Next</span>  │     │
+                  │  └────────────┘   └────────────────┘     │
+                  │  <span class="muted">Need more details?</span> <span class="hl">Open full modal →</span>    │
+                  └──────────────────────────────────────────┘</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-paint-brush-line"></i> 팝업 스타일 스펙</div>
+
+    <h4>공통 컨테이너</h4>
+    <div class="spec-row"><span class="k">Width</span><span class="v">340px</span></div>
+    <div class="spec-row"><span class="k">Position</span><span class="v">absolute, 아래쪽 → 위에서 내려옴 (top: 100% + 8px)</span></div>
+    <div class="spec-row"><span class="k">Background</span><span class="v">#fff</span></div>
+    <div class="spec-row"><span class="k">Border</span><span class="v">1px solid #E2E8F0</span></div>
+    <div class="spec-row"><span class="k">Border-radius</span><span class="v">0.75rem (12px)</span></div>
+    <div class="spec-row"><span class="k">Shadow</span><span class="v">0 4px 24px rgba(0,0,0,0.12)</span></div>
+    <div class="spec-row"><span class="k">Z-index</span><span class="v">50</span></div>
+    <div class="spec-row"><span class="k">Arrow</span><span class="v">8px CSS triangle, 클릭한 버튼 중앙 정렬</span></div>
+    <div class="spec-row"><span class="k">Entrance animation</span><span class="v">opacity 0→1 + translateY(-4px→0), 150ms ease</span></div>
+
+    <h4>Header</h4>
+    <div class="spec-row"><span class="k">Padding</span><span class="v">0.75rem 1rem</span></div>
+    <div class="spec-row"><span class="k">Border-bottom</span><span class="v">1px solid #F1F5F9</span></div>
+    <div class="spec-row"><span class="k">Icon + Status text</span><span class="v">0.8125rem, 700 — Fail: color #DC2626 / Block: #D97706</span></div>
+    <div class="spec-row"><span class="k">Subtitle</span><span class="v">"Add a note (optional)" — 0.75rem, #94A3B8</span></div>
+
+    <h4>Textarea</h4>
+    <div class="spec-row"><span class="k">Rows</span><span class="v">3 (auto-expand up to 6)</span></div>
+    <div class="spec-row"><span class="k">Placeholder</span><span class="v">Fail: "What went wrong?" / Block: "What's blocking this test?"</span></div>
+    <div class="spec-row"><span class="k">Font</span><span class="v">0.8125rem, Inter</span></div>
+    <div class="spec-row"><span class="k">Border</span><span class="v">1px solid #E2E8F0 → focus: #6366F1</span></div>
+    <div class="spec-row"><span class="k">Border-radius</span><span class="v">0.375rem</span></div>
+    <div class="spec-row"><span class="k">Auto-focus</span><span class="v">✅ 팝업 열리면 즉시 textarea에 포커스</span></div>
+
+    <h4>Action Buttons</h4>
+    <table class="tbl">
+      <thead><tr><th>Button</th><th>Style</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td class="feature">Skip & Next</td><td>outline — border #E2E8F0, color #64748B</td><td>노트 없이 상태만 저장 → auto-advance</td></tr>
+        <tr><td class="feature">Save & Next (Fail)</td><td>bg #EF4444, color #fff, hover: #DC2626</td><td>노트 + 상태 저장 → auto-advance</td></tr>
+        <tr><td class="feature">Save & Next (Block)</td><td>bg #F59E0B, color #fff, hover: #D97706</td><td>노트 + 상태 저장 → auto-advance</td></tr>
+      </tbody>
+    </table>
+
+    <h4>"Open full modal →" 링크</h4>
+    <div class="spec-row"><span class="k">Font</span><span class="v">0.6875rem, 600, color #6366F1</span></div>
+    <div class="spec-row"><span class="k">Hover</span><span class="v">underline</span></div>
+    <div class="spec-row"><span class="k">동작</span><span class="v">팝업 닫힘 → Add Result 모달 열림 (상태 pre-selected)</span></div>
+    <div class="spec-row"><span class="k">노트 이관</span><span class="v">팝업에 입력된 텍스트가 모달의 Note 필드로 이관됨</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-arrow-right-line"></i> 인터랙션 플로우</div>
+
+    <div class="flow">
+      <div class="flow-title">Fail 버튼 클릭 → 인라인 팝업 → 자동 진행</div>
+      <div class="flow-step"><span class="flow-num">1</span><span class="flow-text">사용자가 <strong>Fail 버튼</strong> 클릭</span></div>
+      <div class="flow-step"><span class="flow-num">2</span><span class="flow-text">인라인 팝업이 Fail 버튼 아래에 나타남 (150ms fade-in), textarea auto-focus</span></div>
+      <div class="flow-step"><span class="flow-num">3a</span><span class="flow-text"><strong>"Save & Next"</strong> 클릭 또는 <kbd>Ctrl</kbd>+<kbd>Enter</kbd> → 노트 + Failed 상태 DB 저장</span></div>
+      <div class="flow-step"><span class="flow-num">3b</span><span class="flow-text">또는 <strong>"Skip & Next"</strong> 클릭 → 노트 없이 Failed 상태만 DB 저장</span></div>
+      <div class="flow-step"><span class="flow-num">3c</span><span class="flow-text">또는 <strong>"Open full modal →"</strong> 클릭 → 팝업 닫힘, Add Result 모달 열림 (Fail pre-selected, 노트 이관)</span></div>
+      <div class="flow-step"><span class="flow-num">4</span><span class="flow-text">3a/3b: 팝업 닫힘 → <strong>500ms 후 다음 TC로 자동 이동</strong></span></div>
+    </div>
+
+    <div class="alert alert-warn">
+      <strong>ESC 키:</strong> 팝업이 열린 상태에서 ESC → 팝업 닫힘, 상태 변경 취소 (아무것도 저장 안 함).<br>
+      <strong>팝업 바깥 클릭:</strong> 동일하게 팝업 닫힘 + 취소.
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- ③ STEP-LEVEL INLINE RESULTS             -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="d3">
+  <h2 class="section-title"><span class="section-num">3</span> Step-level Inline 결과 기록</h2>
+
+  <p class="section-desc">
+    Run context의 Steps 영역에서 각 Step에 <strong>미니 Pass/Fail 버튼</strong>을 표시합니다. 테스터가 Step 단위로
+    결과를 기록하면, Steps toggle bar에 실시간 진행률이 표시됩니다. (이미 dev-handoff-detail-panel-option-a.html §5에 정의됨. 여기서는 디자인 관점 보충.)
+  </p>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-layout-right-line"></i> Step Row 와이어프레임</div>
+
+<div class="wireframe"><span class="label">[Step Row — 3가지 상태]</span>
+
+<span class="muted">── Untested (default) ──</span>
+┌─────────────────────────────────────────────────────────────┐
+│  <span class="hl">①</span>  Open Safari 17 and navigate to login page        [<span class="muted">✓</span>][<span class="muted">✗</span>] │
+│      <span class="green">✓ Login page loads within 3 seconds</span>                       │
+└─────────────────────────────────────────────────────────────┘
+
+<span class="muted">── Passed ──</span>
+┌─<span class="green">────────────────────────────────────────────────────────────</span>─┐
+│  <span class="green">①</span>  Open Safari 17 and navigate to login page        [<span class="green">✓</span>][<span class="muted">✗</span>] │
+│      <span class="green">✓ Login page loads within 3 seconds</span>                       │
+└─<span class="green">────────────────────────────────────────────────────────────</span>─┘
+
+<span class="muted">── Failed ──</span>
+┌─<span class="red">────────────────────────────────────────────────────────────</span>─┐
+│  <span class="red">①</span>  Open Safari 17 and navigate to login page        [<span class="muted">✓</span>][<span class="red">✗</span>] │
+│      <span class="green">✓ Login page loads within 3 seconds</span>                       │
+└─<span class="red">────────────────────────────────────────────────────────────</span>─┘</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-paint-brush-line"></i> Mini Button 상태 매트릭스</div>
+    <table class="tbl">
+      <thead><tr><th>State</th><th>Button BG</th><th>Icon Color</th><th>Border</th><th>Row BG</th><th>Num Circle</th></tr></thead>
+      <tbody>
+        <tr><td class="feature">Default</td><td>#fff</td><td>#94A3B8</td><td>1px #E2E8F0</td><td>#F8FAFC</td><td>bg #EEF2FF, text #4338CA</td></tr>
+        <tr><td class="feature">Pass hover</td><td>#F0FDF4</td><td>#16A34A</td><td>#86EFAC</td><td>—</td><td>—</td></tr>
+        <tr><td class="feature">Fail hover</td><td>#FEF2F2</td><td>#DC2626</td><td>#FCA5A5</td><td>—</td><td>—</td></tr>
+        <tr><td class="feature">Pass active</td><td>#22C55E</td><td>#fff</td><td>#22C55E</td><td>#F0FDF4, border #BBF7D0</td><td>bg #22C55E, text #fff</td></tr>
+        <tr><td class="feature">Fail active</td><td>#EF4444</td><td>#fff</td><td>#EF4444</td><td>#FEF2F2, border #FECACA</td><td>bg #EF4444, text #fff</td></tr>
+      </tbody>
+    </table>
+    <div class="spec-row"><span class="k">Button size</span><span class="v">22px × 22px (1.375rem)</span></div>
+    <div class="spec-row"><span class="k">Button radius</span><span class="v">0.25rem (4px)</span></div>
+    <div class="spec-row"><span class="k">Icon size</span><span class="v">0.625rem (10px)</span></div>
+    <div class="spec-row"><span class="k">Gap between P/F</span><span class="v">3px</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-bar-chart-line"></i> Steps Toggle Bar — 진행률 표시</div>
+
+<div class="wireframe"><span class="label">[Steps Toggle Bar — Run context]</span>
+
+┌──────────────────────────────────────────────────────────┐
+│  ▼ TEST STEPS                          <span class="green">3</span><span class="muted">/</span>5 steps passed  │
+└──────────────────────────────────────────────────────────┘
+  <span class="muted">↑ passed count: #16A34A 600 | separator "/" #CBD5E1 | total: #64748B</span></div>
+
+    <div class="spec-row"><span class="k">TC context 표시</span><span class="v">"5 steps · 2 attachments"</span></div>
+    <div class="spec-row"><span class="k">Run context 표시</span><span class="v">"3/5 steps passed" — 실시간 업데이트</span></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- ④ ADD RESULT MODAL SIMPLIFICATION       -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="d4">
+  <h2 class="section-title"><span class="section-num">4</span> Add Result 모달 간소화 (조건부 UI)</h2>
+
+  <p class="section-desc">
+    Status 선택에 따라 <strong>필요한 필드만 자동으로 펼치고, 불필요한 필드는 접습니다.</strong>
+    "Passed" 시에는 최소 필드만, "Failed" 시에는 상세 기록 필드를 자동 펼침.
+    비작동 리치 텍스트 도구 바를 제거하고 깔끔한 plain textarea로 교체합니다.
+  </p>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-eye-line"></i> Status별 필드 가시성 매트릭스</div>
+    <table class="tbl">
+      <thead><tr><th>필드</th><th>Passed</th><th>Failed</th><th>Blocked</th><th>Retest</th></tr></thead>
+      <tbody>
+        <tr><td class="feature">Note</td><td>접힘 (1줄)</td><td><strong>펼침 (3줄, 권장)</strong></td><td><strong>펼침 (3줄)</strong></td><td>접힘 (1줄)</td></tr>
+        <tr><td class="feature">Steps 결과</td><td>접힘</td><td><strong>펼침</strong></td><td>접힘</td><td>접힘</td></tr>
+        <tr><td class="feature">Attachments</td><td>접힘</td><td><strong>펼침 (권장)</strong></td><td>접힘</td><td>접힘</td></tr>
+        <tr><td class="feature">Issues (Jira)</td><td>숨김</td><td><strong>펼침 (권장)</strong></td><td><strong>펼침</strong></td><td>숨김</td></tr>
+        <tr><td class="feature">Elapsed Time</td><td>표시</td><td>표시</td><td>표시</td><td>표시</td></tr>
+        <tr><td class="feature">Assign to</td><td>표시</td><td>표시</td><td>표시</td><td>표시</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-info">
+      <strong>"Show more" 토글:</strong> 접힌 필드 하단에 "Show more options" 텍스트 링크를 배치합니다.
+      클릭하면 숨겨진 필드가 모두 펼쳐집니다. 테스터가 Passed이더라도 첨부나 이슈가 필요하면 수동으로 펼칠 수 있습니다.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-layout-bottom-line"></i> Passed 상태 모달 와이어프레임</div>
+
+<div class="wireframe"><span class="label">[Add Result — Status: Passed (간소화됨)]</span>
+
+┌─────────────────────────────────────────────────────────┐
+│  Add Test Result                                   [✕]  │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  Status *                                               │
+│  [<span class="green">✓ Pass</span>] [✗ Fail] [⊘ Block] [↻ Retest]                 │
+│                                                         │
+│  Note <span class="muted">(optional)</span>                                       │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │ <span class="muted">Add a brief note...</span>                              │    │
+│  └─────────────────────────────────────────────────┘    │
+│                                                         │
+│  ┌─────────────────┐  ┌─────────────────┐               │
+│  │ Assign to       │  │ Elapsed Time    │               │
+│  │ [Select ▼]      │  │ [00:00] [▶]     │               │
+│  └─────────────────┘  └─────────────────┘               │
+│                                                         │
+│  <span class="hl">▸ Show more options</span> <span class="muted">(Steps, Attachments, Issues)</span>      │
+│                                                         │
+│  ☐ Auto-advance to next TC after submit                 │
+│                                                         │
+│  ┌─────────┐  ┌────────────┐  ┌──────────────────┐      │
+│  │ Cancel  │  │ Add result │  │ <span class="green">Add & Next →</span>     │      │
+│  └─────────┘  └────────────┘  └──────────────────┘      │
+└─────────────────────────────────────────────────────────┘</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-layout-bottom-line"></i> Failed 상태 모달 와이어프레임</div>
+
+<div class="wireframe"><span class="label">[Add Result — Status: Failed (상세 필드 자동 펼침)]</span>
+
+┌─────────────────────────────────────────────────────────┐
+│  Add Test Result                                   [✕]  │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  Status *                                               │
+│  [✓ Pass] [<span class="red">✗ Fail</span>] [⊘ Block] [↻ Retest]                 │
+│                                                         │
+│  Note <span class="red">* recommended</span>                                     │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │ <span class="muted">Describe what went wrong...</span>                      │    │
+│  │                                                 │    │
+│  │                                                 │    │
+│  └─────────────────────────────────────────────────┘    │
+│                                                         │
+│  Steps                                 <span class="muted">▾ expanded</span>      │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │ <span class="hl">1</span>  Step text        [<span class="green">✓</span>][<span class="red">✗</span>]                      │    │
+│  │ <span class="hl">2</span>  Step text        [<span class="green">✓</span>][<span class="red">✗</span>]                      │    │
+│  └─────────────────────────────────────────────────┘    │
+│                                                         │
+│  Attachments                           <span class="muted">▾ expanded</span>      │
+│  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐      │
+│  │  [Choose files]  or  [📷 Screenshot]         │      │
+│  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘      │
+│                                                         │
+│  Issues (Jira)                         <span class="muted">▾ expanded</span>      │
+│  [Enter Jira key...] [+ Add Issue]                      │
+│                                                         │
+│  ┌─────────────────┐  ┌─────────────────┐               │
+│  │ Assign to       │  │ Elapsed Time    │               │
+│  │ [Select ▼]      │  │ [00:00] [▶]     │               │
+│  └─────────────────┘  └─────────────────┘               │
+│                                                         │
+│  ☐ Auto-advance to next TC after submit                 │
+│                                                         │
+│  ┌─────────┐  ┌────────────┐  ┌──────────────────┐      │
+│  │ Cancel  │  │ Add result │  │ <span class="red">Add & Next →</span>     │      │
+│  └─────────┘  └────────────┘  └──────────────────┘      │
+└─────────────────────────────────────────────────────────┘</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-delete-bin-line"></i> 리치 텍스트 도구 바 제거</div>
+    <div class="alert alert-warn">
+      <strong>현재 문제:</strong> 모달 내 노트 에디터에 9개 서식 버튼(¶, B, I, U, S, code, link, ul, ol)이 있으나 모두 비작동.<br>
+      <strong>디자인 변경:</strong> 도구 바 제거 → 깔끔한 plain textarea로 교체. 추후 Phase 2에서 Markdown 지원 추가 예정.
+    </div>
+    <div class="spec-row"><span class="k">현재</span><span class="old">9-button toolbar + textarea</span><span class="v">→ plain textarea only</span></div>
+    <div class="spec-row"><span class="k">Textarea border</span><span class="v">1px solid #E2E8F0, focus: #6366F1</span></div>
+    <div class="spec-row"><span class="k">Placeholder (Pass)</span><span class="v">"Add a brief note..."</span></div>
+    <div class="spec-row"><span class="k">Placeholder (Fail)</span><span class="v">"Describe what went wrong..."</span></div>
+    <div class="spec-row"><span class="k">Placeholder (Block)</span><span class="v">"What's blocking this test?"</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-arrow-right-line"></i> "Add & Next" 버튼 스펙</div>
+    <div class="spec-row"><span class="k">Label</span><span class="v">"Add & Next →" (상태 컬러 배경)</span></div>
+    <div class="spec-row"><span class="k">Passed bg</span><span class="v">#22C55E</span></div>
+    <div class="spec-row"><span class="k">Failed bg</span><span class="v">#EF4444</span></div>
+    <div class="spec-row"><span class="k">Blocked bg</span><span class="v">#F59E0B</span></div>
+    <div class="spec-row"><span class="k">Retest bg</span><span class="v">#8B5CF6</span></div>
+    <div class="spec-row"><span class="k">동작</span><span class="v">결과 저장 → 모달 닫힘 → 500ms 후 다음 TC 선택</span></div>
+    <div class="spec-row"><span class="k">vs "Add result"</span><span class="v">"Add result"은 저장 후 같은 TC에 머무름</span></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- ⑤ KEYBOARD SHORTCUTS                    -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="d5">
+  <h2 class="section-title"><span class="section-num">5</span> 키보드 단축키 시스템</h2>
+
+  <p class="section-desc">
+    Run Detail 패널에 키보드 단축키를 추가합니다. Focus Mode와 일관된 키 바인딩을 유지하되,
+    Run Detail 맥락에 맞게 조정합니다.
+  </p>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-keyboard-line"></i> 단축키 매핑</div>
+    <table class="tbl">
+      <thead><tr><th>Key</th><th>Action</th><th>조건</th><th>Focus Mode 동일 키?</th></tr></thead>
+      <tbody>
+        <tr><td class="feature"><kbd>P</kbd></td><td>Pass & Next (즉시)</td><td>TC 선택 상태, 팝업/모달 닫힘</td><td>✅ P = Pass</td></tr>
+        <tr><td class="feature"><kbd>F</kbd></td><td>Fail 인라인 팝업 열기</td><td>TC 선택 상태</td><td>✅ F = Fail</td></tr>
+        <tr><td class="feature"><kbd>B</kbd></td><td>Block 인라인 팝업 열기</td><td>TC 선택 상태</td><td>✅ B = Block</td></tr>
+        <tr><td class="feature"><kbd>R</kbd></td><td>Retest & Next (즉시)</td><td>TC 선택 상태</td><td>✅ R = Retest</td></tr>
+        <tr><td class="feature"><kbd>A</kbd></td><td>Add Result 모달 열기</td><td>TC 선택 상태</td><td>—</td></tr>
+        <tr><td class="feature"><kbd>↑</kbd> / <kbd>K</kbd></td><td>이전 TC 선택</td><td>팝업/모달 닫힘</td><td>✅ K/← = Prev</td></tr>
+        <tr><td class="feature"><kbd>↓</kbd> / <kbd>J</kbd></td><td>다음 TC 선택</td><td>팝업/모달 닫힘</td><td>✅ J/→ = Next</td></tr>
+        <tr><td class="feature"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>팝업/모달 내 Submit</td><td>팝업 또는 모달 열림</td><td>—</td></tr>
+        <tr><td class="feature"><kbd>Esc</kbd></td><td>팝업/모달 닫기 (취소)</td><td>팝업 또는 모달 열림</td><td>✅ Esc = Exit</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-information-line"></i> 단축키 힌트 UI</div>
+
+<div class="wireframe"><span class="label">[Quick Status Bar — 키보드 힌트 표시]</span>
+
+┌──────────────────────────────────────────────────────────────┐
+│  ┌─────────────┐ │ ┌────────┐ ┌────────┐ ┌──────┐ ┌──────┐ │
+│  │ ✎ Add result│ │ │ <span class="green">✓ Pass</span> │ │ <span class="red">✗ Fail</span> │ │<span class="amber">⊘ Blck</span>│ │<span class="violet">↻ Rtst</span>│ │
+│  │    <span class="muted">[A]</span>      │ │ │  <span class="muted">[P]</span>   │ │  <span class="muted">[F]</span>   │ │ <span class="muted">[B]</span>  │ │ <span class="muted">[R]</span>  │ │
+│  └─────────────┘ │ └────────┘ └────────┘ └──────┘ └──────┘ │
+└──────────────────────────────────────────────────────────────┘
+  <span class="muted">↑ 각 버튼 하단에 연한 키 힌트 표시 (0.5625rem, #94A3B8)</span></div>
+
+    <div class="spec-row"><span class="k">힌트 위치</span><span class="v">버튼 label 아래, 0.5625rem, #94A3B8</span></div>
+    <div class="spec-row"><span class="k">힌트 형식</span><span class="v">[P] [F] [B] [R] [A] — bracket 포함</span></div>
+    <div class="spec-row"><span class="k">표시 조건</span><span class="v">항상 표시 (접근성). 모바일에서는 숨김</span></div>
+    <div class="spec-row"><span class="k">비활성 시</span><span class="v">textarea/input focus 중에는 단축키 비활성 (힌트 opacity: 0.3)</span></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- ⑥ AUTO-ADVANCE                          -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="d6">
+  <h2 class="section-title"><span class="section-num">6</span> Auto-Advance 설정 & "Add & Next"</h2>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-settings-3-line"></i> Auto-Advance 체크박스</div>
+
+<div class="wireframe"><span class="label">[모달 하단 — Auto-advance 체크박스]</span>
+
+│  ☐ Auto-advance to next test case after submit            │
+│                                                            │
+│  ┌──────────┐   ┌──────────────┐   ┌──────────────────┐    │
+│  │  Cancel   │   │  Add result  │   │  <span class="green">Add & Next →</span>    │    │
+│  └──────────┘   └──────────────┘   └──────────────────┘    │</div>
+
+    <div class="spec-row"><span class="k">체크박스 라벨</span><span class="v">"Auto-advance to next test case after submit"</span></div>
+    <div class="spec-row"><span class="k">기본값</span><span class="v">unchecked</span></div>
+    <div class="spec-row"><span class="k">저장</span><span class="v">localStorage — 사용자 선호 기억</span></div>
+    <div class="spec-row"><span class="k">체크 시 동작</span><span class="v">"Add result" 버튼도 자동 진행 (= "Add & Next"와 동일)</span></div>
+    <div class="spec-row"><span class="k">Font</span><span class="v">0.75rem, #64748B</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-arrow-right-line"></i> 버튼 3개 스펙</div>
+    <table class="tbl">
+      <thead><tr><th>Button</th><th>Style</th><th>동작</th></tr></thead>
+      <tbody>
+        <tr><td class="feature">Cancel</td><td>outline — border #E2E8F0, color #64748B</td><td>모달 닫힘, 저장 안 함</td></tr>
+        <tr><td class="feature">Add result</td><td>bg #6366F1, color #fff</td><td>저장 → 모달 닫힘 → 같은 TC 유지 (auto-advance 체크 시: 다음 TC)</td></tr>
+        <tr><td class="feature">Add & Next →</td><td>bg = status color (P:#22C55E, F:#EF4444 등)</td><td>저장 → 모달 닫힘 → 500ms 후 다음 TC</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-tip">
+      <strong>Phase 2 확장:</strong> "After submit" 옵션을 3가지로 확장 가능 (Qase 패턴):
+      Stay on current / Go to first unresulted / Go to next.
+      Phase 1에서는 체크박스 + "Add & Next" 버튼으로 충분합니다.
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- ⑦ COMPETITOR BENCHMARK                  -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="d7">
+  <h2 class="section-title"><span class="section-num">7</span> 경쟁사 벤치마크 & 디자인 원칙</h2>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-bar-chart-grouped-line"></i> 핵심 비교 (디자인 참고용)</div>
+    <table class="tbl">
+      <thead><tr><th>Feature</th><th>TestRail</th><th>Qase.io</th><th>Zephyr Scale</th><th style="color:#6366F1;font-weight:700">Testably (개선 후)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="feature">Quick Status</td>
+          <td>모든 상태 1-클릭<br>(인라인 드롭다운)</td>
+          <td>Wizard 내 버튼<br>(모든 상태)</td>
+          <td>Test Player 내<br>버튼 그룹</td>
+          <td><strong>4-버튼 바</strong><br>Pass·Fail·Block·Retest</td>
+        </tr>
+        <tr>
+          <td class="feature">Fail 시 워크플로우</td>
+          <td>상태 클릭 → 인라인 코멘트 (2 클릭)</td>
+          <td>상태 클릭 → 인라인 입력 (2 클릭)</td>
+          <td>상태 클릭 → 인라인 (2 클릭)</td>
+          <td><strong>Fail 클릭 → 인라인 팝업 (2 클릭)</strong></td>
+        </tr>
+        <tr>
+          <td class="feature">상세 기록</td>
+          <td>인라인 확장 패널</td>
+          <td>Wizard 내 직접</td>
+          <td>실행 패널 내</td>
+          <td><strong>Add Result 모달</strong><br>(조건부 UI)</td>
+        </tr>
+        <tr>
+          <td class="feature">Auto-advance</td>
+          <td>설정 가능</td>
+          <td>3가지 옵션</td>
+          <td>설정 가능</td>
+          <td><strong>"Add & Next" 버튼</strong><br>+ 체크박스 설정</td>
+        </tr>
+        <tr>
+          <td class="feature">Step-level 결과</td>
+          <td>인라인 색상 뱃지</td>
+          <td>Step별 상태 토글</td>
+          <td>Step 패널 내</td>
+          <td><strong>Mini P/F 버튼</strong><br>(인라인, 토글)</td>
+        </tr>
+        <tr>
+          <td class="feature">키보드 단축키</td>
+          <td>부분 지원</td>
+          <td>❌</td>
+          <td>❌</td>
+          <td><strong>P/F/B/R/A + J/K</strong><br>(경쟁 우위)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-success">
+      <strong>디자인 목표:</strong> 개선 후 Testably는 경쟁사 대비 Quick Status(동등) + 키보드 단축키(우위) + Step-level inline(동등) + 조건부 모달 UI(차별화)를 갖추게 됩니다.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-compass-3-line"></i> 디자인 원칙</div>
+
+    <h4>1. Escalation Path (단계적 상세화)</h4>
+    <p style="font-size:0.75rem;color:#475569;margin-bottom:0.5rem">어떤 모드에서든 필요에 따라 상세 레벨을 올릴 수 있습니다:</p>
+<div class="wireframe"><span class="green">Quick Status (1-click)</span>  →  <span class="amber">인라인 팝업 (note)</span>  →  <span class="red">Full Modal (all fields)</span>  →  <span class="hl">Focus Mode</span>
+     <span class="muted">Pass/Retest</span>                <span class="muted">Fail/Block</span>            <span class="muted">"Open full modal"</span>         <span class="muted">대량 실행</span></div>
+
+    <h4>2. Status-Driven UI (상태 기반 적응)</h4>
+    <p style="font-size:0.75rem;color:#475569">모달이 "Passed" 선택 시 간단해지고, "Failed" 선택 시 상세해지도록 UI가 반응합니다.</p>
+
+    <h4>3. Keyboard-First (키보드 우선)</h4>
+    <p style="font-size:0.75rem;color:#475569">모든 Quick Status 동작에 키보드 단축키 제공. Focus Mode와 일관된 키 매핑.</p>
+
+    <h4>4. Zero-Friction Pass (마찰 없는 Pass)</h4>
+    <p style="font-size:0.75rem;color:#475569">Pass는 1-클릭 또는 <kbd>P</kbd> 키 한 번이면 끝. 팝업도 모달도 없음.</p>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- ⑧ PRIORITY & FULL FLOW                  -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="d8">
+  <h2 class="section-title"><span class="section-num">8</span> 구현 우선순위 & 전체 인터랙션 플로우</h2>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-sort-asc"></i> 디자인 시안 제작 우선순위</div>
+    <table class="tbl">
+      <thead><tr><th>Phase</th><th>Design Item</th><th>우선순위</th><th>난이도</th></tr></thead>
+      <tbody>
+        <tr><td class="feature">Phase 1</td><td>① Quick Status Bar 4-버튼 레이아웃</td><td><span class="p-badge p-p1">P0 Critical</span></td><td>Low</td></tr>
+        <tr><td class="feature">Phase 1</td><td>② Fail/Block 인라인 노트 팝업</td><td><span class="p-badge p-p1">P0 Critical</span></td><td>Medium</td></tr>
+        <tr><td class="feature">Phase 1</td><td>④ Add Result 모달 간소화 (조건부 UI, 도구 바 제거)</td><td><span class="p-badge p-p1">P0 Critical</span></td><td>Medium</td></tr>
+        <tr><td class="feature">Phase 1</td><td>⑥ "Add & Next" 버튼 + 모달 하단</td><td><span class="p-badge p-p2">P1 High</span></td><td>Low</td></tr>
+        <tr><td class="feature">Phase 1</td><td>⑤ 키보드 힌트 UI (버튼 하단 [P] [F] 등)</td><td><span class="p-badge p-p2">P1 High</span></td><td>Low</td></tr>
+        <tr><td class="feature">Phase 2</td><td>③ Step-level Mini P/F 버튼 (Run context)</td><td><span class="p-badge p-p2">P1 High</span></td><td>Medium</td></tr>
+        <tr><td class="feature">Phase 2</td><td>Step toggle 진행률 ("3/5 steps passed")</td><td><span class="p-badge p-p3">P2</span></td><td>Low</td></tr>
+        <tr><td class="feature">Phase 2</td><td>Auto-advance 3-옵션 설정 (Stay/Unresulted/Next)</td><td><span class="p-badge p-p3">P2</span></td><td>Low</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-flow-chart"></i> 전체 인터랙션 플로우맵</div>
+
+<div class="wireframe"><span class="label">[Run Detail — Test Execution Flow (개선 후)]</span>
+
+                        ┌──────────────────────┐
+                        │   TC 선택 (클릭/↑↓)   │
+                        └──────────┬───────────┘
+                                   │
+                    ┌──────────────┼──────────────┐
+                    │              │              │
+               <span class="green">[P] Pass</span>       <span class="red">[F] Fail</span>     <span class="hl">[A] Add Result</span>
+                    │              │              │
+                    │         ┌────┴────┐    ┌────┴────┐
+                    │         │ 인라인   │    │  Full   │
+                    │         │ 팝업     │    │  Modal  │
+                    │         │         │    │         │
+                    │         │ [Save & │    │(조건부UI)│
+                    │         │  Next]  │    │         │
+                    │         │    │    │    │[Add &   │
+                    │         │    │    │    │ Next]   │
+                    │         │ [Open → │    │    │    │
+                    │         │ modal]──┼────┘    │    │
+                    │         └────┬────┘         │    │
+                    │              │              │    │
+                    └──────┬───────┴──────────────┘    │
+                           │                           │
+                    ┌──────┴───────┐          ┌────────┴──────┐
+                    │  DB 저장      │          │  DB 저장       │
+                    │  (500ms wait) │          │  (500ms wait)  │
+                    └──────┬───────┘          └────────┬──────┘
+                           │                           │
+                    ┌──────┴───────────────────────────┘
+                    │
+               ┌────┴─────┐
+               │ Next TC   │  ← Auto-advance
+               │ 선택/스크롤│
+               └───────────┘</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-checkbox-circle-line"></i> Desi 디자인 체크리스트</div>
+    <table class="tbl">
+      <thead><tr><th>#</th><th>시안 항목</th><th>상태</th><th>포함 요소</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="feature">Quick Status Bar (4-button)</td><td>☐ 시안 필요</td><td>Pass(green)/Fail(red)/Block(amber)/Retest(violet) 버튼, Add Result(outline), Nav(↑↓), 키보드 힌트</td></tr>
+        <tr><td>2</td><td class="feature">Fail 인라인 팝업</td><td>☐ 시안 필요</td><td>팝업 컨테이너, header(red), textarea, Skip & Next/Save & Next, "Open full modal →" 링크</td></tr>
+        <tr><td>3</td><td class="feature">Block 인라인 팝업</td><td>☐ 시안 필요</td><td>Fail과 동일 구조, amber 테마</td></tr>
+        <tr><td>4</td><td class="feature">Add Result 모달 — Passed 상태</td><td>☐ 시안 필요</td><td>간소화 레이아웃, "Show more" 토글, 도구 바 제거된 textarea</td></tr>
+        <tr><td>5</td><td class="feature">Add Result 모달 — Failed 상태</td><td>☐ 시안 필요</td><td>상세 필드 자동 펼침 (Steps, Attachments, Issues), "recommended" 태그</td></tr>
+        <tr><td>6</td><td class="feature">모달 하단 버튼 영역</td><td>☐ 시안 필요</td><td>Cancel + Add result + Add & Next + Auto-advance 체크박스</td></tr>
+        <tr><td>7</td><td class="feature">Step-level Mini P/F 버튼</td><td>☐ 시안 필요</td><td>3가지 상태(default/passed/failed), hover, toggle 인터랙션</td></tr>
+        <tr><td>8</td><td class="feature">Steps Toggle 진행률</td><td>☐ 시안 필요</td><td>"3/5 steps passed" color-coded text</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SIGN-OFF                                -->
+<!-- ═══════════════════════════════════════ -->
+<div style="margin-top:2rem;padding:1.25rem;background:#fff;border:1px solid #E2E8F0;border-radius:0.75rem;text-align:center;">
+  <p style="font-size:0.8125rem;font-weight:600;color:#0F172A;margin-bottom:0.25rem">Design Handoff Complete</p>
+  <p style="font-size:0.75rem;color:#64748B">
+    Based on: pm-analysis-run-workflow-usability.html · CEO Approved<br>
+    PM → Desi · 2026-03-26 · 8 Design Items
+  </p>
+</div>
+
+</div><!-- /container -->
+</body>
+</html>

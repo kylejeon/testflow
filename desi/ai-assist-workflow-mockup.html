@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — AI Assist Workflow Redesign Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  :root {
+    --primary:#6366F1; --primary-hover:#4F46E5; --primary-bg:#EEF2FF; --primary-ring:rgba(99,102,241,0.15);
+    --violet:#8B5CF6; --violet-bg:#F5F3FF;
+    --blue:#3B82F6; --blue-bg:#EFF6FF;
+    --green:#22C55E; --green-bg:#F0FDF4; --green-dark:#16A34A;
+    --emerald:#059669; --emerald-bg:#ECFDF5;
+    --amber:#F59E0B; --amber-bg:#FFFBEB;
+    --red:#EF4444; --red-bg:#FEF2F2;
+    --rose:#F43F5E; --rose-bg:#FFF1F2;
+    --gray-50:#F9FAFB; --gray-100:#F3F4F6; --gray-200:#E5E7EB; --gray-300:#D1D5DB;
+    --gray-400:#9CA3AF; --gray-500:#6B7280; --gray-600:#4B5563; --gray-700:#374151;
+    --gray-800:#1F2937; --gray-900:#111827;
+    --border:#E5E7EB;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:#F1F0FB;color:var(--gray-900);line-height:1.5;min-height:100vh;padding:24px;}
+
+  /* ── Nav ── */
+  .screen-nav{max-width:960px;margin:0 auto 20px;display:flex;flex-wrap:wrap;gap:6px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 14px;box-shadow:0 1px 2px rgba(0,0,0,.05);}
+  .screen-nav-btn{padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;background:#fff;color:var(--gray-600);transition:all .15s;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+  .screen-nav-btn:hover{background:var(--gray-50);border-color:var(--gray-300);}
+  .screen-nav-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .screen-nav-btn .tag{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;text-transform:uppercase;letter-spacing:.3px;}
+  .screen-nav-btn .tag.hub{background:#E0E7FF;color:#3730A3;} .screen-nav-btn .tag.new{background:#DCFCE7;color:#166534;}
+  .screen-nav-btn .tag.st{background:#DBEAFE;color:#1E40AF;}
+  .screen-nav-btn.active .tag{background:rgba(255,255,255,.25);color:#fff;}
+  .screen-panel{display:none;} .screen-panel.active{display:block;}
+
+  .page-title{max-width:960px;margin:0 auto 16px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px;}
+  .page-title i{color:var(--violet);font-size:22px;}
+  .page-title .subtitle{font-size:13px;font-weight:400;color:var(--gray-500);margin-left:auto;}
+
+  /* ── Modal Shell ── */
+  .modal-backdrop{max-width:960px;margin:0 auto;background:rgba(17,24,39,.45);border-radius:16px;padding:40px 24px;display:flex;justify-content:center;align-items:flex-start;min-height:540px;position:relative;}
+  .modal{background:#fff;border-radius:12px;box-shadow:0 20px 25px -5px rgba(0,0,0,.1);width:100%;max-width:680px;overflow:hidden;border:1px solid var(--gray-200);}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);}
+  .modal-header h2{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;}
+  .modal-header h2 i{font-size:18px;}
+  .modal-close{width:28px;height:28px;border-radius:6px;border:none;background:transparent;color:var(--gray-400);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .modal-body{padding:20px;}
+  .modal-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--border);background:var(--gray-50);}
+
+  .btn{padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary);} .btn-primary:hover{background:var(--primary-hover);}
+  .btn-primary:disabled{opacity:.4;cursor:default;}
+  .btn-violet{background:var(--violet);color:#fff;border-color:var(--violet);} .btn-violet:hover{background:#7C3AED;}
+  .btn-ghost{background:#fff;color:var(--gray-600);border-color:var(--border);} .btn-ghost:hover{background:var(--gray-50);}
+  .btn-sm{padding:5px 10px;font-size:12px;}
+
+  /* ── Hub Menu ── */
+  .hub-search{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--gray-50);outline:none;margin-bottom:14px;transition:border-color .15s;position:relative;}
+  .hub-search:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px var(--primary-ring);}
+  .hub-search-wrap{position:relative;} .hub-search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--gray-400);z-index:1;}
+  .hub-list{display:flex;flex-direction:column;gap:4px;}
+  .hub-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;transition:all .15s;border:1px solid transparent;}
+  .hub-item:hover{background:var(--gray-50);border-color:var(--gray-200);}
+  .hub-item.active{background:var(--violet-bg);border-color:#C4B5FD;}
+  .hub-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .hub-text{flex:1;min-width:0;}
+  .hub-text h4{font-size:13px;font-weight:600;color:var(--gray-900);display:flex;align-items:center;gap:6px;}
+  .hub-text p{font-size:11px;color:var(--gray-500);line-height:1.4;margin-top:1px;}
+  .hub-arrow{color:var(--gray-300);font-size:16px;flex-shrink:0;} .hub-item:hover .hub-arrow{color:var(--primary);}
+  .coming-soon-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--amber-bg);color:#92400E;text-transform:uppercase;letter-spacing:.3px;}
+  .plan-lock-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--gray-100);color:var(--gray-500);text-transform:uppercase;letter-spacing:.3px;}
+  .hub-item.locked{opacity:.5;cursor:default;} .hub-item.locked:hover{background:transparent;border-color:transparent;}
+  .hub-item.coming-soon{opacity:.7;}
+  .hub-usage{font-size:11px;color:var(--gray-400);display:flex;align-items:center;gap:4px;} .hub-usage i{font-size:13px;}
+
+  /* ── Phase Header (back nav) ── */
+  .phase-back{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--gray-400);cursor:pointer;margin-bottom:14px;transition:color .15s;}
+  .phase-back:hover{color:var(--primary);}
+  .phase-back i{font-size:16px;}
+
+  /* ── Edge Cases UI ── */
+  .edge-textarea{width:100%;height:100px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;background:var(--gray-50);outline:none;}
+  .edge-textarea:focus{border-color:var(--primary);background:#fff;}
+  .edge-result{margin-top:14px;}
+  .edge-card{border:1px solid #C4B5FD;border-radius:8px;padding:12px 14px;background:var(--violet-bg);margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
+  .edge-card-check{width:18px;height:18px;border:2px solid #C4B5FD;border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .edge-card-check.checked{background:var(--violet);border-color:var(--violet);} .edge-card-check.checked i{display:block;}
+  .edge-card-check i{font-size:11px;color:#fff;display:none;}
+  .edge-card-content{flex:1;}
+  .edge-card-title{font-size:13px;font-weight:500;color:var(--gray-800);margin-bottom:2px;}
+  .edge-card-desc{font-size:11px;color:var(--gray-500);line-height:1.4;}
+  .edge-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(139,92,246,.15);color:var(--violet);text-transform:uppercase;letter-spacing:.3px;}
+
+  /* ── Summarize Run UI ── */
+  .run-select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--gray-50);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");background-position:right 10px center;background-repeat:no-repeat;background-size:16px;}
+  .run-select:focus{border-color:var(--primary);}
+
+  .summary-report{margin-top:16px;}
+  .summary-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .summary-header-row h4{font-size:14px;font-weight:600;color:var(--gray-900);display:flex;align-items:center;gap:6px;}
+
+  /* Pass Rate Gauge */
+  .gauge-row{display:flex;gap:12px;margin-bottom:16px;}
+  .gauge-card{flex:1;background:var(--gray-50);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+  .gauge-val{font-size:28px;font-weight:800;line-height:1;} .gauge-label{font-size:10px;font-weight:500;color:var(--gray-500);margin-top:4px;text-transform:uppercase;letter-spacing:.3px;}
+  .gauge-bar{height:6px;background:var(--gray-200);border-radius:3px;margin-top:8px;overflow:hidden;display:flex;}
+  .gauge-bar .seg-pass{background:var(--green);} .gauge-bar .seg-fail{background:var(--red);} .gauge-bar .seg-skip{background:var(--amber);} .gauge-bar .seg-block{background:var(--gray-400);}
+
+  .risk-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;}
+  .risk-badge.low{background:var(--green-bg);color:var(--green-dark);} .risk-badge.medium{background:var(--amber-bg);color:#92400E;} .risk-badge.high{background:var(--red-bg);color:#991B1B;}
+
+  .finding-list{margin-bottom:14px;}
+  .finding-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--gray-100);font-size:12px;color:var(--gray-700);}
+  .finding-item:last-child{border-bottom:none;}
+  .finding-item i{font-size:14px;color:var(--red);flex-shrink:0;margin-top:1px;}
+  .rec-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;font-size:12px;color:var(--gray-700);}
+  .rec-item i{font-size:14px;color:var(--emerald);flex-shrink:0;margin-top:1px;}
+
+  /* ── Analyze Failed UI ── */
+  .scope-group{display:flex;gap:6px;margin-bottom:14px;}
+  .scope-btn{padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;background:#fff;color:var(--gray-600);transition:all .15s;}
+  .scope-btn:hover{border-color:var(--gray-300);background:var(--gray-50);}
+  .scope-btn.active{background:var(--red-bg);border-color:#FECACA;color:#991B1B;font-weight:600;}
+
+  .cluster-card{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+  .cluster-header{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--gray-50);border-bottom:1px solid var(--border);cursor:pointer;}
+  .cluster-priority{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .cluster-priority.critical{background:var(--red);} .cluster-priority.medium{background:var(--amber);} .cluster-priority.low{background:var(--green);}
+  .cluster-name{font-size:13px;font-weight:600;color:var(--gray-900);flex:1;}
+  .cluster-count{font-size:11px;color:var(--gray-500);background:var(--gray-100);padding:2px 8px;border-radius:4px;}
+  .cluster-body{padding:12px 14px;font-size:12px;color:var(--gray-600);line-height:1.6;}
+  .cluster-body .root-cause{background:var(--red-bg);border-radius:6px;padding:8px 10px;margin-bottom:8px;border-left:3px solid var(--red);}
+  .cluster-body .root-cause strong{color:#991B1B;font-size:11px;text-transform:uppercase;letter-spacing:.3px;}
+  .cluster-body .fix-suggest{background:var(--green-bg);border-radius:6px;padding:8px 10px;border-left:3px solid var(--green);}
+  .cluster-body .fix-suggest strong{color:var(--green-dark);font-size:11px;text-transform:uppercase;letter-spacing:.3px;}
+  .cluster-tc-list{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+  .cluster-tc{font-size:10px;font-weight:500;padding:2px 7px;border-radius:4px;background:var(--gray-100);color:var(--gray-700);}
+
+  .flaky-section{margin-top:14px;padding:12px 14px;border:1.5px dashed #FECACA;border-radius:10px;background:var(--red-bg);}
+  .flaky-section h4{font-size:12px;font-weight:600;color:#991B1B;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+  .flaky-item{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px;border-bottom:1px solid rgba(220,38,38,.1);}
+  .flaky-item:last-child{border-bottom:none;}
+  .flaky-rate{font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(220,38,38,.1);color:#991B1B;}
+
+  /* ── Coverage Gap UI ── */
+  .heatmap-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px;}
+  .heatmap-cell{border-radius:8px;padding:10px;text-align:center;border:1px solid transparent;position:relative;cursor:default;}
+  .heatmap-cell .mod-name{font-size:11px;font-weight:600;margin-bottom:2px;}
+  .heatmap-cell .mod-count{font-size:18px;font-weight:800;} .heatmap-cell .mod-label{font-size:9px;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.3px;}
+  .heatmap-cell.high{background:#DCFCE7;color:#166534;border-color:#BBF7D0;}
+  .heatmap-cell.medium{background:#FEF3C7;color:#92400E;border-color:#FDE68A;}
+  .heatmap-cell.low{background:#FEE2E2;color:#991B1B;border-color:#FECACA;}
+  .heatmap-cell.none{background:var(--gray-100);color:var(--gray-500);border-color:var(--gray-200);}
+  .heatmap-legend{display:flex;gap:12px;justify-content:center;margin-bottom:16px;font-size:10px;color:var(--gray-500);}
+  .heatmap-legend span{display:flex;align-items:center;gap:4px;}
+  .legend-dot{width:10px;height:10px;border-radius:3px;}
+  .legend-dot.high{background:#DCFCE7;border:1px solid #BBF7D0;} .legend-dot.medium{background:#FEF3C7;border:1px solid #FDE68A;}
+  .legend-dot.low{background:#FEE2E2;border:1px solid #FECACA;} .legend-dot.none{background:var(--gray-100);border:1px solid var(--gray-200);}
+
+  .gap-card{border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;}
+  .gap-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .gap-card-header h4{font-size:13px;font-weight:600;color:var(--gray-900);display:flex;align-items:center;gap:6px;}
+  .gap-severity{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;}
+  .gap-severity.high{background:var(--red-bg);color:#991B1B;} .gap-severity.medium{background:var(--amber-bg);color:#92400E;}
+  .gap-reason{font-size:12px;color:var(--gray-500);margin-bottom:10px;}
+  .gap-tc{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:var(--gray-50);margin-bottom:4px;font-size:12px;}
+  .gap-tc-check{width:16px;height:16px;border:1.5px solid var(--gray-300);border-radius:4px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .gap-tc-check.checked{background:var(--green);border-color:var(--green);} .gap-tc-check.checked i{display:block;}
+  .gap-tc-check i{font-size:10px;color:#fff;display:none;}
+  .gap-tc-title{flex:1;color:var(--gray-700);}
+  .gap-tc-type{font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;background:var(--primary-bg);color:var(--primary);}
+
+  .type-balance{display:flex;gap:8px;margin-bottom:14px;}
+  .type-bar-wrap{flex:1;}
+  .type-bar-label{display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;}
+  .type-bar-label span:first-child{font-weight:500;color:var(--gray-700);} .type-bar-label span:last-child{font-weight:600;color:var(--gray-500);}
+  .type-bar{height:6px;background:var(--gray-100);border-radius:3px;overflow:hidden;} .type-bar-fill{height:100%;border-radius:3px;}
+
+  /* ── Dev Note ── */
+  .dev-note{max-width:960px;margin:16px auto 0;background:#1E293B;border-radius:8px;padding:14px 16px;color:#E2E8F0;font-size:12px;line-height:1.6;}
+  .dev-note-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#818CF8;margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+  .dev-note code{background:rgba(255,255,255,.1);padding:1px 5px;border-radius:3px;font-size:11px;font-family:'SF Mono',monospace;}
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <i class="ri-robot-2-fill"></i>
+  AI Assist Workflow — Design Mockup
+  <span class="subtitle">PM 기획안 기반 · Desi 제작 · 2026-03-30</span>
+</div>
+
+<div class="screen-nav" id="screenNav">
+  <button class="screen-nav-btn active" data-screen="s1">1. Hub Menu <span class="tag hub">Core</span></button>
+  <button class="screen-nav-btn" data-screen="s2">2. Edge Cases <span class="tag st">Active</span></button>
+  <button class="screen-nav-btn" data-screen="s3">3. Summarize Run <span class="tag new">New</span></button>
+  <button class="screen-nav-btn" data-screen="s4">4. Analyze Failed <span class="tag new">New</span></button>
+  <button class="screen-nav-btn" data-screen="s5">5. Coverage Gap <span class="tag new">New</span></button>
+  <button class="screen-nav-btn" data-screen="s6">6. Coming Soon States</button>
+  <button class="screen-nav-btn" data-screen="s7">7. Plan Gate States</button>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 1: AI Assist Hub Menu                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel active" id="s1">
+  <div class="modal-backdrop">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-header">
+        <h2><i class="ri-robot-2-line" style="color:var(--violet);"></i> AI Assist</h2>
+        <button class="modal-close"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body" style="padding:16px 20px;">
+        <div class="hub-search-wrap">
+          <i class="ri-search-line"></i>
+          <input class="hub-search" type="text" placeholder="Search AI actions...">
+        </div>
+        <div class="hub-list">
+          <!-- 1. Generate TC → delegates to AIGenerateModal -->
+          <div class="hub-item active">
+            <div class="hub-icon" style="background:var(--primary-bg);color:var(--primary);">
+              <i class="ri-magic-fill"></i>
+            </div>
+            <div class="hub-text">
+              <h4>Generate Test Cases</h4>
+              <p>Auto-generate structured test cases from text, Jira issues, or discovery logs</p>
+            </div>
+            <i class="ri-arrow-right-s-line hub-arrow"></i>
+          </div>
+          <!-- 2. Edge Cases -->
+          <div class="hub-item">
+            <div class="hub-icon" style="background:var(--violet-bg);color:var(--violet);">
+              <i class="ri-lightbulb-flash-fill"></i>
+            </div>
+            <div class="hub-text">
+              <h4>Suggest Edge Cases</h4>
+              <p>Discover boundary conditions and edge scenarios AI identifies</p>
+            </div>
+            <i class="ri-arrow-right-s-line hub-arrow"></i>
+          </div>
+          <!-- 3. Summarize Run -->
+          <div class="hub-item">
+            <div class="hub-icon" style="background:var(--emerald-bg);color:var(--emerald);">
+              <i class="ri-file-chart-fill"></i>
+            </div>
+            <div class="hub-text">
+              <h4>Summarize Run Results <span class="coming-soon-badge">Coming Soon</span></h4>
+              <p>AI-generated summary with risk assessment and key findings</p>
+            </div>
+            <i class="ri-arrow-right-s-line hub-arrow"></i>
+          </div>
+          <!-- 4. Analyze Failed -->
+          <div class="hub-item">
+            <div class="hub-icon" style="background:var(--red-bg);color:var(--red);">
+              <i class="ri-bug-fill"></i>
+            </div>
+            <div class="hub-text">
+              <h4>Analyze Failed Tests <span class="coming-soon-badge">Coming Soon</span></h4>
+              <p>Cluster failures, detect flaky tests, and suggest root causes</p>
+            </div>
+            <i class="ri-arrow-right-s-line hub-arrow"></i>
+          </div>
+          <!-- 5. Coverage Gap -->
+          <div class="hub-item">
+            <div class="hub-icon" style="background:var(--amber-bg);color:var(--amber);">
+              <i class="ri-shield-check-fill"></i>
+            </div>
+            <div class="hub-text">
+              <h4>Coverage Gap Analysis <span class="coming-soon-badge">Coming Soon</span></h4>
+              <p>Identify untested areas and auto-suggest test cases to fill gaps</p>
+            </div>
+            <i class="ri-arrow-right-s-line hub-arrow"></i>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="hub-usage"><i class="ri-sparkling-line"></i> 12 / 150 AI actions used this month</div>
+        <button class="btn btn-ghost btn-sm">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 1: Hub Menu</div>
+    역할 분리: AI Assist = 액션 허브 (메뉴만), TC 생성 = AIGenerateModal로 위임. &nbsp;
+    "Generate Test Cases" 클릭 → <code>onClose()</code> → <code>onOpenGenerate()</code> 콜백 → AIGenerateModal 오픈. &nbsp;
+    Phase 타입: <code>'menu' | 'edge-cases' | 'summarize' | 'analyze' | 'coverage'</code> (generate 제거). &nbsp;
+    Coming Soon 3개: 클릭 시 해당 Phase UI 진입 (비활성 상태 Screen 6 참조).
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 2: Suggest Edge Cases                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s2">
+  <div class="modal-backdrop">
+    <div class="modal" style="max-width:600px;">
+      <div class="modal-header">
+        <h2><i class="ri-robot-2-line" style="color:var(--violet);"></i> AI Assist</h2>
+        <button class="modal-close"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="phase-back"><i class="ri-arrow-left-s-line"></i> Back to AI Assist</div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--violet-bg);color:var(--violet);display:flex;align-items:center;justify-content:center;font-size:16px;">
+            <i class="ri-lightbulb-flash-fill"></i>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--gray-900);">Suggest Edge Cases</div>
+            <div style="font-size:11px;color:var(--gray-500);">Describe a feature or paste existing TC titles</div>
+          </div>
+        </div>
+
+        <textarea class="edge-textarea" placeholder="Describe the feature or paste test case titles to analyze...&#10;&#10;Example: User login with email/password, Google SSO, magic link...">User login with email/password, Google SSO, magic link authentication. Password reset flow. Session expiration handling.</textarea>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:8px;margin-bottom:4px;">
+          <button class="btn btn-violet btn-sm"><i class="ri-sparkling-2-fill"></i> Suggest Edge Cases</button>
+        </div>
+
+        <div class="edge-result">
+          <div style="font-size:12px;font-weight:600;color:var(--gray-700);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+            <i class="ri-lightbulb-line" style="color:var(--violet);"></i>
+            6 edge cases identified
+            <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--gray-400);">Select to add to project</span>
+          </div>
+
+          <div class="edge-card">
+            <div class="edge-card-check checked"><i class="ri-check-line"></i></div>
+            <div class="edge-card-content">
+              <div class="edge-card-title">Verify login with expired magic link token</div>
+              <div class="edge-card-desc">User clicks a magic link after the token has expired (>15min). Should show clear error and re-send option.</div>
+            </div>
+            <span class="edge-badge">Edge Case</span>
+          </div>
+          <div class="edge-card">
+            <div class="edge-card-check checked"><i class="ri-check-line"></i></div>
+            <div class="edge-card-content">
+              <div class="edge-card-title">Simultaneous SSO login from two different browsers</div>
+              <div class="edge-card-desc">User initiates Google SSO in two browser tabs. Only one session should be created.</div>
+            </div>
+            <span class="edge-badge">Edge Case</span>
+          </div>
+          <div class="edge-card">
+            <div class="edge-card-check"><i class="ri-check-line"></i></div>
+            <div class="edge-card-content">
+              <div class="edge-card-title">Password reset with already-used token</div>
+              <div class="edge-card-desc">Attempt to reset password using a token that was already consumed.</div>
+            </div>
+            <span class="edge-badge">Edge Case</span>
+          </div>
+          <div class="edge-card">
+            <div class="edge-card-check"><i class="ri-check-line"></i></div>
+            <div class="edge-card-content">
+              <div class="edge-card-title">Session expiry during active form submission</div>
+              <div class="edge-card-desc">Session expires while user is filling a long form. Should preserve draft and re-authenticate.</div>
+            </div>
+            <span class="edge-badge">Edge Case</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="hub-usage"><i class="ri-sparkling-line"></i> 2 selected</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm">Cancel</button>
+          <button class="btn btn-violet btn-sm"><i class="ri-add-line"></i> Add 2 to Project</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 2: Edge Cases</div>
+    기존 자체 Phase 유지. Mock Fallback 삭제 — 에러 시 에러 메시지만 표시. &nbsp;
+    Edge Function: <code>generate-testcases</code> (통합)에 <code>include_edge_cases: true</code> 플래그. &nbsp;
+    체크박스 선택 → "Add N to Project" 클릭 → <code>test_cases</code> + <code>test_case_history</code> INSERT.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 3: Summarize Run Results                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s3">
+  <div class="modal-backdrop">
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-header">
+        <h2><i class="ri-robot-2-line" style="color:var(--violet);"></i> AI Assist</h2>
+        <button class="modal-close"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body" style="max-height:420px;overflow-y:auto;">
+        <div class="phase-back"><i class="ri-arrow-left-s-line"></i> Back to AI Assist</div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--emerald-bg);color:var(--emerald);display:flex;align-items:center;justify-content:center;font-size:16px;">
+            <i class="ri-file-chart-fill"></i>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--gray-900);">Summarize Run Results</div>
+            <div style="font-size:11px;color:var(--gray-500);">Select a test run to generate AI summary</div>
+          </div>
+        </div>
+
+        <div class="summary-report">
+          <!-- Gauge Row -->
+          <div class="gauge-row">
+            <div class="gauge-card">
+              <div class="gauge-val" style="color:var(--emerald);">75%</div>
+              <div class="gauge-label">Pass Rate</div>
+              <div class="gauge-bar">
+                <div class="seg-pass" style="width:75%;"></div>
+                <div class="seg-fail" style="width:18.75%;"></div>
+                <div class="seg-skip" style="width:6.25%;"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--gray-400);margin-top:4px;">
+                <span>12 Pass</span><span>3 Fail</span><span>1 Skip</span>
+              </div>
+            </div>
+            <div class="gauge-card">
+              <div style="margin-bottom:4px;"><span class="risk-badge medium"><i class="ri-alert-line" style="font-size:12px;"></i> Medium Risk</span></div>
+              <div style="font-size:11px;color:var(--gray-500);line-height:1.5;margin-top:8px;">3 critical failures detected. Recommend fixing before release.</div>
+            </div>
+          </div>
+
+          <!-- Key Findings -->
+          <div style="font-size:12px;font-weight:600;color:var(--gray-800);margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+            <i class="ri-error-warning-line" style="color:var(--red);font-size:14px;"></i> Key Findings
+          </div>
+          <div class="finding-list">
+            <div class="finding-item"><i class="ri-close-circle-fill"></i> Authentication module: 2 of 4 TCs failed — SSO token refresh not triggered on expiry</div>
+            <div class="finding-item"><i class="ri-close-circle-fill"></i> Checkout API: Payment timeout TC failed — 504 gateway timeout after 30s</div>
+            <div class="finding-item"><i class="ri-close-circle-fill"></i> Dashboard: Widget load TC failed intermittently — potential flaky test</div>
+          </div>
+
+          <!-- Recommendations -->
+          <div style="font-size:12px;font-weight:600;color:var(--gray-800);margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+            <i class="ri-lightbulb-line" style="color:var(--emerald);font-size:14px;"></i> Recommendations
+          </div>
+          <div style="margin-bottom:4px;">
+            <div class="rec-item"><i class="ri-checkbox-circle-fill"></i> Fix SSO token refresh logic before next release (Critical)</div>
+            <div class="rec-item"><i class="ri-checkbox-circle-fill"></i> Increase payment API timeout to 60s or add retry logic (High)</div>
+            <div class="rec-item"><i class="ri-checkbox-circle-fill"></i> Re-run Dashboard widget test 3x to confirm flakiness (Medium)</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="hub-usage" style="font-size:11px;color:var(--gray-400);">
+          Run: <strong style="color:var(--gray-700);">Sprint 12 Regression</strong> · Mar 29, 2026
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm"><i class="ri-clipboard-line"></i> Copy</button>
+          <button class="btn btn-ghost btn-sm">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 3: Summarize Run</div>
+    Edge Function: <code>POST /functions/v1/ai-summarize-run</code> { project_id, run_id }. &nbsp;
+    Run 선택: 프로젝트 내 test_runs를 드롭다운으로 표시 (최신순). &nbsp;
+    출력: <code>overall</code> (pass/fail/skip 수), <code>risk_level</code>, <code>key_findings[]</code>, <code>recommendations[]</code>. &nbsp;
+    "Copy" 버튼: 요약 텍스트를 Markdown 형식으로 클립보드 복사 (Slack/email 용도). &nbsp;
+    플랜: Starter 10회/월, Pro 50회/월, Enterprise 무제한.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 4: Analyze Failed Tests                           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s4">
+  <div class="modal-backdrop">
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-header">
+        <h2><i class="ri-robot-2-line" style="color:var(--violet);"></i> AI Assist</h2>
+        <button class="modal-close"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body" style="max-height:420px;overflow-y:auto;">
+        <div class="phase-back"><i class="ri-arrow-left-s-line"></i> Back to AI Assist</div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--red-bg);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:16px;">
+            <i class="ri-bug-fill"></i>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:600;">Analyze Failed Tests</div>
+            <div style="font-size:11px;color:var(--gray-500);">AI clusters failures and suggests root causes</div>
+          </div>
+          <span style="margin-left:auto;font-size:12px;font-weight:600;color:var(--red);background:var(--red-bg);padding:3px 10px;border-radius:6px;">8 failures found</span>
+        </div>
+
+        <!-- Clusters -->
+        <div class="cluster-card">
+          <div class="cluster-header">
+            <span class="cluster-priority critical"></span>
+            <span class="cluster-name">Authentication Module Failures</span>
+            <span class="cluster-count">3 TCs</span>
+          </div>
+          <div class="cluster-body">
+            <div class="cluster-tc-list">
+              <span class="cluster-tc">Login SSO token refresh</span>
+              <span class="cluster-tc">Session expiry redirect</span>
+              <span class="cluster-tc">Multi-browser SSO conflict</span>
+            </div>
+            <div class="root-cause">
+              <strong>Root Cause Hypothesis</strong><br>
+              Session token expiration not handled in the OAuth callback. Refresh token flow is missing for Google SSO provider.
+            </div>
+            <div class="fix-suggest">
+              <strong>Suggested Fix</strong><br>
+              Add token refresh logic in <code>auth/callback.ts</code> before redirecting to dashboard. Implement retry with exponential backoff.
+            </div>
+          </div>
+        </div>
+
+        <div class="cluster-card">
+          <div class="cluster-header">
+            <span class="cluster-priority critical"></span>
+            <span class="cluster-name">Payment API Timeout</span>
+            <span class="cluster-count">2 TCs</span>
+          </div>
+          <div class="cluster-body">
+            <div class="cluster-tc-list">
+              <span class="cluster-tc">Stripe payment 30s timeout</span>
+              <span class="cluster-tc">Webhook delivery failure</span>
+            </div>
+            <div class="root-cause">
+              <strong>Root Cause Hypothesis</strong><br>
+              Stripe API response time increased. Default 30s timeout is insufficient during peak hours.
+            </div>
+            <div class="fix-suggest">
+              <strong>Suggested Fix</strong><br>
+              Increase timeout to 60s and implement async payment confirmation via webhooks.
+            </div>
+          </div>
+        </div>
+
+        <div class="cluster-card">
+          <div class="cluster-header">
+            <span class="cluster-priority medium"></span>
+            <span class="cluster-name">UI Rendering Issues</span>
+            <span class="cluster-count">3 TCs</span>
+          </div>
+          <div class="cluster-body">
+            <div class="cluster-tc-list">
+              <span class="cluster-tc">Dashboard widget load</span>
+              <span class="cluster-tc">Chart tooltip position</span>
+              <span class="cluster-tc">Table pagination edge</span>
+            </div>
+            <div class="root-cause">
+              <strong>Root Cause Hypothesis</strong><br>
+              Race condition in async data fetching causes intermittent render failures.
+            </div>
+          </div>
+        </div>
+
+        <!-- Flaky Tests -->
+        <div class="flaky-section">
+          <h4><i class="ri-flashlight-line"></i> Flaky Tests Detected</h4>
+          <div class="flaky-item">
+            <span style="flex:1;font-weight:500;">Dashboard widget load test</span>
+            <span class="flaky-rate">60% pass (30d)</span>
+            <span style="font-size:10px;color:#991B1B;">intermittent</span>
+          </div>
+          <div class="flaky-item">
+            <span style="flex:1;font-weight:500;">Chart tooltip position test</span>
+            <span class="flaky-rate">45% pass (30d)</span>
+            <span style="font-size:10px;color:#991B1B;">intermittent</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="hub-usage"><i class="ri-filter-line"></i> Scope: Latest Run · Sprint 12</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm"><i class="ri-clipboard-line"></i> Copy</button>
+          <button class="btn btn-ghost btn-sm">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 4: Analyze Failed</div>
+    Edge Function: <code>POST /functions/v1/ai-analyze-failures</code> { project_id, scope, run_id }. &nbsp;
+    Scope 선택: "Latest Run" / "All Project" / "Specific Run" (상단 세그먼트). &nbsp;
+    Cluster 카드: 확장 가능, priority 색상 코딩 (빨강=critical, 주황=medium, 초록=low). &nbsp;
+    Flaky 감지: test_run_results 히스토리에서 30일 pass rate 계산 → 70% 미만이면 flaky 표시. &nbsp;
+    플랜: Starter 10회/월, Pro 50회/월.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 5: Coverage Gap Analysis                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s5">
+  <div class="modal-backdrop">
+    <div class="modal" style="max-width:660px;">
+      <div class="modal-header">
+        <h2><i class="ri-robot-2-line" style="color:var(--violet);"></i> AI Assist</h2>
+        <button class="modal-close"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body" style="max-height:420px;overflow-y:auto;">
+        <div class="phase-back"><i class="ri-arrow-left-s-line"></i> Back to AI Assist</div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--amber-bg);color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:16px;">
+            <i class="ri-shield-check-fill"></i>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:600;">Coverage Gap Analysis</div>
+            <div style="font-size:11px;color:var(--gray-500);">Identify untested areas and get TC suggestions</div>
+          </div>
+        </div>
+
+        <!-- Heatmap -->
+        <div style="font-size:11px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">Module Coverage Map</div>
+        <div class="heatmap-grid">
+          <div class="heatmap-cell high"><div class="mod-name">Auth</div><div class="mod-count">8</div><div class="mod-label">TCs · 85%</div></div>
+          <div class="heatmap-cell medium"><div class="mod-name">Checkout</div><div class="mod-count">5</div><div class="mod-label">TCs · 45%</div></div>
+          <div class="heatmap-cell high"><div class="mod-name">Dashboard</div><div class="mod-count">6</div><div class="mod-label">TCs · 72%</div></div>
+          <div class="heatmap-cell low"><div class="mod-name">Reporting</div><div class="mod-count">2</div><div class="mod-label">TCs · 20%</div></div>
+          <div class="heatmap-cell medium"><div class="mod-name">Settings</div><div class="mod-count">4</div><div class="mod-label">TCs · 55%</div></div>
+          <div class="heatmap-cell none"><div class="mod-name">Webhooks</div><div class="mod-count">0</div><div class="mod-label">TCs · 0%</div></div>
+          <div class="heatmap-cell low"><div class="mod-name">API</div><div class="mod-count">1</div><div class="mod-label">TCs · 15%</div></div>
+          <div class="heatmap-cell medium"><div class="mod-name">Onboarding</div><div class="mod-count">3</div><div class="mod-label">TCs · 50%</div></div>
+        </div>
+        <div class="heatmap-legend">
+          <span><span class="legend-dot high"></span> Good (>70%)</span>
+          <span><span class="legend-dot medium"></span> Partial (40-70%)</span>
+          <span><span class="legend-dot low"></span> Low (<40%)</span>
+          <span><span class="legend-dot none"></span> None (0%)</span>
+        </div>
+
+        <!-- Type Balance -->
+        <div style="font-size:11px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">TC Type Balance</div>
+        <div class="type-balance">
+          <div class="type-bar-wrap">
+            <div class="type-bar-label"><span>Functional</span><span>80%</span></div>
+            <div class="type-bar"><div class="type-bar-fill" style="width:80%;background:var(--primary);"></div></div>
+          </div>
+          <div class="type-bar-wrap">
+            <div class="type-bar-label"><span>Smoke</span><span>10%</span></div>
+            <div class="type-bar"><div class="type-bar-fill" style="width:10%;background:var(--emerald);"></div></div>
+          </div>
+          <div class="type-bar-wrap">
+            <div class="type-bar-label"><span>Edge Case</span><span style="color:var(--red);">5% ⚠</span></div>
+            <div class="type-bar"><div class="type-bar-fill" style="width:5%;background:var(--red);"></div></div>
+          </div>
+          <div class="type-bar-wrap">
+            <div class="type-bar-label"><span>Regression</span><span>5%</span></div>
+            <div class="type-bar"><div class="type-bar-fill" style="width:5%;background:var(--amber);"></div></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--red);background:var(--red-bg);padding:6px 10px;border-radius:6px;margin-bottom:14px;">
+          <i class="ri-alert-line" style="font-size:12px;"></i> Edge Case coverage is only 5%. Recommend at least 15%.
+        </div>
+
+        <!-- Gaps -->
+        <div style="font-size:11px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">Identified Gaps & Suggested TCs</div>
+
+        <div class="gap-card">
+          <div class="gap-card-header">
+            <h4><i class="ri-alert-line" style="color:var(--red);"></i> Webhooks — No Coverage</h4>
+            <span class="gap-severity high">High</span>
+          </div>
+          <div class="gap-reason">No test cases exist for webhook delivery, retry logic, or payload validation.</div>
+          <div class="gap-tc">
+            <div class="gap-tc-check checked"><i class="ri-check-line"></i></div>
+            <span class="gap-tc-title">Verify webhook delivery on test run completion</span>
+            <span class="gap-tc-type">Functional</span>
+          </div>
+          <div class="gap-tc">
+            <div class="gap-tc-check checked"><i class="ri-check-line"></i></div>
+            <span class="gap-tc-title">Verify webhook retry after delivery failure</span>
+            <span class="gap-tc-type">Edge Case</span>
+          </div>
+          <div class="gap-tc">
+            <div class="gap-tc-check"><i class="ri-check-line"></i></div>
+            <span class="gap-tc-title">Verify webhook payload contains all required fields</span>
+            <span class="gap-tc-type">Functional</span>
+          </div>
+        </div>
+
+        <div class="gap-card">
+          <div class="gap-card-header">
+            <h4><i class="ri-alert-line" style="color:var(--amber);"></i> Checkout — Error Handling</h4>
+            <span class="gap-severity medium">Medium</span>
+          </div>
+          <div class="gap-reason">No test cases for payment failure scenarios (declined card, timeout, network error).</div>
+          <div class="gap-tc">
+            <div class="gap-tc-check"><i class="ri-check-line"></i></div>
+            <span class="gap-tc-title">Verify error message on declined credit card</span>
+            <span class="gap-tc-type">Functional</span>
+          </div>
+          <div class="gap-tc">
+            <div class="gap-tc-check"><i class="ri-check-line"></i></div>
+            <span class="gap-tc-title">Verify retry logic after payment timeout</span>
+            <span class="gap-tc-type">Edge Case</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="hub-usage"><i class="ri-sparkling-line"></i> 2 TCs selected to add</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm"><i class="ri-clipboard-line"></i> Copy Report</button>
+          <button class="btn btn-primary btn-sm"><i class="ri-add-line"></i> Add 2 TCs to Project</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 5: Coverage Gap</div>
+    Edge Function: <code>POST /functions/v1/ai-coverage-gap</code> { project_id, scope, folder_id }. &nbsp;
+    히트맵: 모듈/폴더별 <code>coverage_score</code> → 색상 매핑 (green >70, yellow 40-70, red <40, gray 0). &nbsp;
+    Type Balance: TC 타입 비율 분석 → 경고 threshold: Edge Case < 15%. &nbsp;
+    Suggested TCs: 체크박스 선택 → "Add to Project" — Edge Cases와 동일한 INSERT 패턴 재사용. &nbsp;
+    플랜: Professional 30회/월, Enterprise 무제한.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 6: Coming Soon States                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s6">
+  <div class="modal-backdrop">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-header">
+        <h2><i class="ri-robot-2-line" style="color:var(--violet);"></i> AI Assist</h2>
+        <button class="modal-close"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="phase-back"><i class="ri-arrow-left-s-line"></i> Back to AI Assist</div>
+
+        <div style="text-align:center;padding:32px 20px;">
+          <div style="width:56px;height:56px;border-radius:14px;background:var(--emerald-bg);color:var(--emerald);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px;">
+            <i class="ri-file-chart-fill"></i>
+          </div>
+          <div style="font-size:16px;font-weight:700;color:var(--gray-900);margin-bottom:4px;">Summarize Run Results</div>
+          <div style="display:inline-flex;margin-bottom:12px;">
+            <span class="coming-soon-badge" style="font-size:11px;padding:3px 10px;">Coming Soon</span>
+          </div>
+          <p style="font-size:13px;color:var(--gray-500);line-height:1.6;max-width:340px;margin:0 auto 20px;">
+            AI-powered run analysis is coming soon. Get instant summaries with risk assessment, key findings, and actionable recommendations.
+          </p>
+
+          <div style="background:var(--gray-50);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:left;max-width:320px;margin:0 auto;">
+            <div style="font-size:11px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">What you'll get:</div>
+            <div style="font-size:12px;color:var(--gray-600);line-height:1.8;">
+              <div style="display:flex;align-items:center;gap:6px;"><i class="ri-bar-chart-line" style="color:var(--emerald);font-size:14px;"></i> Pass/Fail/Skip breakdown</div>
+              <div style="display:flex;align-items:center;gap:6px;"><i class="ri-alert-line" style="color:var(--amber);font-size:14px;"></i> Risk level assessment</div>
+              <div style="display:flex;align-items:center;gap:6px;"><i class="ri-search-eye-line" style="color:var(--primary);font-size:14px;"></i> Key findings & patterns</div>
+              <div style="display:flex;align-items:center;gap:6px;"><i class="ri-lightbulb-line" style="color:var(--violet);font-size:14px;"></i> Actionable recommendations</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div></div>
+        <button class="btn btn-ghost btn-sm">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 6: Coming Soon State</div>
+    <code>comingSoon: true</code>인 액션 클릭 시 Phase UI 진입 → 이 화면 표시. &nbsp;
+    큰 아이콘 + Coming Soon 뱃지 + 기능 설명 + feature preview 리스트. &nbsp;
+    Hub 메뉴에서도 Coming Soon 뱃지 표시 (Screen 1 참조). &nbsp;
+    활성화 시: <code>comingSoon: false</code>로 변경 → 실제 Phase UI로 전환.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 7: Plan Gate States                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s7">
+  <div class="modal-backdrop">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-header">
+        <h2><i class="ri-robot-2-line" style="color:var(--violet);"></i> AI Assist</h2>
+        <button class="modal-close"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body" style="padding:16px 20px;">
+        <div class="hub-search-wrap">
+          <i class="ri-search-line"></i>
+          <input class="hub-search" type="text" placeholder="Search AI actions...">
+        </div>
+        <div style="font-size:10px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Free Plan — Viewing as Free User</div>
+        <div class="hub-list">
+          <!-- Generate — Available -->
+          <div class="hub-item">
+            <div class="hub-icon" style="background:var(--primary-bg);color:var(--primary);"><i class="ri-magic-fill"></i></div>
+            <div class="hub-text">
+              <h4>Generate Test Cases</h4>
+              <p>Auto-generate test cases from text</p>
+            </div>
+            <i class="ri-arrow-right-s-line hub-arrow"></i>
+          </div>
+          <!-- Edge Cases — Available -->
+          <div class="hub-item">
+            <div class="hub-icon" style="background:var(--violet-bg);color:var(--violet);"><i class="ri-lightbulb-flash-fill"></i></div>
+            <div class="hub-text">
+              <h4>Suggest Edge Cases</h4>
+              <p>Discover boundary conditions and edge scenarios</p>
+            </div>
+            <i class="ri-arrow-right-s-line hub-arrow"></i>
+          </div>
+          <!-- Summarize — LOCKED -->
+          <div class="hub-item locked">
+            <div class="hub-icon" style="background:var(--gray-100);color:var(--gray-400);"><i class="ri-file-chart-fill"></i></div>
+            <div class="hub-text">
+              <h4 style="color:var(--gray-400);">Summarize Run Results <span class="plan-lock-badge"><i class="ri-lock-line" style="font-size:8px;"></i> Starter+</span></h4>
+              <p style="color:var(--gray-400);">AI summary with risk assessment</p>
+            </div>
+          </div>
+          <!-- Analyze — LOCKED -->
+          <div class="hub-item locked">
+            <div class="hub-icon" style="background:var(--gray-100);color:var(--gray-400);"><i class="ri-bug-fill"></i></div>
+            <div class="hub-text">
+              <h4 style="color:var(--gray-400);">Analyze Failed Tests <span class="plan-lock-badge"><i class="ri-lock-line" style="font-size:8px;"></i> Starter+</span></h4>
+              <p style="color:var(--gray-400);">Cluster failures and detect flaky tests</p>
+            </div>
+          </div>
+          <!-- Coverage — LOCKED (Pro+) -->
+          <div class="hub-item locked">
+            <div class="hub-icon" style="background:var(--gray-100);color:var(--gray-400);"><i class="ri-shield-check-fill"></i></div>
+            <div class="hub-text">
+              <h4 style="color:var(--gray-400);">Coverage Gap Analysis <span class="plan-lock-badge"><i class="ri-lock-line" style="font-size:8px;"></i> Professional+</span></h4>
+              <p style="color:var(--gray-400);">Identify untested areas</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;padding:10px 14px;background:linear-gradient(135deg,var(--primary-bg),var(--violet-bg));border:1px solid #C7D2FE;border-radius:10px;display:flex;align-items:center;gap:10px;">
+          <i class="ri-vip-crown-2-fill" style="font-size:20px;color:var(--primary);"></i>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:600;color:var(--gray-900);">Unlock all AI features</div>
+            <div style="font-size:11px;color:var(--gray-500);">Upgrade to Starter for full AI Assist access</div>
+          </div>
+          <button class="btn btn-primary btn-sm">Upgrade</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="hub-usage"><i class="ri-sparkling-line"></i> 3 / 5 AI actions used this month</div>
+        <button class="btn btn-ghost btn-sm">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 7: Plan Gating</div>
+    <code>comingSoon</code> → <code>locked</code> 전환. PLAN_INFO에 각 액션별 접근 레벨 추가. &nbsp;
+    Free: Generate + Edge Cases만 (5회/월). &nbsp;
+    Starter: + Summarize + Analyze (30회/월). &nbsp;
+    Professional: + Coverage Gap (150회/월). &nbsp;
+    Enterprise: All unlimited. &nbsp;
+    잠긴 항목: <code>opacity: 0.5</code>, 클릭 비활성, 자물쇠 뱃지 + 플랜 이름. &nbsp;
+    하단 업그레이드 배너: gradient bg + crown icon.
+  </div>
+</div>
+
+
+<script>
+  document.querySelectorAll('.screen-nav-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.screen-nav-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.screen-panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.screen).classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

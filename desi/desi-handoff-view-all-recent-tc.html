@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desi Handoff — View All Recently Added Test Cases</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.6; }
+
+  .container { max-width: 1060px; margin: 0 auto; padding: 2rem 2.5rem 4rem; }
+
+  /* Header */
+  .doc-header { background: linear-gradient(135deg, #6366F1 0%, #818CF8 50%, #A5B4FC 100%); color: #fff; border-radius: 1rem; padding: 2.5rem; margin-bottom: 2rem; }
+  .doc-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: rgba(255,255,255,0.2); font-size: 0.625rem; font-weight: 700; padding: 0.25rem 0.625rem; border-radius: 9999px; margin-bottom: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  .doc-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .doc-subtitle { font-size: 0.875rem; opacity: 0.9; }
+  .doc-meta { display: flex; gap: 2rem; margin-top: 0.75rem; font-size: 0.75rem; opacity: 0.8; }
+
+  /* Section */
+  .section { margin-bottom: 2.5rem; }
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 0.5rem; background: #6366F1; color: #fff; font-size: 0.8125rem; font-weight: 800; margin-right: 0.5rem; flex-shrink: 0; }
+  .section-title { display: flex; align-items: center; font-size: 1.0625rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem; padding-bottom: 0.625rem; border-bottom: 2px solid #6366F1; }
+  .section-desc { font-size: 0.8125rem; color: #475569; margin-bottom: 0.75rem; line-height: 1.65; }
+
+  /* Card */
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .card-label { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6366F1; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.375rem; }
+  .card h4 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin: 1rem 0 0.375rem; }
+  .card h4:first-of-type { margin-top: 0; }
+
+  /* Spec Row */
+  .spec-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.3125rem 0; font-size: 0.75rem; border-bottom: 1px solid #F8FAFC; gap: 1rem; }
+  .spec-row .k { font-weight: 600; color: #475569; min-width: 180px; flex-shrink: 0; }
+  .spec-row .v { color: #059669; font-weight: 600; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.6875rem; text-align: right; }
+  .spec-row .old { color: #94A3B8; text-decoration: line-through; font-size: 0.6875rem; margin-right: 0.5rem; }
+
+  /* Tags */
+  .tag { display: inline-flex; align-items: center; gap: 0.1875rem; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; font-size: 0.5625rem; font-weight: 700; }
+  .tag-new { background: #DCFCE7; color: #166534; }
+  .tag-change { background: #FEF3C7; color: #92400E; }
+  .tag-reuse { background: #EEF2FF; color: #4338CA; }
+
+  /* Alert */
+  .alert { border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.75rem; line-height: 1.6; margin: 0.625rem 0; }
+  .alert strong { font-weight: 700; }
+  .alert-info { background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; }
+  .alert-info strong { color: #1E3A8A; }
+  .alert-warn { background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; }
+  .alert-warn strong { color: #78350F; }
+  .alert-success { background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; }
+  .alert-success strong { color: #14532D; }
+  .alert-decision { background: #F0FDF4; border: 2px solid #86EFAC; border-radius: 0.75rem; padding: 1.25rem; margin: 1rem 0; }
+  .alert-decision strong { color: #14532D; font-size: 0.875rem; }
+
+  /* Wireframe */
+  .wireframe { background: #F8FAFC; border: 2px dashed #CBD5E1; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin: 0.75rem 0; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.6875rem; line-height: 2; color: #475569; overflow-x: auto; white-space: pre; }
+  .wireframe .hl { color: #6366F1; font-weight: 700; }
+  .wireframe .red { color: #EF4444; font-weight: 700; }
+  .wireframe .green { color: #22C55E; font-weight: 700; }
+  .wireframe .amber { color: #F59E0B; font-weight: 700; }
+  .wireframe .muted { color: #94A3B8; font-style: italic; }
+
+  /* Table */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin: 0.5rem 0; }
+  .tbl th { background: #F8FAFC; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; color: #64748B; border-bottom: 1px solid #E2E8F0; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tbl td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #F1F5F9; color: #334155; vertical-align: top; }
+  .tbl .feature { font-weight: 600; color: #0F172A; }
+
+  /* Priority badge */
+  .p-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 700; }
+  .p-p1 { background: #FEE2E2; color: #991B1B; }
+  .p-p2 { background: #FEF3C7; color: #92400E; }
+  .p-p3 { background: #EEF2FF; color: #4338CA; }
+
+  /* Comparison */
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin: 0.5rem 0; }
+  .cmp-table th { background: #F8FAFC; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; color: #64748B; border-bottom: 1px solid #E2E8F0; }
+  .cmp-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #F1F5F9; vertical-align: top; }
+
+  /* TOC */
+  .toc { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 2rem; }
+  .toc-title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 0.5rem; }
+  .toc-list { list-style: none; padding: 0; columns: 2; gap: 1.5rem; }
+  .toc-list li { font-size: 0.75rem; padding: 0.1875rem 0; break-inside: avoid; }
+  .toc-list a { color: #6366F1; text-decoration: none; font-weight: 500; }
+  .toc-list a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- HEADER                                 -->
+<!-- ═══════════════════════════════════════ -->
+<header class="doc-header">
+  <div class="doc-badge"><i class="ri-palette-line" style="font-size:0.75rem"></i> DESI DESIGN HANDOFF</div>
+  <h1 class="doc-title">View All Recently Added Test Cases</h1>
+  <p class="doc-subtitle">Test Cases Overview → "View All →" 클릭 시 목적지 화면 디자인 스펙</p>
+  <div class="doc-meta">
+    <span><i class="ri-calendar-line"></i> 2026-03-26</span>
+    <span><i class="ri-file-list-3-line"></i> Source: TestCasesOverviewPage.tsx Line 493</span>
+    <span><i class="ri-user-line"></i> PM → Desi</span>
+  </div>
+</header>
+
+<!-- ═══ TOC ═══ -->
+<div class="toc">
+  <div class="toc-title">Design Items</div>
+  <ol class="toc-list">
+    <li><a href="#s1">§1 — PM 기획 결정: URL 파라미터 방식</a></li>
+    <li><a href="#s2">§2 — 동적 헤더 & "← Back to Overview"</a></li>
+    <li><a href="#s3">§3 — Period 드롭다운 (7d 기본 선택)</a></li>
+    <li><a href="#s4">§4 — 테이블 컬럼 & 정렬</a></li>
+    <li><a href="#s5">§5 — Summary Bar & 페이지네이션</a></li>
+    <li><a href="#s6">§6 — Empty State</a></li>
+    <li><a href="#s7">§7 — 전체 와이어프레임 & 인터랙션 플로우</a></li>
+    <li><a href="#s8">§8 — 구현 난이도 & "View All Failed TC" 재사용</a></li>
+  </ol>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §1 — PM DECISION                        -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s1">
+  <h2 class="section-title"><span class="section-num">1</span> PM 기획 결정: URL 파라미터 방식</h2>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-git-branch-line"></i> 3가지 옵션 분석</div>
+    <table class="cmp-table">
+      <thead><tr><th style="min-width:120px">옵션</th><th>설명</th><th>장점</th><th>단점</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="feature">A. 새 페이지</td>
+          <td>/recent-testcases 별도 라우트</td>
+          <td>독립적 디자인 자유</td>
+          <td>중복 코드, 라우트 관리 비용, 유사 UI 분산</td>
+        </tr>
+        <tr>
+          <td class="feature" style="color:#22C55E">B. URL 파라미터 ✅</td>
+          <td>/testcases?period=7d&sort=created_desc</td>
+          <td>기존 인프라 재사용, 일관된 UX, 최소 공수</td>
+          <td>TestCaseList에 sort 파라미터 확장 필요</td>
+        </tr>
+        <tr>
+          <td class="feature">C. 모달</td>
+          <td>Overview 페이지 위에 모달</td>
+          <td>컨텍스트 유지</td>
+          <td>TC가 많으면 모달 스크롤 문제, 검색·필터 제한</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="alert-decision">
+    <strong>✅ PM 권장: Option B — 기존 /testcases 페이지 + URL 파라미터</strong>
+    <p style="font-size:0.8125rem;margin-top:0.375rem;color:#166534">
+      "View All Failed TC"에서 이미 <code style="background:#DCFCE7;padding:0.125rem 0.375rem;border-radius:0.25rem;font-size:0.75rem">/testcases?status=failed&period=7d</code> 패턴을 확립했습니다.
+      동일한 패턴을 적용하여 <code style="background:#DCFCE7;padding:0.125rem 0.375rem;border-radius:0.25rem;font-size:0.75rem">/testcases?period=7d&sort=created_desc</code>로 구현합니다.
+    </p>
+    <p style="font-size:0.75rem;margin-top:0.5rem;color:#15803D">
+      <strong>근거:</strong>
+      ① "View All Failed TC"와 동일 패턴 → 사용자 학습 비용 제로.
+      ② useFilteredTestCases hook이 이미 period=7d 필터를 지원.
+      ③ TestCaseList.tsx에 sort URL 파라미터 확장만 추가하면 됨 (약 30분 Dev 공수).
+      ④ 검색, 프로젝트 필터, Priority 필터 등 기존 기능 무료 획득.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-links-line"></i> URL 스펙</div>
+    <div class="spec-row"><span class="k">View All 클릭 시 URL</span><span class="v">/testcases?period=7d&sort=created_desc</span></div>
+    <div class="spec-row"><span class="k">진입 컨텍스트 감지</span><span class="v">searchParams.has('sort') — from overview</span></div>
+    <div class="spec-row"><span class="k">← Back 링크 목적지</span><span class="v">/testcases-overview</span></div>
+    <div class="spec-row"><span class="k">기존 패턴 비교</span><span class="v">Failed TC: /testcases?status=failed&period={period}</span></div>
+
+    <h4>URL 파라미터 전체 목록 (확장)</h4>
+    <table class="tbl">
+      <thead><tr><th>Param</th><th>Type</th><th>Default</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td class="feature">status</td><td>'all'|'failed'|'passed'|'blocked'|'untested'</td><td>'all'</td><td>기존</td></tr>
+        <tr><td class="feature">period</td><td>'active_run'|'7d'|'30d'|'all'</td><td>'active_run'</td><td>기존 — Recent TC 진입 시 '7d'</td></tr>
+        <tr><td class="feature">project</td><td>string</td><td>'all'</td><td>기존</td></tr>
+        <tr><td class="feature">priority</td><td>string</td><td>'all'</td><td>기존</td></tr>
+        <tr><td class="feature" style="color:#22C55E">sort <span class="tag tag-new">NEW</span></td><td>'created_desc'|'created_asc'|'fail_count'|'title'</td><td>'fail_count'</td><td>신규 — 정렬 기준 URL 동기화</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §2 — DYNAMIC HEADER                     -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s2">
+  <h2 class="section-title"><span class="section-num">2</span> 동적 헤더 & "← Back to Overview"</h2>
+
+  <p class="section-desc">
+    URL 파라미터 <code>sort=created_desc</code>가 있고 <code>period=7d</code>일 때, 헤더가 "Recently Added Test Cases"로 변경됩니다.
+    이전 "View All Failed TC"가 <code>status=failed</code>일 때 "Failed Test Cases"로 변경되는 것과 동일 패턴입니다.
+  </p>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-layout-top-line"></i> 헤더 상태 매트릭스</div>
+    <table class="tbl">
+      <thead><tr><th>진입 조건</th><th>Icon</th><th>Title</th><th>Subtitle</th><th>Back 링크</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="feature">기본 (파라미터 없음)</td>
+          <td>ri-file-list-3-line</td>
+          <td>All Test Cases</td>
+          <td>"All test cases across your projects"</td>
+          <td>없음</td>
+        </tr>
+        <tr>
+          <td class="feature">status=failed</td>
+          <td>ri-close-circle-line (red)</td>
+          <td>Failed Test Cases</td>
+          <td>"Test cases with failed results…"</td>
+          <td>← Back to Report</td>
+        </tr>
+        <tr style="background:#F0FDF4">
+          <td class="feature" style="color:#22C55E">sort=created_desc <span class="tag tag-new">NEW</span></td>
+          <td style="color:#6366F1">ri-time-line</td>
+          <td style="font-weight:700">Recently Added Test Cases</td>
+          <td>"Test cases created in the last 7 days"</td>
+          <td style="color:#6366F1">← Back to Overview</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-layout-top-line"></i> 헤더 와이어프레임</div>
+
+<div class="wireframe"><span class="muted">[sort=created_desc 일 때 헤더]</span>
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│  <span class="hl">🕐</span> <span class="hl">Recently Added Test Cases</span>  <span style="color:#6366F1;background:#EEF2FF;border-radius:99px;padding:0 6px;font-size:0.6rem;font-weight:700">42</span>            <span class="hl">← Back to Overview</span>  │
+│  <span class="muted">Test cases created in the last 7 days</span>                               │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘</div>
+
+    <h4>스타일 스펙</h4>
+    <div class="spec-row"><span class="k">Icon</span><span class="v">ri-time-line, color: #6366F1, font-size: 1.25rem</span></div>
+    <div class="spec-row"><span class="k">Title</span><span class="v">"Recently Added Test Cases" — 1.375rem, 700, #0F172A</span></div>
+    <div class="spec-row"><span class="k">Count badge</span><span class="v">bg #EEF2FF, color #4F46E5, 0.75rem 700, pill</span></div>
+    <div class="spec-row"><span class="k">Subtitle</span><span class="v">"Test cases created in the last 7 days" — 0.8125rem, #94A3B8</span></div>
+    <div class="spec-row"><span class="k">Subtitle (period=30d)</span><span class="v">"Test cases created in the last 30 days"</span></div>
+    <div class="spec-row"><span class="k">Subtitle (period=all)</span><span class="v">"All test cases, newest first"</span></div>
+    <div class="spec-row"><span class="k">Back link</span><span class="v">"← Back to Overview" — 0.8125rem, 600, #6366F1, ri-arrow-left-line</span></div>
+    <div class="spec-row"><span class="k">Back link 목적지</span><span class="v">/testcases-overview</span></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §3 — PERIOD DROPDOWN                    -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s3">
+  <h2 class="section-title"><span class="section-num">3</span> Period 드롭다운 (7d 기본 선택)</h2>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-filter-3-line"></i> 필터 영역</div>
+
+    <p class="section-desc">
+      기존 TestCaseList의 필터 영역을 그대로 사용합니다. <code>sort=created_desc</code>로 진입 시 Period 드롭다운이 "Last 7 days"로 pre-selected 됩니다.
+      Status 탭 바도 그대로 표시되며, 사용자가 자유롭게 추가 필터링 가능합니다.
+    </p>
+
+<div class="wireframe"><span class="muted">[Filter Area — 기존 레이아웃 재사용]</span>
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  🔍 [Search test cases…          ]  [All Projects ▼] [All Priority ▼]  [<span class="hl">Last 7 days</span> ▼] │
+├─────────────────────────────────────────────────────────────────────┤
+│  <span class="hl">All(42)</span>  │  Failed(3)  │  Passed(28)  │  Blocked(1)  │  Untested(10)  │
+└─────────────────────────────────────────────────────────────────────┘
+  <span class="muted">↑ Period 드롭다운이 "Last 7 days"로 pre-selected</span>
+  <span class="muted">↑ Status 탭은 "All"이 기본 활성 (View All Failed TC는 "Failed"가 기본)</span></div>
+
+    <div class="alert alert-info">
+      <strong>차이점:</strong> "View All Failed TC" 진입 시 status=failed 탭이 활성화되지만,
+      "View All Recently Added" 진입 시 status=all 탭이 활성화됩니다.
+      "최근 추가된 TC"는 모든 상태를 포함하기 때문입니다.
+    </div>
+
+    <div class="spec-row"><span class="k">Period 기본값</span><span class="v">'7d' (URL에서 읽음)</span></div>
+    <div class="spec-row"><span class="k">Status 기본값</span><span class="v">'all' (URL에 status 없으면 all)</span></div>
+    <div class="spec-row"><span class="k">Period 변경 시</span><span class="v">URL 업데이트 → 데이터 re-fetch → 테이블 리렌더</span></div>
+    <div class="spec-row"><span class="k">사용자가 Period를 변경하면</span><span class="v">subtitle 자동 변경 (예: "Last 30 days" → "…in the last 30 days")</span></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §4 — TABLE COLUMNS                      -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s4">
+  <h2 class="section-title"><span class="section-num">4</span> 테이블 컬럼 & 정렬</h2>
+
+  <p class="section-desc">
+    기존 TestCaseList 테이블을 확장합니다. "Recently Added" 맥락에서는 <strong>Created 컬럼이 추가</strong>되고,
+    기본 정렬이 <strong>Created 내림차순</strong>입니다 (최신순). Fail Count / Last Failed 컬럼은 숨기되,
+    사용자가 status=failed 탭 클릭 시 자동 표시됩니다.
+  </p>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-table-line"></i> 컬럼 정의</div>
+    <table class="tbl">
+      <thead><tr><th>Column</th><th>Width</th><th>정렬 가능</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td class="feature">☑ (체크박스)</td><td>36px</td><td>—</td><td>Bulk action용</td></tr>
+        <tr><td class="feature">TC-ID</td><td>100px</td><td>✅ sort=tc_id</td><td>프로젝트 prefix 포함 (예: AUTH-041)</td></tr>
+        <tr><td class="feature">Title</td><td>flex</td><td>✅ sort=title</td><td>truncate with ellipsis</td></tr>
+        <tr><td class="feature">Project</td><td>120px</td><td>—</td><td>프로젝트명 pill badge</td></tr>
+        <tr><td class="feature">Priority</td><td>80px</td><td>✅ sort=priority</td><td>Critical/High/Med/Low pill</td></tr>
+        <tr><td class="feature">Status</td><td>90px</td><td>—</td><td>실행 상태 badge (Passed/Failed/…)</td></tr>
+        <tr><td class="feature">Assignee</td><td>100px</td><td>—</td><td>Avatar + name (truncate)</td></tr>
+        <tr style="background:#F0FDF4"><td class="feature" style="color:#22C55E">Created <span class="tag tag-new">NEW</span></td><td>120px</td><td>✅ sort=created_desc/asc</td><td>상대 시간 (예: "2 hours ago") + tooltip 절대 시간</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-warn">
+      <strong>컬럼 가시성 규칙:</strong><br>
+      • <code>sort=created_desc</code> 진입 시: Created 컬럼 표시, Fail Count / Last Failed 숨김<br>
+      • <code>status=failed</code> 진입 시: Fail Count / Last Failed 표시, Created 숨김 (기존 동작)<br>
+      • 기본 진입: Created와 Fail Count 모두 숨김 (기존 동작 유지)
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-layout-grid-line"></i> 테이블 와이어프레임</div>
+
+<div class="wireframe"><span class="muted">[sort=created_desc 테이블]</span>
+
+┌────┬──────────┬──────────────────────────────────┬────────────┬──────────┬───────────┬──────────┬──────────────┐
+│ ☑  │  TC-ID   │  Title                           │  Project   │ Priority │  Status   │ Assignee │  Created ↓   │
+├────┼──────────┼──────────────────────────────────┼────────────┼──────────┼───────────┼──────────┼──────────────┤
+│ ☐  │ <span class="hl">AUTH-048</span> │ 2FA backup code validation       │ <span class="hl">Auth</span>       │ <span class="red">Critical</span> │ <span class="muted">Untested</span>  │ <span class="hl">SK</span>       │ 2 hours ago  │
+│ ☐  │ <span class="hl">PAY-032</span>  │ Stripe webhook retry handling     │ <span class="hl">Payment</span>    │ <span class="amber">High</span>     │ <span class="green">Passed</span>    │ <span class="hl">JL</span>       │ 5 hours ago  │
+│ ☐  │ <span class="hl">DASH-019</span> │ Widget resize persistence         │ <span class="hl">Dashboard</span>  │ <span class="hl">Medium</span>   │ <span class="muted">Untested</span>  │ <span class="hl">MK</span>       │ 1 day ago    │
+│ ☐  │ <span class="hl">AUTH-047</span> │ Login rate limiting edge case     │ <span class="hl">Auth</span>       │ <span class="amber">High</span>     │ <span class="red">Failed</span>    │ <span class="hl">SK</span>       │ 2 days ago   │
+│ ☐  │ <span class="hl">API-016</span>  │ GraphQL query depth limit         │ <span class="hl">API</span>        │ <span class="hl">Medium</span>   │ <span class="muted">Untested</span>  │    —     │ 3 days ago   │
+│ …  │          │                                  │            │          │           │          │              │
+└────┴──────────┴──────────────────────────────────┴────────────┴──────────┴───────────┴──────────┴──────────────┘
+                                                                                       <span class="muted">↑ 기본 정렬: Created 내림차순</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-paint-brush-line"></i> Created 컬럼 스타일</div>
+    <div class="spec-row"><span class="k">Font</span><span class="v">0.75rem, 500, #64748B</span></div>
+    <div class="spec-row"><span class="k">형식</span><span class="v">상대 시간: "2 hours ago", "1 day ago", "5 days ago"</span></div>
+    <div class="spec-row"><span class="k">Tooltip</span><span class="v">절대 시간: "Mar 26, 2026, 2:15 PM"</span></div>
+    <div class="spec-row"><span class="k">정렬 아이콘</span><span class="v">ri-arrow-down-line (desc) / ri-arrow-up-line (asc)</span></div>
+    <div class="spec-row"><span class="k">정렬 클릭</span><span class="v">Created 헤더 클릭 → desc ↔ asc 토글</span></div>
+    <div class="spec-row"><span class="k">기본 활성</span><span class="v">sort=created_desc 진입 시 desc 활성 (↓ 아이콘 표시)</span></div>
+
+    <h4>상대 시간 규칙</h4>
+    <div class="spec-row"><span class="k">&lt; 1분</span><span class="v">"just now"</span></div>
+    <div class="spec-row"><span class="k">&lt; 60분</span><span class="v">"N minutes ago"</span></div>
+    <div class="spec-row"><span class="k">&lt; 24시간</span><span class="v">"N hours ago"</span></div>
+    <div class="spec-row"><span class="k">&lt; 7일</span><span class="v">"N days ago"</span></div>
+    <div class="spec-row"><span class="k">&ge; 7일</span><span class="v">"Mar 20, 2026" (절대 날짜)</span></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §5 — SUMMARY & PAGINATION               -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s5">
+  <h2 class="section-title"><span class="section-num">5</span> Summary Bar & 페이지네이션</h2>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-bar-chart-line"></i> Summary Bar</div>
+
+<div class="wireframe"><span class="muted">[Summary Bar — 테이블 상단]</span>
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  <span class="hl">42 test cases</span> across <span class="hl">5 projects</span> created in the last 7 days          │
+└─────────────────────────────────────────────────────────────────────┘</div>
+
+    <div class="spec-row"><span class="k">Font</span><span class="v">0.8125rem, #64748B</span></div>
+    <div class="spec-row"><span class="k">Count 강조</span><span class="v">font-weight: 700, color: #0F172A</span></div>
+    <div class="spec-row"><span class="k">Project count</span><span class="v">고유 프로젝트 수 — font-weight: 700, color: #0F172A</span></div>
+    <div class="spec-row"><span class="k">Period 텍스트</span><span class="v">period 값에 따라 동적: "in the last 7 days" / "in the last 30 days" / "all time"</span></div>
+    <div class="spec-row"><span class="k">Padding</span><span class="v">0.75rem 1.125rem</span></div>
+    <div class="spec-row"><span class="k">Background</span><span class="v">#fff, border-bottom: 1px solid #E2E8F0</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-pages-line"></i> 페이지네이션 <span class="tag tag-reuse">REUSE</span></div>
+
+    <p class="section-desc">기존 TestCaseList의 페이지네이션을 그대로 사용합니다.</p>
+
+<div class="wireframe"><span class="muted">[Pagination Bar — 테이블 하단]</span>
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  Showing 1-20 of 42                   [20 ▼]  [← Prev] [1] [2] [3] [Next →] │
+└─────────────────────────────────────────────────────────────────────┘</div>
+
+    <div class="spec-row"><span class="k">Per page 옵션</span><span class="v">20 / 50 / 100</span></div>
+    <div class="spec-row"><span class="k">기본값</span><span class="v">20</span></div>
+    <div class="spec-row"><span class="k">페이지 번호</span><span class="v">최대 5개 표시, 현재 페이지 강조 (bg #6366F1, color #fff)</span></div>
+    <div class="spec-row"><span class="k">Prev/Next</span><span class="v">첫/마지막 페이지에서 disabled (opacity: 0.5)</span></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §6 — EMPTY STATE                        -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s6">
+  <h2 class="section-title"><span class="section-num">6</span> Empty State</h2>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-emotion-happy-line"></i> 빈 상태 디자인</div>
+
+<div class="wireframe"><span class="muted">[Empty State — TC가 0개일 때]</span>
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│                         <span class="hl">🎉</span>                                       │
+│                                                                     │
+│              <span class="hl">No new test cases in the last 7 days</span>                  │
+│                                                                     │
+│       <span class="muted">Your team hasn't created any test cases recently.</span>            │
+│       <span class="muted">Try expanding the period filter or create new ones.</span>          │
+│                                                                     │
+│                    ┌──────────────────────┐                         │
+│                    │  <span class="hl">Create Test Case</span>    │                         │
+│                    └──────────────────────┘                         │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘</div>
+
+    <h4>스타일 스펙</h4>
+    <div class="spec-row"><span class="k">Icon</span><span class="v">ri-calendar-check-line, 3rem, #CBD5E1</span></div>
+    <div class="spec-row"><span class="k">Title</span><span class="v">"No new test cases in the last 7 days" — 1rem, 700, #475569</span></div>
+    <div class="spec-row"><span class="k">Title (period=30d)</span><span class="v">"No new test cases in the last 30 days"</span></div>
+    <div class="spec-row"><span class="k">Title (period=all)</span><span class="v">"No test cases found"</span></div>
+    <div class="spec-row"><span class="k">Description</span><span class="v">0.875rem, #94A3B8</span></div>
+    <div class="spec-row"><span class="k">CTA 버튼</span><span class="v">"Create Test Case" — bg #6366F1, color #fff, 0.8125rem 600</span></div>
+    <div class="spec-row"><span class="k">CTA 동작</span><span class="v">Quick Create TC 모달 열기 (TestCasesOverviewPage와 동일)</span></div>
+    <div class="spec-row"><span class="k">Padding</span><span class="v">4rem center-aligned</span></div>
+
+    <div class="alert alert-success">
+      <strong>긍정적 메시지:</strong> "View All Failed TC"의 empty state는 "All tests passing!"이었듯이,
+      여기서도 부정적 톤이 아닌 안내 톤("Try expanding the period filter")을 사용합니다.
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §7 — FULL WIREFRAME & FLOW              -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s7">
+  <h2 class="section-title"><span class="section-num">7</span> 전체 와이어프레임 & 인터랙션 플로우</h2>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-layout-right-line"></i> Full Page 와이어프레임</div>
+
+<div class="wireframe"><span class="muted">/testcases?period=7d&sort=created_desc</span>
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  <span class="hl">Testably</span>   │ Projects │ Team │ Settings       🔔  [KJ]           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  <span class="hl">← Back to Overview</span>                                                │
+│                                                                     │
+│  🕐 <span class="hl">Recently Added Test Cases</span>  <span style="color:#6366F1;font-weight:700;font-size:0.6rem">[42]</span>                                 │
+│  <span class="muted">Test cases created in the last 7 days</span>                               │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────────┐│
+│  │ 🔍 [Search…            ]  [All Projects▼] [All Priority▼] [<span class="hl">Last 7 days</span>▼] ││
+│  ├─────────────────────────────────────────────────────────────────┤│
+│  │ <span class="hl">All(42)</span> │ Failed(3) │ Passed(28) │ Blocked(1) │ Untested(10)    ││
+│  ├─────────────────────────────────────────────────────────────────┤│
+│  │ <span class="muted">42 test cases across 5 projects created in the last 7 days</span>       ││
+│  ├─────────────────────────────────────────────────────────────────┤│
+│  │  ☑  │ TC-ID    │ Title                    │ Project  │ Pri │ … │ Created↓ ││
+│  │─────┼──────────┼──────────────────────────┼──────────┼─────┼───┼──────────││
+│  │  ☐  │ AUTH-048 │ 2FA backup code valid…   │ Auth     │ Cri │ … │ 2h ago   ││
+│  │  ☐  │ PAY-032  │ Stripe webhook retry…    │ Payment  │ Hi  │ … │ 5h ago   ││
+│  │  ☐  │ DASH-019 │ Widget resize persist…   │ Dashbrd  │ Med │ … │ 1d ago   ││
+│  │  ☐  │ AUTH-047 │ Login rate limiting…     │ Auth     │ Hi  │ … │ 2d ago   ││
+│  │  ☐  │ API-016  │ GraphQL depth limit…     │ API      │ Med │ … │ 3d ago   ││
+│  │  …  │          │                          │          │     │   │          ││
+│  ├─────────────────────────────────────────────────────────────────┤│
+│  │ Showing 1-20 of 42          [20▼]  [←Prev] [1] [2] [3] [Next→] ││
+│  └─────────────────────────────────────────────────────────────────┘│
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-flow-chart"></i> 인터랙션 플로우</div>
+
+<div class="wireframe"><span class="muted">[User Flow: Overview → View All → Explore → Back]</span>
+
+┌───────────────────────┐
+│ Test Cases Overview    │
+│ (/testcases-overview)  │
+│                        │
+│ Recently Added TC      │
+│ Last 7 Days            │
+│ [item 1] [item 2] … 8 │
+│          <span class="hl">[View All →]</span>  │─────┐
+└───────────────────────┘     │
+                              ▼
+                   ┌─────────────────────────────┐
+                   │ /testcases?period=7d         │
+                   │          &sort=created_desc  │
+                   │                              │
+                   │ ← Back to Overview           │
+                   │ Recently Added Test Cases    │
+                   │ [Search] [Filters] [Period]  │
+                   │ [All│Fail│Pass│Block│Untest]  │
+                   │ [Full paginated table]       │
+                   │                              │
+                   │ 사용자가 필터 변경 가능:      │
+                   │ • Period 30d, all로 변경      │
+                   │ • Status 탭 클릭             │
+                   │ • Project/Priority 필터      │
+                   │ • 검색                       │
+                   │                              │
+                   │ TC 행 클릭 →                  │─── DetailPanel 열림
+                   │ ← Back to Overview 클릭 →     │─── /testcases-overview 복귀
+                   └─────────────────────────────┘</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §8 — IMPLEMENTATION REUSE               -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s8">
+  <h2 class="section-title"><span class="section-num">8</span> 구현 난이도 & "View All Failed TC" 재사용</h2>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-recycle-line"></i> 기존 코드 재사용 분석</div>
+    <table class="tbl">
+      <thead><tr><th>Feature</th><th>재사용 가능?</th><th>변경 사항</th></tr></thead>
+      <tbody>
+        <tr><td class="feature">URL param 읽기 (useSearchParams)</td><td>✅ 100% 재사용</td><td>sort 파라미터 읽기 1줄 추가</td></tr>
+        <tr><td class="feature">Period 필터 (useFilteredTestCases)</td><td>✅ 100% 재사용</td><td>period='7d' 이미 지원</td></tr>
+        <tr><td class="feature">Status 탭 바</td><td>✅ 100% 재사용</td><td>변경 없음</td></tr>
+        <tr><td class="feature">검색 + Project + Priority 필터</td><td>✅ 100% 재사용</td><td>변경 없음</td></tr>
+        <tr><td class="feature">페이지네이션</td><td>✅ 100% 재사용</td><td>변경 없음</td></tr>
+        <tr><td class="feature">Dynamic header</td><td>✅ 패턴 재사용</td><td>sort=created_desc 조건 추가 (~10줄)</td></tr>
+        <tr><td class="feature">← Back 링크</td><td>✅ 패턴 재사용</td><td>목적지를 /testcases-overview로 (~5줄)</td></tr>
+        <tr style="background:#F0FDF4"><td class="feature" style="color:#22C55E">sort URL 파라미터</td><td><span class="tag tag-new">NEW</span></td><td>sortBy 상태를 URL에 동기화 (~20줄)</td></tr>
+        <tr style="background:#F0FDF4"><td class="feature" style="color:#22C55E">Created 컬럼</td><td><span class="tag tag-new">NEW</span></td><td>테이블에 Created 컬럼 조건부 표시 (~30줄)</td></tr>
+        <tr style="background:#F0FDF4"><td class="feature" style="color:#22C55E">Summary bar 텍스트</td><td><span class="tag tag-new">NEW</span></td><td>"N TCs across M projects created in…" (~10줄)</td></tr>
+        <tr style="background:#F0FDF4"><td class="feature" style="color:#22C55E">Empty state</td><td><span class="tag tag-new">NEW</span></td><td>sort=created_desc 전용 빈 상태 (~15줄)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-time-line"></i> 예상 공수</div>
+    <table class="tbl">
+      <thead><tr><th>Item</th><th>공수</th><th>담당</th></tr></thead>
+      <tbody>
+        <tr><td class="feature">Desi 디자인 시안</td><td>0.5일</td><td>Desi</td></tr>
+        <tr><td class="feature">Dev: sort URL 파라미터 + Created 컬럼</td><td>2~3시간</td><td>Dev</td></tr>
+        <tr><td class="feature">Dev: Dynamic header + Back 링크</td><td>30분</td><td>Dev</td></tr>
+        <tr><td class="feature">Dev: Empty state + Summary bar</td><td>30분</td><td>Dev</td></tr>
+        <tr><td class="feature">Dev: Overview 페이지 View All 링크 연결</td><td>5분</td><td>Dev</td></tr>
+        <tr style="background:#F0FDF4"><td class="feature" style="color:#22C55E">합계</td><td style="font-weight:700">~4시간 Dev</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-success">
+      <strong>핵심:</strong> "View All Failed TC" 구현 시 확립한 패턴(URL 파라미터 + 동적 헤더 + Back 링크) 덕분에
+      "View All Recently Added"는 <strong>~4시간</strong>이면 완료됩니다.
+      신규 코드는 약 90줄이고, 나머지는 전부 기존 코드 재사용입니다.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label"><i class="ri-checkbox-circle-line"></i> Desi 디자인 체크리스트</div>
+    <table class="tbl">
+      <thead><tr><th>#</th><th>시안 항목</th><th>상태</th><th>참고</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="feature">Dynamic header (Recently Added)</td><td>☐ 시안 필요</td><td>ri-time-line icon, count badge, subtitle</td></tr>
+        <tr><td>2</td><td class="feature">"← Back to Overview" 링크</td><td>☐ 시안 필요</td><td>기존 "← Back to Report" 패턴 재활용</td></tr>
+        <tr><td>3</td><td class="feature">Created 컬럼 셀 (상대 시간 + tooltip)</td><td>☐ 시안 필요</td><td>"2 hours ago" 형식, hover 시 절대 시간</td></tr>
+        <tr><td>4</td><td class="feature">Summary bar ("42 TCs across 5 projects…")</td><td>☐ 시안 필요</td><td>기존 Summary bar 패턴 재활용</td></tr>
+        <tr><td>5</td><td class="feature">Empty state (빈 상태)</td><td>☐ 시안 필요</td><td>icon + 안내 텍스트 + CTA 버튼</td></tr>
+        <tr><td>6</td><td class="feature">Full page layout (전체 조합)</td><td>☐ 시안 필요</td><td>§7 와이어프레임 기반</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SIGN-OFF                                -->
+<!-- ═══════════════════════════════════════ -->
+<div style="margin-top:2rem;padding:1.25rem;background:#fff;border:1px solid #E2E8F0;border-radius:0.75rem;text-align:center;">
+  <p style="font-size:0.8125rem;font-weight:600;color:#0F172A;margin-bottom:0.25rem">Design Handoff Complete</p>
+  <p style="font-size:0.75rem;color:#64748B">
+    Pattern: Consistent with "View All Failed TC" (spec-view-all-failed-tc.html)<br>
+    PM → Desi · 2026-03-26 · 6 Design Items
+  </p>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Keyboard Shortcuts Guide (Design Mockup)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ══════════════════════════════════════════ */
+  /* DEMO STATE SWITCHER BAR                   */
+  /* ══════════════════════════════════════════ */
+  .demo-bar {
+    display: flex; align-items: center; gap: 0.375rem; padding: 0.5rem 1.25rem;
+    background: #FFFBEB; border-bottom: 1px solid #FDE68A; flex-shrink: 0; flex-wrap: wrap;
+  }
+  .demo-bar label { font-size: 0.625rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.04em; }
+  .demo-btn {
+    font-size: 0.625rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px;
+    cursor: pointer; font-family: inherit; border: 1px solid #E2E8F0; background: #fff; color: #475569; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .demo-btn.active { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .demo-sep { width: 1px; height: 0.875rem; background: #D97706; opacity: 0.3; }
+  .demo-note { font-size: 0.5625rem; color: #92400E; margin-left: auto; }
+
+  /* ══════════════════════════════════════════ */
+  /* FAKE APP BACKGROUND                       */
+  /* ══════════════════════════════════════════ */
+  .app-bg { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+  /* Top header (simplified) */
+  .top-header {
+    background: #fff; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; padding: 0 1.25rem; height: 3.25rem; flex-shrink: 0;
+  }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; padding-right: 1.25rem; border-right: 1px solid #E2E8F0; margin-right: 1rem; }
+  .logo-icon { width: 26px; height: 26px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; }
+  .logo-text { font-family: 'Pacifico', cursive; font-size: 1rem; color: #6366F1; }
+  .header-nav { display: flex; align-items: center; height: 100%; }
+  .header-nav-item { display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.625rem; height: 100%; font-size: 0.8125rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: #6366F1; font-weight: 600; }
+  .header-nav-item i { font-size: 0.875rem; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.375rem; }
+  .h-icon-btn {
+    width: 2rem; height: 2rem; border-radius: 0.375rem; border: none; background: none;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;
+    position: relative; transition: all 0.15s;
+  }
+  .h-icon-btn:hover { background: #F1F5F9; color: #475569; }
+  .h-icon-btn.kb-active { background: #EEF2FF; color: #6366F1; }
+  .h-icon-btn .notif-dot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; border: 1.5px solid #fff; }
+  .h-icon-btn .tooltip-tag {
+    position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%);
+    background: #1E293B; color: #fff; font-size: 0.5625rem; padding: 3px 8px; border-radius: 4px;
+    white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 200;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .h-icon-btn:hover .tooltip-tag { opacity: 1; }
+  .h-icon-btn .tooltip-tag kbd { font-size: 0.5rem; background: #334155; border: 1px solid #475569; color: #E2E8F0; padding: 0 3px; border-radius: 2px; font-family: 'SF Mono','Fira Code',monospace; }
+  .header-avatar { width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1; display: flex; align-items: center; justify-content: center; font-size: 0.5625rem; font-weight: 700; color: #fff; cursor: pointer; }
+
+  /* App content placeholder */
+  .app-content { flex: 1; display: flex; overflow: hidden; }
+  .app-sidebar { width: 220px; background: #fff; border-right: 1px solid #E2E8F0; }
+  .app-main { flex: 1; background: #F8FAFC; display: flex; align-items: center; justify-content: center; color: #CBD5E1; font-size: 0.875rem; }
+
+  /* ══════════════════════════════════════════ */
+  /* MODAL OVERLAY                             */
+  /* ══════════════════════════════════════════ */
+  .modal-overlay {
+    position: absolute; inset: 0; background: rgba(15,23,42,0.25);
+    display: flex; align-items: center; justify-content: center; z-index: 50;
+    animation: fadeIn 150ms ease-out;
+  }
+  .modal-overlay.hidden { display: none; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ══════════════════════════════════════════ */
+  /* SHORTCUTS MODAL                           */
+  /* ══════════════════════════════════════════ */
+  .sc-modal {
+    width: 520px; max-height: 70vh; background: #fff; border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15); border: 1px solid #E2E8F0;
+    display: flex; flex-direction: column; overflow: hidden;
+    animation: slideUp 150ms ease-out;
+  }
+
+  /* Header */
+  .sc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid #E2E8F0; flex-shrink: 0;
+  }
+  .sc-header-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: #0F172A; }
+  .sc-header-title i { color: #6366F1; font-size: 18px; }
+  .sc-close {
+    width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    color: #94A3B8; cursor: pointer; border: none; background: none; font-size: 16px;
+  }
+  .sc-close:hover { background: #F1F5F9; color: #475569; }
+
+  /* Search */
+  .sc-search { padding: 12px 20px; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .sc-search-wrap { position: relative; }
+  .sc-search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #94A3B8; pointer-events: none; }
+  .sc-search input {
+    width: 100%; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px 8px 36px;
+    font-size: 13px; color: #1E293B; outline: none; background: #F8FAFC; font-family: inherit;
+  }
+  .sc-search input:focus { border-color: #6366F1; box-shadow: 0 0 0 2px rgba(99,102,241,0.15); background: #fff; }
+
+  /* Category Tabs (for tab view) */
+  .sc-tabs { display: none; padding: 0 20px; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .sc-tabs.visible { display: flex; gap: 0; }
+  .sc-cat-tab {
+    padding: 8px 12px; font-size: 11px; font-weight: 600; color: #64748B; cursor: pointer;
+    border-bottom: 2px solid transparent; text-transform: uppercase; letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .sc-cat-tab:hover { color: #475569; }
+  .sc-cat-tab.active { color: #6366F1; border-bottom-color: #6366F1; }
+
+  /* Body */
+  .sc-body { flex: 1; overflow-y: auto; padding: 4px 0; min-height: 0; }
+
+  /* Category label */
+  .sc-category {
+    padding: 10px 20px 4px; font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #64748B; display: flex; align-items: center; gap: 6px;
+  }
+  .sc-category i { font-size: 13px; }
+  .sc-category .ctx-badge {
+    font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 9999px;
+    background: #EEF2FF; color: #6366F1; text-transform: none; letter-spacing: 0;
+  }
+
+  /* Shortcut row */
+  .sc-row { display: flex; align-items: center; padding: 7px 20px; gap: 12px; border-radius: 0; transition: background 0.1s; }
+  .sc-row:hover { background: #F8FAFC; }
+  .sc-row.dimmed { opacity: 0.35; }
+  .sc-row.dimmed .sc-action { text-decoration: line-through; }
+
+  .sc-keys { min-width: 100px; display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .sc-keys kbd {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'SF Mono','Fira Code',monospace; font-size: 11px; font-weight: 500;
+    padding: 1px 6px; min-width: 22px; text-align: center;
+    background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 4px; color: #1E293B;
+    line-height: 1.6;
+  }
+  .sc-keys .then { font-size: 10px; color: #94A3B8; font-family: inherit; }
+  .sc-keys .or { font-size: 10px; color: #94A3B8; font-family: inherit; }
+
+  /* Status-colored keys */
+  kbd.key-pass { background: #F0FDF4; border-color: #BBF7D0; color: #16A34A; }
+  kbd.key-fail { background: #FEF2F2; border-color: #FECACA; color: #DC2626; }
+  kbd.key-block { background: #FFFBEB; border-color: #FDE68A; color: #B45309; }
+  kbd.key-retest { background: #F5F3FF; border-color: #DDD6FE; color: #7C3AED; }
+
+  .sc-action { font-size: 13px; color: #1E293B; flex: 1; }
+  .sc-action .highlight { background: #FEF3C7; border-radius: 2px; padding: 0 1px; }
+
+  /* Empty state */
+  .sc-empty { display: none; text-align: center; padding: 48px 20px; color: #94A3B8; }
+  .sc-empty.visible { display: block; }
+  .sc-empty i { font-size: 48px; color: #CBD5E1; display: block; margin-bottom: 12px; }
+  .sc-empty p { font-size: 13px; }
+
+  /* Footer */
+  .sc-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px; border-top: 1px solid #E2E8F0; flex-shrink: 0;
+  }
+  .toggle-wrap { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .toggle-track {
+    width: 32px; height: 18px; border-radius: 9px; background: #CBD5E1; position: relative;
+    transition: background 0.2s; flex-shrink: 0;
+  }
+  .toggle-track.on { background: #6366F1; }
+  .toggle-thumb {
+    width: 14px; height: 14px; border-radius: 50%; background: #fff; position: absolute;
+    top: 2px; left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.15); transition: left 0.2s;
+  }
+  .toggle-track.on .toggle-thumb { left: 16px; }
+  .toggle-label { font-size: 12px; color: #64748B; }
+  .sc-footer-right { font-size: 12px; color: #94A3B8; display: flex; align-items: center; gap: 8px; }
+  .sc-footer-right kbd { font-size: 10px; font-family: 'SF Mono',monospace; padding: 1px 5px; background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 3px; color: #64748B; }
+  .os-toggle { font-size: 11px; font-weight: 600; color: #6366F1; cursor: pointer; background: #EEF2FF; border: none; padding: 2px 8px; border-radius: 4px; font-family: inherit; }
+  .os-toggle:hover { background: #E0E7FF; }
+
+  /* ══════════════════════════════════════════ */
+  /* FOCUS MODE OVERLAY (state 6)              */
+  /* ══════════════════════════════════════════ */
+  .focus-overlay {
+    position: absolute; inset: 0; background: #0F172A; z-index: 40;
+    display: none; flex-direction: column; color: #E2E8F0;
+  }
+  .focus-overlay.visible { display: flex; }
+  .focus-header {
+    display: flex; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #1E293B; flex-shrink: 0;
+  }
+  .focus-back { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; color: #94A3B8; cursor: pointer; }
+  .focus-back:hover { color: #E2E8F0; }
+  .focus-counter { margin-left: auto; font-size: 0.8125rem; color: #64748B; margin-right: 1rem; }
+  .focus-help-btn {
+    display: flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; color: #94A3B8;
+    cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 0.375rem; border: 1px solid #334155; background: none;
+    font-family: inherit;
+  }
+  .focus-help-btn:hover { background: #1E293B; color: #E2E8F0; }
+  .focus-help-btn kbd { font-size: 0.5625rem; font-family: 'SF Mono',monospace; background: #334155; border: 1px solid #475569; color: #CBD5E1; padding: 0 4px; border-radius: 3px; }
+  .focus-body { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .focus-card {
+    background: #1E293B; border: 1px solid #334155; border-radius: 12px;
+    padding: 2rem; width: 600px; max-width: 90%;
+  }
+  .focus-card-title { font-size: 0.8125rem; color: #64748B; margin-bottom: 0.25rem; font-family: monospace; }
+  .focus-card-name { font-size: 1.25rem; font-weight: 700; color: #F8FAFC; margin-bottom: 1.5rem; }
+  .focus-hints {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.6875rem; color: #64748B;
+  }
+  .focus-hints span { display: flex; align-items: center; gap: 0.25rem; }
+  .focus-hints kbd {
+    font-family: 'SF Mono',monospace; font-size: 0.625rem; background: #334155;
+    border: 1px solid #475569; color: #CBD5E1; padding: 1px 5px; border-radius: 3px;
+    min-width: 18px; text-align: center;
+  }
+  .focus-hints kbd.kp { background: #14532D; border-color: #166534; color: #4ADE80; }
+  .focus-hints kbd.kf { background: #450A0A; border-color: #7F1D1D; color: #FCA5A5; }
+  .focus-hints kbd.kb { background: #451A03; border-color: #78350F; color: #FCD34D; }
+  .focus-hints kbd.kr { background: #2E1065; border-color: #4C1D95; color: #C4B5FD; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ DEMO STATE SWITCHER ═══════════ -->
+<div class="demo-bar">
+  <label>State:</label>
+  <button class="demo-btn active" onclick="setState('default')">① Default</button>
+  <button class="demo-btn" onclick="setState('search')">② Search</button>
+  <button class="demo-btn" onclick="setState('tabs')">③ Tab View</button>
+  <button class="demo-btn" onclick="setState('focus')">④ Focus Mode</button>
+  <button class="demo-btn" onclick="setState('os')">⑤ OS: Win/Linux</button>
+  <button class="demo-btn" onclick="setState('empty')">⑥ Empty Search</button>
+  <span class="demo-sep"></span>
+  <button class="demo-btn" onclick="setState('toggle-off')">⑦ Toggle OFF</button>
+  <span class="demo-note">★ Press <kbd style="font-size:9px;background:#fff;border:1px solid #E2E8F0;padding:0 4px;border-radius:3px">?</kbd> to open/close modal · 6 required design states + Toggle OFF bonus</span>
+</div>
+
+<!-- ═══════════ APP BACKGROUND ═══════════ -->
+<div class="app-bg" id="appBg">
+  <!-- Header -->
+  <header class="top-header">
+    <div class="header-logo">
+      <div class="logo-icon">T</div>
+      <span class="logo-text">Testably</span>
+    </div>
+    <nav class="header-nav">
+      <div class="header-nav-item"><i class="ri-dashboard-line"></i> Dashboard</div>
+      <div class="header-nav-item active"><i class="ri-file-list-3-line"></i> Test Cases</div>
+      <div class="header-nav-item"><i class="ri-play-circle-line"></i> Runs</div>
+      <div class="header-nav-item"><i class="ri-flag-line"></i> Milestones</div>
+    </nav>
+    <div class="header-right">
+      <button class="h-icon-btn"><i class="ri-search-line"></i></button>
+      <button class="h-icon-btn">
+        <i class="ri-notification-3-line"></i>
+        <span class="notif-dot"></span>
+      </button>
+      <button class="h-icon-btn" id="kbBtn" onclick="toggleModal()">
+        <i class="ri-keyboard-line"></i>
+        <span class="tooltip-tag">Keyboard Shortcuts <kbd>?</kbd></span>
+      </button>
+      <div class="header-avatar">KJ</div>
+    </div>
+  </header>
+  <!-- Content placeholder -->
+  <div class="app-content">
+    <div class="app-sidebar"></div>
+    <div class="app-main">Press <kbd style="font-size:12px;background:#F1F5F9;border:1px solid #E2E8F0;padding:2px 8px;border-radius:4px;color:#64748B;font-family:'SF Mono',monospace">?</kbd> or click ⌨ in header to open shortcuts</div>
+  </div>
+
+  <!-- ═══════════ MODAL OVERLAY ═══════════ -->
+  <div class="modal-overlay hidden" id="modalOverlay" onclick="if(event.target===this)toggleModal()">
+    <div class="sc-modal" id="scModal">
+      <!-- Header -->
+      <div class="sc-header">
+        <div class="sc-header-title"><i class="ri-keyboard-line"></i> Keyboard Shortcuts</div>
+        <button class="sc-close" onclick="toggleModal()"><i class="ri-close-line"></i></button>
+      </div>
+      <!-- Search -->
+      <div class="sc-search">
+        <div class="sc-search-wrap">
+          <i class="ri-search-line"></i>
+          <input type="text" id="searchInput" placeholder="Search shortcuts..." oninput="filterShortcuts()" />
+        </div>
+      </div>
+      <!-- Category Tabs -->
+      <div class="sc-tabs" id="scTabs">
+        <div class="sc-cat-tab active" data-cat="all" onclick="selectTab('all')">All</div>
+        <div class="sc-cat-tab" data-cat="current" onclick="selectTab('current')">Current Page</div>
+        <div class="sc-cat-tab" data-cat="global" onclick="selectTab('global')">Global</div>
+        <div class="sc-cat-tab" data-cat="nav" onclick="selectTab('nav')">Navigation</div>
+        <div class="sc-cat-tab" data-cat="focus" onclick="selectTab('focus')">Focus Mode</div>
+        <div class="sc-cat-tab" data-cat="editing" onclick="selectTab('editing')">Editing</div>
+      </div>
+      <!-- Body -->
+      <div class="sc-body" id="scBody">
+
+        <!-- Current Page -->
+        <div class="sc-category" data-cat="current"><i class="ri-map-pin-line"></i> Current Page <span class="ctx-badge">Test Cases</span></div>
+        <div class="sc-row" data-cat="current" data-single="1"><div class="sc-keys"><kbd>N</kbd></div><div class="sc-action">New Test Case</div></div>
+        <div class="sc-row" data-cat="current" data-single="1"><div class="sc-keys"><kbd>R</kbd></div><div class="sc-action">Continue Run</div></div>
+        <div class="sc-row" data-cat="current" data-single="1"><div class="sc-keys"><kbd>E</kbd></div><div class="sc-action">Edit selected</div></div>
+        <div class="sc-row" data-cat="current"><div class="sc-keys"><kbd id="mod1">⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></div><div class="sc-action">Enter Focus Mode</div></div>
+
+        <!-- Global -->
+        <div class="sc-category" data-cat="global"><i class="ri-global-line"></i> Global</div>
+        <div class="sc-row" data-cat="global"><div class="sc-keys"><kbd id="mod2">⌘</kbd><kbd>K</kbd></div><div class="sc-action">Command Palette</div></div>
+        <div class="sc-row" data-cat="global"><div class="sc-keys"><kbd id="mod3">⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></div><div class="sc-action">Focus Mode</div></div>
+        <div class="sc-row" data-cat="global" data-single="1"><div class="sc-keys"><kbd>?</kbd></div><div class="sc-action">This help</div></div>
+        <div class="sc-row" data-cat="global"><div class="sc-keys"><kbd id="mod4">⌘</kbd><kbd>/</kbd></div><div class="sc-action">Toggle sidebar</div></div>
+        <div class="sc-row" data-cat="global"><div class="sc-keys"><kbd>Esc</kbd></div><div class="sc-action">Close panel / modal</div></div>
+
+        <!-- Navigation -->
+        <div class="sc-category" data-cat="nav"><i class="ri-compass-3-line"></i> Navigation</div>
+        <div class="sc-row" data-cat="nav" data-single="1"><div class="sc-keys"><kbd>G</kbd> <span class="then">then</span> <kbd>T</kbd></div><div class="sc-action">Go to Test Cases</div></div>
+        <div class="sc-row" data-cat="nav" data-single="1"><div class="sc-keys"><kbd>G</kbd> <span class="then">then</span> <kbd>R</kbd></div><div class="sc-action">Go to Test Runs</div></div>
+        <div class="sc-row" data-cat="nav" data-single="1"><div class="sc-keys"><kbd>G</kbd> <span class="then">then</span> <kbd>D</kbd></div><div class="sc-action">Go to Discovery Logs</div></div>
+        <div class="sc-row" data-cat="nav" data-single="1"><div class="sc-keys"><kbd>G</kbd> <span class="then">then</span> <kbd>M</kbd></div><div class="sc-action">Go to Milestones</div></div>
+        <div class="sc-row" data-cat="nav" data-single="1"><div class="sc-keys"><kbd>G</kbd> <span class="then">then</span> <kbd>P</kbd></div><div class="sc-action">Go to All Projects</div></div>
+        <div class="sc-row" data-cat="nav" data-single="1"><div class="sc-keys"><kbd>J</kbd> <span class="or">/</span> <kbd>↓</kbd></div><div class="sc-action">Next item in list</div></div>
+        <div class="sc-row" data-cat="nav" data-single="1"><div class="sc-keys"><kbd>K</kbd> <span class="or">/</span> <kbd>↑</kbd></div><div class="sc-action">Previous item in list</div></div>
+
+        <!-- Focus Mode -->
+        <div class="sc-category" data-cat="focus"><i class="ri-focus-3-line"></i> Focus Mode</div>
+        <div class="sc-row" data-cat="focus" data-single="1"><div class="sc-keys"><kbd class="key-pass">P</kbd></div><div class="sc-action">Pass &amp; Next</div></div>
+        <div class="sc-row" data-cat="focus" data-single="1"><div class="sc-keys"><kbd class="key-fail">F</kbd></div><div class="sc-action">Fail (opens note)</div></div>
+        <div class="sc-row" data-cat="focus" data-single="1"><div class="sc-keys"><kbd class="key-block">B</kbd></div><div class="sc-action">Block &amp; Next</div></div>
+        <div class="sc-row" data-cat="focus" data-single="1"><div class="sc-keys"><kbd class="key-retest">R</kbd></div><div class="sc-action">Retest &amp; Next</div></div>
+        <div class="sc-row" data-cat="focus" data-single="1"><div class="sc-keys"><kbd>S</kbd></div><div class="sc-action">Skip &amp; Next</div></div>
+        <div class="sc-row" data-cat="focus" data-single="1"><div class="sc-keys"><kbd>J</kbd> <span class="or">/</span> <kbd>→</kbd></div><div class="sc-action">Next Test</div></div>
+        <div class="sc-row" data-cat="focus" data-single="1"><div class="sc-keys"><kbd>K</kbd> <span class="or">/</span> <kbd>←</kbd></div><div class="sc-action">Previous Test</div></div>
+        <div class="sc-row" data-cat="focus" data-single="1"><div class="sc-keys"><kbd>N</kbd></div><div class="sc-action">Focus Note</div></div>
+        <div class="sc-row" data-cat="focus" data-single="1"><div class="sc-keys"><kbd>C</kbd></div><div class="sc-action">Toggle Comments</div></div>
+        <div class="sc-row" data-cat="focus" data-single="1"><div class="sc-keys"><kbd>H</kbd></div><div class="sc-action">Toggle History</div></div>
+        <div class="sc-row" data-cat="focus"><div class="sc-keys"><kbd id="mod5">⌘</kbd><kbd>↵</kbd></div><div class="sc-action">Save Note &amp; Next</div></div>
+        <div class="sc-row" data-cat="focus"><div class="sc-keys"><kbd>Esc</kbd></div><div class="sc-action">Exit Focus Mode</div></div>
+
+        <!-- Editing -->
+        <div class="sc-category" data-cat="editing"><i class="ri-edit-line"></i> Editing</div>
+        <div class="sc-row" data-cat="editing"><div class="sc-keys"><kbd>Enter</kbd></div><div class="sc-action">Save / Submit</div></div>
+        <div class="sc-row" data-cat="editing"><div class="sc-keys"><kbd>Esc</kbd></div><div class="sc-action">Cancel / Close</div></div>
+        <div class="sc-row" data-cat="editing"><div class="sc-keys"><kbd id="mod6">⌘</kbd><kbd>↵</kbd></div><div class="sc-action">Save (multiline)</div></div>
+        <div class="sc-row" data-cat="editing"><div class="sc-keys"><kbd>Tab</kbd></div><div class="sc-action">Next field</div></div>
+        <div class="sc-row" data-cat="editing"><div class="sc-keys"><kbd>⇧</kbd><kbd>Tab</kbd></div><div class="sc-action">Previous field</div></div>
+
+        <!-- Empty state -->
+        <div class="sc-empty" id="emptyState">
+          <i class="ri-search-line"></i>
+          <p>No shortcuts match your search</p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="sc-footer">
+        <div class="toggle-wrap" onclick="toggleSingleKey()">
+          <div class="toggle-track on" id="toggleTrack"><div class="toggle-thumb"></div></div>
+          <span class="toggle-label">Single-key shortcuts</span>
+        </div>
+        <div class="sc-footer-right">
+          <button class="os-toggle" id="osToggle" onclick="toggleOS()">macOS</button>
+          <span><kbd>Esc</kbd> to close</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ FOCUS MODE OVERLAY ═══════════ -->
+  <div class="focus-overlay" id="focusOverlay">
+    <div class="focus-header">
+      <div class="focus-back"><i class="ri-arrow-left-s-line"></i> Exit Focus Mode</div>
+      <div class="focus-counter">Test 3 of 12</div>
+      <button class="focus-help-btn" onclick="toggleModal()">
+        <i class="ri-keyboard-line" style="font-size:14px"></i> Shortcuts <kbd>?</kbd>
+      </button>
+    </div>
+    <div class="focus-body">
+      <div class="focus-card">
+        <div class="focus-card-title">TC-042</div>
+        <div class="focus-card-name">Login with valid credentials on Safari 17</div>
+        <div class="focus-hints">
+          <span><kbd class="kp">P</kbd> Pass</span>
+          <span><kbd class="kf">F</kbd> Fail</span>
+          <span><kbd class="kb">B</kbd> Block</span>
+          <span><kbd class="kr">R</kbd> Retest</span>
+          <span><kbd>S</kbd> Skip</span>
+          <span><kbd>J</kbd>/<kbd>→</kbd> Next</span>
+          <span><kbd>K</kbd>/<kbd>←</kbd> Prev</span>
+          <span><kbd>N</kbd> Note</span>
+          <span><kbd>C</kbd> Comments</span>
+          <span><kbd>H</kbd> History</span>
+          <span><kbd>?</kbd> Help</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let modalOpen = false;
+let currentOS = 'mac'; // 'mac' | 'win'
+let singleKeyOn = true;
+let currentState = 'default';
+let tabMode = false;
+let activeTab = 'all';
+
+// ── Detect real OS ──
+if (!navigator.platform.includes('Mac')) {
+  currentOS = 'win';
+  applyOS();
+}
+
+// ── Toggle modal ──
+function toggleModal() {
+  modalOpen = !modalOpen;
+  document.getElementById('modalOverlay').classList.toggle('hidden', !modalOpen);
+  document.getElementById('kbBtn').classList.toggle('kb-active', modalOpen);
+  if (modalOpen) {
+    document.getElementById('searchInput').focus();
+  }
+}
+
+// ── Keyboard ? to toggle ──
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
+    e.preventDefault();
+    toggleModal();
+  }
+  if (e.key === 'Escape' && modalOpen) {
+    e.preventDefault();
+    toggleModal();
+  }
+});
+
+// ── Search / Filter ──
+function filterShortcuts() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  const rows = document.querySelectorAll('.sc-row');
+  const cats = document.querySelectorAll('.sc-category');
+  let anyVisible = false;
+
+  rows.forEach(row => {
+    const action = row.querySelector('.sc-action').textContent.toLowerCase();
+    const keys = row.querySelector('.sc-keys').textContent.toLowerCase();
+    const match = !q || action.includes(q) || keys.includes(q);
+    row.style.display = match ? '' : 'none';
+    if (match) anyVisible = true;
+
+    // Highlight matching text
+    const actionEl = row.querySelector('.sc-action');
+    const original = actionEl.textContent;
+    if (q && match && action.includes(q)) {
+      const idx = action.indexOf(q);
+      actionEl.innerHTML = original.substring(0, idx) + '<span class="highlight">' + original.substring(idx, idx + q.length) + '</span>' + original.substring(idx + q.length);
+    } else {
+      actionEl.textContent = original;
+    }
+  });
+
+  // Hide empty categories
+  cats.forEach(cat => {
+    const catName = cat.dataset.cat;
+    const catRows = document.querySelectorAll(`.sc-row[data-cat="${catName}"]`);
+    const hasVisible = [...catRows].some(r => r.style.display !== 'none');
+    cat.style.display = hasVisible ? '' : 'none';
+  });
+
+  document.getElementById('emptyState').classList.toggle('visible', !anyVisible && !!q);
+}
+
+// ── Category Tab View ──
+function selectTab(cat) {
+  activeTab = cat;
+  document.querySelectorAll('.sc-cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+  const rows = document.querySelectorAll('.sc-row');
+  const cats = document.querySelectorAll('.sc-category');
+
+  if (cat === 'all') {
+    rows.forEach(r => r.style.display = '');
+    cats.forEach(c => c.style.display = '');
+  } else {
+    rows.forEach(r => r.style.display = r.dataset.cat === cat ? '' : 'none');
+    cats.forEach(c => c.style.display = c.dataset.cat === cat ? '' : 'none');
+  }
+  // Re-apply single-key toggle
+  if (!singleKeyOn) applySingleKeyDim();
+}
+
+// ── OS Toggle ──
+function toggleOS() {
+  currentOS = currentOS === 'mac' ? 'win' : 'mac';
+  applyOS();
+}
+
+function applyOS() {
+  const btn = document.getElementById('osToggle');
+  btn.textContent = currentOS === 'mac' ? 'macOS' : 'Windows';
+  const macSymbols = { '⌘': 'Ctrl', '⌥': 'Alt', '⇧': 'Shift', '↵': 'Enter' };
+  const winSymbols = { 'Ctrl': '⌘', 'Alt': '⌥', 'Shift': '⇧', 'Enter': '↵' };
+  const modKeys = document.querySelectorAll('[id^="mod"]');
+
+  if (currentOS === 'win') {
+    modKeys.forEach(k => { if (macSymbols[k.textContent]) k.textContent = macSymbols[k.textContent]; });
+    // Also fix Shift keys
+    document.querySelectorAll('.sc-keys kbd').forEach(k => {
+      if (k.textContent === '⇧') k.textContent = 'Shift';
+      if (k.textContent === '↵') k.textContent = 'Enter';
+    });
+  } else {
+    modKeys.forEach(k => { if (winSymbols[k.textContent]) k.textContent = winSymbols[k.textContent]; });
+    document.querySelectorAll('.sc-keys kbd').forEach(k => {
+      if (k.textContent === 'Shift') k.textContent = '⇧';
+      if (k.textContent === 'Enter' && k.closest('.sc-keys').querySelectorAll('kbd').length > 1) k.textContent = '↵';
+    });
+  }
+}
+
+// ── Single-key toggle ──
+function toggleSingleKey() {
+  singleKeyOn = !singleKeyOn;
+  document.getElementById('toggleTrack').classList.toggle('on', singleKeyOn);
+  applySingleKeyDim();
+}
+
+function applySingleKeyDim() {
+  document.querySelectorAll('.sc-row[data-single="1"]').forEach(row => {
+    row.classList.toggle('dimmed', !singleKeyOn);
+  });
+}
+
+// ── Demo State Switcher ──
+function setState(state) {
+  currentState = state;
+  document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.demo-btn[onclick="setState('${state}')"]`).classList.add('active');
+
+  // Reset everything
+  const focusOverlay = document.getElementById('focusOverlay');
+  focusOverlay.classList.remove('visible');
+  singleKeyOn = true;
+  document.getElementById('toggleTrack').classList.add('on');
+  applySingleKeyDim();
+  currentOS = 'mac';
+  applyOS();
+  tabMode = false;
+  document.getElementById('scTabs').classList.remove('visible');
+  document.getElementById('searchInput').value = '';
+  filterShortcuts(); // reset
+  selectTab('all');
+
+  // Show modal for all states except focus-only
+  if (!modalOpen && state !== 'focus') toggleModal();
+  if (modalOpen && state === 'focus') toggleModal();
+
+  switch (state) {
+    case 'default':
+      break;
+
+    case 'search':
+      document.getElementById('searchInput').value = 'pass';
+      filterShortcuts();
+      break;
+
+    case 'tabs':
+      tabMode = true;
+      document.getElementById('scTabs').classList.add('visible');
+      selectTab('focus');
+      break;
+
+    case 'focus':
+      focusOverlay.classList.add('visible');
+      // Open modal on top of focus mode
+      setTimeout(() => { if (!modalOpen) toggleModal(); }, 300);
+      break;
+
+    case 'os':
+      currentOS = 'win';
+      applyOS();
+      break;
+
+    case 'empty':
+      document.getElementById('searchInput').value = 'xyznonexistent';
+      filterShortcuts();
+      break;
+
+    case 'toggle-off':
+      singleKeyOn = false;
+      document.getElementById('toggleTrack').classList.remove('on');
+      applySingleKeyDim();
+      break;
+  }
+}
+
+// Open modal on page load
+window.addEventListener('load', () => {
+  setTimeout(() => toggleModal(), 300);
+});
+</script>
+</body>
+</html>

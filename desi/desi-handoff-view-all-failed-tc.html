@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Desi Handoff — /testcases Page Redesign: Status Filter + Failed TC View</title>
+<style>
+  :root {
+    --indigo: #6366F1; --indigo-50: #EEF2FF; --indigo-700: #4338CA;
+    --red: #EF4444; --red-50: #FEF2F2; --red-700: #B91C1C;
+    --green: #10B981; --green-50: #F0FDF4; --green-700: #15803D;
+    --amber: #F59E0B; --amber-50: #FFFBEB; --amber-700: #B45309;
+    --slate-900: #0F172A; --slate-700: #334155; --slate-500: #64748B;
+    --slate-400: #94A3B8; --slate-300: #CBD5E1; --slate-200: #E2E8F0;
+    --slate-100: #F1F5F9; --slate-50: #F8FAFC;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--slate-700); line-height: 1.65; background: #F1F5F9; padding: 2rem; }
+  .container { max-width: 960px; margin: 0 auto; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 50%, #6366F1 100%); color: #fff; padding: 2.5rem; border-radius: 1rem 1rem 0 0; }
+  .header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .header .sub { opacity: 0.9; font-size: 0.875rem; }
+  .tag { display: inline-block; background: rgba(255,255,255,0.2); padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; margin-top: 0.5rem; }
+  .meta { background: #fff; border: 1px solid var(--slate-200); border-top: none; padding: 1rem 2.5rem; display: flex; gap: 2rem; flex-wrap: wrap; font-size: 0.8125rem; color: var(--slate-400); }
+  .meta b { color: var(--slate-700); }
+
+  /* Body */
+  .body { background: #fff; border: 1px solid var(--slate-200); border-top: none; border-radius: 0 0 1rem 1rem; padding: 2.5rem; }
+  h2 { font-size: 1.125rem; font-weight: 800; color: var(--slate-900); margin: 2.5rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--indigo); }
+  h2:first-child { margin-top: 0; }
+  h3 { font-size: 0.9375rem; font-weight: 700; color: var(--slate-900); margin: 1.75rem 0 0.5rem; }
+  h4 { font-size: 0.875rem; font-weight: 700; color: var(--slate-700); margin: 1.25rem 0 0.375rem; }
+  p, li { font-size: 0.875rem; margin-bottom: 0.5rem; }
+  ul, ol { padding-left: 1.25rem; }
+  a { color: var(--indigo); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8125rem; }
+  th { background: var(--slate-50); font-weight: 700; color: var(--slate-900); text-align: left; padding: 0.625rem 0.75rem; border: 1px solid var(--slate-200); }
+  td { padding: 0.625rem 0.75rem; border: 1px solid var(--slate-200); vertical-align: top; }
+
+  /* Code */
+  code { background: var(--slate-100); padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.8125rem; color: var(--indigo); }
+
+  /* Callouts */
+  .callout { border-left: 4px solid var(--indigo); background: var(--indigo-50); padding: 1rem 1.25rem; border-radius: 0 0.5rem 0.5rem 0; margin: 1rem 0; font-size: 0.8125rem; }
+  .callout-pink { border-left-color: #EC4899; background: #FDF2F8; }
+  .callout-green { border-left-color: var(--green); background: var(--green-50); }
+  .callout-amber { border-left-color: var(--amber); background: var(--amber-50); }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; vertical-align: middle; }
+  .badge-red { background: var(--red-50); color: #DC2626; }
+  .badge-green { background: var(--green-50); color: #16A34A; }
+  .badge-amber { background: var(--amber-50); color: #D97706; }
+  .badge-indigo { background: var(--indigo-50); color: #4F46E5; }
+  .badge-slate { background: var(--slate-100); color: var(--slate-500); }
+  .badge-pink { background: #FDF2F8; color: #DB2777; }
+
+  /* Wireframes */
+  .wireframe { background: var(--slate-50); border: 2px dashed var(--slate-300); border-radius: 0.75rem; padding: 1.5rem; margin: 1rem 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.6875rem; line-height: 1.9; color: var(--slate-700); overflow-x: auto; white-space: pre; }
+  .wireframe .label { color: var(--slate-400); font-style: italic; }
+  .wireframe .highlight { color: var(--indigo); font-weight: 700; }
+  .wireframe .red { color: var(--red); font-weight: 700; }
+  .wireframe .green { color: var(--green); font-weight: 700; }
+
+  /* Color swatches */
+  .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 4px; border: 1px solid rgba(0,0,0,0.1); }
+
+  /* Design item cards */
+  .design-item { background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 0.75rem; padding: 1.5rem; margin: 1.25rem 0; }
+  .design-item-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .design-item-number { background: var(--indigo); color: #fff; width: 1.5rem; height: 1.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6875rem; font-weight: 800; flex-shrink: 0; }
+  .design-item-title { font-weight: 700; color: var(--slate-900); font-size: 0.9375rem; }
+
+  /* Summary */
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .summary-card { background: #fff; border: 1px solid var(--slate-200); border-radius: 0.75rem; padding: 1rem; }
+  .summary-card-label { font-size: 0.6875rem; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+  .summary-card-value { font-size: 1.25rem; font-weight: 800; color: var(--slate-900); }
+
+  .toc { background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2rem; }
+  .toc-title { font-weight: 700; font-size: 0.8125rem; color: var(--slate-900); margin-bottom: 0.5rem; }
+  .toc a { text-decoration: none; font-size: 0.8125rem; display: block; padding: 0.125rem 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══ Header ═══ -->
+<div class="header">
+  <h1>🎨 Desi Handoff — /testcases 페이지 Execution Status 필터 디자인</h1>
+  <div class="sub">Pass Rate Report "View All →" 클릭 시 /testcases?status=failed 이동 — 7개 디자인 항목</div>
+  <div class="tag">CEO APPROVED — PM Spec: spec-view-all-failed-tc.html</div>
+</div>
+<div class="meta">
+  <span>📅 <b>2026-03-26</b></span>
+  <span>👤 <b>From</b> PM Kyle</span>
+  <span>🎨 <b>To</b> Desi (Designer)</span>
+  <span>📌 <b>Priority</b> <span class="badge badge-red">High</span></span>
+  <span>📐 <b>디자인 항목</b> 7건</span>
+</div>
+
+<div class="body">
+
+<!-- ═══ Context ═══ -->
+<h2>배경 및 Context</h2>
+
+<div class="callout-pink callout">
+  <b>핵심 요약:</b> Pass Rate Report 페이지 하단 "Failed Test Cases" 섹션에서 "View All →" 링크를 클릭하면, 기존 <code>/testcases</code> 페이지로 이동하되 URL 파라미터(<code>?status=failed</code>)를 통해 Failed TC만 필터링하여 표시합니다. 별도 새 페이지가 아닌, <b>기존 페이지의 기능 확장</b>입니다.
+</div>
+
+<h3>현재 /testcases 페이지 구조</h3>
+<div class="wireframe">┌──────────────────────────────────────────────────────────────────┐
+│ <span class="label">[Header Bar]</span>                                                      │
+│ Logo · Test Cases · 🔍 프로젝트, 테스트 케이스 검색...    🔔 ❓ JK│
+├──────────┬───────────────────────────────────────────────────────┤
+│ <span class="label">[Sidebar]</span>  │  <span class="label">[Main Content]</span>                                       │
+│          │                                                       │
+│ 📁 폴더  │  테스트 케이스              [+ 새 테스트 케이스]       │
+│          │  모든 테스트 케이스를 관리하고 실행하세요              │
+│ · 모든 TC│                                                       │
+│ · UI     │  🔍 검색... │ <span class="highlight">모든 상태 ▼</span> │ <span class="highlight">모든 우선순위 ▼</span> │ 필터  │
+│ · API    │  <span class="label">(상태 필터 UI 있으나 로직 미연결)</span>                       │
+│ · 통합   │                                                       │
+│ · 보안   │  ┌────────────────────────────────────────────────┐   │
+│          │  │ ☐ │ 테스트 케이스 │ 폴더 │ 우선순위 │ 상태 │...│   │
+│ [+ 새폴더]│  ├────────────────────────────────────────────────┤   │
+│          │  │ ☐ │ Login test   │ UI   │ HIGH     │ 통과 │...│   │
+│          │  │ ☐ │ API auth     │ API  │ CRITICAL │ 실패 │...│   │
+│          │  │ ☐ │ ...          │ ...  │ ...      │ ...  │...│   │
+│          │  └────────────────────────────────────────────────┘   │
+└──────────┴───────────────────────────────────────────────────────┘</div>
+
+<p>현재 페이지의 "모든 상태" 드롭다운(Line 175-180)은 UI만 존재하고 실제 필터링 로직이 연결되지 않은 상태입니다. 이번 디자인에서 이 영역을 <b>Execution Status 탭 바</b>로 교체하고, 추가 필터/컬럼을 확장합니다.</p>
+
+
+<!-- ═══ TOC ═══ -->
+<div class="toc">
+  <div class="toc-title">📋 디자인 항목 목록 (7건)</div>
+  <a href="#item1">① Execution Status 탭 바</a>
+  <a href="#item2">② 동적 헤더 + Back 링크</a>
+  <a href="#item3">③ Period 드롭다운</a>
+  <a href="#item4">④ 확장 컬럼 (Fail Count, Last Failed, Last Run)</a>
+  <a href="#item5">⑤ Summary Bar</a>
+  <a href="#item6">⑥ Pagination</a>
+  <a href="#item7">⑦ Empty State</a>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="item1">디자인 항목 ① — Execution Status 탭 바</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">1</div>
+    <div class="design-item-title">Execution Status 탭 바 — 기존 "모든 상태" 드롭다운 교체</div>
+  </div>
+
+  <h4>위치</h4>
+  <p>현재 검색바 옆 "모든 상태" 드롭다운을 제거하고, 검색바 <b>아래</b>에 별도 행으로 탭 바를 배치합니다.</p>
+
+  <h4>와이어프레임</h4>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────┐
+│ <span class="label">[Filter Row 1: 검색 + 기타 필터]</span>                                │
+│  🔍 검색...    │ Project ▼ │ Priority ▼ │ Period ▼ │        │
+├─────────────────────────────────────────────────────────────┤
+│ <span class="label">[Filter Row 2: Execution Status 탭 바 — 신규]</span>                    │
+│                                                             │
+│  <span class="highlight">[ All ]</span>  [ <span class="red">Failed  47</span> ]  [ <span class="green">Passed  128</span> ]  [ Blocked  5 ]  [ Untested  23 ]  │
+│    ↑                                                        │
+│  <span class="label">활성 탭: indigo underline + bold</span>                                │
+└─────────────────────────────────────────────────────────────┘</div>
+
+  <h4>탭 상태별 스타일</h4>
+  <table>
+    <tr><th>탭</th><th>아이콘</th><th>뱃지 색상</th><th>비고</th></tr>
+    <tr>
+      <td><b>All</b></td>
+      <td><code>ri-list-check</code></td>
+      <td><span class="badge badge-slate">count</span> (slate)</td>
+      <td>기본 선택 상태</td>
+    </tr>
+    <tr>
+      <td><b>Failed</b></td>
+      <td><code>ri-close-circle-line</code></td>
+      <td><span class="badge badge-red">47</span> (red)</td>
+      <td>Pass Rate Report에서 진입 시 자동 활성화</td>
+    </tr>
+    <tr>
+      <td><b>Passed</b></td>
+      <td><code>ri-checkbox-circle-line</code></td>
+      <td><span class="badge badge-green">128</span> (green)</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><b>Blocked</b></td>
+      <td><code>ri-forbid-line</code></td>
+      <td><span class="badge badge-amber">5</span> (amber)</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><b>Untested</b></td>
+      <td><code>ri-question-line</code></td>
+      <td><span class="badge badge-slate">23</span> (slate)</td>
+      <td></td>
+    </tr>
+  </table>
+
+  <h4>활성/비활성 상태</h4>
+  <table>
+    <tr><th>상태</th><th>폰트</th><th>색상</th><th>하단 보더</th></tr>
+    <tr>
+      <td>Active Tab</td>
+      <td>600 weight</td>
+      <td><span class="swatch" style="background:#4F46E5"></span><code>#4F46E5</code> (Indigo-700)</td>
+      <td>2px solid Indigo-500</td>
+    </tr>
+    <tr>
+      <td>Inactive Tab</td>
+      <td>500 weight</td>
+      <td><span class="swatch" style="background:#64748B"></span><code>#64748B</code> (Slate-500)</td>
+      <td>none</td>
+    </tr>
+    <tr>
+      <td>Hover (Inactive)</td>
+      <td>500 weight</td>
+      <td><span class="swatch" style="background:#334155"></span><code>#334155</code> (Slate-700)</td>
+      <td>2px solid Slate-200</td>
+    </tr>
+  </table>
+
+  <div class="callout">
+    <b>디자인 노트:</b> 탭은 기존 Tailwind 스타일에 맞춰 <code>border-b</code> 기반 underline 탭 패턴을 사용합니다. 각 탭의 카운트 뱃지는 해당 상태의 실제 TC 수를 실시간으로 반영합니다.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="item2">디자인 항목 ② — 동적 헤더 + Back 링크</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">2</div>
+    <div class="design-item-title">동적 헤더 — 선택된 Status에 따라 타이틀/아이콘 변경</div>
+  </div>
+
+  <h4>기존 헤더 (As-Is)</h4>
+  <div class="wireframe"><span class="label">현재 고정:</span>
+테스트 케이스                        [+ 새 테스트 케이스]
+모든 테스트 케이스를 관리하고 실행하세요</div>
+
+  <h4>변경 후 헤더 (To-Be) — status 파라미터별</h4>
+  <div class="wireframe"><span class="label">status=all (기본):</span>
+  All Test Cases                       [+ New Test Case]
+  Browse and manage all test cases
+
+<span class="label">status=failed (Pass Rate Report에서 진입):</span>
+  <span class="red">✕</span> Failed Test Cases  <span class="badge badge-red">47</span>               <span class="highlight">← Back to Report</span>
+  Test cases with failed results in the selected period
+
+<span class="label">status=passed:</span>
+  <span class="green">✓</span> Passed Test Cases  <span class="badge badge-green">128</span>
+  Test cases that passed in the selected period
+
+<span class="label">status=blocked:</span>
+  ⊘ Blocked Test Cases  <span class="badge badge-amber">5</span>
+  Test cases currently blocked in the selected period</div>
+
+  <h4>Status별 헤더 스펙</h4>
+  <table>
+    <tr><th>Status</th><th>아이콘</th><th>아이콘 색상</th><th>타이틀</th><th>카운트 뱃지</th><th>Back 링크</th></tr>
+    <tr>
+      <td><code>all</code></td>
+      <td><code>ri-list-check</code></td>
+      <td>Slate-700</td>
+      <td>All Test Cases</td>
+      <td>없음</td>
+      <td>없음</td>
+    </tr>
+    <tr>
+      <td><code>failed</code></td>
+      <td><code>ri-close-circle-line</code></td>
+      <td><span class="swatch" style="background:#EF4444"></span>Red-500</td>
+      <td>Failed Test Cases</td>
+      <td><span class="badge badge-red">47</span></td>
+      <td>"← Back to Report" → <code>/passrate-report</code></td>
+    </tr>
+    <tr>
+      <td><code>passed</code></td>
+      <td><code>ri-checkbox-circle-line</code></td>
+      <td><span class="swatch" style="background:#10B981"></span>Green-500</td>
+      <td>Passed Test Cases</td>
+      <td><span class="badge badge-green">128</span></td>
+      <td>없음 (또는 referer 기반 조건부)</td>
+    </tr>
+    <tr>
+      <td><code>blocked</code></td>
+      <td><code>ri-forbid-line</code></td>
+      <td><span class="swatch" style="background:#F59E0B"></span>Amber-500</td>
+      <td>Blocked Test Cases</td>
+      <td><span class="badge badge-amber">5</span></td>
+      <td>없음</td>
+    </tr>
+    <tr>
+      <td><code>untested</code></td>
+      <td><code>ri-question-line</code></td>
+      <td><span class="swatch" style="background:#94A3B8"></span>Slate-400</td>
+      <td>Untested Test Cases</td>
+      <td><span class="badge badge-slate">23</span></td>
+      <td>없음</td>
+    </tr>
+  </table>
+
+  <h4>"← Back to Report" 링크 스타일</h4>
+  <table>
+    <tr><th>속성</th><th>값</th></tr>
+    <tr><td>위치</td><td>타이틀 우측 (flex justify-between)</td></tr>
+    <tr><td>폰트 크기</td><td>13px (0.8125rem)</td></tr>
+    <tr><td>폰트 weight</td><td>600</td></tr>
+    <tr><td>색상</td><td><span class="swatch" style="background:#6366F1"></span>Indigo-500</td></tr>
+    <tr><td>Hover</td><td>Indigo-700 + underline</td></tr>
+    <tr><td>표시 조건</td><td><code>?status=failed</code>일 때만 표시 (URL 파라미터 기반)</td></tr>
+    <tr><td>클릭 동작</td><td><code>/passrate-report</code>로 이동</td></tr>
+  </table>
+
+  <div class="callout">
+    <b>디자인 노트:</b> "← Back to Report" 링크는 Pass Rate Report에서 "View All →"로 진입했을 때만 표시됩니다. 사이드바에서 직접 /testcases로 진입한 경우에는 표시하지 않습니다. Dev는 <code>searchParams.get('from') === 'report'</code> 또는 <code>status !== 'all'</code> 조건으로 구현합니다.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="item3">디자인 항목 ③ — Period 드롭다운</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">3</div>
+    <div class="design-item-title">Period 필터 드롭다운 — Pass Rate Report와 동일 디자인 재사용</div>
+  </div>
+
+  <h4>위치</h4>
+  <p>Filter Row 1 (검색바 행)의 우측, Priority 드롭다운 옆에 배치합니다.</p>
+
+  <h4>와이어프레임</h4>
+  <div class="wireframe">┌──────────────────────────────────────────────────────────────────┐
+│  🔍 Search test cases...  │ Project ▼ │ Priority ▼ │ <span class="highlight">Period ▼</span>  │
+│                            │           │            │           │
+│                            │           │            │ ┌───────┐ │
+│                            │           │            │ │• Active│ │
+│                            │           │            │ │  Run   │ │
+│                            │           │            │ │  7 Days│ │
+│                            │           │            │ │ 30 Days│ │
+│                            │           │            │ │All Time│ │
+│                            │           │            │ └───────┘ │
+└──────────────────────────────────────────────────────────────────┘</div>
+
+  <h4>드롭다운 옵션</h4>
+  <table>
+    <tr><th>값</th><th>표시 텍스트</th><th>설명</th></tr>
+    <tr><td><code>active_run</code></td><td>Active Run</td><td>현재 진행 중인 Run의 결과만 (기본값)</td></tr>
+    <tr><td><code>7d</code></td><td>Last 7 Days</td><td>최근 7일간의 실행 결과</td></tr>
+    <tr><td><code>30d</code></td><td>Last 30 Days</td><td>최근 30일간의 실행 결과</td></tr>
+    <tr><td><code>all</code></td><td>All Time</td><td>전체 기간</td></tr>
+  </table>
+
+  <h4>스타일 스펙</h4>
+  <table>
+    <tr><th>속성</th><th>값</th></tr>
+    <tr><td>높이</td><td>36px (기존 필터 드롭다운과 동일)</td></tr>
+    <tr><td>border</td><td>1px solid <code>#CBD5E1</code> (Slate-300)</td></tr>
+    <tr><td>border-radius</td><td>8px</td></tr>
+    <tr><td>폰트</td><td>14px, 500 weight</td></tr>
+    <tr><td>선택된 옵션</td><td>Indigo-500 체크마크 표시</td></tr>
+    <tr><td>드롭다운 패널</td><td>white bg, 4px shadow-lg, 8px radius, z-20</td></tr>
+  </table>
+
+  <div class="callout">
+    <b>참고:</b> 이 Period 드롭다운은 Pass Rate Report 페이지(PassRateReportPage.tsx)에 이미 구현된 것과 <b>동일한 디자인</b>입니다. 스타일을 재사용합니다. Pass Rate Report에서 "View All →" 클릭 시 현재 선택된 period가 URL 파라미터로 전달되어 자동으로 동기화됩니다.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="item4">디자인 항목 ④ — 확장 컬럼 (Fail Count, Last Failed, Last Run)</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">4</div>
+    <div class="design-item-title">테이블 확장 컬럼 — status=failed일 때 추가 정보 표시</div>
+  </div>
+
+  <h4>기존 테이블 컬럼 (현재)</h4>
+  <div class="wireframe">☐ │ 테스트 케이스 │ 폴더 │ 우선순위 │ 상태 │ 담당자 │ 생성일 │ 작업</div>
+
+  <h4>변경 후 테이블 컬럼 — status=failed일 때</h4>
+  <div class="wireframe">☐ │ TC-ID │ Title │ Project │ Priority │ <span class="red">Fail Count</span> │ <span class="red">Last Failed</span> │ <span class="red">Last Run</span> │ Assignee</div>
+
+  <div class="callout-amber callout">
+    <b>컬럼 전환 규칙:</b><br>
+    • <code>status=all</code> → 기존 컬럼 유지 (폴더, 상태, 생성일, 작업 포함)<br>
+    • <code>status=failed</code> → 3개 컬럼 추가 (Fail Count, Last Failed, Last Run) + 불필요한 컬럼 숨김 (폴더, 생성일)<br>
+    • <code>status=passed/blocked/untested</code> → 해당 상태에 맞는 적절한 컬럼 조합 (Phase 2에서 상세화)
+  </div>
+
+  <h4>신규 컬럼 상세 스펙</h4>
+  <table>
+    <tr><th>컬럼</th><th>폰트 크기</th><th>정렬</th><th>표시 형식</th><th>정렬 가능</th></tr>
+    <tr>
+      <td><b>TC-ID</b></td>
+      <td>13px, 400wt</td>
+      <td>좌</td>
+      <td><code style="color:#94A3B8">TC-012</code> (Slate-400)</td>
+      <td>✅ ↕</td>
+    </tr>
+    <tr>
+      <td><b>Title</b></td>
+      <td>13px, 600wt</td>
+      <td>좌</td>
+      <td>Slate-900 · text-overflow: ellipsis · max-width: 280px</td>
+      <td>✅ ↕</td>
+    </tr>
+    <tr>
+      <td><b>Project</b></td>
+      <td>12px, 500wt</td>
+      <td>좌</td>
+      <td><span class="badge badge-indigo">Auth Project</span> 뱃지 스타일</td>
+      <td>✅ ↕</td>
+    </tr>
+    <tr>
+      <td><b>Priority</b></td>
+      <td>11px, 600wt</td>
+      <td>좌</td>
+      <td>기존 Priority 뱃지 재사용 (getPriorityColor)</td>
+      <td>✅ ↕</td>
+    </tr>
+    <tr>
+      <td><b>Fail Count</b> <span class="badge badge-red">NEW</span></td>
+      <td>13px, 700wt</td>
+      <td>중앙</td>
+      <td><span style="color:#EF4444; font-weight:700">5×</span> (Red-500, bold) — "회" 뒤에 × 기호</td>
+      <td>✅ ↕ (기본 정렬)</td>
+    </tr>
+    <tr>
+      <td><b>Last Failed</b> <span class="badge badge-red">NEW</span></td>
+      <td>12px, 400wt</td>
+      <td>좌</td>
+      <td><span style="color:#94A3B8">2h ago</span> (Slate-400) — timeAgo 포맷</td>
+      <td>✅ ↕</td>
+    </tr>
+    <tr>
+      <td><b>Last Run</b> <span class="badge badge-red">NEW</span></td>
+      <td>12px, 500wt</td>
+      <td>좌</td>
+      <td><span style="color:#6366F1">Sprint 24 Regression</span> (Indigo-500, 링크 스타일)<br>클릭 시 해당 Run Detail 페이지로 이동</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><b>Assignee</b></td>
+      <td>—</td>
+      <td>중앙</td>
+      <td>32px 아바타 (기존 스타일) · 미배정 시 "—"</td>
+      <td>✅ ↕</td>
+    </tr>
+  </table>
+
+  <h4>정렬 가능 컬럼 헤더 스타일</h4>
+  <table>
+    <tr><th>상태</th><th>아이콘</th><th>동작</th></tr>
+    <tr><td>정렬 미적용</td><td><code>ri-arrow-up-down-line</code> (Slate-300)</td><td>클릭 시 ASC</td></tr>
+    <tr><td>ASC 정렬</td><td><code>ri-arrow-up-line</code> (Indigo-500)</td><td>클릭 시 DESC</td></tr>
+    <tr><td>DESC 정렬</td><td><code>ri-arrow-down-line</code> (Indigo-500)</td><td>클릭 시 정렬 해제</td></tr>
+  </table>
+
+  <h4>행 전체 와이어프레임</h4>
+  <div class="wireframe">┌──────┬─────────────────────┬──────────┬──────────┬──────┬─────────┬──────────────────┬──────┐
+│TC-ID │ Title               │ Project  │ Priority │ Fail │ Last    │ Last Run         │Assign│
+│      │                     │          │          │ Count│ Failed  │                  │      │
+├──────┼─────────────────────┼──────────┼──────────┼──────┼─────────┼──────────────────┼──────┤
+│<span style="color:#94A3B8">TC-012</span>│ Login validation     │<span class="badge badge-indigo">Auth Proj</span>│<span class="badge badge-red">CRITICAL</span>│ <span class="red">5×</span>   │ <span style="color:#94A3B8">2h ago</span>  │ <span class="highlight">Sprint 24 Regr...</span>│  <span style="color:#6366F1">JK</span>  │
+│      │ fails on Safari     │          │          │      │         │                  │      │
+├──────┼─────────────────────┼──────────┼──────────┼──────┼─────────┼──────────────────┼──────┤
+│<span style="color:#94A3B8">TC-045</span>│ Payment timeout on   │<span class="badge badge-indigo">Payment </span>│<span class="badge badge-amber">HIGH    </span>│ <span class="red">3×</span>   │ <span style="color:#94A3B8">5h ago</span>  │ <span class="highlight">Payment v2.1   </span>│  <span style="color:#6366F1">ML</span>  │
+│      │ slow connection     │          │          │      │         │                  │      │
+├──────┼─────────────────────┼──────────┼──────────┼──────┼─────────┼──────────────────┼──────┤
+│<span style="color:#94A3B8">TC-078</span>│ CSV export missing   │<span class="badge badge-indigo">Reports </span>│<span style="color:#D97706">MEDIUM  </span>│ <span class="red">2×</span>   │ <span style="color:#94A3B8">1d ago</span>  │ <span class="highlight">Data Export QA </span>│  —   │
+│      │ header row          │          │          │      │         │                  │      │
+└──────┴─────────────────────┴──────────┴──────────┴──────┴─────────┴──────────────────┴──────┘</div>
+
+  <div class="callout">
+    <b>행 Hover:</b> 기존 <code>hover:bg-gray-50</code> 유지. 행 클릭 시 우측 TC 상세 패널 슬라이드인 (기존 동작).
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="item5">디자인 항목 ⑤ — Summary Bar</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">5</div>
+    <div class="design-item-title">Summary Bar — 테이블 상단 결과 요약</div>
+  </div>
+
+  <h4>위치</h4>
+  <p>Execution Status 탭 바 아래, 테이블 상단에 위치. Status 탭이 "All"이 아닐 때만 표시됩니다.</p>
+
+  <h4>와이어프레임</h4>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────────┐
+│ <span class="label">[Summary Bar — status != 'all' 일 때만 표시]</span>                      │
+│                                                                 │
+│  <span class="red">●</span> Showing <b>47</b> failed test cases across <b>5</b> projects │ Active Run  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+<span class="label">status별 변형:</span>
+  <span class="red">●</span> Showing <b>47</b> failed test cases across <b>5</b> projects │ Active Run
+  <span class="green">●</span> Showing <b>128</b> passed test cases across <b>8</b> projects │ Last 7 Days
+  ⊘ Showing <b>5</b> blocked test cases across <b>2</b> projects │ Last 30 Days</div>
+
+  <h4>스타일 스펙</h4>
+  <table>
+    <tr><th>속성</th><th>값</th></tr>
+    <tr><td>배경</td><td><code>#F8FAFC</code> (Slate-50)</td></tr>
+    <tr><td>패딩</td><td>12px 20px</td></tr>
+    <tr><td>border</td><td>1px solid Slate-200 (좌우하단), 테이블과 연결</td></tr>
+    <tr><td>border-radius</td><td>12px 12px 0 0 (상단만)</td></tr>
+    <tr><td>폰트</td><td>13px, 500 weight, Slate-500</td></tr>
+    <tr><td>숫자 강조</td><td>700 weight, Slate-900</td></tr>
+    <tr><td>상태 도트</td><td>8px 원, 해당 상태 색상</td></tr>
+    <tr><td>Period 라벨</td><td>구분선(│) 뒤 Slate-400로 표시</td></tr>
+    <tr><td>표시 조건</td><td><code>status !== 'all'</code>일 때만 표시</td></tr>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="item6">디자인 항목 ⑥ — Pagination</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">6</div>
+    <div class="design-item-title">Pagination — 테이블 하단 페이지 네비게이션</div>
+  </div>
+
+  <h4>현재 상태</h4>
+  <p>기존 /testcases 페이지는 <code>@tanstack/react-virtual</code> 가상 스크롤을 사용합니다. 이를 <b>전통적 페이지네이션</b>으로 교체합니다 (Failed TC 목록의 경우 전체 건수 파악 + 공유 가능성이 더 중요).</p>
+
+  <h4>와이어프레임</h4>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────────┐
+│ <span class="label">[테이블 마지막 행 아래]</span>                                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Showing 1-20 of 47       │  ← Prev  [1] 2  3  Next →  │ 20 ▼ │
+│                            │                             │<span class="label">per pg</span>│
+└─────────────────────────────────────────────────────────────────┘</div>
+
+  <h4>스타일 스펙</h4>
+  <table>
+    <tr><th>요소</th><th>스타일</th></tr>
+    <tr>
+      <td>"Showing 1-20 of 47"</td>
+      <td>13px, Slate-500, 좌측 정렬</td>
+    </tr>
+    <tr>
+      <td>Page 버튼 (비활성)</td>
+      <td>32px × 32px, Slate-700, hover: Slate-50 bg, border-radius 6px</td>
+    </tr>
+    <tr>
+      <td>Page 버튼 (활성)</td>
+      <td>32px × 32px, White text, Indigo-500 bg, border-radius 6px</td>
+    </tr>
+    <tr>
+      <td>Prev/Next</td>
+      <td>13px, 600 weight, Indigo-500. 비활성 시 Slate-300 + cursor-not-allowed</td>
+    </tr>
+    <tr>
+      <td>Per Page 드롭다운</td>
+      <td>옵션: 20 | 50 | 100 — 기본값 20. 기존 필터 드롭다운 스타일과 동일</td>
+    </tr>
+    <tr>
+      <td>컨테이너</td>
+      <td>padding 12px 20px, border-top 1px Slate-200, bg White</td>
+    </tr>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="item7">디자인 항목 ⑦ — Empty State</h2>
+
+<div class="design-item">
+  <div class="design-item-header">
+    <div class="design-item-number">7</div>
+    <div class="design-item-title">Empty State — 필터 결과가 0건일 때 표시</div>
+  </div>
+
+  <h4>와이어프레임</h4>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│                          <span class="green">✓</span>                                    │
+│                     <span class="label">(64px 원형 아이콘)</span>                           │
+│                                                                 │
+│                  No failures found                              │
+│             <span class="label">All test cases passed in this period</span>                  │
+│                                                                 │
+│               [ ← Back to Report ]                              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘</div>
+
+  <h4>Status별 Empty State 메시지</h4>
+  <table>
+    <tr><th>Status</th><th>아이콘</th><th>아이콘 bg</th><th>Title</th><th>Subtitle</th></tr>
+    <tr>
+      <td><code>failed</code></td>
+      <td><code>ri-checkbox-circle-line</code></td>
+      <td><span class="swatch" style="background:#F0FDF4"></span>Green-50</td>
+      <td>No failures found</td>
+      <td>All test cases passed in this period</td>
+    </tr>
+    <tr>
+      <td><code>passed</code></td>
+      <td><code>ri-file-list-3-line</code></td>
+      <td><span class="swatch" style="background:#F1F5F9"></span>Slate-50</td>
+      <td>No passed test cases</td>
+      <td>No test cases have passed in this period</td>
+    </tr>
+    <tr>
+      <td><code>blocked</code></td>
+      <td><code>ri-checkbox-circle-line</code></td>
+      <td><span class="swatch" style="background:#F0FDF4"></span>Green-50</td>
+      <td>No blocked test cases</td>
+      <td>All test cases are unblocked in this period</td>
+    </tr>
+    <tr>
+      <td><code>all</code> (TC 없음)</td>
+      <td><code>ri-file-list-3-line</code></td>
+      <td><span class="swatch" style="background:#F1F5F9"></span>Slate-50</td>
+      <td>No test cases yet</td>
+      <td>Create your first test case to get started</td>
+    </tr>
+  </table>
+
+  <h4>스타일 스펙</h4>
+  <table>
+    <tr><th>요소</th><th>스타일</th></tr>
+    <tr><td>아이콘 컨테이너</td><td>64px × 64px 원형, 해당 bg색, 아이콘 28px</td></tr>
+    <tr><td>Title</td><td>18px, 700 weight, Slate-900</td></tr>
+    <tr><td>Subtitle</td><td>14px, 400 weight, Slate-500</td></tr>
+    <tr><td>"← Back to Report" 버튼</td><td>14px, 600 weight, Indigo-500, margin-top 16px</td></tr>
+    <tr><td>전체 컨테이너</td><td>text-align center, padding 60px 0</td></tr>
+  </table>
+
+  <div class="callout-green callout">
+    <b>긍정적 Empty State:</b> Failed가 0건일 때는 "문제가 없다"는 긍정적 메시지를 표시합니다. 초록 체크 아이콘 + "All test cases passed" 메시지로 사용자에게 안심감을 줍니다.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>전체 화면 통합 와이어프레임</h2>
+
+<p>7개 디자인 항목이 모두 적용된 최종 화면 구성:</p>
+
+<div class="wireframe">┌──────────────────────────────────────────────────────────────────────────┐
+│ <span class="label">[Header Bar]</span>                                                                │
+│ Logo · Test Cases · 🔍 Search...                              🔔 ❓ JK  │
+├──────────┬───────────────────────────────────────────────────────────────┤
+│ <span class="label">[Sidebar]</span>  │                                                               │
+│          │  <span class="label">②</span> <span class="red">✕</span> <b>Failed Test Cases</b> <span class="badge badge-red">47</span>          <span class="highlight">← Back to Report</span>        │
+│ 📁 폴더  │     Test cases with failed results in the selected period     │
+│          │                                                               │
+│ · 모든 TC│  <span class="label">③</span> 🔍 Search...  │ Project ▼ │ Priority ▼ │ <span class="highlight">Active Run ▼</span> │
+│ · UI     │                                                               │
+│ · API    │  <span class="label">①</span> [ All ] [ <span class="red"><b>Failed 47</b></span> ] [ Passed 128 ] [ Blocked 5 ] [ Untested ] │
+│ · 통합   │                                                               │
+│ · 보안   │  <span class="label">⑤</span> <span class="red">●</span> Showing <b>47</b> failed test cases across <b>5</b> projects │ Active Run│
+│          │  ┌────────────────────────────────────────────────────────┐   │
+│ [+ 새폴더]│  │ <span class="label">④</span> TC-ID↕│Title↕  │Project│Priority↕│Fail↕│Last F↕│Run │As│   │
+│          │  ├────────────────────────────────────────────────────────┤   │
+│          │  │ TC-012│Login.. │Auth   │CRITICAL │ <span class="red">5×</span>  │2h ago │Sp..│JK│   │
+│          │  │ TC-045│Payment.│Payment│HIGH     │ <span class="red">3×</span>  │5h ago │Pa..│ML│   │
+│          │  │ TC-078│CSV ex..│Reports│MEDIUM   │ <span class="red">2×</span>  │1d ago │Da..│ — │   │
+│          │  │ ...   │...     │...    │...      │ ...  │...    │... │..│   │
+│          │  └────────────────────────────────────────────────────────┘   │
+│          │  <span class="label">⑥</span> Showing 1-20 of 47  │ ← Prev [1] 2 3 Next → │ 20 ▼    │
+│          │                                                               │
+└──────────┴───────────────────────────────────────────────────────────────┘
+
+<span class="label">번호는 디자인 항목 번호: ① 탭바 ② 동적헤더 ③ Period ④ 확장컬럼 ⑤ Summary ⑥ Pagination</span>
+<span class="label">⑦ Empty State는 결과 0건일 때 테이블 영역을 대체</span></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>디자인 토큰 참조</h2>
+
+<h3>색상 팔레트</h3>
+<table>
+  <tr><th>용도</th><th>색상</th><th>코드</th><th>Tailwind</th></tr>
+  <tr><td>Primary / Active</td><td><span class="swatch" style="background:#6366F1"></span></td><td>#6366F1</td><td>indigo-500</td></tr>
+  <tr><td>Failed / Error</td><td><span class="swatch" style="background:#EF4444"></span></td><td>#EF4444</td><td>red-500</td></tr>
+  <tr><td>Passed / Success</td><td><span class="swatch" style="background:#10B981"></span></td><td>#10B981</td><td>green-500 (emerald)</td></tr>
+  <tr><td>Blocked / Warning</td><td><span class="swatch" style="background:#F59E0B"></span></td><td>#F59E0B</td><td>amber-500</td></tr>
+  <tr><td>Text Primary</td><td><span class="swatch" style="background:#0F172A"></span></td><td>#0F172A</td><td>slate-900</td></tr>
+  <tr><td>Text Secondary</td><td><span class="swatch" style="background:#64748B"></span></td><td>#64748B</td><td>slate-500</td></tr>
+  <tr><td>Text Muted</td><td><span class="swatch" style="background:#94A3B8"></span></td><td>#94A3B8</td><td>slate-400</td></tr>
+  <tr><td>Border</td><td><span class="swatch" style="background:#E2E8F0"></span></td><td>#E2E8F0</td><td>slate-200</td></tr>
+  <tr><td>Background</td><td><span class="swatch" style="background:#F8FAFC"></span></td><td>#F8FAFC</td><td>slate-50</td></tr>
+</table>
+
+<h3>아이콘 (Remix Icons)</h3>
+<table>
+  <tr><th>용도</th><th>아이콘 클래스</th></tr>
+  <tr><td>Failed 상태</td><td><code>ri-close-circle-line</code> / <code>ri-close-circle-fill</code></td></tr>
+  <tr><td>Passed 상태</td><td><code>ri-checkbox-circle-line</code> / <code>ri-checkbox-circle-fill</code></td></tr>
+  <tr><td>Blocked 상태</td><td><code>ri-forbid-line</code></td></tr>
+  <tr><td>Untested 상태</td><td><code>ri-question-line</code> / <code>ri-question-fill</code></td></tr>
+  <tr><td>All 상태</td><td><code>ri-list-check</code></td></tr>
+  <tr><td>정렬 (기본)</td><td><code>ri-arrow-up-down-line</code></td></tr>
+  <tr><td>정렬 (ASC)</td><td><code>ri-arrow-up-line</code></td></tr>
+  <tr><td>정렬 (DESC)</td><td><code>ri-arrow-down-line</code></td></tr>
+  <tr><td>Back 링크</td><td><code>ri-arrow-left-line</code></td></tr>
+  <tr><td>검색</td><td><code>ri-search-line</code></td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>인터랙션 플로우</h2>
+
+<h3>시나리오 1: Pass Rate Report → "View All →" 클릭</h3>
+<table>
+  <tr><th>Step</th><th>사용자 행동</th><th>시스템 반응</th></tr>
+  <tr><td>1</td><td>Pass Rate Report 페이지에서 "View All →" 클릭</td><td><code>/testcases?status=failed&period=active_run</code>으로 이동</td></tr>
+  <tr><td>2</td><td>페이지 로드</td><td>헤더 "Failed Test Cases" + 뱃지 + "← Back to Report" 표시<br>Status 탭에서 "Failed" 자동 활성화<br>Period 드롭다운에서 "Active Run" 자동 선택<br>Summary Bar에 "Showing N failed test cases across M projects" 표시</td></tr>
+  <tr><td>3</td><td>Period를 "Last 7 Days"로 변경</td><td>URL 업데이트: <code>?status=failed&period=7d</code><br>테이블 데이터 재조회 + 카운트 갱신</td></tr>
+  <tr><td>4</td><td>"Fail Count" 컬럼 헤더 클릭</td><td>DESC 정렬 활성화 (가장 많이 실패한 TC 순)</td></tr>
+  <tr><td>5</td><td>TC-012 행 클릭</td><td>우측 상세 패널 슬라이드인 (기존 동작)</td></tr>
+  <tr><td>6</td><td>"← Back to Report" 클릭</td><td><code>/passrate-report</code>로 이동</td></tr>
+</table>
+
+<h3>시나리오 2: 사이드바에서 Test Cases 직접 진입</h3>
+<table>
+  <tr><th>Step</th><th>사용자 행동</th><th>시스템 반응</th></tr>
+  <tr><td>1</td><td>사이드바 "Test Cases" 클릭</td><td><code>/testcases</code>로 이동 (파라미터 없음)</td></tr>
+  <tr><td>2</td><td>페이지 로드</td><td>헤더 "All Test Cases" (기본)<br>Status 탭 "All" 활성화<br>Summary Bar 숨김<br>"← Back to Report" 숨김<br>기존 테이블 컬럼 유지</td></tr>
+  <tr><td>3</td><td>"Failed" 탭 클릭</td><td>URL 업데이트: <code>?status=failed</code><br>헤더/컬럼/Summary Bar 전환<br>데이터 재조회</td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>참고 자료</h2>
+
+<table>
+  <tr><th>문서</th><th>설명</th></tr>
+  <tr><td><code>spec-view-all-failed-tc.html</code></td><td>PM 기획 스펙 (CEO 승인 완료)</td></tr>
+  <tr><td><code>PassRateReportPage.tsx</code></td><td>현재 Failed TC 섹션 UI (Line 402-440) + Period 드롭다운 디자인 참고</td></tr>
+  <tr><td><code>TestCaseList.tsx</code></td><td>현재 /testcases 테이블 UI (기존 컬럼 구조)</td></tr>
+  <tr><td><code>13-team-activity.html</code></td><td>최근 승인된 디자인 — 테이블/카드 스타일 참고</td></tr>
+</table>
+
+<div class="callout-pink callout">
+  <b>Desi 디자인 완료 후 다음 단계:</b><br>
+  1. Desi 디자인 시안 → PM 리뷰 → CEO 승인<br>
+  2. 승인 후 이 문서 + 디자인 시안을 Dev에게 핸드오프<br>
+  3. Dev 구현 예상 공수: 약 1일 (6-7시간)<br><br>
+  <b>질문 있으면:</b> PM Kyle에게 문의해주세요.
+</div>
+
+</div><!-- .body -->
+</div><!-- .container -->
+</body>
+</html>

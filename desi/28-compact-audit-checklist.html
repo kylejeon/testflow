@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compact Design Audit — Gap Checklist</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.6; }
+
+  .doc-header { background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%); color: #fff; padding: 2.5rem 3rem; }
+  .doc-header h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .doc-header p { font-size: 0.9375rem; opacity: 0.85; }
+  .doc-meta { display: flex; gap: 2rem; margin-top: 1rem; font-size: 0.8125rem; opacity: 0.75; }
+  .doc-meta span { display: flex; align-items: center; gap: 0.375rem; }
+  .doc-body { max-width: 1200px; margin: 0 auto; padding: 2rem 3rem 4rem; }
+
+  /* ── Summary Dashboard ── */
+  .dash { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-bottom: 2rem; }
+  .dash-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1rem 1.25rem; text-align: center; }
+  .dash-card.pass { border-left: 4px solid #16A34A; }
+  .dash-card.warn { border-left: 4px solid #F59E0B; }
+  .dash-card.fail { border-left: 4px solid #EF4444; }
+  .dash-file { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; margin-bottom: 0.25rem; }
+  .dash-status { font-size: 1.125rem; font-weight: 800; line-height: 1.2; }
+  .dash-count { font-size: 0.75rem; color: #64748B; margin-top: 0.125rem; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 2.5rem; }
+  h2 { font-size: 1.25rem; font-weight: 800; color: #0F172A; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+  h3 { font-size: 1rem; font-weight: 700; color: #334155; margin: 1.25rem 0 0.625rem; }
+  p { margin-bottom: 0.75rem; font-size: 0.875rem; color: #475569; }
+
+  /* ── File Header ── */
+  .file-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1.25rem; background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem 0.75rem 0 0; border-bottom: none; }
+  .file-header .icon { width: 2rem; height: 2rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+  .file-header .icon.pass { background: #DCFCE7; color: #16A34A; }
+  .file-header .icon.warn { background: #FEF3C7; color: #D97706; }
+  .file-header .icon.fail { background: #FEE2E2; color: #EF4444; }
+  .file-header .name { font-size: 0.875rem; font-weight: 700; color: #0F172A; }
+  .file-header .path { font-size: 0.75rem; color: #94A3B8; font-family: monospace; }
+  .file-header .badge { margin-left: auto; font-size: 0.6875rem; font-weight: 600; padding: 0.25rem 0.625rem; border-radius: 9999px; }
+  .file-header .badge.pass { background: #DCFCE7; color: #166534; }
+  .file-header .badge.warn { background: #FEF3C7; color: #92400E; }
+  .file-header .badge.fail { background: #FEE2E2; color: #991B1B; }
+
+  /* ── Checklist Table ── */
+  .cl-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; background: #fff; border: 1px solid #E2E8F0; border-radius: 0 0 0.75rem 0.75rem; overflow: hidden; margin-bottom: 1.5rem; }
+  .cl-table th { background: #F8FAFC; font-weight: 600; text-align: left; padding: 0.5rem 1rem; color: #475569; border-bottom: 1px solid #E2E8F0; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .cl-table td { padding: 0.5rem 1rem; border-bottom: 1px solid #F1F5F9; color: #334155; vertical-align: top; }
+  .cl-table tr:last-child td { border-bottom: none; }
+  .cl-table code { background: #F1F5F9; padding: 0.125rem 0.375rem; border-radius: 4px; font-size: 0.6875rem; font-family: 'SF Mono', monospace; }
+  .cl-table .old { color: #EF4444; font-weight: 600; }
+  .cl-table .new { color: #16A34A; font-weight: 600; }
+  .cl-table .line { font-family: monospace; font-size: 0.6875rem; color: #94A3B8; white-space: nowrap; }
+  .cl-table .sev { font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.375rem; border-radius: 9999px; white-space: nowrap; }
+  .cl-table .sev.high { background: #FEE2E2; color: #991B1B; }
+  .cl-table .sev.med { background: #FEF3C7; color: #92400E; }
+  .cl-table .sev.low { background: #F1F5F9; color: #64748B; }
+  .cl-table .check { width: 20px; text-align: center; }
+  .cl-table .check input { width: 14px; height: 14px; accent-color: #6366F1; }
+
+  /* ── Token Reference ── */
+  .token-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
+  .token-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem; padding: 0.875rem 1rem; }
+  .token-title { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; margin-bottom: 0.5rem; }
+  .token-row { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0; font-size: 0.8125rem; }
+  .token-row .label { color: #475569; }
+  .token-row .val { font-family: monospace; font-size: 0.75rem; }
+  .token-row .val.old { color: #EF4444; text-decoration: line-through; }
+  .token-row .val.new { color: #16A34A; font-weight: 600; }
+  .token-row .arrow { color: #94A3B8; margin: 0 0.375rem; }
+
+  /* ── Info/Warn boxes ── */
+  .info-box { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 0.625rem; padding: 0.875rem 1rem; font-size: 0.8125rem; color: #1E40AF; margin: 0.75rem 0; display: flex; gap: 0.5rem; }
+  .info-box i { font-size: 1rem; flex-shrink: 0; margin-top: 0.125rem; }
+  .warn-box { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.625rem; padding: 0.875rem 1rem; font-size: 0.8125rem; color: #92400E; margin: 0.75rem 0; display: flex; gap: 0.5rem; }
+  .warn-box i { font-size: 1rem; flex-shrink: 0; margin-top: 0.125rem; }
+
+  /* ── Scope Note ── */
+  .scope-note { background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 0.625rem; padding: 0.75rem 1rem; font-size: 0.75rem; color: #64748B; margin: 0.5rem 0; }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <h1><i class="ri-error-warning-line"></i> Compact Design Audit — Gap Checklist</h1>
+  <p>Design mockup vs React code comparison · 5 inner pages · All missing compact tokens identified</p>
+  <div class="doc-meta">
+    <span><i class="ri-file-list-3-line"></i> File 28</span>
+    <span><i class="ri-calendar-line"></i> March 26, 2026</span>
+    <span><i class="ri-git-branch-line"></i> Branch: claude</span>
+    <span><i class="ri-palette-line"></i> Ref: 20-dev-handoff-spec.html</span>
+  </div>
+</div>
+
+<div class="doc-body">
+
+<!-- ═══════════════ SUMMARY DASHBOARD ═══════════════ -->
+<h2><i class="ri-dashboard-line" style="color:#6366F1"></i> Summary Dashboard</h2>
+<div class="dash">
+  <div class="dash-card pass">
+    <div class="dash-file">Test Cases</div>
+    <div class="dash-status" style="color:#16A34A">✓ Compliant</div>
+    <div class="dash-count">0 issues</div>
+  </div>
+  <div class="dash-card warn">
+    <div class="dash-file">Runs & Results</div>
+    <div class="dash-status" style="color:#F59E0B">Gaps Found</div>
+    <div class="dash-count">8 issues</div>
+  </div>
+  <div class="dash-card warn">
+    <div class="dash-file">Milestones</div>
+    <div class="dash-status" style="color:#F59E0B">Gaps Found</div>
+    <div class="dash-count">5 issues</div>
+  </div>
+  <div class="dash-card pass">
+    <div class="dash-file">Documents</div>
+    <div class="dash-status" style="color:#16A34A">~Compliant</div>
+    <div class="dash-count">1 minor issue</div>
+  </div>
+  <div class="dash-card fail">
+    <div class="dash-file">Discovery</div>
+    <div class="dash-status" style="color:#EF4444">Most Gaps</div>
+    <div class="dash-count">10 issues</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ TOKEN REFERENCE ═══════════════ -->
+<h2><i class="ri-ruler-line" style="color:#6366F1"></i> Compact Design Token Reference</h2>
+<p>These are the approved compact values from <code>20-dev-handoff-spec.html</code>. All inner pages must use these instead of the standard Tailwind defaults.</p>
+
+<div class="token-grid">
+  <div class="token-card">
+    <div class="token-title">Spacing</div>
+    <div class="token-row"><span class="label">Content padding</span><span><code class="val old">p-8 (32px)</code> <span class="arrow">→</span> <code class="val new">p-[1.75rem] (28px)</code></span></div>
+    <div class="token-row"><span class="label">Card padding</span><span><code class="val old">p-6 (24px)</code> <span class="arrow">→</span> <code class="val new">p-[1.3125rem] (21px)</code></span></div>
+    <div class="token-row"><span class="label">Section gap</span><span><code class="val old">gap-6 (24px)</code> <span class="arrow">→</span> <code class="val new">gap-[1.3125rem] (21px)</code></span></div>
+    <div class="token-row"><span class="label">Table cell py</span><span><code class="val old">py-3 (12px)</code> <span class="arrow">→</span> <code class="val new">py-[0.6875rem] (11px)</code></span></div>
+    <div class="token-row"><span class="label">Table cell px</span><span><code class="val old">px-6 (24px)</code> <span class="arrow">→</span> <code class="val new">px-4 (16px)</code></span></div>
+  </div>
+  <div class="token-card">
+    <div class="token-title">Typography</div>
+    <div class="token-row"><span class="label">Page title</span><span><code class="val old">text-2xl (24px)</code> <span class="arrow">→</span> <code class="val new">text-[1.375rem] (22px)</code></span></div>
+    <div class="token-row"><span class="label">Body text</span><span><code class="val old">text-sm (14px)</code> <span class="arrow">→</span> <code class="val new">text-[0.8125rem] (13px)</code></span></div>
+    <div class="token-row"><span class="label">Stat values</span><span><code class="val old">text-3xl (30px)</code> <span class="arrow">→</span> <code class="val new">text-[1.75rem] (28px)</code></span></div>
+    <div class="token-row"><span class="label">Button font</span><span><code class="val old">text-sm (14px)</code> <span class="arrow">→</span> <code class="val new">text-[0.8125rem] (13px)</code></span></div>
+    <div class="token-row"><span class="label">Small labels</span><span><code class="val old">text-xs (12px)</code> <span class="arrow">→</span> <code class="val new">text-[0.6875rem] (11px)</code></span></div>
+  </div>
+  <div class="token-card">
+    <div class="token-title">Buttons</div>
+    <div class="token-row"><span class="label">Button padding</span><span><code class="val old">px-4 py-2</code> <span class="arrow">→</span> <code class="val new">px-[0.875rem] py-[0.4375rem]</code></span></div>
+    <div class="token-row"><span class="label">Button font</span><span><code class="val old">text-sm</code> <span class="arrow">→</span> <code class="val new">text-[0.8125rem]</code></span></div>
+    <div class="token-row"><span class="label">Small button py</span><span><code class="val old">py-1</code> <span class="arrow">→</span> <code class="val new">py-[0.25rem]</code></span></div>
+  </div>
+  <div class="token-card">
+    <div class="token-title">Exclusions (no change needed)</div>
+    <div class="token-row"><span class="label">Modal padding</span><span><code class="val new">p-6 is OK</code></span></div>
+    <div class="token-row"><span class="label">Modal forms</span><span><code class="val new">px-3 py-2 is OK</code></span></div>
+    <div class="token-row"><span class="label">Toast radius</span><span><code class="val new">rounded-xl is OK</code></span></div>
+    <div class="token-row"><span class="label">Dropdown shadow</span><span><code class="val new">shadow-lg is OK</code></span></div>
+  </div>
+</div>
+
+<div class="scope-note">
+  <strong>Scope:</strong> This audit covers ONLY the inner page content area. Shared chrome (top header 3.5rem, tab bar 3rem) is unchanged and out of scope. Modals, dropdowns, and form inputs inside modals use standard sizes.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- PAGE 1: TEST CASES                                  -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="file-header">
+  <div class="icon pass"><i class="ri-checkbox-circle-fill"></i></div>
+  <div>
+    <div class="name">14 — Test Cases</div>
+    <div class="path">src/pages/project-testcases/page.tsx</div>
+  </div>
+  <span class="badge pass">✓ Compliant</span>
+</div>
+<table class="cl-table">
+  <tr><th class="check"></th><th>Component</th><th>Current Value</th><th>Expected Value</th><th>Status</th></tr>
+  <tr>
+    <td class="check"><input type="checkbox" checked disabled></td>
+    <td>Content padding</td>
+    <td><code>p-[1.75rem]</code></td>
+    <td><code>p-[1.75rem]</code></td>
+    <td><span class="sev low">✓ OK</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox" checked disabled></td>
+    <td>Page title size</td>
+    <td><code>text-[1.375rem]</code></td>
+    <td><code>text-[1.375rem]</code></td>
+    <td><span class="sev low">✓ OK</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox" checked disabled></td>
+    <td>Body text / subtitles</td>
+    <td><code>text-[0.8125rem]</code></td>
+    <td><code>text-[0.8125rem]</code></td>
+    <td><span class="sev low">✓ OK</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox" checked disabled></td>
+    <td>Button padding</td>
+    <td><code>px-[0.875rem] py-[0.4375rem]</code></td>
+    <td><code>px-[0.875rem] py-[0.4375rem]</code></td>
+    <td><span class="sev low">✓ OK</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox" checked disabled></td>
+    <td>Table cell padding</td>
+    <td><code>py-[0.6875rem] px-4</code></td>
+    <td><code>py-[0.6875rem] px-4</code></td>
+    <td><span class="sev low">✓ OK</span></td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- PAGE 2: RUNS & RESULTS                              -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="file-header">
+  <div class="icon warn"><i class="ri-alert-fill"></i></div>
+  <div>
+    <div class="name">15 — Runs & Results</div>
+    <div class="path">src/pages/project-runs/page.tsx</div>
+  </div>
+  <span class="badge warn">8 Issues</span>
+</div>
+<table class="cl-table">
+  <tr><th class="check"></th><th>Component</th><th>Current (Code)</th><th>Expected (Design)</th><th>Line</th><th>Severity</th></tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Run detail stats row — gap</td>
+    <td><code class="old">gap-6</code></td>
+    <td><code class="new">gap-[1.3125rem]</code></td>
+    <td class="line">~1508</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Run detail stats row — text size</td>
+    <td><code class="old">text-sm</code></td>
+    <td><code class="new">text-[0.8125rem]</code></td>
+    <td class="line">~1659</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Run detail — second stats gap</td>
+    <td><code class="old">gap-6</code></td>
+    <td><code class="new">gap-[1.3125rem]</code></td>
+    <td class="line">~1659</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Context menu items — padding &amp; text</td>
+    <td><code class="old">px-4 py-2 text-sm</code></td>
+    <td><code class="new">px-[0.875rem] py-[0.4375rem] text-[0.8125rem]</code></td>
+    <td class="line">~1570–1590</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Progress percentage text</td>
+    <td><code class="old">text-sm</code></td>
+    <td><code class="new">text-[0.8125rem]</code></td>
+    <td class="line">~1701</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Add Run modal header — padding</td>
+    <td><code class="old">px-6 py-4</code></td>
+    <td><code class="new">px-[1.3125rem] py-[1rem]</code></td>
+    <td class="line">~1804</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Modal Cancel button — padding</td>
+    <td><code class="old">px-4 py-2 text-sm</code></td>
+    <td><code class="new">px-[0.875rem] py-[0.4375rem] text-[0.8125rem]</code></td>
+    <td class="line">~1949</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Run card assigned label (missing "Assigned to" text)</td>
+    <td><code class="old">(no label)</code></td>
+    <td><code class="new">+ "Assigned to" label before avatars</code></td>
+    <td class="line">Run cards</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- PAGE 3: MILESTONES                                  -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="file-header">
+  <div class="icon warn"><i class="ri-alert-fill"></i></div>
+  <div>
+    <div class="name">16 — Milestones</div>
+    <div class="path">src/pages/project-milestones/page.tsx</div>
+  </div>
+  <span class="badge warn">5 Issues</span>
+</div>
+<table class="cl-table">
+  <tr><th class="check"></th><th>Component</th><th>Current (Code)</th><th>Expected (Design)</th><th>Line</th><th>Severity</th></tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Milestone timeline — gap</td>
+    <td><code class="old">gap-6</code></td>
+    <td><code class="new">gap-[1.3125rem]</code></td>
+    <td class="line">~503</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Timeline date number — size</td>
+    <td><code class="old">text-2xl font-bold</code></td>
+    <td><code class="new">text-[1.375rem] font-bold</code></td>
+    <td class="line">~509</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Tab buttons — padding</td>
+    <td><code class="old">py-3</code></td>
+    <td><code class="new">py-[0.4375rem]</code></td>
+    <td class="line">~476, 480</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Modal buttons — padding</td>
+    <td><code class="old">px-4 py-2</code></td>
+    <td><code class="new">px-[0.875rem] py-[0.4375rem]</code></td>
+    <td class="line">~548-549</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Form labels — text size</td>
+    <td><code class="old">text-sm</code></td>
+    <td><code class="new">text-[0.8125rem]</code></td>
+    <td class="line">~535, 539, 543</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- PAGE 4: DOCUMENTS                                   -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="file-header">
+  <div class="icon pass"><i class="ri-checkbox-circle-fill"></i></div>
+  <div>
+    <div class="name">17 — Documents</div>
+    <div class="path">src/pages/project-documentation/page.tsx</div>
+  </div>
+  <span class="badge pass">~Compliant (1 minor)</span>
+</div>
+<table class="cl-table">
+  <tr><th class="check"></th><th>Component</th><th>Current (Code)</th><th>Expected (Design)</th><th>Line</th><th>Severity</th></tr>
+  <tr>
+    <td class="check"><input type="checkbox" checked disabled></td>
+    <td>Content padding</td>
+    <td><code>p-[1.75rem]</code></td>
+    <td><code>p-[1.75rem]</code></td>
+    <td class="line">—</td>
+    <td><span class="sev low">✓ OK</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox" checked disabled></td>
+    <td>Page title</td>
+    <td><code>text-[1.375rem]</code></td>
+    <td><code>text-[1.375rem]</code></td>
+    <td class="line">~188</td>
+    <td><span class="sev low">✓ OK</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Empty state icon — size</td>
+    <td><code class="old">text-3xl</code></td>
+    <td><code class="new">text-[1.75rem]</code></td>
+    <td class="line">~250</td>
+    <td><span class="sev low">LOW</span></td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- PAGE 5: DISCOVERY (SESSIONS)                        -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="file-header">
+  <div class="icon fail"><i class="ri-close-circle-fill"></i></div>
+  <div>
+    <div class="name">18 — Discovery (Sessions)</div>
+    <div class="path">src/pages/project-sessions/page.tsx</div>
+  </div>
+  <span class="badge fail">10 Issues</span>
+</div>
+<table class="cl-table">
+  <tr><th class="check"></th><th>Component</th><th>Current (Code)</th><th>Expected (Design)</th><th>Line</th><th>Severity</th></tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Stat circle number — size</td>
+    <td><code class="old">text-2xl font-bold</code></td>
+    <td><code class="new">text-[1.75rem] font-bold</code></td>
+    <td class="line">~616</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Sub-tab "View" link text</td>
+    <td><code class="old">text-sm</code></td>
+    <td><code class="new">text-[0.8125rem]</code></td>
+    <td class="line">~682</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Session list — vertical gap</td>
+    <td><code class="old">space-y-6</code></td>
+    <td><code class="new">space-y-3</code> or <code class="new">gap-[0.75rem]</code></td>
+    <td class="line">~864</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Filter/tag dropdown items — padding</td>
+    <td><code class="old">px-3 py-2</code></td>
+    <td><code class="new">px-[0.875rem] py-[0.4375rem]</code></td>
+    <td class="line">~771, 824</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Expanded table headers — py</td>
+    <td><code class="old">py-3</code></td>
+    <td><code class="new">py-[0.6875rem]</code></td>
+    <td class="line">~1040–1043</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>TC table body text</td>
+    <td><code class="old">text-sm</code></td>
+    <td><code class="new">text-[0.8125rem]</code></td>
+    <td class="line">~1075</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Context menu delete button — padding</td>
+    <td><code class="old">px-4 py-2 text-sm</code></td>
+    <td><code class="new">px-[0.875rem] py-[0.4375rem] text-[0.8125rem]</code></td>
+    <td class="line">~1210</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Session cards — missing schedule row</td>
+    <td><code class="old">(not implemented)</code></td>
+    <td><code class="new">+ sc-schedule row (calendar icon + date + time + duration)</code></td>
+    <td class="line">Session cards</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Modal form labels</td>
+    <td><code class="old">text-sm</code></td>
+    <td><code class="new">text-[0.8125rem]</code></td>
+    <td class="line">~1241+</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td>Modal form inputs — multiple</td>
+    <td><code class="old">px-3 py-2 text-sm</code></td>
+    <td><code class="new">px-[0.875rem] py-[0.4375rem] text-[0.8125rem]</code></td>
+    <td class="line">~1241–1430</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- CROSS-PAGE SYSTEMATIC ISSUES                        -->
+<!-- ═══════════════════════════════════════════════════ -->
+<h2 style="margin-top:2rem"><i class="ri-error-warning-line" style="color:#EF4444"></i> Cross-Page Systematic Issues</h2>
+
+<p>These patterns appear across multiple files and should be fixed globally:</p>
+
+<table class="cl-table" style="border-radius:0.75rem">
+  <tr><th class="check"></th><th>Pattern</th><th>Current</th><th>Expected</th><th>Files Affected</th><th>Severity</th></tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td><strong>gap-6 in content area</strong> — Section gaps between cards/rows still using standard spacing</td>
+    <td><code class="old">gap-6</code></td>
+    <td><code class="new">gap-[1.3125rem]</code></td>
+    <td>Runs (~1508, ~1659), Milestones (~503)</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td><strong>text-2xl on secondary numbers</strong> — Non-title large text still using standard size</td>
+    <td><code class="old">text-2xl</code></td>
+    <td><code class="new">text-[1.375rem]</code> or <code class="new">text-[1.75rem]</code></td>
+    <td>Milestones (~509), Sessions (~616)</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td><strong>text-sm → text-[0.8125rem]</strong> — Body text in content area still 14px instead of 13px</td>
+    <td><code class="old">text-sm</code></td>
+    <td><code class="new">text-[0.8125rem]</code></td>
+    <td>Runs (~1659, 1701), Sessions (~682, 1075, 1241+), Milestones (~535+)</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td><strong>px-4 py-2 on buttons in content area</strong> — Standard button padding instead of compact</td>
+    <td><code class="old">px-4 py-2</code></td>
+    <td><code class="new">px-[0.875rem] py-[0.4375rem]</code></td>
+    <td>Runs (~1570–1590, 1949), Milestones (~548), Sessions (~1210)</td>
+    <td><span class="sev med">MED</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td><strong>space-y-6 → space-y-3</strong> — Vertical spacing between list items too wide</td>
+    <td><code class="old">space-y-6</code></td>
+    <td><code class="new">space-y-3</code> or <code class="new">gap-[0.75rem]</code></td>
+    <td>Sessions (~864)</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td><strong>Missing design features</strong> — New UI elements from design not yet implemented</td>
+    <td><code class="old">(absent)</code></td>
+    <td><code class="new">See details below</code></td>
+    <td>Runs (Assigned to label), Sessions (schedule row)</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- MISSING FEATURES (NOT JUST CSS)                     -->
+<!-- ═══════════════════════════════════════════════════ -->
+<h2 style="margin-top:2rem"><i class="ri-add-circle-line" style="color:#6366F1"></i> Missing Features (Not Just CSS)</h2>
+
+<p>These items from the design mockups require new HTML/JSX elements, not just class changes:</p>
+
+<table class="cl-table" style="border-radius:0.75rem">
+  <tr><th class="check"></th><th>Page</th><th>Feature</th><th>Description</th><th>Design Ref</th><th>Severity</th></tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td><strong>15 — Runs</strong></td>
+    <td>"Assigned to" label</td>
+    <td>Add <code>&lt;span class="text-[0.75rem] text-gray-400 font-medium"&gt;Assigned to&lt;/span&gt;</code> before avatar badges in run cards, with middot separator before timestamp</td>
+    <td>15-runs-compact.html</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+  <tr>
+    <td class="check"><input type="checkbox"></td>
+    <td><strong>18 — Discovery</strong></td>
+    <td>Schedule row in session cards</td>
+    <td>Add row between charter text and tags: calendar icon (<code>ri-calendar-line</code>) + date + middot + time range + middot + duration. Pattern: <code>&lt;div class="sc-schedule"&gt;...&lt;/div&gt;</code></td>
+    <td>18-discovery-compact.html</td>
+    <td><span class="sev high">HIGH</span></td>
+  </tr>
+</table>
+
+<div class="warn-box">
+  <i class="ri-error-warning-fill"></i>
+  <span><strong>Priority Order:</strong> Fix HIGH severity items first (gap-6, text-2xl, text-sm conversions, missing features), then MED (button padding, form labels). LOW items can go in a separate PR.</span>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- QUICK GREP COMMANDS FOR DEV                         -->
+<!-- ═══════════════════════════════════════════════════ -->
+<h2 style="margin-top:2rem"><i class="ri-terminal-line" style="color:#6366F1"></i> Quick Grep Commands for Dev</h2>
+
+<p>Run these to find all remaining non-compact values in the 5 files:</p>
+
+<pre style="background:#1E293B;color:#E2E8F0;border-radius:0.625rem;padding:1rem;font-size:0.75rem;overflow-x:auto;margin:1rem 0;font-family:'SF Mono',monospace;line-height:1.8">
+<span style="color:#64748B"># Find all remaining gap-6 in content areas</span>
+<span style="color:#818CF8">grep</span> -n <span style="color:#FBBF24">"gap-6"</span> src/pages/project-{runs,milestones,sessions}/*.tsx
+
+<span style="color:#64748B"># Find all remaining text-2xl (should be text-[1.375rem])</span>
+<span style="color:#818CF8">grep</span> -n <span style="color:#FBBF24">"text-2xl"</span> src/pages/project-{runs,milestones,sessions}/*.tsx
+
+<span style="color:#64748B"># Find text-sm in content (exclude modals/dropdowns context)</span>
+<span style="color:#818CF8">grep</span> -n <span style="color:#FBBF24">"text-sm"</span> src/pages/project-{runs,milestones,sessions}/*.tsx
+
+<span style="color:#64748B"># Find standard button padding (should be px-[0.875rem] py-[0.4375rem])</span>
+<span style="color:#818CF8">grep</span> -n <span style="color:#FBBF24">"px-4 py-2"</span> src/pages/project-{runs,milestones,sessions}/*.tsx
+
+<span style="color:#64748B"># Find space-y-6 (should be space-y-3 or smaller)</span>
+<span style="color:#818CF8">grep</span> -n <span style="color:#FBBF24">"space-y-6"</span> src/pages/project-sessions/*.tsx
+
+<span style="color:#64748B"># Find py-3 in table headers (should be py-[0.6875rem])</span>
+<span style="color:#818CF8">grep</span> -n <span style="color:#FBBF24">"py-3"</span> src/pages/project-sessions/*.tsx
+</pre>
+
+</div><!-- /doc-body -->
+</body>
+</html>

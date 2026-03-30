@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Milestones Compact Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* DEMO BAR                                              */
+  /* ══════════════════════════════════════════════════════ */
+  .demo-bar {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem;
+    background: #FFFBEB; border-bottom: 1px solid #FDE68A; flex-shrink: 0; flex-wrap: wrap;
+  }
+  .demo-bar label { font-size: 0.625rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.04em; }
+  .demo-chip {
+    font-size: 0.625rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px;
+    background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;
+  }
+  .demo-note { font-size: 0.5625rem; color: #92400E; margin-left: auto; font-style: italic; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TOP HEADER                                            */
+  /* ══════════════════════════════════════════════════════ */
+  .top-header {
+    background: #fff; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; padding: 0 1.25rem; height: 3.25rem; gap: 0; flex-shrink: 0;
+  }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding-right: 1.25rem; border-right: 1px solid #E2E8F0; margin-right: 1rem; }
+  .logo-icon { width: 26px; height: 26px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; }
+  .logo-text { font-family: 'Pacifico', cursive; font-size: 1rem; color: #6366F1; letter-spacing: -0.01em; }
+  .project-selector {
+    display: flex; align-items: center; gap: 0.375rem; cursor: pointer;
+    padding: 0.3125rem 0.625rem; border-radius: 0.375rem; margin-right: 0.5rem;
+  }
+  .project-selector:hover { background: #F8FAFC; }
+  .project-selector .proj-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .project-selector .proj-chevron { font-size: 0.75rem; color: #94A3B8; }
+  .header-nav { display: flex; align-items: center; height: 100%; gap: 0; }
+  .header-nav-item {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; font-weight: 500; white-space: nowrap;
+    transition: color 0.15s; position: relative;
+  }
+  .header-nav-item:hover { color: #475569; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .header-nav-item.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .header-nav-item i { font-size: 0.9375rem; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .header-icon-btn {
+    width: 2rem; height: 2rem; border-radius: 0.375rem; border: none; background: none;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;
+    position: relative;
+  }
+  .header-icon-btn:hover { background: #F1F5F9; color: #475569; }
+  .notif-dot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; border: 1.5px solid #fff; }
+  .header-avatar {
+    width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5625rem; font-weight: 700; color: #fff; cursor: pointer;
+  }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* SUBTAB ROW                                            */
+  /* ══════════════════════════════════════════════════════ */
+  .subtab-row {
+    display: flex; align-items: center; padding: 0 1.25rem; gap: 0;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; height: 2.625rem;
+    position: relative;
+  }
+  .st-tab {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; font-weight: 500; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; white-space: nowrap; transition: color 0.15s; position: relative;
+  }
+  .st-tab:hover { color: #475569; }
+  .st-tab.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .st-tab.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .st-tab i { font-size: 0.875rem; }
+  .st-badge {
+    font-size: 0.625rem; font-weight: 700; padding: 0.0625rem 0.375rem;
+    border-radius: 9999px; background: #F1F5F9; color: #64748B; min-width: 1.25rem; text-align: center;
+  }
+  .st-tab.active .st-badge { background: #EEF2FF; color: #6366F1; }
+  .st-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .count-chip {
+    font-size: 0.6875rem; font-weight: 600; color: #94A3B8; padding: 0.1875rem 0.625rem;
+    border: 1px solid #E2E8F0; border-radius: 9999px; background: #F8FAFC; white-space: nowrap;
+  }
+  .action-btn {
+    display: flex; align-items: center; gap: 0.3125rem;
+    font-size: 0.8125rem; font-weight: 600; padding: 0.375rem 0.875rem;
+    border-radius: 0.375rem; border: none; cursor: pointer; font-family: inherit;
+    background: #6366F1; color: #fff; white-space: nowrap; transition: all 0.15s;
+    box-shadow: 0 1px 3px rgba(99,102,241,0.3);
+  }
+  .action-btn:hover { box-shadow: 0 2px 8px rgba(99,102,241,0.4); transform: translateY(-0.5px); }
+  .action-btn i { font-size: 0.875rem; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* SEARCH / FILTER / SORT TOOLBAR                        */
+  /* ══════════════════════════════════════════════════════ */
+  .toolbar {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.5rem;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0;
+  }
+  .toolbar-search {
+    flex: 1; display: flex; align-items: center; gap: 0.375rem;
+    background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 0.375rem;
+    padding: 0.375rem 0.625rem; transition: border-color 0.15s;
+  }
+  .toolbar-search:focus-within { border-color: #C7D2FE; background: #fff; }
+  .toolbar-search i { font-size: 0.875rem; color: #94A3B8; flex-shrink: 0; }
+  .toolbar-search input {
+    border: none; background: none; outline: none; font-size: 0.8125rem;
+    color: #1E293B; font-family: inherit; flex: 1; min-width: 0;
+  }
+  .toolbar-search input::placeholder { color: #94A3B8; }
+  .toolbar-btn {
+    display: flex; align-items: center; gap: 0.25rem;
+    font-size: 0.75rem; font-weight: 500; padding: 0.375rem 0.625rem;
+    border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff;
+    color: #475569; cursor: pointer; font-family: inherit; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .toolbar-btn:hover { background: #F8FAFC; border-color: #CBD5E1; }
+  .toolbar-btn i { font-size: 0.875rem; color: #94A3B8; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* MAIN CONTENT                                          */
+  /* ══════════════════════════════════════════════════════ */
+  .content { flex: 1; padding: 1.25rem 1.5rem; overflow-y: auto; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* MILESTONE CARDS — Compact                             */
+  /* ══════════════════════════════════════════════════════ */
+  .milestone-list { display: flex; flex-direction: column; gap: 0.625rem; }
+
+  .ms-wrapper { }
+
+  .milestone-card {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem;
+    padding: 0.9375rem 1.125rem; transition: all 0.15s; cursor: pointer;
+  }
+  .milestone-card:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-color: #C7D2FE; }
+  .milestone-card.expanded { border-color: #C7D2FE; box-shadow: 0 1px 6px rgba(99,102,241,0.1); }
+
+  /* Expand chevron */
+  .ms-expand {
+    width: 1.375rem; height: 1.375rem; border-radius: 0.25rem; border: none; background: none;
+    color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0; transition: all 0.15s;
+  }
+  .ms-expand:hover { background: #F1F5F9; color: #475569; }
+  .ms-expand.open { color: #6366F1; transform: rotate(90deg); }
+
+  .ms-top {
+    display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.5625rem;
+  }
+  .ms-icon {
+    width: 2.25rem; height: 2.25rem; background: #EEF2FF; border-radius: 0.4375rem;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .ms-icon i { font-size: 1.125rem; color: #6366F1; }
+  .ms-icon.at-risk { background: #FEF3C7; }
+  .ms-icon.at-risk i { color: #D97706; }
+  .ms-icon.on-track { background: #F0FDF4; }
+  .ms-icon.on-track i { color: #16A34A; }
+  .ms-icon.completed { background: #F0FDF4; }
+  .ms-icon.completed i { color: #16A34A; }
+  .ms-icon.overdue { background: #FEF2F2; }
+  .ms-icon.overdue i { color: #EF4444; }
+
+  .ms-info { flex: 1; min-width: 0; }
+  .ms-name { font-size: 0.875rem; font-weight: 600; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ms-date { font-size: 0.75rem; color: #94A3B8; margin-top: 0.0625rem; }
+
+  .ms-status {
+    font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .ms-status.active { background: #DBEAFE; color: #2563EB; }
+  .ms-status.on-track { background: #F0FDF4; color: #16A34A; }
+  .ms-status.at-risk { background: #FEF3C7; color: #D97706; }
+  .ms-status.completed { background: #F0FDF4; color: #16A34A; }
+  .ms-status.overdue { background: #FEF2F2; color: #DC2626; }
+
+  .ms-actions { display: flex; gap: 0.25rem; flex-shrink: 0; }
+  .ms-action-btn {
+    font-size: 0.6875rem; padding: 0.25rem 0.4375rem; border-radius: 0.25rem;
+    border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer;
+    display: flex; align-items: center; gap: 0.1875rem; font-family: inherit; font-weight: 500;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .ms-action-btn:hover { background: #F1F5F9; }
+  .ms-action-btn.complete { border-color: #86EFAC; color: #16A34A; }
+  .ms-action-btn.complete:hover { background: #F0FDF4; }
+  .ms-action-btn i { font-size: 0.8125rem; }
+
+  .ms-progress { margin-bottom: 0.4375rem; }
+  .ms-progress-bar {
+    height: 6px; background: #F1F5F9; border-radius: 3px;
+    display: flex; overflow: hidden; margin-bottom: 0.3125rem;
+  }
+  .ms-pb-pass { background: #10B981; }
+  .ms-pb-fail { background: #EF4444; }
+  .ms-pb-remain { background: #E2E8F0; flex: 1; }
+  .ms-progress-info {
+    display: flex; justify-content: space-between; font-size: 0.75rem;
+  }
+  .ms-progress-pct { font-weight: 600; color: #0F172A; }
+  .ms-progress-detail { color: #94A3B8; }
+
+  .ms-bottom { display: flex; align-items: center; justify-content: space-between; }
+  .ms-counts { display: flex; gap: 0.75rem; font-size: 0.75rem; }
+  .ms-count { display: flex; align-items: center; gap: 0.1875rem; }
+  .ms-count .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .ms-count .dot.pass { background: #10B981; }
+  .ms-count .dot.fail { background: #EF4444; }
+  .ms-count .dot.untested { background: #94A3B8; }
+  .ms-count span { color: #64748B; }
+  .ms-assignees { display: flex; }
+  .ms-av {
+    width: 1.375rem; height: 1.375rem; border-radius: 50%; border: 1.5px solid #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5rem; font-weight: 700; color: #fff; margin-left: -0.25rem;
+  }
+  .ms-av:first-child { margin-left: 0; }
+
+  .milestone-card.done { opacity: 0.7; }
+  .milestone-card.done:hover { opacity: 0.85; }
+  .milestone-card.done .ms-name { color: #64748B; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* SUB-MILESTONES                                        */
+  /* ══════════════════════════════════════════════════════ */
+  .sub-milestones {
+    display: none; margin-top: 0.375rem; padding-left: 1.125rem;
+    position: relative;
+  }
+  .sub-milestones.open { display: block; }
+
+  /* Vertical connector line */
+  .sub-milestones::before {
+    content: ''; position: absolute; left: 0.5rem; top: 0; bottom: 0.75rem;
+    width: 1.5px; background: #E2E8F0; border-radius: 1px;
+  }
+
+  .sub-ms {
+    position: relative; background: #FAFAFF; border: 1px solid #EEF2FF;
+    border-radius: 0.375rem; padding: 0.6875rem 0.8125rem; margin-bottom: 0.375rem;
+    transition: all 0.15s; cursor: pointer;
+  }
+  .sub-ms:last-child { margin-bottom: 0; }
+  .sub-ms:hover { border-color: #C7D2FE; background: #F5F3FF; }
+
+  /* Horizontal branch line */
+  .sub-ms::before {
+    content: ''; position: absolute; left: -0.625rem; top: 50%;
+    width: 0.625rem; height: 1.5px; background: #E2E8F0;
+  }
+
+  .sub-ms-top { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.375rem; }
+  .sub-ms-icon {
+    width: 1.5rem; height: 1.5rem; border-radius: 0.25rem;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    background: #EEF2FF;
+  }
+  .sub-ms-icon i { font-size: 0.75rem; color: #6366F1; }
+  .sub-ms-icon.done { background: #F0FDF4; }
+  .sub-ms-icon.done i { color: #16A34A; }
+  .sub-ms-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sub-ms-status {
+    font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.4375rem; border-radius: 9999px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .sub-ms-status.active { background: #DBEAFE; color: #2563EB; }
+  .sub-ms-status.done { background: #F0FDF4; color: #16A34A; }
+  .sub-ms-av {
+    width: 1.125rem; height: 1.125rem; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.4375rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+
+  .sub-ms-progress { display: flex; align-items: center; gap: 0.5rem; }
+  .sub-ms-bar {
+    flex: 1; height: 4.5px; background: #F1F5F9; border-radius: 2.25px;
+    display: flex; overflow: hidden;
+  }
+  .sub-ms-bar .pass { background: #10B981; }
+  .sub-ms-bar .fail { background: #EF4444; }
+  .sub-ms-bar .remain { background: #E2E8F0; flex: 1; }
+  .sub-ms-stats {
+    font-size: 0.6875rem; color: #64748B; white-space: nowrap; display: flex; gap: 0.5rem;
+  }
+  .sub-ms-stats .s-pass { color: #10B981; font-weight: 600; }
+  .sub-ms-stats .s-fail { color: #EF4444; font-weight: 600; }
+  .sub-ms-stats .s-pct { color: #0F172A; font-weight: 600; }
+
+  /* Sub count label on parent card */
+  .ms-sub-count {
+    font-size: 0.6875rem; color: #6366F1; font-weight: 600;
+    display: flex; align-items: center; gap: 0.1875rem; flex-shrink: 0;
+  }
+  .ms-sub-count i { font-size: 0.8125rem; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* EMPTY STATE                                           */
+  /* ══════════════════════════════════════════════════════ */
+  .empty-state {
+    text-align: center; padding: 3rem 1rem; color: #94A3B8; display: none;
+  }
+  .empty-state i { font-size: 2.5rem; margin-bottom: 0.75rem; display: block; color: #CBD5E1; }
+  .empty-state .es-title { font-size: 0.875rem; font-weight: 600; color: #64748B; margin-bottom: 0.25rem; }
+  .empty-state .es-desc { font-size: 0.75rem; }
+
+  /* Animations */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  .sub-milestones.open { animation: fadeIn 0.15s ease-out; }
+
+  /* Search highlight */
+  mark { background: #FEF08A; color: inherit; border-radius: 2px; padding: 0; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ DEMO BAR ═══════════ -->
+<div class="demo-bar">
+  <label>Desi 디자인 시안</label>
+  <span class="demo-chip">Milestones — Compact + Sub-Milestones</span>
+  <span class="demo-note">카드 클릭 시 sub milestone 펼침 · 검색/필터/정렬 지원</span>
+</div>
+
+<!-- ═══════════ TOP HEADER ═══════════ -->
+<div class="top-header">
+  <div class="header-logo">
+    <div class="logo-icon">T</div>
+    <span class="logo-text">Testably</span>
+  </div>
+  <div class="project-selector">
+    <span class="proj-name">Stellar Health EMR</span>
+    <i class="ri-arrow-down-s-line proj-chevron"></i>
+  </div>
+  <div class="header-nav">
+    <div class="header-nav-item"><i class="ri-dashboard-line"></i> Dashboard</div>
+    <div class="header-nav-item"><i class="ri-file-list-3-line"></i> Test Cases</div>
+    <div class="header-nav-item"><i class="ri-play-circle-line"></i> Runs &amp; Results</div>
+    <div class="header-nav-item active"><i class="ri-flag-line"></i> Milestones</div>
+    <div class="header-nav-item"><i class="ri-file-text-line"></i> Documents</div>
+    <div class="header-nav-item"><i class="ri-search-eye-line"></i> Discovery Log</div>
+  </div>
+  <div class="header-right">
+    <button class="header-icon-btn"><i class="ri-search-line"></i></button>
+    <button class="header-icon-btn"><i class="ri-notification-3-line"></i><span class="notif-dot"></span></button>
+    <button class="header-icon-btn"><i class="ri-keyboard-line"></i></button>
+    <div class="header-avatar">KJ</div>
+  </div>
+</div>
+
+<!-- ═══════════ SUBTAB ROW ═══════════ -->
+<div class="subtab-row">
+  <div class="st-tab active" data-filter="all" onclick="filterTab('all',this)">
+    <i class="ri-list-check-3" style="color:#6366F1"></i> All <span class="st-badge" id="badge-all">8</span>
+  </div>
+  <div class="st-tab" data-filter="in-progress" onclick="filterTab('in-progress',this)">
+    <i class="ri-loader-4-fill" style="color:#3B82F6"></i> In Progress <span class="st-badge">3</span>
+  </div>
+  <div class="st-tab" data-filter="completed" onclick="filterTab('completed',this)">
+    <i class="ri-checkbox-circle-fill" style="color:#22C55E"></i> Completed <span class="st-badge">4</span>
+  </div>
+  <div class="st-tab" data-filter="overdue" onclick="filterTab('overdue',this)">
+    <i class="ri-error-warning-fill" style="color:#EF4444"></i> Overdue <span class="st-badge">1</span>
+  </div>
+  <div class="st-right">
+    <span class="count-chip">8 milestones</span>
+    <button class="action-btn"><i class="ri-add-line"></i> New Milestone</button>
+  </div>
+</div>
+
+<!-- ═══════════ SEARCH / FILTER / SORT TOOLBAR ═══════════ -->
+<div class="toolbar">
+  <div class="toolbar-search">
+    <i class="ri-search-line"></i>
+    <input type="text" placeholder="Search milestones..." id="searchInput" oninput="searchMilestones()" />
+  </div>
+  <button class="toolbar-btn"><i class="ri-filter-3-line"></i> Filters</button>
+  <button class="toolbar-btn" onclick="toggleSort()"><i class="ri-sort-desc" id="sortIcon"></i> <span id="sortLabel">Sort: Newest</span></button>
+</div>
+
+<!-- ═══════════ CONTENT ═══════════ -->
+<div class="content">
+  <div class="milestone-list" id="milestoneList">
+
+    <!-- ── Card 1: Sprint 24 Release (3 subs) ── -->
+    <div class="ms-wrapper" data-status="in-progress" data-name="Sprint 24 Release" data-date="2026-03-28">
+      <div class="milestone-card" onclick="toggleExpand(this)">
+        <div class="ms-top">
+          <button class="ms-expand open" onclick="event.stopPropagation();toggleExpand(this.closest('.milestone-card'))"><i class="ri-arrow-right-s-line"></i></button>
+          <div class="ms-icon"><i class="ri-flag-fill"></i></div>
+          <div class="ms-info">
+            <div class="ms-name">Sprint 24 Release</div>
+            <div class="ms-date"><i class="ri-calendar-line" style="font-size:0.625rem;vertical-align:-1px"></i> Mar 14 – Mar 28, 2026</div>
+          </div>
+          <span class="ms-sub-count"><i class="ri-git-branch-line"></i> 3 subs</span>
+          <span class="ms-status active">In Progress</span>
+          <div class="ms-actions" onclick="event.stopPropagation()">
+            <button class="ms-action-btn"><i class="ri-git-branch-line"></i> +Sub</button>
+            <button class="ms-action-btn"><i class="ri-edit-line"></i> Edit</button>
+            <button class="ms-action-btn complete"><i class="ri-check-line"></i> Complete</button>
+          </div>
+        </div>
+        <div class="ms-progress">
+          <div class="ms-progress-bar"><div class="ms-pb-pass" style="width:78%"></div><div class="ms-pb-fail" style="width:9%"></div><div class="ms-pb-remain"></div></div>
+          <div class="ms-progress-info"><span class="ms-progress-pct">78% complete</span><span class="ms-progress-detail">156 / 200 cases</span></div>
+        </div>
+        <div class="ms-bottom">
+          <div class="ms-counts">
+            <span class="ms-count"><span class="dot pass"></span><span>156 passed</span></span>
+            <span class="ms-count"><span class="dot fail"></span><span>18 failed</span></span>
+            <span class="ms-count"><span class="dot untested"></span><span>26 remaining</span></span>
+          </div>
+          <div class="ms-assignees">
+            <span class="ms-av" style="background:#6366F1">SK</span>
+            <span class="ms-av" style="background:#F59E0B">MC</span>
+          </div>
+        </div>
+      </div>
+      <!-- Sub-milestones -->
+      <div class="sub-milestones open">
+        <div class="sub-ms">
+          <div class="sub-ms-top">
+            <div class="sub-ms-icon done"><i class="ri-checkbox-circle-fill"></i></div>
+            <div class="sub-ms-name">Login Module</div>
+            <span class="sub-ms-status done">Done</span>
+            <span class="sub-ms-av" style="background:#6366F1">SK</span>
+          </div>
+          <div class="sub-ms-progress">
+            <div class="sub-ms-bar"><div class="pass" style="width:100%"></div></div>
+            <div class="sub-ms-stats"><span class="s-pct">100%</span> <span class="s-pass">48 passed</span> <span class="s-fail">0 failed</span></div>
+          </div>
+        </div>
+        <div class="sub-ms">
+          <div class="sub-ms-top">
+            <div class="sub-ms-icon"><i class="ri-flag-line"></i></div>
+            <div class="sub-ms-name">Patient List CRUD</div>
+            <span class="sub-ms-status active">In Progress</span>
+            <span class="sub-ms-av" style="background:#F59E0B">MC</span>
+          </div>
+          <div class="sub-ms-progress">
+            <div class="sub-ms-bar"><div class="pass" style="width:72%"></div><div class="fail" style="width:8%"></div><div class="remain"></div></div>
+            <div class="sub-ms-stats"><span class="s-pct">80%</span> <span class="s-pass">65 passed</span> <span class="s-fail">7 failed</span> <span>18 remaining</span></div>
+          </div>
+        </div>
+        <div class="sub-ms">
+          <div class="sub-ms-top">
+            <div class="sub-ms-icon"><i class="ri-flag-line"></i></div>
+            <div class="sub-ms-name">Viewer Integration Tests</div>
+            <span class="sub-ms-status active">In Progress</span>
+            <span class="sub-ms-av" style="background:#6366F1">SK</span>
+          </div>
+          <div class="sub-ms-progress">
+            <div class="sub-ms-bar"><div class="pass" style="width:55%"></div><div class="fail" style="width:14%"></div><div class="remain"></div></div>
+            <div class="sub-ms-stats"><span class="s-pct">69%</span> <span class="s-pass">43 passed</span> <span class="s-fail">11 failed</span> <span>8 remaining</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card 2: API v3 Certification (2 subs) ── -->
+    <div class="ms-wrapper" data-status="in-progress" data-name="API v3 Certification" data-date="2026-04-15">
+      <div class="milestone-card" onclick="toggleExpand(this)">
+        <div class="ms-top">
+          <button class="ms-expand" onclick="event.stopPropagation();toggleExpand(this.closest('.milestone-card'))"><i class="ri-arrow-right-s-line"></i></button>
+          <div class="ms-icon at-risk"><i class="ri-flag-fill"></i></div>
+          <div class="ms-info">
+            <div class="ms-name">API v3 Certification</div>
+            <div class="ms-date"><i class="ri-calendar-line" style="font-size:0.625rem;vertical-align:-1px"></i> Mar 20 – Apr 15, 2026</div>
+          </div>
+          <span class="ms-sub-count"><i class="ri-git-branch-line"></i> 2 subs</span>
+          <span class="ms-status at-risk">At Risk</span>
+          <div class="ms-actions" onclick="event.stopPropagation()">
+            <button class="ms-action-btn"><i class="ri-git-branch-line"></i> +Sub</button>
+            <button class="ms-action-btn"><i class="ri-edit-line"></i> Edit</button>
+            <button class="ms-action-btn complete"><i class="ri-check-line"></i> Complete</button>
+          </div>
+        </div>
+        <div class="ms-progress">
+          <div class="ms-progress-bar"><div class="ms-pb-pass" style="width:45%"></div><div class="ms-pb-fail" style="width:5%"></div><div class="ms-pb-remain"></div></div>
+          <div class="ms-progress-info"><span class="ms-progress-pct">45% complete</span><span class="ms-progress-detail">89 / 198 cases</span></div>
+        </div>
+        <div class="ms-bottom">
+          <div class="ms-counts">
+            <span class="ms-count"><span class="dot pass"></span><span>89 passed</span></span>
+            <span class="ms-count"><span class="dot fail"></span><span>10 failed</span></span>
+            <span class="ms-count"><span class="dot untested"></span><span>99 remaining</span></span>
+          </div>
+          <div class="ms-assignees">
+            <span class="ms-av" style="background:#10B981">AP</span>
+            <span class="ms-av" style="background:#06B6D4">DK</span>
+            <span class="ms-av" style="background:#EC4899">JL</span>
+          </div>
+        </div>
+      </div>
+      <div class="sub-milestones">
+        <div class="sub-ms">
+          <div class="sub-ms-top">
+            <div class="sub-ms-icon"><i class="ri-flag-line"></i></div>
+            <div class="sub-ms-name">Auth Endpoints</div>
+            <span class="sub-ms-status active">In Progress</span>
+            <span class="sub-ms-av" style="background:#10B981">AP</span>
+          </div>
+          <div class="sub-ms-progress">
+            <div class="sub-ms-bar"><div class="pass" style="width:60%"></div><div class="fail" style="width:3%"></div><div class="remain"></div></div>
+            <div class="sub-ms-stats"><span class="s-pct">63%</span> <span class="s-pass">58 passed</span> <span class="s-fail">3 failed</span> <span>31 remaining</span></div>
+          </div>
+        </div>
+        <div class="sub-ms">
+          <div class="sub-ms-top">
+            <div class="sub-ms-icon"><i class="ri-flag-line"></i></div>
+            <div class="sub-ms-name">Data Endpoints</div>
+            <span class="sub-ms-status active">In Progress</span>
+            <span class="sub-ms-av" style="background:#06B6D4">DK</span>
+          </div>
+          <div class="sub-ms-progress">
+            <div class="sub-ms-bar"><div class="pass" style="width:28%"></div><div class="fail" style="width:7%"></div><div class="remain"></div></div>
+            <div class="sub-ms-stats"><span class="s-pct">28%</span> <span class="s-pass">31 passed</span> <span class="s-fail">7 failed</span> <span>72 remaining</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card 3: Q1 Regression Suite (no subs) ── -->
+    <div class="ms-wrapper" data-status="in-progress" data-name="Q1 Regression Suite" data-date="2026-03-31">
+      <div class="milestone-card" onclick="toggleExpand(this)">
+        <div class="ms-top">
+          <div class="ms-icon on-track"><i class="ri-flag-fill"></i></div>
+          <div class="ms-info">
+            <div class="ms-name">Q1 Regression Suite</div>
+            <div class="ms-date"><i class="ri-calendar-line" style="font-size:0.625rem;vertical-align:-1px"></i> Mar 1 – Mar 31, 2026</div>
+          </div>
+          <span class="ms-status on-track">On Track</span>
+          <div class="ms-actions" onclick="event.stopPropagation()">
+            <button class="ms-action-btn"><i class="ri-git-branch-line"></i> +Sub</button>
+            <button class="ms-action-btn"><i class="ri-edit-line"></i> Edit</button>
+            <button class="ms-action-btn complete"><i class="ri-check-line"></i> Complete</button>
+          </div>
+        </div>
+        <div class="ms-progress">
+          <div class="ms-progress-bar"><div class="ms-pb-pass" style="width:92%"></div><div class="ms-pb-fail" style="width:3%"></div><div class="ms-pb-remain"></div></div>
+          <div class="ms-progress-info"><span class="ms-progress-pct">92% complete</span><span class="ms-progress-detail">234 / 258 cases</span></div>
+        </div>
+        <div class="ms-bottom">
+          <div class="ms-counts">
+            <span class="ms-count"><span class="dot pass"></span><span>234 passed</span></span>
+            <span class="ms-count"><span class="dot fail"></span><span>8 failed</span></span>
+            <span class="ms-count"><span class="dot untested"></span><span>16 remaining</span></span>
+          </div>
+          <div class="ms-assignees">
+            <span class="ms-av" style="background:#6366F1">SK</span>
+            <span class="ms-av" style="background:#8B5CF6">YH</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card 4: Sprint 23 Release (completed) ── -->
+    <div class="ms-wrapper" data-status="completed" data-name="Sprint 23 Release" data-date="2026-03-14">
+      <div class="milestone-card done">
+        <div class="ms-top">
+          <div class="ms-icon completed"><i class="ri-checkbox-circle-fill"></i></div>
+          <div class="ms-info">
+            <div class="ms-name">Sprint 23 Release</div>
+            <div class="ms-date"><i class="ri-calendar-line" style="font-size:0.625rem;vertical-align:-1px"></i> Feb 28 – Mar 14, 2026</div>
+          </div>
+          <span class="ms-status completed">Completed</span>
+          <div class="ms-actions"><button class="ms-action-btn"><i class="ri-eye-line"></i> View</button></div>
+        </div>
+        <div class="ms-progress">
+          <div class="ms-progress-bar"><div class="ms-pb-pass" style="width:95%"></div><div class="ms-pb-fail" style="width:5%"></div><div class="ms-pb-remain" style="flex:0"></div></div>
+          <div class="ms-progress-info"><span class="ms-progress-pct">100% complete</span><span class="ms-progress-detail">180 / 180 cases</span></div>
+        </div>
+        <div class="ms-bottom">
+          <div class="ms-counts">
+            <span class="ms-count"><span class="dot pass"></span><span>171 passed</span></span>
+            <span class="ms-count"><span class="dot fail"></span><span>9 failed</span></span>
+            <span class="ms-count"><span class="dot untested"></span><span>0 remaining</span></span>
+          </div>
+          <div class="ms-assignees">
+            <span class="ms-av" style="background:#6366F1">KJ</span>
+            <span class="ms-av" style="background:#EC4899">SK</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card 5: HIPAA Compliance Audit (completed) ── -->
+    <div class="ms-wrapper" data-status="completed" data-name="HIPAA Compliance Audit" data-date="2026-02-28">
+      <div class="milestone-card done">
+        <div class="ms-top">
+          <div class="ms-icon completed"><i class="ri-checkbox-circle-fill"></i></div>
+          <div class="ms-info">
+            <div class="ms-name">HIPAA Compliance Audit</div>
+            <div class="ms-date"><i class="ri-calendar-line" style="font-size:0.625rem;vertical-align:-1px"></i> Feb 1 – Feb 28, 2026</div>
+          </div>
+          <span class="ms-status completed">Completed</span>
+          <div class="ms-actions"><button class="ms-action-btn"><i class="ri-eye-line"></i> View</button></div>
+        </div>
+        <div class="ms-progress">
+          <div class="ms-progress-bar"><div class="ms-pb-pass" style="width:100%"></div><div class="ms-pb-remain" style="flex:0"></div></div>
+          <div class="ms-progress-info"><span class="ms-progress-pct">100% complete</span><span class="ms-progress-detail">312 / 312 cases</span></div>
+        </div>
+        <div class="ms-bottom">
+          <div class="ms-counts">
+            <span class="ms-count"><span class="dot pass"></span><span>312 passed</span></span>
+            <span class="ms-count"><span class="dot fail"></span><span>0 failed</span></span>
+            <span class="ms-count"><span class="dot untested"></span><span>0 remaining</span></span>
+          </div>
+          <div class="ms-assignees"><span class="ms-av" style="background:#6366F1">KJ</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card 6: v2.3 Release Sign-off (completed) ── -->
+    <div class="ms-wrapper" data-status="completed" data-name="v2.3 Release Sign-off" data-date="2026-03-07">
+      <div class="milestone-card done">
+        <div class="ms-top">
+          <div class="ms-icon completed"><i class="ri-checkbox-circle-fill"></i></div>
+          <div class="ms-info">
+            <div class="ms-name">v2.3 Release Sign-off</div>
+            <div class="ms-date"><i class="ri-calendar-line" style="font-size:0.625rem;vertical-align:-1px"></i> Feb 14 – Mar 7, 2026</div>
+          </div>
+          <span class="ms-status completed">Completed</span>
+          <div class="ms-actions"><button class="ms-action-btn"><i class="ri-eye-line"></i> View</button></div>
+        </div>
+        <div class="ms-progress">
+          <div class="ms-progress-bar"><div class="ms-pb-pass" style="width:97%"></div><div class="ms-pb-fail" style="width:3%"></div><div class="ms-pb-remain" style="flex:0"></div></div>
+          <div class="ms-progress-info"><span class="ms-progress-pct">100% complete</span><span class="ms-progress-detail">145 / 145 cases</span></div>
+        </div>
+        <div class="ms-bottom">
+          <div class="ms-counts">
+            <span class="ms-count"><span class="dot pass"></span><span>141 passed</span></span>
+            <span class="ms-count"><span class="dot fail"></span><span>4 failed</span></span>
+            <span class="ms-count"><span class="dot untested"></span><span>0 remaining</span></span>
+          </div>
+          <div class="ms-assignees">
+            <span class="ms-av" style="background:#EC4899">SK</span>
+            <span class="ms-av" style="background:#3B82F6">JL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card 7: Sprint 22 Release (completed) ── -->
+    <div class="ms-wrapper" data-status="completed" data-name="Sprint 22 Release" data-date="2026-02-14">
+      <div class="milestone-card done">
+        <div class="ms-top">
+          <div class="ms-icon completed"><i class="ri-checkbox-circle-fill"></i></div>
+          <div class="ms-info">
+            <div class="ms-name">Sprint 22 Release</div>
+            <div class="ms-date"><i class="ri-calendar-line" style="font-size:0.625rem;vertical-align:-1px"></i> Jan 17 – Feb 14, 2026</div>
+          </div>
+          <span class="ms-status completed">Completed</span>
+          <div class="ms-actions"><button class="ms-action-btn"><i class="ri-eye-line"></i> View</button></div>
+        </div>
+        <div class="ms-progress">
+          <div class="ms-progress-bar"><div class="ms-pb-pass" style="width:88%"></div><div class="ms-pb-fail" style="width:12%"></div><div class="ms-pb-remain" style="flex:0"></div></div>
+          <div class="ms-progress-info"><span class="ms-progress-pct">100% complete</span><span class="ms-progress-detail">210 / 210 cases</span></div>
+        </div>
+        <div class="ms-bottom">
+          <div class="ms-counts">
+            <span class="ms-count"><span class="dot pass"></span><span>185 passed</span></span>
+            <span class="ms-count"><span class="dot fail"></span><span>25 failed</span></span>
+            <span class="ms-count"><span class="dot untested"></span><span>0 remaining</span></span>
+          </div>
+          <div class="ms-assignees">
+            <span class="ms-av" style="background:#F59E0B">MC</span>
+            <span class="ms-av" style="background:#8B5CF6">YH</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card 8: Overdue ── -->
+    <div class="ms-wrapper" data-status="overdue" data-name="Patient List Performance Audit" data-date="2026-03-21">
+      <div class="milestone-card" onclick="toggleExpand(this)">
+        <div class="ms-top">
+          <button class="ms-expand" onclick="event.stopPropagation();toggleExpand(this.closest('.milestone-card'))"><i class="ri-arrow-right-s-line"></i></button>
+          <div class="ms-icon overdue"><i class="ri-error-warning-fill"></i></div>
+          <div class="ms-info">
+            <div class="ms-name" style="color:#DC2626">Patient List Performance Audit</div>
+            <div class="ms-date" style="color:#DC2626;font-weight:600"><i class="ri-calendar-line" style="font-size:0.625rem;vertical-align:-1px"></i> Feb 15 – Mar 21, 2026 ⚠ Overdue</div>
+          </div>
+          <span class="ms-sub-count"><i class="ri-git-branch-line"></i> 2 subs</span>
+          <span class="ms-status overdue">Overdue</span>
+          <div class="ms-actions" onclick="event.stopPropagation()">
+            <button class="ms-action-btn"><i class="ri-git-branch-line"></i> +Sub</button>
+            <button class="ms-action-btn"><i class="ri-edit-line"></i> Edit</button>
+            <button class="ms-action-btn complete"><i class="ri-check-line"></i> Complete</button>
+          </div>
+        </div>
+        <div class="ms-progress">
+          <div class="ms-progress-bar"><div class="ms-pb-pass" style="width:52%"></div><div class="ms-pb-fail" style="width:8%"></div><div class="ms-pb-remain"></div></div>
+          <div class="ms-progress-info"><span class="ms-progress-pct" style="color:#DC2626">60% complete</span><span class="ms-progress-detail">90 / 150 cases</span></div>
+        </div>
+        <div class="ms-bottom">
+          <div class="ms-counts">
+            <span class="ms-count"><span class="dot pass"></span><span>78 passed</span></span>
+            <span class="ms-count"><span class="dot fail"></span><span>12 failed</span></span>
+            <span class="ms-count"><span class="dot untested"></span><span>60 remaining</span></span>
+          </div>
+          <div class="ms-assignees"><span class="ms-av" style="background:#3B82F6">JL</span></div>
+        </div>
+      </div>
+      <div class="sub-milestones">
+        <div class="sub-ms">
+          <div class="sub-ms-top">
+            <div class="sub-ms-icon done"><i class="ri-checkbox-circle-fill"></i></div>
+            <div class="sub-ms-name">List Load Time < 2s</div>
+            <span class="sub-ms-status done">Done</span>
+            <span class="sub-ms-av" style="background:#3B82F6">JL</span>
+          </div>
+          <div class="sub-ms-progress">
+            <div class="sub-ms-bar"><div class="pass" style="width:95%"></div><div class="fail" style="width:5%"></div></div>
+            <div class="sub-ms-stats"><span class="s-pct">100%</span> <span class="s-pass">57 passed</span> <span class="s-fail">3 failed</span></div>
+          </div>
+        </div>
+        <div class="sub-ms">
+          <div class="sub-ms-top">
+            <div class="sub-ms-icon"><i class="ri-flag-line"></i></div>
+            <div class="sub-ms-name">Pagination & Infinite Scroll</div>
+            <span class="sub-ms-status active">In Progress</span>
+            <span class="sub-ms-av" style="background:#3B82F6">JL</span>
+          </div>
+          <div class="sub-ms-progress">
+            <div class="sub-ms-bar"><div class="pass" style="width:23%"></div><div class="fail" style="width:10%"></div><div class="remain"></div></div>
+            <div class="sub-ms-stats"><span class="s-pct">33%</span> <span class="s-pass">21 passed</span> <span class="s-fail">9 failed</span> <span>33 remaining</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" id="emptyState">
+    <i class="ri-flag-line"></i>
+    <div class="es-title">No milestones found</div>
+    <div class="es-desc">Try a different search term or filter.</div>
+  </div>
+</div>
+
+<script>
+  /* ═══════════════════════════════════ */
+  /* EXPAND / COLLAPSE SUB-MILESTONES   */
+  /* ═══════════════════════════════════ */
+  function toggleExpand(card) {
+    const wrapper = card.closest('.ms-wrapper');
+    const subs = wrapper.querySelector('.sub-milestones');
+    if (!subs) return;
+
+    const chevron = card.querySelector('.ms-expand');
+    const isOpen = subs.classList.contains('open');
+
+    if (isOpen) {
+      subs.classList.remove('open');
+      card.classList.remove('expanded');
+      if (chevron) chevron.classList.remove('open');
+    } else {
+      subs.classList.add('open');
+      card.classList.add('expanded');
+      if (chevron) chevron.classList.add('open');
+    }
+  }
+
+  /* ═══════════════════════════════════ */
+  /* SUBTAB FILTER                       */
+  /* ═══════════════════════════════════ */
+  let currentFilter = 'all';
+
+  function filterTab(filter, el) {
+    currentFilter = filter;
+    document.querySelectorAll('.st-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    applyFilters();
+  }
+
+  /* ═══════════════════════════════════ */
+  /* SEARCH                              */
+  /* ═══════════════════════════════════ */
+  function searchMilestones() {
+    applyFilters();
+  }
+
+  /* ═══════════════════════════════════ */
+  /* SORT                                */
+  /* ═══════════════════════════════════ */
+  let sortAsc = false;
+
+  function toggleSort() {
+    sortAsc = !sortAsc;
+    document.getElementById('sortLabel').textContent = sortAsc ? 'Sort: Oldest' : 'Sort: Newest';
+    document.getElementById('sortIcon').className = sortAsc ? 'ri-sort-asc' : 'ri-sort-desc';
+
+    const list = document.getElementById('milestoneList');
+    const wrappers = [...list.querySelectorAll('.ms-wrapper')];
+    wrappers.sort((a, b) => {
+      const da = new Date(a.dataset.date);
+      const db = new Date(b.dataset.date);
+      return sortAsc ? da - db : db - da;
+    });
+    wrappers.forEach(w => list.appendChild(w));
+  }
+
+  /* ═══════════════════════════════════ */
+  /* COMBINED FILTER + SEARCH            */
+  /* ═══════════════════════════════════ */
+  function applyFilters() {
+    const query = document.getElementById('searchInput').value.toLowerCase().trim();
+    const wrappers = document.querySelectorAll('.ms-wrapper');
+    let visible = 0;
+
+    wrappers.forEach(w => {
+      const status = w.dataset.status;
+      const name = w.dataset.name.toLowerCase();
+      const subNames = [...w.querySelectorAll('.sub-ms-name')].map(el => el.textContent.toLowerCase());
+      const allNames = [name, ...subNames].join(' ');
+
+      const matchFilter = (currentFilter === 'all') || (status === currentFilter);
+      const matchSearch = !query || allNames.includes(query);
+
+      if (matchFilter && matchSearch) {
+        w.style.display = '';
+        visible++;
+        // Highlight matching text
+        highlightText(w, query);
+      } else {
+        w.style.display = 'none';
+      }
+    });
+
+    document.getElementById('emptyState').style.display = visible === 0 ? '' : 'none';
+    document.getElementById('milestoneList').style.display = visible === 0 ? 'none' : '';
+  }
+
+  function highlightText(wrapper, query) {
+    // Clear existing highlights
+    wrapper.querySelectorAll('.ms-name, .sub-ms-name').forEach(el => {
+      el.innerHTML = el.textContent;
+    });
+
+    if (!query) return;
+
+    wrapper.querySelectorAll('.ms-name, .sub-ms-name').forEach(el => {
+      const text = el.textContent;
+      const idx = text.toLowerCase().indexOf(query);
+      if (idx !== -1) {
+        const before = text.substring(0, idx);
+        const match = text.substring(idx, idx + query.length);
+        const after = text.substring(idx + query.length);
+        el.innerHTML = before + '<mark>' + match + '</mark>' + after;
+      }
+    });
+  }
+</script>
+
+</body>
+</html>

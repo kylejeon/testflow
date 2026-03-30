@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Discovery Status 통일 기획안</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.7; }
+  .doc { max-width: 960px; margin: 0 auto; padding: 3rem 2rem 4rem; }
+  .doc-header { margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 2px solid #E2E8F0; }
+  .doc-badge { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; font-weight: 700;
+    color: #EF4444; background: #FEF2F2; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem;
+    text-transform: uppercase; letter-spacing: 0.04em; }
+  .doc-badge i { font-size: 0.875rem; }
+  .doc-title { font-size: 2rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+  .doc-subtitle { font-size: 1rem; color: #64748B; margin-bottom: 1.25rem; }
+  .doc-meta { display: flex; gap: 1.5rem; font-size: 0.8125rem; color: #94A3B8; flex-wrap: wrap; }
+  .doc-meta span { display: flex; align-items: center; gap: 0.25rem; }
+  .doc-meta i { font-size: 0.9375rem; }
+</style>
+<style>
+  .section { margin-bottom: 3rem; }
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem;
+    border-radius: 50%; background: #6366F1; color: #fff; font-size: 0.75rem; font-weight: 800; margin-right: 0.5rem; }
+  .section-title { font-size: 1.375rem; font-weight: 800; color: #0F172A; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+    padding-bottom: 0.75rem; border-bottom: 1px solid #E2E8F0; }
+  .section-title i { font-size: 1.25rem; color: #6366F1; }
+  h3 { font-size: 1rem; font-weight: 700; color: #1E293B; margin: 1.5rem 0 0.75rem; }
+  h4 { font-size: 0.875rem; font-weight: 700; color: #334155; margin: 1.25rem 0 0.5rem; }
+  p { margin-bottom: 0.875rem; color: #334155; font-size: 0.9375rem; }
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+  .card-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.375rem; }
+  .card-title i { font-size: 1rem; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.8125rem; }
+  th { background: #F8FAFC; font-weight: 600; color: #64748B; text-transform: uppercase; font-size: 0.6875rem; letter-spacing: 0.04em;
+    padding: 0.625rem 0.875rem; text-align: left; border-bottom: 1px solid #E2E8F0; }
+  td { padding: 0.625rem 0.875rem; border-bottom: 1px solid #F1F5F9; color: #334155; vertical-align: top; }
+  tr:hover { background: #FAFAFF; }
+  .tag { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600;
+    padding: 0.1875rem 0.5rem; border-radius: 9999px; }
+  .tag-indigo { background: #EEF2FF; color: #4338CA; }
+  .tag-green { background: #F0FDF4; color: #166534; }
+  .tag-amber { background: #FEF3C7; color: #92400E; }
+  .tag-red { background: #FEF2F2; color: #991B1B; }
+  .tag-blue { background: #DBEAFE; color: #1E40AF; }
+  .tag-gray { background: #F1F5F9; color: #475569; }
+</style>
+<style>
+  .rec-box { background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); border: 2px solid #6366F1;
+    border-radius: 0.75rem; padding: 1.5rem; margin: 1.5rem 0; position: relative; }
+  .rec-box::before { content: '★ PM 추천안'; position: absolute; top: -0.75rem; left: 1.25rem;
+    background: #6366F1; color: #fff; font-size: 0.6875rem; font-weight: 700; padding: 0.1875rem 0.75rem;
+    border-radius: 9999px; }
+  .rec-box p { color: #312E81; }
+  .ceo-quote { background: #FEF3C7; border-left: 4px solid #F59E0B; border-radius: 0 0.5rem 0.5rem 0;
+    padding: 1rem 1.25rem; margin: 1rem 0; font-style: italic; color: #92400E; font-size: 0.9375rem; }
+  .ceo-quote::before { content: 'CEO 질문'; display: block; font-style: normal; font-weight: 700;
+    font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.375rem; color: #92400E; }
+  .flow { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0; flex-wrap: wrap; }
+  .flow-step { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem; font-weight: 500; color: #334155; }
+  .flow-arrow { color: #CBD5E1; font-size: 1rem; }
+  .mockup { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; overflow: hidden; margin: 1.5rem 0; }
+  .mockup-header { background: #F8FAFC; padding: 0.625rem 1rem; border-bottom: 1px solid #E2E8F0;
+    font-size: 0.6875rem; font-weight: 600; color: #64748B; display: flex; align-items: center; gap: 0.375rem; }
+  .mockup-body { padding: 1.25rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.75rem; line-height: 1.6; color: #475569; white-space: pre; overflow-x: auto; }
+  .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .pros, .cons { padding: 1rem 1.25rem; border-radius: 0.625rem; }
+  .pros { background: #F0FDF4; border: 1px solid #BBF7D0; }
+  .cons { background: #FEF2F2; border: 1px solid #FECACA; }
+  .pros h4 { color: #166534; font-size: 0.8125rem; margin-bottom: 0.5rem; }
+  .cons h4 { color: #991B1B; font-size: 0.8125rem; margin-bottom: 0.5rem; }
+  .pros li, .cons li { font-size: 0.8125rem; margin-bottom: 0.25rem; color: #334155; list-style: none; }
+</style>
+</head>
+<body>
+<div class="doc">
+  <div class="doc-header">
+    <div class="doc-badge"><i class="ri-alert-fill"></i> CEO 질문 대응</div>
+    <h1 class="doc-title">Discovery Status 통일 기획안</h1>
+    <p class="doc-subtitle">리스트(테이블) 상태 vs 세션 디테일 상태 — 불일치 분석 및 통일 시스템 설계</p>
+    <div class="doc-meta">
+      <span><i class="ri-user-line"></i> Author: Kyle (PM)</span>
+      <span><i class="ri-calendar-line"></i> 2026-03-27</span>
+      <span><i class="ri-git-branch-line"></i> v1.0</span>
+      <span><i class="ri-link"></i> 연관: pm-plan-discovery-log-redesign.html §9-6</span>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 1: CEO 질문 & 현황 ═══ -->
+  <div class="section" id="s1">
+    <div class="section-title"><span class="section-num">1</span><i class="ri-error-warning-line"></i> 문제 정의 — 상태 불일치 현황</div>
+
+    <div class="ceo-quote">
+      "Discovery Log 테이블의 Status와 Discovery Detail의 Status 리스트가 서로 다르다. 왜 서로 다른지?"
+    </div>
+
+    <h3>1-1. 현재 두 시스템 비교</h3>
+    <table>
+      <thead><tr><th>구분</th><th>Discovery Log 리스트 (테이블)</th><th>Discovery Detail (세션 상세)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>위치</strong></td><td>Discovery 탭 → 메인 리스트 화면</td><td>세션 클릭 → 상세 페이지 → About 패널 & 액션 바</td></tr>
+        <tr><td><strong>상태 종류</strong></td><td>3개: <span class="tag tag-blue">Open</span> <span class="tag tag-green">Resolved</span> <span class="tag tag-gray">Dismissed</span></td><td>7개: <span class="tag tag-gray">Not Started</span> <span class="tag tag-blue">Active</span> <span class="tag tag-amber">Paused</span> <span class="tag tag-green">Passed</span> <span class="tag tag-red">Failed</span> <span class="tag tag-amber">Blocked</span> <span class="tag tag-gray">Dismissed</span></td></tr>
+        <tr><td><strong>Subtab 필터</strong></td><td>All(15) · Open(6) · Resolved(7) · Dismissed(2)</td><td>해당 없음 (단일 세션 페이지)</td></tr>
+        <tr><td><strong>용도</strong></td><td>"이 세션은 아직 열려있나, 끝났나?" — 결과 요약</td><td>"지금 세션이 진행 중인가, 멈춰있나, 어떻게 끝났나?" — 실시간 작업 상태</td></tr>
+        <tr><td><strong>출처 문서</strong></td><td>pm-plan-discovery-log-redesign.html §3, §4</td><td>pm-plan-discovery-log-redesign.html §9-6</td></tr>
+      </tbody>
+    </table>
+
+    <h3>1-2. 불일치 원인 분석</h3>
+
+    <div class="card">
+      <div class="card-title"><i class="ri-search-eye-line" style="color:#6366F1"></i> 근본 원인: 두 가지 다른 관점이 혼재</div>
+      <p>현재 시스템에는 <strong>두 가지 서로 다른 추상화 레벨</strong>이 섞여 있습니다:</p>
+
+      <table>
+        <thead><tr><th>관점</th><th>설명</th><th>해당 상태</th><th>사용 맥락</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>A. 결과 상태</strong><br><span style="font-size:0.75rem; color:#64748B">Outcome Status</span></td>
+            <td>세션이 "끝났을 때" 어떤 결론인지. 리스트에서 전체 세션을 빠르게 분류할 때 필요.</td>
+            <td>Open / Resolved / Dismissed</td>
+            <td>리스트 테이블, 필터, 통계</td>
+          </tr>
+          <tr>
+            <td><strong>B. 운영 상태</strong><br><span style="font-size:0.75rem; color:#64748B">Operational Status</span></td>
+            <td>세션을 "실행하는 동안" 실시간으로 무슨 상태인지. 타이머 연동, 작업 흐름 제어에 필요.</td>
+            <td>Not Started / Active / Paused / Passed / Failed / Blocked / Dismissed</td>
+            <td>세션 상세 페이지, 타이머</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p><strong>핵심 문제:</strong> 리스트 화면의 "Open"이 Detail의 어떤 상태에 매핑되는지 정의되지 않았습니다. "Open"은 Not Started인지, Active인지, Paused인지 알 수 없고, "Resolved"는 Passed만 의미하는지 Failed도 포함하는지 불명확합니다. 이 매핑 부재가 CEO에게 혼란을 준 직접적 원인입니다.</p>
+    </div>
+
+    <h3>1-3. 구체적 충돌 지점 3가지</h3>
+    <table>
+      <thead><tr><th>#</th><th>충돌 지점</th><th>리스트 관점</th><th>디테일 관점</th><th>문제</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>"Open"의 범위</strong></td><td>Open = 아직 끝나지 않은 세션</td><td>Not Started, Active, Paused 3개가 모두 "끝나지 않은" 상태</td><td>Open이 3개 중 어디에 대응하는지 불명확</td></tr>
+        <tr><td>2</td><td><strong>"Resolved"의 범위</strong></td><td>Resolved = 완료된 세션</td><td>Passed, Failed, Blocked 3개가 모두 "완료"될 수 있음</td><td>Failed도 Resolved인가? Blocked는?</td></tr>
+        <tr><td>3</td><td><strong>용어 불일치</strong></td><td>"Open/Resolved" — 이슈 트래커 용어</td><td>"Not Started/Active/Passed/Failed" — 테스트 실행 용어</td><td>같은 제품에서 두 가지 용어 체계 혼용</td></tr>
+      </tbody>
+    </table>
+  </div>

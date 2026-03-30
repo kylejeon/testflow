@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Test Cases Overview</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── Top Header Bar ── */
+  .top-header { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0 1.5rem; height: 3.5rem; gap: 1.5rem; flex-shrink: 0; }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; margin-right: 1rem; cursor: pointer; }
+  .logo-icon { width: 28px; height: 28px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.875rem; }
+  .header-logo span { font-weight: 700; color: #0F172A; font-size: 0.9375rem; }
+  .header-nav { display: flex; align-items: center; gap: 0; height: 100%; margin-left: 0.5rem; }
+  .header-nav-item { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.875rem; height: 100%; font-size: 0.8125rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; font-weight: 500; }
+  .header-nav-item:hover { color: #334155; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: #6366F1; }
+  .header-nav-item i { font-size: 1rem; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.625rem; }
+  .header-btn { font-size: 0.75rem; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; transition: all 0.15s; }
+  .header-btn:hover { background: #F1F5F9; }
+  .header-avatar { width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700; color: #fff; cursor: pointer; }
+
+  /* ── Sub-header with breadcrumb ── */
+  .sub-header { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0.625rem 1.5rem; gap: 0.75rem; flex-shrink: 0; }
+  .breadcrumb { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; }
+  .breadcrumb a { color: #6366F1; text-decoration: none; font-weight: 500; cursor: pointer; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb .sep { color: #CBD5E1; font-size: 0.75rem; }
+  .breadcrumb .current { color: #0F172A; font-weight: 700; }
+  .sub-spacer { flex: 1; }
+  .sub-btn { font-size: 0.75rem; padding: 0.375rem 0.75rem; border-radius: 9999px; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; transition: all 0.15s; font-family: inherit; font-weight: 500; }
+  .sub-btn:hover { background: #F1F5F9; }
+  .sub-btn.primary { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .sub-btn.primary:hover { background: #4F46E5; }
+
+  /* ── Content ── */
+  .content { flex: 1; padding: 1.5rem; overflow-y: auto; }
+  .content-inner { max-width: 1200px; margin: 0 auto; }
+
+  /* ── Page Title Row ── */
+  .page-title-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
+  .page-icon { width: 2.5rem; height: 2.5rem; border-radius: 0.625rem; background: rgba(99,102,241,0.1); display: flex; align-items: center; justify-content: center; }
+  .page-icon i { font-size: 1.25rem; color: #6366F1; }
+  .page-title { font-size: 1.25rem; font-weight: 800; color: #0F172A; }
+  .page-subtitle { font-size: 0.8125rem; color: #64748B; margin-top: 0.125rem; }
+
+  /* ── Summary Stats Row ── */
+  .summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+  .summary-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1rem 1.25rem; }
+  .summary-card .sm-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 0.375rem; }
+  .summary-card .sm-value { font-size: 1.5rem; font-weight: 800; color: #0F172A; line-height: 1; letter-spacing: -0.02em; }
+  .summary-card .sm-sub { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.25rem; }
+  .summary-card .sm-delta { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.6875rem; font-weight: 600; border-radius: 9999px; padding: 0.125rem 0.375rem; margin-left: 0.375rem; }
+  .sm-delta.up { color: #16A34A; background: #F0FDF4; }
+
+  /* ── Priority / Status Breakdown ── */
+  .breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+  .breakdown-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; }
+  .bk-title { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .bk-title i { font-size: 1rem; color: #6366F1; }
+  .bk-bar-group { display: flex; flex-direction: column; gap: 0.625rem; }
+  .bk-bar-row { display: flex; align-items: center; gap: 0.75rem; }
+  .bk-bar-label { font-size: 0.75rem; font-weight: 500; color: #475569; width: 80px; flex-shrink: 0; }
+  .bk-bar-track { flex: 1; height: 8px; background: #F1F5F9; border-radius: 4px; overflow: hidden; }
+  .bk-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease-out; }
+  .bk-bar-fill.critical { background: #EF4444; }
+  .bk-bar-fill.high { background: #F59E0B; }
+  .bk-bar-fill.medium { background: #6366F1; }
+  .bk-bar-fill.low { background: #94A3B8; }
+  .bk-bar-fill.active { background: #16A34A; }
+  .bk-bar-fill.draft { background: #F59E0B; }
+  .bk-bar-fill.deprecated { background: #94A3B8; }
+  .bk-bar-count { font-size: 0.75rem; font-weight: 700; color: #334155; width: 40px; text-align: right; flex-shrink: 0; }
+
+  /* ── Project Breakdown Table ── */
+  .section-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+  .section-title i { color: #6366F1; }
+
+  .tc-table { width: 100%; background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; overflow: hidden; margin-bottom: 1.5rem; }
+  .tc-table table { width: 100%; border-collapse: collapse; }
+  .tc-table th { background: #F8FAFC; padding: 0.75rem 1rem; text-align: left; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; border-bottom: 1px solid #E2E8F0; }
+  .tc-table td { padding: 0.75rem 1rem; font-size: 0.8125rem; color: #334155; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+  .tc-table tr:last-child td { border-bottom: none; }
+  .tc-table tr:hover td { background: #FAFAFF; }
+  .proj-name { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: #0F172A; }
+  .proj-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .tc-count { font-weight: 800; color: #0F172A; font-size: 0.9375rem; }
+  .tc-added { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.75rem; font-weight: 600; color: #16A34A; background: #F0FDF4; padding: 0.125rem 0.5rem; border-radius: 9999px; }
+  .tc-growth-spark { width: 64px; height: 24px; }
+  .tc-growth-spark .sp-line { fill: none; stroke: #6366F1; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .tc-growth-spark .sp-area { fill: url(#sparkGrad); opacity: 0.2; }
+
+  /* ── Recent Additions ── */
+  .recent-list { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; overflow: hidden; }
+  .recent-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid #E2E8F0; }
+  .recent-header .rh-title { font-size: 0.8125rem; font-weight: 700; color: #0F172A; }
+  .recent-header .rh-link { font-size: 0.75rem; color: #6366F1; font-weight: 600; cursor: pointer; text-decoration: none; }
+  .recent-header .rh-link:hover { text-decoration: underline; }
+  .recent-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem; border-bottom: 1px solid #F1F5F9; transition: background 0.15s; cursor: pointer; }
+  .recent-item:last-child { border-bottom: none; }
+  .recent-item:hover { background: #FAFAFF; }
+  .ri-priority { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .ri-priority.critical { background: #EF4444; }
+  .ri-priority.high { background: #F59E0B; }
+  .ri-priority.medium { background: #6366F1; }
+  .ri-priority.low { background: #94A3B8; }
+  .ri-info { flex: 1; min-width: 0; }
+  .ri-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ri-meta { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.125rem; }
+  .ri-project-badge { font-size: 0.6875rem; font-weight: 500; padding: 0.125rem 0.5rem; border-radius: 9999px; background: #EEF2FF; color: #6366F1; white-space: nowrap; }
+  .ri-time { font-size: 0.6875rem; color: #94A3B8; white-space: nowrap; }
+
+  /* ── Weekly Growth Chart ── */
+  .chart-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1.5rem; }
+  .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .chart-title { font-size: 0.8125rem; font-weight: 700; color: #0F172A; }
+  .chart-legend { display: flex; align-items: center; gap: 1rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: #64748B; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .chart-area { position: relative; height: 180px; }
+  .chart-svg { width: 100%; height: 100%; }
+  .chart-gridline { stroke: #F1F5F9; stroke-width: 1; }
+  .chart-bar { rx: 3; transition: opacity 0.15s; cursor: pointer; }
+  .chart-bar:hover { opacity: 0.8; }
+  .chart-xlabel { font-size: 0.625rem; fill: #94A3B8; font-family: 'Inter', sans-serif; }
+  .chart-ylabel { font-size: 0.625rem; fill: #94A3B8; font-family: 'Inter', sans-serif; }
+  .chart-line { fill: none; stroke: #8B5CF6; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .chart-dot { fill: #8B5CF6; stroke: #fff; stroke-width: 2; cursor: pointer; }
+  .chart-dot:hover { r: 5; }
+
+  /* ── Animations ── */
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .summary-card { animation: fadeInUp 0.3s ease-out backwards; }
+  .summary-card:nth-child(1) { animation-delay: 0s; }
+  .summary-card:nth-child(2) { animation-delay: 0.05s; }
+  .summary-card:nth-child(3) { animation-delay: 0.1s; }
+  .summary-card:nth-child(4) { animation-delay: 0.15s; }
+  .breakdown-card { animation: fadeInUp 0.4s ease-out backwards; animation-delay: 0.2s; }
+  .chart-card { animation: fadeInUp 0.4s ease-out backwards; animation-delay: 0.25s; }
+  .tc-table { animation: fadeInUp 0.4s ease-out backwards; animation-delay: 0.3s; }
+  .recent-list { animation: fadeInUp 0.4s ease-out backwards; animation-delay: 0.35s; }
+
+  /* ── Responsive ── */
+  @media (max-width: 1023px) { .summary-row { grid-template-columns: repeat(2, 1fr); } .breakdown-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .summary-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- SVG Defs -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="sparkGrad" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- Top Header -->
+<header class="top-header">
+  <div class="header-logo">
+    <div class="logo-icon">T</div>
+    <span>Testably</span>
+  </div>
+  <nav class="header-nav">
+    <div class="header-nav-item active"><i class="ri-folder-3-line"></i> Projects</div>
+    <div class="header-nav-item"><i class="ri-team-line"></i> Team</div>
+    <div class="header-nav-item"><i class="ri-settings-3-line"></i> Settings</div>
+  </nav>
+  <div class="header-right">
+    <div class="header-btn"><i class="ri-command-line"></i> ⌘K</div>
+    <div class="header-btn"><i class="ri-notification-3-line"></i></div>
+    <div class="header-avatar">KJ</div>
+  </div>
+</header>
+
+<!-- Sub-header -->
+<div class="sub-header">
+  <div class="breadcrumb">
+    <a href="#">Projects</a>
+    <span class="sep"><i class="ri-arrow-right-s-line"></i></span>
+    <span class="current">Test Cases Overview</span>
+  </div>
+  <span class="sub-spacer"></span>
+  <div class="sub-btn"><i class="ri-download-2-line"></i> Export CSV</div>
+  <div class="sub-btn primary"><i class="ri-add-line"></i> New Test Case</div>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <div class="content-inner">
+
+    <!-- Page Title -->
+    <div class="page-title-row">
+      <div class="page-icon"><i class="ri-file-list-3-line"></i></div>
+      <div>
+        <div class="page-title">Test Cases Overview</div>
+        <div class="page-subtitle">All test cases across 5 projects — updated just now</div>
+      </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="sm-label">Total Test Cases</div>
+        <div class="sm-value">2,847 <span class="sm-delta up"><i class="ri-arrow-up-s-line"></i>+32</span></div>
+        <div class="sm-sub">this week</div>
+      </div>
+      <div class="summary-card">
+        <div class="sm-label">Active</div>
+        <div class="sm-value" style="color:#16A34A">2,412</div>
+        <div class="sm-sub">84.7% of total</div>
+      </div>
+      <div class="summary-card">
+        <div class="sm-label">Draft</div>
+        <div class="sm-value" style="color:#F59E0B">298</div>
+        <div class="sm-sub">10.5% of total</div>
+      </div>
+      <div class="summary-card">
+        <div class="sm-label">Deprecated</div>
+        <div class="sm-value" style="color:#94A3B8">137</div>
+        <div class="sm-sub">4.8% of total</div>
+      </div>
+    </div>
+
+    <!-- Priority & Status Breakdown -->
+    <div class="breakdown-grid">
+      <div class="breakdown-card">
+        <div class="bk-title"><i class="ri-flag-line"></i> By Priority</div>
+        <div class="bk-bar-group">
+          <div class="bk-bar-row">
+            <span class="bk-bar-label">Critical</span>
+            <div class="bk-bar-track"><div class="bk-bar-fill critical" style="width:12%"></div></div>
+            <span class="bk-bar-count">341</span>
+          </div>
+          <div class="bk-bar-row">
+            <span class="bk-bar-label">High</span>
+            <div class="bk-bar-track"><div class="bk-bar-fill high" style="width:28%"></div></div>
+            <span class="bk-bar-count">797</span>
+          </div>
+          <div class="bk-bar-row">
+            <span class="bk-bar-label">Medium</span>
+            <div class="bk-bar-track"><div class="bk-bar-fill medium" style="width:42%"></div></div>
+            <span class="bk-bar-count">1,196</span>
+          </div>
+          <div class="bk-bar-row">
+            <span class="bk-bar-label">Low</span>
+            <div class="bk-bar-track"><div class="bk-bar-fill low" style="width:18%"></div></div>
+            <span class="bk-bar-count">513</span>
+          </div>
+        </div>
+      </div>
+      <div class="breakdown-card">
+        <div class="bk-title"><i class="ri-pulse-line"></i> By Status</div>
+        <div class="bk-bar-group">
+          <div class="bk-bar-row">
+            <span class="bk-bar-label">Active</span>
+            <div class="bk-bar-track"><div class="bk-bar-fill active" style="width:85%"></div></div>
+            <span class="bk-bar-count">2,412</span>
+          </div>
+          <div class="bk-bar-row">
+            <span class="bk-bar-label">Draft</span>
+            <div class="bk-bar-track"><div class="bk-bar-fill draft" style="width:10%"></div></div>
+            <span class="bk-bar-count">298</span>
+          </div>
+          <div class="bk-bar-row">
+            <span class="bk-bar-label">Deprecated</span>
+            <div class="bk-bar-track"><div class="bk-bar-fill deprecated" style="width:5%"></div></div>
+            <span class="bk-bar-count">137</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly Growth Chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Weekly Test Case Growth (Last 8 Weeks)</div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#6366F1"></div> Created</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#8B5CF6"></div> Cumulative Trend</div>
+        </div>
+      </div>
+      <div class="chart-area">
+        <svg class="chart-svg" viewBox="0 0 700 180" preserveAspectRatio="none">
+          <!-- Grid lines -->
+          <line x1="50" y1="20" x2="680" y2="20" class="chart-gridline"/>
+          <line x1="50" y1="60" x2="680" y2="60" class="chart-gridline"/>
+          <line x1="50" y1="100" x2="680" y2="100" class="chart-gridline"/>
+          <line x1="50" y1="140" x2="680" y2="140" class="chart-gridline"/>
+          <!-- Y labels -->
+          <text x="44" y="24" class="chart-ylabel" text-anchor="end">50</text>
+          <text x="44" y="64" class="chart-ylabel" text-anchor="end">40</text>
+          <text x="44" y="104" class="chart-ylabel" text-anchor="end">30</text>
+          <text x="44" y="144" class="chart-ylabel" text-anchor="end">20</text>
+          <!-- Bars -->
+          <rect x="75" y="108" width="52" height="52" fill="#6366F1" class="chart-bar" rx="3"/>
+          <rect x="153" y="92" width="52" height="68" fill="#6366F1" class="chart-bar" rx="3"/>
+          <rect x="231" y="76" width="52" height="84" fill="#6366F1" class="chart-bar" rx="3"/>
+          <rect x="309" y="100" width="52" height="60" fill="#6366F1" class="chart-bar" rx="3"/>
+          <rect x="387" y="84" width="52" height="76" fill="#6366F1" class="chart-bar" rx="3"/>
+          <rect x="465" y="68" width="52" height="92" fill="#6366F1" class="chart-bar" rx="3"/>
+          <rect x="543" y="56" width="52" height="104" fill="#6366F1" class="chart-bar" rx="3"/>
+          <rect x="621" y="48" width="52" height="112" fill="#6366F1" class="chart-bar" rx="3"/>
+          <!-- Trend line -->
+          <polyline points="101,100 179,88 257,72 335,90 413,78 491,62 569,50 647,40" class="chart-line"/>
+          <circle cx="101" cy="100" r="3.5" class="chart-dot"/>
+          <circle cx="179" cy="88" r="3.5" class="chart-dot"/>
+          <circle cx="257" cy="72" r="3.5" class="chart-dot"/>
+          <circle cx="335" cy="90" r="3.5" class="chart-dot"/>
+          <circle cx="413" cy="78" r="3.5" class="chart-dot"/>
+          <circle cx="491" cy="62" r="3.5" class="chart-dot"/>
+          <circle cx="569" cy="50" r="3.5" class="chart-dot"/>
+          <circle cx="647" cy="40" r="3.5" class="chart-dot"/>
+          <!-- X labels -->
+          <text x="101" y="172" class="chart-xlabel" text-anchor="middle">W1</text>
+          <text x="179" y="172" class="chart-xlabel" text-anchor="middle">W2</text>
+          <text x="257" y="172" class="chart-xlabel" text-anchor="middle">W3</text>
+          <text x="335" y="172" class="chart-xlabel" text-anchor="middle">W4</text>
+          <text x="413" y="172" class="chart-xlabel" text-anchor="middle">W5</text>
+          <text x="491" y="172" class="chart-xlabel" text-anchor="middle">W6</text>
+          <text x="569" y="172" class="chart-xlabel" text-anchor="middle">W7</text>
+          <text x="647" y="172" class="chart-xlabel" text-anchor="middle">W8</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Project Breakdown Table -->
+    <div class="section-title"><i class="ri-pie-chart-line"></i> Test Cases by Project</div>
+    <div class="tc-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Test Cases</th>
+            <th>Added (7d)</th>
+            <th>Growth</th>
+            <th>Critical</th>
+            <th>Pass Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="proj-name"><span class="proj-dot" style="background:#6366F1"></span> Mobile App v2</div></td>
+            <td><span class="tc-count">842</span></td>
+            <td><span class="tc-added"><i class="ri-arrow-up-s-line"></i>12</span></td>
+            <td>
+              <svg class="tc-growth-spark" viewBox="0 0 64 24">
+                <path d="M2,18 L10,15 L18,16 L26,12 L34,10 L42,8 L50,6 L58,3 L62,2" class="sp-line"/>
+                <path d="M2,18 L10,15 L18,16 L26,12 L34,10 L42,8 L50,6 L58,3 L62,2 L62,24 L2,24Z" class="sp-area"/>
+              </svg>
+            </td>
+            <td style="font-weight:700;color:#EF4444">98</td>
+            <td style="font-weight:600;color:#16A34A">91.2%</td>
+          </tr>
+          <tr>
+            <td><div class="proj-name"><span class="proj-dot" style="background:#8B5CF6"></span> Web Dashboard</div></td>
+            <td><span class="tc-count">723</span></td>
+            <td><span class="tc-added"><i class="ri-arrow-up-s-line"></i>8</span></td>
+            <td>
+              <svg class="tc-growth-spark" viewBox="0 0 64 24">
+                <path d="M2,16 L10,14 L18,15 L26,11 L34,13 L42,9 L50,7 L58,5 L62,4" class="sp-line"/>
+                <path d="M2,16 L10,14 L18,15 L26,11 L34,13 L42,9 L50,7 L58,5 L62,4 L62,24 L2,24Z" class="sp-area"/>
+              </svg>
+            </td>
+            <td style="font-weight:700;color:#EF4444">72</td>
+            <td style="font-weight:600;color:#16A34A">88.5%</td>
+          </tr>
+          <tr>
+            <td><div class="proj-name"><span class="proj-dot" style="background:#10B981"></span> API Gateway v3</div></td>
+            <td><span class="tc-count">561</span></td>
+            <td><span class="tc-added"><i class="ri-arrow-up-s-line"></i>6</span></td>
+            <td>
+              <svg class="tc-growth-spark" viewBox="0 0 64 24">
+                <path d="M2,14 L10,15 L18,12 L26,13 L34,10 L42,11 L50,8 L58,6 L62,5" class="sp-line"/>
+                <path d="M2,14 L10,15 L18,12 L26,13 L34,10 L42,11 L50,8 L58,6 L62,5 L62,24 L2,24Z" class="sp-area"/>
+              </svg>
+            </td>
+            <td style="font-weight:700;color:#EF4444">89</td>
+            <td style="font-weight:600;color:#F59E0B">82.1%</td>
+          </tr>
+          <tr>
+            <td><div class="proj-name"><span class="proj-dot" style="background:#F59E0B"></span> Admin Dashboard</div></td>
+            <td><span class="tc-count">412</span></td>
+            <td><span class="tc-added"><i class="ri-arrow-up-s-line"></i>4</span></td>
+            <td>
+              <svg class="tc-growth-spark" viewBox="0 0 64 24">
+                <path d="M2,12 L10,13 L18,11 L26,12 L34,10 L42,9 L50,10 L58,8 L62,7" class="sp-line"/>
+                <path d="M2,12 L10,13 L18,11 L26,12 L34,10 L42,9 L50,10 L58,8 L62,7 L62,24 L2,24Z" class="sp-area"/>
+              </svg>
+            </td>
+            <td style="font-weight:700;color:#EF4444">52</td>
+            <td style="font-weight:600;color:#16A34A">89.7%</td>
+          </tr>
+          <tr>
+            <td><div class="proj-name"><span class="proj-dot" style="background:#EC4899"></span> Payment Integration</div></td>
+            <td><span class="tc-count">309</span></td>
+            <td><span class="tc-added"><i class="ri-arrow-up-s-line"></i>2</span></td>
+            <td>
+              <svg class="tc-growth-spark" viewBox="0 0 64 24">
+                <path d="M2,10 L10,12 L18,11 L26,10 L34,11 L42,10 L50,9 L58,9 L62,8" class="sp-line"/>
+                <path d="M2,10 L10,12 L18,11 L26,10 L34,11 L42,10 L50,9 L58,9 L62,8 L62,24 L2,24Z" class="sp-area"/>
+              </svg>
+            </td>
+            <td style="font-weight:700;color:#EF4444">30</td>
+            <td style="font-weight:600;color:#16A34A">93.4%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Recent Additions -->
+    <div class="section-title"><i class="ri-time-line"></i> Recently Added Test Cases</div>
+    <div class="recent-list">
+      <div class="recent-header">
+        <span class="rh-title">Last 7 Days</span>
+        <a class="rh-link" href="#">View All →</a>
+      </div>
+      <div class="recent-item">
+        <div class="ri-priority critical"></div>
+        <div class="ri-info">
+          <div class="ri-name">TC-2847: Payment timeout handling for 3DS verification</div>
+          <div class="ri-meta">Created by Sarah K. · 3 steps</div>
+        </div>
+        <span class="ri-project-badge">Payment Integration</span>
+        <span class="ri-time">2h ago</span>
+      </div>
+      <div class="recent-item">
+        <div class="ri-priority high"></div>
+        <div class="ri-info">
+          <div class="ri-name">TC-2846: Dashboard widget drag-and-drop reordering</div>
+          <div class="ri-meta">Created by Mike C. · 8 steps</div>
+        </div>
+        <span class="ri-project-badge">Admin Dashboard</span>
+        <span class="ri-time">3h ago</span>
+      </div>
+      <div class="recent-item">
+        <div class="ri-priority critical"></div>
+        <div class="ri-info">
+          <div class="ri-name">TC-2845: OAuth token refresh race condition</div>
+          <div class="ri-meta">Created by Alex P. · 5 steps</div>
+        </div>
+        <span class="ri-project-badge">API Gateway v3</span>
+        <span class="ri-time">5h ago</span>
+      </div>
+      <div class="recent-item">
+        <div class="ri-priority medium"></div>
+        <div class="ri-info">
+          <div class="ri-name">TC-2844: Push notification deep-link navigation on iOS</div>
+          <div class="ri-meta">Created by Jina L. · 6 steps</div>
+        </div>
+        <span class="ri-project-badge">Mobile App v2</span>
+        <span class="ri-time">8h ago</span>
+      </div>
+      <div class="recent-item">
+        <div class="ri-priority high"></div>
+        <div class="ri-info">
+          <div class="ri-name">TC-2843: Rate limiter bypass with concurrent requests</div>
+          <div class="ri-meta">Created by Alex P. · 4 steps</div>
+        </div>
+        <span class="ri-project-badge">API Gateway v3</span>
+        <span class="ri-time">12h ago</span>
+      </div>
+      <div class="recent-item">
+        <div class="ri-priority medium"></div>
+        <div class="ri-info">
+          <div class="ri-name">TC-2842: User avatar upload with WebP conversion</div>
+          <div class="ri-meta">Created by Sarah K. · 4 steps</div>
+        </div>
+        <span class="ri-project-badge">Web Dashboard</span>
+        <span class="ri-time">1d ago</span>
+      </div>
+      <div class="recent-item">
+        <div class="ri-priority low"></div>
+        <div class="ri-info">
+          <div class="ri-name">TC-2841: Dark mode toggle persistence after logout</div>
+          <div class="ri-meta">Created by Mike C. · 3 steps</div>
+        </div>
+        <span class="ri-project-badge">Web Dashboard</span>
+        <span class="ri-time">1d ago</span>
+      </div>
+      <div class="recent-item">
+        <div class="ri-priority critical"></div>
+        <div class="ri-info">
+          <div class="ri-name">TC-2840: Biometric login fallback when Face ID unavailable</div>
+          <div class="ri-meta">Created by Jina L. · 7 steps</div>
+        </div>
+        <span class="ri-project-badge">Mobile App v2</span>
+        <span class="ri-time">1d ago</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── CountUp Animation ──
+function animateCountUps() {
+  document.querySelectorAll('.sm-value').forEach((el, i) => {
+    const text = el.textContent.trim();
+    const match = text.match(/([\d,]+)/);
+    if (!match) return;
+    const target = parseInt(match[1].replace(/,/g, ''));
+    const rest = text.replace(match[1], '');
+    const duration = 600;
+    const start = performance.now();
+    function tick(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(target * ease);
+      el.innerHTML = current.toLocaleString() + rest;
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    setTimeout(() => requestAnimationFrame(tick), i * 80);
+  });
+}
+
+// ── Bar Fill Animation ──
+function animateBars() {
+  document.querySelectorAll('.bk-bar-fill').forEach(bar => {
+    const target = bar.style.width;
+    bar.style.width = '0%';
+    setTimeout(() => { bar.style.width = target; }, 300);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  animateCountUps();
+  animateBars();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Active Test Runs</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── Top Header Bar ── */
+  .top-header { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0 1.5rem; height: 3.5rem; gap: 1.5rem; flex-shrink: 0; }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; margin-right: 1rem; cursor: pointer; }
+  .logo-icon { width: 28px; height: 28px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.875rem; }
+  .header-logo span { font-weight: 700; color: #0F172A; font-size: 0.9375rem; }
+  .header-nav { display: flex; align-items: center; gap: 0; height: 100%; margin-left: 0.5rem; }
+  .header-nav-item { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.875rem; height: 100%; font-size: 0.8125rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; font-weight: 500; }
+  .header-nav-item:hover { color: #334155; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: #6366F1; }
+  .header-nav-item i { font-size: 1rem; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.625rem; }
+  .header-btn { font-size: 0.75rem; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; transition: all 0.15s; }
+  .header-btn:hover { background: #F1F5F9; }
+  .header-avatar { width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700; color: #fff; cursor: pointer; }
+
+  /* ── Sub-header ── */
+  .sub-header { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0.625rem 1.5rem; gap: 0.75rem; flex-shrink: 0; }
+  .breadcrumb { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; }
+  .breadcrumb a { color: #6366F1; text-decoration: none; font-weight: 500; cursor: pointer; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb .sep { color: #CBD5E1; font-size: 0.75rem; }
+  .breadcrumb .current { color: #0F172A; font-weight: 700; }
+  .sub-spacer { flex: 1; }
+  .sub-btn { font-size: 0.75rem; padding: 0.375rem 0.75rem; border-radius: 9999px; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; transition: all 0.15s; font-family: inherit; font-weight: 500; }
+  .sub-btn:hover { background: #F1F5F9; }
+  .sub-btn.primary { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .sub-btn.primary:hover { background: #4F46E5; }
+
+  /* ── Content ── */
+  .content { flex: 1; padding: 1.5rem; overflow-y: auto; }
+  .content-inner { max-width: 1200px; margin: 0 auto; }
+
+  /* ── Page Title ── */
+  .page-title-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
+  .page-icon { width: 2.5rem; height: 2.5rem; border-radius: 0.625rem; background: rgba(16,185,129,0.1); display: flex; align-items: center; justify-content: center; }
+  .page-icon i { font-size: 1.25rem; color: #10B981; }
+  .page-title { font-size: 1.25rem; font-weight: 800; color: #0F172A; }
+  .page-subtitle { font-size: 0.8125rem; color: #64748B; margin-top: 0.125rem; }
+
+  /* ── Summary Row ── */
+  .summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+  .summary-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1rem 1.25rem; }
+  .summary-card .sm-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 0.375rem; }
+  .summary-card .sm-value { font-size: 1.5rem; font-weight: 800; color: #0F172A; line-height: 1; }
+  .summary-card .sm-sub { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.25rem; }
+
+  /* ── Filter Tabs ── */
+  .filter-bar { display: flex; align-items: center; gap: 0.375rem; margin-bottom: 1rem; }
+  .filter-tab { font-size: 0.75rem; padding: 0.375rem 0.875rem; border-radius: 9999px; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.15s; }
+  .filter-tab:hover { background: #F1F5F9; color: #334155; }
+  .filter-tab.active { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .filter-count { font-size: 0.625rem; background: rgba(255,255,255,0.25); padding: 0.0625rem 0.375rem; border-radius: 9999px; margin-left: 0.25rem; font-weight: 700; }
+  .filter-tab:not(.active) .filter-count { background: #F1F5F9; color: #64748B; }
+
+  /* ── Run Cards ── */
+  .run-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .run-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; cursor: pointer; transition: all 0.2s ease; }
+  .run-card:hover { border-color: #C7D2FE; box-shadow: 0 4px 16px rgba(99,102,241,0.08); transform: translateY(-1px); }
+  .run-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.75rem; }
+  .run-info { flex: 1; min-width: 0; }
+  .run-name { font-size: 0.9375rem; font-weight: 700; color: #0F172A; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem; }
+  .run-status { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.625rem; border-radius: 9999px; }
+  .run-status.in-progress { background: #DBEAFE; color: #2563EB; }
+  .run-status.in-progress::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #2563EB; animation: statusPulse 2s infinite; }
+  .run-status.blocked { background: #FEF2F2; color: #DC2626; }
+  .run-status.blocked::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #DC2626; }
+  .run-status.paused { background: #FEF3C7; color: #D97706; }
+  .run-status.paused::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #D97706; }
+  .run-meta { font-size: 0.75rem; color: #94A3B8; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .run-meta i { font-size: 0.875rem; }
+  .run-meta-item { display: flex; align-items: center; gap: 0.25rem; }
+  .run-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.375rem; flex-shrink: 0; }
+  .run-time { font-size: 0.6875rem; color: #94A3B8; }
+
+  /* ── Progress Bar ── */
+  .run-progress { margin-bottom: 0.75rem; }
+  .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.375rem; }
+  .progress-label { font-size: 0.6875rem; font-weight: 600; color: #475569; }
+  .progress-pct { font-size: 0.8125rem; font-weight: 800; color: #0F172A; }
+  .progress-track { height: 8px; background: #F1F5F9; border-radius: 4px; overflow: hidden; display: flex; }
+  .progress-fill { height: 100%; transition: width 0.8s ease-out; }
+  .progress-fill.pass { background: #16A34A; }
+  .progress-fill.fail { background: #EF4444; }
+  .progress-fill.blocked { background: #F59E0B; }
+  .progress-fill.untested { background: #E2E8F0; }
+
+  /* ── TC Breakdown in Run ── */
+  .run-breakdown { display: flex; align-items: center; gap: 1rem; }
+  .rb-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; font-weight: 600; }
+  .rb-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .rb-dot.pass { background: #16A34A; }
+  .rb-dot.fail { background: #EF4444; }
+  .rb-dot.blocked { background: #F59E0B; }
+  .rb-dot.untested { background: #CBD5E1; }
+
+  /* ── Assignee ── */
+  .run-assignee { display: flex; align-items: center; gap: 0.5rem; padding-top: 0.75rem; border-top: 1px solid #F1F5F9; margin-top: 0.75rem; }
+  .assignee-avatar { width: 1.5rem; height: 1.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.5rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .assignee-name { font-size: 0.75rem; font-weight: 600; color: #334155; }
+  .assignee-role { font-size: 0.6875rem; color: #94A3B8; }
+
+  /* ── Animations ── */
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes statusPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .summary-card { animation: fadeInUp 0.3s ease-out backwards; }
+  .summary-card:nth-child(1) { animation-delay: 0s; }
+  .summary-card:nth-child(2) { animation-delay: 0.05s; }
+  .summary-card:nth-child(3) { animation-delay: 0.1s; }
+  .summary-card:nth-child(4) { animation-delay: 0.15s; }
+  .run-card { animation: fadeInUp 0.4s ease-out backwards; }
+  .run-card:nth-child(1) { animation-delay: 0.2s; }
+  .run-card:nth-child(2) { animation-delay: 0.25s; }
+  .run-card:nth-child(3) { animation-delay: 0.3s; }
+  .run-card:nth-child(4) { animation-delay: 0.35s; }
+  .run-card:nth-child(5) { animation-delay: 0.4s; }
+
+  /* ── Responsive ── */
+  @media (max-width: 1023px) { .summary-row { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .summary-row { grid-template-columns: 1fr; } .run-breakdown { flex-wrap: wrap; gap: 0.5rem; } }
+</style>
+</head>
+<body>
+
+<!-- Top Header -->
+<header class="top-header">
+  <div class="header-logo">
+    <div class="logo-icon">T</div>
+    <span>Testably</span>
+  </div>
+  <nav class="header-nav">
+    <div class="header-nav-item active"><i class="ri-folder-3-line"></i> Projects</div>
+    <div class="header-nav-item"><i class="ri-team-line"></i> Team</div>
+    <div class="header-nav-item"><i class="ri-settings-3-line"></i> Settings</div>
+  </nav>
+  <div class="header-right">
+    <div class="header-btn"><i class="ri-command-line"></i> ⌘K</div>
+    <div class="header-btn"><i class="ri-notification-3-line"></i></div>
+    <div class="header-avatar">KJ</div>
+  </div>
+</header>
+
+<!-- Sub-header -->
+<div class="sub-header">
+  <div class="breadcrumb">
+    <a href="#">Projects</a>
+    <span class="sep"><i class="ri-arrow-right-s-line"></i></span>
+    <span class="current">Active Test Runs</span>
+  </div>
+  <span class="sub-spacer"></span>
+  <div class="sub-btn primary"><i class="ri-play-line"></i> Start New Run</div>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <div class="content-inner">
+
+    <!-- Page Title -->
+    <div class="page-title-row">
+      <div class="page-icon"><i class="ri-play-circle-line"></i></div>
+      <div>
+        <div class="page-title">Active Test Runs</div>
+        <div class="page-subtitle">5 runs in progress across 4 projects</div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="sm-label">Active Runs</div>
+        <div class="sm-value" style="color:#2563EB">5</div>
+        <div class="sm-sub">across 4 projects</div>
+      </div>
+      <div class="summary-card">
+        <div class="sm-label">Total TC in Runs</div>
+        <div class="sm-value">312</div>
+        <div class="sm-sub">test cases being executed</div>
+      </div>
+      <div class="summary-card">
+        <div class="sm-label">Untested</div>
+        <div class="sm-value" style="color:#F59E0B">23</div>
+        <div class="sm-sub">remaining across all runs</div>
+      </div>
+      <div class="summary-card">
+        <div class="sm-label">Avg Completion</div>
+        <div class="sm-value" style="color:#16A34A">76%</div>
+        <div class="sm-sub">of all active runs</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <button class="filter-tab active">All <span class="filter-count">5</span></button>
+      <button class="filter-tab">In Progress <span class="filter-count">3</span></button>
+      <button class="filter-tab">Blocked <span class="filter-count">1</span></button>
+      <button class="filter-tab">Paused <span class="filter-count">1</span></button>
+    </div>
+
+    <!-- Run Cards -->
+    <div class="run-list">
+
+      <!-- Run 1 -->
+      <div class="run-card">
+        <div class="run-top">
+          <div class="run-info">
+            <div class="run-name">
+              Sprint 24 — Regression Suite
+              <span class="run-status in-progress">In Progress</span>
+            </div>
+            <div class="run-meta">
+              <span class="run-meta-item"><i class="ri-folder-3-line"></i> Mobile App v2</span>
+              <span class="run-meta-item"><i class="ri-file-list-3-line"></i> 128 test cases</span>
+              <span class="run-meta-item"><i class="ri-time-line"></i> Started 2h ago</span>
+            </div>
+          </div>
+          <div class="run-right">
+            <span class="run-time">Last activity: 4 min ago</span>
+          </div>
+        </div>
+        <div class="run-progress">
+          <div class="progress-header">
+            <span class="progress-label">Progress</span>
+            <span class="progress-pct">82%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill pass" style="width:72%"></div>
+            <div class="progress-fill fail" style="width:6%"></div>
+            <div class="progress-fill blocked" style="width:4%"></div>
+            <div class="progress-fill untested" style="width:18%"></div>
+          </div>
+        </div>
+        <div class="run-breakdown">
+          <div class="rb-item"><div class="rb-dot pass"></div> <span style="color:#16A34A">92</span> Passed</div>
+          <div class="rb-item"><div class="rb-dot fail"></div> <span style="color:#EF4444">8</span> Failed</div>
+          <div class="rb-item"><div class="rb-dot blocked"></div> <span style="color:#F59E0B">5</span> Blocked</div>
+          <div class="rb-item"><div class="rb-dot untested"></div> <span style="color:#94A3B8">23</span> Untested</div>
+        </div>
+        <div class="run-assignee">
+          <div class="assignee-avatar" style="background:#6366F1">SK</div>
+          <div>
+            <div class="assignee-name">Sarah Kim</div>
+            <div class="assignee-role">QA Lead</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run 2 -->
+      <div class="run-card">
+        <div class="run-top">
+          <div class="run-info">
+            <div class="run-name">
+              API v3 Smoke Tests
+              <span class="run-status in-progress">In Progress</span>
+            </div>
+            <div class="run-meta">
+              <span class="run-meta-item"><i class="ri-folder-3-line"></i> API Gateway v3</span>
+              <span class="run-meta-item"><i class="ri-file-list-3-line"></i> 64 test cases</span>
+              <span class="run-meta-item"><i class="ri-time-line"></i> Started 45 min ago</span>
+            </div>
+          </div>
+          <div class="run-right">
+            <span class="run-time">Last activity: 12 min ago</span>
+          </div>
+        </div>
+        <div class="run-progress">
+          <div class="progress-header">
+            <span class="progress-label">Progress</span>
+            <span class="progress-pct">56%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill pass" style="width:48%"></div>
+            <div class="progress-fill fail" style="width:5%"></div>
+            <div class="progress-fill blocked" style="width:3%"></div>
+            <div class="progress-fill untested" style="width:44%"></div>
+          </div>
+        </div>
+        <div class="run-breakdown">
+          <div class="rb-item"><div class="rb-dot pass"></div> <span style="color:#16A34A">31</span> Passed</div>
+          <div class="rb-item"><div class="rb-dot fail"></div> <span style="color:#EF4444">3</span> Failed</div>
+          <div class="rb-item"><div class="rb-dot blocked"></div> <span style="color:#F59E0B">2</span> Blocked</div>
+          <div class="rb-item"><div class="rb-dot untested"></div> <span style="color:#94A3B8">28</span> Untested</div>
+        </div>
+        <div class="run-assignee">
+          <div class="assignee-avatar" style="background:#10B981">AP</div>
+          <div>
+            <div class="assignee-name">Alex Park</div>
+            <div class="assignee-role">Backend QA</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run 3 -->
+      <div class="run-card">
+        <div class="run-top">
+          <div class="run-info">
+            <div class="run-name">
+              Payment Flow — E2E
+              <span class="run-status blocked">Blocked</span>
+            </div>
+            <div class="run-meta">
+              <span class="run-meta-item"><i class="ri-folder-3-line"></i> Payment Integration</span>
+              <span class="run-meta-item"><i class="ri-file-list-3-line"></i> 42 test cases</span>
+              <span class="run-meta-item"><i class="ri-time-line"></i> Started 1d ago</span>
+            </div>
+          </div>
+          <div class="run-right">
+            <span class="run-time">Last activity: 3h ago</span>
+          </div>
+        </div>
+        <div class="run-progress">
+          <div class="progress-header">
+            <span class="progress-label">Progress</span>
+            <span class="progress-pct">71%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill pass" style="width:57%"></div>
+            <div class="progress-fill fail" style="width:7%"></div>
+            <div class="progress-fill blocked" style="width:7%"></div>
+            <div class="progress-fill untested" style="width:29%"></div>
+          </div>
+        </div>
+        <div class="run-breakdown">
+          <div class="rb-item"><div class="rb-dot pass"></div> <span style="color:#16A34A">24</span> Passed</div>
+          <div class="rb-item"><div class="rb-dot fail"></div> <span style="color:#EF4444">3</span> Failed</div>
+          <div class="rb-item"><div class="rb-dot blocked"></div> <span style="color:#F59E0B">3</span> Blocked</div>
+          <div class="rb-item"><div class="rb-dot untested"></div> <span style="color:#94A3B8">12</span> Untested</div>
+        </div>
+        <div class="run-assignee">
+          <div class="assignee-avatar" style="background:#EC4899">JL</div>
+          <div>
+            <div class="assignee-name">Jina Lee</div>
+            <div class="assignee-role">QA Engineer · <span style="color:#DC2626;font-weight:600">Blocked by: Sandbox API down</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run 4 -->
+      <div class="run-card">
+        <div class="run-top">
+          <div class="run-info">
+            <div class="run-name">
+              Dashboard RBAC Verification
+              <span class="run-status in-progress">In Progress</span>
+            </div>
+            <div class="run-meta">
+              <span class="run-meta-item"><i class="ri-folder-3-line"></i> Admin Dashboard</span>
+              <span class="run-meta-item"><i class="ri-file-list-3-line"></i> 38 test cases</span>
+              <span class="run-meta-item"><i class="ri-time-line"></i> Started 3h ago</span>
+            </div>
+          </div>
+          <div class="run-right">
+            <span class="run-time">Last activity: 28 min ago</span>
+          </div>
+        </div>
+        <div class="run-progress">
+          <div class="progress-header">
+            <span class="progress-label">Progress</span>
+            <span class="progress-pct">89%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill pass" style="width:82%"></div>
+            <div class="progress-fill fail" style="width:3%"></div>
+            <div class="progress-fill blocked" style="width:5%"></div>
+            <div class="progress-fill untested" style="width:10%"></div>
+          </div>
+        </div>
+        <div class="run-breakdown">
+          <div class="rb-item"><div class="rb-dot pass"></div> <span style="color:#16A34A">31</span> Passed</div>
+          <div class="rb-item"><div class="rb-dot fail"></div> <span style="color:#EF4444">1</span> Failed</div>
+          <div class="rb-item"><div class="rb-dot blocked"></div> <span style="color:#F59E0B">2</span> Blocked</div>
+          <div class="rb-item"><div class="rb-dot untested"></div> <span style="color:#94A3B8">4</span> Untested</div>
+        </div>
+        <div class="run-assignee">
+          <div class="assignee-avatar" style="background:#F59E0B">MC</div>
+          <div>
+            <div class="assignee-name">Mike Choi</div>
+            <div class="assignee-role">QA Engineer</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run 5 -->
+      <div class="run-card">
+        <div class="run-top">
+          <div class="run-info">
+            <div class="run-name">
+              Accessibility Audit — WCAG 2.1
+              <span class="run-status paused">Paused</span>
+            </div>
+            <div class="run-meta">
+              <span class="run-meta-item"><i class="ri-folder-3-line"></i> Web Dashboard</span>
+              <span class="run-meta-item"><i class="ri-file-list-3-line"></i> 40 test cases</span>
+              <span class="run-meta-item"><i class="ri-time-line"></i> Started 2d ago</span>
+            </div>
+          </div>
+          <div class="run-right">
+            <span class="run-time">Last activity: 1d ago</span>
+          </div>
+        </div>
+        <div class="run-progress">
+          <div class="progress-header">
+            <span class="progress-label">Progress</span>
+            <span class="progress-pct">60%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill pass" style="width:50%"></div>
+            <div class="progress-fill fail" style="width:5%"></div>
+            <div class="progress-fill blocked" style="width:5%"></div>
+            <div class="progress-fill untested" style="width:40%"></div>
+          </div>
+        </div>
+        <div class="run-breakdown">
+          <div class="rb-item"><div class="rb-dot pass"></div> <span style="color:#16A34A">20</span> Passed</div>
+          <div class="rb-item"><div class="rb-dot fail"></div> <span style="color:#EF4444">2</span> Failed</div>
+          <div class="rb-item"><div class="rb-dot blocked"></div> <span style="color:#F59E0B">2</span> Blocked</div>
+          <div class="rb-item"><div class="rb-dot untested"></div> <span style="color:#94A3B8">16</span> Untested</div>
+        </div>
+        <div class="run-assignee">
+          <div class="assignee-avatar" style="background:#8B5CF6">SK</div>
+          <div>
+            <div class="assignee-name">Sarah Kim</div>
+            <div class="assignee-role">QA Lead · <span style="color:#D97706;font-weight:600">Paused: Waiting for design update</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Animate progress bars ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.progress-fill').forEach(bar => {
+    const target = bar.style.width;
+    bar.style.width = '0%';
+    setTimeout(() => { bar.style.width = target; }, 400);
+  });
+});
+</script>
+</body>
+</html>

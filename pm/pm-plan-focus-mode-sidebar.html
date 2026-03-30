@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM 기획안 — Focus Mode TC 리스트 사이드바</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.7; }
+
+  /* ─── Layout ─── */
+  .doc-wrapper { max-width: 960px; margin: 0 auto; padding: 3rem 2rem 4rem; }
+
+  /* ─── Header ─── */
+  .doc-header { margin-bottom: 3rem; border-bottom: 2px solid #E2E8F0; padding-bottom: 2rem; }
+  .doc-badge { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6366F1; background: #EEF2FF; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 0.75rem; }
+  .doc-title { font-size: 1.75rem; font-weight: 800; color: #0F172A; margin-bottom: 0.5rem; }
+  .doc-subtitle { font-size: 0.9375rem; color: #64748B; }
+  .doc-meta { display: flex; gap: 1.5rem; margin-top: 1rem; font-size: 0.8125rem; color: #94A3B8; }
+  .doc-meta span { display: flex; align-items: center; gap: 0.25rem; }
+
+  /* ─── Sections ─── */
+  .section { margin-bottom: 2.5rem; }
+  .section-num { font-size: 0.6875rem; font-weight: 700; color: #6366F1; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.25rem; }
+  .section-title { font-size: 1.25rem; font-weight: 700; color: #0F172A; margin-bottom: 1rem; }
+  .section p, .section li { font-size: 0.9375rem; color: #475569; line-height: 1.8; }
+  .section ul { padding-left: 1.25rem; margin-bottom: 1rem; }
+  .section li { margin-bottom: 0.375rem; }
+  /* ─── Callout Boxes ─── */
+  .callout { border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+  .callout-problem { background: #FEF2F2; border-left: 4px solid #EF4444; }
+  .callout-solution { background: #F0FDF4; border-left: 4px solid #22C55E; }
+  .callout-info { background: #EFF6FF; border-left: 4px solid #3B82F6; }
+  .callout-warn { background: #FFFBEB; border-left: 4px solid #F59E0B; }
+  .callout-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.375rem; }
+  .callout-problem .callout-label { color: #991B1B; }
+  .callout-solution .callout-label { color: #166534; }
+  .callout-info .callout-label { color: #1E40AF; }
+  .callout-warn .callout-label { color: #92400E; }
+  .callout p { font-size: 0.875rem; color: #475569; }
+
+  /* ─── Spec Table ─── */
+  .spec-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; border-radius: 0.75rem; overflow: hidden; border: 1px solid #E2E8F0; }
+  .spec-table th { background: #F1F5F9; font-size: 0.75rem; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.625rem 1rem; text-align: left; }
+  .spec-table td { padding: 0.75rem 1rem; font-size: 0.875rem; color: #334155; border-top: 1px solid #E2E8F0; vertical-align: top; }
+  .spec-table tr:hover td { background: #FAFBFC; }
+  .spec-table code { background: #F1F5F9; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.8125rem; font-family: 'SF Mono','Fira Code',monospace; color: #6366F1; }
+
+  /* ─── Status Chips ─── */
+  .chip { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 9999px; white-space: nowrap; }
+  .chip-passed { background: #F0FDF4; color: #166534; }
+  .chip-failed { background: #FEF2F2; color: #991B1B; }
+  .chip-blocked { background: #FFFBEB; color: #92400E; }
+  .chip-retest { background: #F5F3FF; color: #5B21B6; }
+  .chip-untested { background: #F1F5F9; color: #64748B; }
+  .chip-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .chip-passed .chip-dot { background: #22C55E; }
+  .chip-failed .chip-dot { background: #EF4444; }
+  .chip-blocked .chip-dot { background: #F59E0B; }
+  .chip-retest .chip-dot { background: #8B5CF6; }
+  .chip-untested .chip-dot { background: #CBD5E1; }
+
+  /* ─── Visual Mockup ─── */
+  .mockup-container { background: #fff; border: 2px solid #E2E8F0; border-radius: 1rem; overflow: hidden; margin: 1.5rem 0 2rem; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+  .mockup-topbar { background: #F8FAFC; border-bottom: 1px solid #E2E8F0; padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .mockup-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .mockup-body { display: flex; min-height: 520px; }
+
+  /* Sidebar mockup */
+  .mock-sidebar { width: 280px; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; flex-shrink: 0; background: #FAFBFC; }
+  .mock-sidebar-header { padding: 0.875rem 1rem; border-bottom: 1px solid #E2E8F0; }
+  .mock-sidebar-progress { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+  .mock-sidebar-progress-label { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .mock-sidebar-progress-count { font-size: 0.75rem; font-weight: 700; color: #6366F1; }
+  .mock-sidebar-bar { height: 6px; background: #E2E8F0; border-radius: 3px; overflow: hidden; }
+  .mock-sidebar-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #22C55E 0%, #22C55E 55%, #EF4444 55%, #EF4444 70%, #F59E0B 70%, #F59E0B 77.5%, #8B5CF6 77.5%, #8B5CF6 85%, #E2E8F0 85%); }
+  .mock-sidebar-filters { display: flex; gap: 0.25rem; margin-top: 0.5rem; }
+  .mock-filter-chip { font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; }
+  .mock-filter-chip.active { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .mock-sidebar-search { padding: 0.5rem 0.75rem; border-bottom: 1px solid #E2E8F0; }
+  .mock-sidebar-search input { width: 100%; border: 1px solid #E2E8F0; border-radius: 0.375rem; padding: 0.375rem 0.5rem 0.375rem 1.75rem; font-size: 0.75rem; outline: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 0.5rem center no-repeat; }
+  .mock-sidebar-list { flex: 1; overflow-y: auto; padding: 0.25rem 0; }
+  .mock-tc-item { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.75rem; margin: 0 0.375rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.15s; }
+  .mock-tc-item:hover { background: #F1F5F9; }
+  .mock-tc-item.active { background: #EEF2FF; border: 1.5px solid #C7D2FE; }
+  .mock-tc-item.active .mock-tc-name { color: #4338CA; font-weight: 600; }
+  .mock-tc-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6875rem; flex-shrink: 0; }
+  .mock-tc-icon.passed { background: #DCFCE7; color: #16A34A; }
+  .mock-tc-icon.failed { background: #FEE2E2; color: #DC2626; }
+  .mock-tc-icon.blocked { background: #FEF3C7; color: #D97706; }
+  .mock-tc-icon.retest { background: #EDE9FE; color: #7C3AED; }
+  .mock-tc-icon.untested { background: #F1F5F9; color: #94A3B8; }
+  .mock-tc-info { flex: 1; min-width: 0; }
+  .mock-tc-id { font-size: 0.625rem; font-family: 'SF Mono','Fira Code',monospace; color: #94A3B8; font-weight: 500; }
+  .mock-tc-name { font-size: 0.8125rem; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+
+  /* Main content mockup */
+  .mock-main { flex: 1; display: flex; flex-direction: column; }
+  .mock-main-header { padding: 0.75rem 1.5rem; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: space-between; background: #fff; }
+  .mock-main-meta { padding: 0.5rem 1.5rem; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; font-size: 0.75rem; color: #64748B; display: flex; align-items: center; gap: 0.75rem; }
+  .mock-main-body { flex: 1; padding: 2rem; overflow-y: auto; }
+  .mock-main-body h3 { font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 0.5rem; }
+  .mock-main-body .step-row { display: flex; gap: 0.75rem; padding: 0.625rem 0.75rem; border-radius: 0.5rem; margin-bottom: 0.375rem; background: #F8FAFC; border: 1px solid #E2E8F0; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: #6366F1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.6875rem; font-weight: 700; flex-shrink: 0; }
+  .step-text { font-size: 0.8125rem; color: #475569; flex: 1; }
+  .mock-sidebar-toggle { position: absolute; top: 50%; right: -12px; transform: translateY(-50%); width: 24px; height: 48px; border-radius: 0 8px 8px 0; background: #fff; border: 1px solid #E2E8F0; border-left: none; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 2px 0 8px rgba(0,0,0,0.05); z-index: 5; }
+
+  /* ─── Benchmark Table ─── */
+  .bench-table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; border: 1px solid #E2E8F0; border-radius: 0.75rem; overflow: hidden; }
+  .bench-table th { background: #F1F5F9; font-size: 0.6875rem; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.625rem 0.75rem; text-align: center; }
+  .bench-table th:first-child { text-align: left; }
+  .bench-table td { padding: 0.75rem; font-size: 0.8125rem; color: #334155; border-top: 1px solid #E2E8F0; text-align: center; }
+  .bench-table td:first-child { text-align: left; font-weight: 600; }  .bench-yes { color: #16A34A; font-weight: 600; }
+  .bench-no { color: #DC2626; font-weight: 600; }
+  .bench-partial { color: #D97706; font-weight: 600; }
+  .bench-highlight td { background: #EEF2FF; }
+
+  /* ─── Keyboard Shortcut Badges ─── */
+  .kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 1.375rem; height: 1.375rem; padding: 0 0.25rem; background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 0.25rem; font-size: 0.6875rem; font-weight: 700; color: #64748B; font-family: 'SF Mono','Fira Code',monospace; }
+
+  /* ─── Flow Diagram ─── */
+  .flow-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .flow-box { padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 600; border: 1.5px solid; }
+  .flow-arrow { color: #94A3B8; font-size: 1.25rem; }
+
+  /* ─── Footer ─── */
+  .doc-footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 2px solid #E2E8F0; font-size: 0.8125rem; color: #94A3B8; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<div class="doc-wrapper">
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- HEADER                                                 -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="doc-header">
+    <div class="doc-badge"><i class="ri-file-text-line"></i> PM 기획안</div>
+    <h1 class="doc-title">Focus Mode — TC 리스트 사이드바</h1>
+    <p class="doc-subtitle">테스트 실행 시 전체 TC 리스트를 사이드바로 확인하고, 상태별 시각적 피드백을 제공하는 기능 기획</p>
+    <div class="doc-meta">
+      <span><i class="ri-calendar-line"></i> 2026-03-27</span>
+      <span><i class="ri-user-line"></i> Product — Kyle</span>
+      <span><i class="ri-git-branch-line"></i> Feature: focus-mode-sidebar</span>
+      <span><i class="ri-arrow-right-line"></i> 다음 단계: Desi 디자인 핸드오프</span>
+    </div>
+  </div>
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 1. 문제 정의                                            -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-num">Section 1</div>
+    <h2 class="section-title">문제 정의 — 왜 사이드바가 필요한가</h2>
+
+    <div class="callout callout-problem">
+      <div class="callout-label"><i class="ri-error-warning-line"></i> CEO Pain Point</div>
+      <p>"Focus Mode에서 전체 TC 리스트를 볼 수 없어서 답답하다. 현재 어디까지 진행했는지, 어떤 TC가 Failed인지 한눈에 파악이 안 된다."</p>
+    </div>
+
+    <p>현재 Focus Mode는 한 번에 하나의 TC만 표시하고, <kbd class="kbd">N</kbd> 또는 <kbd class="kbd">J</kbd>/<kbd class="kbd">K</kbd> 키로 순차 이동만 가능합니다. 40개 이상의 TC가 있는 Run에서는 전체 진행 상황을 파악하기 어렵고, 특정 TC로 즉시 이동할 방법이 없습니다.</p>
+
+    <div class="callout callout-solution" style="margin-top: 1rem;">
+      <div class="callout-label"><i class="ri-lightbulb-line"></i> 솔루션 요약</div>
+      <p>좌측에 접기/펼치기 가능한 TC 리스트 사이드바를 추가합니다. 각 TC는 실행 상태(Passed/Failed/Blocked/Retest/Untested)에 따른 컬러 아이콘을 표시하고, 현재 TC를 하이라이트하며, 클릭으로 즉시 이동할 수 있습니다. 상단에 진행률 바와 필터 칩을 배치합니다.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 2. 경쟁사 벤치마킹                                      -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-num">Section 2</div>
+    <h2 class="section-title">경쟁사 벤치마킹</h2>
+
+    <table class="bench-table">
+      <thead>
+        <tr>
+          <th style="width: 20%;">기능</th>
+          <th>TestRail</th>
+          <th>Zephyr Scale</th>
+          <th>Qase</th>
+          <th style="background: #EEF2FF; color: #4338CA;">Testably (제안)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>TC 리스트 사이드바</td>
+          <td class="bench-yes">O (Section Tree)</td>
+          <td class="bench-partial">△ (Cycle sidebar)</td>
+          <td class="bench-yes">O (Run sidebar)</td>
+          <td class="bench-yes" style="background:#EEF2FF;">O (Collapsible)</td>        </tr>
+        <tr>
+          <td>상태별 컬러/아이콘</td>
+          <td class="bench-yes">O</td>
+          <td class="bench-yes">O</td>
+          <td class="bench-yes">O</td>
+          <td class="bench-yes" style="background:#EEF2FF;">O (5종 아이콘)</td>
+        </tr>
+        <tr>
+          <td>사이드바 접기/펼치기</td>
+          <td class="bench-yes">O (리사이즈)</td>
+          <td class="bench-no">X</td>
+          <td class="bench-no">X</td>
+          <td class="bench-yes" style="background:#EEF2FF;">O (토글 + 키보드)</td>
+        </tr>
+        <tr>
+          <td>TC 검색/필터</td>
+          <td class="bench-yes">O</td>
+          <td class="bench-partial">△</td>
+          <td class="bench-yes">O</td>
+          <td class="bench-yes" style="background:#EEF2FF;">O (검색 + 상태 필터)</td>
+        </tr>
+        <tr>
+          <td>진행률 시각화</td>
+          <td class="bench-partial">△ (상단 카운트)</td>
+          <td class="bench-partial">△ (도넛 차트)</td>
+          <td class="bench-yes">O (도넛 + 막대)</td>
+          <td class="bench-yes" style="background:#EEF2FF;">O (세그먼트 바)</td>
+        </tr>        <tr>
+          <td>클릭으로 TC 이동</td>
+          <td class="bench-yes">O</td>
+          <td class="bench-yes">O</td>
+          <td class="bench-yes">O</td>
+          <td class="bench-yes" style="background:#EEF2FF;">O</td>
+        </tr>
+        <tr>
+          <td>키보드 단축키 (사이드바)</td>
+          <td class="bench-no">X</td>
+          <td class="bench-no">X</td>
+          <td class="bench-no">X</td>
+          <td class="bench-yes" style="background:#EEF2FF;"><strong>O (차별화)</strong></td>
+        </tr>
+        <tr>
+          <td>Focus/Fullscreen 모드</td>
+          <td class="bench-no">X (일반 뷰)</td>
+          <td class="bench-partial">△ (클릭 확장)</td>
+          <td class="bench-partial">△ (Run wizard)</td>
+          <td class="bench-yes" style="background:#EEF2FF;"><strong>O (Full overlay)</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <div class="callout-label"><i class="ri-bar-chart-line"></i> 차별화 포인트</div>
+      <p>경쟁사 중 Focus(풀스크린) 모드와 사이드바 TC 리스트를 동시에 제공하는 제품은 없습니다. Testably는 키보드 우선(Keyboard-first) 접근과 결합하여, "사이드바 키보드 토글 + 상태 필터 + 풀스크린 실행"이라는 유니크한 경험을 제공할 수 있습니다.</p>
+    </div>
+  </div>
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 3. 사이드바 스펙                                        -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-num">Section 3</div>
+    <h2 class="section-title">사이드바 상세 스펙</h2>
+
+    <h3 style="font-size: 1rem; font-weight: 700; color: #334155; margin-bottom: 0.75rem;">3-1. 위치 및 크기</h3>
+
+    <table class="spec-table">
+      <thead>
+        <tr><th style="width: 30%;">속성</th><th>스펙</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>위치</td><td><strong>좌측(Left)</strong> — 좌→우 읽기 흐름에 맞춰 리스트를 먼저 스캔하고 우측 본문으로 시선 이동</td></tr>
+        <tr><td>기본 너비</td><td><code>280px</code> (최소 240px, 최대 360px 리사이즈 가능)</td></tr>
+        <tr><td>접기(Collapse) 시</td><td>너비 <code>0px</code> — 완전히 숨기고 토글 핸들(12px 탭)만 좌측 가장자리에 표시</td></tr>
+        <tr><td>토글 방법</td><td>① 토글 핸들 클릭 ② 키보드 <kbd class="kbd">[</kbd> (열기/닫기 토글) ③ 본문 영역을 넓게 쓰고 싶을 때 자유롭게 접기</td></tr>
+        <tr><td>기본 상태</td><td><strong>펼침(Open)</strong> — 사용자가 접으면 세션 내 기억 (localStorage)</td></tr>
+        <tr><td>반응형</td><td>화면 너비 &lt; 1024px 시 자동 접힘, 토글로 오버레이 열기</td></tr>
+        <tr><td>배경</td><td><code>#FAFBFC</code> — 메인 본문(#FFFFFF)과 미세한 구분</td></tr>
+        <tr><td>구분선</td><td>우측에 <code>1px solid #E2E8F0</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size: 1rem; font-weight: 700; color: #334155; margin: 1.5rem 0 0.75rem;">3-2. 사이드바 내부 구조 (위→아래)</h3>
+
+    <table class="spec-table">
+      <thead>
+        <tr><th style="width: 22%;">영역</th><th style="width: 40%;">내용</th><th>상세</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>① 진행률 헤더</strong></td>
+          <td>세그먼트 프로그레스 바 + 카운트</td>
+          <td>
+            "15 / 40 completed" 형태<br>
+            세그먼트 바: 각 상태별 비율을 컬러로 표시 (Passed 초록, Failed 빨강, Blocked 노랑, Retest 보라, Untested 회색)<br>
+            높이 <code>6px</code>, 둥근 모서리
+          </td>
+        </tr>        <tr>
+          <td><strong>② 필터 칩</strong></td>
+          <td>상태별 퀵 필터</td>
+          <td>
+            All · Passed · Failed · Blocked · Retest · Untested<br>
+            활성 필터: Indigo(<code>#6366F1</code>) 배경 + 흰색 텍스트<br>
+            클릭 시 해당 상태만 표시, 다시 클릭하면 해제
+          </td>
+        </tr>
+        <tr>
+          <td><strong>③ 검색</strong></td>
+          <td>TC 검색 인풋</td>
+          <td>
+            돋보기 아이콘 + placeholder "Search TC..."<br>
+            TC-ID 또는 이름으로 실시간 필터링
+          </td>
+        </tr>
+        <tr>
+          <td><strong>④ TC 리스트</strong></td>
+          <td>스크롤 가능한 TC 목록</td>
+          <td>
+            각 항목: 상태 아이콘 + TC-ID + TC 이름<br>
+            현재 TC 하이라이트<br>
+            클릭으로 해당 TC로 이동<br>
+            가상 스크롤 (100+ TC 대응)
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 4. 상태별 UI 디자인 토큰                                 -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-num">Section 4</div>
+    <h2 class="section-title">상태별 UI 디자인 토큰</h2>
+
+    <table class="spec-table">
+      <thead>
+        <tr>
+          <th style="width: 15%;">상태</th>
+          <th style="width: 12%;">아이콘</th>
+          <th style="width: 15%;">아이콘 컬러</th>
+          <th style="width: 15%;">배경 (원형)</th>
+          <th style="width: 20%;">리스트 행 배경<br>(선택 시)</th>
+          <th>비고</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="chip chip-passed"><span class="chip-dot"></span>Passed</span></td>
+          <td><code>ri-check-line</code></td>
+          <td><code>#16A34A</code></td>
+          <td><code>#DCFCE7</code></td>
+          <td><code>#F0FDF4</code></td>
+          <td>체크 아이콘 — 완료감</td>
+        </tr>
+        <tr>
+          <td><span class="chip chip-failed"><span class="chip-dot"></span>Failed</span></td>
+          <td><code>ri-close-line</code></td>
+          <td><code>#DC2626</code></td>
+          <td><code>#FEE2E2</code></td>
+          <td><code>#FEF2F2</code></td>
+          <td>X 아이콘 — 즉각 인지</td>
+        </tr>        <tr>
+          <td><span class="chip chip-blocked"><span class="chip-dot"></span>Blocked</span></td>
+          <td><code>ri-forbid-line</code></td>
+          <td><code>#D97706</code></td>
+          <td><code>#FEF3C7</code></td>
+          <td><code>#FFFBEB</code></td>
+          <td>금지 아이콘 — 주의</td>
+        </tr>
+        <tr>
+          <td><span class="chip chip-retest"><span class="chip-dot"></span>Retest</span></td>
+          <td><code>ri-refresh-line</code></td>
+          <td><code>#7C3AED</code></td>
+          <td><code>#EDE9FE</code></td>
+          <td><code>#F5F3FF</code></td>
+          <td>리프레시 아이콘 — 재시도</td>
+        </tr>
+        <tr>
+          <td><span class="chip chip-untested"><span class="chip-dot"></span>Untested</span></td>
+          <td><code>ri-subtract-line</code></td>
+          <td><code>#94A3B8</code></td>
+          <td><code>#F1F5F9</code></td>
+          <td>—</td>
+          <td>대시 아이콘 — 미실행 (기본)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-warn">
+      <div class="callout-label"><i class="ri-palette-line"></i> 접근성 노트</div>
+      <p>컬러만으로 상태를 구분하지 않고, 반드시 서로 다른 아이콘 모양을 함께 사용합니다. 이는 색각 이상(color vision deficiency) 사용자를 위한 필수 요건입니다. 추가로 hover 시 상태 텍스트 tooltip을 표시합니다.</p>
+    </div>
+  </div>
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 5. 현재 TC 하이라이트                                    -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-num">Section 5</div>
+    <h2 class="section-title">현재 TC 하이라이트 & 네비게이션</h2>
+
+    <table class="spec-table">
+      <thead>
+        <tr><th style="width: 30%;">속성</th><th>스펙</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>하이라이트 배경</td><td><code>#EEF2FF</code> (Indigo-50) — 선택된 TC 행 전체</td></tr>
+        <tr><td>하이라이트 보더</td><td><code>1.5px solid #C7D2FE</code> (Indigo-200) — 좌측 또는 전체 테두리</td></tr>
+        <tr><td>TC 이름 폰트</td><td>일반: <code>400 #334155</code> → 활성: <code>600 #4338CA</code> (Indigo-700)</td></tr>
+        <tr><td>자동 스크롤</td><td><kbd class="kbd">J</kbd>/<kbd class="kbd">K</kbd> 또는 <kbd class="kbd">→</kbd>/<kbd class="kbd">←</kbd>로 이동 시 사이드바 리스트도 해당 TC로 자동 스크롤 (<code>scrollIntoView({ block: 'nearest' })</code>)</td></tr>
+        <tr><td>클릭 이동</td><td>사이드바 TC 항목 클릭 → 메인 영역이 해당 TC로 즉시 전환. 미저장 노트가 있으면 확인 다이얼로그 표시.</td></tr>
+        <tr><td>상태 변경 반영</td><td><kbd class="kbd">P</kbd>/<kbd class="kbd">F</kbd>/<kbd class="kbd">B</kbd>/<kbd class="kbd">R</kbd> 입력 즉시 사이드바 아이콘/컬러 실시간 업데이트 + 진행률 바 재계산</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 6. 진행률 표시 상세                                      -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-num">Section 6</div>
+    <h2 class="section-title">진행률 표시</h2>
+
+    <p>사이드바 상단에 세그먼트형 프로그레스 바를 배치합니다. 기존 Focus Mode 헤더의 단일색 프로그레스 바를 대체하지 않고, 사이드바에 더 상세한 정보를 추가합니다.</p>
+
+    <table class="spec-table">
+      <thead>
+        <tr><th style="width: 30%;">요소</th><th>스펙</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>텍스트 카운트</strong></td>
+          <td>
+            "15 / 40 completed" — 좌측 정렬<br>
+            15: <code>font-weight: 700; color: #6366F1</code> (Indigo, 강조)<br>
+            / 40 completed: <code>font-weight: 500; color: #94A3B8</code>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>세그먼트 바</strong></td>
+          <td>
+            높이 <code>6px</code>, 둥근 모서리 <code>3px</code><br>
+            각 세그먼트: Passed(#22C55E) → Failed(#EF4444) → Blocked(#F59E0B) → Retest(#8B5CF6) → Untested(#E2E8F0)<br>
+            비율에 따라 너비 자동 계산, 부드러운 전환 애니메이션
+          </td>
+        </tr>        <tr>
+          <td><strong>상태별 카운트 (옵션)</strong></td>
+          <td>
+            필터 칩 옆에 숫자 뱃지 표시 — 예: "Failed (3)"<br>
+            0개인 상태는 뱃지 숨김
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 7. 비주얼 목업                                          -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-num">Section 7</div>
+    <h2 class="section-title">비주얼 목업 (Wireframe)</h2>
+
+    <div class="mockup-container">
+      <!-- Fake title bar -->
+      <div class="mockup-topbar">
+        <div class="mockup-dot" style="background: #EF4444;"></div>
+        <div class="mockup-dot" style="background: #F59E0B;"></div>
+        <div class="mockup-dot" style="background: #22C55E;"></div>
+        <span style="flex:1; text-align:center; font-size: 0.75rem; font-weight: 600; color: #94A3B8;">Testably — Focus Mode (with Sidebar)</span>
+      </div>
+      <div class="mockup-body">
+        <!-- ── SIDEBAR ── -->
+        <div class="mock-sidebar" style="position: relative;">          <div class="mock-sidebar-header">
+            <div class="mock-sidebar-progress">
+              <span class="mock-sidebar-progress-label">Progress</span>
+              <span class="mock-sidebar-progress-count">22 / 40</span>
+            </div>
+            <div class="mock-sidebar-bar">
+              <div class="mock-sidebar-bar-fill" style="width: 85%;"></div>
+            </div>
+            <div class="mock-sidebar-filters">
+              <span class="mock-filter-chip active">All</span>
+              <span class="mock-filter-chip" style="color: #16A34A;">Pass</span>
+              <span class="mock-filter-chip" style="color: #DC2626;">Fail</span>
+              <span class="mock-filter-chip" style="color: #D97706;">Block</span>
+              <span class="mock-filter-chip" style="color: #7C3AED;">Retest</span>
+            </div>
+          </div>
+          <div class="mock-sidebar-search">
+            <input type="text" placeholder="Search TC..." disabled />
+          </div>
+          <div class="mock-sidebar-list">
+            <!-- TC items -->
+            <div class="mock-tc-item">
+              <div class="mock-tc-icon passed"><i class="ri-check-line"></i></div>
+              <div class="mock-tc-info">
+                <div class="mock-tc-id">TC-001</div>
+                <div class="mock-tc-name">로그인 - 정상 이메일</div>
+              </div>
+            </div>
+            <div class="mock-tc-item">
+              <div class="mock-tc-icon passed"><i class="ri-check-line"></i></div>              <div class="mock-tc-info">
+                <div class="mock-tc-id">TC-002</div>
+                <div class="mock-tc-name">로그인 - 소셜 (Google)</div>
+              </div>
+            </div>
+            <div class="mock-tc-item">
+              <div class="mock-tc-icon failed"><i class="ri-close-line"></i></div>
+              <div class="mock-tc-info">
+                <div class="mock-tc-id">TC-003</div>
+                <div class="mock-tc-name">로그인 - 2FA 인증 실패</div>
+              </div>
+            </div>
+            <div class="mock-tc-item">
+              <div class="mock-tc-icon passed"><i class="ri-check-line"></i></div>
+              <div class="mock-tc-info">
+                <div class="mock-tc-id">TC-004</div>
+                <div class="mock-tc-name">회원가입 - 이메일 인증</div>
+              </div>
+            </div>
+            <div class="mock-tc-item">
+              <div class="mock-tc-icon blocked"><i class="ri-forbid-line"></i></div>
+              <div class="mock-tc-info">
+                <div class="mock-tc-id">TC-005</div>
+                <div class="mock-tc-name">비밀번호 재설정 플로우</div>
+              </div>
+            </div>
+            <div class="mock-tc-item active">
+              <div class="mock-tc-icon untested"><i class="ri-subtract-line"></i></div>
+              <div class="mock-tc-info">
+                <div class="mock-tc-id">TC-006</div>                <div class="mock-tc-name">대시보드 위젯 로딩</div>
+              </div>
+            </div>
+            <div class="mock-tc-item">
+              <div class="mock-tc-icon retest"><i class="ri-refresh-line"></i></div>
+              <div class="mock-tc-info">
+                <div class="mock-tc-id">TC-007</div>
+                <div class="mock-tc-name">프로젝트 생성 권한 체크</div>
+              </div>
+            </div>
+            <div class="mock-tc-item">
+              <div class="mock-tc-icon untested"><i class="ri-subtract-line"></i></div>
+              <div class="mock-tc-info">
+                <div class="mock-tc-id">TC-008</div>
+                <div class="mock-tc-name">TC 드래그앤드롭 이동</div>
+              </div>
+            </div>
+            <div class="mock-tc-item">
+              <div class="mock-tc-icon failed"><i class="ri-close-line"></i></div>
+              <div class="mock-tc-info">
+                <div class="mock-tc-id">TC-009</div>
+                <div class="mock-tc-name">첨부파일 업로드 5MB 제한</div>
+              </div>
+            </div>
+            <div class="mock-tc-item">
+              <div class="mock-tc-icon untested"><i class="ri-subtract-line"></i></div>
+              <div class="mock-tc-info">
+                <div class="mock-tc-id">TC-010</div>                <div class="mock-tc-name">리포트 PDF 다운로드</div>
+              </div>
+            </div>
+          </div>
+          <!-- Toggle handle -->
+          <div class="mock-sidebar-toggle">
+            <i class="ri-arrow-left-s-line" style="font-size: 0.875rem; color: #94A3B8;"></i>
+          </div>
+        </div>
+
+        <!-- ── MAIN AREA ── -->
+        <div class="mock-main">
+          <div class="mock-main-header">
+            <div style="display:flex; align-items:center; gap: 0.75rem;">
+              <span style="font-size: 0.875rem; font-weight: 600; color: #0F172A;">Sprint 12 Regression</span>
+              <span style="font-size: 0.8125rem; color: #94A3B8;">6 / 40</span>
+            </div>
+            <div style="display:flex; align-items:center; gap: 0.5rem;">
+              <span class="kbd" style="font-size: 0.5625rem;">[</span>
+              <span style="font-size: 0.6875rem; color: #94A3B8;">Toggle sidebar</span>
+              <span style="width: 1px; height: 16px; background: #E2E8F0; margin: 0 0.25rem;"></span>
+              <button style="font-size: 0.8125rem; font-weight: 600; color: #64748B; padding: 0.25rem 0.5rem; border: 1px solid #E2E8F0; border-radius: 0.375rem; background:#fff; cursor: pointer;">
+                Exit <span class="kbd" style="font-size: 0.5rem;">Esc</span>
+              </button>
+            </div>
+          </div>
+          <div class="mock-main-meta">
+            <span style="font-family: monospace; color: #7C3AED; font-weight: 600;">TC-006</span>
+            <span style="color: #CBD5E1;">·</span>
+            <span>Auth / Dashboard</span>
+            <span style="color: #CBD5E1;">·</span>            <span style="display:flex; align-items:center; gap: 0.25rem;"><span style="width:8px; height:8px; border-radius:50%; background:#6366F1;"></span> Medium</span>
+          </div>
+          <div class="mock-main-body">
+            <h3>대시보드 위젯 로딩</h3>
+            <p style="font-size: 0.8125rem; color: #64748B; margin-bottom: 1.25rem;">대시보드 진입 시 모든 위젯이 정상적으로 로딩되는지 확인</p>
+
+            <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 1rem;">
+              <div style="font-size: 0.625rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                <i class="ri-alert-line"></i> Precondition
+              </div>
+              <div style="font-size: 0.8125rem; color: #92400E;">사용자가 로그인되어 있고, 최소 1개 프로젝트가 생성된 상태</div>
+            </div>
+
+            <div style="font-size: 0.6875rem; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Steps</div>
+            <div class="step-row"><div class="step-num">1</div><div class="step-text">대시보드 페이지로 이동</div></div>
+            <div class="step-row"><div class="step-num">2</div><div class="step-text">모든 위젯 카드가 로딩됨을 확인</div></div>
+            <div class="step-row"><div class="step-num">3</div><div class="step-text">각 위젯의 데이터가 정상 표시되는지 검증</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 8. 키보드 단축키 확장                                    -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-num">Section 8</div>
+    <h2 class="section-title">키보드 단축키 확장</h2>
+
+    <table class="spec-table">
+      <thead>
+        <tr><th style="width: 15%;">키</th><th style="width: 35%;">동작</th><th>비고</th></tr>
+      </thead>
+      <tbody>
+        <tr style="background: #EEF2FF;">
+          <td><kbd class="kbd">[</kbd></td>
+          <td>사이드바 토글 (열기/닫기)</td>
+          <td><strong>NEW</strong> — 추가 단축키</td>
+        </tr>
+        <tr style="background: #EEF2FF;">
+          <td><kbd class="kbd">/</kbd></td>
+          <td>사이드바 검색 포커스</td>
+          <td><strong>NEW</strong> — Vim 스타일 검색</td>
+        </tr>
+        <tr>
+          <td><kbd class="kbd">J</kbd> / <kbd class="kbd">→</kbd></td>
+          <td>다음 TC로 이동 + 사이드바 동기화</td>
+          <td>기존 동작 유지, 사이드바 하이라이트 이동 추가</td>
+        </tr>
+        <tr>
+          <td><kbd class="kbd">K</kbd> / <kbd class="kbd">←</kbd></td>
+          <td>이전 TC로 이동 + 사이드바 동기화</td>
+          <td>기존 동작 유지</td>
+        </tr>        <tr>
+          <td><kbd class="kbd">P</kbd>/<kbd class="kbd">F</kbd>/<kbd class="kbd">B</kbd>/<kbd class="kbd">R</kbd></td>
+          <td>상태 설정 → 사이드바 아이콘 즉시 업데이트</td>
+          <td>기존 동작 유지, 사이드바 실시간 반영</td>
+        </tr>
+        <tr>
+          <td><kbd class="kbd">Esc</kbd></td>
+          <td>① 사이드바 검색 포커스 해제 → ② Focus Mode 종료</td>
+          <td>2단계 Esc — 검색 중이면 검색 해제 먼저</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 9. 인터랙션 플로우                                       -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-num">Section 9</div>
+    <h2 class="section-title">인터랙션 플로우</h2>
+
+    <h3 style="font-size: 1rem; font-weight: 700; color: #334155; margin-bottom: 0.75rem;">Flow A: 일반 실행 흐름</h3>
+    <div class="flow-row">
+      <div class="flow-box" style="background: #EEF2FF; border-color: #C7D2FE; color: #4338CA;">Focus Mode 진입</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box" style="background: #F0FDF4; border-color: #BBF7D0; color: #166534;">사이드바에서 전체 TC 확인</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box" style="background: #FFF7ED; border-color: #FED7AA; color: #9A3412;">TC 실행 (P/F/B/R)</div>
+      <span class="flow-arrow">→</span>      <div class="flow-box" style="background: #F0FDF4; border-color: #BBF7D0; color: #166534;">사이드바 아이콘 즉시 업데이트</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box" style="background: #EEF2FF; border-color: #C7D2FE; color: #4338CA;">J로 다음 TC</div>
+    </div>
+
+    <h3 style="font-size: 1rem; font-weight: 700; color: #334155; margin: 1.25rem 0 0.75rem;">Flow B: 특정 TC로 점프</h3>
+    <div class="flow-row">
+      <div class="flow-box" style="background: #EEF2FF; border-color: #C7D2FE; color: #4338CA;">사이드바에서 Failed TC 발견</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box" style="background: #FEF2F2; border-color: #FECACA; color: #991B1B;">해당 TC 클릭</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box" style="background: #FFF7ED; border-color: #FED7AA; color: #9A3412;">메인 영역 즉시 전환</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box" style="background: #F0FDF4; border-color: #BBF7D0; color: #166534;">재확인 후 Retest 처리</div>
+    </div>
+
+    <h3 style="font-size: 1rem; font-weight: 700; color: #334155; margin: 1.25rem 0 0.75rem;">Flow C: 필터로 빠른 확인</h3>
+    <div class="flow-row">
+      <div class="flow-box" style="background: #FEF2F2; border-color: #FECACA; color: #991B1B;">"Failed" 필터 클릭</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box" style="background: #EEF2FF; border-color: #C7D2FE; color: #4338CA;">Failed TC만 표시</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box" style="background: #FFF7ED; border-color: #FED7AA; color: #9A3412;">하나씩 클릭하며 재확인</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box" style="background: #F0FDF4; border-color: #BBF7D0; color: #166534;">"All" 클릭하여 필터 해제</div>
+    </div>
+  </div>
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 10. 기술 고려사항                                        -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-num">Section 10</div>
+    <h2 class="section-title">기술 고려사항</h2>
+
+    <table class="spec-table">
+      <thead>
+        <tr><th style="width: 30%;">항목</th><th>상세</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>레이아웃 변경</strong></td>
+          <td>
+            기존 <code>focus-overlay</code>의 <code>flex-direction: column</code> 안에 <code>flex-direction: row</code> 영역을 추가하여 [Sidebar | Main] 구조 생성.<br>
+            Header/Progress는 sidebar 위가 아닌 전체 상단에 유지.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>상태 관리</strong></td>
+          <td>
+            기존 <code>tests</code> prop의 <code>runStatus</code> 필드를 사이드바가 참조.<br>
+            <code>onStatusChange</code> 호출 후 부모 컴포넌트가 <code>tests</code> 배열을 업데이트하면 사이드바도 자동 반영.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>가상 스크롤</strong></td>
+          <td>
+            기존 <code>VirtualList.tsx</code> 활용 가능. 100+ TC 시 성능 최적화.<br>
+            아이템 높이 고정: <code>48px</code>
+          </td>
+        </tr>        <tr>
+          <td><strong>localStorage 캐시</strong></td>
+          <td>
+            사이드바 열림/닫힘 상태: <code>focusMode.sidebarOpen</code><br>
+            사이드바 너비: <code>focusMode.sidebarWidth</code><br>
+            활성 필터: 세션 내에서만 유지 (새 Run 시 초기화)
+          </td>
+        </tr>
+        <tr>
+          <td><strong>애니메이션</strong></td>
+          <td>
+            사이드바 토글: <code>width</code> transition <code>200ms ease</code><br>
+            상태 아이콘 변경: <code>scale</code> bounce <code>150ms</code><br>
+            진행률 바: <code>width</code> transition <code>400ms ease</code>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>영향 범위</strong></td>
+          <td>
+            수정 파일: <code>FocusMode.tsx</code> (주요), <code>FocusModeProps</code> 인터페이스 변경 없음<br>
+            새 컴포넌트: <code>FocusSidebar.tsx</code> 분리 권장
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 11. 우선순위 & 릴리즈 계획                               -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-num">Section 11</div>
+    <h2 class="section-title">릴리즈 계획 (Phase)</h2>
+
+    <table class="spec-table">
+      <thead>
+        <tr><th style="width: 15%;">Phase</th><th style="width: 35%;">스코프</th><th style="width: 15%;">예상 공수</th><th>우선순위</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Phase 1</strong><br><span style="font-size: 0.75rem; color: #16A34A;">MVP</span></td>
+          <td>
+            사이드바 기본 구조 (280px, 좌측)<br>
+            TC 리스트 + 상태 아이콘/컬러<br>
+            현재 TC 하이라이트<br>
+            클릭으로 TC 이동<br>
+            <kbd class="kbd">[</kbd> 토글
+          </td>
+          <td>3~4일</td>
+          <td><span style="color: #DC2626; font-weight: 700;">P0 — Must Have</span></td>
+        </tr>
+        <tr>
+          <td><strong>Phase 2</strong><br><span style="font-size: 0.75rem; color: #6366F1;">Enhanced</span></td>
+          <td>
+            세그먼트 진행률 바<br>
+            상태별 필터 칩<br>
+            TC 검색<br>
+            진행률 카운트
+          </td>          <td>2~3일</td>
+          <td><span style="color: #F59E0B; font-weight: 700;">P1 — Should Have</span></td>
+        </tr>
+        <tr>
+          <td><strong>Phase 3</strong><br><span style="font-size: 0.75rem; color: #94A3B8;">Polish</span></td>
+          <td>
+            리사이즈 핸들 (드래그로 너비 조절)<br>
+            가상 스크롤 (100+ TC)<br>
+            반응형 (1024px 이하 오버레이)<br>
+            애니메이션 마무리
+          </td>
+          <td>2일</td>
+          <td><span style="color: #64748B; font-weight: 700;">P2 — Nice to Have</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- FOOTER                                                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="doc-footer">
+    <span>Testably PM 기획안 v1.0</span>
+    <span>작성: Kyle · 2026-03-27</span>
+  </div>
+
+</div>
+</body>
+</html>

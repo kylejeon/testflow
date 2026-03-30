@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Dev Handoff: Unified Avatar Component</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F1F5F9; color: #1E293B; line-height: 1.65; padding: 2rem; }
+  .container { max-width: 960px; margin: 0 auto; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); color: #fff; padding: 2.5rem; border-radius: 1rem 1rem 0 0; }
+  .header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .header .sub { opacity: 0.9; font-size: 0.875rem; }
+  .tag { display: inline-block; background: rgba(255,255,255,0.2); padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; margin-top: 0.5rem; }
+  .meta-bar { background: #fff; border: 1px solid #E2E8F0; border-top: none; padding: 1rem 2.5rem; display: flex; gap: 2rem; flex-wrap: wrap; font-size: 0.8125rem; color: #94A3B8; }
+  .meta-bar b { color: #334155; }
+  .body { background: #fff; border: 1px solid #E2E8F0; border-top: none; border-radius: 0 0 1rem 1rem; padding: 2.5rem; }
+
+  /* Sections */
+  h2 { font-size: 1.125rem; font-weight: 800; color: #0F172A; margin: 2.5rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid #6366F1; }
+  h2:first-child { margin-top: 0; }
+  h3 { font-size: 0.9375rem; font-weight: 700; color: #0F172A; margin: 1.75rem 0 0.5rem; }
+  h4 { font-size: 0.875rem; font-weight: 700; color: #334155; margin: 1.25rem 0 0.375rem; }
+  p, li { font-size: 0.875rem; margin-bottom: 0.5rem; }
+  ul, ol { padding-left: 1.25rem; }
+  a { color: #6366F1; }
+  code { background: #F1F5F9; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.8125rem; color: #6366F1; }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8125rem; }
+  th { background: #F8FAFC; font-weight: 700; color: #0F172A; text-align: left; padding: 0.625rem 0.75rem; border: 1px solid #E2E8F0; }
+  td { padding: 0.625rem 0.75rem; border: 1px solid #E2E8F0; vertical-align: top; }
+
+  /* Callouts */
+  .callout { border-left: 4px solid #6366F1; background: #EEF2FF; padding: 1rem 1.25rem; border-radius: 0 0.5rem 0.5rem 0; margin: 1rem 0; font-size: 0.8125rem; }
+  .callout-red { border-left-color: #EF4444; background: #FEF2F2; }
+  .callout-amber { border-left-color: #F59E0B; background: #FFFBEB; color: #92400E; }
+  .callout-green { border-left-color: #10B981; background: #F0FDF4; }
+
+  /* Code block */
+  .code-block { background: #0F172A; color: #E2E8F0; border-radius: 0.5rem; padding: 1rem 1.25rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.6875rem; line-height: 1.8; overflow-x: auto; margin: 0.75rem 0; white-space: pre; }
+  .cm { color: #64748B; }
+  .kw { color: #C084FC; }
+  .fn { color: #38BDF8; }
+  .st { color: #86EFAC; }
+  .nb { color: #FDBA74; }
+  .ty { color: #67E8F9; }
+
+  /* Badge */
+  .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; }
+  .badge-red { background: #FEF2F2; color: #DC2626; }
+  .badge-green { background: #F0FDF4; color: #16A34A; }
+  .badge-amber { background: #FFFBEB; color: #D97706; }
+  .badge-indigo { background: #EEF2FF; color: #4F46E5; }
+
+  /* File tree */
+  .file-tree { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 0.5rem; padding: 1rem 1.25rem; font-family: 'SF Mono', monospace; font-size: 0.75rem; line-height: 2; color: #334155; margin: 0.75rem 0; }
+  .file-tree .dir { color: #6366F1; font-weight: 600; }
+  .file-tree .new { color: #16A34A; font-weight: 600; }
+  .file-tree .mod { color: #F59E0B; font-weight: 600; }
+  .file-tree .del { color: #EF4444; text-decoration: line-through; }
+
+  /* Swatch */
+  .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 4px; border: 1px solid rgba(0,0,0,0.1); }
+
+  /* Checklist */
+  .check-list { list-style: none; padding: 0; margin: 0.75rem 0; }
+  .check-list li { padding: 0.375rem 0; font-size: 0.8125rem; display: flex; align-items: flex-start; gap: 0.5rem; border-bottom: 1px solid #F8FAFC; }
+  .check-list li::before { content: '☐'; flex-shrink: 0; color: #94A3B8; }
+
+  /* Priority labels */
+  .pri { display: inline-block; font-size: 0.625rem; font-weight: 700; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; vertical-align: middle; margin-left: 0.25rem; }
+  .pri-h { background: #FEF2F2; color: #DC2626; }
+  .pri-m { background: #FFFBEB; color: #D97706; }
+  .pri-l { background: #F0FDF4; color: #16A34A; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <h1>Dev Handoff — Unified Avatar Component</h1>
+  <div class="sub">기존 6+개 아바타 클래스를 단일 <code style="background:rgba(255,255,255,0.2);color:#fff">&lt;Avatar /&gt;</code> 컴포넌트로 통합</div>
+  <div class="tag">DESIGN: 32-profile-avatar-design.html</div>
+</div>
+<div class="meta-bar">
+  <span>From <b>Desi (Designer)</b></span>
+  <span>To <b>Dev Team</b></span>
+  <span>Priority <span class="badge badge-red">High</span></span>
+  <span>Date <b>2026-03-26</b></span>
+  <span>Scope <b>7 files · 1 new component</b></span>
+</div>
+
+<div class="body">
+
+<!-- ═══ TOC ═══ -->
+<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:0.75rem; padding:1.25rem 1.5rem; margin-bottom:2rem;">
+  <div style="font-weight:700; font-size:0.8125rem; color:#0F172A; margin-bottom:0.5rem;">목차</div>
+  <a href="#s1" style="display:block; font-size:0.8125rem; padding:0.125rem 0;">§1 Overview — 변경 배경 및 범위</a>
+  <a href="#s2" style="display:block; font-size:0.8125rem; padding:0.125rem 0;">§2 Avatar Component — Props & API</a>
+  <a href="#s3" style="display:block; font-size:0.8125rem; padding:0.125rem 0;">§3 Size Tokens — CSS 스펙</a>
+  <a href="#s4" style="display:block; font-size:0.8125rem; padding:0.125rem 0;">§4 Color System — 10색 팔레트 + 해시 알고리즘</a>
+  <a href="#s5" style="display:block; font-size:0.8125rem; padding:0.125rem 0;">§5 Variants — Initials / Photo / Status / Stack / Upload</a>
+  <a href="#s6" style="display:block; font-size:0.8125rem; padding:0.125rem 0;">§6 Migration Guide — 파일별 변경 사항</a>
+  <a href="#s7" style="display:block; font-size:0.8125rem; padding:0.125rem 0;">§7 Supabase Schema & Storage</a>
+  <a href="#s8" style="display:block; font-size:0.8125rem; padding:0.125rem 0;">§8 Accessibility</a>
+  <a href="#s9" style="display:block; font-size:0.8125rem; padding:0.125rem 0;">§9 Edge Cases</a>
+  <a href="#s10" style="display:block; font-size:0.8125rem; padding:0.125rem 0;">§10 QA Checklist</a>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="s1">§1 Overview — 변경 배경 및 범위</h2>
+
+<h4>현재 문제</h4>
+<p>프로필 아바타가 화면마다 서로 다른 클래스명, 크기, 색상 로직을 사용하고 있어 디자인 일관성이 깨져 있습니다.</p>
+
+<table>
+  <tr><th>기존 클래스</th><th>사용 위치</th><th>크기</th><th>문제</th></tr>
+  <tr><td><code>.ph-avatar</code></td><td>Project header</td><td>2rem (32px)</td><td>인라인 색상, 별도 클래스</td></tr>
+  <tr><td><code>.header-avatar</code></td><td>Sub header</td><td>1.75rem (28px)</td><td>같은 헤더인데 크기 불일치</td></tr>
+  <tr><td><code>.assignee-sm</code></td><td>Table cells</td><td>1.5~1.75rem</td><td>파일별 크기 불일치</td></tr>
+  <tr><td><code>.member-avatar</code></td><td>Team cards</td><td>2.5rem (40px)</td><td>독자적 클래스</td></tr>
+  <tr><td><code>.feed-avatar</code></td><td>Activity feed</td><td>1.75rem (28px)</td><td>규격 외 사이즈</td></tr>
+  <tr><td><code>.dp-av</code></td><td>TC detail meta</td><td>1.25rem (20px)</td><td>독자적 클래스</td></tr>
+</table>
+
+<h4>목표</h4>
+<p>단일 <code>&lt;Avatar /&gt;</code> 컴포넌트 + 5개 사이즈 토큰으로 통합. userId 기반 결정론적 색상 배정.</p>
+
+<h4>영향 범위</h4>
+<div class="file-tree">
+<span class="dir">src/components/ui/</span>
+  <span class="new">Avatar.tsx</span>                    ← 신규 생성
+  <span class="new">avatar-utils.ts</span>               ← 신규 (getAvatarColor, getInitials)
+
+<span class="dir">src/pages/project-testcases/</span>
+  <span class="mod">components/TestCaseList.tsx</span>   ← .assignee-sm, .dp-av 교체
+  <span class="mod">page.tsx</span>                       ← .ph-avatar 교체
+
+<span class="dir">src/pages/project-runs/</span>
+  <span class="mod">page.tsx</span>                       ← .ph-avatar, .assignee-sm 교체
+
+<span class="dir">src/pages/project-milestones/</span>
+  <span class="mod">page.tsx</span>                       ← .ph-avatar 교체
+
+<span class="dir">src/pages/project-documentation/</span>
+  <span class="mod">page.tsx</span>                       ← .ph-avatar 교체
+
+<span class="dir">src/pages/project-sessions/</span>
+  <span class="mod">page.tsx</span>                       ← .ph-avatar, team avatars 교체
+
+<span class="dir">src/components/layout/</span>
+  <span class="mod">ProjectHeader.tsx</span>             ← .ph-avatar 교체 (공통 헤더인 경우)
+
+<span class="del">삭제 대상 CSS 클래스: .ph-avatar, .header-avatar, .assignee-sm, .member-avatar, .feed-avatar, .dp-av, .online-dot</span>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="s2">§2 Avatar Component — Props & API</h2>
+
+<div class="code-block"><span class="cm">// src/components/ui/Avatar.tsx</span>
+
+<span class="kw">import</span> { <span class="fn">getAvatarColor</span>, <span class="fn">getInitials</span> } <span class="kw">from</span> <span class="st">'./avatar-utils'</span>;
+
+<span class="kw">interface</span> <span class="ty">AvatarUser</span> {
+  id: <span class="ty">string</span>;
+  full_name?: <span class="ty">string</span> | <span class="kw">null</span>;
+  email?: <span class="ty">string</span> | <span class="kw">null</span>;
+  avatar_url?: <span class="ty">string</span> | <span class="kw">null</span>;
+}
+
+<span class="kw">interface</span> <span class="ty">AvatarProps</span> {
+  user: <span class="ty">AvatarUser</span>;
+  size: <span class="st">'xs'</span> | <span class="st">'sm'</span> | <span class="st">'md'</span> | <span class="st">'lg'</span> | <span class="st">'xl'</span>;
+  status?: <span class="st">'online'</span> | <span class="st">'offline'</span> | <span class="st">'busy'</span> | <span class="st">'away'</span>;
+  showUpload?: <span class="ty">boolean</span>;   <span class="cm">// Only for 'xl' — shows camera overlay on hover</span>
+  className?: <span class="ty">string</span>;
+  onClick?: () => <span class="ty">void</span>;
+}
+
+<span class="kw">export function</span> <span class="fn">Avatar</span>({ user, size, status, showUpload, className, onClick }: <span class="ty">AvatarProps</span>) {
+  <span class="kw">const</span> initials = <span class="fn">getInitials</span>(user.full_name || user.email || <span class="st">''</span>);
+  <span class="kw">const</span> bgColor = <span class="fn">getAvatarColor</span>(user.id);
+  <span class="kw">const</span> [imgError, setImgError] = useState(<span class="kw">false</span>);
+  <span class="kw">const</span> hasPhoto = user.avatar_url && !imgError;
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">div</span>
+      className={cn(<span class="st">'av'</span>, <span class="st">`av-${size}`</span>, showUpload && <span class="st">'av-upload'</span>, className)}
+      style={{ background: hasPhoto ? <span class="st">'transparent'</span> : bgColor }}
+      role=<span class="st">"img"</span>
+      aria-label={<span class="st">`${user.full_name || 'User'} avatar`</span>}
+      onClick={onClick}
+    &gt;
+      {hasPhoto
+        ? &lt;<span class="ty">img</span> src={user.avatar_url!} alt=<span class="st">""</span> onError={() => setImgError(<span class="kw">true</span>)} /&gt;
+        : initials || <span class="st">'?'</span>}
+      {status && &lt;<span class="ty">span</span> className={<span class="st">`av-status ${status}`</span>} aria-label={status} /&gt;}
+      {showUpload && (
+        &lt;<span class="ty">div</span> className=<span class="st">"av-overlay"</span>&gt;&lt;<span class="ty">i</span> className=<span class="st">"ri-camera-line"</span> /&gt;&lt;/<span class="ty">div</span>&gt;
+      )}
+    &lt;/<span class="ty">div</span>&gt;
+  );
+}
+
+<span class="cm">// ── AvatarStack sub-component ──</span>
+<span class="kw">interface</span> <span class="ty">AvatarStackProps</span> {
+  users: <span class="ty">AvatarUser</span>[];
+  size: <span class="st">'xs'</span> | <span class="st">'sm'</span> | <span class="st">'md'</span>;
+  max?: <span class="ty">number</span>;  <span class="cm">// default 4</span>
+}
+
+<span class="kw">export function</span> <span class="fn">AvatarStack</span>({ users, size, max = <span class="nb">4</span> }: <span class="ty">AvatarStackProps</span>) {
+  <span class="kw">const</span> visible = users.slice(<span class="nb">0</span>, max);
+  <span class="kw">const</span> overflow = users.length - max;
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">div</span> className=<span class="st">"av-stack"</span>&gt;
+      {visible.map(u => &lt;<span class="fn">Avatar</span> key={u.id} user={u} size={size} /&gt;)}
+      {overflow > <span class="nb">0</span> && &lt;<span class="ty">span</span> className={<span class="st">`av-overflow av-${size}`</span>}&gt;+{overflow}&lt;/<span class="ty">span</span>&gt;}
+    &lt;/<span class="ty">div</span>&gt;
+  );
+}</div>
+
+<div class="callout">
+  <b>Import 패턴:</b> 모든 페이지에서 <code>import { Avatar, AvatarStack } from '@/components/ui/Avatar';</code>로 사용합니다. 기존 인라인 아바타 마크업을 모두 이 컴포넌트 호출로 교체합니다.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="s3">§3 Size Tokens — CSS 스펙</h2>
+
+<h4>Tailwind 확장 (tailwind.config.ts)</h4>
+<div class="code-block"><span class="cm">// 방법 A: Tailwind plugin으로 등록 (권장)</span>
+<span class="cm">// 방법 B: Avatar.tsx 내 CSS-in-JS or inline styles</span>
+<span class="cm">// 방법 C: globals.css에 utility class 추가 (아래)</span></div>
+
+<h4>CSS 클래스 정의</h4>
+<div class="code-block"><span class="cm">/* globals.css or avatar.css */</span>
+
+.av {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: <span class="st">'Inter'</span>, sans-serif;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  position: relative;
+  user-select: none;
+  line-height: 1;
+  overflow: hidden;
+  vertical-align: middle;
+}
+.av img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+<span class="cm">/* ── Size scale ── */</span>
+.av-xs { width: 20px; height: 20px; font-size: 0.4375rem; }  <span class="cm">/* 7px */</span>
+.av-sm { width: 24px; height: 24px; font-size: 0.5rem; }     <span class="cm">/* 8px */</span>
+.av-md { width: 32px; height: 32px; font-size: 0.6875rem; }  <span class="cm">/* 11px */</span>
+.av-lg { width: 40px; height: 40px; font-size: 0.875rem; }   <span class="cm">/* 14px */</span>
+.av-xl { width: 64px; height: 64px; font-size: 1.25rem; }    <span class="cm">/* 20px */</span>
+
+<span class="cm">/* ── Status dot ── */</span>
+.av-status {
+  position: absolute; bottom: 0; right: 0;
+  border-radius: 50%; border: 2px solid #fff;
+}
+.av-xs .av-status { width: 6px; height: 6px; border-width: 1.5px; }
+.av-sm .av-status { width: 7px; height: 7px; border-width: 1.5px; }
+.av-md .av-status { width: 8px; height: 8px; }
+.av-lg .av-status { width: 10px; height: 10px; }
+.av-xl .av-status { width: 14px; height: 14px; border-width: 2.5px; }
+
+.av-status.online  { background: #16A34A; }
+.av-status.offline { background: #CBD5E1; }
+.av-status.busy    { background: #EF4444; }
+.av-status.away    { background: #F59E0B; }
+
+<span class="cm">/* ── Stack ── */</span>
+.av-stack { display: flex; align-items: center; }
+.av-stack .av { border: 2px solid #fff; margin-left: -0.5rem; }
+.av-stack .av:first-child { margin-left: 0; }
+.av-overflow {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; border: 2px solid #fff;
+  background: #F1F5F9; color: #64748B;
+  font-weight: 700; margin-left: -0.5rem;
+}
+
+<span class="cm">/* ── Upload overlay (XL only) ── */</span>
+.av-upload { cursor: pointer; }
+.av-upload .av-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.4);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s;
+}
+.av-upload:hover .av-overlay { opacity: 1; }
+.av-overlay i { color: #fff; font-size: 1.25rem; }</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="s4">§4 Color System — 10색 팔레트 + 해시 알고리즘</h2>
+
+<div class="code-block"><span class="cm">// src/components/ui/avatar-utils.ts</span>
+
+<span class="kw">export const</span> AVATAR_COLORS = [
+  <span class="st">'#6366F1'</span>,  <span class="cm">// 0  Indigo   (brand primary)</span>
+  <span class="st">'#8B5CF6'</span>,  <span class="cm">// 1  Violet   (brand accent)</span>
+  <span class="st">'#EC4899'</span>,  <span class="cm">// 2  Pink</span>
+  <span class="st">'#10B981'</span>,  <span class="cm">// 3  Emerald</span>
+  <span class="st">'#F59E0B'</span>,  <span class="cm">// 4  Amber</span>
+  <span class="st">'#06B6D4'</span>,  <span class="cm">// 5  Cyan</span>
+  <span class="st">'#EF4444'</span>,  <span class="cm">// 6  Red</span>
+  <span class="st">'#14B8A6'</span>,  <span class="cm">// 7  Teal</span>
+  <span class="st">'#F97316'</span>,  <span class="cm">// 8  Orange</span>
+  <span class="st">'#3B82F6'</span>,  <span class="cm">// 9  Blue</span>
+] <span class="kw">as const</span>;
+
+<span class="cm">/**
+ * Returns a deterministic color for a userId.
+ * Same userId → same color across all screens.
+ * Uses djb2 hash for even distribution.
+ */</span>
+<span class="kw">export function</span> <span class="fn">getAvatarColor</span>(userId: <span class="ty">string</span>): <span class="ty">string</span> {
+  <span class="kw">let</span> hash = <span class="nb">0</span>;
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="nb">0</span>; i < userId.length; i++) {
+    hash = ((hash << <span class="nb">5</span>) - hash + userId.charCodeAt(i)) | <span class="nb">0</span>;
+  }
+  <span class="kw">return</span> AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+<span class="cm">/**
+ * Extracts 1-2 character initials from a name or email.
+ * "Kim Yong Hyuk" → "KH" (first + last)
+ * "alice@test.com" → "A"
+ * "" → "?"
+ */</span>
+<span class="kw">export function</span> <span class="fn">getInitials</span>(input: <span class="ty">string</span>): <span class="ty">string</span> {
+  <span class="kw">if</span> (!input) <span class="kw">return</span> <span class="st">'?'</span>;
+  <span class="kw">const</span> name = input.includes(<span class="st">'@'</span>) ? input.split(<span class="st">'@'</span>)[<span class="nb">0</span>] : input;
+  <span class="kw">const</span> parts = name.trim().split(/\s+/);
+  <span class="kw">if</span> (parts.length === <span class="nb">1</span>) <span class="kw">return</span> parts[<span class="nb">0</span>][<span class="nb">0</span>].toUpperCase();
+  <span class="kw">return</span> (parts[<span class="nb">0</span>][<span class="nb">0</span>] + parts[parts.length - <span class="nb">1</span>][<span class="nb">0</span>]).toUpperCase();
+}</div>
+
+<div class="callout-red callout">
+  <b>Critical:</b> 기존 코드에서 인라인 <code>style="background:#6366F1"</code> 등으로 하드코딩된 색상을 <b>모두 제거</b>하고 <code>getAvatarColor(user.id)</code>로 교체해야 합니다. 현재 같은 사용자가 페이지마다 다른 색상인 문제의 근본 원인입니다.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="s5">§5 Variants — 구현 요구사항</h2>
+
+<h3>5-A. Initials (기본)</h3>
+<table>
+  <tr><th>속성</th><th>값</th></tr>
+  <tr><td>텍스트</td><td><code>getInitials()</code> 결과 (1~2자)</td></tr>
+  <tr><td>배경색</td><td><code>getAvatarColor(userId)</code></td></tr>
+  <tr><td>텍스트 색</td><td><code>#FFFFFF</code> 고정</td></tr>
+  <tr><td>font-weight</td><td><code>700</code></td></tr>
+</table>
+
+<h3>5-B. Photo (업로드된 프로필 사진)</h3>
+<table>
+  <tr><th>속성</th><th>값</th></tr>
+  <tr><td>표시 조건</td><td><code>avatar_url</code>이 truthy이고 이미지 로드 성공</td></tr>
+  <tr><td>이미지</td><td><code>&lt;img&gt;</code> 태그, <code>object-fit: cover</code></td></tr>
+  <tr><td>Fallback</td><td><code>onError</code> → 이니셜로 자동 전환</td></tr>
+  <tr><td>배경</td><td><code>transparent</code> (이미지가 배경을 덮음)</td></tr>
+</table>
+
+<h3>5-C. Status Dot</h3>
+<table>
+  <tr><th>상태</th><th>색상</th><th>조건</th></tr>
+  <tr><td>Online</td><td><span class="swatch" style="background:#16A34A"></span><code>#16A34A</code></td><td>Active within 5 min</td></tr>
+  <tr><td>Away</td><td><span class="swatch" style="background:#F59E0B"></span><code>#F59E0B</code></td><td>Idle 5–15 min</td></tr>
+  <tr><td>Offline</td><td><span class="swatch" style="background:#CBD5E1"></span><code>#CBD5E1</code></td><td>Inactive 15+ min</td></tr>
+  <tr><td>Busy</td><td><span class="swatch" style="background:#EF4444"></span><code>#EF4444</code></td><td>DND mode active</td></tr>
+</table>
+<p><b>사용 위치:</b> Team Activity 멤버 카드(<code>.av-lg</code>)에서만 사용. 테이블 assignee에는 사용 안 함.</p>
+
+<h3>5-D. Stack</h3>
+<table>
+  <tr><th>속성</th><th>값</th></tr>
+  <tr><td>겹침</td><td><code>margin-left: -0.5rem</code></td></tr>
+  <tr><td>구분선</td><td><code>border: 2px solid #fff</code></td></tr>
+  <tr><td>최대 표시</td><td>4개 (prop <code>max</code>으로 조정 가능)</td></tr>
+  <tr><td>Overflow 배지</td><td><code>+N</code> · bg <code>#F1F5F9</code> · color <code>#64748B</code></td></tr>
+  <tr><td>사용 위치</td><td>Run cards, Project cards, Milestone 참여자</td></tr>
+</table>
+
+<h3>5-E. Upload Overlay (XL 전용)</h3>
+<table>
+  <tr><th>속성</th><th>값</th></tr>
+  <tr><td>트리거</td><td><code>showUpload</code> prop + <code>size="xl"</code></td></tr>
+  <tr><td>오버레이</td><td><code>rgba(0,0,0,0.4)</code> · opacity 0→1 on hover</td></tr>
+  <tr><td>아이콘</td><td><code>ri-camera-line</code> · 1.25rem · #fff</td></tr>
+  <tr><td>사용 위치</td><td>Profile Settings 페이지에서만</td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="s6">§6 Migration Guide — 파일별 변경 사항</h2>
+
+<h3>Step 1: 신규 파일 생성</h3>
+<table>
+  <tr><th>파일</th><th>설명</th></tr>
+  <tr><td><code>src/components/ui/Avatar.tsx</code></td><td>Avatar + AvatarStack 컴포넌트</td></tr>
+  <tr><td><code>src/components/ui/avatar-utils.ts</code></td><td>getAvatarColor, getInitials, AVATAR_COLORS</td></tr>
+</table>
+
+<h3>Step 2: 파일별 교체 작업</h3>
+
+<h4>2-A. TestCaseList.tsx <span class="pri pri-h">HIGH</span></h4>
+<p>가장 많은 아바타 변형 사용. 3가지 교체 필요:</p>
+<table>
+  <tr><th>위치</th><th>기존</th><th>신규</th></tr>
+  <tr>
+    <td>테이블 Assignee 셀</td>
+    <td><code>&lt;span class="assignee-sm" style="background:..."&gt;SK&lt;/span&gt;</code></td>
+    <td><code>&lt;Avatar user={tc.assignee} size="sm" /&gt;</code></td>
+  </tr>
+  <tr>
+    <td>Detail panel meta</td>
+    <td><code>&lt;span class="dp-av" style="background:..."&gt;AP&lt;/span&gt;</code></td>
+    <td><code>&lt;Avatar user={tc.assignee} size="xs" /&gt;</code></td>
+  </tr>
+  <tr>
+    <td>Sidebar에서 직접 사용 없음</td>
+    <td>—</td>
+    <td>—</td>
+  </tr>
+</table>
+<div class="callout">
+  <b>Grep 명령:</b><br>
+  <code>grep -n "assignee-sm\|dp-av\|ph-avatar" src/pages/project-testcases/components/TestCaseList.tsx</code>
+</div>
+
+<h4>2-B. project-runs/page.tsx <span class="pri pri-h">HIGH</span></h4>
+<table>
+  <tr><th>위치</th><th>기존</th><th>신규</th></tr>
+  <tr><td>Header</td><td><code>.ph-avatar</code> (32px)</td><td><code>&lt;Avatar user={me} size="md" /&gt;</code></td></tr>
+  <tr><td>Run card assignees</td><td>인라인 아바타 스택</td><td><code>&lt;AvatarStack users={run.assignees} size="sm" /&gt;</code></td></tr>
+  <tr><td>Run detail assignee</td><td><code>.assignee-sm</code></td><td><code>&lt;Avatar user={assignee} size="sm" /&gt;</code></td></tr>
+</table>
+
+<h4>2-C. project-milestones/page.tsx <span class="pri pri-m">MED</span></h4>
+<table>
+  <tr><th>위치</th><th>기존</th><th>신규</th></tr>
+  <tr><td>Header</td><td><code>.ph-avatar</code></td><td><code>&lt;Avatar user={me} size="md" /&gt;</code></td></tr>
+  <tr><td>Milestone card participants</td><td>인라인 small circles</td><td><code>&lt;AvatarStack users={ms.participants} size="sm" /&gt;</code></td></tr>
+</table>
+
+<h4>2-D. project-documentation/page.tsx <span class="pri pri-l">LOW</span></h4>
+<table>
+  <tr><th>위치</th><th>기존</th><th>신규</th></tr>
+  <tr><td>Header</td><td><code>.ph-avatar</code></td><td><code>&lt;Avatar user={me} size="md" /&gt;</code></td></tr>
+</table>
+
+<h4>2-E. project-sessions/page.tsx <span class="pri pri-m">MED</span></h4>
+<table>
+  <tr><th>위치</th><th>기존</th><th>신규</th></tr>
+  <tr><td>Header</td><td><code>.ph-avatar</code></td><td><code>&lt;Avatar user={me} size="md" /&gt;</code></td></tr>
+  <tr><td>Team Activity 멤버</td><td><code>.member-avatar</code> + <code>.online-dot</code></td><td><code>&lt;Avatar user={m} size="lg" status={m.status} /&gt;</code></td></tr>
+  <tr><td>Activity feed</td><td><code>.feed-avatar</code> (28px)</td><td><code>&lt;Avatar user={m} size="sm" /&gt;</code> (24px ↓)</td></tr>
+</table>
+
+<h3>Step 3: CSS 정리</h3>
+<p>교체 완료 후 아래 클래스 정의를 각 파일 또는 globals.css에서 <b>삭제</b>합니다:</p>
+<div class="code-block"><span class="cm">/* 삭제 대상 */</span>
+.ph-avatar { ... }
+.header-avatar { ... }
+.assignee-sm { ... }
+.member-avatar { ... }
+.feed-avatar { ... }
+.dp-av { ... }
+.online-dot { ... }</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="s7">§7 Supabase Schema & Storage</h2>
+
+<h4>profiles 테이블 (기존)</h4>
+<div class="code-block"><span class="cm">-- 이미 존재하는 컬럼 확인</span>
+<span class="kw">SELECT</span> id, full_name, email, avatar_url
+<span class="kw">FROM</span> profiles
+<span class="kw">LIMIT</span> <span class="nb">1</span>;
+
+<span class="cm">-- avatar_url이 없으면 추가</span>
+<span class="kw">ALTER TABLE</span> profiles
+<span class="kw">ADD COLUMN IF NOT EXISTS</span> avatar_url <span class="ty">TEXT</span> <span class="kw">DEFAULT NULL</span>;</div>
+
+<h4>Storage Bucket</h4>
+<table>
+  <tr><th>속성</th><th>값</th></tr>
+  <tr><td>Bucket name</td><td><code>avatars</code></td></tr>
+  <tr><td>File path</td><td><code>avatars/{userId}.webp</code></td></tr>
+  <tr><td>Max size</td><td>2MB</td></tr>
+  <tr><td>Allowed MIME</td><td>image/jpeg, image/png, image/webp</td></tr>
+  <tr><td>Resize transform</td><td><code>?width=128&height=128</code></td></tr>
+  <tr><td>Public access</td><td>Yes (read-only)</td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="s8">§8 Accessibility</h2>
+
+<table>
+  <tr><th>요소</th><th>요구사항</th></tr>
+  <tr><td><code>role</code></td><td><code>"img"</code> — 정보 전달 시 (assignee 등)</td></tr>
+  <tr><td><code>aria-label</code></td><td><code>"{full_name}'s avatar"</code> or <code>"Unassigned"</code></td></tr>
+  <tr><td>Status dot</td><td><code>aria-label="{status}"</code> 속성 추가</td></tr>
+  <tr><td>색상 대비</td><td>10색 모두 #fff 텍스트와 WCAG AA (4.5:1) 이상 충족 ✅</td></tr>
+  <tr><td>Upload overlay</td><td><code>aria-label="Change profile photo"</code></td></tr>
+  <tr><td>Stack overflow</td><td><code>aria-label="and N more members"</code></td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="s9">§9 Edge Cases</h2>
+
+<table>
+  <tr><th>케이스</th><th>처리</th></tr>
+  <tr><td>이름 없음 (null/empty)</td><td><code>"?"</code> 텍스트 + bg <code>#CBD5E1</code></td></tr>
+  <tr><td>Email만 있는 사용자</td><td><code>alice@test.com</code> → <code>"A"</code> (@ 앞 첫 글자)</td></tr>
+  <tr><td>단일 이름</td><td><code>"Alice"</code> → <code>"A"</code></td></tr>
+  <tr><td>3+ 단어 이름</td><td><code>"Kim Yong Hyuk"</code> → <code>"KH"</code> (첫+끝)</td></tr>
+  <tr><td>비라틴 문자</td><td><code>"김영혁"</code> → <code>"김영"</code> (그대로 2자)</td></tr>
+  <tr><td>이미지 로드 실패</td><td><code>onError</code> → <code>imgError=true</code> → 이니셜 fallback</td></tr>
+  <tr><td>Deleted/deactivated user</td><td>grey silhouette SVG + bg <code>#E2E8F0</code></td></tr>
+  <tr><td>userId 없음 (비정상)</td><td><code>getAvatarColor('')</code> → index 0 (#6366F1)</td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="s10">§10 QA Checklist</h2>
+
+<ul class="check-list">
+  <li><b>동일 사용자 색상 일관성:</b> 같은 유저가 Header / Table / Team Card / Comment에서 모두 동일 색상인지 확인</li>
+  <li><b>크기 통일:</b> Header 아바타가 정확히 32px인지 (기존 28px 페이지가 없는지)</li>
+  <li><b>Table assignee:</b> 모든 테이블 셀에서 24px 고정인지 (1.5rem~1.75rem 혼용 없는지)</li>
+  <li><b>Feed avatar:</b> Activity feed에서 24px로 변경 후 레이아웃 깨지지 않는지</li>
+  <li><b>Photo fallback:</b> avatar_url을 잘못된 URL로 세팅 후 이니셜로 정상 전환되는지</li>
+  <li><b>Stack overflow:</b> 5명 이상 팀에서 "+N" 배지 정상 표시되는지</li>
+  <li><b>Status dot:</b> Team Activity에서 online/offline 정상 표시, 테이블에서는 미표시인지</li>
+  <li><b>Empty name:</b> full_name이 null인 유저 초대 시 "?" 표시되는지</li>
+  <li><b>비라틴 문자:</b> 한국어/일본어 이름에서 이니셜 정상 추출되는지</li>
+  <li><b>Upload:</b> Profile Settings에서 2MB 초과 파일 업로드 시 에러 메시지 표시</li>
+  <li><b>Accessibility:</b> 스크린 리더로 각 아바타의 aria-label 정상 읽히는지</li>
+  <li><b>CSS 정리:</b> 기존 6개 클래스 삭제 후 어디에서도 스타일 깨짐 없는지</li>
+</ul>
+
+<div class="callout-green callout">
+  <b>완료 기준:</b> 위 12개 항목 모두 통과 시 PR merge 가능. 디자인 시안(<code>32-profile-avatar-design.html</code>)과 비교하여 pixel-perfect 검증해주세요.
+</div>
+
+</div><!-- .body -->
+</div><!-- .container -->
+</body>
+</html>

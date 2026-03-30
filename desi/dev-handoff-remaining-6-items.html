@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dev Handoff — 미구현 6건 통합 구현 스펙</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:#F8FAFC;color:#1E293B;padding:2rem;line-height:1.6}
+  .ctr{max-width:960px;margin:0 auto}
+  h1{font-size:1.5rem;font-weight:800;color:#0F172A;margin-bottom:0.25rem}
+  .sub{font-size:0.875rem;color:#64748B;margin-bottom:2rem}
+  h2{font-size:1.125rem;font-weight:700;color:#0F172A;margin:2.5rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:2px solid #6366F1}
+  h3{font-size:0.9375rem;font-weight:700;color:#334155;margin:1.25rem 0 0.5rem}
+  p,li{font-size:0.8125rem;color:#475569}
+  ul{padding-left:1.25rem;margin-bottom:0.75rem}
+  li{margin-bottom:0.375rem}
+  code{font-family:'SF Mono','Fira Code',monospace;font-size:0.75rem;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:4px;padding:0.125rem 0.375rem;color:#6366F1}
+  pre{background:#1E293B;color:#E2E8F0;border-radius:0.5rem;padding:1rem 1.25rem;font-size:0.75rem;line-height:1.6;overflow-x:auto;margin:0.75rem 0;font-family:'SF Mono','Fira Code',monospace}
+  .cm{color:#64748B} .kw{color:#818CF8} .str{color:#34D399} .tp{color:#F59E0B}
+  .card{background:#fff;border:1px solid #E2E8F0;border-radius:0.75rem;padding:1.25rem;margin:0.75rem 0}
+  .b{display:inline-block;font-size:0.625rem;font-weight:600;padding:0.125rem 0.5rem;border-radius:9999px;text-transform:uppercase;letter-spacing:0.04em;vertical-align:middle}
+  .b-done{background:#ECFDF5;color:#16A34A} .b-todo{background:#FEF3C7;color:#D97706} .b-new{background:#DBEAFE;color:#2563EB} .b-db{background:#F3E8FF;color:#7C3AED} .b-code{background:#EEF2FF;color:#4338CA}
+  table{width:100%;border-collapse:collapse;margin:0.75rem 0;font-size:0.8125rem}
+  th{background:#F8FAFC;font-weight:600;color:#334155;text-align:left;padding:0.625rem 0.75rem;border:1px solid #E2E8F0;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.04em}
+  td{padding:0.625rem 0.75rem;border:1px solid #E2E8F0;color:#475569;vertical-align:top}
+  td code{font-size:0.6875rem}
+  .ft{display:inline-block;font-size:0.6875rem;font-weight:600;color:#6366F1;background:#EEF2FF;border-radius:4px;padding:0.125rem 0.5rem}
+  .sn{display:inline-flex;align-items:center;justify-content:center;width:1.75rem;height:1.75rem;background:#6366F1;color:#fff;border-radius:0.375rem;font-size:0.8125rem;font-weight:700;margin-right:0.5rem}
+  .p0{color:#DC2626;font-weight:700} .p1{color:#D97706;font-weight:700} .p2{color:#6366F1;font-weight:700}
+  .hr{border:none;border-top:1px dashed #CBD5E1;margin:2rem 0}
+  .banner{padding:0.75rem 1rem;border-radius:0.5rem;font-size:0.8125rem;font-weight:600;display:flex;align-items:center;gap:0.5rem;margin:0.75rem 0}
+  .banner-done{background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0}
+  .banner-todo{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
+  .banner-db{background:#F3E8FF;color:#6D28D9;border:1px solid #DDD6FE}
+  .item-header{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;flex-wrap:wrap}
+  .time-est{font-size:0.6875rem;color:#94A3B8;font-weight:500;margin-left:auto}
+</style>
+</head>
+<body>
+<div class="ctr">
+
+<h1>Dev Handoff — 미구현 6건 통합 구현 스펙</h1>
+<p class="sub">PM: Kyle &nbsp;|&nbsp; 2026-03-26 &nbsp;|&nbsp; CEO 지시: 전체 착수 가능하도록 기획 완료 &nbsp;|&nbsp; 총 예상: ~15시간</p>
+
+<!-- ============================================================== -->
+<!-- MASTER STATUS TABLE -->
+<!-- ============================================================== -->
+
+<div class="card" style="padding:1rem 1.25rem">
+  <h3 style="margin-top:0">전체 현황 Dashboard</h3>
+  <table>
+    <tr>
+      <th>#</th>
+      <th>항목</th>
+      <th>코드 상태</th>
+      <th>남은 작업</th>
+      <th>예상</th>
+    </tr>
+    <tr style="background:#F0FDF4">
+      <td><span class="sn">1</span></td>
+      <td>resolved_at DB 마이그레이션</td>
+      <td><span class="b b-done">CODE DONE</span></td>
+      <td><span class="b b-db">DB MIGRATION</span> SQL 실행만</td>
+      <td>5분</td>
+    </tr>
+    <tr style="background:#F0FDF4">
+      <td><span class="sn">2</span></td>
+      <td>result upsert — resolved_at 로직</td>
+      <td><span class="b b-done">CODE DONE</span></td>
+      <td>없음 — #1 마이그레이션 후 자동 작동</td>
+      <td>0분</td>
+    </tr>
+    <tr style="background:#FFFBEB">
+      <td><span class="sn">3</span></td>
+      <td>Pass Rate 기간 필터 UI 연동</td>
+      <td><span class="b b-done">HOOK DONE</span> <span class="b b-done">PAGE DONE</span></td>
+      <td><span class="b b-todo">TODO</span> ProjectsContent + StatCards 연동</td>
+      <td>1.5h</td>
+    </tr>
+    <tr style="background:#FEF3C7">
+      <td><span class="sn">4</span></td>
+      <td>새 프로젝트 모달 영문화</td>
+      <td><span class="b b-todo">TODO</span></td>
+      <td>22개 문자열 교체</td>
+      <td>1h</td>
+    </tr>
+    <tr style="background:#FEF3C7">
+      <td><span class="sn">5</span></td>
+      <td>TC Status Workflow 전체</td>
+      <td><span class="b b-todo">TODO</span></td>
+      <td>DB + 12개 UI 컴포넌트 + 쿼리</td>
+      <td>~8h</td>
+    </tr>
+    <tr style="background:#FEF3C7">
+      <td><span class="sn">6</span></td>
+      <td>Add Run 모달 + TC 선택 개선</td>
+      <td><span class="b b-todo">TODO</span></td>
+      <td>모달 필드 추가 + TC 선택 리팩터링</td>
+      <td>~4h</td>
+    </tr>
+  </table>
+</div>
+
+<hr class="hr">
+
+<!-- ============================================================== -->
+<!-- ITEM 1: resolved_at DB Migration -->
+<!-- ============================================================== -->
+
+<h2><span class="sn">1</span>resolved_at DB 마이그레이션</h2>
+<div class="item-header">
+  <span class="b b-db">DB MIGRATION</span>
+  <span class="b b-done">CODE ALREADY DONE</span>
+  <span class="time-est">⏱ 5분</span>
+</div>
+
+<div class="banner banner-done">
+  <i class="ri-checkbox-circle-line"></i>
+  코드는 이미 구현 완료. DB에 컬럼만 추가하면 즉시 작동합니다.
+</div>
+
+<pre><span class="cm">-- Supabase SQL Editor에서 실행</span>
+<span class="kw">ALTER TABLE</span> test_results
+  <span class="kw">ADD COLUMN</span> resolved_at <span class="tp">TIMESTAMPTZ</span> <span class="kw">NULL</span>;</pre>
+
+<p><strong>영향 범위:</strong> nullable 컬럼이므로 기존 데이터/쿼리에 영향 없음. RLS 정책 수정 불필요.</p>
+<p><strong>확인 방법:</strong> 마이그레이션 후 Run Detail에서 Failed TC를 Passed로 변경 → <code>test_results</code> 테이블에서 <code>resolved_at</code> 값이 세팅되는지 확인.</p>
+
+<hr class="hr">
+
+<!-- ============================================================== -->
+<!-- ITEM 2: result upsert resolved_at logic -->
+<!-- ============================================================== -->
+
+<h2><span class="sn">2</span>result upsert — resolved_at 로직</h2>
+<div class="item-header">
+  <span class="b b-done">ALREADY IMPLEMENTED</span>
+  <span class="time-est">⏱ 0분 (구현 완료)</span>
+</div>
+
+<div class="banner banner-done">
+  <i class="ri-checkbox-circle-line"></i>
+  두 파일 모두 이미 resolved_at 로직이 구현되어 있습니다. #1 마이그레이션만 실행하면 됩니다.
+</div>
+
+<table>
+  <tr><th>파일</th><th>구현 위치</th><th>로직</th></tr>
+  <tr>
+    <td><span class="ft">run-detail/page.tsx</span></td>
+    <td>Lines 776–790</td>
+    <td>status가 <code>passed</code>/<code>retest</code>이면 기존 result를 SELECT → 이전 status가 <code>failed</code>/<code>blocked</code>이면 <code>resolved_at = now()</code>. Line 805에서 insert 시 포함.</td>
+  </tr>
+  <tr>
+    <td><span class="ft">upload-ci-results/index.ts</span></td>
+    <td>Lines 231–261</td>
+    <td>batch SELECT로 기존 status map 구성 (Line 234–243) → <code>isResolution</code> 판별 (Line 250–251) → 조건부 <code>resolved_at: now</code> (Line 259).</td>
+  </tr>
+</table>
+
+<hr class="hr">
+
+<!-- ============================================================== -->
+<!-- ITEM 3: Pass Rate Period Filter — Dashboard Integration -->
+<!-- ============================================================== -->
+
+<h2><span class="sn">3</span>Pass Rate 기간 필터 — Dashboard 연동</h2>
+<div class="item-header">
+  <span class="b b-done">HOOK + REPORT PAGE DONE</span>
+  <span class="b b-todo">DASHBOARD TODO</span>
+  <span class="time-est">⏱ 1.5h</span>
+</div>
+
+<div class="banner banner-done">
+  <i class="ri-checkbox-circle-line"></i>
+  <code>usePassRateReport.ts</code> (period 파라미터, 4개 분기, deltaLabel) + <code>PassRateReportPage.tsx</code> (드롭다운 UI, localStorage 저장, 동적 제목/부제) 구현 완료.
+</div>
+
+<div class="banner banner-todo">
+  <i class="ri-alert-line"></i>
+  남은 작업: <code>ProjectsContent.tsx</code> + <code>StatCards.tsx</code>에 필터 연동
+</div>
+
+<h3>3.1 ProjectsContent.tsx 변경</h3>
+<table>
+  <tr><th>#</th><th>변경</th><th>위치</th><th>상세</th></tr>
+  <tr>
+    <td>1</td>
+    <td>localStorage에서 period 읽기</td>
+    <td>load() 함수 상단</td>
+    <td>
+<pre style="margin:0"><span class="kw">const</span> period = (localStorage.getItem(<span class="str">'passrate_period'</span>) ?? <span class="str">'active_run'</span>) <span class="kw">as</span> PeriodFilter;</pre>
+    </td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Pass Rate 계산에 필터 반영</td>
+    <td>Lines 144–187</td>
+    <td>
+      <code>active_run</code>: Active Run의 results만 사용 → <code>allRunsForStats</code> 쿼리에 <code>.in('status', ['new','in_progress','paused','under_review'])</code> 추가<br>
+      <code>7d</code>/<code>30d</code>: <code>resultsData</code> 쿼리에 <code>.gte('created_at', startDate)</code> 추가<br>
+      <code>all</code>: 현재와 동일 (전체)
+    </td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Delta 실제 계산</td>
+    <td>Line 391</td>
+    <td><code>passRateDelta: 2.1</code> (하드코딩) → <code>usePassRateReport</code>의 로직과 동일한 실제 Delta 계산으로 교체</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>deltaLabel 전달</td>
+    <td>Line 385–395 <code>statCardsData</code></td>
+    <td><span class="b b-new">NEW</span> <code>deltaLabel: string | null</code> 추가 — period에 따라 "vs prev run" / "vs last week" / "vs prev 30d" / null</td>
+  </tr>
+</table>
+
+<h3>3.2 StatCards.tsx 변경</h3>
+<table>
+  <tr><th>#</th><th>변경</th><th>위치</th></tr>
+  <tr>
+    <td>1</td>
+    <td><code>StatCardsData</code> 인터페이스에 <code>deltaLabel: string | null</code> 추가</td>
+    <td>인터페이스 정의</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Line 332: <code>"vs last week"</code> → <code>data.deltaLabel ?? ''</code></td>
+    <td>Pass Rate 카드 delta badge</td>
+  </tr>
+</table>
+
+<hr class="hr">
+
+<!-- ============================================================== -->
+<!-- ITEM 4: Create Project Modal — English Translation -->
+<!-- ============================================================== -->
+
+<h2><span class="sn">4</span>새 프로젝트 만들기 모달 — 영문화</h2>
+<div class="item-header">
+  <span class="b b-todo">TODO</span>
+  <span class="time-est">⏱ 1h</span>
+</div>
+
+<p><span class="ft">src/pages/projects/components/CreateProjectModal.tsx</span> — 하드코딩된 한국어를 영문으로 교체. i18n 파일은 사용하지 않고 있으므로 직접 문자열 교체.</p>
+
+<table>
+  <tr><th>Line</th><th>현재 (한국어)</th><th>변경 (영문)</th></tr>
+  <tr><td>195</td><td><code>새 프로젝트 만들기</code></td><td><code>Create New Project</code></td></tr>
+  <tr><td>215</td><td><code>프로젝트 생성 한도 초과</code></td><td><code>Project Limit Reached</code></td></tr>
+  <tr><td>217</td><td><code>{tier} 요금제에서는 최대 {max}개의 프로젝트만 생성할 수 있습니다.</code></td><td><code>Your {tier} plan allows up to {max} projects.</code></td></tr>
+  <tr><td>219</td><td><code>현재 {n}개의 프로젝트를 보유하고 있습니다.</code></td><td><code>You currently have {n} projects.</code></td></tr>
+  <tr><td>222</td><td><code>더 많은 프로젝트가 필요하시면 요금제를 업그레이드해 주세요.</code></td><td><code>Upgrade your plan to create more projects.</code></td></tr>
+  <tr><td>229</td><td><code>닫기</code></td><td><code>Close</code></td></tr>
+  <tr><td>236</td><td><code>요금제 확인</code></td><td><code>View Plans</code></td></tr>
+  <tr><td>274</td><td><code>Free 요금제: {n}/{max}개 프로젝트 사용 중</code></td><td><code>Free plan: {n}/{max} projects used</code></td></tr>
+  <tr><td>282</td><td><code>Starter 요금제: {n}/{max}개 프로젝트 사용 중</code></td><td><code>Starter plan: {n}/{max} projects used</code></td></tr>
+  <tr><td>289</td><td><code>프로젝트 이름</code></td><td><code>Project Name</code></td></tr>
+  <tr><td>295</td><td><code>예: 모바일 앱 테스트</code></td><td><code>e.g. Mobile App Testing</code></td></tr>
+  <tr><td>303</td><td><code>테스트 케이스 ID Prefix</code></td><td><code>Test Case ID Prefix</code></td></tr>
+  <tr><td>309</td><td><code>예: TC, LOGIN (영문 대문자 권장, 최대 10자)</code></td><td><code>e.g. TC, LOGIN (uppercase recommended, max 10 chars)</code></td></tr>
+  <tr><td>314</td><td><code>테스트 케이스 ID 형식:</code></td><td><code>Test case ID format:</code></td></tr>
+  <tr><td>317</td><td><code>(비워두면 "{prefix}" 사용)</code></td><td><code>(leave empty to use "{prefix}")</code></td></tr>
+  <tr><td>325</td><td><code>설명</code></td><td><code>Description</code></td></tr>
+  <tr><td>330</td><td><code>프로젝트에 대한 간단한 설명을 입력하세요</code></td><td><code>Enter a brief description of this project</code></td></tr>
+  <tr><td>344</td><td><code>예: PROJ, SUI (Jira 프로젝트 키)</code></td><td><code>e.g. PROJ, SUI (Jira project key)</code></td></tr>
+  <tr><td>348</td><td><code>이 프로젝트와 연결할 Jira 프로젝트 키를 입력하세요 (선택사항)</code></td><td><code>Enter the Jira project key to link with this project (optional)</code></td></tr>
+  <tr><td>353</td><td><code>상태</code></td><td><code>Status</code></td></tr>
+  <tr><td>360</td><td><code>활성</code></td><td><code>Active</code></td></tr>
+  <tr><td>361</td><td><code>보관됨</code></td><td><code>Archived</code></td></tr>
+  <tr><td>372</td><td><code>취소</code></td><td><code>Cancel</code></td></tr>
+  <tr><td>378</td><td><code>프로젝트 생성</code></td><td><code>Create Project</code></td></tr>
+</table>
+
+<div class="card">
+  <p><strong>추가 확인:</strong> 템플릿 이름/설명, Jira Project Key 라벨은 이미 영문. <code>onCreate</code> props로 전달되는 toast/success 메시지도 확인 필요 — 호출하는 부모 컴포넌트에서 한국어 메시지가 있을 수 있음.</p>
+  <p style="margin-top:0.375rem"><strong>i18n 참고:</strong> <code>src/i18n/local/ko/projects.ts</code>에 일부 키가 있지만 현재 모달에서는 직접 사용하지 않음. 향후 i18n 전환 시 참조.</p>
+</div>
+
+<hr class="hr">
+
+<!-- ============================================================== -->
+<!-- ITEM 5: TC Status Workflow -->
+<!-- ============================================================== -->
+
+<h2><span class="sn">5</span>TC Status Workflow — 전체 구현</h2>
+<div class="item-header">
+  <span class="b b-todo">FULL IMPLEMENTATION</span>
+  <span class="time-est">⏱ ~8h</span>
+</div>
+
+<div class="card">
+  <p><strong>참조 문서 (모두 Dev에게 전달 완료):</strong></p>
+  <ul>
+    <li><code>TC_Status_Workflow_DetailSpec.docx</code> — PM 기획서 (워크플로우 로직, 제약 조건, Flow 다이어그램)</li>
+    <li><code>25-dev-handoff-tc-status.html</code> — Dev 핸드오프 (15 sections: 토큰, 배지, 필터, 드롭다운, 다이얼로그, Bulk, DB, API, a11y)</li>
+    <li><code>spec-tc-status-design.html</code> — Desi 디자인 시안 (§1~§11 컴포넌트별 HTML/CSS mockup)</li>
+    <li><code>spec-tc-workflow-design-handoff.html</code> — Desi 통합 핸드오프 (10 sections, edge cases, 권한 매트릭스)</li>
+  </ul>
+</div>
+
+<h3>5.1 DB 변경</h3>
+<pre><span class="cm">-- test_cases 테이블에 lifecycle_status 컬럼 추가</span>
+<span class="kw">ALTER TABLE</span> test_cases
+  <span class="kw">ADD COLUMN</span> lifecycle_status <span class="tp">TEXT</span> <span class="kw">NOT NULL DEFAULT</span> <span class="str">'draft'</span>
+  <span class="kw">CHECK</span> (lifecycle_status <span class="kw">IN</span> (<span class="str">'draft'</span>, <span class="str">'active'</span>, <span class="str">'deprecated'</span>));
+
+<span class="cm">-- 기존 TC를 모두 'active'로 설정 (이미 사용 중인 TC들)</span>
+<span class="kw">UPDATE</span> test_cases <span class="kw">SET</span> lifecycle_status = <span class="str">'active'</span>
+  <span class="kw">WHERE</span> lifecycle_status = <span class="str">'draft'</span>;</pre>
+
+<h3>5.2 구현 항목 (12개 UI 컴포넌트)</h3>
+<table>
+  <tr><th>순서</th><th>컴포넌트</th><th>참조 문서 섹션</th><th>우선순위</th><th>예상</th></tr>
+  <tr><td>1</td><td>Status Badge (draft/active/deprecated, 2 sizes)</td><td>25-handoff §2</td><td><span class="p0">P0</span></td><td>20m</td></tr>
+  <tr><td>2</td><td>TC List Row — Badge 위치</td><td>25-handoff §3</td><td><span class="p0">P0</span></td><td>15m</td></tr>
+  <tr><td>3</td><td>Filter Tabs (All/Draft/Active/Deprecated + count)</td><td>25-handoff §4</td><td><span class="p0">P0</span></td><td>30m</td></tr>
+  <tr><td>4</td><td>Status Change Dropdown</td><td>25-handoff §5</td><td><span class="p0">P0</span></td><td>30m</td></tr>
+  <tr><td>5</td><td>Deprecated Confirm Dialog (개별 + bulk)</td><td>25-handoff §6, design §5</td><td><span class="p0">P0</span></td><td>30m</td></tr>
+  <tr><td>6</td><td>Bulk Action Bar — Set Status</td><td>25-handoff §7</td><td><span class="p0">P0</span></td><td>45m</td></tr>
+  <tr><td>7</td><td>TC Creation Toast — "Mark as Active" link</td><td>25-handoff §9, design §8</td><td><span class="p1">P1</span></td><td>30m</td></tr>
+  <tr><td>8</td><td>Right-Click Context Menu — Set Status submenu</td><td>25-handoff §10, design §9</td><td><span class="p1">P1</span></td><td>30m</td></tr>
+  <tr><td>9</td><td>Run TC Selection — "Include Draft TCs" toggle</td><td>25-handoff §11, design §10</td><td><span class="p0">P0</span></td><td>45m</td></tr>
+  <tr><td>10</td><td>Existing Run — Deprecated TC info banner</td><td>25-handoff §12, design §11</td><td><span class="p1">P1</span></td><td>20m</td></tr>
+  <tr><td>11</td><td>Run Draft Warning Banner</td><td>25-handoff §8</td><td><span class="p1">P1</span></td><td>20m</td></tr>
+  <tr><td>12</td><td>Supabase 쿼리 통합 (lifecycle_status 필터 추가)</td><td>25-handoff §14</td><td><span class="p0">P0</span></td><td>45m</td></tr>
+</table>
+
+<h3>5.3 핵심 쿼리 변경 포인트</h3>
+<table>
+  <tr><th>파일</th><th>변경</th></tr>
+  <tr>
+    <td><span class="ft">test-cases page</span></td>
+    <td>TC 목록 쿼리에 <code>.select('..., lifecycle_status')</code> 추가. Filter tabs에 <code>.eq('lifecycle_status', tab)</code> 또는 전체.</td>
+  </tr>
+  <tr>
+    <td><span class="ft">project-runs/page.tsx</span></td>
+    <td>TC 선택 팝업: 기본적으로 <code>.eq('lifecycle_status', 'active')</code>만 표시. "Include Draft TCs" 토글 ON 시 <code>.in('lifecycle_status', ['active','draft'])</code>.</td>
+  </tr>
+  <tr>
+    <td><span class="ft">test_case_history</span></td>
+    <td>lifecycle_status 변경 시 <code>test_case_history</code> 테이블에 INSERT (이미 이 테이블 존재).</td>
+  </tr>
+  <tr>
+    <td><span class="ft">권한</span></td>
+    <td>deprecated → active 복원: Admin/Manager만 가능. 일반 Member는 draft → active, active → deprecated만 가능. (25-handoff §15 참조)</td>
+  </tr>
+</table>
+
+<div class="banner banner-done">
+  <i class="ri-information-line"></i>
+  <span>모든 컴포넌트의 디자인 토큰, HTML/CSS mockup, 인터랙션 스펙은 <code>25-dev-handoff-tc-status.html</code>에 완비되어 있습니다. 추가 기획 없이 바로 구현 가능합니다.</span>
+</div>
+
+<hr class="hr">
+
+<!-- ============================================================== -->
+<!-- ITEM 6: Add Run Modal Redesign -->
+<!-- ============================================================== -->
+
+<h2><span class="sn">6</span>Add Run 모달 + TC 선택 팝업 개선</h2>
+<div class="item-header">
+  <span class="b b-todo">FULL IMPLEMENTATION</span>
+  <span class="time-est">⏱ ~4h</span>
+</div>
+
+<div class="card">
+  <p><strong>참조 문서:</strong> <code>spec-add-run-modal-redesign.html</code> (63KB, 10 sections, mockup 포함)</p>
+  <p><strong>대상 파일:</strong> <code>src/pages/project-runs/page.tsx</code> — Add Run 모달 (Lines 1772–1996) + TC 선택 팝업 (Lines 1997–2368)</p>
+</div>
+
+<h3>6.1 Add Run 모달 — 필드 변경</h3>
+<table>
+  <tr><th>변경</th><th>상세</th><th>우선순위</th></tr>
+  <tr>
+    <td><span class="b b-new">ADD</span> Description textarea</td>
+    <td><code>formData</code>에 <code>description: string</code> 추가. DB insert에 포함. 4행 textarea.</td>
+    <td><span class="p0">P0</span></td>
+  </tr>
+  <tr>
+    <td><span class="b b-new">ADD</span> Assignees 다중 선택</td>
+    <td>Avatar chip UI + 드롭다운. 현재 <code>[user.id]</code> 자동 할당만 → 프로젝트 멤버 목록에서 선택 가능하게. DB: <code>run_testcase_assignees</code> 활용.</td>
+    <td><span class="p0">P0</span></td>
+  </tr>
+  <tr>
+    <td><span class="b b-new">ADD</span> Tags chip UI</td>
+    <td>autocomplete + 기존 태그 매칭. 입력 후 Enter → chip 생성.</td>
+    <td><span class="p1">P1</span></td>
+  </tr>
+  <tr>
+    <td><span style="background:#FEE2E2;color:#991B1B" class="b">REMOVE</span> Configuration 드롭다운</td>
+    <td>현재 옵션 없이 빈 상태. 삭제.</td>
+    <td><span class="p0">P0</span></td>
+  </tr>
+  <tr>
+    <td><span style="background:#FEE2E2;color:#991B1B" class="b">REMOVE</span> Issues 드롭다운</td>
+    <td>현재 옵션 없이 빈 상태. 삭제.</td>
+    <td><span class="p0">P0</span></td>
+  </tr>
+  <tr>
+    <td><span style="background:#FEE2E2;color:#991B1B" class="b">REMOVE</span> NOTES 탭</td>
+    <td>기능 미구현 상태. 삭제.</td>
+    <td><span class="p0">P0</span></td>
+  </tr>
+  <tr>
+    <td><span class="b b-todo">FIX</span> Milestone + State 레이아웃</td>
+    <td>나란히 배치 (side-by-side). Milestone "+" 버튼 연결 확인.</td>
+    <td><span class="p1">P1</span></td>
+  </tr>
+</table>
+
+<h3>6.2 TC 선택 팝업 — 개선</h3>
+<table>
+  <tr><th>변경</th><th>상세</th><th>우선순위</th></tr>
+  <tr>
+    <td><span class="b b-new">ADD</span> "Include Draft TCs" 토글</td>
+    <td>상단 토글. OFF(기본): <code>lifecycle_status = 'active'</code>만 표시. ON: active + draft. Deprecated는 항상 제외. (#5와 연동)</td>
+    <td><span class="p0">P0</span></td>
+  </tr>
+  <tr>
+    <td><span class="b b-new">ADD</span> Lifecycle status badge 컬럼</td>
+    <td>TC 리스트에 Draft/Active 배지 표시. Draft row는 <code>bg: #FFFBEB</code> 옅은 노란색.</td>
+    <td><span class="p0">P0</span></td>
+  </tr>
+  <tr>
+    <td><span class="b b-new">ADD</span> Execution status 필터</td>
+    <td>기존 priority/tags 필터 옆에 status 필터 추가 (passed/failed/blocked/untested).</td>
+    <td><span class="p1">P1</span></td>
+  </tr>
+  <tr>
+    <td><span class="b b-todo">FIX</span> Folder counts</td>
+    <td>폴더명 옆 TC 수를 실시간으로 표시 (현재 미표시).</td>
+    <td><span class="p1">P1</span></td>
+  </tr>
+  <tr>
+    <td><span class="b b-new">ADD</span> "Select all in folder" 퀵 액션</td>
+    <td>폴더 hover 시 체크박스 또는 "Select all" 링크 표시.</td>
+    <td><span class="p1">P1</span></td>
+  </tr>
+  <tr>
+    <td><span class="b b-new">ADD</span> Footer status breakdown</td>
+    <td>선택된 TC의 status 분포 chip: <code>12 Active · 3 Draft</code>. Draft 포함 시 amber 경고 배너 + "모두 Active로 변경" 버튼.</td>
+    <td><span class="p0">P0</span></td>
+  </tr>
+</table>
+
+<h3>6.3 Edge Cases (spec-add-run-modal-redesign.html §8)</h3>
+<table>
+  <tr><th>#</th><th>케이스</th><th>처리</th></tr>
+  <tr><td>1</td><td>"Include All" + Deprecated TCs 존재</td><td>Deprecated는 항상 제외 — "Include All"은 Active + Draft(토글 ON시)만 포함</td></tr>
+  <tr><td>2</td><td>선택된 TC 0개로 생성 시도</td><td>생성 버튼 disabled + "Select at least 1 test case" 경고</td></tr>
+  <tr><td>3</td><td>Draft TC만 선택</td><td>경고 배너: "All selected TCs are in Draft status. Consider marking them as Active."</td></tr>
+  <tr><td>4</td><td>Assignees가 프로젝트에서 제거된 경우</td><td>chip에 "(removed)" 표시, 저장 시 해당 user 제외</td></tr>
+</table>
+
+<div class="banner banner-done">
+  <i class="ri-information-line"></i>
+  <span>모든 mockup, 인터랙션 스펙, Desi 체크리스트는 <code>spec-add-run-modal-redesign.html</code>에 완비. §1 코드 분석, §2-§4 mockup, §5 인터랙션, §6-§7 필드 상세, §8 edge cases, §9 Desi 체크리스트, §10 파일 목록.</span>
+</div>
+
+<hr class="hr">
+
+<!-- ============================================================== -->
+<!-- IMPLEMENTATION ORDER -->
+<!-- ============================================================== -->
+
+<h2><i class="ri-route-line" style="color:#6366F1;margin-right:0.375rem"></i>권장 구현 순서</h2>
+
+<table>
+  <tr><th>Phase</th><th>순서</th><th>항목</th><th>의존성</th><th>예상</th></tr>
+  <tr style="background:#F0FDF4">
+    <td rowspan="2"><strong>즉시<br>(Day 1 AM)</strong></td>
+    <td>1</td>
+    <td><span class="sn" style="width:1.25rem;height:1.25rem;font-size:0.625rem">1</span> resolved_at DB 마이그레이션</td>
+    <td>없음</td>
+    <td>5분</td>
+  </tr>
+  <tr style="background:#F0FDF4">
+    <td>2</td>
+    <td><span class="sn" style="width:1.25rem;height:1.25rem;font-size:0.625rem">4</span> 프로젝트 모달 영문화</td>
+    <td>없음</td>
+    <td>1h</td>
+  </tr>
+  <tr>
+    <td rowspan="2"><strong>Day 1 PM</strong></td>
+    <td>3</td>
+    <td><span class="sn" style="width:1.25rem;height:1.25rem;font-size:0.625rem">3</span> Pass Rate Dashboard 연동</td>
+    <td>없음</td>
+    <td>1.5h</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><span class="sn" style="width:1.25rem;height:1.25rem;font-size:0.625rem">5</span> TC Status — DB 마이그레이션 + Badge + Filter Tabs</td>
+    <td>없음</td>
+    <td>1.5h</td>
+  </tr>
+  <tr>
+    <td rowspan="2"><strong>Day 2</strong></td>
+    <td>5</td>
+    <td><span class="sn" style="width:1.25rem;height:1.25rem;font-size:0.625rem">5</span> TC Status — Dropdown + Dialog + Bulk + 쿼리</td>
+    <td>#4 완료 후</td>
+    <td>3.5h</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td><span class="sn" style="width:1.25rem;height:1.25rem;font-size:0.625rem">5</span> TC Status — Toast + Context Menu + Banner (P1)</td>
+    <td>#5 완료 후</td>
+    <td>2h</td>
+  </tr>
+  <tr>
+    <td rowspan="2"><strong>Day 3</strong></td>
+    <td>7</td>
+    <td><span class="sn" style="width:1.25rem;height:1.25rem;font-size:0.625rem">6</span> Add Run 모달 — 필드 추가/삭제 + Description/Assignees</td>
+    <td>없음 (#5와 병렬 가능)</td>
+    <td>2h</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td><span class="sn" style="width:1.25rem;height:1.25rem;font-size:0.625rem">6</span> TC 선택 팝업 — Draft 토글 + Status badge + Footer</td>
+    <td>#5 DB 완료 후 (lifecycle_status 필요)</td>
+    <td>2h</td>
+  </tr>
+</table>
+
+<div class="card" style="margin-top:1rem">
+  <p><strong>총 예상:</strong> ~15시간 (3일) &nbsp;|&nbsp; <strong>DB 변경:</strong> 2건 (resolved_at + lifecycle_status)</p>
+  <p style="margin-top:0.375rem"><strong>핵심 의존성:</strong> #6의 TC 선택 개선은 #5의 <code>lifecycle_status</code> DB가 먼저 완료되어야 함.</p>
+  <p style="margin-top:0.375rem"><strong>참조 문서 전체 목록:</strong></p>
+  <ul>
+    <li>#1~2: <code>dev-handoff-team-activity-final.html</code> §A2-DB</li>
+    <li>#3: <code>dev-handoff-passrate-filter.html</code></li>
+    <li>#4: 본 문서 §4 (전체 매핑 테이블)</li>
+    <li>#5: <code>TC_Status_Workflow_DetailSpec.docx</code> + <code>25-dev-handoff-tc-status.html</code> + <code>spec-tc-status-design.html</code> + <code>spec-tc-workflow-design-handoff.html</code></li>
+    <li>#6: <code>spec-add-run-modal-redesign.html</code></li>
+  </ul>
+  <p style="margin-top:0.375rem"><strong>질문:</strong> Kyle(PM)에게 Slack</p>
+</div>
+
+</div>
+</body>
+</html>

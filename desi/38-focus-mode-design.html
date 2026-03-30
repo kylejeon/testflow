@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Focus Mode Enhanced (3-Tier Design)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #0F172A; color: #1E293B; margin: 0; }
+
+  /* ══════════════════════════════════════════════════════════ */
+  /* FOCUS MODE OVERLAY — Full Screen                         */
+  /* ══════════════════════════════════════════════════════════ */
+  .focus-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: #fff;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── Progress Bar ── */
+  .focus-progress { height: 4px; background: #F1F5F9; flex-shrink: 0; }
+  .focus-progress-fill { height: 100%; background: #6366F1; border-radius: 0 2px 2px 0; transition: width 0.4s ease; }
+
+  /* ── Header ── */
+  .focus-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid #E2E8F0;
+    flex-shrink: 0; background: #fff;
+  }
+  .focus-header-left { display: flex; align-items: center; gap: 0.75rem; }
+  .focus-run-name { font-size: 0.875rem; font-weight: 600; color: #0F172A; }
+  .focus-counter { font-size: 0.8125rem; color: #94A3B8; font-weight: 500; }
+  .focus-header-center { display: flex; align-items: center; gap: 0.375rem; }
+  .kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 1.25rem; height: 1.25rem; padding: 0 0.25rem; background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 0.25rem; font-size: 0.625rem; font-weight: 700; color: #64748B; font-family: 'SF Mono','Fira Code',monospace; }
+  .kbd-label { font-size: 0.625rem; color: #94A3B8; margin-right: 0.5rem; }
+  .kbd-sep { width: 1px; height: 16px; background: #E2E8F0; margin: 0 0.5rem; }
+  .focus-close { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; font-weight: 600; color: #64748B; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; cursor: pointer; font-family: inherit; }
+  .focus-close:hover { background: #F8FAFC; color: #475569; }
+
+  /* ══════════════════════════════════════════════ */
+  /* ★ TIER 2 — Metadata Bar                      */
+  /* ══════════════════════════════════════════════ */
+  .meta-bar {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.625rem 1.5rem;
+    background: #F8FAFC;
+    border-bottom: 1px solid #E2E8F0;
+    flex-shrink: 0;
+    height: 40px;
+  }
+  .meta-bar-id { font-family: 'SF Mono','Fira Code',monospace; font-size: 0.8125rem; font-weight: 600; color: #7C3AED; }
+  .meta-bar-sep { color: #CBD5E1; font-size: 0.75rem; }
+  .meta-bar-item { display: flex; align-items: center; gap: 0.25rem; font-size: 0.8125rem; color: #64748B; font-weight: 500; }
+  .meta-bar-item i { font-size: 0.875rem; color: #94A3B8; }
+  .meta-priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .meta-priority-text { font-weight: 600; }
+  .meta-priority-critical .meta-priority-dot { background: #EF4444; }
+  .meta-priority-critical .meta-priority-text { color: #991B1B; }
+  .meta-priority-high .meta-priority-dot { background: #F59E0B; }
+  .meta-priority-high .meta-priority-text { color: #92400E; }
+  .meta-tag { font-size: 0.6875rem; font-weight: 500; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; background: #EEF2FF; color: #4338CA; }
+  .meta-bar-av { width: 1.375rem; height: 1.375rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; }
+
+  /* ══════════════════════════════════════════════ */
+  /* ★ TIER 1 — Main Scrollable Body              */
+  /* ══════════════════════════════════════════════ */
+  .focus-body {
+    flex: 1; overflow-y: auto;
+    padding: 2rem 3rem;
+  }
+  .focus-body-inner {
+    max-width: 720px; margin: 0 auto; width: 100%;
+  }
+
+  /* Previously failed badge */
+  .prev-failed-badge { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; font-weight: 600; color: #991B1B; background: #FEF2F2; padding: 0.25rem 0.625rem; border-radius: 9999px; margin-bottom: 0.75rem; }
+  .prev-failed-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: #EF4444; }
+
+  /* TC Title & Description */
+  .focus-tc-title { font-size: 1.25rem; font-weight: 700; color: #0F172A; margin-bottom: 0.5rem; line-height: 1.4; }
+  .focus-tc-desc { font-size: 0.875rem; color: #64748B; margin-bottom: 1.5rem; line-height: 1.6; }
+
+  /* Precondition */
+  .focus-precondition { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.875rem 1rem; margin-bottom: 1.25rem; }
+  .focus-precondition-label { font-size: 0.6875rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.375rem; display: flex; align-items: center; gap: 0.375rem; }
+  .focus-precondition-label i { font-size: 0.875rem; }
+  .focus-precondition-text { font-size: 0.8125rem; color: #92400E; line-height: 1.6; }
+
+  /* ══════════════════════════════════════════════ */
+  /* ★ Attachments                                 */
+  /* ══════════════════════════════════════════════ */
+  .focus-attachments { margin-bottom: 1.5rem; }
+  .focus-attach-label { font-size: 0.75rem; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.375rem; }
+  .focus-attach-label i { font-size: 0.875rem; color: #94A3B8; }
+  .focus-attach-grid { display: flex; gap: 0.625rem; flex-wrap: wrap; }
+  .focus-attach-img {
+    width: 120px; height: 80px; border-radius: 0.5rem; overflow: hidden;
+    border: 1px solid #E2E8F0; cursor: zoom-in;
+    background: #F1F5F9; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .focus-attach-img:hover { border-color: #A5B4FC; transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .focus-attach-img img { width: 100%; height: 100%; object-fit: cover; }
+  .focus-attach-img .placeholder { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; color: #94A3B8; }
+  .focus-attach-img .placeholder i { font-size: 1.25rem; }
+  .focus-attach-img .placeholder span { font-size: 0.5625rem; font-weight: 500; }
+  .focus-attach-file {
+    height: 80px; min-width: 140px; border-radius: 0.5rem;
+    border: 1px solid #E2E8F0; background: #F8FAFC;
+    padding: 0.625rem 0.75rem; display: flex; flex-direction: column; justify-content: center;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .focus-attach-file:hover { border-color: #A5B4FC; }
+  .focus-attach-file-name { font-size: 0.75rem; font-weight: 600; color: #334155; display: flex; align-items: center; gap: 0.25rem; }
+  .focus-attach-file-name i { font-size: 0.875rem; color: #94A3B8; }
+  .focus-attach-file-size { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.125rem; }
+  .focus-attach-file-dl { font-size: 0.6875rem; color: #6366F1; font-weight: 600; margin-top: 0.25rem; display: flex; align-items: center; gap: 0.125rem; }
+
+  /* ══════════════════════════════════════════════ */
+  /* ★ Test Steps with Step-Level Results          */
+  /* ══════════════════════════════════════════════ */
+  .focus-steps-label { font-size: 0.75rem; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.625rem; }
+  .focus-steps { display: flex; flex-direction: column; gap: 0; margin-bottom: 1.25rem; }
+
+  .focus-step {
+    display: flex; gap: 0.75rem; padding: 0.875rem 1rem;
+    border: 1px solid #E2E8F0; border-top: none;
+    background: #fff; position: relative;
+  }
+  .focus-step:first-child { border-top: 1px solid #E2E8F0; border-radius: 0.5rem 0.5rem 0 0; }
+  .focus-step:last-child { border-radius: 0 0 0.5rem 0.5rem; }
+  .focus-step:only-child { border-radius: 0.5rem; border-top: 1px solid #E2E8F0; }
+
+  .focus-step.step-passed { background: #F0FDF4; border-color: #BBF7D0; }
+  .focus-step.step-passed + .focus-step { border-top-color: #BBF7D0; }
+  .focus-step.step-failed { background: #FEF2F2; border-color: #FECACA; }
+  .focus-step.step-failed + .focus-step { border-top-color: #FECACA; }
+
+  .focus-step-num {
+    width: 1.5rem; height: 1.5rem; border-radius: 50%;
+    background: #EEF2FF; color: #6366F1;
+    font-size: 0.6875rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .focus-step.step-passed .focus-step-num { background: #22C55E; color: #fff; }
+  .focus-step.step-failed .focus-step-num { background: #EF4444; color: #fff; }
+
+  .focus-step-content { flex: 1; min-width: 0; }
+  .focus-step-text { font-size: 0.875rem; color: #334155; line-height: 1.6; }
+  .focus-step-expected {
+    margin-top: 0.375rem; font-size: 0.8125rem; color: #16A34A;
+    background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 0.375rem;
+    padding: 0.375rem 0.625rem; display: flex; align-items: flex-start; gap: 0.25rem; line-height: 1.5;
+  }
+  .focus-step-expected i { font-size: 0.875rem; flex-shrink: 0; margin-top: 0.125rem; }
+
+  /* Step-level mini buttons */
+  .focus-step-actions { display: flex; gap: 0.25rem; flex-shrink: 0; margin-top: 0.125rem; }
+  .step-btn { width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: #94A3B8; transition: all 0.1s; }
+  .step-btn:hover { border-color: #C7D2FE; }
+  .step-btn.btn-pass:hover { background: #F0FDF4; color: #16A34A; border-color: #86EFAC; }
+  .step-btn.btn-fail:hover { background: #FEF2F2; color: #DC2626; border-color: #FCA5A5; }
+  .step-btn.btn-pass.active { background: #22C55E; color: #fff; border-color: #22C55E; }
+  .step-btn.btn-fail.active { background: #EF4444; color: #fff; border-color: #EF4444; }
+
+  /* ══════════════════════════════════════════════ */
+  /* ★ Overall Expected Result                     */
+  /* ══════════════════════════════════════════════ */
+  .focus-expected-result {
+    background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 0.5rem;
+    padding: 0.875rem 1rem; margin-bottom: 1.5rem;
+  }
+  .focus-expected-result-label { font-size: 0.8125rem; font-weight: 600; color: #4338CA; margin-bottom: 0.375rem; display: flex; align-items: center; gap: 0.375rem; }
+  .focus-expected-result-label i { font-size: 1rem; color: #6366F1; }
+  .focus-expected-result-text { font-size: 0.875rem; color: #312E81; line-height: 1.6; }
+
+  /* ══════════════════════════════════════════════ */
+  /* ★ TIER 3 — Collapsible Panels                */
+  /* ══════════════════════════════════════════════ */
+  .collapse-panel { margin-bottom: 0.75rem; }
+  .collapse-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.625rem 1rem;
+    background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 0.5rem;
+    cursor: pointer; user-select: none; transition: all 0.15s;
+  }
+  .collapse-header:hover { background: #F1F5F9; }
+  .collapse-header.expanded { border-radius: 0.5rem 0.5rem 0 0; }
+  .collapse-header-left { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; font-weight: 600; color: #475569; }
+  .collapse-header-left i { font-size: 1rem; color: #94A3B8; }
+  .collapse-badge { font-size: 0.6875rem; background: #F1F5F9; color: #64748B; padding: 0.0625rem 0.375rem; border-radius: 9999px; font-weight: 700; }
+  .collapse-chevron { font-size: 1rem; color: #94A3B8; transition: transform 0.2s; }
+  .collapse-header.expanded .collapse-chevron { transform: rotate(90deg); }
+  .collapse-body {
+    display: none; border: 1px solid #E2E8F0; border-top: none;
+    border-radius: 0 0 0.5rem 0.5rem; padding: 0.75rem 1rem; background: #fff;
+  }
+  .collapse-body.visible { display: block; }
+
+  /* Comment items */
+  .fm-comment { background: #F8FAFC; border-radius: 0.375rem; padding: 0.625rem 0.75rem; margin-bottom: 0.5rem; }
+  .fm-comment:last-child { margin-bottom: 0; }
+  .fm-comment-head { display: flex; align-items: center; gap: 0.375rem; margin-bottom: 0.25rem; }
+  .fm-comment-av { width: 1.25rem; height: 1.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .fm-comment-name { font-size: 0.8125rem; font-weight: 600; color: #4338CA; }
+  .fm-comment-time { font-size: 0.75rem; color: #94A3B8; }
+  .fm-comment-text { font-size: 0.8125rem; color: #475569; line-height: 1.5; }
+
+  /* History items */
+  .fm-history-item { display: flex; align-items: flex-start; gap: 0.625rem; padding: 0.5rem 0; border-bottom: 1px solid #F1F5F9; }
+  .fm-history-item:last-child { border-bottom: none; }
+  .fm-history-status { font-size: 0.75rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; flex-shrink: 0; }
+  .fm-history-status .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .fh-passed { background: #F0FDF4; color: #166534; } .fh-passed .dot { background: #22C55E; }
+  .fh-failed { background: #FEF2F2; color: #991B1B; } .fh-failed .dot { background: #EF4444; }
+  .fm-history-info { flex: 1; }
+  .fm-history-run { font-size: 0.8125rem; font-weight: 500; color: #475569; }
+  .fm-history-meta { font-size: 0.75rem; color: #94A3B8; }
+  .fm-history-note { font-size: 0.75rem; color: #94A3B8; font-style: italic; margin-top: 0.125rem; padding-left: 0.25rem; }
+
+  /* ══════════════════════════════════════════════ */
+  /* ★ Note Input                                  */
+  /* ══════════════════════════════════════════════ */
+  .focus-note { margin-bottom: 1rem; }
+  .focus-note-label { font-size: 0.75rem; font-weight: 600; color: #64748B; margin-bottom: 0.375rem; }
+  .focus-note-input {
+    width: 100%; min-height: 5rem; padding: 0.75rem 1rem;
+    border: 1px solid #E2E8F0; border-radius: 0.5rem;
+    font-size: 0.875rem; font-family: inherit; color: #334155;
+    resize: vertical; outline: none; line-height: 1.6;
+  }
+  .focus-note-input:focus { border-color: #6366F1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+  .focus-note-hint { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.25rem; text-align: right; }
+
+  /* ══════════════════════════════════════════════ */
+  /* ★ Footer — Status Buttons                     */
+  /* ══════════════════════════════════════════════ */
+  .focus-footer {
+    display: flex; align-items: center; justify-content: center;
+    padding: 0.875rem 1.5rem;
+    border-top: 1px solid #E2E8F0;
+    background: #fff; flex-shrink: 0; gap: 0.5rem;
+  }
+  .focus-nav-btn {
+    display: flex; align-items: center; gap: 0.25rem;
+    font-size: 0.8125rem; font-weight: 600; color: #64748B;
+    padding: 0.5rem 0.875rem; border-radius: 0.5rem;
+    border: 1px solid #E2E8F0; background: #fff; cursor: pointer;
+    font-family: inherit; transition: all 0.15s;
+  }
+  .focus-nav-btn:hover { background: #F8FAFC; }
+  .focus-nav-btn i { font-size: 1rem; }
+  .focus-status-btns { display: flex; gap: 0.375rem; margin: 0 0.75rem; }
+  .focus-status-btn {
+    padding: 0.5rem 1.125rem; border-radius: 0.5rem;
+    font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    border: none; color: #fff; font-family: inherit;
+    display: flex; align-items: center; gap: 0.375rem;
+    transition: all 0.15s;
+  }
+  .focus-status-btn .key { font-size: 0.6875rem; opacity: 0.7; padding: 0.0625rem 0.25rem; background: rgba(255,255,255,0.2); border-radius: 0.25rem; }
+  .fs-passed { background: #22C55E; } .fs-passed:hover { background: #16A34A; }
+  .fs-failed { background: #EF4444; } .fs-failed:hover { background: #DC2626; }
+  .fs-blocked { background: #F59E0B; } .fs-blocked:hover { background: #D97706; }
+  .fs-retest { background: #8B5CF6; } .fs-retest:hover { background: #7C3AED; }
+  .fs-skip { background: #94A3B8; } .fs-skip:hover { background: #64748B; }
+
+  /* ══════════════════════════════════════════════ */
+  /* Lightbox Overlay                              */
+  /* ══════════════════════════════════════════════ */
+  .lightbox {
+    display: none; position: fixed; inset: 0; z-index: 60;
+    background: rgba(0,0,0,0.85);
+    align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .lightbox.visible { display: flex; }
+  .lightbox-close { position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: rgba(255,255,255,0.15); color: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+  .lightbox-close:hover { background: rgba(255,255,255,0.25); }
+  .lightbox-img { max-width: 90vw; max-height: 85vh; object-fit: contain; border-radius: 0.5rem; cursor: default; }
+
+  /* ══════════════════════════════════════════════ */
+  /* DEV HANDOFF SPEC                              */
+  /* ══════════════════════════════════════════════ */
+  .spec-panel { padding: 2rem; background: #F8FAFC; border-top: 2px dashed #C7D2FE; }
+  .spec-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: #EEF2FF; color: #4338CA; font-size: 0.6875rem; font-weight: 700; padding: 0.25rem 0.625rem; border-radius: 9999px; margin-bottom: 1rem; }
+  .spec-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .spec-card .label { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6366F1; margin-bottom: 0.75rem; }
+  .spec-card h4 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin: 0.875rem 0 0.375rem; }
+  .spec-card h4:first-of-type { margin-top: 0; }
+  .spec-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.25rem 0; font-size: 0.75rem; border-bottom: 1px solid #F8FAFC; }
+  .spec-row .k { font-weight: 600; color: #475569; min-width: 180px; }
+  .spec-row .v { color: #059669; font-weight: 600; font-family: monospace; font-size: 0.6875rem; }
+  .spec-row .old { color: #94A3B8; text-decoration: line-through; font-size: 0.6875rem; margin-right: 0.5rem; }
+  .rec-box { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.75rem; color: #92400E; line-height: 1.6; margin-top: 0.5rem; }
+  .rec-box strong { color: #78350F; }
+  pre.code { background: #1E293B; color: #E2E8F0; border-radius: 0.5rem; padding: 1rem; font-size: 0.6875rem; line-height: 1.6; overflow-x: auto; margin: 0.5rem 0; font-family: 'SF Mono','Fira Code',monospace; }
+  pre.code .cm { color: #64748B; } pre.code .kw { color: #818CF8; } pre.code .str { color: #34D399; } pre.code .num { color: #FBBF24; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- ★ FOCUS MODE OVERLAY                                      -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="focus-overlay">
+
+  <!-- Progress Bar -->
+  <div class="focus-progress">
+    <div class="focus-progress-fill" style="width: 33.3%"></div>
+  </div>
+
+  <!-- Header -->
+  <div class="focus-header">
+    <div class="focus-header-left">
+      <span class="focus-run-name">Sprint 24 Regression</span>
+      <span class="focus-counter">5 / 15</span>
+    </div>
+    <div class="focus-header-center">
+      <span class="kbd">P</span><span class="kbd-label">Pass</span>
+      <span class="kbd">F</span><span class="kbd-label">Fail</span>
+      <span class="kbd">B</span><span class="kbd-label">Block</span>
+      <span class="kbd">R</span><span class="kbd-label">Retest</span>
+      <span class="kbd">S</span><span class="kbd-label">Skip</span>
+      <span class="kbd-sep"></span>
+      <span class="kbd">C</span><span class="kbd-label">Comments</span>
+      <span class="kbd">H</span><span class="kbd-label">History</span>
+      <span class="kbd">N</span><span class="kbd-label">Note</span>
+    </div>
+    <button class="focus-close" id="focusCloseBtn"><i class="ri-close-line"></i> Exit <span class="kbd" style="margin-left:0.25rem">Esc</span></button>
+  </div>
+
+  <!-- ★ TIER 2: Metadata Bar -->
+  <div class="meta-bar">
+    <span class="meta-bar-id">TC-012</span>
+    <span class="meta-bar-sep">·</span>
+    <span class="meta-bar-item"><i class="ri-folder-line"></i> UI Tests</span>
+    <span class="meta-bar-sep">·</span>
+    <span class="meta-bar-item meta-priority-critical"><span class="meta-priority-dot"></span><span class="meta-priority-text">Critical</span></span>
+    <span class="meta-bar-sep">·</span>
+    <span class="meta-bar-item"><i class="ri-price-tag-3-line"></i> <span class="meta-tag">login</span> <span class="meta-tag">auth</span> <span class="meta-tag">safari</span></span>
+    <span class="meta-bar-sep">·</span>
+    <span class="meta-bar-item"><span class="meta-bar-av" style="background:#6366F1">SK</span> Sarah Kim</span>
+  </div>
+
+  <!-- ★ TIER 1: Main Scrollable Body -->
+  <div class="focus-body">
+    <div class="focus-body-inner">
+
+      <!-- Previously failed indicator -->
+      <div class="prev-failed-badge"><span class="dot"></span> Previously failed</div>
+
+      <!-- TC Title & Description -->
+      <h1 class="focus-tc-title">Login validation fails on Safari 17</h1>
+      <p class="focus-tc-desc">Verify that login form validates credentials correctly on Safari 17+ and redirects to dashboard on successful authentication.</p>
+
+      <!-- Precondition -->
+      <div class="focus-precondition">
+        <div class="focus-precondition-label"><i class="ri-alert-line"></i> Precondition</div>
+        <div class="focus-precondition-text">User must be logged out. Safari 17.0+ browser required. Clear browser cache before testing.</div>
+      </div>
+
+      <!-- ★ Attachments -->
+      <div class="focus-attachments">
+        <div class="focus-attach-label"><i class="ri-attachment-2"></i> Attachments (3)</div>
+        <div class="focus-attach-grid">
+          <div class="focus-attach-img" onclick="openLightbox(this)">
+            <div class="placeholder"><i class="ri-image-line"></i><span>login-form.png</span></div>
+          </div>
+          <div class="focus-attach-img" onclick="openLightbox(this)">
+            <div class="placeholder"><i class="ri-image-line"></i><span>safari-bug.png</span></div>
+          </div>
+          <div class="focus-attach-file">
+            <div class="focus-attach-file-name"><i class="ri-file-text-line"></i> error-log.txt</div>
+            <div class="focus-attach-file-size">4.2 KB</div>
+            <div class="focus-attach-file-dl"><i class="ri-download-2-line"></i> Download</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ★ Test Steps with Step-Level Results -->
+      <div class="focus-steps-label">Test Steps</div>
+      <div class="focus-steps">
+
+        <!-- Step 1: Passed -->
+        <div class="focus-step step-passed">
+          <div class="focus-step-num">1</div>
+          <div class="focus-step-content">
+            <div class="focus-step-text">Navigate to login page at /auth/login</div>
+            <div class="focus-step-expected"><i class="ri-checkbox-circle-line"></i> Login form visible with email & password fields</div>
+          </div>
+          <div class="focus-step-actions">
+            <button class="step-btn btn-pass active"><i class="ri-check-line"></i></button>
+            <button class="step-btn btn-fail"><i class="ri-close-line"></i></button>
+          </div>
+        </div>
+
+        <!-- Step 2: Passed -->
+        <div class="focus-step step-passed">
+          <div class="focus-step-num">2</div>
+          <div class="focus-step-content">
+            <div class="focus-step-text">Enter valid email "test@example.com" and password "Test123!"</div>
+            <div class="focus-step-expected"><i class="ri-checkbox-circle-line"></i> Fields accept input without validation errors</div>
+          </div>
+          <div class="focus-step-actions">
+            <button class="step-btn btn-pass active"><i class="ri-check-line"></i></button>
+            <button class="step-btn btn-fail"><i class="ri-close-line"></i></button>
+          </div>
+        </div>
+
+        <!-- Step 3: Failed -->
+        <div class="focus-step step-failed">
+          <div class="focus-step-num">3</div>
+          <div class="focus-step-content">
+            <div class="focus-step-text">Click "Sign In" button</div>
+            <div class="focus-step-expected"><i class="ri-checkbox-circle-line"></i> Redirect to dashboard within 3 seconds</div>
+          </div>
+          <div class="focus-step-actions">
+            <button class="step-btn btn-pass"><i class="ri-check-line"></i></button>
+            <button class="step-btn btn-fail active"><i class="ri-close-line"></i></button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ★ Overall Expected Result (always visible) -->
+      <div class="focus-expected-result">
+        <div class="focus-expected-result-label"><i class="ri-checkbox-circle-line"></i> Expected Result</div>
+        <div class="focus-expected-result-text">User redirected to main dashboard with "Welcome back" greeting. Session token persists across page refreshes.</div>
+      </div>
+
+      <!-- ★ TIER 3: Comments (collapsible, C key) -->
+      <div class="collapse-panel" id="commentsPanel">
+        <div class="collapse-header" onclick="toggleCollapse('comments')">
+          <div class="collapse-header-left"><i class="ri-chat-3-line"></i> Comments <span class="collapse-badge">3</span></div>
+          <i class="ri-arrow-right-s-line collapse-chevron" id="commentsChevron"></i>
+        </div>
+        <div class="collapse-body" id="commentsBody">
+          <div class="fm-comment">
+            <div class="fm-comment-head">
+              <div class="fm-comment-av" style="background:#EC4899">ML</div>
+              <span class="fm-comment-name">Mike Lee</span>
+              <span class="fm-comment-time">· 2d ago</span>
+            </div>
+            <div class="fm-comment-text">Safari 17.2에서 재현됨, 17.1에서는 통과. Cookie SameSite 속성 관련 이슈로 보입니다.</div>
+          </div>
+          <div class="fm-comment">
+            <div class="fm-comment-head">
+              <div class="fm-comment-av" style="background:#6366F1">JK</div>
+              <span class="fm-comment-name">Jake Kim</span>
+              <span class="fm-comment-time">· 5d ago</span>
+            </div>
+            <div class="fm-comment-text">CORS 헤더 이슈일 수 있음 — BE팀 확인 필요. CS#4521 참고.</div>
+          </div>
+          <div class="fm-comment">
+            <div class="fm-comment-head">
+              <div class="fm-comment-av" style="background:#10B981">SY</div>
+              <span class="fm-comment-name">Su Yeon</span>
+              <span class="fm-comment-time">· 7d ago</span>
+            </div>
+            <div class="fm-comment-text">최초 보고 — 고객 CS#4521 연관. Safari 17 업데이트 후 발생.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ★ TIER 3: Execution History (collapsible, H key) -->
+      <div class="collapse-panel" id="historyPanel">
+        <div class="collapse-header" onclick="toggleCollapse('history')">
+          <div class="collapse-header-left"><i class="ri-history-line"></i> Execution History <span class="collapse-badge">4</span></div>
+          <i class="ri-arrow-right-s-line collapse-chevron" id="historyChevron"></i>
+        </div>
+        <div class="collapse-body" id="historyBody">
+          <div class="fm-history-item">
+            <div class="fm-history-status fh-passed"><span class="dot"></span> Passed</div>
+            <div class="fm-history-info">
+              <div class="fm-history-run">Sprint 23 Regression</div>
+              <div class="fm-history-meta">3d ago · by JK</div>
+            </div>
+          </div>
+          <div class="fm-history-item">
+            <div class="fm-history-status fh-failed"><span class="dot"></span> Failed</div>
+            <div class="fm-history-info">
+              <div class="fm-history-run">Sprint 22 Hotfix</div>
+              <div class="fm-history-meta">10d ago · by ML</div>
+              <div class="fm-history-note">"CORS error on Safari 17.2 — see CS#4521"</div>
+            </div>
+          </div>
+          <div class="fm-history-item">
+            <div class="fm-history-status fh-failed"><span class="dot"></span> Failed</div>
+            <div class="fm-history-info">
+              <div class="fm-history-run">Sprint 21 Release</div>
+              <div class="fm-history-meta">17d ago · by SY</div>
+              <div class="fm-history-note">"Login form doesn't render on Safari 17"</div>
+            </div>
+          </div>
+          <div class="fm-history-item">
+            <div class="fm-history-status fh-passed"><span class="dot"></span> Passed</div>
+            <div class="fm-history-info">
+              <div class="fm-history-run">Sprint 20 Regression</div>
+              <div class="fm-history-meta">24d ago · by JK</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ★ Note Input -->
+      <div class="focus-note" id="noteArea">
+        <div class="focus-note-label">Note (optional)</div>
+        <textarea class="focus-note-input" placeholder="Describe what you observed..."></textarea>
+        <div class="focus-note-hint">⌘ + Enter to save with status</div>
+      </div>
+
+    </div><!-- /focus-body-inner -->
+  </div><!-- /focus-body -->
+
+  <!-- ★ Footer — Status Buttons -->
+  <div class="focus-footer">
+    <button class="focus-nav-btn"><i class="ri-arrow-left-s-line"></i> Previous</button>
+    <div class="focus-status-btns">
+      <button class="focus-status-btn fs-passed"><i class="ri-check-line"></i> Passed <span class="key">P</span></button>
+      <button class="focus-status-btn fs-failed"><i class="ri-close-line"></i> Failed <span class="key">F</span></button>
+      <button class="focus-status-btn fs-blocked"><i class="ri-forbid-line"></i> Blocked <span class="key">B</span></button>
+      <button class="focus-status-btn fs-retest"><i class="ri-refresh-line"></i> Retest <span class="key">R</span></button>
+      <button class="focus-status-btn fs-skip"><i class="ri-skip-forward-line"></i> Skip <span class="key">S</span></button>
+    </div>
+    <button class="focus-nav-btn">Next <i class="ri-arrow-right-s-line"></i></button>
+  </div>
+
+</div><!-- /focus-overlay -->
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close"><i class="ri-close-line"></i></button>
+  <div style="display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;opacity:0.5">Image preview placeholder</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- DEV HANDOFF SPECIFICATION                                 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="spec-panel">
+  <div class="spec-badge"><i class="ri-code-s-slash-line"></i> DEV HANDOFF — Focus Mode Enhancement (3-Tier)</div>
+
+  <!-- §1 Architecture -->
+  <div class="spec-card">
+    <div class="label">§1 — 3-Tier Architecture Overview</div>
+    <h4>Layout Stack (top → bottom)</h4>
+    <div class="spec-row"><span class="k">① Progress bar</span><span class="v">height: 4px, bg #F1F5F9, fill #6366F1 — flex-shrink: 0</span></div>
+    <div class="spec-row"><span class="k">② Header</span><span class="v">Run name + counter + kbd hints + Exit — flex-shrink: 0</span></div>
+    <div class="spec-row"><span class="k">③ Metadata bar (Tier 2) ★</span><span class="v">height: 40px, bg #F8FAFC — flex-shrink: 0</span></div>
+    <div class="spec-row"><span class="k">④ Body (Tier 1) ★</span><span class="v">flex: 1, overflow-y: auto, max-width: 720px centered</span></div>
+    <div class="spec-row"><span class="k">⑤ Footer</span><span class="v">Status buttons + nav — flex-shrink: 0</span></div>
+
+    <h4>Body Content Order</h4>
+    <div class="spec-row"><span class="k">A. Previously failed badge</span><span class="v">Conditional — only if prev execution was Failed</span></div>
+    <div class="spec-row"><span class="k">B. TC Title + Description</span><span class="v">Always visible (existing)</span></div>
+    <div class="spec-row"><span class="k">C. Precondition ★</span><span class="v">Bug fix: pass testCase.precondition prop to FocusMode</span></div>
+    <div class="spec-row"><span class="k">D. Attachments ★</span><span class="v">New — image thumbnails + file cards + lightbox</span></div>
+    <div class="spec-row"><span class="k">E. Test Steps + Expected</span><span class="v">Existing + step-level Pass/Fail buttons</span></div>
+    <div class="spec-row"><span class="k">F. Overall Expected Result ★</span><span class="v">Bug fix: always show (remove steps.length===0 check)</span></div>
+    <div class="spec-row"><span class="k">G. Comments (Tier 3) ★</span><span class="v">Collapsible — default collapsed — C key toggle</span></div>
+    <div class="spec-row"><span class="k">H. Exec History (Tier 3) ★</span><span class="v">Collapsible — default collapsed — H key toggle</span></div>
+    <div class="spec-row"><span class="k">I. Note input</span><span class="v">Existing — Bug fix: save note with status</span></div>
+
+    <div class="rec-box"><strong>Key principle:</strong> Tier 1 (Steps, Precondition, Attachments) is always visible. Tier 2 (Metadata) is a compact 1-line bar. Tier 3 (Comments, History) is collapsed by default to maintain focus. Auto-collapse Tier 3 on TC navigation.</div>
+  </div>
+
+  <!-- §2 Metadata Bar -->
+  <div class="spec-card">
+    <div class="label">§2 — Tier 2: Metadata Bar</div>
+    <h4>Container</h4>
+    <div class="spec-row"><span class="k">Height</span><span class="v">40px (fixed)</span></div>
+    <div class="spec-row"><span class="k">Background</span><span class="v">#F8FAFC</span></div>
+    <div class="spec-row"><span class="k">Padding</span><span class="v">0.625rem 1.5rem (10px 24px)</span></div>
+    <div class="spec-row"><span class="k">Border</span><span class="v">border-bottom: 1px solid #E2E8F0</span></div>
+    <div class="spec-row"><span class="k">Layout</span><span class="v">flex, align-items: center, gap: 0.75rem (12px)</span></div>
+
+    <h4>Items (left → right)</h4>
+    <div class="spec-row"><span class="k">TC-ID</span><span class="v">monospace, 13px, 600wt, #7C3AED (violet-600)</span></div>
+    <div class="spec-row"><span class="k">Separator</span><span class="v">"·" middle dot, #CBD5E1</span></div>
+    <div class="spec-row"><span class="k">Folder</span><span class="v">ri-folder-line + 13px 500wt #64748B</span></div>
+    <div class="spec-row"><span class="k">Priority dot</span><span class="v">8px circle — Critical: #EF4444, High: #F59E0B, Med: #6366F1, Low: #94A3B8</span></div>
+    <div class="spec-row"><span class="k">Tags</span><span class="v">ri-price-tag-3-line + tag pills (bg #EEF2FF, color #4338CA, 11px)</span></div>
+    <div class="spec-row"><span class="k">Assignee</span><span class="v">22px avatar circle + name 13px 500wt</span></div>
+
+    <h4>Data Source</h4>
+<pre class="code"><span class="cm">// Pass these via FocusMode props (currently missing)</span>
+<span class="kw">interface</span> FocusModeProps {
+  <span class="cm">// existing props...</span>
+  testCase: {
+    id: <span class="kw">string</span>;        <span class="cm">// TC-012</span>
+    folder: <span class="kw">string</span>;    <span class="cm">// "UI Tests"</span>
+    priority: <span class="kw">string</span>;  <span class="cm">// "critical" | "high" | "medium" | "low"</span>
+    tags: <span class="kw">string</span>[];    <span class="cm">// ["login", "auth", "safari"]</span>
+    assignee: { name: <span class="kw">string</span>; initials: <span class="kw">string</span>; color: <span class="kw">string</span>; };
+    precondition?: <span class="kw">string</span>;     <span class="cm">// ★ Bug fix: currently not passed</span>
+    attachments?: Attachment[];  <span class="cm">// ★ New</span>
+    expected_result?: <span class="kw">string</span>;  <span class="cm">// ★ Bug fix: always display</span>
+    comments?: Comment[];       <span class="cm">// ★ New</span>
+    executions?: Execution[];   <span class="cm">// ★ New</span>
+  };
+}
+</pre>
+  </div>
+
+  <!-- §3 Attachments -->
+  <div class="spec-card">
+    <div class="label">§3 — Attachments Section</div>
+    <h4>Location</h4>
+    <div class="spec-row"><span class="k">Position</span><span class="v">After Precondition, before Test Steps</span></div>
+    <div class="spec-row"><span class="k">Visibility</span><span class="v">Hidden if attachments.length === 0</span></div>
+
+    <h4>Image Thumbnails</h4>
+    <div class="spec-row"><span class="k">Size</span><span class="v">120px × 80px (fixed)</span></div>
+    <div class="spec-row"><span class="k">Object-fit</span><span class="v">cover</span></div>
+    <div class="spec-row"><span class="k">Border-radius</span><span class="v">8px</span></div>
+    <div class="spec-row"><span class="k">Border</span><span class="v">1px solid #E2E8F0 → hover: #A5B4FC</span></div>
+    <div class="spec-row"><span class="k">Hover</span><span class="v">scale(1.02), shadow-md</span></div>
+    <div class="spec-row"><span class="k">Cursor</span><span class="v">zoom-in</span></div>
+    <div class="spec-row"><span class="k">Click</span><span class="v">Opens lightbox overlay</span></div>
+
+    <h4>Non-Image Files</h4>
+    <div class="spec-row"><span class="k">Height</span><span class="v">80px (fixed), width auto</span></div>
+    <div class="spec-row"><span class="k">Icon mapping</span><span class="v">.txt → ri-file-text-line, .pdf → ri-file-pdf-line, else → ri-attachment-2</span></div>
+    <div class="spec-row"><span class="k">Download link</span><span class="v">#6366F1, hover: underline</span></div>
+
+    <h4>Lightbox Overlay</h4>
+    <div class="spec-row"><span class="k">Background</span><span class="v">rgba(0,0,0,0.85)</span></div>
+    <div class="spec-row"><span class="k">Image constraints</span><span class="v">max-width: 90vw, max-height: 85vh, object-fit: contain</span></div>
+    <div class="spec-row"><span class="k">Close triggers</span><span class="v">ESC key / overlay click / ✕ button</span></div>
+    <div class="spec-row"><span class="k">Navigation</span><span class="v">← → arrows for multi-image</span></div>
+    <div class="spec-row"><span class="k">z-index</span><span class="v">60 (above focus mode z-50)</span></div>
+  </div>
+
+  <!-- §4 Step-Level Results -->
+  <div class="spec-card">
+    <div class="label">§4 — Step-Level Pass/Fail Buttons</div>
+    <h4>Button Spec</h4>
+    <div class="spec-row"><span class="k">Size</span><span class="v">28px × 28px (1.75rem)</span></div>
+    <div class="spec-row"><span class="k">Border-radius</span><span class="v">0.375rem (6px)</span></div>
+    <div class="spec-row"><span class="k">Default</span><span class="v">border #E2E8F0, bg #fff, icon 0.75rem #94A3B8</span></div>
+    <div class="spec-row"><span class="k">Pass hover</span><span class="v">bg #F0FDF4, icon #16A34A, border #86EFAC</span></div>
+    <div class="spec-row"><span class="k">Fail hover</span><span class="v">bg #FEF2F2, icon #DC2626, border #FCA5A5</span></div>
+    <div class="spec-row"><span class="k">Pass active</span><span class="v">bg #22C55E, icon #fff, border #22C55E</span></div>
+    <div class="spec-row"><span class="k">Fail active</span><span class="v">bg #EF4444, icon #fff, border #EF4444</span></div>
+
+    <h4>Step Row State</h4>
+    <div class="spec-row"><span class="k">Untested</span><span class="v">bg #fff, border #E2E8F0, num bg #EEF2FF / #6366F1</span></div>
+    <div class="spec-row"><span class="k">.step-passed</span><span class="v">bg #F0FDF4, border #BBF7D0, num bg #22C55E / #fff</span></div>
+    <div class="spec-row"><span class="k">.step-failed</span><span class="v">bg #FEF2F2, border #FECACA, num bg #EF4444 / #fff</span></div>
+
+    <h4>Expected Result per Step</h4>
+    <div class="spec-row"><span class="k">Container</span><span class="v">bg #F0FDF4, border 1px #BBF7D0, radius 0.375rem</span></div>
+    <div class="spec-row"><span class="k">Icon</span><span class="v">ri-checkbox-circle-line, 0.875rem, #16A34A</span></div>
+    <div class="spec-row"><span class="k">Text</span><span class="v">0.8125rem, #16A34A, line-height 1.5</span></div>
+  </div>
+
+  <!-- §5 Collapsible Panels -->
+  <div class="spec-card">
+    <div class="label">§5 — Tier 3: Collapsible Panels (Comments + History)</div>
+    <h4>Shared Panel Behavior</h4>
+    <div class="spec-row"><span class="k">Default state</span><span class="v">Collapsed (header only)</span></div>
+    <div class="spec-row"><span class="k">Toggle</span><span class="v">Click header or keyboard shortcut</span></div>
+    <div class="spec-row"><span class="k">Auto-collapse</span><span class="v">On TC navigation (next/prev/status-save)</span></div>
+    <div class="spec-row"><span class="k">Animation</span><span class="v">CSS transition max-height 0.3s ease</span></div>
+
+    <h4>Comments Panel</h4>
+    <div class="spec-row"><span class="k">Keyboard</span><span class="v">C key to toggle</span></div>
+    <div class="spec-row"><span class="k">Icon</span><span class="v">ri-chat-3-line</span></div>
+    <div class="spec-row"><span class="k">Badge</span><span class="v">comment count — bg #F1F5F9, 11px 700</span></div>
+    <div class="spec-row"><span class="k">Comment card</span><span class="v">bg #F8FAFC, radius 6px, padding 10px 12px</span></div>
+    <div class="spec-row"><span class="k">Author name</span><span class="v">13px 600wt #4338CA (indigo-700)</span></div>
+    <div class="spec-row"><span class="k">Time</span><span class="v">12px 400wt #94A3B8 — "· 2d ago"</span></div>
+    <div class="spec-row"><span class="k">Empty state</span><span class="v">"No comments yet" centered, #94A3B8</span></div>
+
+    <h4>Execution History Panel</h4>
+    <div class="spec-row"><span class="k">Keyboard</span><span class="v">H key to toggle</span></div>
+    <div class="spec-row"><span class="k">Icon</span><span class="v">ri-history-line</span></div>
+    <div class="spec-row"><span class="k">Status badge</span><span class="v">Passed: bg #F0FDF4 / #166534, Failed: bg #FEF2F2 / #991B1B</span></div>
+    <div class="spec-row"><span class="k">Run name</span><span class="v">13px 500wt #475569</span></div>
+    <div class="spec-row"><span class="k">Note (if exists)</span><span class="v">12px italic #94A3B8, padding-left 4px</span></div>
+    <div class="spec-row"><span class="k">Max display</span><span class="v">10 items, then "Show all N results →" link</span></div>
+  </div>
+
+  <!-- §6 Bug Fixes -->
+  <div class="spec-card">
+    <div class="label">§6 — Phase 0: Bug Fixes (No Design Needed)</div>
+    <h4>Bug 1: Precondition Not Displayed</h4>
+    <div class="spec-row"><span class="k">Root cause</span><span class="v">testCase.precondition not passed to FocusMode component</span></div>
+    <div class="spec-row"><span class="k">Fix</span><span class="v">Pass precondition in FocusMode props from page.tsx</span></div>
+<pre class="code"><span class="cm">// page.tsx — Line ~1390</span>
+&lt;FocusMode
+  ...existingProps
+  precondition={selectedTC?.precondition}  <span class="cm">// ★ ADD THIS</span>
+  attachments={selectedTC?.attachments}    <span class="cm">// ★ ADD THIS</span>
+  expected_result={selectedTC?.expected_result} <span class="cm">// ★ ADD THIS</span>
+/&gt;
+</pre>
+
+    <h4>Bug 2: Note Not Saved</h4>
+    <div class="spec-row"><span class="k">Root cause</span><span class="v">Note textarea value not included in status update mutation</span></div>
+    <div class="spec-row"><span class="k">Fix</span><span class="v">Include noteRef.current.value in handleStatusChange</span></div>
+<pre class="code"><span class="cm">// FocusMode.tsx — handleStatusChange()</span>
+<span class="kw">const</span> note = noteRef.current?.value?.trim();
+await updateExecution({
+  status,
+  note: note || <span class="kw">null</span>,  <span class="cm">// ★ ADD THIS</span>
+});
+</pre>
+
+    <h4>Bug 3: Expected Result Conditional</h4>
+    <div class="spec-row"><span class="k">Root cause</span><span class="v">Line 242: {steps.length === 0 && expectedResult && (...)}</span></div>
+    <div class="spec-row"><span class="k">Fix</span><span class="v">Remove steps.length === 0 check — always show if exists</span></div>
+<pre class="code"><span class="cm">// Before (buggy)</span>
+{steps.length === <span class="num">0</span> && expectedResult && (&lt;ExpectedResult /&gt;)}
+
+<span class="cm">// After (fixed)</span>
+{expectedResult && (&lt;ExpectedResult /&gt;)}
+</pre>
+  </div>
+
+  <!-- §7 Keyboard Shortcuts -->
+  <div class="spec-card">
+    <div class="label">§7 — Keyboard Shortcuts (Complete Map)</div>
+    <h4>Status (existing)</h4>
+    <div class="spec-row"><span class="k">P</span><span class="v">Mark Passed → auto-advance 300ms</span></div>
+    <div class="spec-row"><span class="k">F</span><span class="v">Mark Failed → show Note input → ⌘Enter to save+advance</span></div>
+    <div class="spec-row"><span class="k">B</span><span class="v">Mark Blocked → auto-advance 300ms</span></div>
+    <div class="spec-row"><span class="k">R</span><span class="v">Mark Retest → auto-advance 300ms</span></div>
+    <div class="spec-row"><span class="k">S</span><span class="v">Skip → auto-advance 300ms</span></div>
+
+    <h4>Navigation (existing)</h4>
+    <div class="spec-row"><span class="k">J / ↓</span><span class="v">Next TC</span></div>
+    <div class="spec-row"><span class="k">K / ↑</span><span class="v">Previous TC</span></div>
+    <div class="spec-row"><span class="k">Esc</span><span class="v">Exit Focus Mode</span></div>
+
+    <h4>New Shortcuts ★</h4>
+    <div class="spec-row"><span class="k">C</span><span class="v">Toggle Comments panel (Tier 3)</span></div>
+    <div class="spec-row"><span class="k">H</span><span class="v">Toggle Execution History panel (Tier 3)</span></div>
+    <div class="spec-row"><span class="k">N</span><span class="v">Focus Note input textarea</span></div>
+    <div class="spec-row"><span class="k">⌘ + Enter</span><span class="v">Save note + current status → advance</span></div>
+
+    <h4>Conflict Prevention</h4>
+    <div class="rec-box"><strong>Important:</strong> Keyboard shortcuts must be disabled when focus is inside the Note textarea or any other input. Check <code>document.activeElement.tagName</code> before handling key events. Only listen for shortcuts when no input/textarea is focused.</div>
+  </div>
+
+  <!-- §8 TC Navigation Reset -->
+  <div class="spec-card">
+    <div class="label">§8 — TC Navigation State Reset</div>
+    <h4>When navigating to next/prev TC:</h4>
+    <div class="spec-row"><span class="k">Comments panel</span><span class="v">Auto-collapse</span></div>
+    <div class="spec-row"><span class="k">History panel</span><span class="v">Auto-collapse</span></div>
+    <div class="spec-row"><span class="k">Note textarea</span><span class="v">Clear value, blur focus</span></div>
+    <div class="spec-row"><span class="k">Lightbox</span><span class="v">Close if open</span></div>
+    <div class="spec-row"><span class="k">Metadata bar</span><span class="v">Update all fields to new TC data</span></div>
+    <div class="spec-row"><span class="k">Step results</span><span class="v">Reset all step-level states</span></div>
+    <div class="spec-row"><span class="k">Scroll position</span><span class="v">Reset to top</span></div>
+  </div>
+
+  <!-- §9 Implementation Phases -->
+  <div class="spec-card">
+    <div class="label">§9 — Implementation Phases</div>
+    <h4>Phase 0 — Bug Fixes (no design, dev immediate)</h4>
+    <div class="spec-row"><span class="k">0-1. Precondition prop</span><span class="v">Pass testCase.precondition to FocusMode</span></div>
+    <div class="spec-row"><span class="k">0-2. Note save</span><span class="v">Include note in status mutation</span></div>
+    <div class="spec-row"><span class="k">0-3. Expected Result</span><span class="v">Remove steps.length===0 guard</span></div>
+
+    <h4>Phase 1 — CEO Request (this design)</h4>
+    <div class="spec-row"><span class="k">1-1. Metadata Bar</span><span class="v">New component: FocusMetadataBar</span></div>
+    <div class="spec-row"><span class="k">1-2. Attachments</span><span class="v">New section + Lightbox component</span></div>
+    <div class="spec-row"><span class="k">1-3. Step-level results</span><span class="v">Mini Pass/Fail buttons per step</span></div>
+    <div class="spec-row"><span class="k">1-4. Keyboard hints update</span><span class="v">Add C/H/N to header</span></div>
+
+    <h4>Phase 2 — Extension</h4>
+    <div class="spec-row"><span class="k">2-1. Comments panel</span><span class="v">Collapsible, C key toggle</span></div>
+    <div class="spec-row"><span class="k">2-2. History panel</span><span class="v">Collapsible, H key toggle, max 10 items</span></div>
+    <div class="spec-row"><span class="k">2-3. Auto-collapse on nav</span><span class="v">Reset Tier 3 panels on TC change</span></div>
+  </div>
+
+</div><!-- /spec-panel -->
+
+<script>
+// Collapse/Expand toggle
+function toggleCollapse(panel) {
+  const body = document.getElementById(panel + 'Body');
+  const chevron = document.getElementById(panel + 'Chevron');
+  const header = body.previousElementSibling;
+  body.classList.toggle('visible');
+  header.classList.toggle('expanded');
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+  switch(e.key.toLowerCase()) {
+    case 'c': toggleCollapse('comments'); break;
+    case 'h': toggleCollapse('history'); break;
+    case 'n':
+      e.preventDefault();
+      document.querySelector('.focus-note-input').focus();
+      break;
+    case 'escape':
+      // Close lightbox first, then exit focus mode
+      const lb = document.getElementById('lightbox');
+      if (lb.classList.contains('visible')) { closeLightbox(); }
+      break;
+  }
+});
+
+// Lightbox
+function openLightbox() {
+  document.getElementById('lightbox').classList.add('visible');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('visible');
+}
+
+// Step-level buttons (demo interactivity)
+document.querySelectorAll('.step-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const step = btn.closest('.focus-step');
+    const isPass = btn.classList.contains('btn-pass');
+    const wasActive = btn.classList.contains('active');
+
+    step.querySelectorAll('.step-btn').forEach(b => b.classList.remove('active'));
+    step.classList.remove('step-passed', 'step-failed');
+
+    if (!wasActive) {
+      btn.classList.add('active');
+      step.classList.add(isPass ? 'step-passed' : 'step-failed');
+    }
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dev Handoff — Pass Rate 기간 필터 구현 스펙</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; padding: 2rem; line-height: 1.6; }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 800; color: #0F172A; margin-bottom: 0.25rem; }
+  .subtitle { font-size: 0.875rem; color: #64748B; margin-bottom: 2rem; }
+  h2 { font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E2E8F0; }
+  h3 { font-size: 0.9375rem; font-weight: 700; color: #334155; margin: 1.25rem 0 0.5rem; }
+  p, li { font-size: 0.8125rem; color: #475569; }
+  ul { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+  li { margin-bottom: 0.375rem; }
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.75rem; background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 4px; padding: 0.125rem 0.375rem; color: #6366F1; }
+  pre { background: #1E293B; color: #E2E8F0; border-radius: 0.5rem; padding: 1rem 1.25rem; font-size: 0.75rem; line-height: 1.6; overflow-x: auto; margin: 0.75rem 0; font-family: 'SF Mono', 'Fira Code', monospace; }
+  pre .cm { color: #64748B; }
+  pre .kw { color: #818CF8; }
+  pre .str { color: #34D399; }
+  pre .tp { color: #F59E0B; }
+
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin: 0.75rem 0; }
+  .badge { display: inline-block; font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.04em; vertical-align: middle; }
+  .badge-new { background: #DBEAFE; color: #2563EB; }
+  .badge-change { background: #FEF3C7; color: #D97706; }
+  .badge-remove { background: #FEE2E2; color: #DC2626; }
+  .badge-default { background: #E0E7FF; color: #4338CA; }
+
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8125rem; }
+  th { background: #F8FAFC; font-weight: 600; color: #334155; text-align: left; padding: 0.625rem 0.75rem; border: 1px solid #E2E8F0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  td { padding: 0.625rem 0.75rem; border: 1px solid #E2E8F0; color: #475569; vertical-align: top; }
+  td code { font-size: 0.6875rem; }
+
+  .file-tag { display: inline-block; font-size: 0.6875rem; font-weight: 600; color: #6366F1; background: #EEF2FF; border-radius: 4px; padding: 0.125rem 0.5rem; margin-bottom: 0.25rem; }
+
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; background: #6366F1; color: #fff; border-radius: 50%; font-size: 0.75rem; font-weight: 700; margin-right: 0.5rem; }
+
+  .p0 { color: #DC2626; font-weight: 700; }
+  .p1 { color: #D97706; font-weight: 700; }
+  .p2 { color: #6366F1; font-weight: 700; }
+
+  .divider { border: none; border-top: 1px dashed #CBD5E1; margin: 1.5rem 0; }
+
+  /* Dropdown mock */
+  .mock-dropdown { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; padding: 0.375rem 0.75rem; border-radius: 9999px; border: 1px solid #E2E8F0; background: #fff; color: #475569; font-family: inherit; font-weight: 500; cursor: pointer; }
+  .mock-dropdown:hover { background: #F1F5F9; }
+  .mock-dropdown.active { border-color: #6366F1; color: #6366F1; background: #EEF2FF; }
+  .mock-dropdown i { font-size: 0.875rem; }
+
+  .mock-menu { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 0.25rem 0; display: inline-block; margin-top: 0.25rem; min-width: 180px; }
+  .mock-menu-item { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; font-size: 0.8125rem; color: #334155; cursor: pointer; }
+  .mock-menu-item:hover { background: #F1F5F9; }
+  .mock-menu-item.selected { color: #6366F1; font-weight: 600; }
+  .mock-menu-item .check { font-size: 0.875rem; color: #6366F1; }
+  .mock-menu-item .desc { font-size: 0.6875rem; color: #94A3B8; margin-left: 0.5rem; }
+
+  .scope-tag { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 0.375rem; margin-right: 0.25rem; }
+  .scope-report { background: #F0FDF4; color: #16A34A; }
+  .scope-dash { background: #EEF2FF; color: #6366F1; }
+</style>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+
+<h1>Dev Handoff — Pass Rate 기간 필터 구현</h1>
+<p class="subtitle">PM: Kyle &nbsp;|&nbsp; 2026-03-25 &nbsp;|&nbsp; CEO 확정 &nbsp;|&nbsp; 영향 범위: usePassRateReport.ts, PassRateReportPage.tsx, ProjectsContent.tsx, StatCards.tsx</p>
+
+<!-- ================================================================== -->
+<h2><span class="section-num">1</span>필터 옵션 정의</h2>
+
+<table>
+  <tr>
+    <th>옵션</th>
+    <th>value</th>
+    <th>의미</th>
+    <th>데이터 범위</th>
+    <th>Delta 비교 기준</th>
+  </tr>
+  <tr>
+    <td><strong>Active Run</strong> <span class="badge badge-default">DEFAULT</span></td>
+    <td><code>'active_run'</code></td>
+    <td>현재 진행 중인 Run들 (<code>status IN ('new','in_progress','paused','under_review')</code>)에 포함된 test_results만</td>
+    <td>Active Run의 전체 기간 (Run 생성일~현재)</td>
+    <td>직전 완료된 Run(들)의 Pass Rate와 비교. 없으면 Delta 숨김</td>
+  </tr>
+  <tr>
+    <td><strong>Last 7 Days</strong></td>
+    <td><code>'7d'</code></td>
+    <td>최근 7일 내 기록된 test_results</td>
+    <td><code>created_at >= now() - 7d</code></td>
+    <td>이전 7일 (8~14일 전)과 비교 — 현재 로직과 동일</td>
+  </tr>
+  <tr>
+    <td><strong>Last 30 Days</strong></td>
+    <td><code>'30d'</code></td>
+    <td>최근 30일 내 기록된 test_results</td>
+    <td><code>created_at >= now() - 30d</code></td>
+    <td>이전 30일 (31~60일 전)과 비교</td>
+  </tr>
+  <tr>
+    <td><strong>All Time</strong></td>
+    <td><code>'all'</code></td>
+    <td>프로젝트 전체 기간의 test_results</td>
+    <td>날짜 필터 없음</td>
+    <td><strong>Delta 숨김</strong> — 비교 기준 없음</td>
+  </tr>
+</table>
+
+<h3>1.1 "Active Run" 상세 정의</h3>
+<div class="card">
+  <p><strong>Active Run이란?</strong> <code>test_runs.status</code>가 <code>new</code>, <code>in_progress</code>, <code>paused</code>, <code>under_review</code> 중 하나인 Run을 의미합니다. 이미 <code>ProjectsContent.tsx</code> Line 194에서 동일한 조건으로 Active Run count를 계산하고 있습니다.</p>
+  <p style="margin-top:0.5rem"><strong>왜 기본값인가?</strong> QA팀이 가장 관심 있는 것은 "지금 진행 중인 Run의 품질"입니다. 7일 기준은 임의적이지만, Active Run 기준은 실제 작업 컨텍스트와 일치합니다.</p>
+  <p style="margin-top:0.5rem"><strong>Active Run이 0개일 때:</strong> "No active runs" 메시지 표시 + Last 7 Days로 자동 fallback하지 않음 (사용자가 직접 다른 옵션 선택).</p>
+  <p style="margin-top:0.5rem"><strong>Delta 비교 — "직전 완료 Run":</strong> <code>test_runs.status = 'completed'</code>인 Run 중 <code>updated_at DESC</code> 기준 가장 최근 것(들)을 비교 대상으로 사용. Active Run이 여러 개면 모두 합산, 직전 완료 Run도 같은 수만큼 합산.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">2</span>UI 스펙 — 드롭다운</h2>
+
+<h3>2.1 드롭다운 위치</h3>
+<p>두 곳에 동일한 필터를 적용합니다:</p>
+<table>
+  <tr>
+    <th>페이지</th>
+    <th>위치</th>
+    <th>현재 상태</th>
+    <th>변경</th>
+  </tr>
+  <tr>
+    <td><span class="scope-report">Report</span> PassRateReportPage.tsx</td>
+    <td>Sub-header 오른쪽 — 현재 "Mar 19 – Mar 25" 날짜 버튼 위치 (Line 185)</td>
+    <td>클릭 불가 버튼으로 날짜 범위만 표시</td>
+    <td>드롭다운으로 교체 — 선택 시 데이터 리로드</td>
+  </tr>
+  <tr>
+    <td><span class="scope-dash">Dashboard</span> StatCards.tsx</td>
+    <td>Pass Rate 카드 내부 — label "Pass Rate" 옆 또는 delta badge 위치</td>
+    <td>"vs last week" 텍스트 고정</td>
+    <td>카드 클릭 시 Report 페이지로 이동하되, 카드 자체에는 드롭다운 불필요 — Report 페이지에서만 필터 제공</td>
+  </tr>
+</table>
+
+<h3>2.2 드롭다운 모양 (Report 페이지)</h3>
+<div class="card" style="display:flex; flex-direction:column; gap:0.75rem;">
+  <div>
+    <p style="margin-bottom:0.375rem; font-weight:600; color:#334155;">Closed 상태:</p>
+    <div class="mock-dropdown active">
+      <i class="ri-filter-3-line"></i>
+      Active Run
+      <i class="ri-arrow-down-s-line"></i>
+    </div>
+  </div>
+  <div>
+    <p style="margin-bottom:0.375rem; font-weight:600; color:#334155;">Open 상태:</p>
+    <div class="mock-menu">
+      <div class="mock-menu-item selected">
+        <span>Active Run<span class="desc">&nbsp;— ongoing runs</span></span>
+        <i class="ri-check-line check"></i>
+      </div>
+      <div class="mock-menu-item">
+        <span>Last 7 Days</span>
+      </div>
+      <div class="mock-menu-item">
+        <span>Last 30 Days</span>
+      </div>
+      <div class="mock-menu-item">
+        <span>All Time</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3>2.3 드롭다운 스타일 토큰</h3>
+<table>
+  <tr><th>요소</th><th>스타일</th></tr>
+  <tr><td>Trigger button</td><td>기존 sub-btn 스타일 유지 — <code>font-size: 0.75rem; border-radius: 9999px; border: 1px solid #E2E8F0</code></td></tr>
+  <tr><td>Active 상태</td><td><code>border-color: #6366F1; color: #6366F1; background: #EEF2FF</code></td></tr>
+  <tr><td>Menu panel</td><td><code>min-width: 180px; border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08)</code></td></tr>
+  <tr><td>Selected item</td><td><code>color: #6366F1; font-weight: 600</code> + <code>ri-check-line</code> 아이콘</td></tr>
+  <tr><td>Item hover</td><td><code>background: #F1F5F9</code></td></tr>
+  <tr><td>닫기</td><td>외부 클릭 또는 옵션 선택 시 닫힘</td></tr>
+</table>
+
+<h3>2.4 Dashboard 카드 동기화</h3>
+<div class="card">
+  <p><span class="scope-dash">Dashboard</span> Pass Rate 카드는 Report 페이지와 <strong>동일한 기간 필터</strong>를 사용해야 합니다.</p>
+  <p style="margin-top:0.5rem"><strong>구현 방식:</strong> 필터 값을 <code>localStorage</code> 또는 URL search param에 저장. 기본값: <code>'active_run'</code>.</p>
+  <p style="margin-top:0.5rem"><strong>카드 표시:</strong></p>
+  <ul>
+    <li>Active Run 선택 시: delta badge = <code>"+2.1% vs prev run"</code></li>
+    <li>7d 선택 시: delta badge = <code>"+2.1% vs last week"</code> (현재와 동일)</li>
+    <li>30d 선택 시: delta badge = <code>"+2.1% vs prev 30d"</code></li>
+    <li>All Time 선택 시: delta badge 숨김</li>
+  </ul>
+  <p style="margin-top:0.5rem"><strong>카드 자체에 드롭다운 없음.</strong> Report 페이지에서 변경한 필터가 카드에도 반영됩니다.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">3</span>데이터 — 옵션별 Supabase 쿼리 로직</h2>
+
+<h3>3.1 Active Run</h3>
+<pre><span class="cm">// Step 1: Active Run IDs 가져오기</span>
+<span class="kw">const</span> { data: activeRuns } = <span class="kw">await</span> supabase
+  .from(<span class="str">'test_runs'</span>)
+  .select(<span class="str">'id, project_id, created_at'</span>)
+  .in(<span class="str">'project_id'</span>, projectIds)
+  .in(<span class="str">'status'</span>, [<span class="str">'new'</span>, <span class="str">'in_progress'</span>, <span class="str">'paused'</span>, <span class="str">'under_review'</span>]);
+
+<span class="kw">const</span> activeRunIds = (activeRuns ?? []).map(r => r.id);
+
+<span class="cm">// Step 2: Active Run의 test_results만 가져오기 (날짜 필터 없음)</span>
+<span class="kw">const</span> { data: results } = <span class="kw">await</span> supabase
+  .from(<span class="str">'test_results'</span>)
+  .select(<span class="str">'id, run_id, test_case_id, status, created_at'</span>)
+  .in(<span class="str">'run_id'</span>, activeRunIds)
+  .order(<span class="str">'created_at'</span>, { ascending: <span class="kw">false</span> });
+
+<span class="cm">// Step 3: Delta용 — 직전 완료 Run</span>
+<span class="kw">const</span> { data: prevRuns } = <span class="kw">await</span> supabase
+  .from(<span class="str">'test_runs'</span>)
+  .select(<span class="str">'id, project_id'</span>)
+  .in(<span class="str">'project_id'</span>, projectIds)
+  .eq(<span class="str">'status'</span>, <span class="str">'completed'</span>)
+  .order(<span class="str">'updated_at'</span>, { ascending: <span class="kw">false</span> })
+  .limit(activeRunIds.length || 1);  <span class="cm">// Active Run 수만큼</span>
+</pre>
+
+<h3>3.2 Last 7 Days (현재 로직 유지)</h3>
+<pre><span class="kw">const</span> sevenDaysAgo = <span class="kw">new</span> Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+<span class="kw">const</span> fourteenDaysAgo = <span class="kw">new</span> Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
+<span class="cm">// Primary</span>
+.in(<span class="str">'run_id'</span>, allRunIds).gte(<span class="str">'created_at'</span>, sevenDaysAgo)
+<span class="cm">// Delta (prev 7d)</span>
+.gte(<span class="str">'created_at'</span>, fourteenDaysAgo).lt(<span class="str">'created_at'</span>, sevenDaysAgo)
+</pre>
+
+<h3>3.3 Last 30 Days</h3>
+<pre><span class="kw">const</span> thirtyDaysAgo = <span class="kw">new</span> Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+<span class="kw">const</span> sixtyDaysAgo  = <span class="kw">new</span> Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+
+<span class="cm">// Primary</span>
+.in(<span class="str">'run_id'</span>, allRunIds).gte(<span class="str">'created_at'</span>, thirtyDaysAgo)
+<span class="cm">// Delta (prev 30d)</span>
+.gte(<span class="str">'created_at'</span>, sixtyDaysAgo).lt(<span class="str">'created_at'</span>, thirtyDaysAgo)
+</pre>
+
+<h3>3.4 All Time</h3>
+<pre><span class="cm">// Primary — 날짜 필터 없음</span>
+.in(<span class="str">'run_id'</span>, allRunIds)
+<span class="cm">// Delta — 없음 (passRateDelta = null)</span>
+</pre>
+
+<h3>3.5 Daily Trend 차트 조정</h3>
+<table>
+  <tr><th>필터</th><th>X축</th><th>포인트 수</th></tr>
+  <tr><td>Active Run</td><td>Run 시작일 ~ 오늘, 일별</td><td>가변 (최대 30일, 그 이상이면 주별로 집계)</td></tr>
+  <tr><td>Last 7 Days</td><td>7일간 일별</td><td>7 포인트 (현재와 동일)</td></tr>
+  <tr><td>Last 30 Days</td><td>30일간 일별</td><td>30 포인트</td></tr>
+  <tr><td>All Time</td><td>월별 집계</td><td>가변 (프로젝트 첫 결과~현재, 최대 12개월)</td></tr>
+</table>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">4</span>Delta 비교 정리</h2>
+
+<table>
+  <tr>
+    <th>필터</th>
+    <th>비교 대상</th>
+    <th>Badge 텍스트</th>
+    <th>비교 대상 없을 때</th>
+  </tr>
+  <tr>
+    <td>Active Run</td>
+    <td>직전 완료 Run(들)의 Pass Rate</td>
+    <td><code>+2.1% vs prev run</code></td>
+    <td>Delta badge 숨김</td>
+  </tr>
+  <tr>
+    <td>Last 7 Days</td>
+    <td>이전 7일 (8~14일 전)</td>
+    <td><code>+2.1% vs last week</code></td>
+    <td>이전 기간 데이터 0건이면 숨김</td>
+  </tr>
+  <tr>
+    <td>Last 30 Days</td>
+    <td>이전 30일 (31~60일 전)</td>
+    <td><code>+2.1% vs prev 30d</code></td>
+    <td>이전 기간 데이터 0건이면 숨김</td>
+  </tr>
+  <tr>
+    <td>All Time</td>
+    <td>—</td>
+    <td><em>Delta badge 숨김</em></td>
+    <td>—</td>
+  </tr>
+</table>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">5</span>영향 범위 — 적용 위치</h2>
+
+<table>
+  <tr>
+    <th>페이지/컴포넌트</th>
+    <th>드롭다운 UI</th>
+    <th>데이터 연동</th>
+    <th>비고</th>
+  </tr>
+  <tr>
+    <td><span class="scope-report">Report</span> PassRateReportPage.tsx</td>
+    <td>✅ 표시</td>
+    <td>✅ 필터 변경 시 리로드</td>
+    <td>제목, 부제, 날짜 라벨, Summary Card "vs" 텍스트 모두 동적 변경</td>
+  </tr>
+  <tr>
+    <td><span class="scope-dash">Dashboard</span> StatCards.tsx</td>
+    <td>❌ 없음</td>
+    <td>✅ 저장된 필터값 사용</td>
+    <td>delta badge 텍스트만 필터에 맞게 변경</td>
+  </tr>
+  <tr>
+    <td><span class="scope-dash">Dashboard</span> ProjectsContent.tsx</td>
+    <td>❌ 없음</td>
+    <td>✅ 저장된 필터값으로 passRate 계산</td>
+    <td>현재 전체 기간 계산 (Line 155) → 필터 반영으로 변경</td>
+  </tr>
+</table>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">6</span>코드 변경 포인트 상세</h2>
+
+<h3>6.1 usePassRateReport.ts <span class="badge badge-change">CHANGE</span></h3>
+<table>
+  <tr><th>#</th><th>변경</th><th>상세</th></tr>
+  <tr>
+    <td>1</td>
+    <td>필터 파라미터 추가</td>
+    <td>
+      <span class="badge badge-new">NEW</span> hook에 <code>period</code> 파라미터 추가:<br>
+      <code>usePassRateReport(period: 'active_run' | '7d' | '30d' | 'all' = 'active_run')</code><br>
+      <code>useEffect</code> dependency에 <code>period</code> 추가 → 변경 시 리로드
+    </td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>날짜 범위 동적 계산 (Lines 83-85)</td>
+    <td>
+      <span class="badge badge-change">CHANGE</span> 하드코딩된 <code>sevenDaysAgo</code> / <code>fourteenDaysAgo</code><br>
+      → <code>period</code>에 따라 동적으로 <code>primaryStart</code>, <code>deltaStart</code>, <code>deltaEnd</code> 계산<br>
+      <code>active_run</code>일 때: 날짜 필터 대신 Run ID 필터 사용<br>
+      <code>all</code>일 때: 날짜 필터 제거 + Delta 쿼리 스킵
+    </td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Active Run 분기 (Lines 100-113)</td>
+    <td>
+      <span class="badge badge-new">NEW</span> <code>period === 'active_run'</code>일 때:<br>
+      ① Active Run IDs 쿼리<br>
+      ② <code>.in('run_id', activeRunIds)</code>로 results 필터 (날짜 필터 없음)<br>
+      ③ 직전 completed Run에서 Delta 계산
+    </td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Daily Trend 동적 기간 (Lines 156-177)</td>
+    <td>
+      <span class="badge badge-change">CHANGE</span> <code>for (let d = 6; d >= 0; d--)</code> (7일 고정)<br>
+      → <code>period</code>에 따라:<br>
+      &nbsp;&nbsp;• <code>7d</code>: 7 포인트 (현재 동일)<br>
+      &nbsp;&nbsp;• <code>30d</code>: 30 포인트<br>
+      &nbsp;&nbsp;• <code>active_run</code>: Run 시작일~오늘 (최대 30일, 초과 시 주별)<br>
+      &nbsp;&nbsp;• <code>all</code>: 월별 집계 (최대 12개월)
+    </td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><code>PassRateData</code> 인터페이스 확장</td>
+    <td>
+      <span class="badge badge-new">NEW</span> <code>period: string</code> — 현재 선택된 필터 (UI에서 label 표시용)<br>
+      <span class="badge badge-new">NEW</span> <code>deltaLabel: string | null</code> — "vs last week" / "vs prev run" / "vs prev 30d" / null
+    </td>
+  </tr>
+</table>
+
+<h3>6.2 PassRateReportPage.tsx <span class="badge badge-change">CHANGE</span></h3>
+<table>
+  <tr><th>#</th><th>변경</th><th>위치</th></tr>
+  <tr>
+    <td>1</td>
+    <td>기간 필터 state 추가</td>
+    <td>Line 28 부근 — <code>const [period, setPeriod] = useState&lt;string&gt;('active_run');</code></td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Hook 호출 변경</td>
+    <td>Line 28 — <code>usePassRateReport()</code> → <code>usePassRateReport(period)</code></td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>날짜 버튼 → 드롭다운 교체</td>
+    <td>
+      Line 184-186 — 기존 <code>dateRangeLabel()</code> 버튼 제거<br>
+      → §2.2 스펙의 드롭다운 컴포넌트로 교체
+    </td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Breadcrumb 제목 동적 변경</td>
+    <td>
+      Line 178 — <code>"Pass Rate Report — Last 7 Days"</code><br>
+      → <code>`Pass Rate Report — ${periodLabel}`</code><br>
+      periodLabel 매핑: active_run→"Active Run", 7d→"Last 7 Days", 30d→"Last 30 Days", all→"All Time"
+    </td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>페이지 부제 동적 변경</td>
+    <td>
+      Line 207 — <code>"7-day test execution results across all projects"</code><br>
+      → 필터별 문구로 변경
+    </td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>Summary Card "vs" 텍스트 동적 변경</td>
+    <td>
+      Line 231 — <code>sub: 'vs previous 7 days'</code><br>
+      → <code>sub: data.deltaLabel ?? ''</code>
+    </td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td><code>dateRangeLabel()</code> 함수 제거 또는 수정</td>
+    <td>Lines 20-25 — 7일 고정 → <code>period</code> 기반 동적 날짜 범위. Export PDF에도 반영</td>
+  </tr>
+</table>
+
+<h3>6.3 ProjectsContent.tsx <span class="badge badge-change">CHANGE</span></h3>
+<table>
+  <tr><th>#</th><th>변경</th><th>위치</th></tr>
+  <tr>
+    <td>1</td>
+    <td>Pass Rate 계산에 필터 반영</td>
+    <td>
+      Lines 144-187 — 현재 전체 기간 기준 passRate 계산<br>
+      → 저장된 <code>period</code> 값 읽기 (localStorage key: <code>'testably_pr_period'</code>)<br>
+      → <code>active_run</code>: Active Run의 results만 사용<br>
+      → <code>7d</code>/<code>30d</code>: <code>.gte('created_at', startDate)</code> 추가<br>
+      → <code>all</code>: 현재와 동일 (전체)
+    </td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>sparkline placeholder Delta 제거</td>
+    <td>
+      Line 391 — <code>passRateDelta: avgPassRate !== null ? 2.1 : null</code> (하드코딩)<br>
+      → 실제 Delta 계산으로 교체 (hook에서 계산된 값 사용)
+    </td>
+  </tr>
+</table>
+
+<h3>6.4 StatCards.tsx <span class="badge badge-change">CHANGE</span></h3>
+<table>
+  <tr><th>#</th><th>변경</th><th>위치</th></tr>
+  <tr>
+    <td>1</td>
+    <td>Delta badge 텍스트 동적 변경</td>
+    <td>
+      Line 332 — <code>"{data.passRateDelta.toFixed(1)}% vs last week"</code><br>
+      → <code>"{data.passRateDelta.toFixed(1)}% {data.deltaLabel}"</code>
+    </td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>StatCardsData</code> 인터페이스 확장</td>
+    <td><span class="badge badge-new">NEW</span> <code>deltaLabel: string | null</code> 추가</td>
+  </tr>
+</table>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">7</span>필터 값 저장 방식</h2>
+
+<div class="card">
+  <p><strong>방식:</strong> <code>localStorage</code> — key: <code>'testably_pr_period'</code></p>
+  <p style="margin-top:0.5rem"><strong>초기값:</strong> <code>'active_run'</code> (localStorage에 값 없을 때)</p>
+  <p style="margin-top:0.5rem"><strong>동기화 흐름:</strong></p>
+  <ul>
+    <li>Report 페이지에서 드롭다운 변경 → <code>localStorage.setItem()</code> + <code>setPeriod()</code></li>
+    <li>Dashboard 마운트 시 → <code>localStorage.getItem()</code>으로 현재 필터 읽기</li>
+    <li>둘 다 같은 키를 참조하므로 항상 동기화됨</li>
+  </ul>
+  <p style="margin-top:0.5rem"><strong>대안:</strong> URL search param (<code>?period=7d</code>) — Report 페이지 URL 공유 시 필터 유지 가능. 두 방식 중 Dev 판단에 맡김.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">8</span>Edge Cases</h2>
+
+<table>
+  <tr><th>#</th><th>케이스</th><th>처리</th></tr>
+  <tr><td>1</td><td>Active Run 0개</td><td>Pass Rate = <code>"—"</code>, 차트 빈 상태, 안내 메시지: "No active runs. Start a new run or select a different time period."</td></tr>
+  <tr><td>2</td><td>선택 기간 내 test_results 0건</td><td>Pass Rate = <code>"—"</code>, Delta 숨김, 차트 all-zero 표시</td></tr>
+  <tr><td>3</td><td>All Time + 데이터 매우 많음 (10,000+건)</td><td>성능 주의: <code>.limit(5000)</code> + 클라이언트 사이드 집계. 향후 RPC 함수로 전환 가능.</td></tr>
+  <tr><td>4</td><td>직전 완료 Run 없음 (Active Run Delta)</td><td>Delta badge 숨김</td></tr>
+  <tr><td>5</td><td>Active Run이 30일 이상 진행 중</td><td>Daily Trend 차트를 주별로 자동 집계 (30일 초과 시)</td></tr>
+  <tr><td>6</td><td>필터 변경 중 로딩</td><td>현재 데이터 유지 + spinner overlay. 데이터 도착 후 교체.</td></tr>
+  <tr><td>7</td><td>PDF Export 시 현재 필터 반영</td><td>Export PDF에 선택된 기간 + 날짜 범위가 헤더에 표시되어야 함</td></tr>
+</table>
+
+<hr class="divider">
+
+<!-- ================================================================== -->
+<h2><span class="section-num">9</span>구현 순서</h2>
+
+<table>
+  <tr><th>순서</th><th>작업</th><th>우선순위</th><th>예상</th></tr>
+  <tr><td>1</td><td><code>usePassRateReport.ts</code>: <code>period</code> 파라미터 추가 + 쿼리 분기 로직</td><td><span class="p0">P0</span></td><td>1.5h</td></tr>
+  <tr><td>2</td><td><code>PassRateReportPage.tsx</code>: 드롭다운 UI + state 연결</td><td><span class="p0">P0</span></td><td>1h</td></tr>
+  <tr><td>3</td><td><code>PassRateReportPage.tsx</code>: 제목/부제/Summary 동적 텍스트</td><td><span class="p0">P0</span></td><td>30m</td></tr>
+  <tr><td>4</td><td><code>ProjectsContent.tsx</code>: 필터 연동 + 하드코딩 Delta 제거</td><td><span class="p0">P0</span></td><td>1h</td></tr>
+  <tr><td>5</td><td><code>StatCards.tsx</code>: Delta label 동적 텍스트</td><td><span class="p0">P0</span></td><td>15m</td></tr>
+  <tr><td>6</td><td>Daily Trend 차트: 30일/월별 집계 대응</td><td><span class="p1">P1</span></td><td>1h</td></tr>
+  <tr><td>7</td><td>PDF Export: 선택 기간 반영</td><td><span class="p2">P2</span></td><td>30m</td></tr>
+</table>
+
+<p style="margin-top:1rem; font-size:0.8125rem; color:#64748B;">
+  <strong>총 예상:</strong> 약 5.5시간 &nbsp;|&nbsp; <strong>DB 변경:</strong> 없음 &nbsp;|&nbsp; <strong>질문:</strong> Kyle(PM)에게 Slack
+</p>
+
+</div>
+</body>
+</html>

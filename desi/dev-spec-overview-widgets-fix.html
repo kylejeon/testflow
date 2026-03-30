@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dev Spec — Overview 위젯 수정: Attention Needed + Recent Activity</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F8FAFC;color:#1E293B;line-height:1.7}
+    .container{max-width:960px;margin:0 auto;padding:2.5rem 2rem 4rem}
+    h1{font-size:1.5rem;font-weight:800;color:#0F172A;margin-bottom:0.3rem}
+    .subtitle{font-size:0.85rem;color:#64748B;margin-bottom:2rem}
+    .meta-row{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:2rem;font-size:0.8rem;color:#64748B}
+    .meta-row span{display:flex;align-items:center;gap:0.3rem}
+    .section-title{font-size:1.1rem;font-weight:700;color:#0F172A;margin:2.5rem 0 1rem;padding-bottom:0.5rem;border-bottom:2px solid #E2E8F0;display:flex;align-items:center;gap:0.5rem}
+    .section-num{display:inline-flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;background:#6366F1;color:#fff;border-radius:0.35rem;font-size:0.7rem;font-weight:700}
+    h3{font-size:0.92rem;font-weight:700;color:#1E293B;margin:1.5rem 0 0.5rem}
+    p,li{font-size:0.85rem;color:#334155;margin-bottom:0.5rem}
+    ul,ol{padding-left:1.5rem;margin-bottom:1rem}
+    li{margin-bottom:0.4rem}
+    code{background:#EEF2FF;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.78rem;color:#4338CA;font-family:'SF Mono',Consolas,monospace}
+    pre{background:#0F172A;color:#E2E8F0;padding:1.25rem;border-radius:0.75rem;overflow-x:auto;font-size:0.78rem;line-height:1.6;margin:1rem 0 1.5rem;font-family:'SF Mono',Consolas,monospace}
+    pre .comment{color:#64748B}
+    pre .keyword{color:#818CF8}
+    pre .string{color:#34D399}
+    pre .type{color:#F472B6}
+    strong{color:#0F172A}
+    table{width:100%;border-collapse:collapse;margin:1rem 0 1.5rem;font-size:0.8rem}
+    th{background:#F1F5F9;color:#475569;font-weight:600;text-align:left;padding:0.55rem 0.75rem;border:1px solid #E2E8F0}
+    td{padding:0.5rem 0.75rem;border:1px solid #E2E8F0;vertical-align:top}
+    .tag{display:inline-block;padding:0.12rem 0.45rem;border-radius:0.25rem;font-size:0.68rem;font-weight:600}
+    .gap-miss{background:#FEE2E2;color:#B91C1C}
+    .gap-partial{background:#FEF3C7;color:#92400E}
+    .gap-ok{background:#DCFCE7;color:#15803D}
+    .priority-p0{background:#FEE2E2;color:#B91C1C}
+    .priority-p1{background:#FEF3C7;color:#92400E}
+    .priority-p2{background:#DBEAFE;color:#1E40AF}
+    .callout{background:#EEF2FF;border-left:4px solid #6366F1;padding:1rem 1.25rem;border-radius:0 0.5rem 0.5rem 0;margin:1rem 0 1.5rem;font-size:0.82rem}
+    .callout-warn{background:#FFF7ED;border-left-color:#F59E0B}
+    .callout-red{background:#FEF2F2;border-left-color:#EF4444}
+    .checklist{list-style:none;padding-left:0}
+    .checklist li{padding:0.4rem 0.5rem;border-bottom:1px solid #F1F5F9;display:flex;align-items:flex-start;gap:0.5rem}
+    .checklist li::before{content:'☐';flex-shrink:0;color:#94A3B8;font-size:0.9rem}
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1><i class="ri-bug-line" style="color:#EF4444"></i> Dev Spec — Overview 위젯 수정</h1>
+  <p class="subtitle">Attention Needed + Recent Activity 위젯 — 현재 구현 vs 기획안 갭 분석 및 수정 스펙</p>
+
+  <div class="meta-row">
+    <span><i class="ri-calendar-line"></i> 2026-03-27</span>
+    <span><i class="ri-user-line"></i> From: Kyle (PM)</span>
+    <span><i class="ri-arrow-right-line"></i> To: Dev1</span>
+    <span><i class="ri-file-line"></i> 대상: src/pages/project-detail/page.tsx</span>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PART A: ATTENTION NEEDED -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">A</span><i class="ri-error-warning-line"></i> Attention Needed 위젯</div>
+
+  <h3>A-1. 현재 구현 상태 (코드 분석)</h3>
+  <div class="callout-red callout">
+    <strong>⚠️ 핵심 문제:</strong> 현재 위젯은 "Failed/Blocked 카운트 > 0인 Run"만 표시합니다. 이것은 단순 "Failed Runs List"이지, "주의가 필요한 항목"이 아닙니다.
+  </div>
+
+  <table>
+    <thead><tr><th>항목</th><th>현재 구현</th></tr></thead>
+    <tbody>
+      <tr><td>데이터 소스</td><td><code>testRuns.filter(r =&gt; (r.failed||0) + (r.blocked||0) &gt; 0)</code></td></tr>
+      <tr><td>표시 항목</td><td>Run 이름 + Failed 수 badge + Blocked 수 badge</td></tr>
+      <tr><td>최대 표시</td><td>5개</td></tr>
+      <tr><td>Empty 상태</td><td>"No failures or blockers. Looking good!" + 초록 방패 아이콘</td></tr>
+      <tr><td>링크</td><td>"View failures" → /projects/{id}/runs</td></tr>
+      <tr><td>Badge 카운트</td><td>해당 Run 수</td></tr>
+    </tbody>
+  </table>
+
+  <h3>A-2. 기획안 의도 (pm-plan-project-overview-redesign.html §5-2)</h3>
+  <p>기획안에서는 <strong>Q6 "긴급 조치할 것은?"</strong>에 직접 답변하는 위젯으로, 4가지 트리거 조건을 정의했습니다:</p>
+  <table>
+    <thead><tr><th>#</th><th>트리거 조건</th><th>아이콘/색상</th><th>의미</th><th>현재 구현</th></tr></thead>
+    <tbody>
+      <tr><td>T-1</td><td><strong>3회+ 연속 실패 TC</strong> (Repeat Failure)</td><td>🔴 ri-close-circle-fill #EF4444</td><td>같은 TC가 3번 이상 연속 failed → Flaky 또는 근본 결함</td><td><span class="tag gap-miss">없음</span></td></tr>
+      <tr><td>T-2</td><td><strong>Blocked 3일+ TC</strong></td><td>🟡 ri-forbid-line #F59E0B</td><td>blocked 상태로 3일 이상 방치 → 환경/의존성 이슈 고착</td><td><span class="tag gap-miss">없음</span></td></tr>
+      <tr><td>T-3</td><td><strong>Milestone 기한 ≤10일 + Pass Rate &lt;70%</strong></td><td>🔴 ri-alarm-warning-fill #EF4444</td><td>마감 임박한데 품질 미달 → 릴리스 위험</td><td><span class="tag gap-miss">없음</span></td></tr>
+      <tr><td>T-4</td><td><strong>미실행 7일+ TC</strong> (Untested Aging)</td><td>⚪ ri-time-line #94A3B8</td><td>7일 넘게 untested → 커버리지 사각지대</td><td><span class="tag gap-miss">없음</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>A-3. 갭 요약</h3>
+  <div class="callout-warn callout">
+    <strong>4개 트리거 중 0개 구현됨.</strong> 현재 로직은 기획안에 정의된 트리거 조건과 완전히 다릅니다.<br>
+    현재 = "Run에 failed > 0이면 표시" (단순 필터)<br>
+    기획 = "TC 레벨에서 반복 실패, 장기 blocked, 마감 위험, 미실행 방치를 감지" (다차원 분석)
+  </div>
+
+  <h3>A-4. 수정 스펙</h3>
+
+  <h3>T-1: 3회+ 연속 실패 TC 감지</h3>
+  <table>
+    <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>쿼리 로직</td><td><code>test_results</code> 테이블에서 각 TC의 최근 3건 결과를 가져와, 3건 모두 <code>status = 'failed'</code>인 TC를 추출</td></tr>
+      <tr><td>SQL 핵심</td><td>
+<pre style="margin:0">
+<span class="comment">-- 각 TC의 최근 3건 결과를 가져와 모두 failed인 TC</span>
+WITH ranked AS (
+  SELECT test_case_id, status,
+    ROW_NUMBER() OVER (
+      PARTITION BY test_case_id ORDER BY created_at DESC
+    ) AS rn
+  FROM test_results
+  WHERE run_id IN (
+    SELECT id FROM test_runs WHERE project_id = :projectId
+  )
+)
+SELECT test_case_id
+FROM ranked
+WHERE rn <= 3
+GROUP BY test_case_id
+HAVING COUNT(*) = 3
+  AND COUNT(*) FILTER (WHERE status = 'failed') = 3
+</pre>
+      </td></tr>
+      <tr><td>표시 형태</td><td>🔴 <strong>{TC 이름}</strong> — "3회 연속 실패" + 최근 실패 시간</td></tr>
+      <tr><td>링크</td><td>클릭 → 해당 TC의 Run Detail 페이지</td></tr>
+      <tr><td>우선순위</td><td><span class="tag priority-p0">P0</span> 가장 높은 심각도로 정렬</td></tr>
+    </tbody>
+  </table>
+
+  <h3>T-2: Blocked 3일+ TC 감지</h3>
+  <table>
+    <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>쿼리 로직</td><td><code>test_results</code>에서 <code>status = 'blocked'</code>이고 <code>created_at</code>이 3일 이상 전인 TC (이후 상태 변경 없는 것)</td></tr>
+      <tr><td>구현 방식</td><td>
+<pre style="margin:0">
+<span class="comment">// 각 TC의 최신 결과가 blocked이고 3일+ 경과</span>
+const blockedTCs = latestResultPerTC
+  .filter(r => r.status === 'blocked')
+  .filter(r => {
+    const blockedDate = new Date(r.created_at);
+    const diffDays = (Date.now() - blockedDate.getTime())
+                     / (1000 * 60 * 60 * 24);
+    return diffDays >= 3;
+  });
+</pre>
+      </td></tr>
+      <tr><td>표시 형태</td><td>🟡 <strong>{TC 이름}</strong> — "Blocked {N}일째" + 소속 Run 이름</td></tr>
+      <tr><td>우선순위</td><td><span class="tag priority-p0">P0</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>T-3: Milestone 기한 ≤10일 + Pass Rate &lt;70%</h3>
+  <table>
+    <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>쿼리 로직</td><td><code>milestones</code> 테이블에서 <code>end_date</code>가 오늘부터 10일 이내인 항목 필터 → 해당 Milestone에 연결된 Run들의 종합 Pass Rate 계산 → 70% 미만이면 경고</td></tr>
+      <tr><td>구현 방식</td><td>
+<pre style="margin:0">
+<span class="comment">// 기한 임박 + 품질 미달 Milestone</span>
+const atRiskMilestones = milestones
+  .filter(m => m.status !== 'completed')
+  .filter(m => {
+    if (!m.end_date) return false;
+    const daysLeft = Math.ceil(
+      (new Date(m.end_date) - Date.now()) / 86400000
+    );
+    return daysLeft >= 0 && daysLeft <= 10;
+  })
+  .filter(m => {
+    const msRuns = testRuns.filter(r => r.milestone_id === m.id);
+    const totalPassed = msRuns.reduce((s, r) => s + (r.passed||0), 0);
+    const totalAll = msRuns.reduce((s, r) =>
+      s + (r.passed||0) + (r.failed||0) + (r.blocked||0)
+      + (r.retest||0) + (r.untested||0), 0);
+    const passRate = totalAll > 0 ? (totalPassed / totalAll) * 100 : 0;
+    return passRate < 70;
+  });
+</pre>
+      </td></tr>
+      <tr><td>표시 형태</td><td>🔴 <strong>{Milestone 이름}</strong> — "기한 {N}일 남음, Pass Rate {X}%" </td></tr>
+      <tr><td>링크</td><td>클릭 → Milestone Detail 페이지</td></tr>
+      <tr><td>우선순위</td><td><span class="tag priority-p0">P0</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>T-4: 미실행 7일+ TC (Untested Aging)</h3>
+  <table>
+    <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>쿼리 로직</td><td>Active Run에 포함된 TC 중, <code>test_results</code>에 결과가 없거나 최신 결과가 <code>untested</code>이면서 해당 Run의 <code>created_at</code>이 7일 이상 전인 TC 수</td></tr>
+      <tr><td>구현 방식</td><td>
+<pre style="margin:0">
+<span class="comment">// 7일+ 미실행 TC 카운트</span>
+const untestedAging = activeRuns
+  .filter(r => {
+    const runAge = (Date.now() - new Date(r.created_at)) / 86400000;
+    return runAge >= 7;
+  })
+  .reduce((count, run) => {
+    const untestedInRun = (run.test_case_ids || []).filter(tcId =>
+      !latestResultMap.has(tcId) ||
+      latestResultMap.get(tcId) === 'untested'
+    );
+    return count + untestedInRun.length;
+  }, 0);
+</pre>
+      </td></tr>
+      <tr><td>표시 형태</td><td>⚪ <strong>{N}개 TC</strong> — "7일+ 미실행" + 관련 Run 수</td></tr>
+      <tr><td>우선순위</td><td><span class="tag priority-p1">P1</span> 가장 낮은 심각도</td></tr>
+    </tbody>
+  </table>
+
+  <h3>A-5. Attention Needed 정렬 순서</h3>
+  <p>위젯 내 항목은 다음 순서로 정렬합니다:</p>
+  <ol>
+    <li>🔴 T-3 (Milestone 기한 위험) — 릴리스 영향 최대</li>
+    <li>🔴 T-1 (3회+ 연속 실패) — 근본 결함 가능성</li>
+    <li>🟡 T-2 (Blocked 3일+) — 프로세스 정체</li>
+    <li>⚪ T-4 (미실행 7일+) — 커버리지 사각지대</li>
+  </ol>
+
+  <h3>A-6. UI 변경 사항</h3>
+  <table>
+    <thead><tr><th>항목</th><th>현재</th><th>변경</th></tr></thead>
+    <tbody>
+      <tr><td>Badge 카운트</td><td>failed/blocked가 있는 Run 수</td><td>전체 Attention 항목 수 (T-1~T-4 합산)</td></tr>
+      <tr><td>항목 아이콘</td><td>Run failed → 🔴, Run blocked → 🟠</td><td>트리거별 아이콘: T-1(ri-close-circle-fill), T-2(ri-forbid-line), T-3(ri-alarm-warning-fill), T-4(ri-time-line)</td></tr>
+      <tr><td>항목 설명</td><td>Run 이름 + Failed N / Blocked N</td><td>트리거 유형 + 대상(TC명/Milestone명) + 상세 메트릭</td></tr>
+      <tr><td>Empty 상태</td><td>"No failures or blockers" (초록 방패)</td><td>"All Clear — No attention items" (동일 패턴 유지)</td></tr>
+      <tr><td>링크</td><td>"View failures" → Runs 페이지</td><td>각 항목 클릭 → 해당 TC/Milestone/Run 상세로 이동</td></tr>
+      <tr><td>최대 표시</td><td>5개</td><td>5개 유지 + "View all {N} items" 링크 (N &gt; 5일 때)</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PART B: RECENT ACTIVITY -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">B</span><i class="ri-time-line"></i> Recent Activity 위젯</div>
+
+  <h3>B-1. 현재 구현 상태 (코드 분석)</h3>
+  <table>
+    <thead><tr><th>이벤트 유형</th><th>Action</th><th>데이터 소스</th><th>표시 내용</th><th>평가</th></tr></thead>
+    <tbody>
+      <tr><td>milestone</td><td>created</td><td>milestones (최근 20개)</td><td>이름 + 시간</td><td><span class="tag gap-ok">OK</span></td></tr>
+      <tr><td>milestone</td><td>completed</td><td>milestones (status=completed, updated_at)</td><td>이름 + 시간</td><td><span class="tag gap-ok">OK</span></td></tr>
+      <tr><td>run</td><td>created</td><td>test_runs (최근 20개)</td><td>이름 + 시간</td><td><span class="tag gap-ok">OK</span></td></tr>
+      <tr><td>run</td><td>completed</td><td>test_runs (status=completed, executed_at)</td><td>이름 + 시간</td><td><span class="tag gap-ok">OK</span></td></tr>
+      <tr><td>test_activity</td><td>tested</td><td>test_results 집계 (Run별)</td><td>Run 이름 + passed✓/failed✗ 카운트</td><td><span class="tag gap-ok">OK</span></td></tr>
+      <tr><td>session</td><td>created</td><td>sessions (최근 20개)</td><td>이름 + 시간</td><td><span class="tag gap-ok">OK</span></td></tr>
+      <tr><td>session</td><td>completed</td><td>sessions (ended_at)</td><td>이름 + 시간</td><td><span class="tag gap-ok">OK</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>✅ 잘된 점:</strong> 이벤트 유형별 아이콘+컬러 dot은 이미 구현됨 (iconMap). test_activity의 passed✓/failed✗ 카운트 표시도 구현됨.<br>
+    <strong>⚠️ 부족한 점:</strong> 날짜 그루핑, 필터, 사용자 정보, Show more 기능이 없음.
+  </div>
+
+  <h3>B-2. 기획안 대비 갭 분석</h3>
+  <table>
+    <thead><tr><th>기획안 요구사항</th><th>현재</th><th>갭 수준</th><th>수정 우선순위</th></tr></thead>
+    <tbody>
+      <tr><td>유형별 아이콘 + 컬러</td><td>✅ 구현됨</td><td><span class="tag gap-ok">OK</span></td><td>—</td></tr>
+      <tr><td>날짜 그루핑 (Today / Yesterday / Earlier)</td><td>❌ 플랫 리스트</td><td><span class="tag gap-miss">누락</span></td><td><span class="tag priority-p1">P1</span></td></tr>
+      <tr><td>필터 드롭다운 (유형별 / 사용자별)</td><td>❌ 없음</td><td><span class="tag gap-miss">누락</span></td><td><span class="tag priority-p2">P2</span></td></tr>
+      <tr><td>"Show more" 확장</td><td>❌ 고정 10개</td><td><span class="tag gap-miss">누락</span></td><td><span class="tag priority-p1">P1</span></td></tr>
+      <tr><td>사용자 이름 표시 ("Jake passed TC-041")</td><td>❌ 이벤트 이름만</td><td><span class="tag gap-miss">누락</span></td><td><span class="tag priority-p1">P1</span></td></tr>
+      <tr><td>Run paused/resumed 이벤트</td><td>❌ created/completed만</td><td><span class="tag gap-partial">부분</span></td><td><span class="tag priority-p2">P2</span></td></tr>
+      <tr><td>TC 생성/수정 이벤트</td><td>❌ 없음</td><td><span class="tag gap-partial">부분</span></td><td><span class="tag priority-p2">P2</span></td></tr>
+      <tr><td>댓글 작성 이벤트</td><td>❌ 없음</td><td><span class="tag gap-partial">부분</span></td><td><span class="tag priority-p2">P2</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>B-3. P1 수정 스펙 — 날짜 그루핑</h3>
+  <p>현재 플랫 리스트를 날짜 그룹으로 분리합니다:</p>
+  <pre>
+<span class="comment">// 날짜 그루핑 로직</span>
+<span class="keyword">function</span> groupByDate(events) {
+  <span class="keyword">const</span> today = <span class="keyword">new</span> Date();
+  today.setHours(0, 0, 0, 0);
+  <span class="keyword">const</span> yesterday = <span class="keyword">new</span> Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  <span class="keyword">const</span> groups = { today: [], yesterday: [], earlier: [] };
+
+  events.forEach(event => {
+    <span class="keyword">const</span> eventDate = <span class="keyword">new</span> Date(event.created_at);
+    eventDate.setHours(0, 0, 0, 0);
+
+    <span class="keyword">if</span> (eventDate.getTime() === today.getTime())
+      groups.today.push(event);
+    <span class="keyword">else if</span> (eventDate.getTime() === yesterday.getTime())
+      groups.yesterday.push(event);
+    <span class="keyword">else</span>
+      groups.earlier.push(event);
+  });
+
+  <span class="keyword">return</span> groups;
+}
+</pre>
+  <p><strong>UI:</strong> 그룹 헤더는 <code>text-[0.6875rem] font-semibold text-gray-400 uppercase tracking-wider py-1.5</code>로, "Today", "Yesterday", "Earlier this week" 텍스트. 구분선은 <code>border-t border-gray-100 mt-2</code>.</p>
+
+  <h3>B-4. P1 수정 스펙 — 사용자 이름 표시</h3>
+  <div class="callout-warn callout">
+    <strong>⚠️ 현재 한계:</strong> <code>test_results</code> 테이블에 <code>user_id</code> 컬럼이 없을 수 있음. 확인 필요.<br>
+    Run/Session은 <code>assignees</code> 배열이 있으나 "누가 실행했는지"는 별개.
+  </div>
+  <table>
+    <thead><tr><th>이벤트 유형</th><th>사용자 소스</th><th>표시 형식</th></tr></thead>
+    <tbody>
+      <tr><td>milestone created/completed</td><td>현재 사용자 정보 없음 → P2에서 audit log 추가 시 해결</td><td>"Milestone created" (사용자명 생략)</td></tr>
+      <tr><td>run created</td><td><code>test_runs.assignees[0]</code> 또는 현재 사용자</td><td>"<strong>{User}</strong> started {Run Name}"</td></tr>
+      <tr><td>run completed</td><td>동일</td><td>"<strong>{User}</strong> completed {Run Name}"</td></tr>
+      <tr><td>test_activity</td><td>test_results.user_id (있는 경우)</td><td>"<strong>{User}</strong> tested {Run Name}" + ✓✗</td></tr>
+      <tr><td>session</td><td>sessions에 creator 정보가 있다면 활용</td><td>"<strong>{User}</strong> started session {Name}"</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Fallback:</strong> 사용자 정보가 없는 이벤트는 현재처럼 이벤트 이름만 표시. 점진적으로 audit log 도입 시 개선.</p>
+
+  <h3>B-5. P1 수정 스펙 — "Show more" 확장</h3>
+  <table>
+    <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>초기 표시</td><td>10개 (현재와 동일)</td></tr>
+      <tr><td>"Show more" 버튼</td><td>전체 20개 중 10개 이상일 때 표시. <code>text-xs text-indigo-600 hover:text-indigo-700 font-medium py-2 text-center cursor-pointer</code></td></tr>
+      <tr><td>확장 시</td><td>20개 전체 표시. 버튼 → "Show less"로 변경.</td></tr>
+      <tr><td>구현</td><td><code>const [expanded, setExpanded] = useState(false)</code> → <code>recentActivity.slice(0, expanded ? 20 : 10)</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>B-6. P2 추가 이벤트 유형 (Phase 2)</h3>
+  <table>
+    <thead><tr><th>이벤트</th><th>데이터 소스</th><th>아이콘</th><th>표시 형식</th></tr></thead>
+    <tbody>
+      <tr><td>run-paused</td><td>test_runs (status 변경 감지 필요)</td><td>ri-pause-circle-line / #F59E0B</td><td>"{User} paused {Run Name}"</td></tr>
+      <tr><td>run-resumed</td><td>test_runs (status 변경 감지 필요)</td><td>ri-play-circle-line / #3B82F6</td><td>"{User} resumed {Run Name}"</td></tr>
+      <tr><td>tc-created</td><td>test_cases 테이블</td><td>ri-file-add-line / #6366F1</td><td>"{User} created {TC Title}"</td></tr>
+      <tr><td>comment-added</td><td>test_case_comments 테이블</td><td>ri-chat-1-line / #8B5CF6</td><td>"{User} commented on {TC Title}"</td></tr>
+      <tr><td>milestone-overdue</td><td>milestones (status=past_due 전환 시점)</td><td>ri-alarm-warning-line / #EF4444</td><td>"{Milestone Name} is now overdue"</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>💡 구현 참고:</strong> P2 이벤트 유형 추가 시 <code>iconMap</code> 객체에 새 키를 추가하면 됩니다. 기존 구조가 확장 가능하게 설계되어 있으므로 큰 리팩토링 없이 가능합니다.
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PART C: 구현 우선순위 및 체크리스트 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">C</span><i class="ri-list-ordered"></i> 구현 우선순위 및 체크리스트</div>
+
+  <h3>C-1. 우선순위 요약</h3>
+  <table>
+    <thead><tr><th>Priority</th><th>위젯</th><th>변경 사항</th><th>예상 공수</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag priority-p0">P0</span></td><td>Attention Needed</td><td>T-1: 3회+ 연속 실패 TC 감지 쿼리 + UI</td><td>M</td></tr>
+      <tr><td><span class="tag priority-p0">P0</span></td><td>Attention Needed</td><td>T-2: Blocked 3일+ TC 감지 쿼리 + UI</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p0">P0</span></td><td>Attention Needed</td><td>T-3: Milestone 기한 위험 감지 쿼리 + UI</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p1">P1</span></td><td>Attention Needed</td><td>T-4: 미실행 7일+ TC 카운트</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p1">P1</span></td><td>Attention Needed</td><td>정렬 순서 + Badge 카운트 수정 + 항목별 링크</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p1">P1</span></td><td>Recent Activity</td><td>날짜 그루핑 (Today/Yesterday/Earlier)</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p1">P1</span></td><td>Recent Activity</td><td>"Show more" 확장 기능</td><td>XS</td></tr>
+      <tr><td><span class="tag priority-p1">P1</span></td><td>Recent Activity</td><td>사용자 이름 표시 (가능한 이벤트에 한해)</td><td>M</td></tr>
+      <tr><td><span class="tag priority-p2">P2</span></td><td>Recent Activity</td><td>필터 드롭다운 (유형별/사용자별)</td><td>M</td></tr>
+      <tr><td><span class="tag priority-p2">P2</span></td><td>Recent Activity</td><td>추가 이벤트 유형 5종</td><td>L</td></tr>
+    </tbody>
+  </table>
+
+  <h3>C-2. 구현 체크리스트</h3>
+  <ul class="checklist">
+    <li>[P0] Attention Needed — T-1: 3회+ 연속 실패 TC 감지 쿼리 구현</li>
+    <li>[P0] Attention Needed — T-2: Blocked 3일+ TC 감지 로직 구현</li>
+    <li>[P0] Attention Needed — T-3: Milestone 기한 ≤10d + Pass Rate &lt;70% 감지</li>
+    <li>[P1] Attention Needed — T-4: 미실행 7일+ TC 카운트</li>
+    <li>[P1] Attention Needed — 트리거별 아이콘/색상 분리 + 정렬 순서 적용</li>
+    <li>[P1] Attention Needed — Badge 카운트를 전체 Attention 항목 수로 변경</li>
+    <li>[P1] Attention Needed — 각 항목 클릭 → TC/Milestone/Run 상세 링크</li>
+    <li>[P1] Recent Activity — 날짜 그루핑 (Today/Yesterday/Earlier) 구현</li>
+    <li>[P1] Recent Activity — "Show more / Show less" 토글 구현</li>
+    <li>[P1] Recent Activity — 사용자 이름 표시 (Run/Session assignees 활용)</li>
+    <li>[P2] Recent Activity — 필터 드롭다운 UI</li>
+    <li>[P2] Recent Activity — 추가 이벤트 유형 (paused, resumed, tc-created, comment, overdue)</li>
+    <li>[검증] Attention Needed — 4개 트리거 모두 empty일 때 "All Clear" 표시 확인</li>
+    <li>[검증] Recent Activity — 20개 이벤트 수집 → 날짜 그루핑 정확성 확인</li>
+    <li>[검증] 기존 Run click → Run Detail 동작 유지 확인</li>
+  </ul>
+
+  <h3>C-3. 영향 파일</h3>
+  <table>
+    <thead><tr><th>파일</th><th>변경 내용</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/pages/project-detail/page.tsx</code></td><td>Attention Needed 쿼리 로직 전면 교체 (lines ~970-1010). Recent Activity 렌더링 수정 (lines ~1011-1080). 날짜 그루핑 유틸 추가.</td></tr>
+      <tr><td><code>src/pages/project-detail/page.tsx</code> (fetchData)</td><td>T-1~T-4 데이터 수집 로직 추가 (lines ~350-410 부근). 기존 testRuns 데이터에 추가 쿼리 필요.</td></tr>
+      <tr><td><code>src/hooks/useActiveRuns.ts</code></td><td>변경 없음 (참고용)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>📌 리팩토링 제안:</strong> Attention Needed 로직이 복잡해지므로, <code>page.tsx</code>의 fetchData에 모든 로직을 넣지 말고 <code>src/hooks/useAttentionItems.ts</code> 커스텀 훅으로 분리하는 것을 권장합니다. Recent Activity의 날짜 그루핑도 <code>src/utils/dateGrouping.ts</code>로 분리하면 테스트가 용이합니다.
+  </div>
+
+
+  <!-- ═══ FOOTER ═══ -->
+  <div style="margin-top:3rem; padding-top:1.5rem; border-top:2px solid #E2E8F0; text-align:center; color:#94A3B8; font-size:0.8rem;">
+    <p>Testably — Overview 위젯 수정 Dev Spec v1.0</p>
+    <p>참고: pm-plan-project-overview-redesign.html (§5-2, §7 G항목)</p>
+    <p style="margin-top:0.5rem;">Last updated: 2026-03-27 · From: Kyle (PM) · To: Dev1</p>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Plan — 홈페이지 미구현 기능 분석 및 개발 기획서</title>
+<style>
+  :root {
+    --bg: #F8FAFC; --card: #FFFFFF; --border: #E2E8F0;
+    --text: #0F172A; --sub: #64748B; --muted: #94A3B8;
+    --indigo: #6366F1; --indigo-bg: #EEF2FF;
+    --green: #16A34A; --green-bg: #F0FDF4;
+    --red: #DC2626; --red-bg: #FEF2F2;
+    --amber: #D97706; --amber-bg: #FFFBEB;
+    --blue: #2563EB; --blue-bg: #DBEAFE;
+    --purple: #7C3AED; --purple-bg: #F5F3FF;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1060px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+  .header { margin-bottom: 2rem; }
+  .header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .header .subtitle { font-size: 0.875rem; color: var(--sub); }
+  .meta { display: flex; gap: 1rem; margin-top: 0.75rem; flex-wrap: wrap; }
+  .meta-item { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 0.25rem; }
+
+  .badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; }
+  .badge-indigo { background: var(--indigo-bg); color: var(--indigo); }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-blue { background: var(--blue-bg); color: var(--blue); }
+  .badge-purple { background: var(--purple-bg); color: var(--purple); }
+
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.25rem; }
+  .section h2 { font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .section h3 { font-size: 0.9375rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--text); }
+  .section h4 { font-size: 0.8125rem; font-weight: 600; margin: 1rem 0 0.375rem; color: var(--sub); }
+  .section p { font-size: 0.8125rem; color: var(--sub); margin-bottom: 0.75rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; margin: 0.75rem 0; }
+  th, td { text-align: left; padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-weight: 600; color: var(--text); background: #F8FAFC; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.02em; }
+  td { color: var(--sub); }
+  td code { background: #F1F5F9; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; font-size: 0.6875rem; font-family: 'SF Mono', monospace; }
+
+  .highlight { background: var(--indigo-bg); border-left: 3px solid var(--indigo); padding: 0.75rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin: 0.75rem 0; }
+  .highlight p { color: var(--text); margin-bottom: 0; }
+
+  .warning { background: var(--amber-bg); border-left: 3px solid var(--amber); padding: 0.75rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin: 0.75rem 0; }
+  .warning p { color: var(--text); margin-bottom: 0; }
+
+  .bug-box { background: var(--red-bg); border-left: 3px solid var(--red); padding: 0.75rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin: 0.75rem 0; }
+  .bug-box p { color: var(--text); margin-bottom: 0; }
+
+  .code { background: #1E293B; color: #E2E8F0; padding: 1rem; border-radius: 0.5rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.75rem; overflow-x: auto; margin: 0.75rem 0; line-height: 1.7; white-space: pre-wrap; }
+  .code .cm { color: #64748B; }
+  .code .kw { color: #818CF8; }
+  .code .str { color: #34D399; }
+  .code .fn { color: #FBBF24; }
+
+  .toc { background: #F8FAFC; border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
+  .toc h3 { font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.5rem; }
+  .toc ol { padding-left: 1.25rem; }
+  .toc li { font-size: 0.8125rem; color: var(--indigo); padding: 0.125rem 0; }
+  .toc a { color: var(--indigo); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .spec-card { border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 0.75rem 0; }
+  .spec-card.p0 { border-left: 4px solid var(--red); }
+  .spec-card.p1 { border-left: 4px solid var(--amber); }
+  .spec-card.p2 { border-left: 4px solid var(--blue); }
+  .spec-card h4 { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.375rem; display: flex; align-items: center; gap: 0.5rem; }
+  .spec-card .desc { font-size: 0.8125rem; color: var(--sub); margin-bottom: 0.5rem; }
+  .spec-card .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .spec-card .detail-item { font-size: 0.75rem; }
+  .spec-card .detail-label { font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.625rem; letter-spacing: 0.05em; }
+  .spec-card .detail-value { color: var(--text); margin-top: 0.125rem; }
+
+  @media (max-width: 640px) {
+    .container { padding: 1.5rem 1rem; }
+    .spec-card .detail-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ══════════════ HEADER ══════════════ -->
+<div class="header">
+  <h1>🔬 홈페이지 미구현 기능 분석 및 개발 기획서</h1>
+  <p class="subtitle">홈페이지(testably.app)에 소개된 기능 vs 실제 소스코드 구현 상태 — Gap 분석 및 개발 상세 스펙</p>
+  <div class="meta">
+    <span class="meta-item">📅 2026-03-30</span>
+    <span class="meta-item">👤 PM</span>
+    <span class="meta-item"><span class="badge badge-red">CEO 지시</span></span>
+    <span class="meta-item"><span class="badge badge-purple">Dev2 개발 대상</span></span>
+  </div>
+</div>
+
+<!-- ══════════════ TOC ══════════════ -->
+<div class="toc">
+  <h3>목차</h3>
+  <ol>
+    <li><a href="#s1">전체 기능 구현 현황 매트릭스</a></li>
+    <li><a href="#s2">미구현 / 부분 구현 기능 상세 (14건)</a></li>
+    <li><a href="#s3">P0 — Jira 양방향 동기화</a></li>
+    <li><a href="#s4">P0 — Jira 커스텀 필드 매핑</a></li>
+    <li><a href="#s5">P0 — Jira 자동 이슈 생성 (실패 시 자동)</a></li>
+    <li><a href="#s6">P0 — "View Demo" 버튼 → 실제 데모</a></li>
+    <li><a href="#s7">P1 — Zephyr / Qase Import</a></li>
+    <li><a href="#s8">P1 — Folder Drag-and-Drop</a></li>
+    <li><a href="#s9">P1 — Discord Webhook</a></li>
+    <li><a href="#s10">P1 — CI/CD Jenkins 지원</a></li>
+    <li><a href="#s11">P1 — Milestone Visual Timeline View</a></li>
+    <li><a href="#s12">P2 — Jira Data Center 지원</a></li>
+    <li><a href="#s13">P2 — Test Case Postconditions</a></li>
+    <li><a href="#s14">P2 — Estimated Workload Tracking</a></li>
+    <li><a href="#s15">P2 — 홈페이지 카피 정정 (코드 변경 불필요 항목)</a></li>
+    <li><a href="#s16">개발 우선순위 로드맵</a></li>
+  </ol>
+</div>
+
+<!-- ══════════════ S1: 전체 매트릭스 ══════════════ -->
+<div class="section" id="s1">
+  <h2>1. 전체 기능 구현 현황 매트릭스</h2>
+  <p>홈페이지(home/page.tsx)와 Features 페이지(features/page.tsx)에 명시된 모든 기능/스펙을 소스코드와 대조 검증한 결과입니다.</p>
+
+  <table>
+    <tr><th style="width:22%">기능</th><th style="width:30%">홈페이지 주장</th><th style="width:12%">상태</th><th style="width:36%">근거</th></tr>
+
+    <tr style="background:#F0FDF4"><td>Test Case Management</td><td>폴더 구조, 필터, 우선순위, 태그</td><td><span class="badge badge-green">✅ 구현</span></td><td>TestCaseList.tsx — 폴더, priority, tags, type, status 필터 모두 동작</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Test Run Execution</td><td>계획, 할당, 실시간 추적, 5개 상태</td><td><span class="badge badge-green">✅ 구현</span></td><td>run-detail/page.tsx — Passed/Failed/Blocked/Retest/Untested 모두 동작</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Milestone Tracking</td><td>릴리즈 목표, 진행률 시각화</td><td><span class="badge badge-green">✅ 구현</span></td><td>project-milestones/page.tsx — parent/child, progress bar, status</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Discovery Logs</td><td>탐색적 테스트, 리치텍스트, 스크린샷</td><td><span class="badge badge-green">✅ 구현</span></td><td>session-detail/page.tsx — 타이머, 리치텍스트, 이미지 업로드/크롭</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Team Collaboration</td><td>4-Role (Owner/Admin/Member/Viewer)</td><td><span class="badge badge-green">✅ 구현</span></td><td>settings/page.tsx — members 탭, 역할 할당, 권한 체계</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Focus Mode</td><td>P/F/B/S 키, Auto-advance, Progress bar</td><td><span class="badge badge-green">✅ 구현</span></td><td>FocusMode.tsx — 전체 기능 동작</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Cmd+K Command Palette</td><td>Cmd+K, G-chord, 단축키</td><td><span class="badge badge-green">✅ 구현</span></td><td>CommandPalette.tsx + useKeyboardShortcuts.ts</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Smart Notifications</td><td>팀 초대, 실행 완료, 마일스톤 알림</td><td><span class="badge badge-green">✅ 구현</span></td><td>NotificationBell.tsx + NotificationSettingsPanel.tsx — 7개 이벤트 토글</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Project Documentation</td><td>파일 업로드, 링크 추가</td><td><span class="badge badge-green">✅ 구현</span></td><td>project-documentation/page.tsx — PDF/DOCX/MD/TXT 업로드, 링크 타입</td></tr>
+
+    <tr style="background:#F0FDF4"><td>AI: Text → Test Cases</td><td>텍스트 설명 → TC 생성</td><td><span class="badge badge-green">✅ 구현</span></td><td>AIGenerateModal.tsx 'text' mode + generate-testcases Edge Function</td></tr>
+
+    <tr style="background:#F0FDF4"><td>AI: Jira Issue → TC</td><td>Jira 이슈에서 TC 생성</td><td><span class="badge badge-green">✅ 구현</span></td><td>AIGenerateModal.tsx 'jira' mode — Jira 이슈 fetch → Claude AI → TC</td></tr>
+
+    <tr style="background:#F0FDF4"><td>AI: Discovery → TC</td><td>세션 로그 → TC 변환</td><td><span class="badge badge-green">✅ 구현</span></td><td>AIGenerateModal.tsx 'session' mode (Professional+)</td></tr>
+
+    <tr style="background:#F0FDF4"><td>AI: Edge Case Suggestions</td><td>엣지 케이스 제안</td><td><span class="badge badge-green">✅ 구현</span></td><td>AIAssistModal.tsx 'edge-cases' phase</td></tr>
+
+    <tr style="background:#F0FDF4"><td>PDF Report Export</td><td>PDF 리포트 생성</td><td><span class="badge badge-green">✅ 구현</span></td><td>PassRateReportPage.tsx + project-runs PDF export — jsPDF</td></tr>
+
+    <tr style="background:#F0FDF4"><td>CSV Import (TestRail)</td><td>TestRail CSV 필드 매핑</td><td><span class="badge badge-green">✅ 구현</span></td><td>testRailExport.ts — Title/Section/Priority/Steps/Expected Result 매핑</td></tr>
+
+    <tr style="background:#F0FDF4"><td>CSV Export</td><td>TC를 CSV로 내보내기</td><td><span class="badge badge-green">✅ 구현</span></td><td>testRailExport.ts — TestRail CSV 형식 내보내기</td></tr>
+
+    <tr style="background:#F0FDF4"><td>JSON Export</td><td>JSON 백업</td><td><span class="badge badge-green">✅ 구현</span></td><td>settings/page.tsx — 계정 전체 데이터 JSON export (프로젝트+TC+Run)</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Slack Webhook</td><td>Slack 알림</td><td><span class="badge badge-green">✅ 구현</span></td><td>useWebhooks.ts — buildSlackPayload() Block Kit 메시지</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Teams Webhook</td><td>Microsoft Teams 알림</td><td><span class="badge badge-green">✅ 구현</span></td><td>useWebhooks.ts — buildTeamsPayload() Adaptive Card</td></tr>
+
+    <tr style="background:#F0FDF4"><td>4 Dashboards</td><td>Pass Rate, Active Runs, Activity Heatmap, TC Overview</td><td><span class="badge badge-green">✅ 구현</span></td><td>usePassRateReport.ts, useActiveRuns.ts, useTeamActivity.ts (heatmap 포함), useTestCasesOverview.ts</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Newsletter</td><td>이메일 구독</td><td><span class="badge badge-green">✅ 구현</span></td><td>lib/loops.ts — Loops.so API 연동</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Compare Pages</td><td>vs TestRail / Qase / Zephyr</td><td><span class="badge badge-green">✅ 구현</span></td><td>compare/page.tsx + data/competitors/*.ts</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Roadmap Page</td><td>Roadmap 링크</td><td><span class="badge badge-green">✅ 구현</span></td><td>roadmap/page.tsx 존재</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Refund Policy</td><td>Footer 링크</td><td><span class="badge badge-green">✅ 구현</span></td><td>refund/page.tsx + router config</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Cookie Policy</td><td>Footer 링크</td><td><span class="badge badge-green">✅ 구현</span></td><td>cookies/page.tsx + router config</td></tr>
+
+    <tr style="background:#F0FDF4"><td>Preconditions</td><td>전제조건</td><td><span class="badge badge-green">✅ 구현</span></td><td>DetailPanel.tsx + FocusMode.tsx — precondition 필드 표시</td></tr>
+
+    <tr style="background:#F0FDF4"><td>CI/CD (GitHub Actions)</td><td>GitHub Actions 결과 업로드</td><td><span class="badge badge-green">✅ 구현</span></td><td>upload-ci-results Edge Function + settings API 탭 토큰 생성</td></tr>
+
+    <tr style="background:#F0FDF4"><td>CI/CD (GitLab CI)</td><td>GitLab CI 결과 업로드</td><td><span class="badge badge-green">✅ 구현</span></td><td>settings API 탭 GitLab CI YAML 스니펫</td></tr>
+
+    <!-- ──────── 미구현/부분 ──────── -->
+    <tr style="background:#FEF2F2"><td><strong>Jira 양방향 동기화</strong></td><td>"Bidirectional sync", "sync status bidirectionally"</td><td><span class="badge badge-red">❌ 미구현</span></td><td>Testably→Jira 단방향만 존재. Jira→Testably 인바운드 없음</td></tr>
+
+    <tr style="background:#FEF2F2"><td><strong>Jira 커스텀 필드 매핑</strong></td><td>"Custom field mapping", "choose which custom fields"</td><td><span class="badge badge-red">❌ 미구현</span></td><td>create-jira-issue에 하드코딩된 필드만. 매핑 UI 없음</td></tr>
+
+    <tr style="background:#FEF2F2"><td><strong>Jira 자동 이슈 생성</strong></td><td>"Automatically creates a Jira issue when tests fail"</td><td><span class="badge badge-red">❌ 수동만</span></td><td>run-detail에서 사용자가 수동 버튼 클릭. 자동 생성 로직 없음</td></tr>
+
+    <tr style="background:#FEF2F2"><td><strong>"View Demo" 버튼</strong></td><td>Hero 섹션 "View Demo" CTA</td><td><span class="badge badge-red">❌ 미구현</span></td><td>onClick → navigate('/auth'). 실제 데모/투어 없음</td></tr>
+
+    <tr style="background:#FFFBEB"><td><strong>Zephyr/Qase Import</strong></td><td>"Import from Zephyr, Qase in minutes"</td><td><span class="badge badge-amber">⚠️ 부분</span></td><td>TestRail만 구현. Zephyr/Qase 파서 없음</td></tr>
+
+    <tr style="background:#FFFBEB"><td><strong>Folder Drag-and-Drop</strong></td><td>"Structured folder hierarchy with drag-and-drop"</td><td><span class="badge badge-amber">⚠️ 부분</span></td><td>폴더 구조 있으나 DnD 라이브러리/코드 없음. 파일 업로드 드래그만 존재</td></tr>
+
+    <tr style="background:#FEF2F2"><td><strong>Discord Webhook</strong></td><td>FAQ: "including Slack, Discord, Microsoft Teams"</td><td><span class="badge badge-red">❌ 미구현</span></td><td>Slack/Teams만 구현. buildDiscordPayload 없음</td></tr>
+
+    <tr style="background:#FFFBEB"><td><strong>CI/CD Jenkins</strong></td><td>"Jenkins support", "GitHub Actions, Jenkins, GitLab CI"</td><td><span class="badge badge-amber">⚠️ 부분</span></td><td>API 엔드포인트는 범용이라 작동은 가능하나 Jenkins 전용 스니펫/가이드 없음</td></tr>
+
+    <tr style="background:#FEF2F2"><td><strong>Milestone Timeline View</strong></td><td>Features 페이지: "Visual timeline view"</td><td><span class="badge badge-red">❌ 미구현</span></td><td>리스트 뷰만 존재. 타임라인/간트 코드 없음</td></tr>
+
+    <tr style="background:#FEF2F2"><td><strong>Jira Data Center</strong></td><td>"Jira Cloud and Data Center support"</td><td><span class="badge badge-red">❌ 미구현</span></td><td>Docs 페이지에 "Data Center / Server is not currently supported" 명시</td></tr>
+
+    <tr style="background:#FEF2F2"><td><strong>Postconditions</strong></td><td>Features: "Preconditions and postconditions"</td><td><span class="badge badge-amber">⚠️ 부분</span></td><td>Preconditions만 구현. postcondition 필드/UI 없음</td></tr>
+
+    <tr style="background:#FEF2F2"><td><strong>Estimated Workload</strong></td><td>Features: "Estimated workload tracking"</td><td><span class="badge badge-red">❌ 미구현</span></td><td>Run 카드에 workload/estimate 관련 코드 없음</td></tr>
+  </table>
+
+  <div class="highlight">
+    <p><strong>요약:</strong> 홈페이지 + Features 페이지에 명시된 기능 총 <strong>39건</strong> 중 <strong>27건 구현(69%)</strong>, <strong>8건 미구현(21%)</strong>, <strong>4건 부분 구현(10%)</strong>. 특히 Jira 관련 3건(양방향 동기화, 커스텀 필드 매핑, 자동 이슈 생성)이 핵심 마케팅 포인트임에도 미구현.</p>
+  </div>
+</div>
+
+<!-- ══════════════ S2: 미구현 기능 개요 ══════════════ -->
+<div class="section" id="s2">
+  <h2>2. 미구현 / 부분 구현 기능 요약 (14건)</h2>
+
+  <table>
+    <tr><th>우선순위</th><th>기능</th><th>상태</th><th>홈페이지 위치</th><th>예상 공수</th></tr>
+    <tr><td><span class="badge badge-red">P0</span></td><td>Jira 양방향 동기화</td><td>❌ 미구현</td><td>Core Features, Integration 섹션, FAQ</td><td>5일</td></tr>
+    <tr><td><span class="badge badge-red">P0</span></td><td>Jira 커스텀 필드 매핑</td><td>❌ 미구현</td><td>Core Features, Integration 섹션, FAQ</td><td>3일</td></tr>
+    <tr><td><span class="badge badge-red">P0</span></td><td>Jira 자동 이슈 생성</td><td>❌ 수동만</td><td>Core Features, Integration 섹션, FAQ, Why Cards</td><td>3일</td></tr>
+    <tr><td><span class="badge badge-red">P0</span></td><td>"View Demo" 버튼</td><td>❌ 미구현</td><td>Hero 섹션 CTA</td><td>2일 (또는 제거)</td></tr>
+    <tr><td><span class="badge badge-amber">P1</span></td><td>Zephyr / Qase Import</td><td>⚠️ TestRail만</td><td>Core Features, Why Cards, FAQ</td><td>3일</td></tr>
+    <tr><td><span class="badge badge-amber">P1</span></td><td>Folder Drag-and-Drop</td><td>⚠️ DnD 없음</td><td>Features 페이지</td><td>3일</td></tr>
+    <tr><td><span class="badge badge-amber">P1</span></td><td>Discord Webhook</td><td>❌ 미구현</td><td>FAQ</td><td>1일</td></tr>
+    <tr><td><span class="badge badge-amber">P1</span></td><td>CI/CD Jenkins 스니펫</td><td>⚠️ 가이드 없음</td><td>Integration 섹션, Features</td><td>0.5일</td></tr>
+    <tr><td><span class="badge badge-amber">P1</span></td><td>Milestone Timeline View</td><td>❌ 미구현</td><td>Features 페이지</td><td>5일</td></tr>
+    <tr><td><span class="badge badge-blue">P2</span></td><td>Jira Data Center</td><td>❌ 미구현</td><td>Features, Changelog</td><td>5일+</td></tr>
+    <tr><td><span class="badge badge-blue">P2</span></td><td>Postconditions</td><td>⚠️ 미구현</td><td>Features 페이지</td><td>1일</td></tr>
+    <tr><td><span class="badge badge-blue">P2</span></td><td>Estimated Workload</td><td>❌ 미구현</td><td>Features 페이지</td><td>2일</td></tr>
+  </table>
+
+  <div class="warning">
+    <p><strong>💡 추가 조치:</strong> 위 12건 외에, 홈페이지 카피 자체를 정정해야 하는 항목 2건 (Jira Data Center 문구, Discord 문구)을 Section 15에서 별도 정리합니다.</p>
+  </div>
+</div>
+
+<!-- ══════════════ S3: P0 — Jira 양방향 동기화 ══════════════ -->
+<div class="section" id="s3">
+  <h2>3. <span class="badge badge-red">P0</span> Jira 양방향 동기화 (Bidirectional Sync)</h2>
+
+  <div class="spec-card p0">
+    <h4>F-001: Jira ↔ Testably 양방향 상태 동기화</h4>
+    <p class="desc">Jira에서 이슈 상태가 변경되면 Testably의 관련 테스트 결과에 반영되고, Testably에서 상태 변경 시 Jira 이슈도 업데이트. 현재는 Testably→Jira 수동 이슈 생성만 가능.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">홈페이지 주장</div>
+        <div class="detail-value">"sync status bidirectionally", "Bidirectional status sync"</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">현재 상태</div>
+        <div class="detail-value">Testably→Jira 단방향 이슈 생성만 (run-detail에서 수동 버튼)</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">5일 (프론트 2일 + 백엔드 3일)</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">디자인 필요</div>
+        <div class="detail-value">Yes — 동기화 상태 표시 UI, Settings 매핑 화면</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>3-1. 구현 범위</h3>
+
+  <h4>A. Jira → Testably (인바운드)</h4>
+  <table>
+    <tr><th>항목</th><th>상세</th></tr>
+    <tr><td>Jira Webhook 수신</td><td>Supabase Edge Function <code>jira-webhook-handler</code> 신규 생성. Jira Cloud webhook이 POST로 이슈 업데이트 이벤트 전송 → 함수에서 수신/파싱</td></tr>
+    <tr><td>이벤트 매핑</td><td>Jira 이슈 transition (e.g. To Do → In Progress → Done) → Testably test_results.issues 배열에서 해당 이슈 key 검색 → 연관 TC의 상태를 업데이트할지 사용자에게 알림</td></tr>
+    <tr><td>DB 스키마</td><td><code>jira_sync_log</code> 테이블 신규: id, project_id, jira_issue_key, jira_status, testably_run_id, testably_tc_id, synced_at, direction ('inbound'|'outbound')</td></tr>
+    <tr><td>보안</td><td>Jira webhook secret 검증 (X-Hub-Signature 헤더)</td></tr>
+  </table>
+
+  <h4>B. Testably → Jira (아웃바운드 상태 동기화)</h4>
+  <table>
+    <tr><th>항목</th><th>상세</th></tr>
+    <tr><td>상태 변경 트리거</td><td>test_results에 새 결과 INSERT 시, 해당 TC에 linked Jira issue가 있으면 Jira REST API로 transition 호출</td></tr>
+    <tr><td>상태 매핑 설정</td><td>Settings → Jira Integration에 상태 매핑 UI 추가: Testably "Passed" → Jira "Done", "Failed" → "Reopened" 등 사용자 설정 가능</td></tr>
+    <tr><td>Edge Function</td><td><code>sync-jira-status</code> 신규: Jira REST API <code>POST /rest/api/3/issue/{key}/transitions</code></td></tr>
+  </table>
+
+  <h4>C. Settings UI 변경</h4>
+  <div class="code"><span class="cm">// Settings → Jira Integration 탭에 추가할 섹션</span>
+<span class="cm">// 1. Webhook URL 표시 (복사 가능) — Jira Admin에 등록하라는 가이드</span>
+<span class="cm">// 2. Status Mapping 테이블 (Testably Status ↔ Jira Transition)</span>
+<span class="cm">// 3. Sync Direction 토글: Inbound only / Outbound only / Bidirectional</span>
+<span class="cm">// 4. Sync Log 테이블 (최근 동기화 이력)</span>
+
+<span class="kw">interface</span> JiraSyncMapping {
+  testably_status: <span class="str">'passed'</span> | <span class="str">'failed'</span> | <span class="str">'blocked'</span> | <span class="str">'retest'</span>;
+  jira_transition_id: <span class="str">string</span>;
+  jira_transition_name: <span class="str">string</span>;
+}
+
+<span class="cm">// DB: jira_settings 테이블에 컬럼 추가</span>
+<span class="kw">ALTER TABLE</span> jira_settings
+  <span class="kw">ADD COLUMN</span> webhook_secret <span class="fn">TEXT</span>,
+  <span class="kw">ADD COLUMN</span> sync_direction <span class="fn">TEXT</span> <span class="kw">DEFAULT</span> <span class="str">'outbound'</span>,
+  <span class="kw">ADD COLUMN</span> status_mappings <span class="fn">JSONB</span> <span class="kw">DEFAULT</span> <span class="str">'[]'</span>;
+  </div>
+</div>
+
+<!-- ══════════════ S4: P0 — Jira 커스텀 필드 매핑 ══════════════ -->
+<div class="section" id="s4">
+  <h2>4. <span class="badge badge-red">P0</span> Jira 커스텀 필드 매핑</h2>
+
+  <div class="spec-card p0">
+    <h4>F-002: Jira 이슈 생성 시 커스텀 필드 매핑 UI</h4>
+    <p class="desc">현재 create-jira-issue Edge Function은 summary, description, priority, labels, assignee, components만 하드코딩. 사용자가 Jira 프로젝트의 커스텀 필드(Epic Link, Story Points, Sprint 등)를 매핑할 수 있어야 함.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">현재 상태</div>
+        <div class="detail-value">Edge Function에 필드 하드코딩. 설정 UI에 custom field mapping 없음</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">3일 (프론트 2일 + 백엔드 1일)</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>4-1. 구현 상세</h3>
+
+  <h4>A. Jira 프로젝트 필드 목록 가져오기</h4>
+  <div class="code"><span class="cm">// 신규 Edge Function: fetch-jira-fields</span>
+<span class="cm">// Jira REST API: GET /rest/api/3/field</span>
+<span class="cm">// → customfield_xxxxx 목록 반환</span>
+<span class="cm">// → Settings UI에서 드롭다운으로 표시</span>
+
+<span class="kw">interface</span> JiraFieldMapping {
+  testably_field: <span class="str">'tc_title'</span> | <span class="str">'tc_priority'</span> | <span class="str">'tc_tags'</span> | <span class="str">'tc_precondition'</span> | <span class="str">'tc_steps'</span> | <span class="str">'run_name'</span> | <span class="str">'milestone_name'</span>;
+  jira_field_id: <span class="str">string</span>;  <span class="cm">// e.g. "customfield_10001"</span>
+  jira_field_name: <span class="str">string</span>;  <span class="cm">// e.g. "Epic Link"</span>
+}
+  </div>
+
+  <h4>B. Settings UI</h4>
+  <p><strong>위치:</strong> Settings → Integrations 탭 → Jira Integration 섹션 하단에 "Field Mapping" 카드 추가</p>
+  <table>
+    <tr><th>UI 요소</th><th>상세</th></tr>
+    <tr><td>"Fetch Fields" 버튼</td><td>Jira API에서 프로젝트 필드 목록 가져오기 (연결 상태일 때만 활성화)</td></tr>
+    <tr><td>매핑 테이블</td><td>좌: Testably 필드 (고정), 우: Jira 필드 드롭다운 (fetched)</td></tr>
+    <tr><td>기본값</td><td>Summary → summary, Description → description, Priority → priority (자동 매핑)</td></tr>
+    <tr><td>추가 필드</td><td>"+ Add Custom Field" 버튼 → 사용자가 Jira field 선택 + 고정값 또는 Testably 동적값 선택</td></tr>
+  </table>
+
+  <h4>C. DB 스키마</h4>
+  <div class="code"><span class="kw">ALTER TABLE</span> jira_settings
+  <span class="kw">ADD COLUMN</span> field_mappings <span class="fn">JSONB</span> <span class="kw">DEFAULT</span> <span class="str">'[]'</span>;
+<span class="cm">-- 형태: [{"testably_field":"tc_priority","jira_field_id":"priority","jira_field_name":"Priority"}, ...]</span>
+  </div>
+
+  <h4>D. Edge Function 수정</h4>
+  <p><code>create-jira-issue/index.ts</code>에서 <code>jira_settings.field_mappings</code>를 읽어서 Jira API body에 동적으로 필드를 추가하도록 변경.</p>
+</div>
+
+<!-- ══════════════ S5: P0 — Jira 자동 이슈 생성 ══════════════ -->
+<div class="section" id="s5">
+  <h2>5. <span class="badge badge-red">P0</span> Jira 자동 이슈 생성 (테스트 실패 시)</h2>
+
+  <div class="spec-card p0">
+    <h4>F-003: 테스트 실패 시 Jira 이슈 자동 생성</h4>
+    <p class="desc">홈페이지: "Automatically creates a Jira issue when tests fail". 현재는 run-detail에서 사용자가 수동으로 "Create Jira Issue" 버튼 클릭 필요. 자동 생성 옵션 추가.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">현재 상태</div>
+        <div class="detail-value">run-detail/page.tsx line 1234: 수동 supabase.functions.invoke('create-jira-issue')</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">3일 (프론트 1일 + 백엔드 2일)</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>5-1. 구현 상세</h3>
+
+  <h4>A. 자동 생성 설정</h4>
+  <table>
+    <tr><th>항목</th><th>상세</th></tr>
+    <tr><td>Settings UI</td><td>Jira Integration 섹션에 "Auto-create issue on failure" 토글 추가</td></tr>
+    <tr><td>조건 설정</td><td>① 모든 Failed 결과에 자동 생성, ② 첫 번째 Failed만, ③ 비활성화 (수동만) — 3가지 옵션</td></tr>
+    <tr><td>중복 방지</td><td>동일 TC + 동일 Run에서 이미 Jira issue가 생성된 경우 중복 생성 방지 (test_results.issues 배열 확인)</td></tr>
+  </table>
+
+  <h4>B. 트리거 위치</h4>
+  <div class="code"><span class="cm">// run-detail/page.tsx — handleStatusUpdate 함수 내부</span>
+<span class="cm">// 또는 Supabase DB trigger (test_results INSERT/UPDATE 시)</span>
+
+<span class="cm">// 권장: DB trigger 방식 (백엔드)</span>
+<span class="cm">// test_results 테이블에 status='failed' INSERT → Postgres trigger</span>
+<span class="cm">// → supabase.functions.invoke('auto-create-jira-issue')</span>
+
+<span class="cm">// 신규 Edge Function: auto-create-jira-issue</span>
+<span class="cm">// 1. jira_settings에서 auto_create_enabled 확인</span>
+<span class="cm">// 2. 중복 체크 (test_results.issues에 이미 key 있는지)</span>
+<span class="cm">// 3. create-jira-issue 로직 재사용</span>
+<span class="cm">// 4. 생성된 issue key를 test_results.issues에 자동 추가</span>
+  </div>
+
+  <h4>C. DB 스키마</h4>
+  <div class="code"><span class="kw">ALTER TABLE</span> jira_settings
+  <span class="kw">ADD COLUMN</span> auto_create_on_failure <span class="fn">TEXT</span> <span class="kw">DEFAULT</span> <span class="str">'disabled'</span>;
+<span class="cm">-- 'disabled' | 'all_failures' | 'first_failure_only'</span>
+  </div>
+</div>
+
+<!-- ══════════════ S6: P0 — View Demo ══════════════ -->
+<div class="section" id="s6">
+  <h2>6. <span class="badge badge-red">P0</span> "View Demo" 버튼</h2>
+
+  <div class="spec-card p0">
+    <h4>F-004: Hero 섹션 "View Demo" CTA 실제 동작</h4>
+    <p class="desc">현재 "View Demo" 버튼이 /auth(회원가입 페이지)로 리다이렉트. 방문자가 기대하는 것은 제품 데모 영상 또는 인터랙티브 투어.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">현재 코드</div>
+        <div class="detail-value"><code>onClick={() => navigate('/auth')}</code> — 회원가입과 동일</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">Option A: 2일 (데모 영상), Option B: 0.5일 (버튼 제거/변경)</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>6-1. 옵션</h3>
+  <table>
+    <tr><th>옵션</th><th>설명</th><th>공수</th><th>권장</th></tr>
+    <tr>
+      <td><strong>A. 데모 영상 모달</strong></td>
+      <td>클릭 시 YouTube/Loom 임베드 영상 모달 팝업. 제품 워크스루 영상 (2-3분)</td>
+      <td>2일 (영상 제작 별도)</td>
+      <td><span class="badge badge-green">권장</span></td>
+    </tr>
+    <tr>
+      <td><strong>B. 인터랙티브 투어</strong></td>
+      <td>샘플 프로젝트가 채워진 읽기전용 데모 환경</td>
+      <td>5일+</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><strong>C. 버튼 제거</strong></td>
+      <td>"View Demo" 버튼을 제거하고 "Start for Free" CTA만 유지</td>
+      <td>0.5일</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><strong>D. 스크롤 앵커</strong></td>
+      <td>"View Demo" 클릭 시 Features 섹션으로 스크롤</td>
+      <td>0.5일</td>
+      <td><span class="badge badge-amber">임시안</span></td>
+    </tr>
+  </table>
+
+  <div class="highlight">
+    <p><strong>PM 권장:</strong> 즉시 <strong>Option D</strong>(스크롤)로 임시 적용 후, 마케팅팀과 데모 영상 제작 일정 협의하여 <strong>Option A</strong>로 최종 전환.</p>
+  </div>
+
+  <h4>Option D 즉시 적용 코드</h4>
+  <div class="code"><span class="cm">// home/page.tsx — Hero 섹션 "View Demo" 버튼</span>
+<span class="cm">// 변경 전:</span>
+onClick={() => navigate(<span class="str">'/auth'</span>)}
+
+<span class="cm">// 변경 후:</span>
+onClick={() => document.getElementById(<span class="str">'features'</span>)?.<span class="fn">scrollIntoView</span>({ behavior: <span class="str">'smooth'</span> })}
+  </div>
+</div>
+
+<!-- ══════════════ S7: P1 — Zephyr/Qase Import ══════════════ -->
+<div class="section" id="s7">
+  <h2>7. <span class="badge badge-amber">P1</span> Zephyr / Qase Import</h2>
+
+  <div class="spec-card p1">
+    <h4>F-005: Zephyr Scale 및 Qase CSV Import 지원</h4>
+    <p class="desc">홈페이지: "Migrate from TestRail, Zephyr, or Qase in minutes". 현재 testRailExport.ts에 TestRail CSV 파서만 존재. Zephyr/Qase CSV 형식에 대한 파서 추가 필요.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">현재 상태</div>
+        <div class="detail-value">TestRail CSV만 파싱 가능 (testRailExport.ts)</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">3일 (각 파서 1일 + UI 소스 선택 드롭다운 1일)</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>7-1. 구현 상세</h3>
+
+  <h4>A. Zephyr Scale CSV 형식</h4>
+  <table>
+    <tr><th>Zephyr 필드</th><th>Testably 매핑</th></tr>
+    <tr><td>Name</td><td>title</td></tr>
+    <tr><td>Folder</td><td>folder (경로 파싱 필요: /Parent/Child)</td></tr>
+    <tr><td>Priority</td><td>priority (High/Medium/Low → Testably priority 매핑)</td></tr>
+    <tr><td>Test Script (Step/Data/Result)</td><td>steps[] 배열 변환</td></tr>
+    <tr><td>Precondition</td><td>precondition</td></tr>
+    <tr><td>Labels</td><td>tags (쉼표 구분)</td></tr>
+  </table>
+
+  <h4>B. Qase CSV 형식</h4>
+  <table>
+    <tr><th>Qase 필드</th><th>Testably 매핑</th></tr>
+    <tr><td>Title</td><td>title</td></tr>
+    <tr><td>Suite</td><td>folder</td></tr>
+    <tr><td>Priority (0-4)</td><td>priority (숫자→이름 매핑: 0=None, 1=Low, 2=Medium, 3=High, 4=Critical)</td></tr>
+    <tr><td>Steps to reproduce</td><td>steps[] 파싱 (줄바꿈 기반)</td></tr>
+    <tr><td>Pre-conditions</td><td>precondition</td></tr>
+    <tr><td>Tags</td><td>tags</td></tr>
+  </table>
+
+  <h4>C. UI 변경</h4>
+  <p><strong>위치:</strong> <code>ExportImportModal.tsx</code> — Import 탭에 "Import Source" 드롭다운 추가</p>
+  <div class="code"><span class="cm">// ExportImportModal.tsx — 소스 선택 추가</span>
+<span class="kw">const</span> [importSource, setImportSource] = useState&lt;<span class="str">'testrail'</span> | <span class="str">'zephyr'</span> | <span class="str">'qase'</span> | <span class="str">'generic'</span>&gt;(<span class="str">'testrail'</span>);
+
+<span class="cm">// 드롭다운: "Import from: TestRail / Zephyr Scale / Qase / Generic CSV"</span>
+<span class="cm">// 선택된 소스에 따라 파서 함수 분기</span>
+  </div>
+
+  <h4>D. 신규 파일</h4>
+  <p><code>src/utils/zephyrImport.ts</code>, <code>src/utils/qaseImport.ts</code> — testRailExport.ts의 parseTestRailCsv 패턴 참고하여 각 소스별 파서 구현.</p>
+</div>
+
+<!-- ══════════════ S8: P1 — Folder DnD ══════════════ -->
+<div class="section" id="s8">
+  <h2>8. <span class="badge badge-amber">P1</span> Folder Drag-and-Drop</h2>
+
+  <div class="spec-card p1">
+    <h4>F-006: 테스트 케이스 폴더 구조 Drag-and-Drop 재정렬</h4>
+    <p class="desc">Features 페이지: "Structured folder hierarchy with drag-and-drop". 현재 폴더 트리는 있으나 드래그 앤 드롭으로 TC를 다른 폴더로 이동하거나 폴더 순서를 변경하는 기능 없음.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">현재 상태</div>
+        <div class="detail-value">폴더 트리 구조 존재, 컨텍스트 메뉴로 이동은 가능. DnD 라이브러리 미사용</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">3일 (라이브러리 도입 1일 + 폴더 DnD 1일 + TC DnD 1일)</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">디자인 필요</div>
+        <div class="detail-value">Yes — 드래그 중 시각적 피드백, 드롭 타겟 하이라이트</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>8-1. 구현 상세</h3>
+  <table>
+    <tr><th>항목</th><th>상세</th></tr>
+    <tr><td>라이브러리</td><td><code>@dnd-kit/core</code> + <code>@dnd-kit/sortable</code> (React용 최신 DnD 라이브러리, 접근성 우수)</td></tr>
+    <tr><td>기능 1: TC 이동</td><td>테스트 케이스를 드래그하여 다른 폴더로 이동 (DB: test_cases.folder_id UPDATE)</td></tr>
+    <tr><td>기능 2: 폴더 정렬</td><td>폴더 순서 드래그 변경 (DB: folders.sort_order UPDATE)</td></tr>
+    <tr><td>기능 3: 다중 선택 DnD</td><td>체크박스로 여러 TC 선택 후 일괄 드래그 이동</td></tr>
+    <tr><td>시각적 피드백</td><td>드래그 중: ghost 아이템 + 원래 위치 placeholder. 드롭 타겟: 폴더 하이라이트 (indigo border)</td></tr>
+    <tr><td>영향 파일</td><td><code>project-testcases/components/TestCaseList.tsx</code> — 폴더 트리 + TC 리스트 부분</td></tr>
+  </table>
+</div>
+
+<!-- ══════════════ S9: P1 — Discord Webhook ══════════════ -->
+<div class="section" id="s9">
+  <h2>9. <span class="badge badge-amber">P1</span> Discord Webhook</h2>
+
+  <div class="spec-card p1">
+    <h4>F-007: Discord Webhook 알림 지원</h4>
+    <p class="desc">FAQ: "including Slack, Discord, Microsoft Teams". Slack/Teams는 구현됨. Discord만 미구현.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">현재 상태</div>
+        <div class="detail-value">useWebhooks.ts에 buildSlackPayload(), buildTeamsPayload()만 존재</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">1일</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>9-1. 구현 상세</h3>
+  <div class="code"><span class="cm">// useWebhooks.ts에 추가</span>
+<span class="kw">function</span> <span class="fn">buildDiscordPayload</span>(event: WebhookEvent): object {
+  <span class="cm">// Discord Webhook은 Slack과 유사하지만 format이 다름</span>
+  <span class="cm">// Discord Embed 형식 사용</span>
+  <span class="kw">return</span> {
+    embeds: [{
+      title: event.title,
+      description: event.message,
+      color: <span class="fn">getDiscordColor</span>(event.type), <span class="cm">// hex를 decimal로 변환</span>
+      fields: event.fields?.map(f =&gt; ({ name: f.label, value: f.value, inline: <span class="kw">true</span> })),
+      footer: { text: <span class="str">'Testably'</span> },
+      timestamp: <span class="kw">new</span> Date().toISOString(),
+    }]
+  };
+}
+  </div>
+
+  <p><strong>UI 변경:</strong> Settings → Integrations → Webhooks에서 type 드롭다운에 'discord' 옵션 추가. Discord Webhook URL 형식: <code>https://discord.com/api/webhooks/{id}/{token}</code></p>
+</div>
+
+<!-- ══════════════ S10: P1 — Jenkins ══════════════ -->
+<div class="section" id="s10">
+  <h2>10. <span class="badge badge-amber">P1</span> CI/CD Jenkins 스니펫</h2>
+
+  <div class="spec-card p1">
+    <h4>F-008: Jenkins Pipeline 설정 가이드 및 코드 스니펫</h4>
+    <p class="desc">upload-ci-results Edge Function은 범용이라 Jenkins에서도 호출 가능. 다만 Settings UI에 Jenkins 전용 Jenkinsfile 스니펫이 없음.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">0.5일</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>10-1. 추가 내용</h3>
+  <p><strong>위치:</strong> Settings → API 탭 → CI/CD 섹션에 "Jenkins" 탭 추가 (기존 GitHub Actions, GitLab CI 옆)</p>
+  <div class="code"><span class="cm">// Jenkinsfile 스니펫 예시</span>
+pipeline {
+  agent any
+  stages {
+    stage(<span class="str">'Test'</span>) {
+      steps {
+        sh <span class="str">'npm test -- --reporter junit --output results.xml'</span>
+      }
+      post {
+        always {
+          sh <span class="str">"""
+            curl -X POST https://your-project.supabase.co/functions/v1/upload-ci-results \\
+              -H "Authorization: Bearer ${TESTABLY_CI_TOKEN}" \\
+              -H "Content-Type: application/xml" \\
+              --data-binary @results.xml
+          """</span>
+        }
+      }
+    }
+  }
+}
+  </div>
+</div>
+
+<!-- ══════════════ S11: P1 — Milestone Timeline ══════════════ -->
+<div class="section" id="s11">
+  <h2>11. <span class="badge badge-amber">P1</span> Milestone Visual Timeline View</h2>
+
+  <div class="spec-card p1">
+    <h4>F-009: Milestone 간트 차트 / 타임라인 뷰</h4>
+    <p class="desc">Features 페이지: "Visual timeline view". 현재 Milestone은 카드 리스트 뷰만 제공. 시간축 기반 타임라인/간트 뷰가 없음.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">현재 상태</div>
+        <div class="detail-value">project-milestones/page.tsx — 카드 리스트 뷰만</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">5일 (프론트 4일 + 디자인 1일)</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">디자인 필요</div>
+        <div class="detail-value">Yes — 타임라인 뷰 UI 설계 필요</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>11-1. 구현 상세</h3>
+  <table>
+    <tr><th>항목</th><th>상세</th></tr>
+    <tr><td>뷰 토글</td><td>Milestone 리스트 상단에 "List | Timeline" 뷰 토글 버튼 추가</td></tr>
+    <tr><td>타임라인 렌더링</td><td>수평 시간축 (월 단위), 각 Milestone을 start_date~end_date 기간의 수평 바로 표시</td></tr>
+    <tr><td>색상</td><td>상태별 색상: Upcoming(blue), In Progress(indigo), Completed(green), Past Due(red)</td></tr>
+    <tr><td>Sub-milestone</td><td>Parent 바 아래에 들여쓰기된 Sub-milestone 바 표시</td></tr>
+    <tr><td>인터랙션</td><td>바 클릭 → Milestone Detail로 이동. 바 hover → 이름/날짜/진행률 tooltip</td></tr>
+    <tr><td>라이브러리</td><td>순수 CSS + JS (div 기반 바 차트) 또는 <code>@nivo/bar</code> horizontal bar 활용</td></tr>
+    <tr><td>DB 변경</td><td>없음 — 기존 milestones 테이블의 start_date, end_date 활용</td></tr>
+  </table>
+</div>
+
+<!-- ══════════════ S12: P2 — Jira Data Center ══════════════ -->
+<div class="section" id="s12">
+  <h2>12. <span class="badge badge-blue">P2</span> Jira Data Center 지원</h2>
+
+  <div class="spec-card p2">
+    <h4>F-010: Jira Data Center / Server 연동</h4>
+    <p class="desc">Features 및 Changelog에서 "Jira Cloud and Data Center support" 주장. 하지만 Docs에 "Data Center / Server is not currently supported" 명시. 현재 Cloud API만 사용.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">현재 상태</div>
+        <div class="detail-value">Jira Cloud REST API v3만 사용. Data Center는 v2 호환 필요</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">5일+ (API 차이 조사 + OAuth 흐름 차이 + 테스트)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="warning">
+    <p><strong>PM 의견:</strong> Data Center 지원은 Enterprise 고객 확보 전까지 보류 권장. 대신 <strong>홈페이지/Features/Changelog의 "Data Center" 문구를 즉시 제거</strong>하여 허위 광고 위험을 방지해야 함. → Section 15 참조.</p>
+  </div>
+</div>
+
+<!-- ══════════════ S13: P2 — Postconditions ══════════════ -->
+<div class="section" id="s13">
+  <h2>13. <span class="badge badge-blue">P2</span> Test Case Postconditions</h2>
+
+  <div class="spec-card p2">
+    <h4>F-011: 테스트 케이스 Postconditions 필드</h4>
+    <p class="desc">Features 페이지: "Preconditions and postconditions". Preconditions는 구현됨 (test_cases.precondition 필드 + UI). Postconditions 필드는 DB/UI 모두 없음.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">1일</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>13-1. 구현 상세</h3>
+  <div class="code"><span class="cm">-- DB 마이그레이션</span>
+<span class="kw">ALTER TABLE</span> test_cases
+  <span class="kw">ADD COLUMN</span> postcondition <span class="fn">TEXT</span>;
+
+<span class="cm">// UI: DetailPanel.tsx — precondition 블록 아래에 postcondition 블록 추가</span>
+<span class="cm">// FocusMode.tsx — precondition 표시 아래에 postcondition 표시 추가</span>
+<span class="cm">// TestCaseList.tsx — TC 편집 폼에 postcondition textarea 추가</span>
+<span class="cm">// testRailExport.ts — 내보내기/가져오기에 Postcondition 필드 추가</span>
+  </div>
+</div>
+
+<!-- ══════════════ S14: P2 — Workload ══════════════ -->
+<div class="section" id="s14">
+  <h2>14. <span class="badge badge-blue">P2</span> Estimated Workload Tracking</h2>
+
+  <div class="spec-card p2">
+    <h4>F-012: Test Run 예상 소요 시간 추적</h4>
+    <p class="desc">Features 페이지: "Estimated workload tracking". TC별 예상 실행 시간을 설정하고, Run 생성 시 총 예상 소요 시간을 표시하는 기능.</p>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">예상 공수</div>
+        <div class="detail-value">2일</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>14-1. 구현 상세</h3>
+  <table>
+    <tr><th>항목</th><th>상세</th></tr>
+    <tr><td>DB: test_cases</td><td><code>estimated_minutes INTEGER DEFAULT NULL</code> 추가</td></tr>
+    <tr><td>TC 편집 UI</td><td>"Estimated time" 입력 필드 (분 단위, 선택사항)</td></tr>
+    <tr><td>Run 생성 시</td><td>선택된 TC들의 estimated_minutes 합산 표시: "Estimated: 2h 30m"</td></tr>
+    <tr><td>Run 카드</td><td>예상 시간 vs 실제 소요 시간 비교 표시</td></tr>
+    <tr><td>실제 시간 추적</td><td>Focus Mode에서 TC당 소요 시간 자동 기록 (타이머 기반)</td></tr>
+  </table>
+</div>
+
+<!-- ══════════════ S15: 홈페이지 카피 정정 ══════════════ -->
+<div class="section" id="s15">
+  <h2>15. <span class="badge badge-red">P0</span> 홈페이지 카피 정정 (즉시 조치)</h2>
+
+  <p>구현 예정이 없거나 장기 보류 기능은 홈페이지 문구를 정정하여 허위 광고 위험을 방지해야 합니다.</p>
+
+  <table>
+    <tr><th>위치</th><th>현재 문구</th><th>정정안</th><th>이유</th></tr>
+    <tr>
+      <td>Features 페이지 Jira 카드</td>
+      <td>"Jira Cloud and Data Center support"</td>
+      <td>"Jira Cloud support" (Data Center 제거)</td>
+      <td>Docs에서 미지원 명시. P2 보류 상태</td>
+    </tr>
+    <tr>
+      <td>Features 페이지 Jira 카드</td>
+      <td>"Bidirectional status sync"</td>
+      <td>"One-click Jira issue creation" (또는 양방향 구현 후 유지)</td>
+      <td>P0 구현 전까지 임시 정정</td>
+    </tr>
+    <tr>
+      <td>Features 페이지 Jira 카드</td>
+      <td>"Custom field mapping"</td>
+      <td>제거 (또는 P0 구현 후 유지)</td>
+      <td>P0 구현 전까지 임시 정정</td>
+    </tr>
+    <tr>
+      <td>홈페이지 Jira 섹션</td>
+      <td>"Automatically create Jira issues when tests fail"</td>
+      <td>"Create Jira issues directly from failed tests" (수동 뉘앙스)</td>
+      <td>현재 자동이 아닌 수동 버튼</td>
+    </tr>
+    <tr>
+      <td>FAQ #11 (Webhooks)</td>
+      <td>"including Slack, Discord, Microsoft Teams"</td>
+      <td>"including Slack and Microsoft Teams" (Discord 제거, 또는 P1 구현 후 유지)</td>
+      <td>Discord buildPayload 미구현</td>
+    </tr>
+    <tr>
+      <td>Features 페이지 TC 카드</td>
+      <td>"Preconditions and postconditions"</td>
+      <td>"Preconditions" (postconditions 제거, 또는 P2 구현 후 유지)</td>
+      <td>Postconditions 미구현</td>
+    </tr>
+    <tr>
+      <td>Features 페이지 Runs 카드</td>
+      <td>"Estimated workload tracking"</td>
+      <td>제거 (또는 P2 구현 후 유지)</td>
+      <td>Workload 미구현</td>
+    </tr>
+    <tr>
+      <td>Features 페이지 Milestone 카드</td>
+      <td>"Visual timeline view"</td>
+      <td>제거 (또는 P1 구현 후 유지)</td>
+      <td>Timeline 미구현</td>
+    </tr>
+    <tr>
+      <td>Features 페이지 DnD</td>
+      <td>"Structured folder hierarchy with drag-and-drop"</td>
+      <td>"Structured folder hierarchy" (drag-and-drop 제거, 또는 P1 구현 후 유지)</td>
+      <td>DnD 미구현</td>
+    </tr>
+  </table>
+
+  <div class="bug-box">
+    <p><strong>⚠️ 즉시 조치 권장:</strong> 위 9건 중 최소 <strong>Jira Data Center</strong>, <strong>Discord</strong>, <strong>Postconditions</strong>, <strong>Workload</strong>, <strong>Timeline</strong>, <strong>DnD</strong> 6건은 구현 시점이 불확실하므로 <strong>즉시 카피 정정</strong>해야 합니다. 나머지 Jira 3건은 P0로 빠르게 구현 착수하면 카피 유지 가능.</p>
+  </div>
+</div>
+
+<!-- ══════════════ S16: 개발 로드맵 ══════════════ -->
+<div class="section" id="s16">
+  <h2>16. 개발 우선순위 로드맵</h2>
+
+  <h3>Phase 1: 즉시 착수 (P0 — 총 ~8.5일)</h3>
+  <table>
+    <tr><th>순서</th><th>기능</th><th>담당</th><th>공수</th><th>의존성</th></tr>
+    <tr><td>1-1</td><td>"View Demo" → 스크롤 앵커 (임시 조치)</td><td>Dev2</td><td>0.5일</td><td>없음</td></tr>
+    <tr><td>1-2</td><td>홈페이지 카피 정정 (6건)</td><td>Dev2</td><td>0.5일</td><td>없음 (CEO 승인 필요)</td></tr>
+    <tr><td>1-3</td><td>Jira 자동 이슈 생성</td><td>Dev2</td><td>3일</td><td>없음</td></tr>
+    <tr><td>1-4</td><td>Jira 커스텀 필드 매핑</td><td>Dev2</td><td>3일</td><td>fetch-jira-fields Edge Function</td></tr>
+    <tr><td>1-5</td><td>Jira 양방향 동기화 (설계)</td><td>PM + Dev2</td><td>1.5일</td><td>1-3, 1-4 완료 후</td></tr>
+  </table>
+
+  <h3>Phase 2: 2주 내 (P1 — 총 ~12.5일)</h3>
+  <table>
+    <tr><th>순서</th><th>기능</th><th>담당</th><th>공수</th><th>의존성</th></tr>
+    <tr><td>2-1</td><td>Jira 양방향 동기화 (구현)</td><td>Dev2</td><td>3.5일</td><td>Phase 1-5 설계 완료</td></tr>
+    <tr><td>2-2</td><td>Discord Webhook</td><td>Dev2</td><td>1일</td><td>없음</td></tr>
+    <tr><td>2-3</td><td>Jenkins CI/CD 스니펫</td><td>Dev2</td><td>0.5일</td><td>없음</td></tr>
+    <tr><td>2-4</td><td>Zephyr / Qase Import</td><td>Dev2</td><td>3일</td><td>없음</td></tr>
+    <tr><td>2-5</td><td>Folder Drag-and-Drop</td><td>Dev2 + Desi</td><td>3일</td><td>Desi 디자인</td></tr>
+    <tr><td>2-6</td><td>Milestone Timeline View</td><td>Dev2 + Desi</td><td>5일</td><td>Desi 디자인</td></tr>
+  </table>
+
+  <h3>Phase 3: 백로그 (P2 — 총 ~8일+)</h3>
+  <table>
+    <tr><th>순서</th><th>기능</th><th>담당</th><th>공수</th></tr>
+    <tr><td>3-1</td><td>Postconditions 필드</td><td>Dev2</td><td>1일</td></tr>
+    <tr><td>3-2</td><td>Estimated Workload Tracking</td><td>Dev2</td><td>2일</td></tr>
+    <tr><td>3-3</td><td>Jira Data Center</td><td>Dev2</td><td>5일+</td></tr>
+    <tr><td>3-4</td><td>"View Demo" 영상 제작 + 모달</td><td>마케팅 + Dev2</td><td>2일 (코드) + 영상 별도</td></tr>
+  </table>
+
+  <h3>디자인 요청 사항 (Desi)</h3>
+  <table>
+    <tr><th>기능</th><th>디자인 내용</th><th>우선순위</th></tr>
+    <tr><td>Folder DnD</td><td>드래그 중 ghost 아이템, 드롭 타겟 하이라이트, 다중 선택 드래그 UI</td><td>P1</td></tr>
+    <tr><td>Milestone Timeline</td><td>수평 타임라인 뷰 전체 디자인 (바 차트, 색상, tooltip, 뷰 토글)</td><td>P1</td></tr>
+    <tr><td>Jira 설정 화면 확장</td><td>커스텀 필드 매핑 UI, 상태 매핑 테이블, 동기화 방향 설정, Sync Log</td><td>P0</td></tr>
+  </table>
+</div>
+
+</div>
+</body>
+</html>

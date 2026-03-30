@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Add Run 모달 + TC 선택 팝업 UX 개선 기획</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; padding: 2rem; line-height: 1.6; }
+  .spec { max-width: 1060px; margin: 0 auto; }
+
+  /* Header */
+  .spec-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid #E2E8F0; }
+  .spec-header h1 { font-size: 1.5rem; font-weight: 800; color: #0F172A; margin-bottom: 0.25rem; }
+  .spec-header .subtitle { font-size: 0.9375rem; color: #6366F1; font-weight: 600; margin-bottom: 0.5rem; }
+  .spec-header .meta { font-size: 0.8125rem; color: #64748B; }
+  .spec-header .meta span { margin-right: 1.5rem; }
+
+  /* Typography */
+  h2 { font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #E2E8F0; }
+  h3 { font-size: 0.9375rem; font-weight: 600; color: #334155; margin: 1.5rem 0 0.75rem; }
+  p, li { font-size: 0.875rem; color: #475569; margin-bottom: 0.5rem; }
+  ul { padding-left: 1.25rem; margin-bottom: 1rem; }
+  code { background: #F1F5F9; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.75rem; color: #6366F1; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+  /* Cards */
+  .note { background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #4338CA; margin: 1rem 0; }
+  .note i { margin-right: 0.375rem; }
+  .warn { background: #FEF9C3; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #854D0E; margin: 1rem 0; }
+  .warn i { margin-right: 0.375rem; }
+  .danger { background: #FEE2E2; border: 1px solid #FECACA; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #991B1B; margin: 1rem 0; }
+  .danger i { margin-right: 0.375rem; }
+  .success { background: #DCFCE7; border: 1px solid #BBF7D0; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #166534; margin: 1rem 0; }
+
+  /* Tables */
+  .spec-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.8125rem; }
+  .spec-table th, .spec-table td { padding: 0.625rem 0.875rem; text-align: left; border: 1px solid #E2E8F0; }
+  .spec-table th { background: #F8FAFC; font-weight: 600; color: #334155; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .spec-table td { color: #475569; vertical-align: top; }
+
+  /* Section divider */
+  .section-divider { height: 4px; background: linear-gradient(to right, #6366F1, #818CF8, #C7D2FE); border-radius: 2px; margin: 3rem 0 2rem; }
+
+  /* Issue tag */
+  .issue-tag { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-size: 0.6875rem; font-weight: 600; }
+  .issue-current { background: #FEE2E2; color: #991B1B; }
+  .issue-improve { background: #DCFCE7; color: #166534; }
+  .issue-new { background: #EEF2FF; color: #4338CA; }
+  .issue-remove { background: #F1F5F9; color: #64748B; text-decoration: line-through; }
+
+  /* ────── Mock UI Styles ────── */
+  .mock-container { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; overflow: hidden; margin: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .mock-header { background: #F8FAFC; border-bottom: 1px solid #E2E8F0; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem; }
+  .mock-header .mock-title { font-size: 0.8125rem; font-weight: 600; color: #334155; }
+  .mock-body { padding: 1rem; }
+
+  /* Form elements */
+  .form-group { margin-bottom: 1rem; }
+  .form-label { display: block; font-size: 0.8125rem; font-weight: 500; color: #374151; margin-bottom: 0.375rem; }
+  .form-label .required { color: #EF4444; }
+  .form-input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 0.5rem; font-size: 0.8125rem; color: #1F2937; background: #fff; }
+  .form-input:focus { outline: none; border-color: #6366F1; box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
+  .form-input::placeholder { color: #9CA3AF; }
+  .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%239CA3AF'%3E%3Cpath d='M12 16l-6-6h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem; }
+  .form-helper { font-size: 0.6875rem; color: #9CA3AF; margin-top: 0.25rem; }
+  .form-row { display: flex; gap: 1rem; }
+  .form-row > * { flex: 1; }
+
+  /* Radio / Checkbox */
+  .radio-group { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 0.5rem; padding: 0.875rem; }
+  .radio-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0; font-size: 0.8125rem; color: #374151; cursor: pointer; }
+  .radio-dot { width: 1rem; height: 1rem; border: 2px solid #D1D5DB; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .radio-dot.selected { border-color: #6366F1; }
+  .radio-dot.selected::after { content: ''; width: 0.5rem; height: 0.5rem; background: #6366F1; border-radius: 50%; }
+
+  /* Toggle */
+  .toggle-row { display: flex; align-items: center; gap: 0.625rem; }
+  .toggle-switch { width: 2.25rem; height: 1.25rem; border-radius: 9999px; background: #CBD5E1; position: relative; flex-shrink: 0; }
+  .toggle-switch.on { background: #6366F1; }
+  .toggle-switch .toggle-knob { width: 0.875rem; height: 0.875rem; border-radius: 50%; background: #fff; position: absolute; top: 0.1875rem; left: 0.1875rem; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .toggle-switch.on .toggle-knob { left: auto; right: 0.1875rem; }
+  .toggle-label { font-size: 0.8125rem; color: #475569; font-weight: 500; }
+
+  /* Badges */
+  .status-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.4375rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 600; border: 1px solid; line-height: 1.4; }
+  .status-badge i { font-size: 0.6875rem; }
+  .badge-draft { background: #FEF9C3; color: #854D0E; border-color: #FDE68A; }
+  .badge-active { background: #DCFCE7; color: #166534; border-color: #BBF7D0; }
+  .badge-deprecated { background: #F1F5F9; color: #64748B; border-color: #CBD5E1; }
+  .priority-high { background: #FEE2E2; color: #991B1B; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; font-size: 0.625rem; font-weight: 600; }
+  .priority-medium { background: #FEF3C7; color: #92400E; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; font-size: 0.625rem; font-weight: 600; }
+  .priority-low { background: #F1F5F9; color: #64748B; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; font-size: 0.625rem; font-weight: 600; }
+
+  /* CI/CD section */
+  .cicd-section { background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 0.5rem; padding: 0.875rem; }
+
+  /* Button styles */
+  .btn { padding: 0.4375rem 0.875rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; border: 1px solid; cursor: pointer; display: inline-flex; align-items: center; gap: 0.375rem; }
+  .btn-primary { background: #6366F1; border-color: #6366F1; color: #fff; }
+  .btn-ghost { background: #fff; border-color: #E2E8F0; color: #64748B; }
+  .btn-blue { background: #3B82F6; border-color: #3B82F6; color: #fff; }
+
+  /* TC selection popup */
+  .tc-popup { display: flex; height: 28rem; }
+  .tc-sidebar { width: 13rem; background: #F9FAFB; border-right: 1px solid #E5E7EB; overflow-y: auto; padding: 0.75rem; flex-shrink: 0; }
+  .tc-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .tc-filters { width: 14rem; background: #F9FAFB; border-left: 1px solid #E5E7EB; overflow-y: auto; padding: 0.75rem; flex-shrink: 0; }
+  .folder-item { display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem; color: #475569; cursor: pointer; margin-bottom: 0.125rem; }
+  .folder-item:hover { background: #F1F5F9; }
+  .folder-item.active { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .folder-item .folder-count { margin-left: auto; font-size: 0.625rem; color: #94A3B8; background: #F1F5F9; padding: 0.0625rem 0.375rem; border-radius: 9999px; }
+  .folder-item.active .folder-count { background: #C7D2FE; color: #4338CA; }
+  .folder-item i { font-size: 0.875rem; }
+
+  /* TC row in popup */
+  .tc-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.75rem; border-bottom: 1px solid #F3F4F6; font-size: 0.75rem; }
+  .tc-row:hover { background: #F9FAFB; }
+  .tc-row.draft-bg { background: #FFFBEB; }
+  .tc-row.draft-bg:hover { background: #FEF9C3; }
+  .tc-checkbox { width: 0.875rem; height: 0.875rem; border: 1.5px solid #D1D5DB; border-radius: 0.1875rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .tc-checkbox.checked { background: #6366F1; border-color: #6366F1; }
+  .tc-checkbox.checked i { color: #fff; font-size: 0.625rem; }
+  .tc-checkbox.disabled { opacity: 0.4; background: #F1F5F9; }
+  .tc-name { flex: 1; color: #1E293B; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tc-status-col { flex-shrink: 0; }
+
+  /* Summary chips */
+  .summary-bar { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.75rem; background: #F9FAFB; border-top: 1px solid #E5E7EB; font-size: 0.75rem; }
+  .summary-chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.1875rem 0.5rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 600; }
+
+  /* Warn banner inside popup */
+  .popup-warn { display: flex; align-items: center; gap: 0.5rem; background: #FFFBEB; border: 1px solid #FDE68A; padding: 0.5rem 0.75rem; font-size: 0.6875rem; color: #92400E; margin: 0.5rem 0.75rem; border-radius: 0.375rem; }
+  .popup-warn i { font-size: 0.875rem; flex-shrink: 0; }
+  .popup-warn .warn-btn { padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-weight: 600; border: 1px solid; cursor: pointer; font-size: 0.625rem; margin-left: auto; white-space: nowrap; }
+  .popup-warn .btn-green { background: #16A34A; border-color: #16A34A; color: #fff; }
+
+  /* Checklist */
+  .checklist-item { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #F1F5F9; }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-num { display: flex; align-items: center; justify-content: center; width: 1.375rem; height: 1.375rem; background: #EEF2FF; color: #6366F1; border-radius: 0.25rem; font-size: 0.6875rem; font-weight: 700; flex-shrink: 0; margin-top: 0.125rem; }
+  .checklist-title { font-size: 0.8125rem; font-weight: 600; color: #1E293B; }
+  .checklist-desc { font-size: 0.75rem; color: #64748B; margin-top: 0.125rem; }
+  .ptag { display: inline-flex; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; font-size: 0.5625rem; font-weight: 700; }
+  .p0 { background: #FEE2E2; color: #991B1B; }
+  .p1 { background: #FEF3C7; color: #92400E; }
+  .p2 { background: #F1F5F9; color: #64748B; }
+
+  /* Comparison table */
+  .compare-current { background: #FEF2F2; }
+  .compare-improved { background: #F0FDF4; }
+</style>
+</head>
+<body>
+<div class="spec">
+
+  <!-- ═══ HEADER ═══ -->
+  <div class="spec-header">
+    <h1>Add Run 모달 + TC 선택 팝업 UX 개선 기획</h1>
+    <div class="subtitle">현재 구현 분석 → 문제점 도출 → 개선안 + Desi 디자인 요청</div>
+    <div class="meta">
+      <span><strong>From:</strong> Kyle (PM)</span>
+      <span><strong>To:</strong> Desi (Design) + Dev Team</span>
+      <span><strong>Date:</strong> 2026-03-25</span>
+      <span><strong>Priority:</strong> P0</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <i class="ri-information-line"></i>
+    <strong>배경:</strong> CEO가 현재 Add Run 모달 스크린샷을 검토한 후, UI 개선을 요청했습니다.
+    코드에 구현되어 있지만 모달에 표시되지 않는 기능 확인 + TC 선택 팝업 UX 개선이 핵심입니다.
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>1. 현재 구현 분석 — 코드 vs UI 불일치</h2>
+
+  <p>현재 <code>project-runs/page.tsx</code>의 Add Run 모달 코드를 분석한 결과, 아래 필드들이 구현되어 있습니다.</p>
+
+  <table class="spec-table">
+    <thead><tr><th>필드</th><th>코드 구현</th><th>현재 UI 상태</th><th>개선 방향</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Name</strong></td>
+        <td>✅ <code>formData.name</code></td>
+        <td>✅ 정상 표시</td>
+        <td><span class="issue-tag issue-improve">유지</span></td>
+      </tr>
+      <tr>
+        <td><strong>Configuration</strong></td>
+        <td>✅ <code>formData.configuration</code></td>
+        <td class="compare-current">⚠️ 빈 드롭다운 — 옵션 없음<br>"Apply to cases" 버튼 동작 안함</td>
+        <td><span class="issue-tag issue-remove">Phase 2로 이동</span> 현재 Configuration 관리 기능이 없어 혼란만 줌</td>
+      </tr>
+      <tr>
+        <td><strong>Milestone</strong></td>
+        <td>✅ <code>formData.milestone_id</code></td>
+        <td class="compare-current">⚠️ "+" 버튼 동작 안함</td>
+        <td><span class="issue-tag issue-improve">유지</span> "+" 버튼 제거 또는 inline 생성 구현</td>
+      </tr>
+      <tr>
+        <td><strong>TC 선택</strong><br>(radio: all / select)</td>
+        <td>✅ <code>include_all_cases</code><br>✅ <code>selectedTestCases[]</code></td>
+        <td>✅ 정상 표시</td>
+        <td><span class="issue-tag issue-improve">대폭 개선</span> §2 참조</td>
+      </tr>
+      <tr>
+        <td><strong>State (Status)</strong></td>
+        <td>✅ <code>formData.status</code><br>4개: new/in_progress/under_review/completed</td>
+        <td>✅ 정상 표시</td>
+        <td><span class="issue-tag issue-improve">유지</span> 아이콘/색상 배지 추가</td>
+      </tr>
+      <tr>
+        <td><strong>Issues</strong></td>
+        <td>✅ <code>formData.issues</code></td>
+        <td class="compare-current">⚠️ 빈 드롭다운 — 옵션 없음<br>"+ Add" 버튼 동작 안함</td>
+        <td><span class="issue-tag issue-remove">Phase 2로 이동</span> Issues 관리 기능 없음</td>
+      </tr>
+      <tr>
+        <td><strong>Tags</strong></td>
+        <td>✅ <code>formData.tags</code> (comma-separated)</td>
+        <td class="compare-current">⚠️ 텍스트 입력 — UX 열악</td>
+        <td><span class="issue-tag issue-improve">칩 UI로 개선</span> 태그 자동완성 + 칩</td>
+      </tr>
+      <tr>
+        <td><strong>CI/CD Run</strong></td>
+        <td>✅ <code>formData.is_ci_cd_run</code></td>
+        <td>✅ 정상 표시 (보라 섹션)</td>
+        <td><span class="issue-tag issue-improve">유지</span></td>
+      </tr>
+      <tr>
+        <td><strong>NOTES 탭</strong></td>
+        <td>⚠️ 탭 UI만 — 내용 없음</td>
+        <td class="compare-current">⚠️ 클릭해도 아무 반응 없음</td>
+        <td><span class="issue-tag issue-remove">제거</span> 비어있는 탭은 혼란</td>
+      </tr>
+      <tr>
+        <td><strong>Description</strong></td>
+        <td>❌ 코드에 없음</td>
+        <td class="compare-current">❌ 없음</td>
+        <td><span class="issue-tag issue-new">신규 추가</span> Run 설명 필드 필요</td>
+      </tr>
+      <tr>
+        <td><strong>Assignee</strong></td>
+        <td>⚠️ DB에 <code>assignees</code> 컬럼 있지만<br>현재 자동으로 <code>[user.id]</code>만 할당</td>
+        <td class="compare-current">❌ 선택 UI 없음</td>
+        <td><span class="issue-tag issue-new">신규 추가</span> 멀티 assignee 선택</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>2. 개선된 Add Run 모달 — 라이브 프리뷰</h2>
+
+  <p>아래는 개선된 모달의 최종 형태입니다. 불필요한 필드를 제거하고, 누락된 기능을 추가했습니다.</p>
+
+  <h3>2.1 개선 모달 전체 프리뷰</h3>
+  <div class="mock-container">
+    <div class="mock-header" style="justify-content: space-between;">
+      <div class="mock-title" style="font-size: 1rem; font-weight: 700;">Add run</div>
+      <div style="font-size: 0.875rem; color: #94A3B8; cursor: pointer;"><i class="ri-close-line"></i></div>
+    </div>
+
+    <div class="mock-body" style="padding: 1.25rem 1.5rem;">
+
+      <!-- Name -->
+      <div class="form-group">
+        <label class="form-label">Name <span class="required">*</span></label>
+        <input type="text" class="form-input" placeholder="e.g. Sprint 24 — Login Module Regression" value="">
+      </div>
+
+      <!-- Description (NEW) -->
+      <div class="form-group">
+        <label class="form-label">Description <span class="issue-tag issue-new" style="font-size:0.5625rem; vertical-align:middle;">NEW</span></label>
+        <textarea class="form-input" rows="2" placeholder="What is this run testing? (optional)" style="resize: vertical;"></textarea>
+      </div>
+
+      <!-- Row: Milestone + State -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Milestone</label>
+          <select class="form-input form-select">
+            <option>Select milestone</option>
+            <option>Sprint 24</option>
+            <option>v2.0 Release</option>
+          </select>
+          <div class="form-helper">선택 사항. 마일스톤에 Run을 연결합니다.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">State <span class="required">*</span></label>
+          <select class="form-input form-select">
+            <option>🌟 New</option>
+            <option>🔄 In Progress</option>
+            <option>👀 Under Review</option>
+            <option>✅ Completed</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Assignees (NEW) -->
+      <div class="form-group">
+        <label class="form-label">Assignees <span class="issue-tag issue-new" style="font-size:0.5625rem; vertical-align:middle;">NEW</span></label>
+        <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 0.5rem; min-height: 2.25rem; flex-wrap: wrap;">
+          <div style="display: inline-flex; align-items: center; gap: 0.25rem; background: #EEF2FF; padding: 0.125rem 0.5rem 0.125rem 0.25rem; border-radius: 9999px; font-size: 0.6875rem; color: #4338CA; font-weight: 500;">
+            <div style="width: 1.125rem; height: 1.125rem; border-radius: 50%; background: #6366F1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.5rem; font-weight: 700;">K</div>
+            Kyle (me)
+            <i class="ri-close-line" style="font-size: 0.625rem; color: #94A3B8; cursor: pointer; margin-left: 0.125rem;"></i>
+          </div>
+          <span style="font-size: 0.75rem; color: #9CA3AF; cursor: pointer;">+ Add assignee</span>
+        </div>
+        <div class="form-helper">이 Run을 담당할 팀원을 지정합니다. 기본값: 본인.</div>
+      </div>
+
+      <!-- Tags (IMPROVED) -->
+      <div class="form-group">
+        <label class="form-label">Tags <span class="issue-tag issue-improve" style="font-size:0.5625rem; vertical-align:middle;">IMPROVED</span></label>
+        <div style="display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 0.5rem; min-height: 2.25rem; flex-wrap: wrap;">
+          <div style="display: inline-flex; align-items: center; gap: 0.25rem; background: #F1F5F9; padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-size: 0.6875rem; color: #475569; font-weight: 500;">
+            regression
+            <i class="ri-close-line" style="font-size: 0.625rem; color: #94A3B8; cursor: pointer;"></i>
+          </div>
+          <div style="display: inline-flex; align-items: center; gap: 0.25rem; background: #F1F5F9; padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-size: 0.6875rem; color: #475569; font-weight: 500;">
+            login
+            <i class="ri-close-line" style="font-size: 0.625rem; color: #94A3B8; cursor: pointer;"></i>
+          </div>
+          <input type="text" placeholder="Type to add..." style="border: none; outline: none; font-size: 0.75rem; flex: 1; min-width: 4rem; padding: 0;">
+        </div>
+        <div class="form-helper">Enter 키로 태그 추가. 기존 태그 자동완성 제공.</div>
+      </div>
+
+      <!-- Test Cases Selection -->
+      <div class="form-group">
+        <label class="form-label">Test Cases</label>
+        <div class="radio-group">
+          <div class="radio-item">
+            <div class="radio-dot selected"></div>
+            <span style="font-weight: 500;">Include all test cases</span>
+            <span style="font-size: 0.6875rem; color: #94A3B8; margin-left: auto;">48 Active TCs</span>
+          </div>
+          <div class="radio-item" style="margin-top: 0.25rem;">
+            <div class="radio-dot"></div>
+            <span style="font-weight: 500;">Select specific cases</span>
+          </div>
+          <div style="margin-left: 1.5rem; margin-top: 0.5rem;">
+            <button class="btn btn-blue" style="font-size: 0.6875rem;">
+              <i class="ri-checkbox-multiple-line"></i>
+              Select cases (0 selected)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CI/CD Run -->
+      <div class="cicd-section">
+        <div style="display: flex; align-items: flex-start; gap: 0.625rem;">
+          <div class="tc-checkbox checked" style="margin-top: 0.125rem; border-color: #7C3AED; background: #fff;"></div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.375rem; margin-bottom: 0.25rem;">
+              <i class="ri-robot-line" style="color: #7C3AED; font-size: 0.875rem;"></i>
+              <span style="font-size: 0.8125rem; font-weight: 600; color: #1F2937;">CI/CD Run</span>
+            </div>
+            <div style="font-size: 0.6875rem; color: #6B7280;">CI/CD 자동화 전용 Run으로 표시합니다. GitHub Actions, GitLab CI 등에서 사용합니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; padding: 0.875rem 1.5rem; border-top: 1px solid #E5E7EB; background: #F9FAFB;">
+      <button class="btn btn-ghost">Cancel</button>
+      <button class="btn btn-primary">Add run</button>
+    </div>
+  </div>
+
+  <h3>2.2 변경사항 요약</h3>
+  <table class="spec-table">
+    <thead><tr><th>변경</th><th>내용</th><th>이유</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="issue-tag issue-new">추가</span></td>
+        <td><strong>Description 필드</strong> — textarea, optional</td>
+        <td>Run의 목적/범위를 기록할 수 있어야 함. 팀원 간 커뮤니케이션에 필수.</td>
+      </tr>
+      <tr>
+        <td><span class="issue-tag issue-new">추가</span></td>
+        <td><strong>Assignees 필드</strong> — 멀티 선택, 기본값: 본인</td>
+        <td>DB에 <code>assignees[]</code> 컬럼이 이미 있지만 현재 자동으로 본인만 할당됨. 팀원 할당 필요.</td>
+      </tr>
+      <tr>
+        <td><span class="issue-tag issue-improve">개선</span></td>
+        <td><strong>Tags 입력</strong> — comma-separated text → 칩 UI + 자동완성</td>
+        <td>현재 텍스트 입력은 실수 유발. 프로젝트 내 기존 태그 자동완성 + 칩 UI가 표준.</td>
+      </tr>
+      <tr>
+        <td><span class="issue-tag issue-improve">개선</span></td>
+        <td><strong>Milestone + State를 한 줄로</strong></td>
+        <td>모달 세로 길이 절약. 두 필드 모두 단순 드롭다운이므로 병렬 배치 가능.</td>
+      </tr>
+      <tr>
+        <td><span class="issue-tag issue-improve">개선</span></td>
+        <td><strong>"Include all" 옵션에 Active TC 수 표시</strong></td>
+        <td>사용자가 현재 몇 개 TC가 Run에 포함되는지 즉시 확인 가능.</td>
+      </tr>
+      <tr>
+        <td><span class="issue-tag issue-remove">제거</span></td>
+        <td><strong>Configuration 필드</strong></td>
+        <td>Configuration 관리 기능이 아직 없어 빈 드롭다운만 표시됨. Phase 2에서 추가.</td>
+      </tr>
+      <tr>
+        <td><span class="issue-tag issue-remove">제거</span></td>
+        <td><strong>Issues 필드</strong></td>
+        <td>Issues 관리 기능이 없어 빈 드롭다운 + 동작 안하는 "+ Add" 버튼. Phase 2에서 Jira 연동 후 추가.</td>
+      </tr>
+      <tr>
+        <td><span class="issue-tag issue-remove">제거</span></td>
+        <td><strong>NOTES 탭</strong></td>
+        <td>클릭해도 아무 반응 없음. 빈 탭은 사용자에게 "깨진 기능" 인상을 줌.</td>
+      </tr>
+      <tr>
+        <td><span class="issue-tag issue-remove">제거</span></td>
+        <td><strong>Milestone "+" 버튼</strong></td>
+        <td>동작 안함. Milestone은 프로젝트 설정에서 관리.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="warn">
+    <i class="ri-error-warning-line"></i>
+    <strong>DB 영향:</strong> Description 필드 추가 시 <code>test_runs</code> 테이블에 <code>description TEXT</code> 컬럼 추가 필요. Assignees는 기존 <code>assignees TEXT[]</code> 컬럼 활용.
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>3. TC 선택 팝업 — 현재 분석</h2>
+
+  <p>현재 TC 선택 팝업은 <strong>3컬럼 레이아웃</strong>입니다: 왼쪽 폴더 트리 + 중앙 TC 리스트 + 오른쪽 필터 패널.</p>
+
+  <h3>3.1 현재 구현 기능</h3>
+  <table class="spec-table">
+    <thead><tr><th>기능</th><th>구현 상태</th><th>문제점</th></tr></thead>
+    <tbody>
+      <tr><td>폴더 트리 (왼쪽)</td><td>✅ 동작함</td><td>폴더별 선택 수/전체 수 표시. 잘 동작.</td></tr>
+      <tr><td>TC 리스트 (중앙)</td><td>✅ 동작함</td><td>체크박스 + TC명 + Priority 표시. 기본적.</td></tr>
+      <tr><td>검색 (중앙 상단)</td><td>✅ 동작함</td><td>title + description 검색. 문제 없음.</td></tr>
+      <tr><td>헤더 체크박스 (전체 선택)</td><td>✅ 동작함</td><td>현재 필터된 TC만 선택/해제.</td></tr>
+      <tr><td>Priority 필터</td><td>✅ 동작함</td><td>High/Medium/Low 체크박스. 기본 전체 선택.</td></tr>
+      <tr><td>Tags 필터</td><td>✅ 동작함</td><td>드롭다운 + 칩 표시. 잘 동작.</td></tr>
+      <tr><td>Select All / Deselect All</td><td>✅ 동작함</td><td>전체 TC 대상 (필터 무관). 혼란 소지 있음.</td></tr>
+      <tr><td>Footer 카운트</td><td>✅ 동작함</td><td><code>selected/total selected</code> 표시.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 누락/개선 필요 항목</h3>
+  <table class="spec-table">
+    <thead><tr><th>항목</th><th>현재</th><th>개선안</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Lifecycle Status 필터</strong></td>
+        <td class="compare-current">❌ 없음. Draft/Active/Deprecated 구분 없음.</td>
+        <td class="compare-improved"><span class="issue-tag issue-new">추가</span> "Include Draft TCs" 토글 + Deprecated 완전 숨김 (이전 기획대로)</td>
+      </tr>
+      <tr>
+        <td><strong>TC 행에 lifecycle 배지</strong></td>
+        <td class="compare-current">❌ 없음. Priority만 표시.</td>
+        <td class="compare-improved"><span class="issue-tag issue-new">추가</span> TC명 옆에 Draft/Active 배지. Deprecated는 표시하지 않음.</td>
+      </tr>
+      <tr>
+        <td><strong>폴더별 "전체 선택" 버튼</strong></td>
+        <td class="compare-current">❌ 없음. 폴더 클릭 시 필터만 됨.</td>
+        <td class="compare-improved"><span class="issue-tag issue-new">추가</span> 폴더 항목에 호버 시 체크박스 또는 "Select all" 아이콘</td>
+      </tr>
+      <tr>
+        <td><strong>Execution Status 필터</strong></td>
+        <td class="compare-current">❌ 없음.</td>
+        <td class="compare-improved"><span class="issue-tag issue-new">추가</span> Passed/Failed/Untested 등 실행 상태별 필터 (오른쪽 패널)</td>
+      </tr>
+      <tr>
+        <td><strong>선택된 TC 요약 칩</strong></td>
+        <td class="compare-current">⚠️ 단순 숫자만 ("12/48 selected")</td>
+        <td class="compare-improved"><span class="issue-tag issue-improve">개선</span> 상태별 분류: "32 Active, 5 Draft" 칩 표시</td>
+      </tr>
+      <tr>
+        <td><strong>폴더별 선택 진행률</strong></td>
+        <td class="compare-current">⚠️ 숫자만 (3/12)</td>
+        <td class="compare-improved"><span class="issue-tag issue-improve">개선</span> 미니 프로그레스 바 또는 체크 아이콘 추가</td>
+      </tr>
+      <tr>
+        <td><strong>"Select All" 버튼 스코프</strong></td>
+        <td class="compare-current">⚠️ 전체 TC 대상 — 필터 무관하여 혼란</td>
+        <td class="compare-improved"><span class="issue-tag issue-improve">수정</span> 현재 필터된 + 현재 폴더의 TC만 대상으로 변경</td>
+      </tr>
+      <tr>
+        <td><strong>Draft TC 선택 시 경고</strong></td>
+        <td class="compare-current">❌ 없음.</td>
+        <td class="compare-improved"><span class="issue-tag issue-new">추가</span> 이전 기획(spec-tc-workflow-design-handoff.html §6)의 amber 경고 배너</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>4. 개선된 TC 선택 팝업 — 라이브 프리뷰</h2>
+
+  <h3>4.1 전체 레이아웃 (3컬럼 유지, 기능 강화)</h3>
+  <div class="mock-container">
+    <div class="mock-header" style="justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div class="mock-title" style="font-size: 0.9375rem; font-weight: 700;">Select test cases</div>
+        <div style="font-size: 0.6875rem; color: #64748B; background: #F1F5F9; padding: 0.125rem 0.5rem; border-radius: 9999px; font-weight: 600;">48 Active · 5 Draft available</div>
+      </div>
+      <div style="font-size: 0.875rem; color: #94A3B8; cursor: pointer;"><i class="ri-close-line"></i></div>
+    </div>
+
+    <div class="tc-popup">
+      <!-- LEFT: Folders -->
+      <div class="tc-sidebar">
+        <div style="font-size: 0.6875rem; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem;">Folders</div>
+        <div class="folder-item active">
+          <i class="ri-folder-line"></i>
+          <span>All Cases</span>
+          <span class="folder-count">12/48</span>
+        </div>
+        <div class="folder-item">
+          <i class="ri-folder-line"></i>
+          <span>Authentication</span>
+          <span class="folder-count">4/15</span>
+        </div>
+        <div class="folder-item">
+          <i class="ri-folder-line"></i>
+          <span>Patient List</span>
+          <span class="folder-count">3/12</span>
+        </div>
+        <div class="folder-item">
+          <i class="ri-folder-line"></i>
+          <span>Viewer</span>
+          <span class="folder-count">5/8</span>
+        </div>
+        <div class="folder-item">
+          <i class="ri-folder-line"></i>
+          <span>Login</span>
+          <span class="folder-count">0/8</span>
+        </div>
+        <div class="folder-item">
+          <i class="ri-folder-3-line" style="color:#94A3B8;"></i>
+          <span style="color: #94A3B8;">Uncategorized</span>
+          <span class="folder-count">0/5</span>
+        </div>
+      </div>
+
+      <!-- CENTER: TC List -->
+      <div class="tc-main">
+        <!-- Search + Include Draft toggle -->
+        <div style="padding: 0.625rem 0.75rem; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; gap: 0.75rem;">
+          <div style="flex: 1; position: relative;">
+            <i class="ri-search-line" style="position: absolute; left: 0.625rem; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 0.875rem;"></i>
+            <input type="text" class="form-input" placeholder="Search test cases..." style="padding-left: 2rem; font-size: 0.75rem; height: 2rem;">
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-switch">
+              <div class="toggle-knob"></div>
+            </div>
+            <span class="toggle-label" style="font-size: 0.6875rem;">Include Draft TCs</span>
+            <span style="font-size: 0.5625rem; color: #94A3B8;">(5)</span>
+          </div>
+        </div>
+
+        <!-- Table header -->
+        <div style="display: flex; align-items: center; padding: 0.375rem 0.75rem; background: #F9FAFB; border-bottom: 1px solid #E5E7EB; font-size: 0.6875rem; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.03em;">
+          <div style="width: 1.5rem; flex-shrink: 0;">
+            <div class="tc-checkbox checked"><i class="ri-subtract-line" style="font-size: 0.5rem; color: #fff;"></i></div>
+          </div>
+          <div style="flex: 1; margin-left: 0.375rem;">Case</div>
+          <div style="width: 4rem; text-align: center;">Status</div>
+          <div style="width: 4rem; text-align: center;">Priority</div>
+        </div>
+
+        <!-- TC rows -->
+        <div style="flex: 1; overflow-y: auto;">
+          <div class="tc-row">
+            <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+            <i class="ri-file-list-3-line" style="color: #C7D2FE; font-size: 0.75rem;"></i>
+            <span class="tc-name">User registration with valid email</span>
+            <div class="tc-status-col"><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></div>
+            <div style="width: 4rem; text-align: center;"><span class="priority-high">High</span></div>
+          </div>
+          <div class="tc-row">
+            <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+            <i class="ri-file-list-3-line" style="color: #C7D2FE; font-size: 0.75rem;"></i>
+            <span class="tc-name">Login with correct credentials</span>
+            <div class="tc-status-col"><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></div>
+            <div style="width: 4rem; text-align: center;"><span class="priority-medium">Medium</span></div>
+          </div>
+          <div class="tc-row">
+            <div class="tc-checkbox"></div>
+            <i class="ri-file-list-3-line" style="color: #C7D2FE; font-size: 0.75rem;"></i>
+            <span class="tc-name">Password reset with expired token</span>
+            <div class="tc-status-col"><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></div>
+            <div style="width: 4rem; text-align: center;"><span class="priority-high">High</span></div>
+          </div>
+          <div class="tc-row">
+            <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+            <i class="ri-file-list-3-line" style="color: #C7D2FE; font-size: 0.75rem;"></i>
+            <span class="tc-name">Social login (Google OAuth 2.0)</span>
+            <div class="tc-status-col"><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></div>
+            <div style="width: 4rem; text-align: center;"><span class="priority-medium">Medium</span></div>
+          </div>
+          <div class="tc-row">
+            <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+            <i class="ri-file-list-3-line" style="color: #C7D2FE; font-size: 0.75rem;"></i>
+            <span class="tc-name">Session timeout after 30 minutes</span>
+            <div class="tc-status-col"><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></div>
+            <div style="width: 4rem; text-align: center;"><span class="priority-low">Low</span></div>
+          </div>
+          <div class="tc-row">
+            <div class="tc-checkbox"></div>
+            <i class="ri-file-list-3-line" style="color: #C7D2FE; font-size: 0.75rem;"></i>
+            <span class="tc-name">Two-factor authentication setup</span>
+            <div class="tc-status-col"><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></div>
+            <div style="width: 4rem; text-align: center;"><span class="priority-medium">Medium</span></div>
+          </div>
+        </div>
+
+        <!-- Footer summary -->
+        <div class="summary-bar" style="justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 0.625rem;">
+            <span style="font-weight: 600; color: #1E293B;">12 / 48 selected</span>
+            <span class="summary-chip" style="background: #DCFCE7; color: #166534;">12 Active</span>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-ghost" style="font-size: 0.6875rem; padding: 0.3125rem 0.625rem;">Cancel</button>
+            <button class="btn btn-primary" style="font-size: 0.6875rem; padding: 0.3125rem 0.625rem;">Confirm selection</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Filters -->
+      <div class="tc-filters">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+          <span style="font-size: 0.6875rem; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em;">Filters</span>
+          <span style="font-size: 0.6875rem; color: #6366F1; cursor: pointer; font-weight: 500;">Clear all</span>
+        </div>
+
+        <!-- Priority filter -->
+        <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #E5E7EB;">
+          <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.375rem;">Priority</div>
+          <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <label style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: #475569; cursor: pointer;">
+              <div class="tc-checkbox checked" style="border-radius: 0.1875rem;"><i class="ri-check-line"></i></div> High
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: #475569; cursor: pointer;">
+              <div class="tc-checkbox checked" style="border-radius: 0.1875rem;"><i class="ri-check-line"></i></div> Medium
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: #475569; cursor: pointer;">
+              <div class="tc-checkbox checked" style="border-radius: 0.1875rem;"><i class="ri-check-line"></i></div> Low
+            </label>
+          </div>
+        </div>
+
+        <!-- Execution Status filter (NEW) -->
+        <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #E5E7EB;">
+          <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.375rem;">
+            Last Execution <span class="issue-tag issue-new" style="font-size:0.5rem;">NEW</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <label style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: #475569; cursor: pointer;">
+              <div class="tc-checkbox checked" style="border-radius: 0.1875rem;"><i class="ri-check-line"></i></div>
+              <span style="width: 0.375rem; height: 0.375rem; border-radius: 50%; background: #10B981;"></span> Passed
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: #475569; cursor: pointer;">
+              <div class="tc-checkbox checked" style="border-radius: 0.1875rem;"><i class="ri-check-line"></i></div>
+              <span style="width: 0.375rem; height: 0.375rem; border-radius: 50%; background: #EF4444;"></span> Failed
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: #475569; cursor: pointer;">
+              <div class="tc-checkbox checked" style="border-radius: 0.1875rem;"><i class="ri-check-line"></i></div>
+              <span style="width: 0.375rem; height: 0.375rem; border-radius: 50%; background: #94A3B8;"></span> Untested
+            </label>
+          </div>
+        </div>
+
+        <!-- Tags filter -->
+        <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #E5E7EB;">
+          <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.375rem;">Tags</div>
+          <div style="padding: 0.375rem 0.5rem; border: 1px solid #D1D5DB; border-radius: 0.375rem; font-size: 0.6875rem; color: #9CA3AF; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+            <span>Select tags...</span>
+            <i class="ri-arrow-down-s-line" style="font-size: 0.75rem;"></i>
+          </div>
+          <div style="font-size: 0.5625rem; color: #94A3B8; font-style: italic; margin-top: 0.25rem;">No tags selected</div>
+        </div>
+
+        <!-- Quick actions -->
+        <div>
+          <div style="font-size: 0.75rem; font-weight: 600; color: #374151; margin-bottom: 0.375rem;">Quick Actions</div>
+          <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <button style="width: 100%; padding: 0.375rem 0.5rem; background: #6366F1; color: #fff; border: none; border-radius: 0.375rem; font-size: 0.6875rem; font-weight: 600; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 0.25rem;">
+              <i class="ri-checkbox-multiple-line" style="font-size: 0.75rem;"></i> Select all in folder
+            </button>
+            <button style="width: 100%; padding: 0.375rem 0.5rem; background: #fff; color: #475569; border: 1px solid #E5E7EB; border-radius: 0.375rem; font-size: 0.6875rem; font-weight: 500; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 0.25rem;">
+              <i class="ri-close-circle-line" style="font-size: 0.75rem;"></i> Deselect all
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>4.2 Draft TC 토글 ON 상태 + 경고 배너</h3>
+  <div class="mock-container">
+    <div class="mock-header" style="justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div class="mock-title" style="font-size: 0.9375rem; font-weight: 700;">Select test cases</div>
+        <div style="font-size: 0.6875rem; color: #64748B; background: #F1F5F9; padding: 0.125rem 0.5rem; border-radius: 9999px; font-weight: 600;">48 Active · 5 Draft available</div>
+      </div>
+      <div style="font-size: 0.875rem; color: #94A3B8; cursor: pointer;"><i class="ri-close-line"></i></div>
+    </div>
+
+    <div style="padding: 0;">
+      <!-- Search + Toggle ON -->
+      <div style="padding: 0.625rem 0.75rem; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; gap: 0.75rem;">
+        <div style="flex: 1; position: relative;">
+          <i class="ri-search-line" style="position: absolute; left: 0.625rem; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 0.875rem;"></i>
+          <input type="text" class="form-input" placeholder="Search test cases..." style="padding-left: 2rem; font-size: 0.75rem; height: 2rem;">
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-switch on">
+            <div class="toggle-knob"></div>
+          </div>
+          <span class="toggle-label" style="font-size: 0.6875rem; color: #4338CA; font-weight: 600;">Include Draft TCs</span>
+          <span style="font-size: 0.5625rem; color: #6366F1;">(5)</span>
+        </div>
+      </div>
+
+      <!-- Warning banner -->
+      <div class="popup-warn">
+        <i class="ri-error-warning-line"></i>
+        <span><strong>Draft TC 2개 선택됨</strong> — 미완성 상태일 수 있습니다.</span>
+        <button class="warn-btn btn-green">모두 Active로 변경</button>
+      </div>
+
+      <!-- TC rows with Draft -->
+      <div style="max-height: 14rem; overflow-y: auto;">
+        <div class="tc-row">
+          <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+          <i class="ri-file-list-3-line" style="color: #C7D2FE; font-size: 0.75rem;"></i>
+          <span class="tc-name">User registration with valid email</span>
+          <div class="tc-status-col"><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></div>
+          <div style="width: 4rem; text-align: center;"><span class="priority-high">High</span></div>
+        </div>
+        <div class="tc-row draft-bg">
+          <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+          <i class="ri-file-list-3-line" style="color: #FDE68A; font-size: 0.75rem;"></i>
+          <span class="tc-name">Multi-factor auth setup</span>
+          <div class="tc-status-col"><span class="status-badge badge-draft"><i class="ri-draft-line"></i> Draft</span></div>
+          <div style="width: 4rem; text-align: center;"><span class="priority-medium">Medium</span></div>
+        </div>
+        <div class="tc-row">
+          <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+          <i class="ri-file-list-3-line" style="color: #C7D2FE; font-size: 0.75rem;"></i>
+          <span class="tc-name">Login with correct credentials</span>
+          <div class="tc-status-col"><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></div>
+          <div style="width: 4rem; text-align: center;"><span class="priority-medium">Medium</span></div>
+        </div>
+        <div class="tc-row draft-bg">
+          <div class="tc-checkbox"></div>
+          <i class="ri-file-list-3-line" style="color: #FDE68A; font-size: 0.75rem;"></i>
+          <span class="tc-name">Biometric login flow</span>
+          <div class="tc-status-col"><span class="status-badge badge-draft"><i class="ri-draft-line"></i> Draft</span></div>
+          <div style="width: 4rem; text-align: center;"><span class="priority-low">Low</span></div>
+        </div>
+        <div class="tc-row">
+          <div class="tc-checkbox"></div>
+          <i class="ri-file-list-3-line" style="color: #C7D2FE; font-size: 0.75rem;"></i>
+          <span class="tc-name">Password reset with expired token</span>
+          <div class="tc-status-col"><span class="status-badge badge-active"><i class="ri-checkbox-circle-line"></i> Active</span></div>
+          <div style="width: 4rem; text-align: center;"><span class="priority-high">High</span></div>
+        </div>
+      </div>
+
+      <!-- Footer with breakdown -->
+      <div class="summary-bar" style="justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-weight: 600; color: #1E293B;">14 / 53 selected</span>
+          <span class="summary-chip" style="background: #DCFCE7; color: #166534;">12 Active</span>
+          <span class="summary-chip" style="background: #FEF9C3; color: #854D0E;">2 Draft</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-ghost" style="font-size: 0.6875rem; padding: 0.3125rem 0.625rem;">Cancel</button>
+          <button class="btn btn-primary" style="font-size: 0.6875rem; padding: 0.3125rem 0.625rem;">Confirm selection</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>5. 인터랙션 상세 스펙</h2>
+
+  <h3>5.1 "Include Draft TCs" 토글</h3>
+  <table class="spec-table">
+    <thead><tr><th>상태</th><th>동작</th></tr></thead>
+    <tbody>
+      <tr><td><strong>OFF (기본)</strong></td><td>Active TC만 표시. 헤더에 "48 Active TCs available". 토글 옆 "(5)" 숫자로 숨겨진 Draft TC 수 표시.</td></tr>
+      <tr><td><strong>ON</strong></td><td>Active + Draft TC 모두 표시. Draft TC는 노란 배경 행. 헤더 변경: "48 Active · 5 Draft available". 토글 라벨 색상 indigo로 강조.</td></tr>
+      <tr><td><strong>ON → OFF 전환 시</strong></td><td>이미 선택된 Draft TC의 선택 <strong>해제</strong>. 경고 배너 사라짐. 카운트 업데이트.</td></tr>
+      <tr><td><strong>Deprecated TC</strong></td><td>어떤 상태에서도 <strong>완전 숨김</strong>. 토글도 없음.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 Draft TC 선택 시 경고 배너</h3>
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>표시 조건</td><td>Draft TC가 1개 이상 선택(체크)되었을 때</td></tr>
+      <tr><td>위치</td><td>검색/토글 바 바로 아래, TC 리스트 위</td></tr>
+      <tr><td>배경</td><td><code>#FFFBEB</code> (amber-50), border <code>#FDE68A</code></td></tr>
+      <tr><td>텍스트</td><td>"Draft TC N개 선택됨 — 미완성 상태일 수 있습니다."</td></tr>
+      <tr><td>"모두 Active로 변경" 버튼</td><td>bg <code>#16A34A</code>, text white. 클릭 시 선택된 Draft TC → Active 일괄 전환 + 배지 업데이트 + 배너 사라짐.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.3 Footer 선택 요약</h3>
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>총 카운트</td><td><code>{selected} / {total}</code> (bold)</td></tr>
+      <tr><td>상태별 칩</td><td>Active: green 칩 (<code>#DCFCE7</code>). Draft: yellow 칩 (<code>#FEF9C3</code>). Draft가 0개면 칩 숨김.</td></tr>
+      <tr><td>칩 형태</td><td>pill, font-size 10px, font-weight 600, padding 3px 8px</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.4 폴더별 선택</h3>
+  <table class="spec-table">
+    <thead><tr><th>인터랙션</th><th>동작</th></tr></thead>
+    <tbody>
+      <tr><td>폴더 클릭</td><td>중앙 TC 리스트를 해당 폴더로 필터. 현재와 동일.</td></tr>
+      <tr><td>폴더 카운트 표시</td><td><code>{selected}/{total}</code> — 현재 폴더의 선택 수 / 전체 수</td></tr>
+      <tr><td>헤더 체크박스 (중앙 테이블)</td><td>현재 필터된(폴더 + 검색 + Priority + Tags) TC만 선택/해제</td></tr>
+      <tr><td>"Select all in folder" 버튼</td><td>오른쪽 Quick Actions. 현재 선택된 폴더의 <strong>모든</strong> TC 선택 (필터 무관).</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.5 TC 행 표시 컬럼</h3>
+  <table class="spec-table">
+    <thead><tr><th>컬럼</th><th>기존</th><th>개선</th></tr></thead>
+    <tbody>
+      <tr><td>체크박스</td><td>✅ 있음</td><td>유지</td></tr>
+      <tr><td>TC 아이콘</td><td>✅ <code>ri-file-list-3-line</code> (gray)</td><td>Draft TC: 아이콘 색상 amber. Active TC: indigo.</td></tr>
+      <tr><td>TC 제목</td><td>✅ 있음</td><td>유지</td></tr>
+      <tr><td>Lifecycle Status 배지</td><td>❌ 없음</td><td><span class="issue-tag issue-new">추가</span> Active/Draft 배지 (sm size)</td></tr>
+      <tr><td>Priority 배지</td><td>✅ 있음</td><td>유지</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>6. Assignees 필드 상세 스펙</h2>
+
+  <p>현재 DB에 <code>assignees TEXT[]</code> 컬럼이 있지만, UI에서는 자동으로 현재 사용자만 할당됩니다. 팀원 선택 UI를 추가합니다.</p>
+
+  <h3>6.1 Assignees 필드 프리뷰</h3>
+  <div class="mock-container">
+    <div class="mock-body">
+      <div class="form-group" style="margin: 0;">
+        <label class="form-label">Assignees</label>
+        <!-- Selected state -->
+        <div style="display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 0.5rem; min-height: 2.25rem; flex-wrap: wrap; background: #fff;">
+          <div style="display: inline-flex; align-items: center; gap: 0.25rem; background: #EEF2FF; padding: 0.125rem 0.5rem 0.125rem 0.25rem; border-radius: 9999px; font-size: 0.6875rem; color: #4338CA; font-weight: 500;">
+            <div style="width: 1.125rem; height: 1.125rem; border-radius: 50%; background: #6366F1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.5rem; font-weight: 700;">K</div>
+            Kyle
+            <i class="ri-close-line" style="font-size: 0.625rem; color: #94A3B8; cursor: pointer; margin-left: 0.125rem;"></i>
+          </div>
+          <div style="display: inline-flex; align-items: center; gap: 0.25rem; background: #EEF2FF; padding: 0.125rem 0.5rem 0.125rem 0.25rem; border-radius: 9999px; font-size: 0.6875rem; color: #4338CA; font-weight: 500;">
+            <div style="width: 1.125rem; height: 1.125rem; border-radius: 50%; background: #10B981; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.5rem; font-weight: 700;">J</div>
+            James
+            <i class="ri-close-line" style="font-size: 0.625rem; color: #94A3B8; cursor: pointer; margin-left: 0.125rem;"></i>
+          </div>
+          <span style="font-size: 0.75rem; color: #9CA3AF; cursor: pointer;">+ Add</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>기본값</td><td>현재 로그인한 사용자 (자동 추가, 제거 가능)</td></tr>
+      <tr><td>"+ Add" 클릭</td><td>프로젝트 멤버 드롭다운 열림 (이미 선택된 멤버 제외). 검색 가능.</td></tr>
+      <tr><td>칩 형태</td><td>아바타 이니셜 (1.125rem 원) + 이름 + X 버튼. pill shape.</td></tr>
+      <tr><td>칩 배경</td><td><code>#EEF2FF</code> (indigo-50), text <code>#4338CA</code></td></tr>
+      <tr><td>아바타 색상</td><td>사용자별 고유 색상 (기존 Testably avatar 시스템 재사용)</td></tr>
+      <tr><td>데이터 소스</td><td><code>profiles</code> 테이블에서 프로젝트 멤버 조회</td></tr>
+      <tr><td>DB 저장</td><td><code>assignees: [user1.id, user2.id]</code> — 기존 컬럼 활용</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>7. Tags 필드 개선 스펙</h2>
+
+  <table class="spec-table">
+    <thead><tr><th>기존</th><th>개선</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="compare-current">텍스트 입력 (<code>Enter tags separated by commas</code>)<br>오타, 중복, 불일치 발생</td>
+        <td class="compare-improved">칩 UI + 자동완성 드롭다운<br>Enter 키로 추가. 기존 태그 자동완성. 칩으로 시각화.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>태그 칩</td><td>bg <code>#F1F5F9</code>, text <code>#475569</code>, radius 4px, X 버튼</td></tr>
+      <tr><td>자동완성</td><td>프로젝트 내 기존 태그를 필터하여 드롭다운 표시. 새 태그도 Enter로 생성 가능.</td></tr>
+      <tr><td>드롭다운 트리거</td><td>입력 필드에 텍스트 입력 시 매칭되는 기존 태그 드롭다운 표시</td></tr>
+      <tr><td>DB 저장</td><td><code>tags: ['regression', 'login']</code> — 기존 배열 형태 유지</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>8. 엣지케이스</h2>
+
+  <table class="spec-table">
+    <thead><tr><th>엣지케이스</th><th>동작</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>"Include all" 선택 + Deprecated TC 존재</td>
+        <td>"Include all"은 <strong>Active TC만</strong> 포함. "All 48 Active test cases will be included" 표시. Draft/Deprecated 제외.</td>
+      </tr>
+      <tr>
+        <td>"Include all" 선택 + Draft TC 존재</td>
+        <td>Draft TC는 제외. Active만 포함. 사용자가 Draft를 포함하려면 "Select specific" → 토글 ON 필요.</td>
+      </tr>
+      <tr>
+        <td>TC가 0개인 프로젝트</td>
+        <td>TC 선택 영역 대신 "아직 테스트 케이스가 없습니다. TC를 먼저 생성해주세요." + TC 생성 링크</td>
+      </tr>
+      <tr>
+        <td>모든 TC가 Deprecated</td>
+        <td>"선택 가능한 TC가 없습니다." Empty state. Run 생성 불가.</td>
+      </tr>
+      <tr>
+        <td>Name 빈 상태로 제출</td>
+        <td>Name 입력 필드 빨간 border + "Run 이름을 입력하세요" 에러 메시지</td>
+      </tr>
+      <tr>
+        <td>"Select specific" 선택 + 0개 선택으로 제출</td>
+        <td>"최소 1개 이상의 TC를 선택하세요" 경고. 제출 차단.</td>
+      </tr>
+      <tr>
+        <td>Edit 모드에서 모달 열기</td>
+        <td>기존 Run 데이터로 폼 pre-fill. 버튼 "Update run". 기존 TC 선택 상태 복원.</td></tr>
+      <tr>
+        <td>Assignees에서 본인 제거</td>
+        <td>허용. 빈 assignees 배열도 가능. "팀원이 지정되지 않았습니다" 경고 없음.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>9. Desi 디자인 산출물 체크리스트</h2>
+
+  <div style="margin: 1rem 0;">
+    <div class="checklist-item">
+      <span class="checklist-num">1</span>
+      <div>
+        <div class="checklist-title">개선된 Add Run 모달 전체 디자인 <span class="ptag p0">P0</span></div>
+        <div class="checklist-desc">§2 참조. Description/Assignees 추가, Configuration/Issues/NOTES 제거, Tags 칩 UI, Milestone+State 병렬 배치.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">2</span>
+      <div>
+        <div class="checklist-title">TC 선택 팝업 — 기본 상태 (Draft 토글 OFF) <span class="ptag p0">P0</span></div>
+        <div class="checklist-desc">§4.1 참조. 3컬럼 유지 + Status 컬럼 추가 + "Include Draft TCs" 토글 + 개선된 footer 요약 칩.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">3</span>
+      <div>
+        <div class="checklist-title">TC 선택 팝업 — Draft 토글 ON + 경고 배너 <span class="ptag p0">P0</span></div>
+        <div class="checklist-desc">§4.2 참조. Draft 행 노란 배경 + amber 경고 배너 + "모두 Active로 변경" 버튼.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">4</span>
+      <div>
+        <div class="checklist-title">Assignees 멀티 선택 UI <span class="ptag p0">P0</span></div>
+        <div class="checklist-desc">§6 참조. 아바타 칩 + "+ Add" 드롭다운 + 프로젝트 멤버 검색.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">5</span>
+      <div>
+        <div class="checklist-title">Tags 칩 UI + 자동완성 <span class="ptag p1">P1</span></div>
+        <div class="checklist-desc">§7 참조. 칩 추가/삭제 + 기존 태그 자동완성 드롭다운.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">6</span>
+      <div>
+        <div class="checklist-title">필터 패널 — Last Execution 필터 추가 <span class="ptag p1">P1</span></div>
+        <div class="checklist-desc">§4.1 오른쪽 패널 참조. Passed/Failed/Untested 체크박스 + 색상 도트.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">7</span>
+      <div>
+        <div class="checklist-title">Quick Actions — "Select all in folder" + "Deselect all" <span class="ptag p1">P1</span></div>
+        <div class="checklist-desc">§4.1 오른쪽 패널 하단 참조. 현재 폴더 기준 전체 선택/해제.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">8</span>
+      <div>
+        <div class="checklist-title">Empty states + Error states <span class="ptag p2">P2</span></div>
+        <div class="checklist-desc">§8 엣지케이스 참조. TC 0개, 이름 미입력 에러, 선택 0개 경고 등.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn">
+    <i class="ri-error-warning-line"></i>
+    <strong>주의:</strong> 이 문서의 목업은 PM이 제작한 참고용입니다. 최종 디자인은 Desi의 판단에 따라 조정해주세요.
+    특히 모달 너비, 패딩, 필드 간격은 기존 Testably 디자인 시스템과 일관성을 맞춰주세요.
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>10. Dev 참고 — 수정 파일 목록</h2>
+
+  <table class="spec-table">
+    <thead><tr><th>#</th><th>파일</th><th>변경 내용</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>project-runs/page.tsx</strong><br>(1772-2310)</td>
+        <td>
+          • <code>formData</code>에 <code>description</code> 추가<br>
+          • Configuration, Issues, NOTES 탭 UI 제거<br>
+          • Milestone + State 한 줄 배치<br>
+          • Assignees 멀티 선택 UI 추가<br>
+          • Tags 칩 UI 교체 (comma-separated → chip)<br>
+          • TC 선택 팝업: lifecycle_status 필터링 추가<br>
+          • Draft 토글 + 경고 배너 + "모두 Active로 변경" 버튼<br>
+          • Footer에 상태별 칩 요약 추가<br>
+          • "Include all" 시 Active TC만 포함하도록 변경
+        </td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>Supabase migration</strong></td>
+        <td><code>ALTER TABLE test_runs ADD COLUMN description TEXT;</code></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>handleAddRun()</strong></td>
+        <td>insert 객체에 <code>description</code>, <code>assignees</code> (사용자 선택 반영) 추가</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Plan — Milestone Card Assignee Avatar Review</title>
+<style>
+  :root {
+    --bg: #F8FAFC; --card: #FFFFFF; --border: #E2E8F0;
+    --text: #0F172A; --sub: #64748B; --muted: #94A3B8;
+    --indigo: #6366F1; --indigo-bg: #EEF2FF;
+    --green: #16A34A; --green-bg: #F0FDF4;
+    --red: #DC2626; --red-bg: #FEF2F2;
+    --amber: #D97706; --amber-bg: #FFFBEB;
+    --blue: #2563EB; --blue-bg: #DBEAFE;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+  .header { margin-bottom: 2rem; }
+  .header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .header .subtitle { font-size: 0.875rem; color: var(--sub); }
+  .meta { display: flex; gap: 1rem; margin-top: 0.75rem; flex-wrap: wrap; }
+  .meta-item { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 0.25rem; }
+  .badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; }
+  .badge-indigo { background: var(--indigo-bg); color: var(--indigo); }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-blue { background: var(--blue-bg); color: var(--blue); }
+
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.25rem; }
+  .section h2 { font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .section h3 { font-size: 0.9375rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--text); }
+  .section p { font-size: 0.8125rem; color: var(--sub); margin-bottom: 0.75rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; margin: 0.75rem 0; }
+  th, td { text-align: left; padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--border); }
+  th { font-weight: 600; color: var(--text); background: #F8FAFC; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.02em; }
+  td { color: var(--sub); }
+
+  .highlight { background: var(--indigo-bg); border-left: 3px solid var(--indigo); padding: 0.75rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin: 0.75rem 0; }
+  .highlight p { color: var(--text); margin-bottom: 0; }
+  .highlight strong { color: var(--indigo); }
+
+  .warning { background: var(--amber-bg); border-left: 3px solid var(--amber); padding: 0.75rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin: 0.75rem 0; }
+  .warning p { color: var(--text); margin-bottom: 0; }
+
+  .bug-box { background: var(--red-bg); border-left: 3px solid var(--red); padding: 0.75rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin: 0.75rem 0; }
+  .bug-box p { color: var(--text); margin-bottom: 0; }
+  .bug-box code { background: #FEE2E2; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.75rem; }
+
+  .code { background: #1E293B; color: #E2E8F0; padding: 1rem; border-radius: 0.5rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.75rem; overflow-x: auto; margin: 0.75rem 0; line-height: 1.7; }
+  .code .comment { color: #64748B; }
+  .code .keyword { color: #818CF8; }
+  .code .string { color: #34D399; }
+  .code .fn { color: #FBBF24; }
+
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .compare-card { border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem; }
+  .compare-card.rec { border-color: var(--green); background: var(--green-bg); }
+  .compare-card h4 { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.375rem; }
+  .compare-card ul { list-style: none; padding: 0; }
+  .compare-card li { font-size: 0.8125rem; color: var(--sub); padding: 0.25rem 0; padding-left: 1.25rem; position: relative; }
+  .compare-card li::before { content: ''; position: absolute; left: 0.25rem; top: 0.625rem; width: 6px; height: 6px; border-radius: 50%; }
+  .pro li::before { background: var(--green); }
+  .con li::before { background: var(--red); }
+
+  .flow-diagram { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin: 0.75rem 0; padding: 0.75rem; background: #F8FAFC; border-radius: 0.5rem; font-size: 0.75rem; }
+  .flow-step { background: var(--indigo-bg); color: var(--indigo); padding: 0.375rem 0.75rem; border-radius: 0.375rem; font-weight: 600; }
+  .flow-arrow { color: var(--muted); font-size: 1rem; }
+
+  .toc { background: #F8FAFC; border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
+  .toc h3 { font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.5rem; }
+  .toc ol { padding-left: 1.25rem; }
+  .toc li { font-size: 0.8125rem; color: var(--indigo); padding: 0.125rem 0; }
+  .toc a { color: var(--indigo); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .container { padding: 1.5rem 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ──────────────── HEADER ──────────────── -->
+<div class="header">
+  <h1>🔍 Milestone Card Assignee Avatar Review</h1>
+  <p class="subtitle">Milestone 리스트 카드에 표시되는 assignee 아바타의 UX 타당성 검토 및 개선 방향 기획안</p>
+  <div class="meta">
+    <span class="meta-item">📅 2026-03-30</span>
+    <span class="meta-item">👤 PM</span>
+    <span class="meta-item"><span class="badge badge-indigo">UX Review</span></span>
+    <span class="meta-item"><span class="badge badge-amber">CEO 요청</span></span>
+  </div>
+</div>
+
+<!-- ──────────────── TOC ──────────────── -->
+<div class="toc">
+  <h3>목차</h3>
+  <ol>
+    <li><a href="#s1">현재 구현 분석</a></li>
+    <li><a href="#s2">데이터 플로우 및 발견된 버그</a></li>
+    <li><a href="#s3">UX 타당성 평가</a></li>
+    <li><a href="#s4">방향 A — Assignee 아바타 제거</a></li>
+    <li><a href="#s5">방향 B — AvatarStack 개선</a></li>
+    <li><a href="#s6">비교 매트릭스</a></li>
+    <li><a href="#s7">Milestone Detail Run 카드 동일 기준 적용 검토</a></li>
+    <li><a href="#s8">권장안 및 구현 로드맵</a></li>
+  </ol>
+</div>
+
+<!-- ──────────────── S1: 현재 구현 분석 ──────────────── -->
+<div class="section" id="s1">
+  <h2>1. 현재 구현 분석</h2>
+
+  <h3>1-1. 관련 파일 구조</h3>
+  <table>
+    <tr><th>파일</th><th>역할</th><th>아바타 사용</th></tr>
+    <tr>
+      <td><code>src/pages/project-milestones/page.tsx</code></td>
+      <td>Milestone 리스트 페이지 (814줄)</td>
+      <td><code>AvatarStack</code> — Parent 카드 + Sub 카드</td>
+    </tr>
+    <tr>
+      <td><code>src/pages/milestone-detail/page.tsx</code></td>
+      <td>Milestone 상세 페이지 (1,600줄+)</td>
+      <td><code>AvatarStack</code> — Run 카드마다</td>
+    </tr>
+    <tr>
+      <td><code>src/pages/project-runs/page.tsx</code></td>
+      <td>Test Runs 리스트 (참고용)</td>
+      <td><code>Avatar</code> 개별 — Run 카드마다</td>
+    </tr>
+    <tr>
+      <td><code>src/components/Avatar.tsx</code></td>
+      <td>공용 Avatar/AvatarStack 컴포넌트 (187줄)</td>
+      <td>5 sizes: xl(64px)~xs(20px)</td>
+    </tr>
+  </table>
+
+  <h3>1-2. Milestone 리스트 카드 — 현재 아바타 위치</h3>
+  <p><strong>Parent Milestone 카드:</strong> 카드 하단 (Bottom row) — passed/failed/remaining 통계 옆 우측 정렬로 <code>AvatarStack size="xs" max={3}</code></p>
+  <p><strong>Sub-Milestone 카드:</strong> 카드 상단 (Top row) — status badge 바로 옆에 <code>AvatarStack size="xs" max={3}</code></p>
+
+  <div class="code">
+<span class="comment">/* Parent Milestone — 하단 Bottom row (line 622-651) */</span>
+&lt;div className="flex items-center justify-between"&gt;
+  &lt;div&gt;  <span class="comment">/* passed / failed / remaining 통계 */</span>  &lt;/div&gt;
+  {(() =&gt; {
+    <span class="keyword">const</span> assigneeIds = milestoneRunAssignees.<span class="fn">get</span>(milestone.id) || [];
+    <span class="keyword">if</span> (assigneeIds.length === <span class="string">0</span>) <span class="keyword">return null</span>;
+    <span class="keyword">return</span> &lt;<span class="fn">AvatarStack</span> size=<span class="string">"xs"</span> max={<span class="string">3</span>} members={...} /&gt;
+  })()}
+&lt;/div&gt;
+
+<span class="comment">/* Sub-Milestone — 상단 Top row (line 444-477) */</span>
+&lt;div className="flex items-center gap-2"&gt;
+  &lt;div&gt; <span class="comment">/* icon + name + date */</span> &lt;/div&gt;
+  &lt;span&gt; <span class="comment">/* status badge */</span> &lt;/span&gt;
+  {(() =&gt; {
+    <span class="keyword">const</span> assigneeIds = milestoneRunAssignees.<span class="fn">get</span>(sub.id) || [];
+    <span class="keyword">return</span> &lt;<span class="fn">AvatarStack</span> size=<span class="string">"xs"</span> max={<span class="string">3</span>} members={...} /&gt;
+  })()}
+&lt;/div&gt;
+  </div>
+
+  <h3>1-3. AvatarStack "xs" 사이즈의 물리적 크기</h3>
+  <table>
+    <tr><th>Size</th><th>Width × Height</th><th>Font Size</th><th>Overlap</th></tr>
+    <tr><td>xs</td><td><strong>20px × 20px</strong></td><td>7px</td><td>-8px</td></tr>
+    <tr><td>sm</td><td>24px × 24px</td><td>8px</td><td>-8px</td></tr>
+    <tr><td>md</td><td>32px × 32px</td><td>11px</td><td>-10px</td></tr>
+  </table>
+  <p>xs(20px)는 겹침(-8px) 적용 시 실제 보이는 영역이 약 12px로 매우 작아, initials를 읽기 어렵고 시각적 인지가 힘듦.</p>
+</div>
+
+<!-- ──────────────── S2: 데이터 플로우 및 버그 ──────────────── -->
+<div class="section" id="s2">
+  <h2>2. 데이터 플로우 및 발견된 버그</h2>
+
+  <h3>2-1. Milestone 리스트 — Assignee 데이터 수집 방식</h3>
+  <div class="flow-diagram">
+    <span class="flow-step">test_runs 전체 조회</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">run.milestone_id로 그룹핑</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">run.assignees[] 합집합</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">milestoneRunAssignees Map</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">profiles 테이블 조회 (UUID)</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">AvatarStack 렌더</span>
+  </div>
+  <p>
+    <strong>핵심:</strong> Milestone 자체에는 <code>assigned_to</code> 필드가 있지만 사실상 미사용(<code>string | null</code>, optional).
+    현재 아바타는 해당 Milestone에 연결된 <strong>모든 Test Run의 assignees를 합산</strong>한 결과를 표시.
+    즉, "이 Milestone의 담당자"가 아니라 "이 Milestone 하위 Run에 참여한 사람들"의 집합.
+  </p>
+
+  <h3>2-2. Milestone Detail — Run 카드 Assignee 데이터 수집 방식</h3>
+  <div class="flow-diagram">
+    <span class="flow-step">run_testcase_assignees 테이블</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">run_id별 assignee 수집</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">fallback: test_cases.assignee</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">profiles 조회 (name/email)</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">AvatarStack 렌더</span>
+  </div>
+
+  <div class="warning">
+    <p><strong>⚠️ 데이터 소스 불일치:</strong> Milestone 리스트는 <code>test_runs.assignees[]</code> (UUID 배열)를 사용하고, Milestone Detail은 <code>run_testcase_assignees.assignee</code> + <code>test_cases.assignee</code> (이름/이메일 문자열)를 사용. 동일 Run에 대해 서로 다른 사람이 표시될 수 있음.</p>
+  </div>
+
+  <h3>2-3. 발견된 버그</h3>
+
+  <div class="bug-box">
+    <p><strong>🐛 Bug 1 — "?" 아바타 표시 문제</strong></p>
+    <p>CEO가 보고한 <code>?</code> 아바타 현상. <code>Avatar.tsx</code>의 <code>getInitials()</code> 함수에서 name과 email 모두 없으면 <code>'?'</code>를 반환.
+    원인: <code>milestoneAssigneeProfiles</code> Map에서 UUID로 프로필을 못 찾을 경우, <code>name: undefined</code>, <code>email: undefined</code>로 Avatar에 전달됨.</p>
+  </div>
+
+  <div class="code">
+<span class="comment">// Avatar.tsx line 29-39</span>
+<span class="keyword">export function</span> <span class="fn">getInitials</span>(name?: string, email?: string): string {
+  <span class="keyword">if</span> (name && name.trim()) { ... <span class="keyword">return</span> initials; }
+  <span class="keyword">if</span> (email) <span class="keyword">return</span> email.slice(<span class="string">0</span>, <span class="string">2</span>).toUpperCase();
+  <span class="keyword">return</span> <span class="string">'?'</span>;  <span class="comment">// ← 이 케이스가 발생</span>
+}
+  </div>
+
+  <div class="bug-box">
+    <p><strong>🐛 Bug 2 — Milestone Detail의 profile 조회 로직 오류</strong></p>
+    <p>Milestone Detail에서 <code>run_testcase_assignees.assignee</code>는 이름/이메일 문자열인데, 이를 <code>profiles</code> 테이블에서 <code>full_name.eq.${n},email.eq.${n}</code>로 OR 조회.
+    만약 assignee 값이 UUID라면 full_name이나 email과 매칭되지 않아 프로필이 누락되고, 이 역시 <code>?</code> 표시 원인이 됨.</p>
+  </div>
+
+  <div class="bug-box">
+    <p><strong>🐛 Bug 3 — Sub-Milestone에 직접 연결된 Run이 없으면 아바타 비어 있음</strong></p>
+    <p>Progress는 parent에서 fallback 상속하지만, assignee는 상속 로직 없음. Sub-Milestone에 직접 <code>milestone_id</code>가 걸린 Run이 없으면 아바타가 표시되지 않아 Parent와 Sub 간 정보 비대칭 발생.</p>
+  </div>
+</div>
+
+<!-- ──────────────── S3: UX 타당성 평가 ──────────────── -->
+<div class="section" id="s3">
+  <h2>3. UX 타당성 평가</h2>
+
+  <h3>3-1. "Milestone 카드에 assignee 아바타를 표시하는 것이 의미가 있는가?"</h3>
+
+  <table>
+    <tr><th>평가 기준</th><th>현재 상태</th><th>평가</th></tr>
+    <tr>
+      <td><strong>정보의 정확성</strong></td>
+      <td>Milestone 담당자가 아닌 "Run 참여자 합산"을 표시</td>
+      <td><span class="badge badge-red">❌ Misleading</span></td>
+    </tr>
+    <tr>
+      <td><strong>시각적 가독성</strong></td>
+      <td>xs(20px) 사이즈, 겹침 적용시 12px 실효 영역</td>
+      <td><span class="badge badge-red">❌ 인지 어려움</span></td>
+    </tr>
+    <tr>
+      <td><strong>정보 밀도</strong></td>
+      <td>카드에 이미 name, date, status, progress bar, passed/failed/remaining, action buttons 존재</td>
+      <td><span class="badge badge-amber">⚠️ 과밀</span></td>
+    </tr>
+    <tr>
+      <td><strong>사용자 행동 맥락</strong></td>
+      <td>Milestone 리스트에서 사용자가 "누가 참여하고 있나"를 확인할 니즈가 있는가?</td>
+      <td><span class="badge badge-amber">⚠️ 낮은 우선순위</span></td>
+    </tr>
+    <tr>
+      <td><strong>데이터 안정성</strong></td>
+      <td>"?" 버그, 데이터 소스 불일치, Sub 상속 누락</td>
+      <td><span class="badge badge-red">❌ 불안정</span></td>
+    </tr>
+    <tr>
+      <td><strong>경쟁 제품 비교</strong></td>
+      <td>TestRail, Zephyr 등은 Milestone 리스트에 assignee를 표시하지 않음. Run 카드에만 표시.</td>
+      <td><span class="badge badge-blue">ℹ️ 참고</span></td>
+    </tr>
+  </table>
+
+  <h3>3-2. 핵심 문제 요약</h3>
+  <div class="warning">
+    <p><strong>근본적 문제:</strong> 현재 아바타가 보여주는 정보는 "Milestone의 담당자(Owner)"가 아니라 "하위 Run들의 assignees 합집합"이며, 이 차이를 사용자가 알 수 없음. 카드에 "Assigned to" 같은 라벨도 없어서 아바타가 무엇을 의미하는지 모호함.</p>
+  </div>
+</div>
+
+<!-- ──────────────── S4: 방향 A ──────────────── -->
+<div class="section" id="s4">
+  <h2>4. 방향 A — Assignee 아바타 제거</h2>
+
+  <p>Milestone 리스트 카드에서 AvatarStack을 완전 제거. 카드는 name, date, status, progress만 표시하여 정보 밀도를 낮추고 핵심에 집중.</p>
+
+  <h3>4-1. 변경 범위</h3>
+  <table>
+    <tr><th>파일</th><th>변경 사항</th><th>LOC 예상</th></tr>
+    <tr>
+      <td><code>project-milestones/page.tsx</code></td>
+      <td>
+        ① <code>milestoneRunAssignees</code>, <code>milestoneAssigneeProfiles</code> state 삭제<br>
+        ② <code>fetchData()</code>에서 assignee 수집/프로필 조회 로직 삭제 (line 246-267)<br>
+        ③ <code>renderMilestone</code> 하단 AvatarStack 삭제 (line 637-650)<br>
+        ④ <code>renderSubMilestone</code> AvatarStack 삭제 (line 464-477)<br>
+        ⑤ <code>Avatar, AvatarStack</code> import 제거 (line 10)
+      </td>
+      <td>~40줄 삭제</td>
+    </tr>
+  </table>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4 style="color: var(--green);">✅ 장점</h4>
+      <ul class="pro">
+        <li>Misleading 정보 제거 — "이 사람이 Milestone 담당자"라는 오해 방지</li>
+        <li>카드 정보 밀도 감소 — 핵심 정보(이름, 날짜, 상태, 진행률)에 집중</li>
+        <li>"?" 아바타 버그 근본 해결</li>
+        <li>네트워크 요청 1회 절감 (profiles 조회 불필요)</li>
+        <li>코드 40줄 삭제로 유지보수 부담 감소</li>
+        <li>구현 공수: ~0.5일 (프론트엔드만)</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <h4 style="color: var(--red);">❌ 단점</h4>
+      <ul class="con">
+        <li>Milestone 리스트에서 "누가 참여하고 있나" 정보를 전혀 볼 수 없음</li>
+        <li>Detail 페이지까지 들어가야 참여자 확인 가능</li>
+        <li>팀 관리자 관점에서 한눈에 부하 분산 파악 불가</li>
+        <li>카드 하단 우측이 비어서 레이아웃 밸런스 변화</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────── S5: 방향 B ──────────────── -->
+<div class="section" id="s5">
+  <h2>5. 방향 B — AvatarStack 개선</h2>
+
+  <p>아바타를 유지하되, 데이터 정확성 개선 + 시각적 가독성 향상 + 의미 명확화를 통해 UX 가치를 높임.</p>
+
+  <h3>5-1. 개선 항목</h3>
+
+  <table>
+    <tr><th>#</th><th>개선 항목</th><th>현재</th><th>개선 후</th><th>공수</th></tr>
+    <tr>
+      <td>B-1</td>
+      <td><strong>사이즈 업그레이드</strong></td>
+      <td>xs (20px)</td>
+      <td>sm (24px) — Parent 카드<br>xs (20px) 유지 — Sub 카드</td>
+      <td>0.25일</td>
+    </tr>
+    <tr>
+      <td>B-2</td>
+      <td><strong>"?" 버그 수정</strong></td>
+      <td>프로필 누락 시 "?"</td>
+      <td>UUID fallback으로 email 표시, 프로필 없으면 아바타 숨김</td>
+      <td>0.5일</td>
+    </tr>
+    <tr>
+      <td>B-3</td>
+      <td><strong>Tooltip 추가</strong></td>
+      <td>없음 (title attr만)</td>
+      <td>AvatarStack hover 시 참여자 이름 리스트 tooltip</td>
+      <td>0.5일</td>
+    </tr>
+    <tr>
+      <td>B-4</td>
+      <td><strong>라벨 추가</strong></td>
+      <td>아바타만 노출 (의미 불명)</td>
+      <td>아바타 앞에 👥 아이콘 또는 "Contributors" 텍스트</td>
+      <td>0.25일</td>
+    </tr>
+    <tr>
+      <td>B-5</td>
+      <td><strong>데이터 소스 통일</strong></td>
+      <td>리스트: UUID / Detail: name/email</td>
+      <td>양쪽 모두 UUID 기반으로 통일</td>
+      <td>1일</td>
+    </tr>
+    <tr>
+      <td>B-6</td>
+      <td><strong>Sub-Milestone 상속</strong></td>
+      <td>Sub에 직접 Run 없으면 비어 있음</td>
+      <td>Parent의 assignees를 fallback으로 상속</td>
+      <td>0.25일</td>
+    </tr>
+  </table>
+
+  <h3>5-2. 개선된 Parent 카드 레이아웃 (안)</h3>
+  <div class="code">
+<span class="comment">/* 개선안: Bottom row에 라벨 + 더 큰 아바타 */</span>
+&lt;div className="flex items-center justify-between"&gt;
+  &lt;div&gt; <span class="comment">/* passed / failed / remaining */</span> &lt;/div&gt;
+  &lt;div className="flex items-center gap-1.5"&gt;
+    &lt;span className="text-[0.6875rem] text-[#94A3B8]"&gt;Contributors&lt;/span&gt;
+    &lt;<span class="fn">AvatarStack</span>
+      size=<span class="string">"sm"</span>     <span class="comment">// 24px (기존 xs 20px에서 업)</span>
+      max={<span class="string">4</span>}
+      members={validMembers}  <span class="comment">// 프로필 있는 멤버만 필터</span>
+    /&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4 style="color: var(--green);">✅ 장점</h4>
+      <ul class="pro">
+        <li>"Contributors" 라벨로 의미 명확화 — 담당자가 아닌 참여자임을 표시</li>
+        <li>sm 사이즈로 가독성 개선</li>
+        <li>Tooltip으로 상세 정보 접근 가능</li>
+        <li>팀 관리자가 리스트에서 참여 현황 즉시 파악</li>
+        <li>데이터 통일로 일관된 경험 제공</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <h4 style="color: var(--red);">❌ 단점</h4>
+      <ul class="con">
+        <li>여전히 파생 데이터 — Milestone 자체의 속성이 아닌 Run 집계</li>
+        <li>카드 정보 밀도 유지 (감소하지 않음)</li>
+        <li>구현 공수 높음: ~2.75일 (B-1~B-6 합산)</li>
+        <li>네트워크 요청 유지 (profiles 조회 필요)</li>
+        <li>"Contributors"와 "Assignees"의 차이가 사용자에게 직관적이지 않을 수 있음</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────── S6: 비교 매트릭스 ──────────────── -->
+<div class="section" id="s6">
+  <h2>6. 비교 매트릭스</h2>
+
+  <table>
+    <tr>
+      <th>평가 항목</th>
+      <th>방향 A (제거)</th>
+      <th>방향 B (개선)</th>
+    </tr>
+    <tr>
+      <td>정보 정확성</td>
+      <td><span class="badge badge-green">N/A (제거)</span></td>
+      <td><span class="badge badge-amber">보통 (파생 데이터)</span></td>
+    </tr>
+    <tr>
+      <td>시각적 명료도</td>
+      <td><span class="badge badge-green">높음</span></td>
+      <td><span class="badge badge-green">높음 (개선 후)</span></td>
+    </tr>
+    <tr>
+      <td>정보 접근성</td>
+      <td><span class="badge badge-red">Detail 진입 필요</span></td>
+      <td><span class="badge badge-green">리스트에서 확인 가능</span></td>
+    </tr>
+    <tr>
+      <td>카드 정보 밀도</td>
+      <td><span class="badge badge-green">낮음 (간결)</span></td>
+      <td><span class="badge badge-amber">높음 (유지)</span></td>
+    </tr>
+    <tr>
+      <td>구현 공수</td>
+      <td><span class="badge badge-green">~0.5일</span></td>
+      <td><span class="badge badge-red">~2.75일</span></td>
+    </tr>
+    <tr>
+      <td>버그 해결</td>
+      <td><span class="badge badge-green">근본 해결</span></td>
+      <td><span class="badge badge-amber">수정 필요</span></td>
+    </tr>
+    <tr>
+      <td>팀 관리 가시성</td>
+      <td><span class="badge badge-red">없음</span></td>
+      <td><span class="badge badge-green">리스트에서 확인</span></td>
+    </tr>
+    <tr>
+      <td>유지보수 부담</td>
+      <td><span class="badge badge-green">코드 삭제</span></td>
+      <td><span class="badge badge-amber">코드 추가/수정</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ──────────────── S7: Milestone Detail Run 카드 ──────────────── -->
+<div class="section" id="s7">
+  <h2>7. Milestone Detail — Run 카드에도 동일 기준 적용 필요한지?</h2>
+
+  <h3>7-1. 현재 구현</h3>
+  <p>Milestone Detail 페이지의 Run 카드에는 <code>AvatarStack size="xs" max={4}</code>로 각 Run의 assignees가 표시됨. 데이터 소스는 <code>run_testcase_assignees</code> 테이블 + <code>test_cases.assignee</code> fallback.</p>
+
+  <h3>7-2. Run 카드와 Milestone 카드의 본질적 차이</h3>
+  <table>
+    <tr><th>속성</th><th>Milestone 카드</th><th>Run 카드 (Detail 내부)</th></tr>
+    <tr>
+      <td><strong>Assignee의 의미</strong></td>
+      <td>하위 Run들의 참여자 <em>합산</em> (간접/파생)</td>
+      <td>해당 Run에 <em>직접</em> 배정된 테스터 (직접)</td>
+    </tr>
+    <tr>
+      <td><strong>정보 정확성</strong></td>
+      <td>모호함 — "누구 담당?" vs "누가 참여?"</td>
+      <td>명확함 — "이 Run을 실행하는 사람"</td>
+    </tr>
+    <tr>
+      <td><strong>사용자 니즈</strong></td>
+      <td>리스트 스캔 시 담당자 확인은 부차적</td>
+      <td>Run 실행 시 배정자 확인은 핵심적</td>
+    </tr>
+    <tr>
+      <td><strong>경쟁 제품 참고</strong></td>
+      <td>TestRail: Milestone 리스트에 아바타 없음</td>
+      <td>TestRail: Run에 "Assigned To" 표시함</td>
+    </tr>
+  </table>
+
+  <div class="highlight">
+    <p><strong>결론:</strong> Milestone Detail의 Run 카드 아바타는 <strong>유지하되 개선</strong>해야 함. Run 카드의 assignee는 직접적이고 명확한 정보이므로 Milestone 리스트 카드와 동일 기준을 적용할 필요 없음. 다만 아래 개선은 공통 적용 권장:</p>
+  </div>
+
+  <h3>7-3. Run 카드 공통 개선 사항</h3>
+  <table>
+    <tr><th>#</th><th>항목</th><th>내용</th></tr>
+    <tr>
+      <td>R-1</td>
+      <td>"?" 버그 수정</td>
+      <td>프로필 조회 로직을 UUID 기반으로 통일 (현재 name/email OR 쿼리 → UUID .in() 쿼리)</td>
+    </tr>
+    <tr>
+      <td>R-2</td>
+      <td>사이즈 sm 통일</td>
+      <td>project-runs 페이지는 이미 <code>Avatar size="sm"</code> 사용. milestone-detail도 xs→sm</td>
+    </tr>
+    <tr>
+      <td>R-3</td>
+      <td>"Assigned to" 라벨</td>
+      <td>project-runs처럼 아바타 앞에 "Assigned to" 텍스트 추가</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ──────────────── S8: 권장안 ──────────────── -->
+<div class="section" id="s8">
+  <h2>8. 권장안 및 구현 로드맵</h2>
+
+  <div class="highlight">
+    <p><strong>🎯 PM 권장: 방향 A (제거) + Run 카드 개선</strong></p>
+  </div>
+
+  <h3>8-1. 권장 이유</h3>
+  <p>
+    Milestone 리스트 카드의 아바타는 <strong>파생 데이터(Run assignees 합산)</strong>를 마치 Milestone 담당자인 것처럼 보여주고 있어 UX적으로 misleading합니다. xs(20px) 사이즈로 가독성도 떨어지고, "?" 버그까지 발생 중입니다. 방향 B로 개선하려면 ~2.75일의 공수가 드는 반면, 근본적으로 "파생 데이터"라는 한계는 해소되지 않습니다.
+  </p>
+  <p>
+    반면 Milestone Detail 내부의 Run 카드 아바타는 "이 Run의 직접 배정자"로 의미가 명확하므로 유지 + 개선이 타당합니다. 이렇게 하면 정보 계층이 자연스럽게 형성됩니다:
+  </p>
+  <p>
+    <strong>Milestone 리스트</strong> (무엇이 진행 중인가? → 이름, 상태, 진행률) → <strong>Milestone Detail</strong> (누가 무엇을 하고 있나? → Run별 assignees) → <strong>Run Detail</strong> (각 테스트 결과는?)
+  </p>
+
+  <h3>8-2. 단계별 구현 로드맵</h3>
+  <table>
+    <tr><th>Phase</th><th>작업</th><th>공수</th><th>우선순위</th></tr>
+    <tr>
+      <td><strong>Phase 1</strong></td>
+      <td>
+        <strong>Milestone 리스트 카드에서 AvatarStack 제거</strong><br>
+        — milestoneRunAssignees, milestoneAssigneeProfiles state 삭제<br>
+        — fetchData()의 assignee 수집 로직 삭제 (line 246-267)<br>
+        — renderMilestone, renderSubMilestone에서 AvatarStack 삭제<br>
+        — Avatar import 제거
+      </td>
+      <td>0.5일</td>
+      <td><span class="badge badge-red">P0</span></td>
+    </tr>
+    <tr>
+      <td><strong>Phase 2</strong></td>
+      <td>
+        <strong>Milestone Detail Run 카드 아바타 개선</strong><br>
+        — profile 조회를 UUID 기반으로 통일 (Bug 2 수정)<br>
+        — AvatarStack xs → sm 사이즈 업<br>
+        — "Assigned to" 라벨 추가 (project-runs 패턴 통일)
+      </td>
+      <td>1일</td>
+      <td><span class="badge badge-amber">P1</span></td>
+    </tr>
+    <tr>
+      <td><strong>Phase 3<br>(선택적)</strong></td>
+      <td>
+        <strong>Milestone "Owner" 필드 도입</strong><br>
+        — milestones 테이블에 <code>owner_id UUID REFERENCES profiles(id)</code> 추가<br>
+        — Create/Edit 모달에 Owner 선택 드롭다운<br>
+        — Milestone 리스트 카드에 단일 Owner Avatar 표시 (sm 사이즈)<br>
+        — 이것은 "파생 데이터"가 아닌 직접 지정된 담당자이므로 의미 명확
+      </td>
+      <td>2일</td>
+      <td><span class="badge badge-blue">P2 — 추후 검토</span></td>
+    </tr>
+  </table>
+
+  <h3>8-3. Phase 3 상세 — Milestone Owner 개념 (향후 발전 방향)</h3>
+  <p>
+    만약 Milestone 카드에 "사람"을 보여주고 싶다면, 현재처럼 Run assignees를 합산하는 것이 아니라 Milestone 자체에 <strong>Owner(책임자)</strong> 개념을 도입하는 것이 올바른 접근입니다.
+    이렇게 하면 "이 Milestone은 누가 책임지고 있는가?"라는 질문에 정확하게 답할 수 있습니다.
+  </p>
+
+  <div class="code">
+<span class="comment">-- Phase 3: DB 마이그레이션</span>
+<span class="keyword">ALTER TABLE</span> milestones
+  <span class="keyword">ADD COLUMN</span> owner_id <span class="fn">UUID</span> <span class="keyword">REFERENCES</span> profiles(id);
+
+<span class="comment">-- Milestone 카드에 단일 Avatar 표시</span>
+&lt;<span class="fn">Avatar</span>
+  userId={milestone.owner_id}
+  name={ownerProfile?.full_name}
+  email={ownerProfile?.email}
+  photoUrl={ownerProfile?.avatar_url}
+  size=<span class="string">"sm"</span>
+  title={<span class="string">`Owner: ${ownerProfile?.full_name}`</span>}
+/&gt;
+  </div>
+
+  <h3>8-4. 최종 정리</h3>
+  <table>
+    <tr><th>영역</th><th>현재</th><th>권장</th></tr>
+    <tr>
+      <td>Milestone 리스트 — Parent 카드</td>
+      <td>AvatarStack xs, max=3 (Run assignees 합산)</td>
+      <td><strong>제거</strong> (Phase 1)</td>
+    </tr>
+    <tr>
+      <td>Milestone 리스트 — Sub 카드</td>
+      <td>AvatarStack xs, max=3 (Run assignees 합산)</td>
+      <td><strong>제거</strong> (Phase 1)</td>
+    </tr>
+    <tr>
+      <td>Milestone Detail — Run 카드</td>
+      <td>AvatarStack xs, max=4 (run_testcase_assignees)</td>
+      <td><strong>유지 + 개선</strong> (Phase 2: sm, 라벨, 버그 수정)</td>
+    </tr>
+    <tr>
+      <td>Milestone 리스트 — Owner 표시</td>
+      <td>없음</td>
+      <td><strong>향후 검토</strong> (Phase 3: 단일 Owner 아바타)</td>
+    </tr>
+  </table>
+
+</div>
+
+</div>
+</body>
+</html>

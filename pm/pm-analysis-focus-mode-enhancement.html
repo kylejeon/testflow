@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PM Analysis — Focus Mode Enhancement</title>
+<style>
+  :root { --indigo: #6366F1; --indigo-50: #EEF2FF; --red: #EF4444; --red-50: #FEF2F2; --green: #10B981; --green-50: #F0FDF4; --amber: #F59E0B; --amber-50: #FFFBEB; --violet: #8B5CF6; --slate-900: #0F172A; --slate-700: #334155; --slate-500: #64748B; --slate-400: #94A3B8; --slate-200: #E2E8F0; --slate-100: #F1F5F9; --slate-50: #F8FAFC; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--slate-700); line-height: 1.65; background: #F1F5F9; padding: 2rem; }
+  .container { max-width: 920px; margin: 0 auto; }
+  .header { background: linear-gradient(135deg, #1E293B 0%, #334155 50%, #475569 100%); color: #fff; padding: 2.5rem; border-radius: 1rem 1rem 0 0; }
+  .header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .header .sub { opacity: 0.85; font-size: 0.875rem; }
+  .tag { display: inline-block; background: rgba(255,255,255,0.15); padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; margin-top: 0.5rem; }
+  .meta { background: #fff; border: 1px solid var(--slate-200); border-top: none; padding: 1rem 2.5rem; display: flex; gap: 2rem; flex-wrap: wrap; font-size: 0.8125rem; color: var(--slate-400); }
+  .meta b { color: var(--slate-700); }
+  .body { background: #fff; border: 1px solid var(--slate-200); border-top: none; border-radius: 0 0 1rem 1rem; padding: 2.5rem; }
+  h2 { font-size: 1.125rem; font-weight: 800; color: var(--slate-900); margin: 2.5rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--indigo); }
+  h2:first-child { margin-top: 0; }
+  h3 { font-size: 0.9375rem; font-weight: 700; color: var(--slate-900); margin: 1.5rem 0 0.5rem; }
+  h4 { font-size: 0.875rem; font-weight: 700; color: var(--slate-700); margin: 1.25rem 0 0.375rem; }
+  p, li { font-size: 0.875rem; margin-bottom: 0.5rem; }
+  ul, ol { padding-left: 1.25rem; }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8125rem; }
+  th { background: var(--slate-50); font-weight: 700; color: var(--slate-900); text-align: left; padding: 0.625rem 0.75rem; border: 1px solid var(--slate-200); }
+  td { padding: 0.625rem 0.75rem; border: 1px solid var(--slate-200); vertical-align: top; }
+  code { background: var(--slate-100); padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.8125rem; color: var(--indigo); }
+  pre { background: #1E293B; color: #E2E8F0; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; font-size: 0.8125rem; line-height: 1.5; margin: 0.75rem 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; }
+  .badge-red { background: var(--red-50); color: #DC2626; }
+  .badge-green { background: var(--green-50); color: #16A34A; }
+  .badge-indigo { background: var(--indigo-50); color: #4F46E5; }
+  .badge-amber { background: var(--amber-50); color: #D97706; }
+  .badge-slate { background: var(--slate-100); color: var(--slate-500); }
+  .badge-violet { background: #F5F3FF; color: #7C3AED; }
+  .callout { border-left: 4px solid var(--indigo); background: var(--indigo-50); padding: 1rem 1.25rem; border-radius: 0 0.5rem 0.5rem 0; margin: 1rem 0; font-size: 0.8125rem; }
+  .callout-green { border-left-color: var(--green); background: var(--green-50); }
+  .callout-red { border-left-color: var(--red); background: var(--red-50); }
+  .callout-amber { border-left-color: var(--amber); background: var(--amber-50); }
+  .decision { background: var(--green-50); border: 1px solid #BBF7D0; border-radius: 0.75rem; padding: 1.25rem; margin: 1rem 0; }
+  .decision-title { font-weight: 700; color: #15803D; font-size: 0.875rem; margin-bottom: 0.5rem; }
+  .wireframe { background: var(--slate-50); border: 2px dashed var(--slate-200); border-radius: 0.75rem; padding: 1.5rem; margin: 1rem 0; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.6875rem; line-height: 1.9; color: var(--slate-700); overflow-x: auto; white-space: pre; }
+  .wireframe .label { color: var(--slate-400); font-style: italic; }
+  .wireframe .hl { color: var(--indigo); font-weight: 700; }
+  .wireframe .red { color: var(--red); font-weight: 700; }
+  .wireframe .green { color: var(--green); font-weight: 700; }
+  .wireframe .amber { color: var(--amber); font-weight: 700; }
+  .gap-card { background: var(--red-50); border: 1px solid #FECACA; border-radius: 0.5rem; padding: 0.75rem 1rem; margin: 0.5rem 0; }
+  .gap-card-title { font-weight: 700; color: #991B1B; font-size: 0.8125rem; }
+  .gap-card-body { font-size: 0.8125rem; color: #7F1D1D; margin-top: 0.25rem; }
+  .tier { display: flex; gap: 1rem; margin: 1rem 0; }
+  .tier-box { flex: 1; border-radius: 0.75rem; padding: 1rem; }
+  .tier-primary { background: var(--indigo-50); border: 2px solid #A5B4FC; }
+  .tier-secondary { background: var(--slate-50); border: 1px solid var(--slate-200); }
+  .tier-tertiary { background: #fff; border: 1px dashed var(--slate-200); }
+  .tier-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══ Header ═══ -->
+<div class="header">
+  <h1>PM Analysis — Focus Mode Enhancement</h1>
+  <div class="sub">CEO 피드백 분석: "Focus Mode에 Expected Result, 첨부 사진, TC ID, Folder, Priority, Tags, Comments 등 필요"</div>
+  <div class="tag">CEO FEEDBACK → PM ANALYSIS → CEO REVIEW</div>
+</div>
+<div class="meta">
+  <span>📅 <b>2026-03-26</b></span>
+  <span>👤 <b>PM</b> Kyle</span>
+  <span>📌 <b>Type</b> CEO 의견 요청 → PM 분석 보고</span>
+  <span>📁 <b>Component</b> FocusMode.tsx (336줄)</span>
+</div>
+
+<div class="body">
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§1. CEO 피드백 요약</h2>
+
+<div class="callout">
+  <b>CEO 원문:</b> "Focus Mode의 경우, test step만 표시되고 있어. Expected result도 함께 표시되어야 하고 첨부된 사진이 있다면 그것도 함께 표시되어야 해. 그리고 test case ID, folder, priority, tags, comments 등 실제 테스트를 수행할 때 필요한 모든 정보가 표시되어야 할 것 같은데."
+</div>
+
+<p>CEO가 제기한 핵심 문제: <b>현재 Focus Mode가 테스터의 실제 실행 시나리오에 필요한 정보를 충분히 제공하지 못하고 있다.</b></p>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§2. 현재 Focus Mode 코드 분석 (As-Is)</h2>
+
+<h3>2-1. 현재 FocusTestCase 인터페이스</h3>
+<pre><code>// FocusMode.tsx — Line 5-13
+export interface FocusTestCase {
+  id: string;
+  title: string;
+  description?: string;
+  steps?: string;
+  expected_result?: string;
+  precondition?: string;      // ← 인터페이스에 있으나 전달 안 됨!
+  runStatus?: TestStatus;
+}</code></pre>
+
+<h3>2-2. 실제 전달되는 데이터 (run-detail/page.tsx Line 1376-1383)</h3>
+<pre><code>const focusTests: FocusTestCase[] = testCases.map((tc) => ({
+  id: tc.id,
+  title: tc.title,
+  description: tc.description,
+  steps: tc.steps,
+  expected_result: tc.expected_result,
+  runStatus: tc.runStatus,
+  // ❌ precondition: 인터페이스에 정의됐지만 여기서 누락
+  // ❌ folder, priority, tags, attachments, assignee: 전달 안 됨
+}));</code></pre>
+
+<h3>2-3. 현재 표시 항목 vs 누락 항목</h3>
+<table>
+  <tr><th>항목</th><th>DB 필드 존재</th><th>인터페이스 정의</th><th>데이터 전달</th><th>UI 표시</th><th>상태</th></tr>
+  <tr><td><b>Title</b></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td><span class="badge badge-green">OK</span></td></tr>
+  <tr><td><b>Description</b></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td><span class="badge badge-green">OK</span></td></tr>
+  <tr><td><b>Test Steps</b></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td><span class="badge badge-green">OK</span></td></tr>
+  <tr><td><b>Expected Result (구조화)</b></td><td>✅</td><td>✅</td><td>✅</td><td>✅ (step별)</td><td><span class="badge badge-green">OK</span></td></tr>
+  <tr><td><b>Expected Result (단일)</b></td><td>✅</td><td>✅</td><td>✅</td><td>✅ (step 없을 때만)</td><td><span class="badge badge-amber">조건부</span></td></tr>
+  <tr><td><b>Run Status (이전)</b></td><td>✅</td><td>✅</td><td>✅</td><td>✅ (뱃지)</td><td><span class="badge badge-green">OK</span></td></tr>
+  <tr><td><b>Precondition</b></td><td>✅</td><td>✅</td><td>❌ 누락</td><td>✅ (코드 있음)</td><td><span class="badge badge-red">BUG</span></td></tr>
+  <tr><td><b>Attachments</b></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td><span class="badge badge-red">없음</span></td></tr>
+  <tr><td><b>TC-ID</b></td><td>✅ (UUID)</td><td>✅ (id)</td><td>✅</td><td>❌ (TC-001 포맷 미표시)</td><td><span class="badge badge-red">없음</span></td></tr>
+  <tr><td><b>Folder</b></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td><span class="badge badge-red">없음</span></td></tr>
+  <tr><td><b>Priority</b></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td><span class="badge badge-red">없음</span></td></tr>
+  <tr><td><b>Tags</b></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td><span class="badge badge-red">없음</span></td></tr>
+  <tr><td><b>Comments</b></td><td>✅ (별도 테이블)</td><td>❌</td><td>❌</td><td>❌</td><td><span class="badge badge-red">없음</span></td></tr>
+  <tr><td><b>Assignee</b></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td><span class="badge badge-red">없음</span></td></tr>
+  <tr><td><b>Note 저장</b></td><td>—</td><td>✅</td><td>✅</td><td>✅ (입력)</td><td><span class="badge badge-red">미저장</span></td></tr>
+</table>
+
+<h3>2-4. 발견된 버그</h3>
+<div class="gap-card">
+  <div class="gap-card-title">🐛 Precondition 데이터 미전달 버그</div>
+  <div class="gap-card-body">
+    FocusMode 컴포넌트에 Precondition 표시 코드(Line 203-211)가 완전히 구현되어 있으나, run-detail/page.tsx의 focusTests 매핑(Line 1376-1383)에서 <code>precondition</code> 필드를 전달하지 않고 있습니다. <code>precondition: tc.precondition</code> 한 줄 추가로 즉시 수정 가능.
+  </div>
+</div>
+
+<div class="gap-card">
+  <div class="gap-card-title">🐛 Note 입력 후 미저장 버그</div>
+  <div class="gap-card-body">
+    Focus Mode에서 F(Failed) 키 → 노트 입력 → 상태 변경 시, <code>handleFocusStatusChange</code>(Line 1370)에서 <code>_note</code> 파라미터를 무시(<code>_</code> prefix)하고 있습니다. 테스터가 입력한 노트가 DB에 저장되지 않습니다.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§3. 경쟁사 실행 모드 비교</h2>
+
+<table>
+  <tr><th>기능</th><th>Testably<br>(현재)</th><th>TestRail<br>Test Execution</th><th>Qase.io<br>Run Wizard</th><th>Zephyr Scale<br>Test Player</th></tr>
+  <tr><td>Step별 표시</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Expected Result (step별)</td><td>✅ (조건부)</td><td>✅ (필수 4필드)</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Expected Result (별도 표시)</td><td>✅ (step 없을 때)</td><td>✅ (항상)</td><td>✅ (항상)</td><td>✅</td></tr>
+  <tr><td>첨부파일/스크린샷</td><td>❌</td><td>✅ (step별 가능)</td><td>✅ (실행 중 첨부)</td><td>✅</td></tr>
+  <tr><td>TC ID 표시</td><td>❌</td><td>✅ (C-ID 포맷)</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Priority</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Precondition</td><td>🐛 (코드있으나 미전달)</td><td>✅ (기본 템플릿)</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Tags</td><td>❌</td><td>✅ (References)</td><td>✅</td><td>—</td></tr>
+  <tr><td>Comments/History</td><td>❌</td><td>✅ (실행 이력)</td><td>✅ (이전 결과)</td><td>✅ (실행 이력)</td></tr>
+  <tr><td>Defect 연동</td><td>❌</td><td>✅ (직접 생성)</td><td>✅ (자동 연동)</td><td>✅ (Jira 연동)</td></tr>
+  <tr><td>Step별 결과 기록</td><td>❌</td><td>✅ (개별 P/F)</td><td>✅</td><td>✅</td></tr>
+  <tr><td>키보드 단축키</td><td>✅ (P/F/B/R/S)</td><td>부분 지원</td><td>—</td><td>—</td></tr>
+  <tr><td>Assignee</td><td>❌</td><td>✅</td><td>✅ (Executed by)</td><td>✅</td></tr>
+  <tr><td>진행률 표시</td><td>✅ (프로그레스 바)</td><td>✅</td><td>✅</td><td>✅</td></tr>
+</table>
+
+<div class="callout-red callout">
+  <b>GAP 요약:</b> Testably Focus Mode는 경쟁사 대비 <b>8개 핵심 기능이 부족</b>합니다. 특히 첨부파일, TC ID, Priority, Comments는 테스트 실행 시 거의 필수적인 정보로, 경쟁사 모두 기본 제공합니다. 키보드 단축키는 Testably가 우위에 있는 차별화 포인트입니다.
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§4. PM 분석 — CEO 의견에 대한 견해</h2>
+
+<div class="decision">
+  <div class="decision-title">✅ PM 견해: CEO 의견에 전적으로 동의하며, 추가 제안 3건을 더합니다</div>
+  <p style="font-size: 0.8125rem; margin-bottom: 0.75rem;">
+    CEO가 지적한 모든 항목(Expected Result, 첨부 사진, TC ID, Folder, Priority, Tags, Comments)은 경쟁사 분석에서도 <b>테스트 실행 모드의 표준 기능</b>으로 확인됩니다. 현재 Focus Mode는 "미니멀한 실행 뷰"로 설계되었으나, 실제 테스터가 다른 화면으로 돌아가지 않고도 테스트를 완료할 수 있는 <b>"자급자족(Self-contained) 실행 환경"</b>이 되어야 합니다.
+  </p>
+</div>
+
+<h3>4-1. CEO 요청 항목별 동의 분석</h3>
+<table>
+  <tr><th>CEO 요청</th><th>PM 의견</th><th>근거</th></tr>
+  <tr>
+    <td><b>Expected Result 함께 표시</b></td>
+    <td><span class="badge badge-green">✅ 동의 + 즉시 가능</span></td>
+    <td>이미 구현되어 있음. 구조화된 step의 경우 step 하단에 표시 중. 단독 expected_result는 step 없을 때만 표시 → <b>항상 표시하도록 변경</b> 필요. 경쟁사 모두 항상 표시.</td>
+  </tr>
+  <tr>
+    <td><b>첨부 사진 표시</b></td>
+    <td><span class="badge badge-green">✅ 강력 동의</span></td>
+    <td>UI 테스트 시 참고 스크린샷은 필수. DB에 <code>attachments</code> 필드 이미 존재. 이미지 라이트박스 + 첨부 목록 추가 필요. 경쟁사 모두 지원.</td>
+  </tr>
+  <tr>
+    <td><b>TC ID 표시</b></td>
+    <td><span class="badge badge-green">✅ 동의</span></td>
+    <td>TC-001 포맷으로 헤더에 표시. 테스터 간 커뮤니케이션 시 TC 식별에 필수.</td>
+  </tr>
+  <tr>
+    <td><b>Folder 표시</b></td>
+    <td><span class="badge badge-amber">🟡 동의 (보조 정보)</span></td>
+    <td>Context 파악용으로 유용하나 실행에 직접적 영향 없음. 메타데이터 영역에 간결하게 표시.</td>
+  </tr>
+  <tr>
+    <td><b>Priority 표시</b></td>
+    <td><span class="badge badge-green">✅ 동의</span></td>
+    <td>Critical TC는 더 신중하게 테스트해야 함을 시각적으로 인지시킴. 뱃지 형태로 헤더에 표시.</td>
+  </tr>
+  <tr>
+    <td><b>Tags 표시</b></td>
+    <td><span class="badge badge-amber">🟡 동의 (보조 정보)</span></td>
+    <td>테스트 범주/환경 파악에 유용. 태그 뱃지로 메타데이터 영역에 표시.</td>
+  </tr>
+  <tr>
+    <td><b>Comments 표시</b></td>
+    <td><span class="badge badge-green">✅ 강력 동의</span></td>
+    <td>이전 테스터의 메모는 재테스트 시 핵심 참고 자료. "이전 실행에서 어떤 이슈가 있었는지" 즉시 파악 가능. 경쟁사 모두 이력 표시.</td>
+  </tr>
+</table>
+
+<h3>4-2. PM 추가 제안 3건</h3>
+
+<table>
+  <tr><th>#</th><th>추가 제안</th><th>근거</th><th>우선순위</th></tr>
+  <tr>
+    <td>A</td>
+    <td><b>Note 저장 버그 수정</b></td>
+    <td>현재 테스터가 입력한 실패 노트가 DB에 저장되지 않음. <code>_note</code> 파라미터가 무시되고 있음. 이것은 기능 부재가 아닌 <b>버그</b>.</td>
+    <td><span class="badge badge-red">P0 — 즉시</span></td>
+  </tr>
+  <tr>
+    <td>B</td>
+    <td><b>Precondition 미전달 버그 수정</b></td>
+    <td>FocusMode에 표시 코드가 완벽히 구현되어 있으나 데이터가 전달되지 않음. 1줄 수정으로 해결 가능.</td>
+    <td><span class="badge badge-red">P0 — 즉시</span></td>
+  </tr>
+  <tr>
+    <td>C</td>
+    <td><b>Execution History (이전 결과 이력)</b></td>
+    <td>이전 Run에서의 결과(Pass/Fail 이력) + 노트를 표시. Retest 시 "지난번에 왜 실패했는지" 즉시 확인 가능. TestRail·Qase 모두 제공하는 핵심 기능.</td>
+    <td><span class="badge badge-amber">P1 — Phase 1</span></td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§5. 정보 우선순위 및 레이아웃 제안</h2>
+
+<h3>5-1. 정보 3-Tier 구분</h3>
+
+<p>Focus Mode는 "집중 실행 환경"입니다. 정보 과부하를 방지하면서도 자급자족이 되려면 <b>정보 우선순위에 따른 시각적 계층 구분</b>이 필요합니다.</p>
+
+<div class="tier">
+  <div class="tier-box tier-primary">
+    <div class="tier-label" style="color: #4F46E5;">🎯 Tier 1 — 메인 콘텐츠 (항상 표시)</div>
+    <ul style="font-size: 0.8125rem; margin-top: 0.25rem;">
+      <li><b>Test Steps + Expected Result</b> (각 step별)</li>
+      <li><b>Precondition</b> (존재 시)</li>
+      <li><b>Attachments / Screenshots</b> (인라인 썸네일)</li>
+      <li><b>Status 버튼</b> (P/F/B/R/S)</li>
+      <li><b>Note 입력</b></li>
+    </ul>
+  </div>
+  <div class="tier-box tier-secondary">
+    <div class="tier-label" style="color: var(--slate-500);">📋 Tier 2 — 메타데이터 바 (헤더 아래 컴팩트)</div>
+    <ul style="font-size: 0.8125rem; margin-top: 0.25rem;">
+      <li><b>TC-ID</b> (TC-001 포맷)</li>
+      <li><b>Priority</b> (색상 뱃지)</li>
+      <li><b>Folder</b> (텍스트)</li>
+      <li><b>Tags</b> (뱃지 목록)</li>
+      <li><b>Assignee</b> (아바타)</li>
+    </ul>
+  </div>
+  <div class="tier-box tier-tertiary">
+    <div class="tier-label" style="color: var(--slate-400);">💬 Tier 3 — 확장 패널 (접이식, 필요 시 펼침)</div>
+    <ul style="font-size: 0.8125rem; margin-top: 0.25rem;">
+      <li><b>Comments</b> (이전 댓글 목록)</li>
+      <li><b>Execution History</b> (이전 Run 결과 이력)</li>
+      <li><b>Description</b> (긴 설명 — 접힘 가능)</li>
+    </ul>
+  </div>
+</div>
+
+<h3>5-2. 전체 레이아웃 와이어프레임</h3>
+<div class="wireframe">┌──────────────────────────────────────────────────────────────────────────┐
+│ <span class="label">[Progress Bar]</span>                                                          │
+│ ████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  32%      │
+├──────────────────────────────────────────────────────────────────────────┤
+│ <span class="label">[Header]</span>                                                                │
+│ Sprint 24 Regression Run   5 / 15   [P=Pass F=Fail B=Block]  [Exit ✕]  │
+├──────────────────────────────────────────────────────────────────────────┤
+│ <span class="label">[Tier 2: Metadata Bar — 신규]</span>                                            │
+│ <span class="hl">TC-012</span> · 📁 UI Tests · <span class="red">● CRITICAL</span> · 🏷 login, auth, safari · 👤 JK     │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│ <span class="label">[Tier 1: Main Content — 스크롤 영역]</span>                                     │
+│                                                                          │
+│  <span class="label">[Previously Failed 뱃지 — 이전 상태 표시]</span>                                │
+│  <span class="red">● Previously failed</span>                                                      │
+│                                                                          │
+│  <span style="font-weight:700; font-size: 0.8rem;">Login validation fails on Safari 17</span>                                        │
+│  <span class="label">Test description text here...</span>                                           │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────┐         │
+│  │ <span class="amber">⚠ Precondition</span>                                               │         │
+│  │ User must be logged out and on Safari 17+ browser          │         │
+│  └─────────────────────────────────────────────────────────────┘         │
+│                                                                          │
+│  <span class="label">[Attachments — 신규]</span>                                                    │
+│  ┌────────┐ ┌────────┐ ┌──────────────────┐                             │
+│  │ 📷     │ │ 📷     │ │ 📎 error-log.txt │                             │
+│  │ thumb1 │ │ thumb2 │ │    (4.2 KB)      │                             │
+│  │ .png   │ │ .png   │ │                  │                             │
+│  └────────┘ └────────┘ └──────────────────┘                             │
+│  <span class="label">(이미지 클릭 시 라이트박스 확대)</span>                                          │
+│                                                                          │
+│  TEST STEPS                                                              │
+│  ┌──────────────────────────────────────────────────────────┐            │
+│  │ <span class="hl">1</span>  Navigate to login page                                  │            │
+│  │    <span class="label">Expected: Login form should be visible with all fields</span> │            │
+│  ├──────────────────────────────────────────────────────────┤            │
+│  │ <span class="hl">2</span>  Enter valid email and password                          │            │
+│  │    <span class="label">Expected: Fields accept input without errors</span>           │            │
+│  ├──────────────────────────────────────────────────────────┤            │
+│  │ <span class="hl">3</span>  Click "Sign In" button                                  │            │
+│  │    <span class="label">Expected: Redirect to dashboard within 3 seconds</span>       │            │
+│  └──────────────────────────────────────────────────────────┘            │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────┐         │
+│  │ <span class="hl">✓ Expected Result</span>                                              │         │
+│  │ User should be redirected to main dashboard with greeting   │         │
+│  └─────────────────────────────────────────────────────────────┘         │
+│                                                                          │
+│  <span class="label">[Tier 3: Expandable Panels — 신규]</span>                                      │
+│  ┌─────────────────────────────────────────────────────────────┐         │
+│  │ 💬 Comments (3)                                      [▼ 펼침]│         │
+│  ├─────────────────────────────────────────────────────────────┤         │
+│  │  <span class="label">ML · 2d ago</span>: "Safari 17.2에서 재현됨, 17.1에서는 통과"     │         │
+│  │  <span class="label">JK · 5d ago</span>: "CORS 헤더 이슈일 수 있음"                    │         │
+│  │  <span class="label">SY · 7d ago</span>: "최초 보고 — 고객 CS#4521 연관"               │         │
+│  └─────────────────────────────────────────────────────────────┘         │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────┐         │
+│  │ 📜 Execution History (4)                             [▶ 접힘]│         │
+│  └─────────────────────────────────────────────────────────────┘         │
+│                                                                          │
+│  <span class="label">[Note 입력 — F 키 누를 시 표시]</span>                                         │
+│  ┌─────────────────────────────────────────────────────────────┐         │
+│  │ Note (optional)                                             │         │
+│  │ Describe what you observed...                               │         │
+│  │                                                             │         │
+│  │ ⌘↵ to save & continue                                      │         │
+│  └─────────────────────────────────────────────────────────────┘         │
+│                                                                          │
+├──────────────────────────────────────────────────────────────────────────┤
+│ <span class="label">[Footer — Status 버튼]</span>                                                  │
+│  ← Previous    [P Passed] [F Failed] [B Blocked] [R Retest] [S Skip]  → │
+│                      <span class="label">Last test — press any status key to complete</span>        │
+└──────────────────────────────────────────────────────────────────────────┘</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§6. 구현 단계 제안</h2>
+
+<h3>Phase 0: 즉시 수정 (버그 + 1줄 Fix) — 30분</h3>
+<table>
+  <tr><th>#</th><th>항목</th><th>변경</th><th>공수</th></tr>
+  <tr>
+    <td>0-1</td>
+    <td>Precondition 미전달 버그</td>
+    <td><code>run-detail/page.tsx</code> Line 1376-1383 매핑에 <code>precondition: tc.precondition</code> 추가</td>
+    <td>1분</td>
+  </tr>
+  <tr>
+    <td>0-2</td>
+    <td>Note 미저장 버그</td>
+    <td><code>handleFocusStatusChange</code>에서 <code>_note</code> → <code>note</code>로 변경 후 DB 저장 로직 추가</td>
+    <td>30분</td>
+  </tr>
+</table>
+
+<h3>Phase 1: CEO 요청 핵심 항목 — 1일</h3>
+<table>
+  <tr><th>#</th><th>항목</th><th>변경 내용</th><th>공수</th></tr>
+  <tr>
+    <td>1-1</td>
+    <td>FocusTestCase 인터페이스 확장</td>
+    <td><code>folder, priority, tags, attachments, assignee</code> 필드 추가</td>
+    <td>15분</td>
+  </tr>
+  <tr>
+    <td>1-2</td>
+    <td>focusTests 매핑 확장</td>
+    <td>run-detail/page.tsx에서 모든 필드 전달</td>
+    <td>10분</td>
+  </tr>
+  <tr>
+    <td>1-3</td>
+    <td>Metadata Bar (Tier 2) 추가</td>
+    <td>헤더 아래 TC-ID · Folder · Priority · Tags · Assignee 표시 바 추가</td>
+    <td>2시간</td>
+  </tr>
+  <tr>
+    <td>1-4</td>
+    <td>Attachments 섹션 추가</td>
+    <td>이미지 썸네일 + 파일 목록, 이미지 클릭 시 라이트박스</td>
+    <td>3시간</td>
+  </tr>
+  <tr>
+    <td>1-5</td>
+    <td>Expected Result 항상 표시</td>
+    <td>Step 존재 여부와 관계없이 <code>expected_result</code> 블록 항상 표시</td>
+    <td>15분</td>
+  </tr>
+</table>
+
+<h3>Phase 2: 확장 기능 — 1-2일 (추가)</h3>
+<table>
+  <tr><th>#</th><th>항목</th><th>변경 내용</th><th>공수</th></tr>
+  <tr>
+    <td>2-1</td>
+    <td>Comments 패널</td>
+    <td>test_case_comments 테이블에서 해당 TC의 댓글 조회 + 접이식 패널 표시</td>
+    <td>3시간</td>
+  </tr>
+  <tr>
+    <td>2-2</td>
+    <td>Execution History 패널</td>
+    <td>test_results에서 해당 TC의 이전 Run 결과 이력 조회 + 접이식 패널</td>
+    <td>3시간</td>
+  </tr>
+  <tr>
+    <td>2-3</td>
+    <td>Step별 결과 기록</td>
+    <td>각 step에 개별 Pass/Fail 체크박스 추가 (경쟁사 표준 기능)</td>
+    <td>4시간</td>
+  </tr>
+</table>
+
+<div class="callout-green callout">
+  <b>총 공수 예상:</b><br>
+  Phase 0: 30분 (즉시 배포 가능)<br>
+  Phase 1: ~6시간 (1일) — CEO 요청 항목 전체 완료<br>
+  Phase 2: ~10시간 (1-2일) — 경쟁사 수준 기능 완성<br><br>
+  <b>권장 순서:</b> Phase 0 → Phase 1 → Desi 디자인 리뷰 → Phase 2
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§7. 확장된 FocusTestCase 인터페이스 (To-Be)</h2>
+
+<pre><code>// FocusMode.tsx — Phase 1 완료 후
+export interface FocusTestCase {
+  // 기존
+  id: string;
+  title: string;
+  description?: string;
+  steps?: string;
+  expected_result?: string;
+  precondition?: string;
+  runStatus?: TestStatus;
+
+  // Phase 1 추가
+  tcIdStr: string;              // "TC-012" 포맷 (표시용)
+  folder?: string;              // 폴더명
+  priority: string;             // 'critical' | 'high' | 'medium' | 'low'
+  tags?: string;                // 콤마 구분 태그 문자열
+  assignee?: string;            // 담당자 이름
+  attachments?: {               // 첨부파일 목록
+    name: string;
+    url: string;
+    size: number;
+  }[];
+
+  // Phase 2 추가
+  comments?: {                  // 이전 댓글 목록
+    author: string;
+    text: string;
+    created_at: string;
+  }[];
+  executionHistory?: {          // 이전 실행 이력
+    runName: string;
+    status: TestStatus;
+    date: string;
+    note?: string;
+  }[];
+}</code></pre>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§8. 핵심 디자인 원칙</h2>
+
+<table>
+  <tr><th>원칙</th><th>설명</th><th>적용</th></tr>
+  <tr>
+    <td><b>Focus First</b></td>
+    <td>Focus Mode의 핵심 가치는 "집중"입니다. 정보를 추가하되 복잡도를 높이면 안 됩니다.</td>
+    <td>Tier 1(메인)은 항상 표시, Tier 3(보조)는 접이식으로 필요 시만 펼침</td>
+  </tr>
+  <tr>
+    <td><b>Keyboard First</b></td>
+    <td>기존 키보드 단축키 UX는 Testably의 차별화 포인트입니다.</td>
+    <td>새 기능 추가 시 키보드 접근성 유지. Tier 3 패널 토글에 단축키 추가 (C=Comments, H=History)</td>
+  </tr>
+  <tr>
+    <td><b>Self-Contained</b></td>
+    <td>테스터가 Focus Mode를 나가지 않고 필요한 모든 정보를 확인할 수 있어야 합니다.</td>
+    <td>첨부파일 라이트박스, 댓글 인라인 표시, 실행 이력 패널</td>
+  </tr>
+  <tr>
+    <td><b>Progressive Disclosure</b></td>
+    <td>핵심 정보부터 보여주고, 상세 정보는 사용자의 명시적 액션으로 드러냅니다.</td>
+    <td>Metadata Bar (항상 표시, 한 줄) → 접이식 패널 (클릭 시 펼침)</td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2>§9. 다음 단계</h2>
+
+<table>
+  <tr><th>순서</th><th>액션</th><th>담당</th></tr>
+  <tr>
+    <td>1</td>
+    <td>이 PM 분석에 대한 CEO 승인/피드백</td>
+    <td>CEO</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Phase 0 (버그 수정 2건) — 승인 즉시 Dev에게 전달 가능</td>
+    <td>Dev</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Phase 1 확정 시 → Desi에게 Metadata Bar + Attachments + 접이식 패널 디자인 요청</td>
+    <td>Desi</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>디자인 시안 리뷰 후 Dev 핸드오프</td>
+    <td>PM</td>
+  </tr>
+</table>
+
+<div class="callout">
+  <b>요약:</b> CEO 피드백은 정확합니다. Focus Mode가 "Steps만 보여주는 미니멀 뷰"에서 "테스터에게 필요한 모든 정보를 집중적으로 보여주는 Self-contained 실행 환경"으로 진화해야 합니다. 기존 키보드 단축키 UX를 유지하면서 3-Tier 정보 구조로 확장하는 것이 최선입니다.
+</div>
+
+</div><!-- .body -->
+</div><!-- .container -->
+</body>
+</html>

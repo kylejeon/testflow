@@ -1,6 +1,7 @@
 import { LogoMark } from '../../components/Logo';
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { markOnboardingStep } from '../../lib/onboardingMarker';
 import { supabase } from '../../lib/supabase';
 import { WEBHOOK_EVENTS, WebhookEventType } from '../../hooks/useWebhooks';
@@ -88,6 +89,93 @@ const TIER_INFO = {
     features: ['Unlimited projects', '100+ team members', 'Jira Integration', 'Slack & Teams Integration', 'Unlimited AI generations', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee', 'Custom contract & SLA'],
   },
 };
+
+// ── Standalone settings data loader (no setState) ─────────────────────────
+async function loadSettingsData(): Promise<{
+  userProfile: UserProfile | null;
+  jiraSettings: JiraSettings;
+  userProjects: Array<{ id: string; name: string }>;
+}> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return {
+      userProfile: null,
+      jiraSettings: { domain: '', email: '', apiToken: '', issueType: 'Bug' },
+      userProjects: [],
+    };
+  }
+
+  const [profileResult, jiraResult, memberResult] = await Promise.all([
+    supabase.from('profiles')
+      .select('email, full_name, subscription_tier, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase.from('jira_settings').select('*').eq('user_id', user.id).maybeSingle(),
+    supabase.from('project_members').select('project_id, projects!inner(id, name)').eq('user_id', user.id),
+  ]);
+
+  // Build userProfile
+  let userProfile: UserProfile | null = null;
+  if (profileResult.data) {
+    const data = profileResult.data;
+    let tier = data.subscription_tier || 1;
+    let isTrial = data.is_trial || false;
+    let subscriptionEndsAt = data.subscription_ends_at || null;
+    const now = new Date();
+
+    if (isTrial && data.trial_ends_at) {
+      const trialEnd = new Date(data.trial_ends_at);
+      if (now > trialEnd) {
+        tier = 1; isTrial = false;
+      } else {
+        tier = 3;
+      }
+    }
+    if (!isTrial && tier > 1 && subscriptionEndsAt) {
+      const subEnd = new Date(subscriptionEndsAt);
+      if (now > subEnd) {
+        tier = 1; subscriptionEndsAt = null;
+      }
+    }
+
+    userProfile = {
+      email: data.email || user.email || '',
+      full_name: data.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
+      subscription_tier: tier,
+      trial_started_at: data.trial_started_at || null,
+      trial_ends_at: data.trial_ends_at || null,
+      is_trial: isTrial,
+      subscription_ends_at: subscriptionEndsAt,
+      avatar_emoji: data.avatar_emoji || '🐶',
+      avatar_url: null,
+    };
+  } else {
+    userProfile = {
+      email: user.email || '',
+      full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+      subscription_tier: 1,
+      trial_started_at: null,
+      trial_ends_at: null,
+      is_trial: false,
+      subscription_ends_at: null,
+      avatar_emoji: '🐶',
+      avatar_url: null,
+    };
+  }
+
+  // Build jiraSettings
+  const jiraData = jiraResult.data;
+  const jiraSettings: JiraSettings = jiraData
+    ? { domain: jiraData.domain || '', email: jiraData.email || '', apiToken: jiraData.api_token || '', issueType: jiraData.issue_type || 'Bug' }
+    : { domain: '', email: '', apiToken: '', issueType: 'Bug' };
+
+  // Build userProjects
+  const userProjects: Array<{ id: string; name: string }> = memberResult.data
+    ? memberResult.data.map((row: any) => ({ id: row.projects.id, name: row.projects.name }))
+    : [];
+
+  return { userProfile, jiraSettings, userProjects };
+}
 
 function DangerZoneSection({ email }: { email: string }) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -226,10 +314,31 @@ export default function SettingsPage() {
 
   const [searchParams] = useSearchParams();
 
+  // React Query for initial settings load
+  const [settingsInitialized, setSettingsInitialized] = useState(false);
+  const { data: settingsData } = useQuery({
+    queryKey: ['settings'],
+    queryFn: loadSettingsData,
+    staleTime: 5 * 60_000,
+  });
+
+  // Sync query data to local form state on first load
   useEffect(() => {
-    fetchUserProfile();
-    fetchJiraSettings();
-    fetchUserProjects();
+    if (settingsData && !settingsInitialized) {
+      setSettingsInitialized(true);
+      if (settingsData.userProfile) setUserProfile(settingsData.userProfile);
+      setJiraSettings(settingsData.jiraSettings);
+      setUserProjects(settingsData.userProjects);
+      setLoading(false);
+      if (!selectedProjectId && settingsData.userProjects.length > 0) {
+        const paramProjectId = searchParams.get('projectId');
+        const initial = paramProjectId && settingsData.userProjects.find(p => p.id === paramProjectId) ? paramProjectId : settingsData.userProjects[0]?.id;
+        if (initial) setSelectedProjectId(initial);
+      }
+    }
+  }, [settingsData, settingsInitialized]);
+
+  useEffect(() => {
     const tab = searchParams.get('tab');
     const VALID_TABS = ['profile', 'billing', 'preferences', 'members', 'integrations', 'api', 'notifications'];
     const TAB_ALIAS: Record<string, typeof activeTab> = { general: 'billing', cicd: 'api' };

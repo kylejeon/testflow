@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — TC 상태 워크플로우 디자인 핸드오프 (Desi)</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; padding: 2rem; line-height: 1.6; }
+  .spec { max-width: 1000px; margin: 0 auto; }
+
+  /* ─── Header ─── */
+  .spec-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid #E2E8F0; }
+  .spec-header h1 { font-size: 1.5rem; font-weight: 800; color: #0F172A; margin-bottom: 0.25rem; }
+  .spec-header .subtitle { font-size: 0.9375rem; color: #6366F1; font-weight: 600; margin-bottom: 0.5rem; }
+  .spec-header .meta { font-size: 0.8125rem; color: #64748B; }
+  .spec-header .meta span { margin-right: 1.5rem; }
+
+  /* ─── Typography ─── */
+  h2 { font-size: 1.125rem; font-weight: 700; color: #0F172A; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #E2E8F0; }
+  h3 { font-size: 0.9375rem; font-weight: 600; color: #334155; margin: 1.5rem 0 0.75rem; }
+  h4 { font-size: 0.8125rem; font-weight: 600; color: #475569; margin: 1rem 0 0.5rem; }
+  p, li { font-size: 0.875rem; color: #475569; margin-bottom: 0.5rem; }
+  ul { padding-left: 1.25rem; margin-bottom: 1rem; }
+  code { background: #F1F5F9; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.75rem; color: #6366F1; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+  /* ─── Cards ─── */
+  .note { background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #4338CA; margin: 1rem 0; }
+  .note i { margin-right: 0.375rem; }
+  .warn { background: #FEF9C3; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #854D0E; margin: 1rem 0; }
+  .warn i { margin-right: 0.375rem; }
+  .success { background: #DCFCE7; border: 1px solid #BBF7D0; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #166534; margin: 1rem 0; }
+  .danger { background: #FEE2E2; border: 1px solid #FECACA; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.8125rem; color: #991B1B; margin: 1rem 0; }
+
+  /* ─── Tables ─── */
+  .spec-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.8125rem; }
+  .spec-table th, .spec-table td { padding: 0.625rem 0.875rem; text-align: left; border: 1px solid #E2E8F0; }
+  .spec-table th { background: #F8FAFC; font-weight: 600; color: #334155; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .spec-table td { color: #475569; vertical-align: top; }
+
+  /* ─── Badges ─── */
+  .status-badge { display: inline-flex; align-items: center; gap: 0.3125rem; padding: 0.1875rem 0.5rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; border: 1px solid; line-height: 1.4; }
+  .status-badge i { font-size: 0.75rem; }
+  .badge-draft { background: #FEF9C3; color: #854D0E; border-color: #FDE68A; }
+  .badge-active { background: #DCFCE7; color: #166534; border-color: #BBF7D0; }
+  .badge-deprecated { background: #F1F5F9; color: #64748B; border-color: #CBD5E1; }
+  .badge-sm { font-size: 0.5625rem; padding: 0.0625rem 0.3125rem; }
+  .badge-sm i { font-size: 0.625rem; }
+
+  /* ─── Flow step ─── */
+  .flow-steps { counter-reset: step; margin: 1rem 0; }
+  .flow-step { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start; }
+  .flow-step::before { counter-increment: step; content: counter(step); display: flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; background: #6366F1; color: #fff; border-radius: 50%; font-size: 0.6875rem; font-weight: 700; flex-shrink: 0; margin-top: 0.125rem; }
+  .flow-step .step-content { font-size: 0.8125rem; color: #334155; }
+  .flow-step .step-note { font-size: 0.75rem; color: #94A3B8; margin-top: 0.125rem; }
+
+  /* ─── Mock containers ─── */
+  .mock-container { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; overflow: hidden; margin: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .mock-header { background: #F8FAFC; border-bottom: 1px solid #E2E8F0; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem; }
+  .mock-header .mock-title { font-size: 0.75rem; font-weight: 600; color: #334155; }
+  .mock-body { padding: 1rem; }
+
+  /* ─── Toast mock ─── */
+  .toast-mock { display: inline-flex; align-items: center; gap: 0.625rem; background: #1E293B; color: #fff; padding: 0.625rem 1rem; border-radius: 0.5rem; font-size: 0.8125rem; box-shadow: 0 8px 24px rgba(0,0,0,0.2); margin: 0.5rem 0; }
+  .toast-mock i { font-size: 1rem; }
+  .toast-mock .toast-link { color: #818CF8; font-weight: 600; text-decoration: underline; cursor: pointer; margin-left: 0.25rem; }
+
+  /* ─── Toggle ─── */
+  .toggle-row { display: flex; align-items: center; gap: 0.625rem; margin: 0.75rem 0; }
+  .toggle-switch { width: 2.25rem; height: 1.25rem; border-radius: 9999px; background: #CBD5E1; position: relative; cursor: pointer; flex-shrink: 0; }
+  .toggle-switch.on { background: #6366F1; }
+  .toggle-switch .toggle-knob { width: 0.875rem; height: 0.875rem; border-radius: 50%; background: #fff; position: absolute; top: 0.1875rem; left: 0.1875rem; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .toggle-switch.on .toggle-knob { left: auto; right: 0.1875rem; }
+  .toggle-label { font-size: 0.8125rem; color: #475569; font-weight: 500; }
+
+  /* ─── Context menu ─── */
+  .ctx-menu { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); padding: 0.25rem; min-width: 11rem; display: inline-flex; flex-direction: column; }
+  .ctx-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.625rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; color: #475569; cursor: pointer; }
+  .ctx-item:hover { background: #F8FAFC; }
+  .ctx-item i { font-size: 0.875rem; color: #94A3B8; }
+  .ctx-divider { height: 1px; background: #E2E8F0; margin: 0.25rem 0.625rem; }
+  .ctx-submenu { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); padding: 0.25rem; min-width: 10rem; display: inline-flex; flex-direction: column; margin-left: 0.5rem; }
+  .dropdown-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.625rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; color: #475569; cursor: pointer; }
+  .dropdown-item:hover { background: #F8FAFC; }
+  .dropdown-item i.status-icon { font-size: 0.875rem; }
+  .dropdown-item .check { margin-left: auto; color: #6366F1; font-size: 0.875rem; }
+  .dropdown-item.draft-item i.status-icon { color: #D97706; }
+  .dropdown-item.active-item i.status-icon { color: #16A34A; }
+  .dropdown-item.deprecated-item i.status-icon { color: #94A3B8; }
+
+  /* ─── Dialog mock ─── */
+  .dialog-overlay { background: rgba(0,0,0,0.25); border-radius: 0.75rem; padding: 2rem; display: flex; align-items: center; justify-content: center; margin: 1rem 0; }
+  .dialog-box { background: #fff; border-radius: 0.75rem; padding: 1.5rem; max-width: 24rem; box-shadow: 0 8px 32px rgba(0,0,0,0.12); width: 100%; }
+  .dialog-box .dialog-icon { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; }
+  .dialog-box .dialog-icon i { font-size: 1.25rem; }
+  .dialog-box h4 { font-size: 0.875rem; font-weight: 700; color: #1E293B; margin-bottom: 0.375rem; }
+  .dialog-box p { font-size: 0.8125rem; color: #64748B; margin-bottom: 1rem; }
+  .dialog-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+  .dialog-actions .btn { padding: 0.4375rem 0.875rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; border: 1px solid; cursor: pointer; }
+  .dialog-actions .btn-cancel { background: #fff; border-color: #E2E8F0; color: #64748B; }
+  .dialog-actions .btn-confirm { border-color: transparent; color: #fff; }
+  .dialog-actions .btn-amber { background: #F59E0B; }
+  .dialog-actions .btn-amber:hover { background: #D97706; }
+
+  /* ─── Bulk bar ─── */
+  .bulk-bar { display: flex; align-items: center; gap: 0.75rem; background: #1E293B; padding: 0.5rem 1rem; border-radius: 0.5rem; margin: 1rem 0; }
+  .bulk-bar .bulk-count { font-size: 0.75rem; color: #fff; font-weight: 600; }
+  .bulk-bar .bulk-btn { display: inline-flex; align-items: center; gap: 0.3125rem; padding: 0.3125rem 0.625rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.375rem; font-size: 0.6875rem; font-weight: 500; color: #fff; cursor: pointer; }
+  .bulk-bar .bulk-divider { width: 1px; height: 1.25rem; background: rgba(255,255,255,0.15); }
+
+  /* ─── TC row mock ─── */
+  .tc-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0.875rem; border-bottom: 1px solid #F1F5F9; font-size: 0.8125rem; }
+  .tc-row:last-child { border-bottom: none; }
+  .tc-row .tc-checkbox { width: 1rem; height: 1rem; border: 1.5px solid #CBD5E1; border-radius: 0.25rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .tc-row .tc-checkbox.checked { background: #6366F1; border-color: #6366F1; }
+  .tc-row .tc-checkbox.checked i { color: #fff; font-size: 0.75rem; }
+  .tc-row .tc-title { flex: 1; color: #1E293B; font-weight: 500; }
+  .tc-row .tc-priority { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.625rem; font-weight: 600; }
+  .tc-row .tc-priority.high { background: #FEE2E2; color: #991B1B; }
+  .tc-row .tc-priority.medium { background: #FEF3C7; color: #92400E; }
+  .tc-row.deprecated-row { opacity: 0.55; }
+  .tc-row.draft-bg { background: #FFFBEB; }
+
+  /* ─── Info / Warning banners ─── */
+  .info-banner { display: flex; align-items: flex-start; gap: 0.625rem; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 0.5rem; padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.8125rem; color: #1E40AF; }
+  .info-banner i { font-size: 1rem; margin-top: 0.125rem; flex-shrink: 0; }
+  .run-warning { display: flex; align-items: flex-start; gap: 0.625rem; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.8125rem; color: #92400E; }
+  .run-warning i { font-size: 1rem; margin-top: 0.125rem; flex-shrink: 0; }
+  .run-warning .run-warn-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+  .run-warning .run-warn-btn { padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.6875rem; font-weight: 600; border: 1px solid; cursor: pointer; }
+  .run-warning .btn-mark-active { background: #16A34A; border-color: #16A34A; color: #fff; }
+  .run-warning .btn-proceed { background: transparent; border-color: #D97706; color: #D97706; }
+
+  /* ─── Nudge banner ─── */
+  .nudge-banner { display: flex; align-items: center; gap: 0.625rem; background: #FEF9C3; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.625rem 1rem; margin: 1rem 0; font-size: 0.8125rem; color: #854D0E; }
+  .nudge-banner i { font-size: 1rem; flex-shrink: 0; }
+  .nudge-banner .nudge-btn { margin-left: auto; padding: 0.25rem 0.625rem; background: #854D0E; color: #FEF9C3; border: none; border-radius: 0.375rem; font-size: 0.6875rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+
+  /* ─── Flow diagram ─── */
+  .flow-diagram { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.5rem; margin: 1rem 0; }
+  .flow-node { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 600; border: 2px solid; }
+  .flow-arrow { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; color: #94A3B8; padding: 0 0.5rem; }
+  .flow-arrow i { font-size: 1rem; }
+
+  /* ─── Section divider ─── */
+  .section-divider { height: 4px; background: linear-gradient(to right, #6366F1, #818CF8, #C7D2FE); border-radius: 2px; margin: 3rem 0 2rem; }
+
+  /* ─── Deliverables checklist ─── */
+  .checklist-item { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #F1F5F9; }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-num { display: flex; align-items: center; justify-content: center; width: 1.375rem; height: 1.375rem; background: #EEF2FF; color: #6366F1; border-radius: 0.25rem; font-size: 0.6875rem; font-weight: 700; flex-shrink: 0; margin-top: 0.125rem; }
+  .checklist-content { flex: 1; }
+  .checklist-title { font-size: 0.8125rem; font-weight: 600; color: #1E293B; }
+  .checklist-desc { font-size: 0.75rem; color: #64748B; margin-top: 0.125rem; }
+  .priority-tag { display: inline-flex; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; font-size: 0.5625rem; font-weight: 700; }
+  .p0 { background: #FEE2E2; color: #991B1B; }
+  .p1 { background: #FEF3C7; color: #92400E; }
+
+  /* ─── Interaction spec table ─── */
+  .interaction-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
+  .interaction-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; padding: 0.75rem; }
+  .interaction-card .ic-label { font-size: 0.6875rem; font-weight: 600; color: #6366F1; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.375rem; }
+  .interaction-card .ic-value { font-size: 0.8125rem; color: #334155; }
+</style>
+</head>
+<body>
+<div class="spec">
+
+  <!-- ═══ HEADER ═══ -->
+  <div class="spec-header">
+    <h1>TC 상태 워크플로우 — Desi 디자인 핸드오프</h1>
+    <div class="subtitle">Draft → Active → Deprecated 전환 워크플로우 + Run 제약조건 — 디자인 요청</div>
+    <div class="meta">
+      <span><strong>From:</strong> Kyle (PM)</span>
+      <span><strong>To:</strong> Desi (Design)</span>
+      <span><strong>Date:</strong> 2026-03-25</span>
+      <span><strong>Priority:</strong> P0</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <i class="ri-information-line"></i>
+    <strong>문서 관계:</strong> 이 핸드오프는 3개 기획 문서의 핵심을 Desi가 바로 작업할 수 있도록 정리한 것입니다.<br>
+    ① <code>TestCase_Status_System_Spec.docx</code> — 전체 기능 기획 (DB, 컴포넌트, 엣지케이스)<br>
+    ② <code>TC_Status_Workflow_DetailSpec.docx</code> — 워크플로우 상세 (전환 플로우, Run 제약, 파일 목록)<br>
+    ③ <code>spec-tc-status-design.html</code> — UI 토큰/목업 참조 (배지, 드롭다운, 다이얼로그 등 13개 섹션)
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>📋 전체 상태 전환 맵</h2>
+
+  <p>아래 플로우 다이어그램이 모든 디자인의 기초입니다. Desi는 이 전환 관계를 이해한 상태에서 각 UI를 설계해주세요.</p>
+
+  <div class="flow-diagram" style="text-align: center; line-height: 2.5;">
+    <div style="margin-bottom: 1rem; font-size: 0.75rem; color: #94A3B8;">TC 생성 (New / AI Generate / Import / Duplicate)</div>
+    <div style="font-size: 1.25rem; color: #94A3B8; margin-bottom: 0.5rem;">↓</div>
+    <div>
+      <span class="flow-node" style="background:#FEF9C3; border-color:#FDE68A; color:#854D0E;">
+        <i class="ri-draft-line"></i> DRAFT
+      </span>
+    </div>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin: 0.75rem 0;">
+      <span style="font-size: 0.6875rem; color: #16A34A; font-weight: 600;">수동 전환 (확인 없음) ↓</span>
+      <span style="font-size: 0.6875rem; color: #D97706; font-weight: 600;">↓ 수동 전환 (확인 다이얼로그)</span>
+    </div>
+    <div style="display: flex; justify-content: center; gap: 2rem; align-items: center;">
+      <span class="flow-node" style="background:#DCFCE7; border-color:#BBF7D0; color:#166534;">
+        <i class="ri-checkbox-circle-line"></i> ACTIVE
+      </span>
+      <span style="font-size: 0.75rem; color: #94A3B8;">←→</span>
+      <span class="flow-node" style="background:#F1F5F9; border-color:#CBD5E1; color:#64748B;">
+        <i class="ri-forbid-line"></i> DEPRECATED
+      </span>
+    </div>
+    <div style="margin-top: 0.75rem; display: flex; justify-content: center; gap: 3rem;">
+      <span style="font-size: 0.625rem; color: #166534; background: #DCFCE7; padding: 0.125rem 0.5rem; border-radius: 0.25rem;">✅ Run 포함 가능</span>
+      <span style="font-size: 0.625rem; color: #991B1B; background: #FEE2E2; padding: 0.125rem 0.5rem; border-radius: 0.25rem;">❌ Run 포함 불가</span>
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>전환</th><th>확인 다이얼로그</th><th>이유</th><th>복원 가능</th></tr></thead>
+    <tbody>
+      <tr><td>Draft → Active</td><td>❌ 불필요</td><td>안전한 전환. 기능 활성화.</td><td>✅ Active → Draft 가능</td></tr>
+      <tr><td>Active → Draft</td><td>❌ 불필요</td><td>안전한 전환. 언제든 복원 가능.</td><td>✅ Draft → Active 가능</td></tr>
+      <tr><td><strong>Active → Deprecated</strong></td><td><strong>⚠️ 필요</strong></td><td>Run 포함 불가로 전환. 실수 방지.</td><td>✅ 복원 가능</td></tr>
+      <tr><td><strong>Draft → Deprecated</strong></td><td><strong>⚠️ 필요</strong></td><td>동일 — Run 포함 불가.</td><td>✅ 복원 가능</td></tr>
+      <tr><td>Deprecated → Active</td><td>❌ 불필요</td><td>복원은 안전. 기능 복구.</td><td>—</td></tr>
+      <tr><td>Deprecated → Draft</td><td>❌ 불필요</td><td>재활용 위한 편집 모드.</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>1. TC 생성 → Draft 상태 + Toast "Mark as Active" 링크</h2>
+
+  <p>모든 TC는 생성 시 <code>lifecycle_status: 'draft'</code>로 시작합니다. 사용자가 즉시 Active로 전환할 수 있도록 Toast에 액션 링크를 포함합니다.</p>
+
+  <h3>1.1 사용자 플로우</h3>
+  <div class="flow-steps">
+    <div class="flow-step"><div class="step-content">QuickCreateTCModal에서 TC 생성 완료</div></div>
+    <div class="flow-step"><div class="step-content">Toast 표시: <strong>"TC명" created as Draft.</strong> + <span style="color:#818CF8; font-weight:600;">Mark as Active</span> 링크</div></div>
+    <div class="flow-step"><div class="step-content">사용자가 "Mark as Active" 클릭 → 즉시 Active로 전환</div></div>
+    <div class="flow-step"><div class="step-content">확인 Toast: <strong>"TC명" marked as Active.</strong> (초록 배경, 3초)</div></div>
+  </div>
+
+  <h3>1.2 Toast 라이브 프리뷰</h3>
+  <div style="display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-start;">
+    <div>
+      <div style="font-size: 0.6875rem; color: #94A3B8; margin-bottom: 0.25rem; font-weight: 500;">① 생성 직후 Toast (5초)</div>
+      <div class="toast-mock">
+        <i class="ri-check-line" style="color:#4ADE80;"></i>
+        <span>"User registration" created as Draft.</span>
+        <span class="toast-link">Mark as Active</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-size: 0.6875rem; color: #94A3B8; margin-bottom: 0.25rem; font-weight: 500;">② "Mark as Active" 클릭 후 확인 Toast (3초)</div>
+      <div class="toast-mock" style="background:#166534;">
+        <i class="ri-checkbox-circle-line" style="color:#86EFAC;"></i>
+        <span>"User registration" marked as Active.</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>1.3 디자인 스펙</h3>
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>생성 Toast 배경</td><td><code>#1E293B</code> (slate-800)</td></tr>
+      <tr><td>텍스트</td><td>13px, #fff</td></tr>
+      <tr><td>"Mark as Active" 링크</td><td><code>#818CF8</code> (indigo-400), 600 weight, underline. Hover: <code>#A5B4FC</code></td></tr>
+      <tr><td>아이콘</td><td><code>ri-check-line</code>, green-400 (<code>#4ADE80</code>)</td></tr>
+      <tr><td>Duration</td><td>5초 (링크 클릭 시 즉시 사라짐)</td></tr>
+      <tr><td>확인 Toast 배경</td><td><code>#166534</code> (green-800), 3초</td></tr>
+      <tr><td>확인 아이콘</td><td><code>ri-checkbox-circle-line</code>, green-300 (<code>#86EFAC</code>)</td></tr>
+      <tr><td>위치</td><td>화면 하단 중앙, 기존 Testably toast 위치</td></tr>
+      <tr><td>애니메이션</td><td>slide-up 200ms + opacity. 사라질 때 fade-out 150ms.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn">
+    <i class="ri-error-warning-line"></i>
+    <strong>엣지케이스:</strong> 사용자가 "Mark as Active" 클릭 중에 Toast가 사라지면 → 클릭 무시. 사용자가 Toast 영역에 마우스를 올려놓으면 타이머 일시정지.
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>2. Draft → Active 전환 — 4개 진입점</h2>
+
+  <p>Draft → Active 전환은 <strong>안전한 전환</strong>이므로 확인 다이얼로그 없이 즉시 전환됩니다. 아래 4개 UI에서 전환 가능합니다.</p>
+
+  <table class="spec-table">
+    <thead><tr><th>#</th><th>진입점</th><th>인터랙션</th><th>위치</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>A</strong></td>
+        <td>TC 상세 패널<br>상태 드롭다운</td>
+        <td>Draft 배지 클릭 → 드롭다운 열림 → 'Active' 선택 → <strong>즉시 전환</strong> + 배지 색상 애니메이션 (노랑→초록, 200ms fade)</td>
+        <td>TC 상세 패널 상단, 제목 아래</td>
+      </tr>
+      <tr>
+        <td><strong>B</strong></td>
+        <td>TC 리스트 행<br>우클릭 메뉴</td>
+        <td>TC 행 우클릭 → 컨텍스트 메뉴 → "Set Status" 서브메뉴 → 'Active' 선택 → <strong>즉시 전환</strong></td>
+        <td>TC 리스트 각 행</td>
+      </tr>
+      <tr>
+        <td><strong>C</strong></td>
+        <td>Bulk Action Bar</td>
+        <td>여러 TC 체크 → BulkActionBar 'Set Status' → 'Active' → 선택된 모든 Draft TC가 Active로 전환</td>
+        <td>TC 리스트 하단 BulkActionBar</td>
+      </tr>
+      <tr>
+        <td><strong>D</strong></td>
+        <td>TC 생성 직후<br>Toast 액션</td>
+        <td>§1 참조. Toast의 "Mark as Active" 링크 클릭 → 즉시 전환</td>
+        <td>화면 하단 Toast</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>2.1 상태 드롭다운 (Entry Point A) — 라이브 프리뷰</h3>
+  <div class="mock-container">
+    <div class="mock-header"><div class="mock-title">TC 상세 패널 — 상태 드롭다운</div></div>
+    <div class="mock-body" style="padding: 1.5rem; display: flex; gap: 3rem; align-items: flex-start;">
+      <div>
+        <div style="font-size: 0.6875rem; color: #94A3B8; margin-bottom: 0.5rem; font-weight: 500;">클릭 전</div>
+        <div style="display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+          <span class="status-badge badge-draft"><i class="ri-draft-line"></i> Draft</span>
+          <span style="font-size: 0.625rem; color: #94A3B8;"><i class="ri-arrow-down-s-line"></i></span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 0.6875rem; color: #94A3B8; margin-bottom: 0.5rem; font-weight: 500;">클릭 후 (드롭다운 열림)</div>
+        <div style="display: inline-flex; flex-direction: column;">
+          <div style="display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+            <span class="status-badge badge-draft"><i class="ri-draft-line"></i> Draft</span>
+            <span style="font-size: 0.625rem; color: #94A3B8;"><i class="ri-arrow-up-s-line"></i></span>
+          </div>
+          <div style="position: relative; top: 0.375rem; background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); padding: 0.25rem; min-width: 10rem;">
+            <div class="dropdown-item draft-item">
+              <i class="ri-draft-line status-icon"></i> <span>Draft</span>
+              <i class="ri-check-line check"></i>
+            </div>
+            <div class="dropdown-item active-item">
+              <i class="ri-checkbox-circle-line status-icon"></i> <span>Active</span>
+            </div>
+            <div class="dropdown-item deprecated-item">
+              <i class="ri-forbid-line status-icon"></i> <span>Deprecated</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>2.2 우클릭 컨텍스트 메뉴 (Entry Point B) — 라이브 프리뷰</h3>
+  <div class="mock-container">
+    <div class="mock-header"><div class="mock-title">TC 리스트 행 우클릭 → 컨텍스트 메뉴</div></div>
+    <div class="mock-body" style="padding: 1.5rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+      <div class="ctx-menu">
+        <div class="ctx-item"><i class="ri-eye-line"></i> View Details</div>
+        <div class="ctx-item"><i class="ri-edit-line"></i> Edit</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" style="background:#F8FAFC;"><i class="ri-arrow-left-right-line"></i> Set Status <span style="margin-left:auto; font-size:0.625rem; color:#94A3B8;"><i class="ri-arrow-right-s-line"></i></span></div>
+        <div class="ctx-item"><i class="ri-folder-transfer-line"></i> Move to Folder</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" style="color:#EF4444;"><i class="ri-delete-bin-line" style="color:#EF4444;"></i> Delete</div>
+      </div>
+      <div class="ctx-submenu" style="margin-top: 3.25rem;">
+        <div class="dropdown-item draft-item">
+          <i class="ri-draft-line status-icon"></i> <span>Draft</span>
+          <i class="ri-check-line check"></i>
+        </div>
+        <div class="dropdown-item active-item">
+          <i class="ri-checkbox-circle-line status-icon"></i> <span>Active</span>
+        </div>
+        <div class="dropdown-item deprecated-item">
+          <i class="ri-forbid-line status-icon"></i> <span>Deprecated</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>메뉴 위치</td><td>"Edit" 아래, "Move to Folder" 위 (구분선 사이)</td></tr>
+      <tr><td>서브메뉴 방향</td><td>오른쪽으로 열림 (<code>left: 100% + 4px</code>)</td></tr>
+      <tr><td>서브메뉴 디자인</td><td>§2.1 상태 드롭다운과 동일한 패널 디자인 재사용</td></tr>
+      <tr><td>현재 상태 표시</td><td>체크 아이콘 <code>ri-check-line</code> (indigo-500)</td></tr>
+      <tr><td>"Deprecated" 선택 시</td><td>메뉴 닫힘 → §3 확인 다이얼로그 표시</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.3 Bulk Action Bar (Entry Point C)</h3>
+  <div class="bulk-bar">
+    <span class="bulk-count">5 selected</span>
+    <div class="bulk-divider"></div>
+    <button class="bulk-btn"><i class="ri-folder-transfer-line"></i> Move</button>
+    <button class="bulk-btn"><i class="ri-arrow-left-right-line"></i> Set Status <i class="ri-arrow-down-s-line" style="font-size:0.625rem;"></i></button>
+    <button class="bulk-btn"><i class="ri-delete-bin-line"></i> Delete</button>
+    <div style="flex:1;"></div>
+    <button class="bulk-btn" style="border-color:rgba(255,255,255,0.05); background:transparent;"><i class="ri-close-line"></i></button>
+  </div>
+  <div class="note">
+    <i class="ri-information-line"></i>
+    <strong>Set Status 드롭다운:</strong> §2.1의 상태 드롭다운과 동일한 패널. 배경이 어두운 바 위에 표시되므로 패널은 <strong>위쪽으로 열림</strong> (bottom-placement). 벌크 Deprecated 선택 시 §3 확인 다이얼로그 표시.
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>3. Active/Draft → Deprecated 전환 — 확인 다이얼로그</h2>
+
+  <p>Deprecated 전환은 <strong>보호 전환</strong>입니다 — 새 Run에 포함되지 않으므로 확인 다이얼로그로 실수를 방지합니다.</p>
+
+  <h3>3.1 개별 TC Deprecated 전환 플로우</h3>
+  <div class="flow-steps">
+    <div class="flow-step"><div class="step-content">TC 상세 패널 → 상태 배지(Active/Draft) 클릭 → 드롭다운</div></div>
+    <div class="flow-step"><div class="step-content">'Deprecated' 선택 → <strong>확인 다이얼로그 표시</strong></div></div>
+    <div class="flow-step"><div class="step-content">사용자가 "Deprecate" 클릭 → 배지 색상 → 회색 전환. 리스트 행 opacity: 0.55</div></div>
+    <div class="flow-step"><div class="step-content">기본 필터(All)에서 사라짐 → Deprecated 탭에서만 보임</div></div>
+    <div class="flow-step"><div class="step-content">History 기록 + Toast: "테스트 케이스가 Deprecated로 변경되었습니다."</div></div>
+  </div>
+
+  <h3>3.2 개별 TC 확인 다이얼로그 — 라이브 프리뷰</h3>
+  <div class="dialog-overlay">
+    <div class="dialog-box">
+      <div class="dialog-icon" style="background:#FEF9C3;"><i class="ri-alert-line" style="color:#D97706;"></i></div>
+      <h4>Deprecate Test Case?</h4>
+      <p><strong>"User registration with valid email"</strong>을 Deprecated로 변경합니다. 새 Run에 포함되지 않습니다.</p>
+      <div style="font-size: 0.75rem; color: #94A3B8; margin-bottom: 1rem;">현재 2개 Run에 포함되어 있으며, 기존 Run에는 영향 없습니다.</div>
+      <div class="dialog-actions">
+        <button class="btn btn-cancel">Cancel</button>
+        <button class="btn btn-confirm btn-amber">Deprecate</button>
+      </div>
+    </div>
+  </div>
+
+  <h3>3.3 벌크 Deprecated 확인 다이얼로그 — 라이브 프리뷰</h3>
+  <div class="dialog-overlay">
+    <div class="dialog-box">
+      <div class="dialog-icon" style="background:#FEF9C3;"><i class="ri-alert-line" style="color:#D97706;"></i></div>
+      <h4>Deprecate 5 Test Cases?</h4>
+      <p>5개 TC를 Deprecated로 변경합니다. 새 Run에 포함되지 않습니다.</p>
+      <div style="font-size: 0.75rem; color: #94A3B8; margin-bottom: 1rem;">이 중 3개가 진행 중인 Run에 포함되어 있습니다. 기존 Run에는 영향 없습니다.</div>
+      <div class="dialog-actions">
+        <button class="btn btn-cancel">Cancel</button>
+        <button class="btn btn-confirm btn-amber">Deprecate 5 Cases</button>
+      </div>
+    </div>
+  </div>
+
+  <h3>3.4 다이얼로그 디자인 스펙</h3>
+  <table class="spec-table">
+    <thead><tr><th>요소</th><th>개별 TC</th><th>벌크</th></tr></thead>
+    <tbody>
+      <tr><td>제목</td><td>"Deprecate Test Case?"</td><td>"Deprecate N Test Cases?"</td></tr>
+      <tr><td>본문</td><td>TC명 bold + "새 Run에 포함되지 않습니다."</td><td>"N개 TC를 Deprecated로 변경합니다."</td></tr>
+      <tr><td>하단 정보</td><td>진행 중 Run 개수 (있을 때만 표시)</td><td>진행 중 Run에 포함된 TC 수</td></tr>
+      <tr><td>Confirm 버튼</td><td>"Deprecate"</td><td>"Deprecate N Cases"</td></tr>
+      <tr><td>Confirm 색상</td><td colspan="2"><code>#F59E0B</code> (amber-500). Hover: <code>#D97706</code></td></tr>
+      <tr><td>Cancel 버튼</td><td colspan="2">Ghost: bg white, border <code>#E2E8F0</code>, text <code>#64748B</code></td></tr>
+      <tr><td>Overlay</td><td colspan="2"><code>rgba(0,0,0,0.4)</code>. 클릭 시 닫힘.</td></tr>
+      <tr><td>Dialog width</td><td colspan="2"><code>max-width: 384px</code> (24rem), 중앙 정렬</td></tr>
+      <tr><td>Animation</td><td colspan="2">Overlay: opacity 0→1 200ms. Dialog: scale(0.95→1) + opacity 200ms</td></tr>
+      <tr><td>Keyboard</td><td colspan="2">Escape = Cancel. Enter = Confirm. <strong>기본 focus: Cancel</strong> (안전).</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>4. Deprecated → Active/Draft 복원 플로우</h2>
+
+  <p>Deprecated TC는 언제든 Active 또는 Draft로 복원할 수 있습니다. 복원은 <strong>안전한 전환</strong>이므로 확인 다이얼로그가 없습니다.</p>
+
+  <div class="flow-steps">
+    <div class="flow-step"><div class="step-content">Deprecated 탭에서 복원할 TC 클릭 → 상세 패널</div></div>
+    <div class="flow-step"><div class="step-content">Deprecated 배지(회색) 클릭 → 드롭다운</div></div>
+    <div class="flow-step"><div class="step-content">"Active" 선택 → <strong>즉시 전환</strong> (확인 다이얼로그 없음)</div></div>
+    <div class="flow-step"><div class="step-content">배지 회색 → 초록 전환. opacity 0.55 → 1.0 복원</div></div>
+    <div class="flow-step"><div class="step-content">기본 필터(All)에서 다시 보임. 새 Run에 포함 가능.</div></div>
+    <div class="flow-step"><div class="step-content">History: "Kyle restored from Deprecated to Active"</div></div>
+  </div>
+
+  <div class="success">
+    <i class="ri-checkbox-circle-line"></i>
+    <strong>Deprecated → Draft도 가능:</strong> 폐기된 TC를 수정하여 재활용할 때. 같은 플로우로 "Draft" 선택 가능.
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>5. Draft Nudge UI — 사용자가 Draft를 잊지 않도록</h2>
+
+  <p>사용자가 Draft TC를 Active로 전환하는 것을 잊지 않도록 부드러운 안내 UI를 제공합니다.</p>
+
+  <h3>5.1 TC 리스트 상단 Nudge 배너</h3>
+  <p>Draft TC가 <strong>5개 이상</strong>일 때 TC 리스트 상단에 표시됩니다.</p>
+  <div class="nudge-banner">
+    <i class="ri-draft-line"></i>
+    <span>현재 <strong>12개</strong>의 Draft TC가 있습니다. 검토 후 Active로 변경해보세요.</span>
+    <button class="nudge-btn">Draft TC 보기</button>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>배경</td><td><code>#FEF9C3</code> (yellow-100)</td></tr>
+      <tr><td>Border</td><td><code>1px solid #FDE68A</code> (yellow-300)</td></tr>
+      <tr><td>텍스트</td><td><code>#854D0E</code> (yellow-800), 13px</td></tr>
+      <tr><td>아이콘</td><td><code>ri-draft-line</code>, yellow-700</td></tr>
+      <tr><td>"Draft TC 보기" 버튼</td><td>bg <code>#854D0E</code>, text <code>#FEF9C3</code>, radius 6px. 클릭 시 Draft 필터 탭 활성화.</td></tr>
+      <tr><td>표시 조건</td><td>Draft TC ≥ 5개</td></tr>
+      <tr><td>닫기</td><td>배너 오른쪽에 X 버튼 (선택). 닫으면 세션 동안 숨김.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>6. Run 생성 — TC 선택 화면 변경</h2>
+
+  <p>Run 생성 시 TC 선택 화면의 핵심 변경사항입니다. <strong>이 섹션은 디자인 P0입니다.</strong></p>
+
+  <h3>6.1 핵심 규칙</h3>
+  <table class="spec-table">
+    <thead><tr><th>TC 상태</th><th>기본 표시</th><th>선택 가능</th><th>UI</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="status-badge badge-active badge-sm"><i class="ri-checkbox-circle-line"></i> Active</span></td>
+        <td>✅ 기본 표시</td>
+        <td>✅ 선택 가능</td>
+        <td>일반 체크박스, 클릭 가능</td>
+      </tr>
+      <tr>
+        <td><span class="status-badge badge-draft badge-sm"><i class="ri-draft-line"></i> Draft</span></td>
+        <td>❌ 기본 숨김</td>
+        <td>⚠️ 토글 ON 시 선택 가능 + 경고</td>
+        <td>노란 배경 행, Draft 배지, 선택 시 경고 배너</td>
+      </tr>
+      <tr>
+        <td><span class="status-badge badge-deprecated badge-sm"><i class="ri-forbid-line"></i> Deprecated</span></td>
+        <td>❌ <strong>완전 숨김</strong></td>
+        <td>❌ 선택 불가</td>
+        <td>목록에 표시하지 않음. 토글도 없음.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>6.2 "Include Draft TCs" 토글 — OFF 상태 (기본)</h3>
+  <div class="mock-container">
+    <div class="mock-header">
+      <div class="mock-title">Select Test Cases for Run</div>
+      <div style="flex:1;"></div>
+      <div style="font-size:0.6875rem; color:#64748B;">32 Active TCs available</div>
+    </div>
+    <div class="mock-body" style="padding: 0.75rem 1rem; border-bottom: 1px solid #E2E8F0;">
+      <div class="toggle-row">
+        <div class="toggle-switch">
+          <div class="toggle-knob"></div>
+        </div>
+        <span class="toggle-label">Include Draft TCs</span>
+        <span style="font-size:0.6875rem; color:#94A3B8; margin-left:auto;">5 draft TCs hidden</span>
+      </div>
+    </div>
+    <div class="mock-body" style="padding: 0;">
+      <div class="tc-row">
+        <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+        <span class="tc-title">User registration with valid email</span>
+        <span class="status-badge badge-active badge-sm"><i class="ri-checkbox-circle-line"></i> Active</span>
+        <span class="tc-priority high">High</span>
+      </div>
+      <div class="tc-row">
+        <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+        <span class="tc-title">Login with correct credentials</span>
+        <span class="status-badge badge-active badge-sm"><i class="ri-checkbox-circle-line"></i> Active</span>
+        <span class="tc-priority medium">Medium</span>
+      </div>
+      <div class="tc-row">
+        <div class="tc-checkbox"></div>
+        <span class="tc-title">Password reset flow</span>
+        <span class="status-badge badge-active badge-sm"><i class="ri-checkbox-circle-line"></i> Active</span>
+        <span class="tc-priority high">High</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>6.3 "Include Draft TCs" 토글 — ON 상태 + Draft TC 선택 → 경고 배너</h3>
+  <div class="mock-container">
+    <div class="mock-header">
+      <div class="mock-title">Select Test Cases for Run</div>
+      <div style="flex:1;"></div>
+      <div style="font-size:0.6875rem; color:#64748B;">32 Active + 5 Draft TCs</div>
+    </div>
+    <div class="mock-body" style="padding: 0.75rem 1rem; border-bottom: 1px solid #E2E8F0;">
+      <div class="toggle-row">
+        <div class="toggle-switch on">
+          <div class="toggle-knob"></div>
+        </div>
+        <span class="toggle-label">Include Draft TCs</span>
+      </div>
+    </div>
+    <div class="mock-body" style="padding: 0;">
+      <div class="tc-row">
+        <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+        <span class="tc-title">User registration with valid email</span>
+        <span class="status-badge badge-active badge-sm"><i class="ri-checkbox-circle-line"></i> Active</span>
+        <span class="tc-priority high">High</span>
+      </div>
+      <div class="tc-row draft-bg">
+        <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+        <span class="tc-title">Multi-factor auth setup</span>
+        <span class="status-badge badge-draft badge-sm"><i class="ri-draft-line"></i> Draft</span>
+        <span class="tc-priority medium">Medium</span>
+      </div>
+      <div class="tc-row">
+        <div class="tc-checkbox checked"><i class="ri-check-line"></i></div>
+        <span class="tc-title">Login with correct credentials</span>
+        <span class="status-badge badge-active badge-sm"><i class="ri-checkbox-circle-line"></i> Active</span>
+        <span class="tc-priority medium">Medium</span>
+      </div>
+      <div class="tc-row draft-bg">
+        <div class="tc-checkbox"></div>
+        <span class="tc-title">Biometric login flow</span>
+        <span class="status-badge badge-draft badge-sm"><i class="ri-draft-line"></i> Draft</span>
+        <span class="tc-priority medium">Medium</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="run-warning">
+    <i class="ri-error-warning-line"></i>
+    <div>
+      <strong>Draft TC 포함:</strong> 이 Run에 Draft 상태의 TC 1개가 포함되어 있습니다. 미완성 상태일 수 있습니다.
+      <div class="run-warn-actions">
+        <button class="run-warn-btn btn-mark-active">모두 Active로 변경</button>
+        <button class="run-warn-btn btn-proceed">그대로 진행</button>
+      </div>
+    </div>
+  </div>
+
+  <h3>6.4 TC 선택 화면 디자인 스펙</h3>
+  <table class="spec-table">
+    <thead><tr><th>요소</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>Toggle switch</td><td>36×20px. Off: <code>#CBD5E1</code>. On: <code>#6366F1</code> (indigo-500). Knob: 14px white circle.</td></tr>
+      <tr><td>Toggle 기본 상태</td><td><strong>OFF</strong> — Active TC만 표시</td></tr>
+      <tr><td>"N draft TCs hidden"</td><td>Toggle OFF일 때만 표시. 11px, <code>#94A3B8</code>, 오른쪽 정렬</td></tr>
+      <tr><td>Draft TC 행 배경</td><td><code>#FFFBEB</code> (amber-50) — 시각적 구분</td></tr>
+      <tr><td>Draft TC 선택 시 경고</td><td>amber 배너 + "모두 Active로 변경" 버튼 (green) + "그대로 진행" 버튼 (amber outline)</td></tr>
+      <tr><td>"모두 Active로 변경" 버튼</td><td>bg <code>#16A34A</code>, text white, radius 6px. 클릭 시 선택된 Draft TC → Active 일괄 전환 + 경고 사라짐</td></tr>
+      <tr><td>"그대로 진행" 버튼</td><td>bg transparent, border <code>#D97706</code>, text <code>#D97706</code>. 클릭 시 경고 닫힘 (Draft 포함 유지)</td></tr>
+      <tr><td>Deprecated TC</td><td><strong>완전 숨김</strong>. 목록에 표시하지 않음. 토글 없음.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>7. 기존 Run — Deprecated TC 안내 배너</h2>
+
+  <p>이미 생성된 Run에 포함된 TC가 이후에 Deprecated 되면, Run 상세 페이지에서 안내 배너를 표시합니다. <strong>데이터는 절대 삭제하지 않습니다.</strong></p>
+
+  <h3>7.1 Run Detail 페이지 — 안내 배너</h3>
+  <div class="info-banner">
+    <i class="ri-information-line"></i>
+    <div>
+      <strong>일부 TC가 Deprecated 상태입니다.</strong> 이 Run에 포함된 TC 2개가 이후에 Deprecated로 변경되었습니다. 실행 결과는 유지되며, 향후 새 Run에는 포함되지 않습니다.
+    </div>
+  </div>
+
+  <h3>7.2 Run Detail — Deprecated TC 행 표시</h3>
+  <div class="mock-container">
+    <div class="mock-header"><div class="mock-title">Run Detail — TC List</div></div>
+    <div class="mock-body" style="padding: 0;">
+      <div class="tc-row">
+        <span class="tc-title">User registration with valid email</span>
+        <span class="status-badge badge-active badge-sm"><i class="ri-checkbox-circle-line"></i> Active</span>
+        <span style="font-size:0.6875rem; font-weight:600; color:#16A34A;">Passed</span>
+      </div>
+      <div class="tc-row deprecated-row">
+        <span class="tc-title">Legacy OAuth 1.0 login</span>
+        <span class="status-badge badge-deprecated badge-sm"><i class="ri-forbid-line"></i> Deprecated</span>
+        <span style="font-size:0.6875rem; font-weight:600; color:#DC2626;">Failed</span>
+      </div>
+      <div class="tc-row">
+        <span class="tc-title">Password reset flow</span>
+        <span class="status-badge badge-active badge-sm"><i class="ri-checkbox-circle-line"></i> Active</span>
+        <span style="font-size:0.6875rem; font-weight:600; color:#94A3B8;">Untested</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>7.3 Focus Mode — Deprecated TC 실행 시</h3>
+  <p>Focus Mode에서 Deprecated TC를 실행할 때 상단에 정보 배너를 표시합니다 (차단하지 않음).</p>
+  <div class="info-banner">
+    <i class="ri-information-line"></i>
+    <span>This test case has been deprecated. It won't be included in future runs.</span>
+  </div>
+
+  <table class="spec-table">
+    <thead><tr><th>요소</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>Run Detail 배너 배경</td><td><code>#EFF6FF</code> (blue-50), border <code>#BFDBFE</code></td></tr>
+      <tr><td>텍스트</td><td><code>#1E40AF</code> (blue-800)</td></tr>
+      <tr><td>아이콘</td><td><code>ri-information-line</code>, blue-600</td></tr>
+      <tr><td>표시 조건</td><td>Run에 포함된 TC 중 1개 이상 <code>lifecycle_status = 'deprecated'</code></td></tr>
+      <tr><td>Deprecated TC 행</td><td><code>opacity: 0.55</code> + Deprecated 배지(sm) 표시. 클릭은 가능 (결과 확인/수정용).</td></tr>
+      <tr><td>통계 반영</td><td>Run 통계(통과율 등)에 포함. 실행된 결과는 유효한 데이터.</td></tr>
+      <tr><td>Focus Mode 배너</td><td>동일 blue info 배너. TC 실행 화면 상단.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>8. 권한 매트릭스</h2>
+
+  <table class="spec-table">
+    <thead><tr><th>전환</th><th>Viewer</th><th>Member</th><th>Admin</th></tr></thead>
+    <tbody>
+      <tr><td>Draft → Active</td><td style="background:#FEE2E2; text-align:center;">❌</td><td style="background:#DCFCE7; text-align:center;">✅</td><td style="background:#DCFCE7; text-align:center;">✅</td></tr>
+      <tr><td>Active → Draft</td><td style="background:#FEE2E2; text-align:center;">❌</td><td style="background:#DCFCE7; text-align:center;">✅</td><td style="background:#DCFCE7; text-align:center;">✅</td></tr>
+      <tr><td>Active → Deprecated</td><td style="background:#FEE2E2; text-align:center;">❌</td><td style="background:#DCFCE7; text-align:center;">✅</td><td style="background:#DCFCE7; text-align:center;">✅</td></tr>
+      <tr><td>Draft → Deprecated</td><td style="background:#FEE2E2; text-align:center;">❌</td><td style="background:#DCFCE7; text-align:center;">✅</td><td style="background:#DCFCE7; text-align:center;">✅</td></tr>
+      <tr><td>Deprecated → Active</td><td style="background:#FEE2E2; text-align:center;">❌</td><td style="background:#DCFCE7; text-align:center;">✅</td><td style="background:#DCFCE7; text-align:center;">✅</td></tr>
+      <tr><td>Deprecated → Draft</td><td style="background:#FEE2E2; text-align:center;">❌</td><td style="background:#DCFCE7; text-align:center;">✅</td><td style="background:#DCFCE7; text-align:center;">✅</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <i class="ri-information-line"></i>
+    <strong>Viewer:</strong> TC를 볼 수만 있고 상태 변경 불가. 상태 드롭다운이 <code>disabled</code> 상태 (클릭 안됨, cursor: not-allowed, opacity: 0.5)로 표시.<br>
+    <strong>Phase 2 검토:</strong> Deprecated 전환을 Admin만 가능하게 제한하는 옵션 추가 예정.
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>9. 엣지케이스 정리</h2>
+
+  <table class="spec-table">
+    <thead><tr><th>엣지케이스</th><th>동작</th><th>디자인 영향</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Toast "Mark as Active" 클릭 중 Toast 사라짐</td>
+        <td>클릭 무시. 마우스 hover 시 타이머 일시정지.</td>
+        <td>Toast hover 시 opacity 유지 + 타이머 pause</td>
+      </tr>
+      <tr>
+        <td>Deprecated 확인 다이얼로그에서 ESC 키</td>
+        <td>Cancel과 동일 — 다이얼로그 닫힘, 전환 취소</td>
+        <td>기본 focus를 Cancel 버튼에</td>
+      </tr>
+      <tr>
+        <td>벌크 선택에 이미 Active인 TC 포함 + "Set Active"</td>
+        <td>이미 Active인 TC는 무시, Draft만 전환</td>
+        <td>Toast: "N test cases set to Active. (M already active)"</td>
+      </tr>
+      <tr>
+        <td>Run 생성 중 Draft TC 토글 OFF로 전환</td>
+        <td>이미 선택된 Draft TC의 선택 해제</td>
+        <td>Draft TC 행이 사라지면서 선택 상태도 해제</td>
+      </tr>
+      <tr>
+        <td>진행 중 Run에 포함된 TC를 Deprecated로 전환</td>
+        <td>Run에는 영향 없음. Run Detail에 info 배너 표시.</td>
+        <td>다이얼로그에 "현재 N개 Run에 포함" 정보 표시</td>
+      </tr>
+      <tr>
+        <td>Viewer가 상태 드롭다운 클릭 시도</td>
+        <td>드롭다운 열리지 않음</td>
+        <td>배지에 cursor: not-allowed, opacity: 0.5. Tooltip: "권한이 없습니다."</td>
+      </tr>
+      <tr>
+        <td>컨텍스트 메뉴에서 Deprecated 선택 → 다이얼로그 표시</td>
+        <td>컨텍스트 메뉴 먼저 닫힘 → 다이얼로그 표시</td>
+        <td>메뉴 close → 150ms delay → 다이얼로그 open</td>
+      </tr>
+      <tr>
+        <td>DB 에러로 상태 전환 실패</td>
+        <td>Optimistic UI 롤백 + 에러 toast</td>
+        <td>에러 Toast: red 배경, "상태 변경에 실패했습니다."</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section-divider"></div>
+  <h2>10. Desi 디자인 산출물 체크리스트</h2>
+
+  <p>아래 10개 디자인 산출물을 요청합니다. P0 항목부터 작업해주세요.</p>
+
+  <div style="margin: 1rem 0;">
+    <div class="checklist-item">
+      <span class="checklist-num">1</span>
+      <div class="checklist-content">
+        <div class="checklist-title">TC 생성 Toast — "Mark as Active" 링크 <span class="priority-tag p0">P0</span></div>
+        <div class="checklist-desc">§1 참조. 생성 Toast + 확인 Toast 2종. 링크 hover 상태 포함.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">2</span>
+      <div class="checklist-content">
+        <div class="checklist-title">상태 드롭다운 (TC 상세 패널) <span class="priority-tag p0">P0</span></div>
+        <div class="checklist-desc">§2.1 참조. 3개 상태 옵션 + 체크 표시 + 열림/닫힘 애니메이션.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">3</span>
+      <div class="checklist-content">
+        <div class="checklist-title">우클릭 컨텍스트 메뉴 — Set Status 서브메뉴 <span class="priority-tag p1">P1</span></div>
+        <div class="checklist-desc">§2.2 참조. 기존 메뉴에 "Set Status" 추가 + 오른쪽 서브메뉴.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">4</span>
+      <div class="checklist-content">
+        <div class="checklist-title">BulkActionBar — Set Status 버튼 <span class="priority-tag p1">P1</span></div>
+        <div class="checklist-desc">§2.3 참조. 위쪽으로 열리는 상태 드롭다운.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">5</span>
+      <div class="checklist-content">
+        <div class="checklist-title">Deprecated 확인 다이얼로그 (개별 + 벌크) <span class="priority-tag p0">P0</span></div>
+        <div class="checklist-desc">§3.2, §3.3 참조. 2가지 변형. 진행 중 Run 정보 포함 여부에 따른 동적 본문.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">6</span>
+      <div class="checklist-content">
+        <div class="checklist-title">Draft Nudge 배너 (TC 리스트 상단) <span class="priority-tag p1">P1</span></div>
+        <div class="checklist-desc">§5 참조. 노란 배너 + "Draft TC 보기" 버튼.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">7</span>
+      <div class="checklist-content">
+        <div class="checklist-title">Run TC 선택 — "Include Draft TCs" 토글 <span class="priority-tag p0">P0</span></div>
+        <div class="checklist-desc">§6 참조. 토글 ON/OFF 2가지 상태 + Draft TC 행 노란 배경 + 경고 배너.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">8</span>
+      <div class="checklist-content">
+        <div class="checklist-title">Run Draft 경고 배너 + 액션 버튼 <span class="priority-tag p0">P0</span></div>
+        <div class="checklist-desc">§6.3 참조. "모두 Active로 변경" (green) + "그대로 진행" (amber outline) 2개 버튼.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">9</span>
+      <div class="checklist-content">
+        <div class="checklist-title">기존 Run — Deprecated TC 안내 배너 + 행 표시 <span class="priority-tag p1">P1</span></div>
+        <div class="checklist-desc">§7 참조. blue info 배너 + deprecated TC 행 opacity 처리. Focus Mode 배너 포함.</div>
+      </div>
+    </div>
+    <div class="checklist-item">
+      <span class="checklist-num">10</span>
+      <div class="checklist-content">
+        <div class="checklist-title">Viewer 권한 — disabled 상태 UI <span class="priority-tag p1">P1</span></div>
+        <div class="checklist-desc">§8 참조. 드롭다운 disabled 상태 + tooltip "권한이 없습니다."</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn">
+    <i class="ri-error-warning-line"></i>
+    <strong>주의:</strong> 이 문서의 목업은 PM이 제작한 참고용입니다. 최종 디자인은 Desi의 판단에 따라 조정해주세요.
+    특히 토글 크기, 배너 패딩, 다이얼로그 애니메이션은 기존 Testably 디자인 시스템과 일관성을 맞춰주세요.
+  </div>
+
+  <div class="note">
+    <i class="ri-information-line"></i>
+    <strong>기존 디자인 요청 참조:</strong> <code>spec-tc-status-design.html</code>에 상태 배지 3종, 필터 탭, CSS 토큰 레퍼런스가 있습니다. 이 문서와 함께 사용하세요.
+  </div>
+
+</div>
+</body>
+</html>

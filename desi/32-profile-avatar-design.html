@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Unified Profile Avatar Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.6; }
+
+  /* ── Page Shell ── */
+  .page { max-width: 1080px; margin: 0 auto; padding: 2rem 2.5rem 4rem; }
+  .page-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: #EEF2FF; color: #4338CA; font-size: 0.6875rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 0.75rem; }
+  .page-title { font-size: 1.5rem; font-weight: 800; color: #0F172A; margin-bottom: 0.25rem; }
+  .page-sub { font-size: 0.875rem; color: #64748B; margin-bottom: 2rem; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 2.5rem; }
+  .section-title { font-size: 1.125rem; font-weight: 800; color: #0F172A; margin-bottom: 0.25rem; padding-bottom: 0.5rem; border-bottom: 2px solid #6366F1; display: flex; align-items: center; gap: 0.5rem; }
+  .section-title .num { background: #6366F1; color: #fff; width: 1.5rem; height: 1.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6875rem; font-weight: 800; flex-shrink: 0; }
+  .section-desc { font-size: 0.8125rem; color: #64748B; margin: 0.5rem 0 1.25rem; }
+
+  /* ── Cards ── */
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1rem; }
+  .card-label { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6366F1; margin-bottom: 0.75rem; }
+  .card h4 { font-size: 0.875rem; font-weight: 700; color: #0F172A; margin: 1rem 0 0.5rem; }
+  .card h4:first-of-type { margin-top: 0; }
+
+  /* ── Spec rows ── */
+  .spec-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.3125rem 0; font-size: 0.75rem; border-bottom: 1px solid #F8FAFC; }
+  .spec-row .k { font-weight: 600; color: #475569; min-width: 160px; }
+  .spec-row .v { color: #0F172A; font-weight: 500; }
+  .spec-row .code { font-family: monospace; font-size: 0.6875rem; color: #6366F1; background: #F1F5F9; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; }
+  .callout { border-left: 4px solid #6366F1; background: #EEF2FF; padding: 0.75rem 1rem; border-radius: 0 0.5rem 0.5rem 0; margin: 0.75rem 0; font-size: 0.8125rem; color: #334155; }
+  .callout-amber { border-left-color: #F59E0B; background: #FFFBEB; color: #92400E; }
+  .callout b { font-weight: 700; }
+
+  /* ═══════════════════════════════════════════ */
+  /* AVATAR COMPONENT SYSTEM                     */
+  /* ═══════════════════════════════════════════ */
+
+  /* Base avatar */
+  .av {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    position: relative;
+    user-select: none;
+    line-height: 1;
+    overflow: hidden;
+    vertical-align: middle;
+  }
+  .av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+  /* Sizes */
+  .av-xs { width: 20px; height: 20px; font-size: 0.4375rem; }   /* 20px — activity log, dense lists */
+  .av-sm { width: 24px; height: 24px; font-size: 0.5rem; }       /* 24px — table cells, inline */
+  .av-md { width: 32px; height: 32px; font-size: 0.6875rem; }    /* 32px — sidebar, stat cards */
+  .av-lg { width: 40px; height: 40px; font-size: 0.875rem; }     /* 40px — comments, team cards */
+  .av-xl { width: 64px; height: 64px; font-size: 1.25rem; }      /* 64px — profile settings */
+
+  /* Online/Offline indicator */
+  .av-status { position: absolute; bottom: 0; right: 0; border-radius: 50%; border: 2px solid #fff; }
+  .av-xs .av-status { width: 6px; height: 6px; border-width: 1.5px; }
+  .av-sm .av-status { width: 7px; height: 7px; border-width: 1.5px; }
+  .av-md .av-status { width: 8px; height: 8px; }
+  .av-lg .av-status { width: 10px; height: 10px; }
+  .av-xl .av-status { width: 14px; height: 14px; border-width: 2.5px; }
+  .av-status.online { background: #16A34A; }
+  .av-status.offline { background: #CBD5E1; }
+  .av-status.busy { background: #EF4444; }
+  .av-status.away { background: #F59E0B; }
+
+  /* Upload hover overlay (XL only) */
+  .av-upload { cursor: pointer; }
+  .av-upload .av-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.4);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .av-upload:hover .av-overlay { opacity: 1; }
+  .av-overlay i { color: #fff; font-size: 1.25rem; }
+
+  /* Stack group */
+  .av-stack { display: flex; align-items: center; }
+  .av-stack .av { border: 2px solid #fff; margin-left: -0.5rem; }
+  .av-stack .av:first-child { margin-left: 0; }
+  .av-stack .av-overflow {
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: 2px solid #fff;
+    background: #F1F5F9; color: #64748B;
+    font-weight: 700; margin-left: -0.5rem;
+  }
+
+  /* ═══════════════════════════════════════════ */
+  /* SHOWCASE LAYOUTS                             */
+  /* ═══════════════════════════════════════════ */
+  .showcase-row { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; margin: 1rem 0; }
+  .showcase-item { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+  .showcase-label { font-size: 0.625rem; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* Color palette grid */
+  .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin: 1rem 0; }
+  .color-card { display: flex; flex-direction: column; align-items: center; gap: 0.375rem; padding: 0.75rem; border: 1px solid #E2E8F0; border-radius: 0.5rem; background: #fff; }
+  .color-swatch { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; }
+  .color-name { font-size: 0.6875rem; font-weight: 600; color: #334155; }
+  .color-hex { font-size: 0.625rem; color: #94A3B8; font-family: monospace; }
+  .color-idx { font-size: 0.5625rem; font-weight: 700; color: #CBD5E1; }
+
+  /* Context demo cards */
+  .context-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .ctx-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem; overflow: hidden; }
+  .ctx-header { background: #F8FAFC; padding: 0.5rem 0.75rem; font-size: 0.625rem; font-weight: 700; color: #6366F1; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #E2E8F0; }
+  .ctx-body { padding: 1rem; }
+
+  /* Mini header demo */
+  .mini-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 0.75rem; background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; }
+  .mini-header .logo { width: 24px; height: 24px; background: #6366F1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.625rem; }
+  .mini-header .spacer { flex: 1; }
+  .mini-header .nav-text { font-size: 0.6875rem; color: #64748B; font-weight: 500; }
+
+  /* Mini table demo */
+  .mini-table { width: 100%; font-size: 0.6875rem; border-collapse: collapse; }
+  .mini-table th { background: #F8FAFC; padding: 0.375rem 0.5rem; text-align: left; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.5625rem; border-bottom: 1px solid #E2E8F0; }
+  .mini-table td { padding: 0.375rem 0.5rem; border-bottom: 1px solid #F1F5F9; color: #334155; vertical-align: middle; }
+  .mini-table .tc-id { color: #94A3B8; font-family: monospace; }
+  .mini-table .tc-name { font-weight: 600; color: #0F172A; }
+
+  /* Mini team card */
+  .mini-member { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0; }
+  .mini-member-info { flex: 1; }
+  .mini-member-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .mini-member-role { font-size: 0.6875rem; color: #94A3B8; }
+
+  /* Mini comment */
+  .mini-comment { display: flex; gap: 0.625rem; padding: 0.5rem 0; }
+  .mini-comment-body { flex: 1; }
+  .mini-comment-head { font-size: 0.6875rem; margin-bottom: 0.125rem; }
+  .mini-comment-head strong { color: #0F172A; font-weight: 600; }
+  .mini-comment-head span { color: #94A3B8; margin-left: 0.375rem; }
+  .mini-comment-text { font-size: 0.75rem; color: #475569; }
+
+  /* Code block */
+  .code-block { background: #0F172A; color: #E2E8F0; border-radius: 0.5rem; padding: 1rem 1.25rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.6875rem; line-height: 1.8; overflow-x: auto; margin: 0.75rem 0; white-space: pre; }
+  .code-block .cm { color: #64748B; }
+  .code-block .kw { color: #C084FC; }
+  .code-block .fn { color: #38BDF8; }
+  .code-block .st { color: #86EFAC; }
+  .code-block .nb { color: #FDBA74; }
+  .code-block .ty { color: #67E8F9; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-badge"><i class="ri-palette-line"></i> DESIGN SYSTEM — Avatar Component</div>
+  <h1 class="page-title">Unified Profile Avatar Design</h1>
+  <p class="page-sub">Testably 전체 화면에서 사용되는 프로필 아바타의 통일된 디자인 시스템. Dev 핸드오프 문서 포함.</p>
+
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- §1 SIZE SCALE                               -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title"><span class="num">1</span> Size Scale — 5단계</div>
+    <p class="section-desc">모든 아바타는 5가지 크기 중 하나를 사용합니다. 컨텍스트에 따라 적절한 크기를 선택합니다.</p>
+
+    <div class="card">
+      <div class="card-label">Live Preview — All Sizes</div>
+
+      <div class="showcase-row" style="gap: 2.5rem;">
+        <div class="showcase-item">
+          <div class="av av-xs" style="background:#6366F1">KJ</div>
+          <span class="showcase-label">XS · 20px</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av av-sm" style="background:#6366F1">KJ</div>
+          <span class="showcase-label">SM · 24px</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av av-md" style="background:#6366F1">KJ</div>
+          <span class="showcase-label">MD · 32px</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av av-lg" style="background:#6366F1">KJ</div>
+          <span class="showcase-label">LG · 40px</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av av-xl" style="background:#6366F1">KJ</div>
+          <span class="showcase-label">XL · 64px</span>
+        </div>
+      </div>
+
+      <h4>Size Spec Table</h4>
+      <div class="spec-row"><span class="k">XS (20px)</span><span class="v">Activity log, dense lists, mini stacks · font <span class="code">0.4375rem (7px)</span></span></div>
+      <div class="spec-row"><span class="k">SM (24px)</span><span class="v">Table cells, inline mentions, stack avatars · font <span class="code">0.5rem (8px)</span></span></div>
+      <div class="spec-row"><span class="k">MD (32px)</span><span class="v">Sidebar, stat cards, assignee picker, header · font <span class="code">0.6875rem (11px)</span></span></div>
+      <div class="spec-row"><span class="k">LG (40px)</span><span class="v">Comment author, team member cards, activity feed · font <span class="code">0.875rem (14px)</span></span></div>
+      <div class="spec-row"><span class="k">XL (64px)</span><span class="v">Profile settings, account page · font <span class="code">1.25rem (20px)</span></span></div>
+
+      <div class="callout" style="margin-top:1rem;">
+        <b>통일 규칙:</b> 기존 디자인 파일에서 <span class="code">.ph-avatar (2rem)</span>, <span class="code">.header-avatar (1.75rem)</span>, <span class="code">.assignee-sm (1.5rem)</span>, <span class="code">.member-avatar (2.5rem)</span>, <span class="code">.feed-avatar (1.75rem)</span>, <span class="code">.dp-av (1.25rem)</span> 등 6개 이상의 서로 다른 클래스가 사용 중입니다. 이를 모두 <span class="code">.av</span> + 사이즈 클래스(<span class="code">.av-xs ~ .av-xl</span>)로 통일합니다.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- §2 COLOR PALETTE                            -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title"><span class="num">2</span> Color Palette — 10색 결정론적 배정</div>
+    <p class="section-desc">사용자별 고정 색상. 이니셜이 아닌 userId 기반 해시로 배정하여 어디서든 동일한 색상으로 표시됩니다.</p>
+
+    <div class="card">
+      <div class="card-label">Avatar Color Set</div>
+
+      <div class="color-grid">
+        <div class="color-card">
+          <div class="color-swatch" style="background:#6366F1">SK</div>
+          <div class="color-name">Indigo</div>
+          <div class="color-hex">#6366F1</div>
+          <div class="color-idx">index 0</div>
+        </div>
+        <div class="color-card">
+          <div class="color-swatch" style="background:#8B5CF6">AP</div>
+          <div class="color-name">Violet</div>
+          <div class="color-hex">#8B5CF6</div>
+          <div class="color-idx">index 1</div>
+        </div>
+        <div class="color-card">
+          <div class="color-swatch" style="background:#EC4899">JL</div>
+          <div class="color-name">Pink</div>
+          <div class="color-hex">#EC4899</div>
+          <div class="color-idx">index 2</div>
+        </div>
+        <div class="color-card">
+          <div class="color-swatch" style="background:#10B981">MC</div>
+          <div class="color-name">Emerald</div>
+          <div class="color-hex">#10B981</div>
+          <div class="color-idx">index 3</div>
+        </div>
+        <div class="color-card">
+          <div class="color-swatch" style="background:#F59E0B">DK</div>
+          <div class="color-name">Amber</div>
+          <div class="color-hex">#F59E0B</div>
+          <div class="color-idx">index 4</div>
+        </div>
+        <div class="color-card">
+          <div class="color-swatch" style="background:#06B6D4">YH</div>
+          <div class="color-name">Cyan</div>
+          <div class="color-hex">#06B6D4</div>
+          <div class="color-idx">index 5</div>
+        </div>
+        <div class="color-card">
+          <div class="color-swatch" style="background:#EF4444">HS</div>
+          <div class="color-name">Red</div>
+          <div class="color-hex">#EF4444</div>
+          <div class="color-idx">index 6</div>
+        </div>
+        <div class="color-card">
+          <div class="color-swatch" style="background:#14B8A6">BW</div>
+          <div class="color-name">Teal</div>
+          <div class="color-hex">#14B8A6</div>
+          <div class="color-idx">index 7</div>
+        </div>
+        <div class="color-card">
+          <div class="color-swatch" style="background:#F97316">CS</div>
+          <div class="color-name">Orange</div>
+          <div class="color-hex">#F97316</div>
+          <div class="color-idx">index 8</div>
+        </div>
+        <div class="color-card">
+          <div class="color-swatch" style="background:#3B82F6">RM</div>
+          <div class="color-name">Blue</div>
+          <div class="color-hex">#3B82F6</div>
+          <div class="color-idx">index 9</div>
+        </div>
+      </div>
+
+      <h4>색상 배정 알고리즘</h4>
+      <div class="code-block"><span class="cm">// Deterministic color from userId — same color everywhere</span>
+<span class="kw">const</span> AVATAR_COLORS = [
+  <span class="st">'#6366F1'</span>, <span class="st">'#8B5CF6'</span>, <span class="st">'#EC4899'</span>, <span class="st">'#10B981'</span>, <span class="st">'#F59E0B'</span>,
+  <span class="st">'#06B6D4'</span>, <span class="st">'#EF4444'</span>, <span class="st">'#14B8A6'</span>, <span class="st">'#F97316'</span>, <span class="st">'#3B82F6'</span>,
+] <span class="kw">as const</span>;
+
+<span class="kw">function</span> <span class="fn">getAvatarColor</span>(userId: <span class="ty">string</span>): <span class="ty">string</span> {
+  <span class="kw">let</span> hash = <span class="nb">0</span>;
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="nb">0</span>; i < userId.length; i++) {
+    hash = ((hash << <span class="nb">5</span>) - hash + userId.charCodeAt(i)) | <span class="nb">0</span>;
+  }
+  <span class="kw">return</span> AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+<span class="kw">function</span> <span class="fn">getInitials</span>(fullName: <span class="ty">string</span>): <span class="ty">string</span> {
+  <span class="kw">return</span> fullName
+    .split(<span class="st">' '</span>)
+    .map(w => w[<span class="nb">0</span>])
+    .join(<span class="st">''</span>)
+    .toUpperCase()
+    .slice(<span class="nb">0</span>, <span class="nb">2</span>);
+}</div>
+
+      <div class="callout-amber callout">
+        <b>핵심 규칙:</b> 색상은 반드시 <b>userId</b>(UUID)로 결정합니다. 이름이나 이니셜 기반이 아닙니다. 같은 사용자는 헤더, 테이블, 댓글, 팀 목록 어디서든 동일한 색상으로 표시됩니다. 이니셜이 같은 다른 사용자(예: "John Kim" JK vs "Jake Kang" JK)도 userId가 다르면 다른 색상이 됩니다.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- §3 AVATAR VARIANTS                          -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title"><span class="num">3</span> Avatar Variants — 이니셜 / 사진 / 상태 / 스택</div>
+
+    <div class="card">
+      <div class="card-label">3-A. Initials (기본) vs Photo (업로드)</div>
+
+      <div class="showcase-row" style="gap:2rem;">
+        <div class="showcase-item">
+          <div class="av av-lg" style="background:#6366F1">SK</div>
+          <span class="showcase-label">Initials</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av av-lg" style="background:#8B5CF6">AP</div>
+          <span class="showcase-label">Initials</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av av-lg" style="background:#CBD5E1; color:#64748B">?</div>
+          <span class="showcase-label">No Name</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av av-lg" style="background:#E2E8F0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#94A3B8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          </div>
+          <span class="showcase-label">Generic</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av av-lg" style="background:#10B981;">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect fill='%2310B981' width='40' height='40'/%3E%3Ctext x='50%25' y='55%25' text-anchor='middle' dominant-baseline='middle' fill='white' font-family='Inter,sans-serif' font-weight='700' font-size='14'%3EMC%3C/text%3E%3C/svg%3E" alt="photo placeholder" />
+          </div>
+          <span class="showcase-label">Photo*</span>
+        </div>
+      </div>
+      <p style="font-size:0.6875rem; color:#94A3B8; margin-top:0.5rem;">* 실제 사진 업로드 시 img 태그로 교체되며, object-fit: cover로 원형 크롭됩니다.</p>
+
+      <h4>Fallback 우선순위</h4>
+      <div class="spec-row"><span class="k">1순위</span><span class="v">프로필 사진 (avatar_url from Supabase)</span></div>
+      <div class="spec-row"><span class="k">2순위</span><span class="v">이니셜 + 배경색 (full_name → 이니셜 2자, userId → 색상)</span></div>
+      <div class="spec-row"><span class="k">3순위</span><span class="v">email 첫 글자 대문자 + 배경색</span></div>
+      <div class="spec-row"><span class="k">4순위 (최종)</span><span class="v">회색 원 + "?" 또는 사람 실루엣 아이콘 · bg <span class="code">#CBD5E1</span></span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">3-B. Online Status Indicator</div>
+
+      <div class="showcase-row" style="gap:2rem;">
+        <div class="showcase-item">
+          <div class="av av-lg" style="background:#6366F1">SK<span class="av-status online"></span></div>
+          <span class="showcase-label">Online</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av av-lg" style="background:#8B5CF6">AP<span class="av-status offline"></span></div>
+          <span class="showcase-label">Offline</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av av-lg" style="background:#EC4899">JL<span class="av-status busy"></span></div>
+          <span class="showcase-label">Busy</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av av-lg" style="background:#10B981">MC<span class="av-status away"></span></div>
+          <span class="showcase-label">Away</span>
+        </div>
+      </div>
+
+      <h4>Status Dot Spec</h4>
+      <div class="spec-row"><span class="k">Online</span><span class="v"><span class="code">#16A34A</span> (Green-600) — Active within 5 min</span></div>
+      <div class="spec-row"><span class="k">Offline</span><span class="v"><span class="code">#CBD5E1</span> (Slate-300) — No activity 15+ min</span></div>
+      <div class="spec-row"><span class="k">Busy</span><span class="v"><span class="code">#EF4444</span> (Red-500) — DND mode</span></div>
+      <div class="spec-row"><span class="k">Away</span><span class="v"><span class="code">#F59E0B</span> (Amber-500) — Idle 5–15 min</span></div>
+      <div class="spec-row"><span class="k">Dot position</span><span class="v">absolute, bottom: 0, right: 0, border: 2px solid #fff</span></div>
+      <div class="spec-row"><span class="k">사용 위치</span><span class="v">Team Activity 멤버 카드, Sidebar 팀 목록에서만 사용. 테이블 내 assignee에는 미표시.</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">3-C. Avatar Stack (겹침 그룹)</div>
+
+      <div class="showcase-row" style="gap: 3rem;">
+        <div class="showcase-item">
+          <div class="av-stack">
+            <div class="av av-sm" style="background:#6366F1">SK</div>
+            <div class="av av-sm" style="background:#8B5CF6">AP</div>
+            <div class="av av-sm" style="background:#EC4899">JL</div>
+          </div>
+          <span class="showcase-label">SM Stack (3)</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av-stack">
+            <div class="av av-md" style="background:#6366F1">SK</div>
+            <div class="av av-md" style="background:#8B5CF6">AP</div>
+            <div class="av av-md" style="background:#EC4899">JL</div>
+            <div class="av av-md" style="background:#10B981">MC</div>
+            <div class="av-overflow av-md" style="font-size:0.5625rem;">+3</div>
+          </div>
+          <span class="showcase-label">MD Stack (7, max 4)</span>
+        </div>
+        <div class="showcase-item">
+          <div class="av-stack">
+            <div class="av av-lg" style="background:#6366F1">SK</div>
+            <div class="av av-lg" style="background:#EC4899">JL</div>
+          </div>
+          <span class="showcase-label">LG Stack (2)</span>
+        </div>
+      </div>
+
+      <h4>Stack Rules</h4>
+      <div class="spec-row"><span class="k">Overlap</span><span class="v"><span class="code">margin-left: -0.5rem</span> (8px) · 첫 번째는 0</span></div>
+      <div class="spec-row"><span class="k">Border</span><span class="v"><span class="code">2px solid #fff</span> (구분선)</span></div>
+      <div class="spec-row"><span class="k">Max visible</span><span class="v">4 avatars → 5번째부터 "+N" overflow badge</span></div>
+      <div class="spec-row"><span class="k">Overflow badge</span><span class="v">Same size, bg <span class="code">#F1F5F9</span>, color <span class="code">#64748B</span>, font-weight 700</span></div>
+      <div class="spec-row"><span class="k">사용 위치</span><span class="v">Run 카드 assignee, Project 카드 팀 멤버, Milestone 참여자</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">3-D. Upload Avatar (프로필 설정 전용)</div>
+
+      <div class="showcase-row" style="gap:2.5rem;">
+        <div class="showcase-item">
+          <div class="av av-xl av-upload" style="background:#6366F1">
+            KJ
+            <div class="av-overlay"><i class="ri-camera-line"></i></div>
+          </div>
+          <span class="showcase-label">Hover to upload</span>
+        </div>
+        <div class="showcase-item" style="text-align:left; align-items: flex-start;">
+          <div style="font-size:0.75rem; color:#475569; line-height:1.8;">
+            <b style="color:#0F172A">Upload Spec</b><br>
+            Max: 2MB<br>
+            Formats: JPEG, PNG, WebP<br>
+            Min size: 256 x 256px<br>
+            Storage: <span class="code">avatars/{userId}.webp</span><br>
+            Resize: <span class="code">?width=128&height=128</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- §4 USAGE CONTEXTS                           -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title"><span class="num">4</span> Usage Contexts — 화면별 적용 매핑</div>
+    <p class="section-desc">각 컨텍스트에서 사용할 정확한 사이즈와 기존 클래스 → 신규 클래스 매핑.</p>
+
+    <div class="context-grid">
+      <!-- Header -->
+      <div class="ctx-card">
+        <div class="ctx-header">A. 글로벌 헤더 (Nav Bar)</div>
+        <div class="ctx-body">
+          <div class="mini-header">
+            <div class="logo">T</div>
+            <span class="nav-text">Dashboard</span>
+            <span class="nav-text" style="color:#6366F1; font-weight:600">Test Cases</span>
+            <span class="spacer"></span>
+            <i class="ri-notification-3-line" style="font-size:1rem; color:#94A3B8"></i>
+            <div class="av av-md" style="background:#6366F1">KJ</div>
+          </div>
+          <div style="margin-top:0.75rem;">
+            <div class="spec-row"><span class="k">Size</span><span class="v"><span class="code">.av-md</span> (32px)</span></div>
+            <div class="spec-row"><span class="k">기존 클래스</span><span class="v"><span class="code">.ph-avatar</span> (2rem) / <span class="code">.header-avatar</span> (1.75rem)</span></div>
+            <div class="spec-row"><span class="k">Status dot</span><span class="v">없음</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Assignee -->
+      <div class="ctx-card">
+        <div class="ctx-header">B. 테이블 Assignee</div>
+        <div class="ctx-body">
+          <table class="mini-table">
+            <thead><tr><th>ID</th><th>Title</th><th>Assignee</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="tc-id">TC-012</td>
+                <td class="tc-name">Login validation</td>
+                <td style="text-align:center"><div class="av av-sm" style="background:#6366F1">SK</div></td>
+              </tr>
+              <tr>
+                <td class="tc-id">TC-045</td>
+                <td class="tc-name">Payment timeout</td>
+                <td style="text-align:center"><div class="av av-sm" style="background:#EC4899">JL</div></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top:0.75rem;">
+            <div class="spec-row"><span class="k">Size</span><span class="v"><span class="code">.av-sm</span> (24px)</span></div>
+            <div class="spec-row"><span class="k">기존 클래스</span><span class="v"><span class="code">.assignee-sm</span> (1.5rem~1.75rem 불일치)</span></div>
+            <div class="spec-row"><span class="k">Status dot</span><span class="v">없음</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team Member Card -->
+      <div class="ctx-card">
+        <div class="ctx-header">C. 팀 멤버 카드</div>
+        <div class="ctx-body">
+          <div class="mini-member">
+            <div class="av av-lg" style="background:#6366F1">SK<span class="av-status online"></span></div>
+            <div class="mini-member-info">
+              <div class="mini-member-name">Sarah Kim</div>
+              <div class="mini-member-role">QA Lead · 24 TCs</div>
+            </div>
+          </div>
+          <div class="mini-member" style="border-top:1px solid #F1F5F9; padding-top:0.5rem;">
+            <div class="av av-lg" style="background:#8B5CF6">AP<span class="av-status offline"></span></div>
+            <div class="mini-member-info">
+              <div class="mini-member-name">Alex Park</div>
+              <div class="mini-member-role">Backend QA · 18 TCs</div>
+            </div>
+          </div>
+          <div style="margin-top:0.75rem;">
+            <div class="spec-row"><span class="k">Size</span><span class="v"><span class="code">.av-lg</span> (40px)</span></div>
+            <div class="spec-row"><span class="k">기존 클래스</span><span class="v"><span class="code">.member-avatar</span> (2.5rem=40px, OK)</span></div>
+            <div class="spec-row"><span class="k">Status dot</span><span class="v">표시 (online/offline)</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comment -->
+      <div class="ctx-card">
+        <div class="ctx-header">D. 댓글 / 활동 피드</div>
+        <div class="ctx-body">
+          <div class="mini-comment">
+            <div class="av av-md" style="background:#EC4899">JL</div>
+            <div class="mini-comment-body">
+              <div class="mini-comment-head"><strong>Jina Lee</strong><span>2h ago</span></div>
+              <div class="mini-comment-text">Confirmed this fails on Safari 17.4 with WebAuthn disabled.</div>
+            </div>
+          </div>
+          <div class="mini-comment" style="border-top:1px solid #F1F5F9; padding-top:0.5rem;">
+            <div class="av av-md" style="background:#6366F1">SK</div>
+            <div class="mini-comment-body">
+              <div class="mini-comment-head"><strong>Sarah Kim</strong><span>1h ago</span></div>
+              <div class="mini-comment-text">Let's prioritize this for the next sprint.</div>
+            </div>
+          </div>
+          <div style="margin-top:0.75rem;">
+            <div class="spec-row"><span class="k">Size</span><span class="v"><span class="code">.av-md</span> (32px) — 댓글 저자</span></div>
+            <div class="spec-row"><span class="k">Activity feed</span><span class="v"><span class="code">.av-sm</span> (24px) — dense list에서는 SM 사용</span></div>
+            <div class="spec-row"><span class="k">기존 클래스</span><span class="v"><span class="code">.feed-avatar</span> (1.75rem=28px, 불일치)</span></div>
+            <div class="spec-row"><span class="k">Status dot</span><span class="v">없음</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TC Detail Meta -->
+      <div class="ctx-card">
+        <div class="ctx-header">E. TC Detail 패널 — Meta Assignee</div>
+        <div class="ctx-body">
+          <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0;">
+            <div style="font-size:0.625rem; font-weight:600; text-transform:uppercase; color:#94A3B8; width:60px;">Assignee</div>
+            <div class="av av-xs" style="background:#8B5CF6">AP</div>
+            <span style="font-size:0.8125rem; font-weight:500; color:#0F172A;">Alex Park</span>
+          </div>
+          <div style="margin-top:0.75rem;">
+            <div class="spec-row"><span class="k">Size</span><span class="v"><span class="code">.av-xs</span> (20px) — compact detail panel</span></div>
+            <div class="spec-row"><span class="k">기존 클래스</span><span class="v"><span class="code">.dp-av</span> (1.25rem=20px, OK)</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run / Stack -->
+      <div class="ctx-card">
+        <div class="ctx-header">F. Run 카드 / Project 카드 — Stack</div>
+        <div class="ctx-body">
+          <div style="display:flex; align-items:center; gap:0.75rem; padding:0.5rem 0;">
+            <div class="av-stack">
+              <div class="av av-sm" style="background:#6366F1">SK</div>
+              <div class="av av-sm" style="background:#8B5CF6">AP</div>
+              <div class="av av-sm" style="background:#EC4899">JL</div>
+              <div class="av-overflow av-sm" style="font-size:0.4375rem;">+2</div>
+            </div>
+            <span style="font-size:0.75rem; color:#64748B;">5 members</span>
+          </div>
+          <div style="margin-top:0.75rem;">
+            <div class="spec-row"><span class="k">Size</span><span class="v"><span class="code">.av-sm</span> (24px) in stack</span></div>
+            <div class="spec-row"><span class="k">기존 클래스</span><span class="v"><span class="code">.avatar-stack .av</span> (다양한 크기 혼용)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- §5 MIGRATION MAP                            -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title"><span class="num">5</span> Migration Map — 기존 → 통일 클래스</div>
+
+    <div class="card">
+      <div class="card-label">Class Replacement Guide</div>
+
+      <table style="width:100%; border-collapse:collapse; font-size:0.75rem; margin-top:0.5rem;">
+        <thead>
+          <tr>
+            <th style="background:#F8FAFC; padding:0.5rem 0.75rem; text-align:left; font-weight:700; color:#0F172A; border-bottom:2px solid #E2E8F0; font-size:0.6875rem;">기존 클래스</th>
+            <th style="background:#F8FAFC; padding:0.5rem 0.75rem; text-align:left; font-weight:700; color:#0F172A; border-bottom:2px solid #E2E8F0; font-size:0.6875rem;">기존 크기</th>
+            <th style="background:#F8FAFC; padding:0.5rem 0.75rem; text-align:left; font-weight:700; color:#0F172A; border-bottom:2px solid #E2E8F0; font-size:0.6875rem;">신규 클래스</th>
+            <th style="background:#F8FAFC; padding:0.5rem 0.75rem; text-align:left; font-weight:700; color:#0F172A; border-bottom:2px solid #E2E8F0; font-size:0.6875rem;">신규 크기</th>
+            <th style="background:#F8FAFC; padding:0.5rem 0.75rem; text-align:left; font-weight:700; color:#0F172A; border-bottom:2px solid #E2E8F0; font-size:0.6875rem;">파일</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #F1F5F9;">
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.ph-avatar</span></td>
+            <td style="padding:0.5rem 0.75rem;">2rem (32px)</td>
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.av .av-md</span></td>
+            <td style="padding:0.5rem 0.75rem;">32px</td>
+            <td style="padding:0.5rem 0.75rem; color:#94A3B8;">14, 22, 29, 31</td>
+          </tr>
+          <tr style="border-bottom:1px solid #F1F5F9;">
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.header-avatar</span></td>
+            <td style="padding:0.5rem 0.75rem;">1.75rem (28px)</td>
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.av .av-md</span></td>
+            <td style="padding:0.5rem 0.75rem;">32px ↑</td>
+            <td style="padding:0.5rem 0.75rem; color:#94A3B8;">29, 30</td>
+          </tr>
+          <tr style="border-bottom:1px solid #F1F5F9;">
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.assignee-sm</span></td>
+            <td style="padding:0.5rem 0.75rem;">1.5–1.75rem</td>
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.av .av-sm</span></td>
+            <td style="padding:0.5rem 0.75rem;">24px</td>
+            <td style="padding:0.5rem 0.75rem; color:#94A3B8;">14, 22, 31</td>
+          </tr>
+          <tr style="border-bottom:1px solid #F1F5F9;">
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.member-avatar</span></td>
+            <td style="padding:0.5rem 0.75rem;">2.5rem (40px)</td>
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.av .av-lg</span></td>
+            <td style="padding:0.5rem 0.75rem;">40px</td>
+            <td style="padding:0.5rem 0.75rem; color:#94A3B8;">13, 27</td>
+          </tr>
+          <tr style="border-bottom:1px solid #F1F5F9;">
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.feed-avatar</span></td>
+            <td style="padding:0.5rem 0.75rem;">1.75rem (28px)</td>
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.av .av-sm</span></td>
+            <td style="padding:0.5rem 0.75rem;">24px ↓</td>
+            <td style="padding:0.5rem 0.75rem; color:#94A3B8;">13</td>
+          </tr>
+          <tr style="border-bottom:1px solid #F1F5F9;">
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.dp-av</span></td>
+            <td style="padding:0.5rem 0.75rem;">1.25rem (20px)</td>
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.av .av-xs</span></td>
+            <td style="padding:0.5rem 0.75rem;">20px</td>
+            <td style="padding:0.5rem 0.75rem; color:#94A3B8;">29</td>
+          </tr>
+          <tr>
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.online-dot</span></td>
+            <td style="padding:0.5rem 0.75rem;">10px</td>
+            <td style="padding:0.5rem 0.75rem;"><span class="code">.av-status</span></td>
+            <td style="padding:0.5rem 0.75rem;">size별 자동</td>
+            <td style="padding:0.5rem 0.75rem; color:#94A3B8;">13, 27</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:1rem;">
+        <b>변경 사항 2건:</b><br>
+        • <span class="code">.header-avatar</span> 28px → 32px로 +4px 상향 (다른 MD 사이즈와 통일)<br>
+        • <span class="code">.feed-avatar</span> 28px → 24px로 -4px 하향 (SM 사이즈로 통일, dense list에 적합)
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- §6 REACT COMPONENT                          -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title"><span class="num">6</span> React Component — <span class="code">&lt;Avatar /&gt;</span></div>
+
+    <div class="card">
+      <div class="card-label">Component Interface</div>
+
+      <div class="code-block"><span class="kw">interface</span> <span class="ty">AvatarProps</span> {
+  user: {
+    id: <span class="ty">string</span>;
+    full_name?: <span class="ty">string</span>;
+    email?: <span class="ty">string</span>;
+    avatar_url?: <span class="ty">string</span> | <span class="kw">null</span>;
+  };
+  size: <span class="st">'xs'</span> | <span class="st">'sm'</span> | <span class="st">'md'</span> | <span class="st">'lg'</span> | <span class="st">'xl'</span>;
+  status?: <span class="st">'online'</span> | <span class="st">'offline'</span> | <span class="st">'busy'</span> | <span class="st">'away'</span>;
+  showUpload?: <span class="ty">boolean</span>;  <span class="cm">// XL only</span>
+  className?: <span class="ty">string</span>;
+}
+
+<span class="kw">function</span> <span class="fn">Avatar</span>({ user, size, status, showUpload, className }: <span class="ty">AvatarProps</span>) {
+  <span class="kw">const</span> initials = <span class="fn">getInitials</span>(user.full_name || user.email || <span class="st">'?'</span>);
+  <span class="kw">const</span> bgColor = <span class="fn">getAvatarColor</span>(user.id);
+
+  <span class="kw">return</span> (
+    &lt;<span class="ty">div</span>
+      className={<span class="st">`av av-${size} ${showUpload ? 'av-upload' : ''} ${className ?? ''}`</span>}
+      style={{ background: user.avatar_url ? <span class="st">'transparent'</span> : bgColor }}
+    &gt;
+      {user.avatar_url
+        ? &lt;<span class="ty">img</span> src={user.avatar_url} alt={initials} /&gt;
+        : initials}
+      {status &amp;&amp; &lt;<span class="ty">span</span> className={<span class="st">`av-status ${status}`</span>} /&gt;}
+      {showUpload &amp;&amp; (
+        &lt;<span class="ty">div</span> className=<span class="st">"av-overlay"</span>&gt;
+          &lt;<span class="ty">i</span> className=<span class="st">"ri-camera-line"</span> /&gt;
+        &lt;/<span class="ty">div</span>&gt;
+      )}
+    &lt;/<span class="ty">div</span>&gt;
+  );
+}</div>
+
+      <h4>Usage Examples</h4>
+      <div class="code-block"><span class="cm">// Header</span>
+&lt;<span class="fn">Avatar</span> user={currentUser} size=<span class="st">"md"</span> /&gt;
+
+<span class="cm">// Table cell</span>
+&lt;<span class="fn">Avatar</span> user={assignee} size=<span class="st">"sm"</span> /&gt;
+
+<span class="cm">// Team card with status</span>
+&lt;<span class="fn">Avatar</span> user={member} size=<span class="st">"lg"</span> status={member.isOnline ? <span class="st">'online'</span> : <span class="st">'offline'</span>} /&gt;
+
+<span class="cm">// Profile settings with upload</span>
+&lt;<span class="fn">Avatar</span> user={currentUser} size=<span class="st">"xl"</span> showUpload /&gt;
+
+<span class="cm">// Stack</span>
+&lt;<span class="ty">div</span> className=<span class="st">"av-stack"</span>&gt;
+  {members.slice(<span class="nb">0</span>, <span class="nb">4</span>).map(m =&gt; &lt;<span class="fn">Avatar</span> key={m.id} user={m} size=<span class="st">"sm"</span> /&gt;)}
+  {members.length &gt; <span class="nb">4</span> &amp;&amp; &lt;<span class="ty">span</span> className=<span class="st">"av-overflow av-sm"</span>&gt;+{members.length - <span class="nb">4</span>}&lt;/<span class="ty">span</span>&gt;}
+&lt;/<span class="ty">div</span>&gt;</div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- §7 ACCESSIBILITY                            -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title"><span class="num">7</span> Accessibility & Edge Cases</div>
+
+    <div class="card">
+      <div class="card-label">접근성 및 엣지 케이스 처리</div>
+
+      <h4>Accessibility</h4>
+      <div class="spec-row"><span class="k">aria-label</span><span class="v"><span class="code">"{full_name}'s avatar"</span> — 모든 아바타에 추가</span></div>
+      <div class="spec-row"><span class="k">role</span><span class="v"><span class="code">img</span> — 장식이 아닌 정보 전달 시</span></div>
+      <div class="spec-row"><span class="k">색상 대비</span><span class="v">10색 모두 #fff 텍스트와 WCAG AA 이상 충족</span></div>
+      <div class="spec-row"><span class="k">Status dot</span><span class="v"><span class="code">aria-label="online"</span> 등 상태 정보 포함</span></div>
+
+      <h4>Edge Cases</h4>
+      <div class="spec-row"><span class="k">이름 없음</span><span class="v">"?" 문자 + bg <span class="code">#CBD5E1</span> (Slate-300)</span></div>
+      <div class="spec-row"><span class="k">단일 이름</span><span class="v">첫 글자만 사용 (예: "Alice" → "A")</span></div>
+      <div class="spec-row"><span class="k">3+ 단어 이름</span><span class="v">첫째 + 마지막 이니셜 (예: "Kim Yong Hyuk" → "KH")</span></div>
+      <div class="spec-row"><span class="k">비라틴 문자</span><span class="v">그대로 표시 (예: "김영혁" → "김영", "太郎" → "太郎")</span></div>
+      <div class="spec-row"><span class="k">이미지 로드 실패</span><span class="v">onError → 이니셜 fallback 자동 전환</span></div>
+      <div class="spec-row"><span class="k">Deleted user</span><span class="v">회색 배경 + 사람 실루엣 SVG</span></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

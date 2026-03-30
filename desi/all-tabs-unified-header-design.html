@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — All Tabs Unified Header Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* DEMO BAR                                              */
+  /* ══════════════════════════════════════════════════════ */
+  .demo-bar {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem;
+    background: #FFFBEB; border-bottom: 1px solid #FDE68A; flex-shrink: 0; flex-wrap: wrap;
+  }
+  .demo-bar label { font-size: 0.625rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.04em; }
+  .demo-chip {
+    font-size: 0.625rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px;
+    background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;
+  }
+  .demo-sep { width: 1px; height: 0.875rem; background: #D97706; opacity: 0.3; }
+  .demo-toggle {
+    font-size: 0.625rem; font-weight: 600; padding: 0.1875rem 0.625rem; border-radius: 9999px;
+    cursor: pointer; font-family: inherit; border: 1px solid #E2E8F0; background: #fff; color: #475569; transition: all 0.15s;
+  }
+  .demo-toggle.active { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .demo-note { font-size: 0.5625rem; color: #92400E; margin-left: auto; font-style: italic; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TOP HEADER                                            */
+  /* ══════════════════════════════════════════════════════ */
+  .top-header {
+    background: #fff; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; padding: 0 1.25rem; height: 3.25rem; gap: 0; flex-shrink: 0;
+  }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding-right: 1.25rem; border-right: 1px solid #E2E8F0; margin-right: 1rem; }
+  .logo-icon { width: 26px; height: 26px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; }
+  .logo-text { font-family: 'Pacifico', cursive; font-size: 1rem; color: #6366F1; letter-spacing: -0.01em; }
+  .project-selector {
+    display: flex; align-items: center; gap: 0.375rem; cursor: pointer;
+    padding: 0.3125rem 0.625rem; border-radius: 0.375rem; margin-right: 0.5rem;
+  }
+  .project-selector:hover { background: #F8FAFC; }
+  .project-selector .proj-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .project-selector .proj-chevron { font-size: 0.75rem; color: #94A3B8; }
+  .header-nav { display: flex; align-items: center; height: 100%; gap: 0; }
+  .header-nav-item {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; font-weight: 500; white-space: nowrap;
+    transition: color 0.15s; position: relative;
+  }
+  .header-nav-item:hover { color: #475569; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .header-nav-item.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .header-nav-item i { font-size: 0.9375rem; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .header-icon-btn {
+    width: 2rem; height: 2rem; border-radius: 0.375rem; border: none; background: none;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;
+    position: relative;
+  }
+  .header-icon-btn:hover { background: #F1F5F9; color: #475569; }
+  .notif-dot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; border: 1.5px solid #fff; }
+  .header-avatar {
+    width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5625rem; font-weight: 700; color: #fff; cursor: pointer;
+  }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* SUBTAB ROW (Unified — lifecycle tabs + actions)       */
+  /* ══════════════════════════════════════════════════════ */
+  .subtab-row {
+    display: flex; align-items: center; padding: 0 1.25rem; gap: 0;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; height: 2.625rem;
+    position: relative;
+  }
+  .st-tab {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; font-weight: 500; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; white-space: nowrap; transition: color 0.15s; position: relative;
+  }
+  .st-tab:hover { color: #475569; }
+  .st-tab.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .st-tab.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .st-tab i { font-size: 0.875rem; }
+  .st-badge {
+    font-size: 0.625rem; font-weight: 700; padding: 0.0625rem 0.375rem;
+    border-radius: 9999px; background: #F1F5F9; color: #64748B; min-width: 1.25rem; text-align: center;
+  }
+  .st-tab.active .st-badge { background: #EEF2FF; color: #6366F1; }
+  .st-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .count-chip {
+    font-size: 0.6875rem; font-weight: 600; color: #94A3B8; padding: 0.1875rem 0.625rem;
+    border: 1px solid #E2E8F0; border-radius: 9999px; background: #F8FAFC; white-space: nowrap;
+  }
+  .action-btn {
+    display: flex; align-items: center; gap: 0.3125rem;
+    font-size: 0.8125rem; font-weight: 600; padding: 0.375rem 0.875rem;
+    border-radius: 0.375rem; border: none; cursor: pointer; font-family: inherit;
+    color: #fff; white-space: nowrap; transition: all 0.15s;
+  }
+  .action-btn:hover { transform: translateY(-0.5px); }
+  .action-btn.ai { background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); box-shadow: 0 1px 3px rgba(99,102,241,0.3); }
+  .action-btn.ai:hover { box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
+  .action-btn.run { background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%); box-shadow: 0 1px 3px rgba(99,102,241,0.3); }
+  .action-btn.primary { background: #6366F1; box-shadow: 0 1px 3px rgba(99,102,241,0.3); }
+  .action-btn.primary:hover { box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
+  .action-btn.upload { background: #6366F1; box-shadow: 0 1px 3px rgba(99,102,241,0.3); }
+  .action-btn i { font-size: 0.875rem; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* MAIN LAYOUT                                           */
+  /* ══════════════════════════════════════════════════════ */
+  .main { flex: 1; display: flex; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .sidebar { width: 220px; min-width: 220px; background: #fff; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+  .sb-header { padding: 0.75rem 0.875rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .sb-search { padding: 0.5rem 0.75rem; border-bottom: 1px solid #F1F5F9; }
+  .sb-search input {
+    width: 100%; font-size: 0.75rem; padding: 0.3125rem 0.5rem 0.3125rem 1.625rem;
+    border: 1px solid #E2E8F0; border-radius: 0.375rem; background: #F8FAFC url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394A3B8' viewBox='0 0 24 24'%3E%3Cpath d='M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0111 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 01-1.969 5.617z'/%3E%3C/svg%3E") 0.5rem center no-repeat;
+    outline: none; font-family: inherit; color: #475569;
+  }
+  .sb-search input:focus { border-color: #C7D2FE; }
+  .sb-folders { flex: 1; overflow-y: auto; padding: 0.25rem 0; }
+  .sb-folder { display: flex; align-items: center; gap: 0.375rem; padding: 0.4375rem 0.875rem; cursor: pointer; font-size: 0.8125rem; color: #475569; border-radius: 0 0.375rem 0.375rem 0; margin-right: 0.375rem; transition: background 0.1s; }
+  .sb-folder:hover { background: #F8FAFC; }
+  .sb-folder.active { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .sb-folder .count { margin-left: auto; font-size: 0.6875rem; color: #94A3B8; font-weight: 500; }
+  .sb-folder.active .count { color: #6366F1; }
+  .sb-folder i { font-size: 1rem; }
+
+  /* ── List / Content Area ── */
+  .list-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .list-toolbar { padding: 0.625rem 1rem; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; gap: 0.375rem; background: #fff; flex-shrink: 0; }
+  .list-search { flex: 1; display: flex; align-items: center; gap: 0.375rem; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 0.375rem; padding: 0.3125rem 0.625rem; }
+  .list-search input { border: none; background: none; outline: none; font-size: 0.8125rem; color: #1E293B; font-family: inherit; flex: 1; }
+  .list-filter { font-size: 0.75rem; padding: 0.3125rem 0.625rem; border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; font-family: inherit; font-weight: 500; }
+  .list-filter:hover { background: #F8FAFC; }
+  .list-table { flex: 1; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { position: sticky; top: 0; z-index: 2; }
+  thead th { background: #F8FAFC; font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; padding: 0.4375rem 0.75rem; text-align: left; border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+  tbody td { padding: 0.4375rem 0.75rem; font-size: 0.8125rem; color: #334155; border-bottom: 1px solid #F1F5F9; }
+  tbody tr { cursor: pointer; transition: background 0.1s; }
+  tbody tr:hover { background: #FAFAFF; }
+  tbody tr.selected { background: #EEF2FF; }
+  .item-id { font-family: 'SF Mono','Fira Code',monospace; font-size: 0.6875rem; color: #94A3B8; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 0.25rem; vertical-align: middle; }
+  .priority-badge { font-size: 0.625rem; font-weight: 600; padding: 0.0625rem 0.375rem; border-radius: 9999px; }
+  .p-high { background: #FEE2E2; color: #991B1B; }
+  .p-med { background: #FEF3C7; color: #92400E; }
+  .p-low { background: #F0FDF4; color: #166534; }
+
+  /* Progress bar (Runs) */
+  .progress-bar { width: 100px; height: 6px; background: #F1F5F9; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; }
+  .progress-fill { height: 100%; border-radius: 3px; }
+
+  /* Avatar */
+  .mini-avatar { width: 1.375rem; height: 1.375rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; }
+
+  /* ── Tab content panels (hidden by default) ── */
+  .tab-content { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  .tab-content.active { display: flex; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* DASHBOARD SPECIFIC                                    */
+  /* ══════════════════════════════════════════════════════ */
+  .dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1.25rem; flex-shrink: 0; }
+  .dash-card {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem;
+    padding: 1rem 1.125rem; display: flex; flex-direction: column; gap: 0.25rem;
+  }
+  .dash-card .dc-label { font-size: 0.6875rem; color: #94A3B8; font-weight: 500; }
+  .dash-card .dc-val { font-size: 1.5rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em; }
+  .dash-card .dc-sub { font-size: 0.6875rem; color: #64748B; display: flex; align-items: center; gap: 0.25rem; }
+  .dc-trend-up { color: #16A34A; font-weight: 600; }
+  .dc-trend-down { color: #DC2626; font-weight: 600; }
+  .dash-charts { flex: 1; display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; padding: 0 1.25rem 1.25rem; overflow-y: auto; }
+  .chart-card {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem;
+    padding: 1.125rem; display: flex; flex-direction: column;
+  }
+  .chart-title { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.375rem; }
+  .chart-placeholder { flex: 1; background: #F8FAFC; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; color: #CBD5E1; font-size: 0.75rem; min-height: 120px; border: 1px dashed #E2E8F0; }
+
+  /* Activity list */
+  .activity-list { display: flex; flex-direction: column; gap: 0; flex: 1; overflow-y: auto; }
+  .activity-item { display: flex; gap: 0.625rem; padding: 0.625rem 0; border-bottom: 1px solid #F1F5F9; font-size: 0.75rem; align-items: flex-start; }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-icon { width: 1.5rem; height: 1.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6875rem; flex-shrink: 0; }
+  .activity-text { flex: 1; color: #334155; line-height: 1.4; }
+  .activity-text strong { font-weight: 600; color: #0F172A; }
+  .activity-time { font-size: 0.625rem; color: #94A3B8; white-space: nowrap; flex-shrink: 0; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* DOCUMENTS SPECIFIC                                    */
+  /* ══════════════════════════════════════════════════════ */
+  .doc-icon { width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; display: inline-flex; align-items: center; justify-content: center; font-size: 0.875rem; flex-shrink: 0; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* BEFORE/AFTER BADGE                                    */
+  /* ══════════════════════════════════════════════════════ */
+  .saved-badge {
+    position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+    font-size: 0.5625rem; font-weight: 700; color: #16A34A; background: #F0FDF4;
+    padding: 0.125rem 0.5rem; border-radius: 9999px; border: 1px solid #BBF7D0;
+    pointer-events: none; z-index: 5; display: none;
+  }
+  .subtab-row.show-saved .saved-badge { display: inline-block; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TRANSITIONS                                           */
+  /* ══════════════════════════════════════════════════════ */
+  .tab-content { animation: fadeIn 0.15s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Design note callout */
+  .design-note {
+    position: fixed; bottom: 1rem; right: 1rem; z-index: 100;
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 0.875rem 1.125rem;
+    max-width: 320px; font-size: 0.75rem; color: #475569; line-height: 1.5;
+    transition: all 0.2s; cursor: pointer;
+  }
+  .design-note.collapsed { max-width: 160px; padding: 0.5rem 0.875rem; }
+  .design-note .dn-title { font-size: 0.6875rem; font-weight: 700; color: #6366F1; margin-bottom: 0.375rem; display: flex; align-items: center; gap: 0.375rem; }
+  .design-note .dn-body { }
+  .design-note.collapsed .dn-body { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ DEMO BAR ═══════════ -->
+<div class="demo-bar">
+  <label>Desi 디자인 시안</label>
+  <span class="demo-chip">6-Tab Unified Header</span>
+  <span class="demo-sep"></span>
+  <label>Highlight:</label>
+  <button class="demo-toggle active" onclick="toggleSaved(this)">▲ Saved px</button>
+  <span class="demo-note">각 탭을 클릭하면 통일된 2-row 헤더를 확인할 수 있습니다</span>
+</div>
+
+<!-- ═══════════ TOP HEADER ═══════════ -->
+<div class="top-header">
+  <div class="header-logo">
+    <div class="logo-icon">T</div>
+    <span class="logo-text">Testably</span>
+  </div>
+  <div class="project-selector">
+    <span class="proj-name">Stellar Health EMR</span>
+    <i class="ri-arrow-down-s-line proj-chevron"></i>
+  </div>
+  <div class="header-nav" id="headerNav">
+    <div class="header-nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <i class="ri-dashboard-line"></i> Dashboard
+    </div>
+    <div class="header-nav-item" data-tab="testcases" onclick="switchTab('testcases')">
+      <i class="ri-file-list-3-line"></i> Test Cases
+    </div>
+    <div class="header-nav-item" data-tab="runs" onclick="switchTab('runs')">
+      <i class="ri-play-circle-line"></i> Runs &amp; Results
+    </div>
+    <div class="header-nav-item" data-tab="milestones" onclick="switchTab('milestones')">
+      <i class="ri-flag-line"></i> Milestones
+    </div>
+    <div class="header-nav-item" data-tab="documents" onclick="switchTab('documents')">
+      <i class="ri-file-text-line"></i> Documents
+    </div>
+    <div class="header-nav-item" data-tab="discovery" onclick="switchTab('discovery')">
+      <i class="ri-search-eye-line"></i> Discovery Log
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="header-icon-btn"><i class="ri-search-line"></i></button>
+    <button class="header-icon-btn">
+      <i class="ri-notification-3-line"></i>
+      <span class="notif-dot"></span>
+    </button>
+    <button class="header-icon-btn"><i class="ri-keyboard-line"></i></button>
+    <div class="header-avatar">KJ</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SUBTAB ROWS — one per tab, only active one visible     -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- Dashboard -->
+<div class="subtab-row show-saved" id="subtab-dashboard">
+  <div class="st-tab active"><i class="ri-eye-line" style="color:#6366F1"></i> Overview</div>
+  <div class="st-tab"><i class="ri-bar-chart-2-fill" style="color:#8B5CF6"></i> Analytics</div>
+  <div class="st-tab"><i class="ri-time-fill" style="color:#F59E0B"></i> Activity Feed</div>
+  <div class="st-right">
+    <span class="count-chip">12 active test cases</span>
+    <button class="action-btn primary"><i class="ri-download-2-line"></i> Export Report</button>
+  </div>
+  <span class="saved-badge">▲ 36px saved</span>
+</div>
+
+<!-- Test Cases -->
+<div class="subtab-row show-saved" id="subtab-testcases" style="display:none">
+  <div class="st-tab active"><i class="ri-list-check-3" style="color:#6366F1"></i> All <span class="st-badge">40</span></div>
+  <div class="st-tab"><i class="ri-draft-fill" style="color:#94A3B8"></i> Draft <span class="st-badge">1</span></div>
+  <div class="st-tab"><i class="ri-checkbox-circle-fill" style="color:#22C55E"></i> Active <span class="st-badge">39</span></div>
+  <div class="st-tab"><i class="ri-forbid-line" style="color:#94A3B8"></i> Deprecated <span class="st-badge">0</span></div>
+  <div class="st-right">
+    <span class="count-chip">40 test cases</span>
+    <button class="action-btn ai"><i class="ri-sparkling-2-fill"></i> Generate with AI</button>
+  </div>
+  <span class="saved-badge">▲ 36px saved</span>
+</div>
+
+<!-- Runs & Results -->
+<div class="subtab-row show-saved" id="subtab-runs" style="display:none">
+  <div class="st-tab active"><i class="ri-play-circle-fill" style="color:#3B82F6"></i> Active <span class="st-badge">3</span></div>
+  <div class="st-tab"><i class="ri-checkbox-circle-fill" style="color:#22C55E"></i> Completed <span class="st-badge">12</span></div>
+  <div class="st-tab"><i class="ri-archive-fill" style="color:#94A3B8"></i> Archived <span class="st-badge">5</span></div>
+  <div class="st-right">
+    <span class="count-chip">20 runs</span>
+    <button class="action-btn run"><i class="ri-play-line"></i> Start New Run</button>
+  </div>
+  <span class="saved-badge">▲ 36px saved</span>
+</div>
+
+<!-- Milestones -->
+<div class="subtab-row show-saved" id="subtab-milestones" style="display:none">
+  <div class="st-tab active"><i class="ri-list-check-3" style="color:#6366F1"></i> All <span class="st-badge">8</span></div>
+  <div class="st-tab"><i class="ri-loader-4-fill" style="color:#3B82F6"></i> In Progress <span class="st-badge">3</span></div>
+  <div class="st-tab"><i class="ri-checkbox-circle-fill" style="color:#22C55E"></i> Completed <span class="st-badge">4</span></div>
+  <div class="st-tab"><i class="ri-error-warning-fill" style="color:#EF4444"></i> Overdue <span class="st-badge">1</span></div>
+  <div class="st-right">
+    <span class="count-chip">8 milestones</span>
+    <button class="action-btn primary"><i class="ri-add-line"></i> New Milestone</button>
+  </div>
+  <span class="saved-badge">▲ 36px saved</span>
+</div>
+
+<!-- Documents -->
+<div class="subtab-row show-saved" id="subtab-documents" style="display:none">
+  <div class="st-tab active"><i class="ri-file-list-3-line" style="color:#6366F1"></i> All <span class="st-badge">24</span></div>
+  <div class="st-tab"><i class="ri-file-shield-2-fill" style="color:#F59E0B"></i> Requirements <span class="st-badge">8</span></div>
+  <div class="st-tab"><i class="ri-task-fill" style="color:#3B82F6"></i> Test Plans <span class="st-badge">6</span></div>
+  <div class="st-tab"><i class="ri-bar-chart-box-fill" style="color:#8B5CF6"></i> Reports <span class="st-badge">10</span></div>
+  <div class="st-right">
+    <span class="count-chip">24 documents</span>
+    <button class="action-btn upload"><i class="ri-upload-2-line"></i> Upload</button>
+  </div>
+  <span class="saved-badge">▲ 36px saved</span>
+</div>
+
+<!-- Discovery Log -->
+<div class="subtab-row show-saved" id="subtab-discovery" style="display:none">
+  <div class="st-tab active"><i class="ri-list-check-3" style="color:#6366F1"></i> All <span class="st-badge">15</span></div>
+  <div class="st-tab"><i class="ri-radar-fill" style="color:#F59E0B"></i> Open <span class="st-badge">6</span></div>
+  <div class="st-tab"><i class="ri-checkbox-circle-fill" style="color:#22C55E"></i> Resolved <span class="st-badge">7</span></div>
+  <div class="st-tab"><i class="ri-close-circle-fill" style="color:#94A3B8"></i> Dismissed <span class="st-badge">2</span></div>
+  <div class="st-right">
+    <span class="count-chip">15 entries</span>
+    <button class="action-btn primary"><i class="ri-add-line"></i> New Entry</button>
+  </div>
+  <span class="saved-badge">▲ 36px saved</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TAB CONTENT PANELS                                     -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ═══════════ DASHBOARD ═══════════ -->
+  <div class="tab-content active" id="content-dashboard" style="display:flex; flex-direction:column; flex:1; overflow:hidden">
+    <div class="dash-grid">
+      <div class="dash-card">
+        <span class="dc-label">Total Test Cases</span>
+        <span class="dc-val">40</span>
+        <span class="dc-sub"><span class="dc-trend-up">↑ 12%</span> vs last week</span>
+      </div>
+      <div class="dash-card">
+        <span class="dc-label">Pass Rate</span>
+        <span class="dc-val" style="color:#16A34A">87.5%</span>
+        <span class="dc-sub"><span class="dc-trend-up">↑ 3.2%</span> vs last run</span>
+      </div>
+      <div class="dash-card">
+        <span class="dc-label">Active Runs</span>
+        <span class="dc-val">3</span>
+        <span class="dc-sub">2 in progress · 1 queued</span>
+      </div>
+      <div class="dash-card">
+        <span class="dc-label">Open Discoveries</span>
+        <span class="dc-val" style="color:#F59E0B">6</span>
+        <span class="dc-sub"><span class="dc-trend-down">↑ 2</span> since yesterday</span>
+      </div>
+    </div>
+    <div class="dash-charts">
+      <div class="chart-card">
+        <div class="chart-title"><i class="ri-line-chart-line" style="color:#6366F1"></i> Test Execution Trend (7 days)</div>
+        <div class="chart-placeholder">
+          <div style="display:flex;align-items:flex-end;gap:6px;height:80px">
+            <div style="width:28px;background:linear-gradient(to top,#6366F1,#818CF8);border-radius:3px 3px 0 0;height:45%"></div>
+            <div style="width:28px;background:linear-gradient(to top,#6366F1,#818CF8);border-radius:3px 3px 0 0;height:62%"></div>
+            <div style="width:28px;background:linear-gradient(to top,#6366F1,#818CF8);border-radius:3px 3px 0 0;height:38%"></div>
+            <div style="width:28px;background:linear-gradient(to top,#6366F1,#818CF8);border-radius:3px 3px 0 0;height:75%"></div>
+            <div style="width:28px;background:linear-gradient(to top,#6366F1,#818CF8);border-radius:3px 3px 0 0;height:88%"></div>
+            <div style="width:28px;background:linear-gradient(to top,#6366F1,#818CF8);border-radius:3px 3px 0 0;height:70%"></div>
+            <div style="width:28px;background:linear-gradient(to top,#6366F1,#818CF8);border-radius:3px 3px 0 0;height:82%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><i class="ri-time-line" style="color:#64748B"></i> Recent Activity</div>
+        <div class="activity-list">
+          <div class="activity-item">
+            <div class="activity-icon" style="background:#F0FDF4;color:#16A34A"><i class="ri-checkbox-circle-fill"></i></div>
+            <div class="activity-text"><strong>Sarah Kim</strong> completed Run #R-012</div>
+            <span class="activity-time">2m ago</span>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon" style="background:#EEF2FF;color:#6366F1"><i class="ri-file-add-line"></i></div>
+            <div class="activity-text"><strong>Jake Lee</strong> created TC-048</div>
+            <span class="activity-time">15m ago</span>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon" style="background:#FEF2F2;color:#EF4444"><i class="ri-bug-line"></i></div>
+            <div class="activity-text"><strong>Mike Chen</strong> logged discovery #DL-009</div>
+            <span class="activity-time">1h ago</span>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon" style="background:#FEF3C7;color:#F59E0B"><i class="ri-flag-line"></i></div>
+            <div class="activity-text"><strong>You</strong> updated Milestone "Sprint 12"</div>
+            <span class="activity-time">3h ago</span>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon" style="background:#F0FDF4;color:#16A34A"><i class="ri-play-circle-fill"></i></div>
+            <div class="activity-text"><strong>Sarah Kim</strong> started Run #R-015</div>
+            <span class="activity-time">4h ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TEST CASES ═══════════ -->
+  <div class="tab-content" id="content-testcases">
+    <div style="display:flex;flex:1;overflow:hidden">
+      <div class="sidebar">
+        <div class="sb-search"><input placeholder="Search folders..." /></div>
+        <div class="sb-folders">
+          <div class="sb-folder active"><i class="ri-folder-fill" style="color:#6366F1"></i> All Test Cases <span class="count">40</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Login <span class="count">8</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Patient List <span class="count">12</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Viewer <span class="count">9</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Settings <span class="count">5</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> API Integration <span class="count">6</span></div>
+        </div>
+      </div>
+      <div class="list-area">
+        <div class="list-toolbar">
+          <div class="list-search"><i class="ri-search-line" style="color:#94A3B8"></i><input placeholder="Search test cases..." /></div>
+          <button class="list-filter"><i class="ri-filter-3-line"></i> Filters</button>
+          <button class="list-filter"><i class="ri-sort-desc"></i> Sort</button>
+        </div>
+        <div class="list-table">
+          <table>
+            <thead><tr><th style="width:28px"><input type="checkbox" /></th><th>ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Folder</th><th>Assignee</th><th>Updated</th></tr></thead>
+            <tbody>
+              <tr class="selected"><td><input type="checkbox" checked /></td><td class="item-id">TC-041</td><td style="font-weight:500;color:#0F172A">Login with valid credentials on Safari 17</td><td><span class="priority-badge p-high">High</span></td><td><span class="status-dot" style="background:#22C55E"></span>Passed</td><td style="color:#64748B">Login</td><td><span class="mini-avatar" style="background:#EC4899">SK</span></td><td style="color:#94A3B8;font-size:0.75rem">2h ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">TC-042</td><td style="font-weight:500;color:#0F172A">Login with invalid password shows error</td><td><span class="priority-badge p-high">High</span></td><td><span class="status-dot" style="background:#22C55E"></span>Passed</td><td style="color:#64748B">Login</td><td><span class="mini-avatar" style="background:#3B82F6">JL</span></td><td style="color:#94A3B8;font-size:0.75rem">3h ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">TC-043</td><td style="font-weight:500;color:#0F172A">OAuth SSO redirect handles timeout</td><td><span class="priority-badge p-med">Med</span></td><td><span class="status-dot" style="background:#EF4444"></span>Failed</td><td style="color:#64748B">Login</td><td><span class="mini-avatar" style="background:#F59E0B">MC</span></td><td style="color:#94A3B8;font-size:0.75rem">5h ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">TC-044</td><td style="font-weight:500;color:#0F172A">Patient list loads within 2 seconds</td><td><span class="priority-badge p-high">High</span></td><td><span class="status-dot" style="background:#22C55E"></span>Passed</td><td style="color:#64748B">Patient List</td><td><span class="mini-avatar" style="background:#EC4899">SK</span></td><td style="color:#94A3B8;font-size:0.75rem">1d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">TC-045</td><td style="font-weight:500;color:#0F172A">Search patient by name returns results</td><td><span class="priority-badge p-med">Med</span></td><td><span class="status-dot" style="background:#22C55E"></span>Passed</td><td style="color:#64748B">Patient List</td><td><span class="mini-avatar" style="background:#3B82F6">JL</span></td><td style="color:#94A3B8;font-size:0.75rem">1d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">TC-046</td><td style="font-weight:500;color:#0F172A">DICOM viewer renders CT scan correctly</td><td><span class="priority-badge p-high">High</span></td><td><span class="status-dot" style="background:#F59E0B"></span>Blocked</td><td style="color:#64748B">Viewer</td><td><span class="mini-avatar" style="background:#F59E0B">MC</span></td><td style="color:#94A3B8;font-size:0.75rem">2d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">TC-047</td><td style="font-weight:500;color:#0F172A">Settings page saves preferences</td><td><span class="priority-badge p-low">Low</span></td><td><span class="status-dot" style="background:#22C55E"></span>Passed</td><td style="color:#64748B">Settings</td><td><span class="mini-avatar" style="background:#EC4899">SK</span></td><td style="color:#94A3B8;font-size:0.75rem">3d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">TC-048</td><td style="font-weight:500;color:#0F172A">API returns 401 for expired token</td><td><span class="priority-badge p-high">High</span></td><td><span class="status-dot" style="background:#94A3B8"></span>Untested</td><td style="color:#64748B">API Integration</td><td><span class="mini-avatar" style="background:#3B82F6">JL</span></td><td style="color:#94A3B8;font-size:0.75rem">3d ago</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ RUNS & RESULTS ═══════════ -->
+  <div class="tab-content" id="content-runs">
+    <div style="display:flex;flex:1;overflow:hidden">
+      <div class="sidebar">
+        <div class="sb-search"><input placeholder="Search runs..." /></div>
+        <div class="sb-folders">
+          <div class="sb-folder active"><i class="ri-play-circle-fill" style="color:#6366F1"></i> All Runs <span class="count">20</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Sprint 12 <span class="count">5</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Regression <span class="count">8</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Smoke <span class="count">4</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Ad-hoc <span class="count">3</span></div>
+        </div>
+      </div>
+      <div class="list-area">
+        <div class="list-toolbar">
+          <div class="list-search"><i class="ri-search-line" style="color:#94A3B8"></i><input placeholder="Search runs..." /></div>
+          <button class="list-filter"><i class="ri-filter-3-line"></i> Filters</button>
+          <button class="list-filter"><i class="ri-sort-desc"></i> Sort</button>
+        </div>
+        <div class="list-table">
+          <table>
+            <thead><tr><th style="width:28px"><input type="checkbox" /></th><th>ID</th><th>Title</th><th>Progress</th><th>Status</th><th>Assignee</th><th>Started</th></tr></thead>
+            <tbody>
+              <tr class="selected"><td><input type="checkbox" checked /></td><td class="item-id">R-015</td><td style="font-weight:500;color:#0F172A">Sprint 12 Full Regression</td><td><div class="progress-bar"><div class="progress-fill" style="width:65%;background:linear-gradient(90deg,#22C55E 70%,#EF4444 70% 85%,#F59E0B 85%)"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">65%</span></td><td><span class="status-dot" style="background:#3B82F6"></span>In Progress</td><td><span class="mini-avatar" style="background:#EC4899">SK</span></td><td style="color:#94A3B8;font-size:0.75rem">4h ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">R-014</td><td style="font-weight:500;color:#0F172A">Login Module Smoke Test</td><td><div class="progress-bar"><div class="progress-fill" style="width:40%;background:#22C55E"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">40%</span></td><td><span class="status-dot" style="background:#3B82F6"></span>In Progress</td><td><span class="mini-avatar" style="background:#3B82F6">JL</span></td><td style="color:#94A3B8;font-size:0.75rem">6h ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">R-013</td><td style="font-weight:500;color:#0F172A">API Integration Sanity</td><td><div class="progress-bar"><div class="progress-fill" style="width:15%;background:#22C55E"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">15%</span></td><td><span class="status-dot" style="background:#F59E0B"></span>Queued</td><td><span class="mini-avatar" style="background:#F59E0B">MC</span></td><td style="color:#94A3B8;font-size:0.75rem">today</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">R-012</td><td style="font-weight:500;color:#0F172A">Sprint 11 Final Regression</td><td><div class="progress-bar"><div class="progress-fill" style="width:100%;background:linear-gradient(90deg,#22C55E 88%,#EF4444 88%)"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">100%</span></td><td><span class="status-dot" style="background:#22C55E"></span>Completed</td><td><span class="mini-avatar" style="background:#EC4899">SK</span></td><td style="color:#94A3B8;font-size:0.75rem">2d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">R-011</td><td style="font-weight:500;color:#0F172A">Patient Viewer Regression</td><td><div class="progress-bar"><div class="progress-fill" style="width:100%;background:#22C55E"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">100%</span></td><td><span class="status-dot" style="background:#22C55E"></span>Completed</td><td><span class="mini-avatar" style="background:#3B82F6">JL</span></td><td style="color:#94A3B8;font-size:0.75rem">5d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">R-010</td><td style="font-weight:500;color:#0F172A">Smoke Test — Hotfix 2.3.1</td><td><div class="progress-bar"><div class="progress-fill" style="width:100%;background:linear-gradient(90deg,#22C55E 95%,#F59E0B 95%)"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">100%</span></td><td><span class="status-dot" style="background:#22C55E"></span>Completed</td><td><span class="mini-avatar" style="background:#F59E0B">MC</span></td><td style="color:#94A3B8;font-size:0.75rem">1w ago</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MILESTONES ═══════════ -->
+  <div class="tab-content" id="content-milestones">
+    <div style="display:flex;flex:1;overflow:hidden">
+      <div class="sidebar">
+        <div class="sb-search"><input placeholder="Search milestones..." /></div>
+        <div class="sb-folders">
+          <div class="sb-folder active"><i class="ri-flag-fill" style="color:#6366F1"></i> All Milestones <span class="count">8</span></div>
+          <div class="sb-folder"><i class="ri-calendar-line"></i> Q1 2026 <span class="count">3</span></div>
+          <div class="sb-folder"><i class="ri-calendar-line"></i> Q2 2026 <span class="count">5</span></div>
+        </div>
+      </div>
+      <div class="list-area">
+        <div class="list-toolbar">
+          <div class="list-search"><i class="ri-search-line" style="color:#94A3B8"></i><input placeholder="Search milestones..." /></div>
+          <button class="list-filter"><i class="ri-filter-3-line"></i> Filters</button>
+          <button class="list-filter"><i class="ri-sort-desc"></i> Sort</button>
+        </div>
+        <div class="list-table">
+          <table>
+            <thead><tr><th style="width:28px"><input type="checkbox" /></th><th>ID</th><th>Milestone</th><th>Progress</th><th>Status</th><th>Due Date</th><th>Owner</th></tr></thead>
+            <tbody>
+              <tr class="selected"><td><input type="checkbox" checked /></td><td class="item-id">MS-008</td><td style="font-weight:500;color:#0F172A">Sprint 12 — Patient Viewer</td><td><div class="progress-bar"><div class="progress-fill" style="width:72%;background:#6366F1"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">72%</span></td><td><span class="status-dot" style="background:#3B82F6"></span>In Progress</td><td style="color:#64748B;font-size:0.75rem">Apr 4, 2026</td><td><span class="mini-avatar" style="background:#6366F1">KJ</span></td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">MS-007</td><td style="font-weight:500;color:#0F172A">Sprint 12 — API Integration</td><td><div class="progress-bar"><div class="progress-fill" style="width:45%;background:#6366F1"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">45%</span></td><td><span class="status-dot" style="background:#3B82F6"></span>In Progress</td><td style="color:#64748B;font-size:0.75rem">Apr 4, 2026</td><td><span class="mini-avatar" style="background:#3B82F6">JL</span></td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">MS-006</td><td style="font-weight:500;color:#0F172A">Sprint 12 — Login Hardening</td><td><div class="progress-bar"><div class="progress-fill" style="width:88%;background:#6366F1"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">88%</span></td><td><span class="status-dot" style="background:#3B82F6"></span>In Progress</td><td style="color:#64748B;font-size:0.75rem">Mar 28, 2026</td><td><span class="mini-avatar" style="background:#EC4899">SK</span></td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">MS-005</td><td style="font-weight:500;color:#0F172A">Sprint 11 — Core Regression</td><td><div class="progress-bar"><div class="progress-fill" style="width:100%;background:#22C55E"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">100%</span></td><td><span class="status-dot" style="background:#22C55E"></span>Completed</td><td style="color:#64748B;font-size:0.75rem">Mar 14, 2026</td><td><span class="mini-avatar" style="background:#6366F1">KJ</span></td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">MS-004</td><td style="font-weight:500;color:#0F172A">Sprint 11 — Settings Module</td><td><div class="progress-bar"><div class="progress-fill" style="width:100%;background:#22C55E"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">100%</span></td><td><span class="status-dot" style="background:#22C55E"></span>Completed</td><td style="color:#64748B;font-size:0.75rem">Mar 14, 2026</td><td><span class="mini-avatar" style="background:#F59E0B">MC</span></td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">MS-003</td><td style="font-weight:500;color:#0F172A">v2.3 Release Sign-off</td><td><div class="progress-bar"><div class="progress-fill" style="width:100%;background:#22C55E"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">100%</span></td><td><span class="status-dot" style="background:#22C55E"></span>Completed</td><td style="color:#64748B;font-size:0.75rem">Mar 7, 2026</td><td><span class="mini-avatar" style="background:#EC4899">SK</span></td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">MS-002</td><td style="font-weight:500;color:#0F172A">HIPAA Compliance Audit</td><td><div class="progress-bar"><div class="progress-fill" style="width:100%;background:#22C55E"></div></div> <span style="font-size:0.6875rem;color:#64748B;margin-left:0.25rem">100%</span></td><td><span class="status-dot" style="background:#22C55E"></span>Completed</td><td style="color:#64748B;font-size:0.75rem">Feb 28, 2026</td><td><span class="mini-avatar" style="background:#6366F1">KJ</span></td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">MS-001</td><td style="font-weight:600;color:#DC2626">Sprint 10 — Patient List Perf</td><td><div class="progress-bar"><div class="progress-fill" style="width:60%;background:#EF4444"></div></div> <span style="font-size:0.6875rem;color:#DC2626;font-weight:600;margin-left:0.25rem">60%</span></td><td><span class="status-dot" style="background:#EF4444"></span>Overdue</td><td style="color:#DC2626;font-size:0.75rem;font-weight:600">Mar 21 ⚠</td><td><span class="mini-avatar" style="background:#3B82F6">JL</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ DOCUMENTS ═══════════ -->
+  <div class="tab-content" id="content-documents">
+    <div style="display:flex;flex:1;overflow:hidden">
+      <div class="sidebar">
+        <div class="sb-search"><input placeholder="Search documents..." /></div>
+        <div class="sb-folders">
+          <div class="sb-folder active"><i class="ri-file-text-fill" style="color:#6366F1"></i> All Documents <span class="count">24</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Requirements <span class="count">8</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Test Plans <span class="count">6</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Reports <span class="count">10</span></div>
+        </div>
+      </div>
+      <div class="list-area">
+        <div class="list-toolbar">
+          <div class="list-search"><i class="ri-search-line" style="color:#94A3B8"></i><input placeholder="Search documents..." /></div>
+          <button class="list-filter"><i class="ri-filter-3-line"></i> Filters</button>
+          <button class="list-filter"><i class="ri-sort-desc"></i> Sort</button>
+        </div>
+        <div class="list-table">
+          <table>
+            <thead><tr><th style="width:28px"><input type="checkbox" /></th><th></th><th>Title</th><th>Category</th><th>Size</th><th>Author</th><th>Updated</th></tr></thead>
+            <tbody>
+              <tr class="selected"><td><input type="checkbox" checked /></td><td><div class="doc-icon" style="background:#EEF2FF;color:#6366F1"><i class="ri-file-word-line"></i></div></td><td style="font-weight:500;color:#0F172A">Patient Viewer PRD v2.4</td><td style="color:#64748B">Requirements</td><td style="color:#94A3B8;font-size:0.75rem">2.1 MB</td><td><span class="mini-avatar" style="background:#6366F1">KJ</span></td><td style="color:#94A3B8;font-size:0.75rem">1h ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td><div class="doc-icon" style="background:#F0FDF4;color:#16A34A"><i class="ri-file-excel-line"></i></div></td><td style="font-weight:500;color:#0F172A">Sprint 12 Test Plan</td><td style="color:#64748B">Test Plans</td><td style="color:#94A3B8;font-size:0.75rem">890 KB</td><td><span class="mini-avatar" style="background:#EC4899">SK</span></td><td style="color:#94A3B8;font-size:0.75rem">3h ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td><div class="doc-icon" style="background:#FEF2F2;color:#EF4444"><i class="ri-file-pdf-2-line"></i></div></td><td style="font-weight:500;color:#0F172A">HIPAA Compliance Report</td><td style="color:#64748B">Reports</td><td style="color:#94A3B8;font-size:0.75rem">4.5 MB</td><td><span class="mini-avatar" style="background:#6366F1">KJ</span></td><td style="color:#94A3B8;font-size:0.75rem">1d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td><div class="doc-icon" style="background:#EEF2FF;color:#6366F1"><i class="ri-file-word-line"></i></div></td><td style="font-weight:500;color:#0F172A">Login Module Requirements</td><td style="color:#64748B">Requirements</td><td style="color:#94A3B8;font-size:0.75rem">1.3 MB</td><td><span class="mini-avatar" style="background:#3B82F6">JL</span></td><td style="color:#94A3B8;font-size:0.75rem">2d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td><div class="doc-icon" style="background:#F0FDF4;color:#16A34A"><i class="ri-file-excel-line"></i></div></td><td style="font-weight:500;color:#0F172A">API Test Coverage Matrix</td><td style="color:#64748B">Test Plans</td><td style="color:#94A3B8;font-size:0.75rem">520 KB</td><td><span class="mini-avatar" style="background:#F59E0B">MC</span></td><td style="color:#94A3B8;font-size:0.75rem">3d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td><div class="doc-icon" style="background:#FEF2F2;color:#EF4444"><i class="ri-file-pdf-2-line"></i></div></td><td style="font-weight:500;color:#0F172A">Sprint 11 Summary Report</td><td style="color:#64748B">Reports</td><td style="color:#94A3B8;font-size:0.75rem">3.2 MB</td><td><span class="mini-avatar" style="background:#EC4899">SK</span></td><td style="color:#94A3B8;font-size:0.75rem">1w ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td><div class="doc-icon" style="background:#EEF2FF;color:#6366F1"><i class="ri-file-text-line"></i></div></td><td style="font-weight:500;color:#0F172A">Settings Module Spec</td><td style="color:#64748B">Requirements</td><td style="color:#94A3B8;font-size:0.75rem">780 KB</td><td><span class="mini-avatar" style="background:#F59E0B">MC</span></td><td style="color:#94A3B8;font-size:0.75rem">1w ago</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ DISCOVERY LOG ═══════════ -->
+  <div class="tab-content" id="content-discovery">
+    <div style="display:flex;flex:1;overflow:hidden">
+      <div class="sidebar">
+        <div class="sb-search"><input placeholder="Search entries..." /></div>
+        <div class="sb-folders">
+          <div class="sb-folder active"><i class="ri-search-eye-fill" style="color:#6366F1"></i> All Entries <span class="count">15</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> UI Bugs <span class="count">5</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Performance <span class="count">4</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Data Issues <span class="count">3</span></div>
+          <div class="sb-folder"><i class="ri-folder-line"></i> Edge Cases <span class="count">3</span></div>
+        </div>
+      </div>
+      <div class="list-area">
+        <div class="list-toolbar">
+          <div class="list-search"><i class="ri-search-line" style="color:#94A3B8"></i><input placeholder="Search discovery log..." /></div>
+          <button class="list-filter"><i class="ri-filter-3-line"></i> Filters</button>
+          <button class="list-filter"><i class="ri-sort-desc"></i> Sort</button>
+        </div>
+        <div class="list-table">
+          <table>
+            <thead><tr><th style="width:28px"><input type="checkbox" /></th><th>ID</th><th>Discovery</th><th>Severity</th><th>Status</th><th>Category</th><th>Reporter</th><th>Found</th></tr></thead>
+            <tbody>
+              <tr class="selected"><td><input type="checkbox" checked /></td><td class="item-id">DL-015</td><td style="font-weight:500;color:#0F172A">Viewer crashes on large DICOM files (>50MB)</td><td><span class="priority-badge p-high">Critical</span></td><td><span class="status-dot" style="background:#F59E0B"></span>Open</td><td style="color:#64748B">Performance</td><td><span class="mini-avatar" style="background:#F59E0B">MC</span></td><td style="color:#94A3B8;font-size:0.75rem">1h ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">DL-014</td><td style="font-weight:500;color:#0F172A">Patient search returns stale cache results</td><td><span class="priority-badge p-high">High</span></td><td><span class="status-dot" style="background:#F59E0B"></span>Open</td><td style="color:#64748B">Data Issues</td><td><span class="mini-avatar" style="background:#EC4899">SK</span></td><td style="color:#94A3B8;font-size:0.75rem">3h ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">DL-013</td><td style="font-weight:500;color:#0F172A">Login button misaligned on mobile Safari</td><td><span class="priority-badge p-med">Medium</span></td><td><span class="status-dot" style="background:#F59E0B"></span>Open</td><td style="color:#64748B">UI Bugs</td><td><span class="mini-avatar" style="background:#3B82F6">JL</span></td><td style="color:#94A3B8;font-size:0.75rem">5h ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">DL-012</td><td style="font-weight:500;color:#0F172A">Settings toggle doesn't persist after refresh</td><td><span class="priority-badge p-med">Medium</span></td><td><span class="status-dot" style="background:#F59E0B"></span>Open</td><td style="color:#64748B">UI Bugs</td><td><span class="mini-avatar" style="background:#F59E0B">MC</span></td><td style="color:#94A3B8;font-size:0.75rem">1d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">DL-011</td><td style="font-weight:500;color:#0F172A">API timeout on concurrent batch requests</td><td><span class="priority-badge p-high">High</span></td><td><span class="status-dot" style="background:#F59E0B"></span>Open</td><td style="color:#64748B">Performance</td><td><span class="mini-avatar" style="background:#3B82F6">JL</span></td><td style="color:#94A3B8;font-size:0.75rem">1d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">DL-010</td><td style="font-weight:500;color:#0F172A">Date picker shows wrong timezone offset</td><td><span class="priority-badge p-med">Medium</span></td><td><span class="status-dot" style="background:#F59E0B"></span>Open</td><td style="color:#64748B">Edge Cases</td><td><span class="mini-avatar" style="background:#EC4899">SK</span></td><td style="color:#94A3B8;font-size:0.75rem">2d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">DL-009</td><td style="font-weight:500;color:#0F172A">CSV export truncates long cell values</td><td><span class="priority-badge p-low">Low</span></td><td><span class="status-dot" style="background:#22C55E"></span>Resolved</td><td style="color:#64748B">Data Issues</td><td><span class="mini-avatar" style="background:#F59E0B">MC</span></td><td style="color:#94A3B8;font-size:0.75rem">3d ago</td></tr>
+              <tr><td><input type="checkbox" /></td><td class="item-id">DL-008</td><td style="font-weight:500;color:#0F172A">Hover tooltip overlaps dropdown menu</td><td><span class="priority-badge p-low">Low</span></td><td><span class="status-dot" style="background:#22C55E"></span>Resolved</td><td style="color:#64748B">UI Bugs</td><td><span class="mini-avatar" style="background:#3B82F6">JL</span></td><td style="color:#94A3B8;font-size:0.75rem">5d ago</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ FLOATING DESIGN NOTE ═══════════ -->
+<div class="design-note" id="designNote" onclick="toggleNote()">
+  <div class="dn-title"><i class="ri-palette-line"></i> Desi 디자인 노트</div>
+  <div class="dn-body">
+    <strong>통일 패턴:</strong> 모든 탭 상단이 2-row 구조 (Top Header 52px + Subtab Row 42px = 94px)로 통일됨.<br><br>
+    <strong>디자인 개선:</strong> subtab row를 기존 38px → 42px로 4px 늘려 시각적 여유 확보. 탭 간격과 아이콘도 살짝 여유있게 조정. 답답함 없이 정보 밀도를 유지.<br><br>
+    <strong>Before:</strong> 3-row (Header + Page Title + Lifecycle = ~126px)<br>
+    <strong>After:</strong> 2-row (Header + Subtab+Action = ~94px) → <strong>32px saved per tab</strong>
+  </div>
+</div>
+
+<script>
+  /* ═══════════════════════════════════════ */
+  /* TAB SWITCHING                           */
+  /* ═══════════════════════════════════════ */
+  const tabs = ['dashboard','testcases','runs','milestones','documents','discovery'];
+
+  function switchTab(tab) {
+    // Nav tabs
+    document.querySelectorAll('.header-nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.tab === tab);
+    });
+    // Subtab rows
+    tabs.forEach(t => {
+      const sr = document.getElementById('subtab-' + t);
+      if (sr) sr.style.display = (t === tab) ? 'flex' : 'none';
+    });
+    // Content panels
+    tabs.forEach(t => {
+      const cp = document.getElementById('content-' + t);
+      if (cp) {
+        if (t === tab) {
+          cp.classList.add('active');
+          cp.style.display = (t === 'dashboard') ? 'flex' : 'flex';
+          cp.style.flexDirection = 'column';
+          cp.style.flex = '1';
+          cp.style.overflow = 'hidden';
+        } else {
+          cp.classList.remove('active');
+          cp.style.display = 'none';
+        }
+      }
+    });
+  }
+
+  /* ═══════════════════════════════════════ */
+  /* SAVED PX BADGE TOGGLE                   */
+  /* ═══════════════════════════════════════ */
+  function toggleSaved(btn) {
+    btn.classList.toggle('active');
+    const show = btn.classList.contains('active');
+    document.querySelectorAll('.subtab-row').forEach(sr => {
+      sr.classList.toggle('show-saved', show);
+    });
+  }
+
+  /* ═══════════════════════════════════════ */
+  /* DESIGN NOTE TOGGLE                      */
+  /* ═══════════════════════════════════════ */
+  function toggleNote() {
+    document.getElementById('designNote').classList.toggle('collapsed');
+  }
+</script>
+
+</body>
+</html>

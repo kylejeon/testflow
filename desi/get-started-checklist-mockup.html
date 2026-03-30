@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Get Started Checklist Redesign Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  :root {
+    --primary: #6366F1;
+    --primary-hover: #4F46E5;
+    --primary-bg: #EEF2FF;
+    --primary-ring: rgba(99,102,241,0.15);
+    --violet: #8B5CF6;
+    --blue: #3B82F6;
+    --blue-bg: #EFF6FF;
+    --green: #22C55E;
+    --green-bg: #F0FDF4;
+    --green-dark: #16A34A;
+    --amber: #F59E0B;
+    --amber-bg: #FFFBEB;
+    --red: #EF4444;
+    --red-bg: #FEF2F2;
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-600: #4B5563;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --gray-900: #111827;
+    --border: #E5E7EB;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #F1F0FB;
+    color: var(--gray-900);
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  /* ── Screen Navigator ── */
+  .screen-nav {
+    max-width: 920px;
+    margin: 0 auto 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .screen-nav-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    background: white;
+    color: var(--gray-600);
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .screen-nav-btn:hover { background: var(--gray-50); border-color: var(--gray-300); }
+  .screen-nav-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .screen-nav-btn .tag {
+    font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .screen-nav-btn .tag.p0 { background: #FEE2E2; color: #991B1B; }
+  .screen-nav-btn .tag.p1 { background: #DBEAFE; color: #1E40AF; }
+  .screen-nav-btn .tag.p2 { background: #DCFCE7; color: #166534; }
+  .screen-nav-btn.active .tag { background: rgba(255,255,255,0.25); color: white; }
+
+  .screen-panel { display: none; }
+  .screen-panel.active { display: block; }
+
+  /* ── Page Title ── */
+  .page-title {
+    max-width: 920px;
+    margin: 0 auto 16px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-900);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .page-title i { color: var(--primary); font-size: 22px; }
+  .page-title .subtitle { font-size: 13px; font-weight: 400; color: var(--gray-500); margin-left: auto; }
+
+  /* ── Dashboard Simulated BG ── */
+  .dash-bg {
+    max-width: 920px;
+    margin: 0 auto;
+    background: #F8FAFC;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    min-height: 480px;
+    position: relative;
+    overflow: hidden;
+  }
+  .dash-header {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .dash-logo {
+    width: 26px; height: 26px; background: var(--primary); border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: white;
+  }
+  .dash-logo-text { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+  .dash-nav { display: flex; gap: 16px; margin-left: 32px; }
+  .dash-nav span { font-size: 13px; color: var(--gray-500); font-weight: 500; cursor: default; }
+  .dash-nav span.active { color: var(--primary); font-weight: 600; }
+  .dash-body { padding: 24px; position: relative; min-height: 420px; }
+
+  /* ── Faded dashboard cards (background context) ── */
+  .dash-placeholder {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; opacity: 0.35;
+  }
+  .dash-card-ph {
+    background: white; border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+    height: 100px;
+  }
+  .dash-card-ph .ph-line {
+    height: 10px; border-radius: 4px; background: var(--gray-200); margin-bottom: 8px;
+  }
+  .dash-card-ph .ph-line.w60 { width: 60%; }
+  .dash-card-ph .ph-line.w80 { width: 80%; }
+  .dash-card-ph .ph-line.w40 { width: 40%; }
+
+  /* ═════════════════════════════════════════════════ */
+  /* FLOATING CHECKLIST WIDGET                         */
+  /* ═════════════════════════════════════════════════ */
+
+  /* ── Collapsed Pill ── */
+  .checklist-pill {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    padding: 8px 16px 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 10;
+  }
+  .checklist-pill:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.12); transform: translateY(-1px); }
+  .pill-progress-ring {
+    width: 28px; height: 28px; position: relative;
+  }
+  .pill-progress-ring svg { transform: rotate(-90deg); }
+  .pill-progress-ring .ring-bg { stroke: var(--gray-200); }
+  .pill-progress-ring .ring-fill { stroke: var(--primary); stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+  .pill-text { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+  .pill-text span { color: var(--primary); }
+  .pill-chevron { color: var(--gray-400); font-size: 16px; }
+
+  /* ── Expanded Widget ── */
+  .checklist-widget {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 340px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+    z-index: 10;
+    overflow: hidden;
+  }
+  .widget-header {
+    padding: 14px 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .widget-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .widget-header-left h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gray-900);
+  }
+  .widget-header-left .rocket-icon {
+    font-size: 16px;
+  }
+  .widget-close {
+    width: 24px; height: 24px; border-radius: 6px;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--gray-400); font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .widget-close:hover { background: var(--gray-100); color: var(--gray-600); }
+
+  /* Progress bar */
+  .widget-progress {
+    padding: 0 16px 12px;
+  }
+  .progress-label {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .progress-label span { font-size: 11px; font-weight: 500; color: var(--gray-500); }
+  .progress-label strong { font-size: 11px; font-weight: 700; color: var(--primary); }
+  .progress-bar {
+    height: 6px; background: var(--gray-100); border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 3px; transition: width 0.5s ease;
+    background: linear-gradient(90deg, var(--primary), var(--violet));
+  }
+
+  /* Checklist Items */
+  .checklist-items {
+    padding: 4px 8px 8px;
+  }
+  .cl-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .cl-item:hover { background: var(--gray-50); }
+  .cl-item.completed:hover { background: transparent; cursor: default; }
+
+  /* Checkbox */
+  .cl-check {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--gray-300); flex-shrink: 0; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .cl-item.completed .cl-check {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .cl-check i { font-size: 12px; color: white; display: none; }
+  .cl-item.completed .cl-check i { display: block; }
+
+  /* Active item pulse */
+  .cl-item.next-up .cl-check {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-ring);
+  }
+
+  /* Content */
+  .cl-content { flex: 1; min-width: 0; }
+  .cl-label {
+    font-size: 13px; font-weight: 500; color: var(--gray-800);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .cl-item.completed .cl-label { color: var(--gray-400); text-decoration: line-through; }
+  .cl-sublabel {
+    font-size: 11px; color: var(--gray-400); margin-top: 1px;
+    line-height: 1.4;
+  }
+  .cl-item.completed .cl-sublabel { display: none; }
+  .cl-completed-text {
+    font-size: 11px; color: var(--green-dark); margin-top: 1px;
+    display: none;
+  }
+  .cl-item.completed .cl-completed-text { display: block; }
+  .cl-arrow {
+    color: var(--gray-300); font-size: 14px; margin-top: 2px; flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .cl-item:hover .cl-arrow { color: var(--primary); }
+  .cl-item.completed .cl-arrow { display: none; }
+
+  /* Optional badge */
+  .cl-optional {
+    font-size: 9px; font-weight: 600; color: var(--gray-400);
+    background: var(--gray-100); padding: 1px 5px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+
+  /* Widget footer */
+  .widget-footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .widget-footer-link {
+    font-size: 11px; color: var(--gray-400); cursor: pointer;
+    text-decoration: none; display: flex; align-items: center; gap: 3px;
+  }
+  .widget-footer-link:hover { color: var(--gray-600); }
+  .widget-footer-dismiss {
+    font-size: 11px; color: var(--gray-400); cursor: pointer;
+    border: none; background: none; font-family: inherit;
+  }
+  .widget-footer-dismiss:hover { color: var(--red); }
+
+  /* ═════════════════════════════════════════════════ */
+  /* TOAST NOTIFICATION                                */
+  /* ═════════════════════════════════════════════════ */
+  .toast {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--gray-800);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    white-space: nowrap;
+    z-index: 20;
+  }
+  .toast i { font-size: 16px; }
+  .toast.amber { background: #92400E; }
+  .toast.green { background: #166534; }
+  .toast .toast-action {
+    font-size: 12px; font-weight: 600; color: #A5B4FC;
+    cursor: pointer; margin-left: 4px; text-decoration: underline;
+  }
+
+  /* ═════════════════════════════════════════════════ */
+  /* CELEBRATION STATE                                 */
+  /* ═════════════════════════════════════════════════ */
+  .celebration-widget {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 340px;
+    background: white;
+    border: 1.5px solid var(--green);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(34,197,94,0.15), 0 2px 8px rgba(0,0,0,0.06);
+    z-index: 10;
+    overflow: hidden;
+    text-align: center;
+    padding: 28px 24px 20px;
+  }
+  .confetti-area {
+    font-size: 40px;
+    margin-bottom: 12px;
+    line-height: 1;
+  }
+  .celebration-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--gray-900);
+    margin-bottom: 4px;
+  }
+  .celebration-desc {
+    font-size: 13px;
+    color: var(--gray-500);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .celebration-progress {
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    margin-bottom: 16px;
+  }
+  .celebration-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+  }
+  .celebration-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    background: var(--green); color: white; border: none; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .celebration-btn:hover { background: var(--green-dark); }
+  .celebration-auto-close {
+    font-size: 11px; color: var(--gray-400); margin-top: 10px;
+  }
+
+  /* ═════════════════════════════════════════════════ */
+  /* CLICK ACTION FLOW DIAGRAM                         */
+  /* ═════════════════════════════════════════════════ */
+  .flow-section {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  .flow-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .flow-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .flow-content { flex: 1; }
+  .flow-title { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 4px; }
+  .flow-steps {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .flow-step-tag {
+    font-size: 11px; font-weight: 500; padding: 3px 10px;
+    border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .flow-step-tag.action { background: var(--primary-bg); color: var(--primary); }
+  .flow-step-tag.nav { background: var(--blue-bg); color: var(--blue); }
+  .flow-step-tag.modal { background: #F3E8FF; color: #7C3AED; }
+  .flow-step-tag.complete { background: var(--green-bg); color: var(--green-dark); }
+  .flow-step-tag.error { background: var(--amber-bg); color: #92400E; }
+  .flow-arrow-sm { color: var(--gray-400); font-size: 12px; }
+  .flow-note { font-size: 11px; color: var(--gray-500); line-height: 1.5; }
+  .flow-note code {
+    background: var(--gray-100); padding: 1px 5px; border-radius: 3px;
+    font-size: 10px; font-family: 'SF Mono', monospace; color: var(--primary);
+  }
+
+  /* ═════════════════════════════════════════════════ */
+  /* STEP COMPLETION ANIMATION                         */
+  /* ═════════════════════════════════════════════════ */
+  .anim-demo {
+    max-width: 920px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .anim-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .anim-card h4 {
+    font-size: 13px; font-weight: 600; color: var(--gray-700);
+    margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .anim-card h4 .tag {
+    font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+  }
+
+  /* Bounce keyframe preview */
+  .bounce-demo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+  .bounce-check {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: white;
+  }
+  .bounce-check.before { background: var(--gray-300); border: 2px solid var(--gray-300); }
+  .bounce-check.after {
+    background: var(--green); border: 2px solid var(--green);
+    animation: bounceCheck 0.5s ease;
+  }
+  @keyframes bounceCheck {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.2); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .bounce-arrow { font-size: 20px; color: var(--gray-400); }
+
+  /* ═════════════════════════════════════════════════ */
+  /* DEV NOTE                                          */
+  /* ═════════════════════════════════════════════════ */
+  .dev-note {
+    max-width: 920px;
+    margin: 16px auto 0;
+    background: #1E293B;
+    border-radius: 8px;
+    padding: 14px 16px;
+    color: #E2E8F0;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .dev-note-title {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #818CF8;
+    margin-bottom: 6px; display: flex; align-items: center; gap: 5px;
+  }
+  .dev-note code {
+    background: rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 3px;
+    font-size: 11px; font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* ═════════════════════════════════════════════════ */
+  /* SUMMARY TABLE                                     */
+  /* ═════════════════════════════════════════════════ */
+  .summary-section {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  .summary-table {
+    width: 100%; border-collapse: collapse; background: white;
+    border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+    font-size: 12px;
+  }
+  .summary-table th {
+    background: var(--gray-50); font-weight: 600; color: var(--gray-700);
+    text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--border);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .summary-table td {
+    padding: 10px 14px; border-bottom: 1px solid var(--gray-100);
+    color: var(--gray-600); vertical-align: top;
+  }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table .badge {
+    display: inline-flex; font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 4px;
+  }
+  .summary-table .badge.green { background: var(--green-bg); color: var(--green-dark); }
+  .summary-table .badge.red { background: var(--red-bg); color: #991B1B; }
+  .summary-table .badge.amber { background: var(--amber-bg); color: #92400E; }
+  .summary-table .badge.blue { background: var(--blue-bg); color: #1E40AF; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ PAGE TITLE ══════════ -->
+<div class="page-title">
+  <i class="ri-rocket-2-fill"></i>
+  Get Started Checklist — Redesign Mockup
+  <span class="subtitle">PM 기획안 기반 · Desi 제작 · 2026-03-30</span>
+</div>
+
+<!-- ══════════ SCREEN NAVIGATOR ══════════ -->
+<div class="screen-nav" id="screenNav">
+  <button class="screen-nav-btn active" data-screen="s1">1. Collapsed Pill</button>
+  <button class="screen-nav-btn" data-screen="s2">2. Expanded (In Progress) <span class="tag p0">Core</span></button>
+  <button class="screen-nav-btn" data-screen="s3">3. Expanded (Early) <span class="tag p0">Core</span></button>
+  <button class="screen-nav-btn" data-screen="s4">4. Click Actions <span class="tag p1">Flow</span></button>
+  <button class="screen-nav-btn" data-screen="s5">5. Dependency Toast <span class="tag p1">UX</span></button>
+  <button class="screen-nav-btn" data-screen="s6">6. Step Complete Anim <span class="tag p2">Polish</span></button>
+  <button class="screen-nav-btn" data-screen="s7">7. All Complete 🎉 <span class="tag p2">Polish</span></button>
+  <button class="screen-nav-btn" data-screen="s8">8. Summary <span class="tag p0">Dev</span></button>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 1: Collapsed Pill State                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel active" id="s1">
+  <div class="dash-bg">
+    <div class="dash-header">
+      <div class="dash-logo"><i class="ri-checkbox-multiple-fill" style="font-size:14px;"></i></div>
+      <span class="dash-logo-text">Testably</span>
+      <div class="dash-nav">
+        <span class="active">Dashboard</span>
+        <span>Projects</span>
+        <span>Milestones</span>
+        <span>Reports</span>
+      </div>
+    </div>
+    <div class="dash-body">
+      <div class="dash-placeholder">
+        <div class="dash-card-ph"><div class="ph-line w60"></div><div class="ph-line w80"></div><div class="ph-line w40"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w80"></div><div class="ph-line w60"></div><div class="ph-line w40"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w40"></div><div class="ph-line w80"></div><div class="ph-line w60"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w60"></div><div class="ph-line w40"></div><div class="ph-line w80"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w80"></div><div class="ph-line w60"></div><div class="ph-line w40"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w40"></div><div class="ph-line w80"></div><div class="ph-line w60"></div></div>
+      </div>
+
+      <!-- Collapsed Pill -->
+      <div class="checklist-pill">
+        <div class="pill-progress-ring">
+          <svg width="28" height="28" viewBox="0 0 28 28">
+            <circle class="ring-bg" cx="14" cy="14" r="11" fill="none" stroke-width="3"/>
+            <circle class="ring-fill" cx="14" cy="14" r="11" fill="none" stroke-width="3"
+                    stroke-dasharray="69.1" stroke-dashoffset="34.5"/>
+          </svg>
+        </div>
+        <span class="pill-text"><span>3</span>/6 completed</span>
+        <i class="ri-arrow-up-s-line pill-chevron"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 1: Collapsed Pill</div>
+    플로팅 위치: <code>position: fixed; bottom: 20px; right: 20px;</code>. &nbsp;
+    Progress ring: SVG <code>stroke-dasharray</code>로 완료 비율 표시. &nbsp;
+    클릭 → 위젯 확장. 첫 3번 로그인 시 자동 확장 → 이후 축소 상태 기본.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 2: Expanded — In Progress (3/6 completed)        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s2">
+  <div class="dash-bg">
+    <div class="dash-header">
+      <div class="dash-logo"><i class="ri-checkbox-multiple-fill" style="font-size:14px;"></i></div>
+      <span class="dash-logo-text">Testably</span>
+      <div class="dash-nav">
+        <span class="active">Dashboard</span>
+        <span>Projects</span>
+        <span>Milestones</span>
+        <span>Reports</span>
+      </div>
+    </div>
+    <div class="dash-body">
+      <div class="dash-placeholder">
+        <div class="dash-card-ph"><div class="ph-line w60"></div><div class="ph-line w80"></div><div class="ph-line w40"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w80"></div><div class="ph-line w60"></div><div class="ph-line w40"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w40"></div><div class="ph-line w80"></div><div class="ph-line w60"></div></div>
+      </div>
+
+      <!-- Expanded Widget -->
+      <div class="checklist-widget">
+        <div class="widget-header">
+          <div class="widget-header-left">
+            <span class="rocket-icon">🚀</span>
+            <h3>Get Started</h3>
+          </div>
+          <button class="widget-close"><i class="ri-subtract-line"></i></button>
+        </div>
+        <div class="widget-progress">
+          <div class="progress-label">
+            <span>Your progress</span>
+            <strong>3 of 6 completed</strong>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 50%;"></div>
+          </div>
+        </div>
+        <div class="checklist-items">
+          <!-- 1. COMPLETED -->
+          <div class="cl-item completed">
+            <div class="cl-check"><i class="ri-check-line"></i></div>
+            <div class="cl-content">
+              <div class="cl-label">Create your first project</div>
+              <div class="cl-completed-text"><i class="ri-check-line" style="font-size:11px;"></i> 'My QA Project' created</div>
+            </div>
+          </div>
+          <!-- 2. COMPLETED -->
+          <div class="cl-item completed">
+            <div class="cl-check"><i class="ri-check-line"></i></div>
+            <div class="cl-content">
+              <div class="cl-label">Write your first test case</div>
+              <div class="cl-completed-text"><i class="ri-check-line" style="font-size:11px;"></i> First TC written</div>
+            </div>
+          </div>
+          <!-- 3. COMPLETED -->
+          <div class="cl-item completed">
+            <div class="cl-check"><i class="ri-check-line"></i></div>
+            <div class="cl-content">
+              <div class="cl-label">Try AI test generation</div>
+              <div class="cl-completed-text"><i class="ri-check-line" style="font-size:11px;"></i> AI generation tried</div>
+            </div>
+          </div>
+          <!-- 4. NEXT UP -->
+          <div class="cl-item next-up">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label"><i class="ri-play-circle-line" style="font-size:13px; color:var(--primary);"></i> Run your first test</div>
+              <div class="cl-sublabel">Execute a test run and see results</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+          <!-- 5. PENDING -->
+          <div class="cl-item">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label">Invite a team member</div>
+              <div class="cl-sublabel">Collaborate with your team</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+          <!-- 6. PENDING (OPTIONAL) -->
+          <div class="cl-item">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label">Connect Jira <span class="cl-optional">Optional</span></div>
+              <div class="cl-sublabel">Sync Jira issues with Testably</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+        </div>
+        <div class="widget-footer">
+          <a class="widget-footer-link" href="#"><i class="ri-question-line"></i> Help Center</a>
+          <button class="widget-footer-dismiss">Dismiss checklist</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 2: Expanded (3/6)</div>
+    완료된 항목: <code>line-through</code> + 초록 체크 + 완료 서브텍스트. &nbsp;
+    다음 항목(next-up): <code>box-shadow: 0 0 0 3px rgba(99,102,241,0.15)</code> 펄스링으로 시각적 유도. &nbsp;
+    "Optional" 뱃지: Connect Jira에만 적용. 전체 완료 계산 시 optional 제외 옵션 고려. &nbsp;
+    Dismiss: <code>checklist_dismissed = true</code> → DB 업데이트 → 더 이상 표시 안 함.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 3: Expanded — Early State (1/6 completed)        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s3">
+  <div class="dash-bg">
+    <div class="dash-header">
+      <div class="dash-logo"><i class="ri-checkbox-multiple-fill" style="font-size:14px;"></i></div>
+      <span class="dash-logo-text">Testably</span>
+      <div class="dash-nav">
+        <span class="active">Dashboard</span>
+        <span>Projects</span>
+        <span>Milestones</span>
+        <span>Reports</span>
+      </div>
+    </div>
+    <div class="dash-body">
+      <div class="dash-placeholder">
+        <div class="dash-card-ph"><div class="ph-line w60"></div><div class="ph-line w80"></div><div class="ph-line w40"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w80"></div><div class="ph-line w60"></div><div class="ph-line w40"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w40"></div><div class="ph-line w80"></div><div class="ph-line w60"></div></div>
+      </div>
+
+      <div class="checklist-widget">
+        <div class="widget-header">
+          <div class="widget-header-left">
+            <span class="rocket-icon">🚀</span>
+            <h3>Get Started</h3>
+          </div>
+          <button class="widget-close"><i class="ri-subtract-line"></i></button>
+        </div>
+        <div class="widget-progress">
+          <div class="progress-label">
+            <span>Your progress</span>
+            <strong>1 of 6 completed</strong>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 16.7%;"></div>
+          </div>
+        </div>
+        <div class="checklist-items">
+          <!-- 1. COMPLETED -->
+          <div class="cl-item completed">
+            <div class="cl-check"><i class="ri-check-line"></i></div>
+            <div class="cl-content">
+              <div class="cl-label">Create your first project</div>
+              <div class="cl-completed-text"><i class="ri-check-line" style="font-size:11px;"></i> 'My QA Project' created</div>
+            </div>
+          </div>
+          <!-- 2. NEXT UP -->
+          <div class="cl-item next-up">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label"><i class="ri-edit-line" style="font-size:13px; color:var(--primary);"></i> Write your first test case</div>
+              <div class="cl-sublabel">Create a test case to start testing</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+          <!-- 3. PENDING -->
+          <div class="cl-item">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label">Try AI test generation</div>
+              <div class="cl-sublabel">Let AI generate test cases for you</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+          <!-- 4. PENDING -->
+          <div class="cl-item">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label">Run your first test</div>
+              <div class="cl-sublabel">Execute a test run and see results</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+          <!-- 5. PENDING -->
+          <div class="cl-item">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label">Invite a team member</div>
+              <div class="cl-sublabel">Collaborate with your team</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+          <!-- 6. PENDING (OPTIONAL) -->
+          <div class="cl-item">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label">Connect Jira <span class="cl-optional">Optional</span></div>
+              <div class="cl-sublabel">Sync Jira issues with Testably</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+        </div>
+        <div class="widget-footer">
+          <a class="widget-footer-link" href="#"><i class="ri-question-line"></i> Help Center</a>
+          <button class="widget-footer-dismiss">Dismiss checklist</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 3: Early State (1/6)</div>
+    신규 가입 후 첫 프로젝트만 생성한 상태. &nbsp;
+    "Write your first test case"가 next-up으로 하이라이트. &nbsp;
+    서브텍스트: 미완료 항목별 행동 유도 문구 표시 (PM 기획 10.1 반영). &nbsp;
+    자동 확장: 처음 3번 로그인 시 자동 오픈, 이후 pill 상태로 축소.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 4: Click Action Flows (All 6 items)              -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s4">
+  <div class="flow-section">
+    <div style="font-size:15px; font-weight:700; color:var(--gray-900); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+      <i class="ri-route-line" style="color:var(--primary);"></i> Click Action Flows — 각 항목 클릭 시 동작
+    </div>
+
+    <!-- Step 1 -->
+    <div class="flow-card">
+      <div class="flow-num" style="background:var(--primary);">1</div>
+      <div class="flow-content">
+        <div class="flow-title">Create your first project</div>
+        <div class="flow-steps">
+          <span class="flow-step-tag action"><i class="ri-cursor-line"></i> Click</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag nav"><i class="ri-navigation-line"></i> /projects?action=create</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag modal"><i class="ri-window-line"></i> Create Project 모달 자동 오픈</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag complete"><i class="ri-check-line"></i> markStep('createProject')</span>
+        </div>
+        <div class="flow-note">
+          <code>?action=create</code> 파라미터 → <code>ProjectsContent.tsx</code>에서 <code>useEffect</code>로 모달 자동 트리거
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="flow-card">
+      <div class="flow-num" style="background:var(--blue);">2</div>
+      <div class="flow-content">
+        <div class="flow-title">Write your first test case</div>
+        <div class="flow-steps">
+          <span class="flow-step-tag action"><i class="ri-cursor-line"></i> Click</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag nav"><i class="ri-navigation-line"></i> /projects/{id}/testcases?action=create</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag modal"><i class="ri-window-line"></i> Quick Create TC 모달</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag complete"><i class="ri-check-line"></i> markStep('createTestcase')</span>
+        </div>
+        <div class="flow-note">
+          프로젝트 없으면 → <span class="flow-step-tag error" style="font-size:10px; padding:1px 6px;"><i class="ri-alert-line"></i> Toast: "프로젝트를 먼저 만들어주세요"</span> + Step 1 하이라이트
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="flow-card">
+      <div class="flow-num" style="background:var(--violet);">3</div>
+      <div class="flow-content">
+        <div class="flow-title">Try AI test generation</div>
+        <div class="flow-steps">
+          <span class="flow-step-tag action"><i class="ri-cursor-line"></i> Click</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag nav"><i class="ri-navigation-line"></i> /projects/{id}/testcases?action=ai-generate</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag modal"><i class="ri-magic-line"></i> AI Generate 모달 자동 오픈</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag complete"><i class="ri-check-line"></i> markStep('tryAi')</span>
+        </div>
+        <div class="flow-note">
+          핵심 개선: 기존에는 TC 목록으로만 이동 → 개선 후 AI 모달이 즉시 오픈됨
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="flow-card">
+      <div class="flow-num" style="background:var(--amber);">4</div>
+      <div class="flow-content">
+        <div class="flow-title">Run your first test</div>
+        <div class="flow-steps">
+          <span class="flow-step-tag action"><i class="ri-cursor-line"></i> Click</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag nav"><i class="ri-navigation-line"></i> /projects/{id}/runs?action=create</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag modal"><i class="ri-window-line"></i> Add Run 모달 자동 오픈</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag complete"><i class="ri-check-line"></i> markStep('runTest')</span>
+        </div>
+        <div class="flow-note">
+          TC 없으면 → <span class="flow-step-tag error" style="font-size:10px; padding:1px 6px;"><i class="ri-alert-line"></i> Toast: "테스트 케이스를 먼저 추가하세요"</span> + Step 2 하이라이트
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="flow-card">
+      <div class="flow-num" style="background:var(--green);">5</div>
+      <div class="flow-content">
+        <div class="flow-title">Invite a team member</div>
+        <div class="flow-steps">
+          <span class="flow-step-tag action"><i class="ri-cursor-line"></i> Click</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag nav"><i class="ri-navigation-line"></i> /settings?tab=members&action=invite</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag modal"><i class="ri-user-add-line"></i> Invite 모달 자동 오픈</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag complete"><i class="ri-check-line"></i> markStep('inviteMember')</span>
+        </div>
+        <div class="flow-note">
+          버그 수정: <code>/settings#team</code> → <code>/settings?tab=members</code>. Settings는 hash가 아닌 query param 사용.
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="flow-card">
+      <div class="flow-num" style="background:var(--gray-500);">6</div>
+      <div class="flow-content">
+        <div class="flow-title">Connect Jira <span class="cl-optional" style="margin-left:4px;">Optional</span></div>
+        <div class="flow-steps">
+          <span class="flow-step-tag action"><i class="ri-cursor-line"></i> Click</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag nav"><i class="ri-navigation-line"></i> /settings?tab=integrations</span>
+          <span class="flow-arrow-sm">→</span>
+          <span class="flow-step-tag complete"><i class="ri-check-line"></i> markStep('connectJira')</span>
+        </div>
+        <div class="flow-note">
+          버그 수정: <code>/settings#integrations</code> → <code>/settings?tab=integrations</code>. Jira 저장 성공 시 자동 완료.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 4: Click Action Flows</div>
+    핵심: <code>?action=</code> 쿼리 파라미터 → 각 페이지의 <code>useEffect</code>에서 감지 → 모달 자동 오픈. &nbsp;
+    <code>OnboardingChecklist.tsx</code>의 <code>linkTo</code> 값 업데이트 필요 (6개 항목 모두). &nbsp;
+    markStep: <code>OnboardingContext</code>를 통해 하위 컴포넌트에서 접근.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 5: Dependency Toast Messages                     -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s5">
+  <div class="dash-bg">
+    <div class="dash-header">
+      <div class="dash-logo"><i class="ri-checkbox-multiple-fill" style="font-size:14px;"></i></div>
+      <span class="dash-logo-text">Testably</span>
+      <div class="dash-nav">
+        <span class="active">Dashboard</span>
+        <span>Projects</span>
+        <span>Milestones</span>
+        <span>Reports</span>
+      </div>
+    </div>
+    <div class="dash-body">
+      <div class="dash-placeholder" style="opacity:0.2;">
+        <div class="dash-card-ph"><div class="ph-line w60"></div><div class="ph-line w80"></div><div class="ph-line w40"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w80"></div><div class="ph-line w60"></div><div class="ph-line w40"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w40"></div><div class="ph-line w80"></div><div class="ph-line w60"></div></div>
+      </div>
+
+      <!-- Toast A: No project -->
+      <div class="toast amber" style="bottom: 390px;">
+        <i class="ri-information-line"></i>
+        프로젝트를 먼저 만들어야 테스트 케이스를 추가할 수 있어요.
+        <span class="toast-action">Create Project →</span>
+      </div>
+
+      <!-- Toast B: No TC -->
+      <div class="toast amber" style="bottom: 330px;">
+        <i class="ri-information-line"></i>
+        테스트 케이스를 먼저 추가해야 테스트 실행을 만들 수 있어요.
+        <span class="toast-action">Write Test Case →</span>
+      </div>
+
+      <!-- Toast C: Step completed -->
+      <div class="toast green" style="bottom: 270px;">
+        <i class="ri-checkbox-circle-fill"></i>
+        첫 테스트 실행 완료! Run your first test ✓
+      </div>
+
+      <!-- Widget showing interaction context -->
+      <div class="checklist-widget" style="bottom:20px;">
+        <div class="widget-header">
+          <div class="widget-header-left">
+            <span class="rocket-icon">🚀</span>
+            <h3>Get Started</h3>
+          </div>
+          <button class="widget-close"><i class="ri-subtract-line"></i></button>
+        </div>
+        <div class="widget-progress">
+          <div class="progress-label">
+            <span>Your progress</span>
+            <strong>0 of 6 completed</strong>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+        <div class="checklist-items">
+          <div class="cl-item next-up">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label"><i class="ri-folder-add-line" style="font-size:13px; color:var(--primary);"></i> Create your first project</div>
+              <div class="cl-sublabel">Create a project to get started</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+          <div class="cl-item" style="background:var(--amber-bg); border-radius:8px; border:1px dashed #FDE68A;">
+            <div class="cl-check" style="border-color:var(--amber);"></div>
+            <div class="cl-content">
+              <div class="cl-label" style="color:var(--amber);">
+                <i class="ri-alert-line" style="font-size:13px;"></i> Write your first test case
+              </div>
+              <div class="cl-sublabel" style="color:#92400E;">Requires: Create a project first</div>
+            </div>
+          </div>
+          <div class="cl-item">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label">Try AI test generation</div>
+              <div class="cl-sublabel">Let AI generate test cases for you</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+          <div class="cl-item" style="background:var(--amber-bg); border-radius:8px; border:1px dashed #FDE68A;">
+            <div class="cl-check" style="border-color:var(--amber);"></div>
+            <div class="cl-content">
+              <div class="cl-label" style="color:var(--amber);">
+                <i class="ri-alert-line" style="font-size:13px;"></i> Run your first test
+              </div>
+              <div class="cl-sublabel" style="color:#92400E;">Requires: Write a test case first</div>
+            </div>
+          </div>
+          <div class="cl-item">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label">Invite a team member</div>
+              <div class="cl-sublabel">Collaborate with your team</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+          <div class="cl-item">
+            <div class="cl-check"></div>
+            <div class="cl-content">
+              <div class="cl-label">Connect Jira <span class="cl-optional">Optional</span></div>
+              <div class="cl-sublabel">Sync Jira issues with Testably</div>
+            </div>
+            <i class="ri-arrow-right-s-line cl-arrow"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 5: Dependency Toasts</div>
+    Soft Lock 방식: 항목은 항상 클릭 가능하되, 선행 조건 미충족 시 toast 표시. &nbsp;
+    Toast 종류: (A) amber = 선행조건 안내 + 해당 스텝 바로가기 링크, (B) green = 완료 축하. &nbsp;
+    체크리스트 내 인라인 힌트: 선행 미충족 항목에 amber dashed border + "Requires:" 서브텍스트. &nbsp;
+    Toast 자동 소멸: 4초 후 fade-out. 액션 링크 클릭 시 즉시 해당 스텝으로 이동.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 6: Step Completion Animation                     -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s6">
+  <div class="anim-demo">
+    <!-- Before/After State -->
+    <div class="anim-card">
+      <h4>Check Animation — Bounce <span class="tag" style="background:var(--green-bg); color:var(--green-dark);">CSS</span></h4>
+      <div class="bounce-demo">
+        <div>
+          <div class="bounce-check before"></div>
+          <div style="font-size:10px; color:var(--gray-400); margin-top:4px;">Before</div>
+        </div>
+        <span class="bounce-arrow">→</span>
+        <div>
+          <div class="bounce-check after"><i class="ri-check-line"></i></div>
+          <div style="font-size:10px; color:var(--green-dark); margin-top:4px;">After (bounce)</div>
+        </div>
+      </div>
+      <div style="text-align:left; font-size:11px; color:var(--gray-500); background:var(--gray-50); padding:8px 10px; border-radius:6px; line-height:1.6; font-family:'SF Mono',monospace;">
+        @keyframes bounceCheck {<br>
+        &nbsp;&nbsp;0% { scale(0.5); opacity:0 }<br>
+        &nbsp;&nbsp;50% { scale(1.2) }<br>
+        &nbsp;&nbsp;70% { scale(0.9) }<br>
+        &nbsp;&nbsp;100% { scale(1); opacity:1 }<br>
+        }
+      </div>
+    </div>
+
+    <!-- Progress Bar Animation -->
+    <div class="anim-card">
+      <h4>Progress Bar Fill <span class="tag" style="background:var(--primary-bg); color:var(--primary);">Transition</span></h4>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:10px; color:var(--gray-400); margin-bottom:4px;">Before (2/6)</div>
+        <div class="progress-bar" style="height:8px;">
+          <div class="progress-fill" style="width:33%;"></div>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:10px; color:var(--green-dark); margin-bottom:4px;">After (3/6) — smooth transition</div>
+        <div class="progress-bar" style="height:8px;">
+          <div class="progress-fill" style="width:50%; transition:width 0.8s cubic-bezier(0.34,1.56,0.64,1);"></div>
+        </div>
+      </div>
+      <div style="text-align:left; font-size:11px; color:var(--gray-500); background:var(--gray-50); padding:8px 10px; border-radius:6px; line-height:1.6; font-family:'SF Mono',monospace;">
+        transition: width 0.8s<br>
+        &nbsp;&nbsp;cubic-bezier(0.34, 1.56, 0.64, 1);<br>
+        /* overshoot easing */
+      </div>
+    </div>
+
+    <!-- Auto-expand on complete -->
+    <div class="anim-card">
+      <h4>Auto-Expand on Step Complete <span class="tag" style="background:var(--blue-bg); color:var(--blue);">UX</span></h4>
+      <div style="display:flex; align-items:center; gap:12px; justify-content:center; margin:8px 0 12px;">
+        <div style="background:var(--gray-50); border:1px solid var(--border); border-radius:20px; padding:6px 12px; font-size:11px; color:var(--gray-500); display:flex; align-items:center; gap:6px;">
+          <div style="width:18px; height:18px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center;">
+            <svg width="18" height="18" viewBox="0 0 28 28"><circle cx="14" cy="14" r="9" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2.5"/><circle cx="14" cy="14" r="9" fill="none" stroke="white" stroke-width="2.5" stroke-dasharray="56.5" stroke-dashoffset="37.7" transform="rotate(-90 14 14)"/></svg>
+          </div>
+          2/6
+        </div>
+        <span class="bounce-arrow">→</span>
+        <div style="background:white; border:1px solid var(--primary); border-radius:10px; padding:8px 12px; font-size:11px; box-shadow:0 4px 12px rgba(99,102,241,0.15);">
+          <div style="font-weight:600; color:var(--primary); margin-bottom:2px;">✓ Step completed!</div>
+          <div style="color:var(--gray-500); font-size:10px;">Auto-expanded for 3s</div>
+        </div>
+        <span class="bounce-arrow">→</span>
+        <div style="background:var(--gray-50); border:1px solid var(--border); border-radius:20px; padding:6px 12px; font-size:11px; color:var(--gray-500); display:flex; align-items:center; gap:6px;">
+          <div style="width:18px; height:18px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center;">
+            <svg width="18" height="18" viewBox="0 0 28 28"><circle cx="14" cy="14" r="9" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2.5"/><circle cx="14" cy="14" r="9" fill="none" stroke="white" stroke-width="2.5" stroke-dasharray="56.5" stroke-dashoffset="28.3" transform="rotate(-90 14 14)"/></svg>
+          </div>
+          3/6
+        </div>
+      </div>
+      <div style="font-size:11px; color:var(--gray-500); line-height:1.5;">
+        스텝 완료 시: pill 상태에서 → 위젯 확장 (3초간) → 완료 상태 보여준 뒤 → pill로 자동 축소
+      </div>
+    </div>
+
+    <!-- Line-through + fade animation -->
+    <div class="anim-card">
+      <h4>Label Strike-through <span class="tag" style="background:var(--green-bg); color:var(--green-dark);">CSS</span></h4>
+      <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-start; padding:8px 0;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:18px; height:18px; border:2px solid var(--primary); border-radius:50%; box-shadow:0 0 0 3px var(--primary-ring);"></div>
+          <span style="font-size:13px; font-weight:500; color:var(--gray-800);">Run your first test</span>
+          <span style="font-size:10px; color:var(--gray-400);">← Before</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:18px; height:18px; background:var(--green); border:2px solid var(--green); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+            <i class="ri-check-line" style="font-size:11px; color:white;"></i>
+          </div>
+          <span style="font-size:13px; font-weight:500; color:var(--gray-400); text-decoration:line-through;">Run your first test</span>
+          <span style="font-size:10px; color:var(--green-dark);">← After</span>
+        </div>
+      </div>
+      <div style="font-size:11px; color:var(--gray-500); line-height:1.5;">
+        완료 시: 체크 bounce → label line-through + color fade → 서브텍스트 → 완료 메시지
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 6: Animations</div>
+    Check bounce: <code>@keyframes bounceCheck</code> 0.5s ease. &nbsp;
+    Progress fill: <code>transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1)</code> (overshoot). &nbsp;
+    Auto-expand: 완료 이벤트 → <code>setTimeout(() => setExpanded(true), 300)</code> → 3s 표시 → <code>setExpanded(false)</code>. &nbsp;
+    PM 기획 10.3 반영.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 7: All Complete — Celebration                     -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s7">
+  <div class="dash-bg">
+    <div class="dash-header">
+      <div class="dash-logo"><i class="ri-checkbox-multiple-fill" style="font-size:14px;"></i></div>
+      <span class="dash-logo-text">Testably</span>
+      <div class="dash-nav">
+        <span class="active">Dashboard</span>
+        <span>Projects</span>
+        <span>Milestones</span>
+        <span>Reports</span>
+      </div>
+    </div>
+    <div class="dash-body">
+      <div class="dash-placeholder" style="opacity:0.2;">
+        <div class="dash-card-ph"><div class="ph-line w60"></div><div class="ph-line w80"></div><div class="ph-line w40"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w80"></div><div class="ph-line w60"></div><div class="ph-line w40"></div></div>
+        <div class="dash-card-ph"><div class="ph-line w40"></div><div class="ph-line w80"></div><div class="ph-line w60"></div></div>
+      </div>
+
+      <!-- Celebration Widget -->
+      <div class="celebration-widget">
+        <div class="confetti-area">🎉</div>
+        <div class="celebration-title">All done!</div>
+        <div class="celebration-desc">
+          You've completed all the setup steps.<br>
+          You're ready to supercharge your QA workflow!
+        </div>
+        <div class="celebration-progress">
+          <div class="celebration-dot"></div>
+          <div class="celebration-dot"></div>
+          <div class="celebration-dot"></div>
+          <div class="celebration-dot"></div>
+          <div class="celebration-dot"></div>
+          <div class="celebration-dot"></div>
+        </div>
+        <button class="celebration-btn">
+          <i class="ri-dashboard-line"></i> Go to Dashboard
+        </button>
+        <div class="celebration-auto-close">
+          This message will close automatically in 5 seconds
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note — Screen 7: Celebration</div>
+    전체 완료 조건: 6/6 또는 5/5 (Connect Jira optional 제외 시). &nbsp;
+    <code>completed_at</code> 타임스탬프 DB 기록. &nbsp;
+    축하 위젯 5초 표시 → fade-out → <code>checklist_dismissed = true</code> 자동 설정. &nbsp;
+    이후 체크리스트 다시 표시 안 함. 선택적: 작은 confetti CSS 파티클 애니메이션 추가 가능.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SCREEN 8: Summary & Dev Reference                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen-panel" id="s8">
+  <div class="summary-section">
+    <div style="font-size:15px; font-weight:700; color:var(--gray-900); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+      <i class="ri-file-list-3-line" style="color:var(--primary);"></i> Dev Reference — 전체 항목 요약
+    </div>
+
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th style="width:30px;">#</th>
+          <th>항목</th>
+          <th>클릭 → 이동 경로</th>
+          <th>자동 오픈</th>
+          <th>markStep 위치</th>
+          <th>선행조건</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1</strong></td>
+          <td>Create your first project</td>
+          <td><code style="font-size:10px; background:var(--gray-100); padding:1px 4px; border-radius:3px; color:var(--primary);">/projects?action=create</code></td>
+          <td>Create Project 모달</td>
+          <td>ProjectsContent.tsx</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td>Write your first test case</td>
+          <td><code style="font-size:10px; background:var(--gray-100); padding:1px 4px; border-radius:3px; color:var(--primary);">/{id}/testcases?action=create</code></td>
+          <td>Quick Create TC 모달</td>
+          <td>QuickCreateTCModal.tsx</td>
+          <td><span class="badge amber">프로젝트 ≥ 1</span></td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td>Try AI test generation</td>
+          <td><code style="font-size:10px; background:var(--gray-100); padding:1px 4px; border-radius:3px; color:var(--primary);">/{id}/testcases?action=ai-generate</code></td>
+          <td>AI Generate 모달</td>
+          <td>AIGenerateModal.tsx</td>
+          <td><span class="badge amber">프로젝트 ≥ 1</span></td>
+        </tr>
+        <tr>
+          <td><strong>4</strong></td>
+          <td>Run your first test</td>
+          <td><code style="font-size:10px; background:var(--gray-100); padding:1px 4px; border-radius:3px; color:var(--primary);">/{id}/runs?action=create</code></td>
+          <td>Add Run 모달</td>
+          <td>Runs 생성 핸들러</td>
+          <td><span class="badge red">프로젝트 + TC ≥ 1</span></td>
+        </tr>
+        <tr>
+          <td><strong>5</strong></td>
+          <td>Invite a team member</td>
+          <td><code style="font-size:10px; background:var(--gray-100); padding:1px 4px; border-radius:3px; color:var(--primary);">/settings?tab=members&action=invite</code></td>
+          <td>Invite 모달</td>
+          <td>InviteMemberModal.tsx</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>6</strong></td>
+          <td>Connect Jira <span class="badge blue">Optional</span></td>
+          <td><code style="font-size:10px; background:var(--gray-100); padding:1px 4px; border-radius:3px; color:var(--primary);">/settings?tab=integrations</code></td>
+          <td>—</td>
+          <td>Settings/page.tsx</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+      <!-- P0 -->
+      <div style="background:var(--red-bg); border:1px solid #FECACA; border-radius:10px; padding:14px;">
+        <div style="font-size:11px; font-weight:700; color:#991B1B; margin-bottom:8px;">🔴 P0 — 즉시 수정</div>
+        <div style="font-size:12px; color:var(--gray-700); line-height:1.7;">
+          • 링크 버그 수정 (#hash → ?tab=)<br>
+          • 5개 markStep 호출 추가<br>
+          • OnboardingContext 생성<br>
+          • 데드코드 삭제
+        </div>
+      </div>
+      <!-- P1 -->
+      <div style="background:var(--amber-bg); border:1px solid #FDE68A; border-radius:10px; padding:14px;">
+        <div style="font-size:11px; font-weight:700; color:#92400E; margin-bottom:8px;">🟡 P1 — 후속 개선</div>
+        <div style="font-size:12px; color:var(--gray-700); line-height:1.7;">
+          • ?action= 모달 자동 오픈<br>
+          • 선행조건 토스트 안내<br>
+          • 로그인 시 DB 검증<br>
+          • 항목 서브텍스트 추가
+        </div>
+      </div>
+      <!-- P2 -->
+      <div style="background:var(--green-bg); border:1px solid #BBF7D0; border-radius:10px; padding:14px;">
+        <div style="font-size:11px; font-weight:700; color:#166534; margin-bottom:8px;">🟢 P2 — UX 폴리시</div>
+        <div style="font-size:12px; color:var(--gray-700); line-height:1.7;">
+          • Check bounce 애니메이션<br>
+          • Progress bar overshoot<br>
+          • 완료 시 축하 메시지<br>
+          • Auto-expand on complete
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px; background:white; border:1px solid var(--border); border-radius:10px; padding:16px;">
+      <div style="font-size:12px; font-weight:600; color:var(--gray-700); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <i class="ri-tools-line" style="color:var(--primary);"></i> Design Tokens — Checklist Widget
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; font-size:11px;">
+        <div style="background:var(--gray-50); padding:8px; border-radius:6px;">
+          <div style="color:var(--gray-400); font-size:10px;">Widget Width</div>
+          <div style="font-weight:600; color:var(--gray-800);">340px</div>
+        </div>
+        <div style="background:var(--gray-50); padding:8px; border-radius:6px;">
+          <div style="color:var(--gray-400); font-size:10px;">Border Radius</div>
+          <div style="font-weight:600; color:var(--gray-800);">14px</div>
+        </div>
+        <div style="background:var(--gray-50); padding:8px; border-radius:6px;">
+          <div style="color:var(--gray-400); font-size:10px;">Pill Radius</div>
+          <div style="font-weight:600; color:var(--gray-800);">28px (full)</div>
+        </div>
+        <div style="background:var(--gray-50); padding:8px; border-radius:6px;">
+          <div style="color:var(--gray-400); font-size:10px;">Check Size</div>
+          <div style="font-weight:600; color:var(--gray-800);">20px circle</div>
+        </div>
+        <div style="background:var(--gray-50); padding:8px; border-radius:6px;">
+          <div style="color:var(--gray-400); font-size:10px;">Complete Color</div>
+          <div style="font-weight:600; color:var(--green);">#22C55E</div>
+        </div>
+        <div style="background:var(--gray-50); padding:8px; border-radius:6px;">
+          <div style="color:var(--gray-400); font-size:10px;">Next-up Ring</div>
+          <div style="font-weight:600; color:var(--primary);">0 0 0 3px rgba(99,102,241,0.15)</div>
+        </div>
+        <div style="background:var(--gray-50); padding:8px; border-radius:6px;">
+          <div style="color:var(--gray-400); font-size:10px;">Item Font</div>
+          <div style="font-weight:600; color:var(--gray-800);">13px / 500</div>
+        </div>
+        <div style="background:var(--gray-50); padding:8px; border-radius:6px;">
+          <div style="color:var(--gray-400); font-size:10px;">Shadow</div>
+          <div style="font-weight:600; color:var(--gray-800);">0 8px 24px 0.12</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ Screen Navigation Script ══════════ -->
+<script>
+  document.querySelectorAll('.screen-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.screen-nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.screen-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.screen).classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

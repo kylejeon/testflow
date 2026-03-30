@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEV Handoff — Detail Panel Option A (TC + Run, Unified Component)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; line-height: 1.6; }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 2rem 2.5rem 4rem; }
+
+  /* ── Header ── */
+  .doc-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid #E2E8F0; }
+  .doc-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: #DC2626; color: #fff; font-size: 0.625rem; font-weight: 700; padding: 0.25rem 0.625rem; border-radius: 9999px; margin-bottom: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  .doc-title { font-size: 1.5rem; font-weight: 800; color: #0F172A; margin-bottom: 0.375rem; }
+  .doc-subtitle { font-size: 0.875rem; color: #64748B; }
+  .doc-meta { display: flex; gap: 2rem; margin-top: 0.75rem; font-size: 0.75rem; color: #94A3B8; }
+  .doc-meta span { display: flex; align-items: center; gap: 0.25rem; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 2rem; }
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; background: #6366F1; color: #fff; font-size: 0.75rem; font-weight: 800; margin-right: 0.5rem; flex-shrink: 0; }
+  .section-title { display: flex; align-items: center; font-size: 1rem; font-weight: 700; color: #0F172A; margin-bottom: 0.875rem; padding-bottom: 0.5rem; border-bottom: 1px solid #E2E8F0; }
+  .section-desc { font-size: 0.8125rem; color: #475569; margin-bottom: 0.75rem; line-height: 1.6; }
+
+  /* ── Card ── */
+  .card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .card-label { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6366F1; margin-bottom: 0.625rem; }
+  .card h4 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin: 0.875rem 0 0.375rem; }
+  .card h4:first-of-type { margin-top: 0; }
+
+  /* ── Spec Row ── */
+  .spec-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.3125rem 0; font-size: 0.75rem; border-bottom: 1px solid #F8FAFC; }
+  .spec-row .k { font-weight: 600; color: #475569; min-width: 180px; flex-shrink: 0; }
+  .spec-row .v { color: #059669; font-weight: 600; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.6875rem; text-align: right; }
+  .spec-row .old { color: #94A3B8; text-decoration: line-through; font-size: 0.6875rem; margin-right: 0.5rem; }
+  .spec-row .new-tag { display: inline-flex; padding: 0.0625rem 0.3125rem; background: #DCFCE7; color: #166534; border-radius: 0.25rem; font-size: 0.5625rem; font-weight: 700; margin-left: 0.375rem; }
+  .spec-row .run-only { display: inline-flex; padding: 0.0625rem 0.3125rem; background: #DBEAFE; color: #1D4ED8; border-radius: 0.25rem; font-size: 0.5625rem; font-weight: 700; margin-left: 0.375rem; }
+
+  /* ── Alert boxes ── */
+  .alert { border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.75rem; line-height: 1.6; margin: 0.5rem 0; }
+  .alert strong { font-weight: 700; }
+  .alert-warn { background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; }
+  .alert-warn strong { color: #78350F; }
+  .alert-info { background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; }
+  .alert-info strong { color: #1E3A8A; }
+  .alert-bug { background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; }
+  .alert-bug strong { color: #7F1D1D; }
+  .alert-success { background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; }
+
+  /* ── Code ── */
+  pre.code { background: #1E293B; color: #E2E8F0; border-radius: 0.5rem; padding: 1rem; font-size: 0.6875rem; line-height: 1.7; overflow-x: auto; margin: 0.5rem 0; font-family: 'SF Mono','Fira Code',monospace; }
+  pre.code .cm { color: #64748B; }
+  pre.code .kw { color: #818CF8; }
+  pre.code .str { color: #34D399; }
+  pre.code .num { color: #FBBF24; }
+  pre.code .fn { color: #38BDF8; }
+  pre.code .type { color: #F472B6; }
+
+  /* ── File table ── */
+  .file-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+  .file-table th { background: #F8FAFC; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; color: #64748B; border-bottom: 1px solid #E2E8F0; text-transform: uppercase; font-size: 0.625rem; letter-spacing: 0.04em; }
+  .file-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #F1F5F9; color: #334155; vertical-align: top; }
+  .file-table td:first-child { font-family: 'SF Mono','Fira Code',monospace; font-size: 0.6875rem; color: #6366F1; white-space: nowrap; }
+  .file-table tr:hover td { background: #FAFAFF; }
+
+  /* ── Priority badge ── */
+  .p-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.625rem; font-weight: 700; }
+  .p-badge.p0 { background: #FEE2E2; color: #991B1B; }
+  .p-badge.p1 { background: #FEF3C7; color: #92400E; }
+  .p-badge.p2 { background: #DBEAFE; color: #1D4ED8; }
+  .p-badge.p3 { background: #F1F5F9; color: #475569; }
+
+  /* ── Checklist ── */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.375rem 0; font-size: 0.75rem; color: #334155; }
+  .checklist li::before { content: '☐'; font-size: 0.875rem; color: #94A3B8; flex-shrink: 0; margin-top: -0.0625rem; }
+
+  /* ── Layout diagram ── */
+  .layout-diagram { background: #fff; border: 2px solid #E2E8F0; border-radius: 0.75rem; overflow: hidden; margin: 0.75rem 0; font-size: 0.6875rem; }
+  .layout-row { display: flex; align-items: center; padding: 0.5rem 1rem; border-bottom: 1px solid #E2E8F0; }
+  .layout-row:last-child { border-bottom: none; }
+  .layout-row .label { font-weight: 700; color: #0F172A; min-width: 180px; }
+  .layout-row .desc { color: #64748B; flex: 1; }
+  .layout-row .tag { font-size: 0.5625rem; font-weight: 700; padding: 0.0625rem 0.3125rem; border-radius: 0.25rem; margin-left: 0.375rem; }
+  .layout-row .tag-fixed { background: #F1F5F9; color: #475569; }
+  .layout-row .tag-flex { background: #DCFCE7; color: #166534; }
+  .layout-row .tag-run { background: #DBEAFE; color: #1D4ED8; }
+  .layout-row .tag-tc { background: #F5F3FF; color: #5B21B6; }
+  .layout-row.run-only { background: #F0F9FF; }
+  .layout-row.tc-only { background: #FAF5FF; }
+
+  /* ── TOC ── */
+  .toc { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 2rem; }
+  .toc-title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 0.5rem; }
+  .toc-list { list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 1.5rem; }
+  .toc-list li { font-size: 0.75rem; }
+  .toc-list a { color: #6366F1; text-decoration: none; font-weight: 500; }
+  .toc-list a:hover { text-decoration: underline; }
+
+  /* ── Comparison table ── */
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin: 0.5rem 0; }
+  .cmp-table th { background: #F8FAFC; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; color: #64748B; border-bottom: 1px solid #E2E8F0; }
+  .cmp-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #F1F5F9; vertical-align: top; }
+  .cmp-table .feature { font-weight: 600; color: #0F172A; }
+  .ctx-tc { color: #7C3AED; font-weight: 600; }
+  .ctx-run { color: #2563EB; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- DOCUMENT HEADER                        -->
+<!-- ═══════════════════════════════════════ -->
+<header class="doc-header">
+  <div class="doc-badge"><i class="ri-code-s-slash-line" style="font-size:0.75rem"></i> DEV HANDOFF</div>
+  <h1 class="doc-title">Detail Panel Option A — Unified Component Spec</h1>
+  <p class="doc-subtitle">TC Detail (36) + Run Detail (37) 통합 구현 가이드 · <code style="font-size:0.75rem;background:#F1F5F9;padding:0.125rem 0.375rem;border-radius:0.25rem">context: 'testcase' | 'run'</code> prop 기반 단일 컴포넌트</p>
+  <div class="doc-meta">
+    <span><i class="ri-calendar-line"></i> 2026-03-26</span>
+    <span><i class="ri-file-list-3-line"></i> Design: 36-tc-detail-option-a.html, 37-run-detail-option-a.html</span>
+    <span><i class="ri-user-line"></i> PM → Dev</span>
+  </div>
+</header>
+
+<!-- ═══════ TOC ═══════ -->
+<div class="toc">
+  <div class="toc-title">Table of Contents</div>
+  <ol class="toc-list">
+    <li><a href="#s1">§1 — 아키텍처 개요 & Panel Layout</a></li>
+    <li><a href="#s2">§2 — 공통 컴포넌트 설계 (DetailPanel)</a></li>
+    <li><a href="#s3">§3 — TC Detail 구현 스펙 (context: 'testcase')</a></li>
+    <li><a href="#s4">§4 — Run Detail 구현 스펙 (context: 'run')</a></li>
+    <li><a href="#s5">§5 — Step-Level Result 버튼 (Run-Only)</a></li>
+    <li><a href="#s6">§6 — Quick Actions Bar (Run-Only)</a></li>
+    <li><a href="#s7">§7 — Phase 0 버그 수정 (Precondition + Note)</a></li>
+    <li><a href="#s8">§8 — Details 탭 제거 → Meta+Steps 상시 노출 마이그레이션</a></li>
+    <li><a href="#s9">§9 — 새 DB 테이블: step_results</a></li>
+    <li><a href="#s10">§10 — 영향받는 파일 목록 & 구현 우선순위</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §1 — ARCHITECTURE OVERVIEW             -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s1">
+  <h2 class="section-title"><span class="section-num">1</span> 아키텍처 개요 & Panel Layout</h2>
+
+  <p class="section-desc">
+    Option A의 핵심: <strong>Meta grid + Steps + Attachments를 탭 위에 항상 노출</strong>하고, 기존 "Details" 탭을 제거합니다.
+    TC Detail과 Run Detail은 동일한 레이아웃 골격을 공유하되, Run context에서만 Quick Actions bar, Step-level result 버튼,
+    Step progress가 추가됩니다.
+  </p>
+
+  <div class="card">
+    <div class="card-label">Panel Stack (top → bottom)</div>
+    <div class="layout-diagram">
+      <div class="layout-row"><span class="label">① dp-header</span><span class="desc">TC-ID · Title · Description · Close 버튼</span><span class="tag tag-fixed">flex-shrink: 0</span></div>
+      <div class="layout-row run-only"><span class="label">② dp-actions-bar</span><span class="desc">Status select · Add Result · Pass & Next · ← → Nav</span><span class="tag tag-run">RUN ONLY</span><span class="tag tag-fixed">flex-shrink: 0</span></div>
+      <div class="layout-row"><span class="label">③ dp-meta</span><span class="desc">2-col grid: Priority · Folder · Tags · Assignee · Created · Last Run</span><span class="tag tag-fixed">flex-shrink: 0</span></div>
+      <div class="layout-row"><span class="label">④ dp-steps-toggle</span><span class="desc">접이식 토글 바 — TC: "N steps · M attachments" / Run: "3/5 steps passed"</span><span class="tag tag-fixed">flex-shrink: 0</span></div>
+      <div class="layout-row"><span class="label">⑤ dp-steps-area ★</span><span class="desc">Precondition → Steps (+ Expected Result inline) → Attachments</span><span class="tag tag-fixed">max-height: 40vh; overflow-y: auto</span></div>
+      <div class="layout-row"><span class="label">⑥ dp-tabs</span><span class="desc">Comments · Results · Issues · History (Details 탭 제거됨)</span><span class="tag tag-fixed">flex-shrink: 0</span></div>
+      <div class="layout-row"><span class="label">⑦ dp-tab-body</span><span class="desc">활성 탭 콘텐츠 — 남은 공간 전체 차지</span><span class="tag tag-flex">flex: 1; overflow-y: auto</span></div>
+      <div class="layout-row tc-only"><span class="label">⑧ dp-actions (footer)</span><span class="desc">Edit · Delete 버튼</span><span class="tag tag-tc">TC ONLY</span><span class="tag tag-fixed">flex-shrink: 0</span></div>
+    </div>
+
+    <div class="alert alert-info">
+      <strong>Key Change:</strong> 기존 5-tab (Details / Comments / Results / Issues / History) → 4-tab (Comments / Results / Issues / History).
+      Details 탭에 있던 모든 정보(Meta, Steps, Expected Result, Precondition, Attachments)가 탭 바 위로 이동하여 항상 보입니다.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Panel Dimensions</div>
+    <div class="spec-row"><span class="k">Panel width</span><span class="v">500px (min-width: 500px)</span></div>
+    <div class="spec-row"><span class="k">현재 run-detail width</span><span class="old">w-[576px]</span><span class="v">→ 500px (w-[500px])</span></div>
+    <div class="spec-row"><span class="k">Background</span><span class="v">#fff</span></div>
+    <div class="spec-row"><span class="k">Border</span><span class="v">border-left: 1px solid #E2E8F0</span></div>
+    <div class="spec-row"><span class="k">Display</span><span class="v">flex; flex-direction: column; overflow: hidden</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §2 — SHARED COMPONENT DESIGN           -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s2">
+  <h2 class="section-title"><span class="section-num">2</span> 공통 컴포넌트 설계 — DetailPanel</h2>
+
+  <p class="section-desc">
+    하나의 <code>DetailPanel</code> 컴포넌트를 만들어 <code>context</code> prop으로 TC/Run 분기합니다.
+    이렇게 하면 스타일·레이아웃 일관성을 유지하면서 Run 전용 기능(Step results, Quick Actions)을 조건부로 렌더링할 수 있습니다.
+  </p>
+
+  <div class="card">
+    <div class="card-label">Interface Definition</div>
+<pre class="code"><span class="cm">// src/components/DetailPanel/types.ts</span>
+
+<span class="kw">export interface</span> <span class="type">DetailPanelProps</span> {
+  <span class="cm">/** 'testcase' = TC 목록에서, 'run' = Run Detail에서 */</span>
+  context: <span class="str">'testcase'</span> | <span class="str">'run'</span>;
+
+  <span class="cm">/** 공통: 테스트 케이스 데이터 */</span>
+  testCase: {
+    id: <span class="type">string</span>;
+    title: <span class="type">string</span>;
+    description?: <span class="type">string</span>;
+    customId?: <span class="type">string</span>;        <span class="cm">// TC-001 형식</span>
+    folder?: <span class="type">string</span>;
+    priority: <span class="type">string</span>;
+    tags?: <span class="type">string</span>;            <span class="cm">// comma-separated</span>
+    assignee?: <span class="type">string</span>;
+    createdAt: <span class="type">string</span>;
+    steps?: <span class="type">string</span>;            <span class="cm">// JSON 또는 newline-separated</span>
+    expected_result?: <span class="type">string</span>;
+    precondition?: <span class="type">string</span>;     <span class="cm">// ★ Phase 0 Bug fix: 반드시 전달</span>
+    attachments?: { name: <span class="type">string</span>; url: <span class="type">string</span>; size: <span class="type">number</span> }[];
+  };
+
+  <span class="cm">/** Run context only */</span>
+  runExecution?: {
+    runStatus: <span class="type">TestStatus</span>;
+    stepResults?: Record&lt;<span class="type">string</span>, <span class="str">'passed'</span> | <span class="str">'failed'</span> | <span class="str">'blocked'</span>&gt;;
+    lastRunName?: <span class="type">string</span>;
+  };
+
+  <span class="cm">/** Callbacks */</span>
+  onClose: () =&gt; <span class="type">void</span>;
+  onEdit?: () =&gt; <span class="type">void</span>;              <span class="cm">// TC context</span>
+  onDelete?: () =&gt; <span class="type">void</span>;            <span class="cm">// TC context</span>
+  onStatusChange?: (status: <span class="type">TestStatus</span>) =&gt; <span class="type">void</span>;   <span class="cm">// Run context</span>
+  onPassAndNext?: () =&gt; <span class="type">void</span>;       <span class="cm">// Run context</span>
+  onAddResult?: () =&gt; <span class="type">void</span>;        <span class="cm">// Run context</span>
+  onPrev?: () =&gt; <span class="type">void</span>;
+  onNext?: () =&gt; <span class="type">void</span>;
+  onStepResult?: (stepId: <span class="type">string</span>, status: <span class="str">'passed'</span>|<span class="str">'failed'</span>|<span class="type">null</span>) =&gt; <span class="type">void</span>;  <span class="cm">// Run context</span>
+}
+</pre>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Component Structure (JSX)</div>
+<pre class="code"><span class="cm">// src/components/DetailPanel/DetailPanel.tsx</span>
+
+<span class="kw">export function</span> <span class="fn">DetailPanel</span>({ context, testCase, runExecution, ...props }: <span class="type">DetailPanelProps</span>) {
+  <span class="kw">const</span> [activeTab, setActiveTab] = useState&lt;<span class="str">'comments'</span>|<span class="str">'results'</span>|<span class="str">'issues'</span>|<span class="str">'history'</span>&gt;(<span class="str">'comments'</span>);
+  <span class="kw">const</span> [stepsCollapsed, setStepsCollapsed] = useState(<span class="kw">false</span>);
+
+  <span class="kw">const</span> steps = <span class="fn">parseSteps</span>(testCase.steps);
+  <span class="kw">const</span> isRun = context === <span class="str">'run'</span>;
+
+  <span class="kw">return</span> (
+    &lt;div className=<span class="str">"w-[500px] min-w-[500px] bg-white border-l border-gray-200 flex flex-col overflow-hidden"</span>&gt;
+
+      <span class="cm">{/* ① Header */}</span>
+      &lt;<span class="fn">DPHeader</span> testCase={testCase} onClose={props.onClose} /&gt;
+
+      <span class="cm">{/* ② Quick Actions — Run Only */}</span>
+      {isRun && runExecution && (
+        &lt;<span class="fn">DPQuickActions</span>
+          status={runExecution.runStatus}
+          onStatusChange={props.onStatusChange}
+          onAddResult={props.onAddResult}
+          onPassAndNext={props.onPassAndNext}
+          onPrev={props.onPrev}
+          onNext={props.onNext}
+        /&gt;
+      )}
+
+      <span class="cm">{/* ③ Meta Grid — Always visible */}</span>
+      &lt;<span class="fn">DPMeta</span> testCase={testCase} /&gt;
+
+      <span class="cm">{/* ④ Steps Toggle */}</span>
+      &lt;<span class="fn">DPStepsToggle</span>
+        collapsed={stepsCollapsed}
+        onClick={() =&gt; setStepsCollapsed(!stepsCollapsed)}
+        stepCount={steps.length}
+        attachmentCount={testCase.attachments?.length || <span class="num">0</span>}
+        <span class="cm">{/* Run: show progress instead of counts */}</span>
+        passedStepCount={isRun ? countPassedSteps(runExecution?.stepResults) : undefined}
+        context={context}
+      /&gt;
+
+      <span class="cm">{/* ⑤ Steps Area — Collapsible, max 40vh */}</span>
+      {!stepsCollapsed && (
+        &lt;div className=<span class="str">"max-h-[40vh] overflow-y-auto px-5 py-3.5 border-b border-gray-200 flex-shrink-0"</span>&gt;
+          {testCase.precondition && &lt;<span class="fn">Precondition</span> text={testCase.precondition} /&gt;}
+          &lt;<span class="fn">StepsList</span>
+            steps={steps}
+            expectedResults={testCase.expected_result}
+            stepResults={isRun ? runExecution?.stepResults : undefined}
+            showResultButtons={isRun}
+            onStepResult={props.onStepResult}
+          /&gt;
+          {testCase.attachments && &lt;<span class="fn">Attachments</span> files={testCase.attachments} /&gt;}
+        &lt;/div&gt;
+      )}
+
+      <span class="cm">{/* ⑥ Tabs */}</span>
+      &lt;<span class="fn">DPTabBar</span> tabs={[<span class="str">'comments'</span>,<span class="str">'results'</span>,<span class="str">'issues'</span>,<span class="str">'history'</span>]} active={activeTab} onChange={setActiveTab} /&gt;
+
+      <span class="cm">{/* ⑦ Tab Body — fills remaining space */}</span>
+      &lt;div className=<span class="str">"flex-1 overflow-y-auto px-5 py-3.5"</span>&gt;
+        {activeTab === <span class="str">'comments'</span> && &lt;<span class="fn">CommentsTab</span> /&gt;}
+        {activeTab === <span class="str">'results'</span>  && &lt;<span class="fn">ResultsTab</span> /&gt;}
+        {activeTab === <span class="str">'issues'</span>   && &lt;<span class="fn">IssuesTab</span> /&gt;}
+        {activeTab === <span class="str">'history'</span>  && &lt;<span class="fn">HistoryTab</span> /&gt;}
+      &lt;/div&gt;
+
+      <span class="cm">{/* ⑧ Footer — TC Only */}</span>
+      {!isRun && (
+        &lt;div className=<span class="str">"px-5 py-3 border-t border-gray-200 flex gap-2 flex-shrink-0"</span>&gt;
+          &lt;button className=<span class="str">"flex-1 ... bg-indigo-500 text-white"</span> onClick={props.onEdit}&gt;Edit&lt;/button&gt;
+          &lt;button className=<span class="str">"flex-1 ... text-red-500 border-red-300"</span> onClick={props.onDelete}&gt;Delete&lt;/button&gt;
+        &lt;/div&gt;
+      )}
+    &lt;/div&gt;
+  );
+}
+</pre>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Context 분기 요약</div>
+    <table class="cmp-table">
+      <thead>
+        <tr><th class="feature" style="min-width:180px">Feature</th><th><span class="ctx-tc">context: 'testcase'</span></th><th><span class="ctx-run">context: 'run'</span></th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="feature">Quick Actions bar</td><td>❌ hidden</td><td>✅ Status select + Add Result + Pass & Next + Nav</td></tr>
+        <tr><td class="feature">Step-level P/F buttons</td><td>❌ hidden</td><td>✅ Mini Pass/Fail per step</td></tr>
+        <tr><td class="feature">Steps toggle 우측 텍스트</td><td>"5 steps · 2 attachments"</td><td>"3/5 steps passed" (color-coded)</td></tr>
+        <tr><td class="feature">Step row styling</td><td>기본 (bg-gray-50)</td><td>.step-passed (green) / .step-failed (red)</td></tr>
+        <tr><td class="feature">Footer (Edit/Delete)</td><td>✅ shown</td><td>❌ hidden (Quick Actions로 대체)</td></tr>
+        <tr><td class="feature">Header</td><td>TC-ID + Title + Description</td><td>TC-ID + Title (Description은 Meta에서)</td></tr>
+        <tr><td class="feature">Tab defaults</td><td>Comments</td><td>Comments</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label">파일 구조 제안</div>
+<pre class="code">src/components/DetailPanel/
+  ├── DetailPanel.tsx       <span class="cm">// 메인 컴포넌트 (context 분기)</span>
+  ├── types.ts              <span class="cm">// DetailPanelProps, shared types</span>
+  ├── DPHeader.tsx           <span class="cm">// TC-ID, Title, Description, Close</span>
+  ├── DPQuickActions.tsx     <span class="cm">// Run-only: Status, Add Result, Pass & Next, Nav</span>
+  ├── DPMeta.tsx             <span class="cm">// 2-col meta grid</span>
+  ├── DPStepsToggle.tsx      <span class="cm">// Collapsible toggle bar</span>
+  ├── DPStepsArea.tsx        <span class="cm">// Precondition + Steps + Attachments</span>
+  ├── StepRow.tsx            <span class="cm">// Individual step with optional P/F buttons</span>
+  ├── DPTabBar.tsx           <span class="cm">// 4-tab bar with badges</span>
+  ├── tabs/
+  │   ├── CommentsTab.tsx
+  │   ├── ResultsTab.tsx
+  │   ├── IssuesTab.tsx
+  │   └── HistoryTab.tsx     <span class="cm">// ★ 신규 — audit_log 기반</span>
+  └── index.ts
+</pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §3 — TC DETAIL SPEC                    -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s3">
+  <h2 class="section-title"><span class="section-num">3</span> TC Detail 구현 스펙 <span style="font-size:0.75rem;color:#7C3AED;margin-left:0.5rem">context: 'testcase'</span></h2>
+
+  <p class="section-desc">디자인 파일: <code>36-tc-detail-option-a.html</code> 기반. 현재 TC 목록 페이지에는 Detail Panel이 없으므로 <strong>신규 구현</strong>입니다.</p>
+
+  <div class="card">
+    <div class="card-label">Header (dp-header)</div>
+    <div class="spec-row"><span class="k">TC-ID</span><span class="v">0.6875rem, monospace, #94A3B8</span></div>
+    <div class="spec-row"><span class="k">Title</span><span class="v">0.9375rem, 700, #0F172A, line-height: 1.3</span></div>
+    <div class="spec-row"><span class="k">Description</span><span class="v">0.75rem, #64748B, line-height: 1.5 — margin-top: 0.375rem</span></div>
+    <div class="spec-row"><span class="k">Close button</span><span class="v">28px square, ri-close-line, hover: bg #F1F5F9</span></div>
+    <div class="spec-row"><span class="k">Padding</span><span class="v">1rem 1.25rem 0.875rem</span></div>
+    <div class="spec-row"><span class="k">Border</span><span class="v">border-bottom: 1px solid #E2E8F0</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Meta Grid (dp-meta) — 항상 표시</div>
+    <div class="spec-row"><span class="k">Layout</span><span class="v">2-col grid, gap: 0.625rem 1rem</span></div>
+    <div class="spec-row"><span class="k">Padding</span><span class="v">0.875rem 1.25rem</span></div>
+    <div class="spec-row"><span class="k">Fields (6개)</span><span class="v">Priority · Folder · Tags · Assignee · Created · Last Run</span></div>
+    <div class="spec-row"><span class="k">Label style</span><span class="v">0.625rem, 600, uppercase, #94A3B8, letter-spacing: 0.05em</span></div>
+    <div class="spec-row"><span class="k">Value style</span><span class="v">0.8125rem, 500, #0F172A</span></div>
+    <div class="spec-row"><span class="k">Priority badge</span><span class="v">pill, High: #FEE2E2/#991B1B, Med: #FEF3C7/#92400E, Low: #DCFCE7/#166534</span></div>
+    <div class="spec-row"><span class="k">Tag style</span><span class="v">0.6875rem, 500, bg #EEF2FF, color #4338CA, border-radius: 0.25rem</span></div>
+    <div class="spec-row"><span class="k">Assignee</span><span class="v">20px avatar circle + name</span></div>
+    <div class="spec-row"><span class="k">Last Run</span><span class="v">"Run #42 →" — color: #6366F1, cursor: pointer (클릭시 해당 Run으로 이동)</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Steps Toggle (TC context)</div>
+    <div class="spec-row"><span class="k">Left side</span><span class="v">▼ chevron + "Test Steps" (0.6875rem, 700, uppercase)</span></div>
+    <div class="spec-row"><span class="k">Right side</span><span class="v">"5 steps · 2 attachments" (0.6875rem, #94A3B8)</span></div>
+    <div class="spec-row"><span class="k">Background</span><span class="v">#F8FAFC → #F1F5F9 hover</span></div>
+    <div class="spec-row"><span class="k">Chevron rotation</span><span class="v">0deg open → -90deg collapsed (transition: 0.2s)</span></div>
+    <div class="spec-row"><span class="k">Default state</span><span class="v">expanded (stepsCollapsed = false)</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Steps Area (TC context — Read-only steps)</div>
+    <h4>Container</h4>
+    <div class="spec-row"><span class="k">Max height</span><span class="v">40vh</span></div>
+    <div class="spec-row"><span class="k">Overflow</span><span class="v">overflow-y: auto</span></div>
+    <div class="spec-row"><span class="k">Content order</span><span class="v">Precondition → Steps → Attachments</span></div>
+
+    <h4>Precondition Box</h4>
+    <div class="spec-row"><span class="k">Background</span><span class="v">#FFFBEB (amber-50)</span></div>
+    <div class="spec-row"><span class="k">Border</span><span class="v">1px solid #FDE68A</span></div>
+    <div class="spec-row"><span class="k">Text</span><span class="v">0.75rem, #92400E, line-height: 1.5</span></div>
+    <div class="spec-row"><span class="k">Icon</span><span class="v">ri-alert-line, 0.75rem</span></div>
+
+    <h4>Step Row</h4>
+    <div class="spec-row"><span class="k">Background</span><span class="v">#F8FAFC (bg-gray-50)</span></div>
+    <div class="spec-row"><span class="k">Step number</span><span class="v">20px circle, bg #EEF2FF, color #4338CA, 0.625rem 700</span></div>
+    <div class="spec-row"><span class="k">Step text</span><span class="v">0.75rem, #334155, line-height: 1.5</span></div>
+    <div class="spec-row"><span class="k">Expected result</span><span class="v">0.6875rem, #16A34A, ri-checkbox-circle-line icon prefix</span></div>
+    <div class="spec-row"><span class="k">Gap between steps</span><span class="v">0.375rem</span></div>
+    <div class="spec-row"><span class="k">Mini P/F buttons</span><span class="v">❌ hidden (TC context)</span></div>
+
+    <h4>Attachments Grid</h4>
+    <div class="spec-row"><span class="k">Layout</span><span class="v">3-col grid, gap 0.375rem</span></div>
+    <div class="spec-row"><span class="k">Item height</span><span class="v">3rem (48px)</span></div>
+    <div class="spec-row"><span class="k">Thumbnail + icon</span><span class="v">ri-image-line (images), ri-file-text-line (docs)</span></div>
+    <div class="spec-row"><span class="k">Last item</span><span class="v">ri-add-line (add attachment button)</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Tabs (TC context) — 4개 탭</div>
+    <div class="spec-row"><span class="k">Tab 1</span><span class="v">Comments — badge: count</span></div>
+    <div class="spec-row"><span class="k">Tab 2</span><span class="v">Results — badge: count (과거 run 결과들)</span></div>
+    <div class="spec-row"><span class="k">Tab 3</span><span class="v">Issues — badge: count</span></div>
+    <div class="spec-row"><span class="k">Tab 4</span><span class="v">History — no badge (audit_log 기반)</span></div>
+    <div class="spec-row"><span class="k">Badge default</span><span class="v">bg #F1F5F9, color #64748B, 0.5625rem 700</span></div>
+    <div class="spec-row"><span class="k">Badge active</span><span class="v">bg #EEF2FF, color #6366F1</span></div>
+    <div class="spec-row"><span class="k">Default active tab</span><span class="v">Comments</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Footer (TC context only)</div>
+    <div class="spec-row"><span class="k">Edit button</span><span class="v">bg #6366F1, color #fff, ri-edit-line, flex: 1</span></div>
+    <div class="spec-row"><span class="k">Delete button</span><span class="v">bg #fff, color #EF4444, border #FCA5A5, ri-delete-bin-6-line, flex: 1</span></div>
+    <div class="spec-row"><span class="k">Padding</span><span class="v">0.75rem 1.25rem, border-top: 1px solid #E2E8F0</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §4 — RUN DETAIL SPEC                   -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s4">
+  <h2 class="section-title"><span class="section-num">4</span> Run Detail 구현 스펙 <span style="font-size:0.75rem;color:#2563EB;margin-left:0.5rem">context: 'run'</span></h2>
+
+  <p class="section-desc">디자인 파일: <code>37-run-detail-option-a.html</code> 기반. 현재 <code>run-detail/page.tsx</code>의 우측 패널(Line 2047~)을 이 컴포넌트로 교체합니다.</p>
+
+  <div class="card">
+    <div class="card-label">TC context와의 차이점 (5가지)</div>
+
+    <h4>① Quick Actions Bar (dp-actions-bar) <span class="new-tag">NEW</span></h4>
+    <div class="spec-row"><span class="k">Layout</span><span class="v">flex, gap: 0.375rem, padding: 0.625rem 1.25rem</span></div>
+    <div class="spec-row"><span class="k">Status select</span><span class="v">0.75rem 600, pill, dynamic bg per status</span></div>
+    <div class="spec-row"><span class="k">Add Result btn</span><span class="v">bg #F1F5F9, color #475569, ri-add-line</span></div>
+    <div class="spec-row"><span class="k">Pass & Next btn</span><span class="v">bg #22C55E → #16A34A hover, color #fff, ri-check-line</span></div>
+    <div class="spec-row"><span class="k">Nav ← → buttons</span><span class="v">28px square, ri-arrow-up/down-s-line</span></div>
+    <div class="spec-row"><span class="k">Spacer</span><span class="v">flex: 1 between Add Result and Pass & Next</span></div>
+
+    <h4>② Step-Level Result Buttons <span class="new-tag">NEW</span></h4>
+    <p style="font-size:0.75rem;color:#475569;margin-bottom:0.375rem">(상세 스펙은 §5에서)</p>
+
+    <h4>③ Steps Toggle 우측 텍스트</h4>
+    <div class="spec-row"><span class="k">TC context</span><span class="v">"5 steps · 2 attachments"</span></div>
+    <div class="spec-row"><span class="k">Run context</span><span class="v">"3/5 steps passed" — passed: #16A34A 600, sep "/" #CBD5E1, total: #64748B</span></div>
+
+    <h4>④ Step Row 상태 스타일링</h4>
+    <div class="spec-row"><span class="k">Default (untested)</span><span class="v">bg #F8FAFC, num bg #EEF2FF/#4338CA</span></div>
+    <div class="spec-row"><span class="k">.step-passed</span><span class="v">bg #F0FDF4, border 1px #BBF7D0, num bg #22C55E/#fff</span></div>
+    <div class="spec-row"><span class="k">.step-failed</span><span class="v">bg #FEF2F2, border 1px #FECACA, num bg #EF4444/#fff</span></div>
+
+    <h4>⑤ Footer 제거</h4>
+    <div class="spec-row"><span class="k">Edit/Delete footer</span><span class="v">❌ hidden — Quick Actions bar로 대체됨</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Status Select 색상 맵</div>
+    <div class="spec-row"><span class="k">Passed</span><span class="v">bg #F0FDF4, color #166534</span></div>
+    <div class="spec-row"><span class="k">Failed</span><span class="v">bg #FEF2F2, color #991B1B</span></div>
+    <div class="spec-row"><span class="k">Blocked</span><span class="v">bg #FFFBEB, color #92400E</span></div>
+    <div class="spec-row"><span class="k">Retest</span><span class="v">bg #F5F3FF, color #5B21B6</span></div>
+    <div class="spec-row"><span class="k">Untested</span><span class="v">bg #F8FAFC, color #64748B</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §5 — STEP-LEVEL RESULT BUTTONS         -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s5">
+  <h2 class="section-title"><span class="section-num">5</span> Step-Level Result 버튼 <span style="font-size:0.75rem;color:#2563EB;margin-left:0.5rem">RUN ONLY</span></h2>
+
+  <div class="card">
+    <div class="card-label">Mini Button 스펙</div>
+    <div class="spec-row"><span class="k">Size</span><span class="v">22px × 22px (1.375rem)</span></div>
+    <div class="spec-row"><span class="k">Border radius</span><span class="v">0.25rem (4px)</span></div>
+    <div class="spec-row"><span class="k">Icon size</span><span class="v">0.625rem (10px)</span></div>
+    <div class="spec-row"><span class="k">Gap (Pass / Fail)</span><span class="v">0.1875rem (3px)</span></div>
+
+    <h4>State Matrix</h4>
+    <table class="cmp-table">
+      <thead>
+        <tr><th>State</th><th>Background</th><th>Icon Color</th><th>Border</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="feature">Default</td><td>#fff</td><td>#94A3B8</td><td>1px solid #E2E8F0</td></tr>
+        <tr><td class="feature">Pass hover</td><td>#F0FDF4</td><td>#16A34A</td><td>#86EFAC</td></tr>
+        <tr><td class="feature">Fail hover</td><td>#FEF2F2</td><td>#DC2626</td><td>#FCA5A5</td></tr>
+        <tr><td class="feature">Pass active</td><td>#22C55E</td><td>#fff</td><td>#22C55E</td></tr>
+        <tr><td class="feature">Fail active</td><td>#EF4444</td><td>#fff</td><td>#EF4444</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label">인터랙션 로직</div>
+    <div class="alert alert-warn">
+      <strong>Click Pass:</strong> Step bg → green (#F0FDF4), num circle → green (#22C55E/#fff), Pass button fills. 같은 버튼 다시 클릭 → untested로 토글.<br>
+      <strong>Click Fail:</strong> 같은 로직 red 적용. Pass 상태에서 Fail 클릭 → Pass 해제, Fail 활성화.<br>
+      <strong>Pass & Next:</strong> 모든 untested step을 Passed로 표시, TC status → Passed, 다음 TC로 자동 이동.
+    </div>
+
+<pre class="code"><span class="cm">// StepRow.tsx — Run context</span>
+
+<span class="kw">function</span> <span class="fn">StepRow</span>({ step, result, showResultButtons, onStepResult }: StepRowProps) {
+  <span class="kw">const</span> stateClass = result === <span class="str">'passed'</span> ? <span class="str">'bg-green-50 border border-green-200'</span>
+                    : result === <span class="str">'failed'</span> ? <span class="str">'bg-red-50 border border-red-200'</span>
+                    : <span class="str">'bg-gray-50'</span>;
+
+  <span class="kw">const</span> numClass = result === <span class="str">'passed'</span> ? <span class="str">'bg-green-500 text-white'</span>
+                  : result === <span class="str">'failed'</span> ? <span class="str">'bg-red-500 text-white'</span>
+                  : <span class="str">'bg-indigo-100 text-indigo-700'</span>;
+
+  <span class="kw">const</span> handleClick = (status: <span class="str">'passed'</span>|<span class="str">'failed'</span>) =&gt; {
+    <span class="cm">// Toggle: 이미 활성 상태면 null(untested)로 되돌림</span>
+    onStepResult?.(step.id, result === status ? <span class="kw">null</span> : status);
+  };
+
+  <span class="kw">return</span> (
+    &lt;div className={<span class="str">`flex gap-2 rounded-lg p-2 items-start ${stateClass}`</span>}&gt;
+      &lt;div className={<span class="str">`w-5 h-5 rounded-full flex items-center justify-center text-[0.625rem] font-bold ${numClass}`</span>}&gt;
+        {step.order}
+      &lt;/div&gt;
+      &lt;div className=<span class="str">"flex-1 min-w-0"</span>&gt;
+        &lt;p className=<span class="str">"text-xs text-gray-700 leading-relaxed"</span>&gt;{step.text}&lt;/p&gt;
+        {step.expected && (
+          &lt;p className=<span class="str">"text-[0.6875rem] text-green-600 mt-1 flex items-start gap-1"</span>&gt;
+            &lt;i className=<span class="str">"ri-checkbox-circle-line text-xs flex-shrink-0 mt-0.5"</span> /&gt;
+            {step.expected}
+          &lt;/p&gt;
+        )}
+      &lt;/div&gt;
+      {showResultButtons && (
+        &lt;div className=<span class="str">"flex gap-[3px] flex-shrink-0 mt-0.5"</span>&gt;
+          &lt;<span class="fn">MiniBtn</span> type=<span class="str">"pass"</span> active={result===<span class="str">'passed'</span>} onClick={() =&gt; handleClick(<span class="str">'passed'</span>)} /&gt;
+          &lt;<span class="fn">MiniBtn</span> type=<span class="str">"fail"</span> active={result===<span class="str">'failed'</span>} onClick={() =&gt; handleClick(<span class="str">'failed'</span>)} /&gt;
+        &lt;/div&gt;
+      )}
+    &lt;/div&gt;
+  );
+}
+</pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §6 — QUICK ACTIONS BAR                 -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s6">
+  <h2 class="section-title"><span class="section-num">6</span> Quick Actions Bar <span style="font-size:0.75rem;color:#2563EB;margin-left:0.5rem">RUN ONLY</span></h2>
+
+  <div class="card">
+    <div class="card-label">현재 run-detail/page.tsx와의 매핑</div>
+
+    <div class="alert alert-info">
+      <strong>현재 구현 (Line 2074~2101):</strong> [Add result] [Pass & Next] [←] [→] 가 Details 영역 중간에 위치.<br>
+      <strong>Option A:</strong> 이 4개 버튼 + Status select를 dp-actions-bar로 통합, Header 바로 아래에 고정 배치.
+    </div>
+
+    <h4>현재 → 변경 매핑</h4>
+    <table class="cmp-table">
+      <thead>
+        <tr><th>현재 (run-detail/page.tsx)</th><th>Option A (DPQuickActions)</th><th>변경 사항</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="feature">Status &lt;select&gt; (Line 2054)</td><td>dp-status-select (pill)</td><td>스타일 변경 — pill shape, dynamic bg</td></tr>
+        <tr><td class="feature">Add result btn (Line 2076)</td><td>dp-add-result btn</td><td>스타일 변경 — compact pill</td></tr>
+        <tr><td class="feature">Pass & Next btn (Line 2082)</td><td>dp-action-pass btn</td><td>스타일 변경 — compact pill, green</td></tr>
+        <tr><td class="feature">← → buttons (Line 2088)</td><td>dp-nav-btn ↑ ↓</td><td>방향: 좌우→상하, 28px square</td></tr>
+        <tr><td class="feature">—</td><td>dp-spacer (flex:1)</td><td>Add Result과 Pass & Next 사이 간격</td></tr>
+      </tbody>
+    </table>
+
+    <h4>handlePassAndNext 기존 로직 유지 (Line 601~675)</h4>
+    <div class="spec-row"><span class="k">1. Create result</span><span class="v">INSERT INTO test_results (status: 'passed', resolved_at 로직)</span></div>
+    <div class="spec-row"><span class="k">2. Update local state</span><span class="v">setTestCases(), setSelectedTestCase()</span></div>
+    <div class="spec-row"><span class="k">3. Auto-advance</span><span class="v">setTimeout 500ms → setSelectedTestCase(next)</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §7 — PHASE 0 BUG FIXES                -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s7">
+  <h2 class="section-title"><span class="section-num">7</span> Phase 0 버그 수정</h2>
+
+  <p class="section-desc">DetailPanel 구현 전에 먼저 수정해야 할 기존 버그 2건입니다. 이 버그들이 수정되어야 새 패널에서 데이터가 올바르게 표시됩니다.</p>
+
+  <!-- Bug 1: Precondition -->
+  <div class="card">
+    <div class="card-label" style="color:#DC2626">🐛 BUG #1 — Precondition 미전달</div>
+
+    <div class="alert alert-bug">
+      <strong>증상:</strong> FocusMode와 현재 Run Detail 패널에서 precondition이 표시되지 않음.<br>
+      <strong>원인:</strong> <code>run-detail/page.tsx</code> Line 1376~1383의 focusTests 매핑에서 <code>precondition</code> 필드 누락.
+      또한 TestCase 인터페이스(Line 9~23)에 <code>precondition</code> 필드 자체가 없음.
+    </div>
+
+    <h4>Fix 1-A: TestCase 인터페이스 확장</h4>
+<pre class="code"><span class="cm">// run-detail/page.tsx Line 9~23</span>
+<span class="kw">interface</span> <span class="type">TestCase</span> {
+  id: <span class="type">string</span>;
+  title: <span class="type">string</span>;
+  description?: <span class="type">string</span>;
+  folder?: <span class="type">string</span>;
+  priority: <span class="type">string</span>;
+  status: <span class="type">string</span>;
+  assignee?: <span class="type">string</span>;
+  is_automated: <span class="type">boolean</span>;
+  created_at: <span class="type">string</span>;
+  steps?: <span class="type">string</span>;
+  expected_result?: <span class="type">string</span>;
+  precondition?: <span class="type">string</span>;    <span class="cm">// ★ 추가</span>
+  tags?: <span class="type">string</span>;
+  attachments?: { name: <span class="type">string</span>; url: <span class="type">string</span>; size: <span class="type">number</span> }[];
+}
+</pre>
+
+    <h4>Fix 1-B: Supabase 쿼리에 precondition 포함</h4>
+    <p style="font-size:0.75rem;color:#475569">TC 데이터를 fetch하는 쿼리의 select 절에 <code>precondition</code> 컬럼을 추가합니다.</p>
+
+    <h4>Fix 1-C: focusTests 매핑에 precondition 추가</h4>
+<pre class="code"><span class="cm">// run-detail/page.tsx Line 1376~1383</span>
+<span class="kw">const</span> focusTests: FocusTestCase[] = testCases.map((tc) =&gt; ({
+  id: tc.id,
+  title: tc.title,
+  description: tc.description,
+  steps: tc.steps,
+  expected_result: tc.expected_result,
+  precondition: tc.precondition,    <span class="cm">// ★ 추가 (1줄)</span>
+  runStatus: tc.runStatus,
+}));
+</pre>
+
+    <div class="spec-row"><span class="k">영향 범위</span><span class="v">FocusMode + DetailPanel (새 컴포넌트)</span></div>
+    <div class="spec-row"><span class="k">수정 시간</span><span class="v">~15분</span></div>
+  </div>
+
+  <!-- Bug 2: Note not saved -->
+  <div class="card">
+    <div class="card-label" style="color:#DC2626">🐛 BUG #2 — Focus Mode Note 미저장</div>
+
+    <div class="alert alert-bug">
+      <strong>증상:</strong> Focus Mode에서 Fail 시 입력한 note가 DB에 저장되지 않음.<br>
+      <strong>원인:</strong> <code>handleFocusStatusChange</code> (Line 1370)에서 <code>_note</code> 파라미터가 무시됨 (underscore prefix = 의도적 미사용).
+    </div>
+
+    <h4>수정</h4>
+<pre class="code"><span class="cm">// run-detail/page.tsx Line 1369~1374</span>
+
+<span class="cm">// BEFORE (buggy):</span>
+<span class="kw">const</span> handleFocusStatusChange = useCallback(
+  <span class="kw">async</span> (testId: <span class="type">string</span>, status: <span class="type">TestStatus</span>, _note?: <span class="type">string</span>) =&gt; {
+    <span class="kw">await</span> handleStatusChange(testId, status);  <span class="cm">// note 무시됨!</span>
+  },
+  [handleStatusChange]
+);
+
+<span class="cm">// AFTER (fixed):</span>
+<span class="kw">const</span> handleFocusStatusChange = useCallback(
+  <span class="kw">async</span> (testId: <span class="type">string</span>, status: <span class="type">TestStatus</span>, note?: <span class="type">string</span>) =&gt; {
+    <span class="kw">await</span> handleStatusChange(testId, status);
+    <span class="cm">// note가 있으면 test_results에 저장</span>
+    <span class="kw">if</span> (note?.trim()) {
+      <span class="kw">await</span> supabase
+        .from(<span class="str">'test_results'</span>)
+        .update({ note: note.trim() })
+        .eq(<span class="str">'run_id'</span>, runId)
+        .eq(<span class="str">'test_case_id'</span>, testId)
+        .order(<span class="str">'created_at'</span>, { ascending: <span class="kw">false</span> })
+        .limit(<span class="num">1</span>);
+    }
+  },
+  [handleStatusChange, runId]
+);
+</pre>
+
+    <div class="spec-row"><span class="k">영향 범위</span><span class="v">FocusMode에서 Fail/Block 시 note 입력</span></div>
+    <div class="spec-row"><span class="k">수정 시간</span><span class="v">~20분</span></div>
+    <div class="spec-row"><span class="k">확인 방법</span><span class="v">Focus Mode에서 F키 → note 입력 → DB에 저장되는지 확인</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §8 — DETAILS TAB REMOVAL MIGRATION     -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s8">
+  <h2 class="section-title"><span class="section-num">8</span> Details 탭 제거 → Meta + Steps 상시 노출 마이그레이션</h2>
+
+  <div class="card">
+    <div class="card-label">현재 run-detail/page.tsx의 Detail 패널 구조</div>
+
+    <h4>현재 구조 (Line 2047~2550+)</h4>
+<pre class="code"><span class="cm">// 현재: 하나의 스크롤 영역에 모든 정보가 순차적으로 나열</span>
+&lt;div className=<span class="str">"w-[576px] bg-white border-l ..."</span>&gt;
+  &lt;div className=<span class="str">"flex-1 overflow-y-auto p-6"</span>&gt;     <span class="cm">← 전체 스크롤</span>
+    &lt;h2&gt;Details&lt;/h2&gt;
+    [Status select]
+    [Action buttons: Add Result, Pass & Next, ← →]
+    [Title + Description]
+    [Priority, Folder, Tags, Assignee, Created]     <span class="cm">← 이것들이 Details 영역</span>
+    [Steps + Expected Results]
+    [Attachments]
+  &lt;/div&gt;
+  [Tab bar: Comments / Results / Issues]             <span class="cm">← 3-tab only</span>
+  [Tab content]
+&lt;/div&gt;
+</pre>
+
+    <h4>Option A 구조 (변경 후)</h4>
+<pre class="code"><span class="cm">// Option A: 독립 영역으로 분리, 각각 독립 스크롤</span>
+&lt;div className=<span class="str">"w-[500px] bg-white border-l flex flex-col overflow-hidden"</span>&gt;
+  &lt;<span class="fn">DPHeader</span> /&gt;                    <span class="cm">← flex-shrink: 0</span>
+  &lt;<span class="fn">DPQuickActions</span> /&gt;              <span class="cm">← flex-shrink: 0 (Run only)</span>
+  &lt;<span class="fn">DPMeta</span> /&gt;                      <span class="cm">← flex-shrink: 0 (항상 보임)</span>
+  &lt;<span class="fn">DPStepsToggle</span> /&gt;              <span class="cm">← flex-shrink: 0</span>
+  &lt;div max-h-[40vh] overflow&gt;    <span class="cm">← 독립 스크롤 영역</span>
+    [Precondition, Steps, Attachments]
+  &lt;/div&gt;
+  &lt;<span class="fn">DPTabBar</span> /&gt;                   <span class="cm">← 4-tab (Comments, Results, Issues, History)</span>
+  &lt;div flex-1 overflow&gt;          <span class="cm">← 남은 공간, 독립 스크롤</span>
+    [Tab content]
+  &lt;/div&gt;
+  &lt;Footer /&gt;                     <span class="cm">← TC only</span>
+&lt;/div&gt;
+</pre>
+  </div>
+
+  <div class="card">
+    <div class="card-label">마이그레이션 체크리스트</div>
+    <ul class="checklist">
+      <li>현재 Detail 패널의 전체 스크롤 영역을 flex-column 기반 독립 섹션으로 분해</li>
+      <li>"Details" 헤더 (<code>&lt;h2&gt;Details&lt;/h2&gt;</code>) 제거</li>
+      <li>Meta 정보 (Priority, Folder, Tags, Assignee, Created)를 DPMeta 컴포넌트로 추출</li>
+      <li>Steps + Expected Result 렌더링 로직을 DPStepsArea로 추출</li>
+      <li>Attachments 렌더링 로직을 DPStepsArea 하단으로 이동</li>
+      <li>Action buttons (Add Result, Pass & Next, Nav)를 DPQuickActions로 이동</li>
+      <li>탭 바에 History 탭 추가 (신규)</li>
+      <li>Panel width 576px → 500px 변경</li>
+      <li>Steps area에 max-height: 40vh + overflow-y: auto 추가</li>
+      <li>Steps toggle bar (접이식) 추가</li>
+      <li>Run context에서 Step-level P/F 미니 버튼 추가</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-label">History 탭 (신규 구현)</div>
+    <div class="spec-row"><span class="k">데이터 소스</span><span class="v">audit_log 테이블 (test_case_id 기준 필터)</span></div>
+    <div class="spec-row"><span class="k">표시 항목</span><span class="v">status 변경, priority 변경, tag 추가/삭제, assignee 변경, step 수정, 생성</span></div>
+    <div class="spec-row"><span class="k">UI 구조</span><span class="v">타임라인 (dot + text + timestamp)</span></div>
+    <div class="spec-row"><span class="k">Dot style</span><span class="v">6px circle, bg #C7D2FE, margin-top: 0.4rem</span></div>
+    <div class="spec-row"><span class="k">Text style</span><span class="v">0.75rem, #334155, actor name bold</span></div>
+    <div class="spec-row"><span class="k">Time style</span><span class="v">0.6875rem, #94A3B8</span></div>
+
+    <div class="alert alert-warn">
+      <strong>주의:</strong> audit_log 테이블이 아직 없다면, History 탭은 Phase 2로 미루고 빈 상태 표시만 구현합니다.
+      빈 상태: ri-time-line icon + "No history yet" 텍스트.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §9 — NEW DB TABLE                      -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s9">
+  <h2 class="section-title"><span class="section-num">9</span> 새 DB 테이블: step_results</h2>
+
+  <p class="section-desc">Step-level result 기능을 위해 새 Supabase 테이블이 필요합니다.</p>
+
+  <div class="card">
+    <div class="card-label">Schema</div>
+<pre class="code"><span class="cm">-- Step-level results for Run context</span>
+<span class="kw">CREATE TABLE</span> step_results (
+  id            uuid <span class="kw">PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  execution_id  uuid <span class="kw">REFERENCES</span> executions(id) <span class="kw">ON DELETE CASCADE</span>,
+  step_index    integer <span class="kw">NOT NULL</span>,  <span class="cm">-- 0-based step order</span>
+  status        text <span class="kw">CHECK</span> (status <span class="kw">IN</span> (<span class="str">'passed'</span>, <span class="str">'failed'</span>, <span class="str">'blocked'</span>)),
+  note          text,
+  created_at    timestamptz <span class="kw">DEFAULT</span> now(),
+  created_by    uuid <span class="kw">REFERENCES</span> profiles(id)
+);
+
+<span class="cm">-- Index for fast lookup</span>
+<span class="kw">CREATE UNIQUE INDEX</span> idx_step_results_exec_step
+  <span class="kw">ON</span> step_results(execution_id, step_index);
+
+<span class="cm">-- RLS: Same policy as executions table</span>
+<span class="kw">ALTER TABLE</span> step_results <span class="kw">ENABLE</span> ROW LEVEL SECURITY;
+
+<span class="cm">-- Enable Supabase Realtime for live updates</span>
+<span class="kw">ALTER PUBLICATION</span> supabase_realtime <span class="kw">ADD TABLE</span> step_results;
+</pre>
+
+    <div class="alert alert-info">
+      <strong>Note:</strong> execution_id는 현재 run_results 또는 test_results 테이블의 ID를 참조합니다.
+      실제 테이블명은 현재 스키마에 맞게 조정하세요. <code>step_index</code>는 steps 배열의 인덱스(0-based)입니다.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- §10 — FILE LIST & PRIORITY              -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="s10">
+  <h2 class="section-title"><span class="section-num">10</span> 영향받는 파일 목록 & 구현 우선순위</h2>
+
+  <div class="card">
+    <div class="card-label">영향받는 파일 목록</div>
+    <table class="file-table">
+      <thead>
+        <tr><th>파일</th><th>변경 유형</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>src/components/DetailPanel/*</td><td><span class="p-badge p0">NEW</span></td><td>DetailPanel 컴포넌트 전체 — types, DPHeader, DPMeta, DPQuickActions, DPStepsToggle, DPStepsArea, StepRow, DPTabBar, tabs/*</td></tr>
+        <tr><td>src/pages/run-detail/page.tsx</td><td><span class="p-badge p0">MAJOR</span></td><td>Line 2047~2550+ 우측 패널 전체 교체 → &lt;DetailPanel context="run" /&gt;. handleFocusStatusChange note 수정. focusTests에 precondition 추가. TestCase interface 확장.</td></tr>
+        <tr><td>src/components/FocusMode.tsx</td><td><span class="p-badge p1">MINOR</span></td><td>precondition이 이제 전달되므로 코드 변경 없음 (이미 렌더링 로직 존재). expected_result 표시 조건 수정 가능.</td></tr>
+        <tr><td>src/pages/testcases/page.tsx</td><td><span class="p-badge p1">MINOR</span></td><td>TC 선택 시 DetailPanel 표시 로직 추가 (현재는 Detail Panel 없음)</td></tr>
+        <tr><td>src/pages/testcases/components/TestCaseList.tsx</td><td><span class="p-badge p2">MODIFY</span></td><td>TC 클릭 → selectedTestCase 상태 + DetailPanel 연동</td></tr>
+        <tr><td>supabase/migrations/</td><td><span class="p-badge p0">NEW</span></td><td>step_results 테이블 생성 migration</td></tr>
+        <tr><td>src/hooks/useStepResults.ts</td><td><span class="p-badge p0">NEW</span></td><td>step_results CRUD + Realtime subscription hook</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label">구현 우선순위 (Phase별)</div>
+
+    <h4><span class="p-badge p0">Phase 0 — 버그 수정 (1일)</span></h4>
+    <ul class="checklist">
+      <li>BUG #1: TestCase interface에 precondition 추가 + Supabase 쿼리 + focusTests 매핑</li>
+      <li>BUG #2: handleFocusStatusChange에서 note 저장 로직 추가</li>
+      <li>테스트: Focus Mode에서 precondition 표시 + note 저장 확인</li>
+    </ul>
+
+    <h4><span class="p-badge p1">Phase 1 — DetailPanel 기본 구현 (3~4일)</span></h4>
+    <ul class="checklist">
+      <li>DetailPanel 컴포넌트 폴더 구조 생성</li>
+      <li>DPHeader, DPMeta, DPStepsToggle, DPStepsArea, DPTabBar 구현</li>
+      <li>run-detail/page.tsx 우측 패널을 &lt;DetailPanel context="run" /&gt;으로 교체</li>
+      <li>기존 Comments, Results, Issues 탭 로직 DetailPanel 하위로 이동</li>
+      <li>DPQuickActions 구현 (기존 handlePassAndNext, handleAddResult 재사용)</li>
+      <li>Details 탭 제거 → Meta + Steps 상시 노출 확인</li>
+      <li>Steps toggle (접이식) 동작 확인</li>
+    </ul>
+
+    <h4><span class="p-badge p2">Phase 2 — Step Results + TC Detail (2~3일)</span></h4>
+    <ul class="checklist">
+      <li>step_results 테이블 Migration 생성 및 적용</li>
+      <li>useStepResults hook 구현 (CRUD + Realtime)</li>
+      <li>StepRow에 Mini P/F 버튼 추가 (Run context)</li>
+      <li>Steps toggle 우측 "3/5 steps passed" 진행률 표시</li>
+      <li>TC 목록 페이지에 &lt;DetailPanel context="testcase" /&gt; 연동</li>
+      <li>Footer (Edit/Delete) 구현 (TC context)</li>
+    </ul>
+
+    <h4><span class="p-badge p3">Phase 3 — History 탭 + Polish (1~2일)</span></h4>
+    <ul class="checklist">
+      <li>History 탭 구현 (audit_log 테이블 연동 or 빈 상태)</li>
+      <li>Tab badge counts 연동 (Comments count, Results count, Issues count)</li>
+      <li>Keyboard shortcuts (C=Comments, H=History — FocusMode에서)</li>
+      <li>반응형 처리 + 접근성 (aria-label, focus management)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-label">전체 예상 일정</div>
+    <table class="cmp-table">
+      <thead>
+        <tr><th>Phase</th><th>일정</th><th>산출물</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="feature">Phase 0</td><td>Day 1</td><td>Precondition + Note 버그 수정</td></tr>
+        <tr><td class="feature">Phase 1</td><td>Day 2~5</td><td>DetailPanel 기본 + Run Detail 패널 교체</td></tr>
+        <tr><td class="feature">Phase 2</td><td>Day 6~8</td><td>Step Results + TC Detail 패널</td></tr>
+        <tr><td class="feature">Phase 3</td><td>Day 9~10</td><td>History 탭 + Polish</td></tr>
+      </tbody>
+    </table>
+    <div class="alert alert-success">
+      <strong>총 예상:</strong> 약 10 working days (2주). Phase 0~1은 독립 배포 가능.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SIGN-OFF                                -->
+<!-- ═══════════════════════════════════════ -->
+<div style="margin-top:2rem;padding:1.25rem;background:#fff;border:1px solid #E2E8F0;border-radius:0.75rem;text-align:center;">
+  <p style="font-size:0.8125rem;font-weight:600;color:#0F172A;margin-bottom:0.25rem">Dev Handoff Complete</p>
+  <p style="font-size:0.75rem;color:#64748B">
+    Design: 36-tc-detail-option-a.html · 37-run-detail-option-a.html<br>
+    PM → Dev · 2026-03-26
+  </p>
+</div>
+
+</div><!-- /container -->
+</body>
+</html>

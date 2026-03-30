@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM Plan — Settings 페이지 개선안 + Desi 핸드오프</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F8FAFC;color:#1E293B;line-height:1.7}
+    .container{max-width:960px;margin:0 auto;padding:2.5rem 2rem 4rem}
+    h1{font-size:1.5rem;font-weight:800;color:#0F172A;margin-bottom:0.3rem}
+    .subtitle{font-size:0.85rem;color:#64748B;margin-bottom:2rem}
+    .meta-row{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:2rem;font-size:0.8rem;color:#64748B}
+    .meta-row span{display:flex;align-items:center;gap:0.3rem}
+    .section-title{font-size:1.1rem;font-weight:700;color:#0F172A;margin:2.5rem 0 1rem;padding-bottom:0.5rem;border-bottom:2px solid #E2E8F0;display:flex;align-items:center;gap:0.5rem}
+    .section-num{display:inline-flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;background:#6366F1;color:#fff;border-radius:0.4rem;font-size:0.7rem;font-weight:700}
+    h3{font-size:0.95rem;font-weight:700;color:#1E293B;margin:1.5rem 0 0.5rem}
+    p,li{font-size:0.85rem;color:#334155;margin-bottom:0.5rem}
+    ul,ol{padding-left:1.5rem;margin-bottom:1rem}
+    code{background:#EEF2FF;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.78rem;color:#4338CA;font-family:'SF Mono',Consolas,monospace}
+    strong{color:#0F172A}
+    table{width:100%;border-collapse:collapse;margin:1rem 0 1.5rem;font-size:0.8rem}
+    th{background:#F1F5F9;color:#475569;font-weight:600;text-align:left;padding:0.6rem 0.75rem;border:1px solid #E2E8F0}
+    td{padding:0.55rem 0.75rem;border:1px solid #E2E8F0;vertical-align:top}
+    .callout{background:#EEF2FF;border-left:4px solid #6366F1;padding:1rem 1.25rem;border-radius:0 0.5rem 0.5rem 0;margin:1rem 0 1.5rem;font-size:0.82rem}
+    .callout-green{background:#F0FDF4;border-left-color:#22C55E}
+    .callout-warn{background:#FFF7ED;border-left-color:#F59E0B}
+    .callout-red{background:#FEF2F2;border-left-color:#EF4444}
+    .tag{display:inline-block;padding:0.15rem 0.5rem;border-radius:0.25rem;font-size:0.7rem;font-weight:600}
+    .tag-keep{background:#EEF2FF;color:#4338CA}
+    .tag-move{background:#FEF3C7;color:#92400E}
+    .tag-new{background:#DCFCE7;color:#166534}
+    .tag-remove{background:#FEE2E2;color:#B91C1C}
+    .tag-merge{background:#F3E8FF;color:#6B21A8}
+    .wireframe{background:#0F172A;color:#94A3B8;font-family:'SF Mono',Consolas,monospace;font-size:0.72rem;line-height:1.6;padding:1.25rem;border-radius:0.75rem;overflow-x:auto;white-space:pre;margin:1rem 0 1.5rem}
+    .wireframe strong{color:#E2E8F0}
+    .checklist{list-style:none;padding-left:0}
+    .checklist li{padding:0.4rem 0.5rem;border-bottom:1px solid #F1F5F9;display:flex;align-items:flex-start;gap:0.5rem}
+    .checklist li::before{content:'☐';flex-shrink:0;color:#94A3B8;font-size:0.9rem}
+    .priority-p0{background:#FEE2E2;color:#B91C1C;padding:0.1rem 0.4rem;border-radius:0.2rem;font-size:0.65rem;font-weight:700}
+    .priority-p1{background:#FEF3C7;color:#92400E;padding:0.1rem 0.4rem;border-radius:0.2rem;font-size:0.65rem;font-weight:700}
+    .priority-p2{background:#EEF2FF;color:#4338CA;padding:0.1rem 0.4rem;border-radius:0.2rem;font-size:0.65rem;font-weight:700}
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1><i class="ri-settings-3-line" style="color:#6366F1"></i> Settings 페이지 개선안 + Desi 핸드오프</h1>
+  <p class="subtitle">CEO 요청 — 탭 구성 재검토, 누락 기능 식별, 기능 분류 최적화</p>
+
+  <div class="meta-row">
+    <span><i class="ri-calendar-line"></i> 2026-03-27</span>
+    <span><i class="ri-user-line"></i> Author: Kyle (PM)</span>
+    <span><i class="ri-artboard-2-line" style="color:#EC4899"></i> Target: Desi (Designer)</span>
+    <span><i class="ri-file-line" style="color:#F59E0B"></i> 기존 Desi 목업: settings-redesign.html</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §1 현재 상태 전수 파악 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">1</span> 현재 Settings 페이지 전수 분석</div>
+
+  <p><code>src/pages/settings/page.tsx</code> (2,286줄) + 2개 하위 컴포넌트를 분석한 결과입니다.</p>
+
+  <h3>1-1. 현재 탭 구조 (6개)</h3>
+  <table>
+    <thead><tr><th>탭</th><th>아이콘</th><th>포함 기능</th><th>코드 줄 수 (대략)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Profile</strong></td><td>ri-user-settings-line</td>
+        <td>이름 변경, 아바타(이모지/사진 업로드), 비밀번호 변경, OAuth 감지(Google SSO 시 PW 섹션 숨김)</td>
+        <td>~200줄 (ProfileSettingsPanel.tsx)</td>
+      </tr>
+      <tr>
+        <td><strong>General</strong></td><td>ri-settings-3-line</td>
+        <td>Trial 배너 (남은 일수, Upgrade CTA), 현재 구독 플랜 카드, 전체 플랜 비교표 (6개 티어), Monthly/Annual 토글</td>
+        <td>~350줄</td>
+      </tr>
+      <tr>
+        <td><strong>Members</strong></td><td>ri-team-line</td>
+        <td>프로젝트 선택 드롭다운, ProjectMembersPanel (역할 변경/제거), Invite Member 버튼 + InviteMemberModal</td>
+        <td>~60줄 (+ 컴포넌트 855줄)</td>
+      </tr>
+      <tr>
+        <td><strong>Integrations</strong></td><td>ri-plug-line</td>
+        <td>① Jira 연동 (Domain, Email, API Token, Issue Type, Test/Save) ② Slack & Teams Webhooks (CRUD, 이벤트 선택, Test, Logs)</td>
+        <td>~600줄</td>
+      </tr>
+      <tr>
+        <td><strong>CI/CD</strong></td><td>ri-git-branch-line</td>
+        <td>① API 토큰 관리 (생성/복사/삭제) ② Integration Guide (GitHub Actions/GitLab CI/Python 코드 스니펫) ③ Token Scope 가이드</td>
+        <td>~500줄</td>
+      </tr>
+      <tr>
+        <td><strong>Notifications</strong></td><td>ri-notification-3-line</td>
+        <td>7개 이벤트별 이메일 알림 On/Off (Team Activity 2개, Test Runs 2개, Milestones 3개)</td>
+        <td>~150줄 (NotificationSettingsPanel.tsx)</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3>1-2. 발견된 문제점</h3>
+
+  <div class="callout-red callout">
+    <strong>문제 ①: "General" 탭이 사실상 "Billing" 탭</strong><br>
+    General 탭에 구독 플랜/가격 비교/Upgrade CTA만 있음. "일반 설정"에 기대하는 기능(언어, 테마, 시간대 등)이 전혀 없음. 탭 이름과 실제 내용의 불일치.
+  </div>
+
+  <div class="callout-warn callout">
+    <strong>문제 ②: Jira 연동이 General에도 있었음 (Desi 목업)</strong><br>
+    Desi의 settings-redesign.html에서는 General 탭에 "Jira Connection" 섹션이 있고, Integrations 탭에도 중복 표시. 실제 코드에서는 Integrations에만 존재. → 혼란 유발.
+  </div>
+
+  <div class="callout-warn callout">
+    <strong>문제 ③: CI/CD와 Integrations 경계 모호</strong><br>
+    CI/CD 탭의 "API Tokens"는 사실상 CI/CD만을 위한 것이 아니라 범용 API 토큰. 웹훅(Integrations)과 API 토큰(CI/CD)이 분리되어 있어, "외부 연동"이라는 하나의 개념이 2개 탭에 분산.
+  </div>
+
+  <div class="callout-warn callout">
+    <strong>문제 ④: Danger Zone이 Desi 목업에만 존재</strong><br>
+    Desi 목업 Profile 탭에 "Delete Account" 버튼이 있으나, 실제 코드에는 미구현. → 기획 확정 후 구현 필요.
+  </div>
+
+  <div class="callout callout">
+    <strong>문제 ⑤: 누락 기능 다수</strong><br>
+    언어 설정, 테마(라이트/다크), 시간대, 날짜 형식, 데이터 내보내기/가져오기, API Key 관리(범용), Account Deletion 등이 Settings에 없음.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §2 경쟁사 벤치마킹 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">2</span> 경쟁사 Settings 구성 벤치마킹</div>
+
+  <table>
+    <thead><tr><th>영역</th><th>TestRail</th><th>Qase</th><th>Testably (현재)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>구조</strong></td>
+        <td>Admin 콘솔 (Site Settings) + My Settings (개인). 관리자/개인 분리.</td>
+        <td>Workspace Settings (조직) + Personal Settings (개인). 명확한 2-레벨.</td>
+        <td>단일 Settings 페이지에 개인+조직+빌링 혼재.</td>
+      </tr>
+      <tr>
+        <td><strong>API Keys</strong></td>
+        <td>My Settings에서 개인 API Key 생성. Admin에서 API on/off 토글.</td>
+        <td>Workspace &gt; Apps에서 App Tokens (최소 권한). 개인은 Profile에서.</td>
+        <td>CI/CD 탭에서 API 토큰 생성. 범용/CI 구분 없음.</td>
+      </tr>
+      <tr>
+        <td><strong>Webhooks</strong></td>
+        <td>Admin &gt; Integrations &gt; Webhooks. 이벤트 선택, 페이로드 커스터마이징.</td>
+        <td>Workspace &gt; Integrations. 다양한 3rd party 연동 (Slack, Jira, GitHub 등).</td>
+        <td>Integrations 탭에 Jira + Slack/Teams 웹훅 혼재.</td>
+      </tr>
+      <tr>
+        <td><strong>Billing</strong></td>
+        <td>별도 Subscription 페이지. Admin 전용.</td>
+        <td>별도 Billing 페이지. 결제 수단, 인보이스 등.</td>
+        <td>"General" 탭에 구독 플랜만 표시. 이름 불일치.</td>
+      </tr>
+      <tr>
+        <td><strong>Notifications</strong></td>
+        <td>My Settings에서 이메일 알림 토글.</td>
+        <td>Personal Settings에서 이메일/인앱 알림 세분화.</td>
+        <td>Notifications 탭. 이메일만. 인앱 알림 설정 없음.</td>
+      </tr>
+      <tr>
+        <td><strong>Appearance</strong></td>
+        <td>없음 (고정 테마).</td>
+        <td>테마(Light/Dark/Auto), 언어 설정 있음.</td>
+        <td>없음. 언어/테마/시간대 설정 없음.</td>
+      </tr>
+      <tr>
+        <td><strong>Data Export</strong></td>
+        <td>Admin에서 전체 데이터 Export (XML). 프로젝트별 Export.</td>
+        <td>Workspace에서 데이터 Import/Export.</td>
+        <td>Settings에서 불가. TC Export는 TC 탭에서만 가능.</td>
+      </tr>
+      <tr>
+        <td><strong>Danger Zone</strong></td>
+        <td>Admin에서 프로젝트 삭제. 개인 계정 삭제는 지원팀.</td>
+        <td>Personal Settings &gt; Delete Account.</td>
+        <td>미구현 (Desi 목업에만 존재).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout-green callout">
+    <strong>벤치마크 핵심 시사점:</strong><br>
+    ① "General"이라는 이름으로 Billing을 넣는 제품은 없음 → <strong>탭 이름 변경 필수</strong><br>
+    ② Qase는 Appearance(테마/언어) 설정을 제공 → 경쟁력 확보에 필요<br>
+    ③ API Key는 개인 프로필 또는 별도 Developer 섹션에 배치하는 것이 표준<br>
+    ④ Data Export/Import를 Settings에서 제공하면 사용자 편의성 향상
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §3 탭 재구성 제안 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">3</span> 탭 재구성 제안 — Before → After</div>
+
+  <h3>3-1. 현재 vs 제안 비교</h3>
+  <table>
+    <thead><tr><th>현재 (6탭)</th><th>→</th><th>제안 (7탭)</th><th>변경 유형</th><th>이유</th></tr></thead>
+    <tbody>
+      <tr><td>Profile</td><td>→</td><td><strong>Profile</strong></td><td><span class="tag tag-keep">유지+확장</span></td><td>이름/아바타/비밀번호 유지. Danger Zone(계정 삭제) 추가.</td></tr>
+      <tr><td>General</td><td>→</td><td><strong>Billing</strong></td><td><span class="tag tag-move">이름 변경</span></td><td>"General"은 구독/가격만 → 실체에 맞게 "Billing"으로 변경.</td></tr>
+      <tr><td>—</td><td>→</td><td><strong>Preferences</strong></td><td><span class="tag tag-new">신규</span></td><td>언어, 테마, 시간대, 날짜 형식 등 "진짜 일반 설정". 경쟁사 Qase에 있음.</td></tr>
+      <tr><td>Members</td><td>→</td><td><strong>Members</strong></td><td><span class="tag tag-keep">유지</span></td><td>프로젝트별 멤버 관리. 변경 없음.</td></tr>
+      <tr><td>Integrations + CI/CD</td><td>→</td><td><strong>Integrations</strong></td><td><span class="tag tag-merge">통합</span></td><td>Jira, Slack/Teams 웹훅, CI/CD를 하나의 "연동" 탭으로. 내부 섹션으로 구분.</td></tr>
+      <tr><td>—</td><td>→</td><td><strong>API & Tokens</strong></td><td><span class="tag tag-new">신규(분리)</span></td><td>CI/CD에서 API 토큰 분리. 범용 API Key + CI 토큰을 한 곳에서 관리.</td></tr>
+      <tr><td>Notifications</td><td>→</td><td><strong>Notifications</strong></td><td><span class="tag tag-keep">유지+확장</span></td><td>이메일 알림 유지. 인앱 알림 + 데스크톱 푸시 알림 설정 추가.</td></tr>
+    </tbody>
+  </table>
+  <h3>3-2. 제안 탭 순서 와이어프레임</h3>
+  <div class="wireframe">┌─ Settings Header ────────────────────────────────────────────────────────┐
+│ [T] Testably  ·  Settings                                        👤 Kyle │
+├──────────────────────────────────────────────────────────────────────────┤
+│ <strong style="color:#8B5CF6">👤 Profile</strong>  <strong style="color:#6366F1">💳 Billing</strong>  <strong style="color:#3B82F6">⚙ Preferences</strong>  <strong style="color:#22C55E">👥 Members</strong> <span class="tag tag-new" style="font-size:0.55rem">4</span>  <strong style="color:#F59E0B">🔗 Integrations</strong> <span class="tag tag-new" style="font-size:0.55rem">3</span>  <strong style="color:#EC4899">🔑 API &amp; Tokens</strong>  <strong style="color:#EF4444">🔔 Notifications</strong> │
+└──────────────────────────────────────────────────────────────────────────┘</div>
+
+  <div class="callout">
+    <strong>탭 순서 논리:</strong> 개인(Profile) → 결제(Billing) → 환경(Preferences) → 팀(Members) → 외부연동(Integrations) → 개발(API) → 알림(Notifications). 사용 빈도 높은 순 + 논리적 그룹핑.
+  </div>
+
+  <h3>3-3. 제안 근거 상세</h3>
+
+  <p><strong>① "General" → "Billing" 이름 변경:</strong> 현재 General 탭에는 구독 플랜 카드, 6티어 비교표, Monthly/Annual 토글, Upgrade CTA만 있습니다. 이것은 "Billing & Subscription"이지 "General"이 아닙니다. TestRail과 Qase도 Billing은 별도 이름으로 분리합니다.</p>
+
+  <p><strong>② Preferences 탭 신설:</strong> 사용자가 "General Settings" 또는 "Preferences"에서 기대하는 기능들(언어, 테마, 시간대)이 현재 어디에도 없습니다. Testably는 이미 한국어/영어 i18n을 지원(<code>src/i18n/</code>)하므로, 전환 UI만 추가하면 됩니다.</p>
+
+  <p><strong>③ Integrations + CI/CD 통합:</strong> 현재 Integrations(Jira + Webhook)와 CI/CD(토큰 + 가이드)가 분리되어 있지만, 사용자 관점에서 "외부 서비스 연동"은 하나의 개념입니다. 하나의 탭 안에서 섹션 카드로 구분하면 탐색이 쉬워집니다. 단, API 토큰은 범용성이 있으므로 별도 탭으로 분리.</p>
+
+  <p><strong>④ API & Tokens 분리:</strong> CI/CD에 묻혀 있던 API 토큰을 독립 탭으로 승격합니다. API 토큰은 CI/CD뿐 아니라 커스텀 스크립트, 외부 도구 연동, 자동화에 사용됩니다. Qase의 "Apps" 개념과 유사.</p>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §4 누락 기능 + 우선순위 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">4</span> 누락 기능 식별 + 우선순위 매트릭스</div>
+
+  <table>
+    <thead><tr><th>기능</th><th>배치 탭</th><th>우선순위</th><th>설명</th><th>경쟁사 현황</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Language Selector</strong></td><td>Preferences</td>
+        <td><span class="priority-p0">P0</span></td>
+        <td>한국어/English 전환. i18n 코드 이미 존재(<code>src/i18n/</code>), UI만 추가.</td>
+        <td>Qase ✅ TestRail ✅</td>
+      </tr>
+      <tr>
+        <td><strong>Theme (Light/Dark/Auto)</strong></td><td>Preferences</td>
+        <td><span class="priority-p1">P1</span></td>
+        <td>다크 모드 지원. CSS 변수 기반. Tailwind dark: prefix 사용.</td>
+        <td>Qase ✅ TestRail ❌</td>
+      </tr>
+      <tr>
+        <td><strong>Timezone</strong></td><td>Preferences</td>
+        <td><span class="priority-p1">P1</span></td>
+        <td>시간대 선택. 기본 = 브라우저 감지. 활동 로그/차트 시간 표시에 영향.</td>
+        <td>Qase ✅ TestRail ✅</td>
+      </tr>
+      <tr>
+        <td><strong>Date/Time Format</strong></td><td>Preferences</td>
+        <td><span class="priority-p2">P2</span></td>
+        <td>MM/DD/YYYY vs DD/MM/YYYY vs YYYY-MM-DD. 12h/24h 시간 형식.</td>
+        <td>TestRail ✅ Qase ❌</td>
+      </tr>
+      <tr>
+        <td><strong>Account Deletion</strong></td><td>Profile (Danger Zone)</td>
+        <td><span class="priority-p0">P0</span></td>
+        <td>GDPR 준수 필수. 확인 다이얼로그 + 비밀번호 재입력 + 30일 유예.</td>
+        <td>Qase ✅ TestRail (지원팀)</td>
+      </tr>
+      <tr>
+        <td><strong>Data Export</strong></td><td>Profile (Danger Zone 위)</td>
+        <td><span class="priority-p1">P1</span></td>
+        <td>전체 데이터 JSON/CSV 내보내기. GDPR "데이터 이동권" 관련.</td>
+        <td>TestRail ✅ Qase ✅</td>
+      </tr>
+      <tr>
+        <td><strong>In-App Notification Settings</strong></td><td>Notifications</td>
+        <td><span class="priority-p1">P1</span></td>
+        <td>알림 벨 뱃지 표시 On/Off, 데스크톱 푸시 On/Off. Desi 목업에 있으나 미구현.</td>
+        <td>Qase ✅ TestRail ❌</td>
+      </tr>
+      <tr>
+        <td><strong>범용 API Key</strong></td><td>API & Tokens</td>
+        <td><span class="priority-p1">P1</span></td>
+        <td>현재 CI 전용 토큰만 존재. "Personal API Key" (Qase App Token 형태) 추가.</td>
+        <td>TestRail ✅ Qase ✅</td>
+      </tr>
+      <tr>
+        <td><strong>Session Management</strong></td><td>Profile</td>
+        <td><span class="priority-p2">P2</span></td>
+        <td>활성 세션 목록, 다른 기기 로그아웃. 보안 강화.</td>
+        <td>Qase ✅ TestRail ❌</td>
+      </tr>
+      <tr>
+        <td><strong>2FA (Two-Factor Auth)</strong></td><td>Profile</td>
+        <td><span class="priority-p2">P2</span></td>
+        <td>TOTP 기반 2FA. 엔터프라이즈 고객 요구사항.</td>
+        <td>TestRail ✅ Qase ✅</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §5 각 탭별 기능 목록 (확정안) -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">5</span> 확정 탭별 기능 목록 (7탭)</div>
+
+  <h3>Tab 1: Profile <i class="ri-user-settings-fill" style="color:#8B5CF6;font-size:0.85rem"></i></h3>
+  <table>
+    <thead><tr><th>섹션</th><th>UI 요소</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td>Profile Information</td><td>아바타(이모지/사진 업로드) + Full Name 입력 + Email (읽기 전용) + Save 버튼</td><td><span class="tag tag-keep">기존</span></td></tr>
+      <tr><td>Password</td><td>New Password + Confirm Password + Change Password 버튼. Google SSO 시 숨김.</td><td><span class="tag tag-keep">기존</span></td></tr>
+      <tr><td>Data Export</td><td>"Export My Data" 버튼 → JSON/CSV 다운로드. 전체 TC, Runs, Results 포함.</td><td><span class="tag tag-new">신규 P1</span></td></tr>
+      <tr><td>Danger Zone</td><td>빨간 테두리 섹션. "Delete Account" 버튼 → 확인 모달 (비밀번호 재입력 + "DELETE" 텍스트 입력) → 30일 유예 안내.</td><td><span class="tag tag-new">신규 P0</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Tab 2: Billing <i class="ri-bank-card-line" style="color:#6366F1;font-size:0.85rem"></i></h3>
+  <table>
+    <thead><tr><th>섹션</th><th>UI 요소</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td>Current Plan</td><td>티어 카드 (아이콘 + 이름 + Active 뱃지 + 기능 목록). Trial 배너 (남은 일수).</td><td><span class="tag tag-keep">기존 (General에서 이동)</span></td></tr>
+      <tr><td>Plan Comparison</td><td>6티어 카드 그리드 + Monthly/Annual 토글 (15% off). Upgrade CTA.</td><td><span class="tag tag-keep">기존</span></td></tr>
+      <tr><td>Invoice History</td><td>결제 내역 테이블 (날짜, 금액, 상태, PDF 다운로드). Paddle 연동.</td><td><span class="tag tag-new">신규 P2</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Tab 3: Preferences <i class="ri-equalizer-line" style="color:#3B82F6;font-size:0.85rem"></i> <span class="tag tag-new">전체 신규</span></h3>
+  <table>
+    <thead><tr><th>섹션</th><th>UI 요소</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td>Language</td><td>드롭다운: English / 한국어. 변경 즉시 적용. <code>src/i18n/</code> 연동.</td><td><span class="tag tag-new">신규 P0</span></td></tr>
+      <tr><td>Appearance</td><td>3-way 토글 카드: Light ☀️ / Dark 🌙 / System 💻. Tailwind <code>dark:</code> prefix 기반.</td><td><span class="tag tag-new">신규 P1</span></td></tr>
+      <tr><td>Timezone</td><td>드롭다운 + 자동 감지 "Use browser timezone" 체크박스. Intl.DateTimeFormat 사용.</td><td><span class="tag tag-new">신규 P1</span></td></tr>
+      <tr><td>Date & Time Format</td><td>날짜: MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD. 시간: 12h/24h. 미리보기 표시.</td><td><span class="tag tag-new">신규 P2</span></td></tr>
+      <tr><td>Default Project</td><td>드롭다운: 로그인 시 자동으로 열리는 기본 프로젝트 선택.</td><td><span class="tag tag-new">신규 P2</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Tab 4: Members <i class="ri-team-fill" style="color:#22C55E;font-size:0.85rem"></i></h3>
+  <table>
+    <thead><tr><th>섹션</th><th>UI 요소</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td>Project Selector</td><td>드롭다운: 소속 프로젝트 목록. 선택 시 멤버 리스트 갱신.</td><td><span class="tag tag-keep">기존</span></td></tr>
+      <tr><td>Members List</td><td>ProjectMembersPanel 재사용 (아바타, 이름, 역할 뱃지, 역할 변경 드롭다운, 제거 버튼).</td><td><span class="tag tag-keep">기존</span></td></tr>
+      <tr><td>Invite</td><td>"Invite Member" 버튼 → InviteMemberModal (이메일, 이름, 역할 선택, 티어 제한 체크).</td><td><span class="tag tag-keep">기존</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Tab 5: Integrations <i class="ri-plug-fill" style="color:#F59E0B;font-size:0.85rem"></i> <span class="tag tag-merge">CI/CD 통합</span></h3>
+  <table>
+    <thead><tr><th>섹션</th><th>UI 요소</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td>Jira</td><td>Domain, Email, API Token, Issue Type, Test Connection, Save. 티어 잠금(Starter+).</td><td><span class="tag tag-keep">기존</span></td></tr>
+      <tr><td>Slack & Teams Webhooks</td><td>웹훅 리스트 (카드형) + Add/Edit 모달 + Test/Logs/Pause/Delete. 티어 잠금(Starter+).</td><td><span class="tag tag-keep">기존</span></td></tr>
+      <tr><td>CI/CD Pipelines</td><td>Integration Guide (GitHub Actions / GitLab CI / Python 코드 스니펫). Token Scope 가이드. 티어 잠금(Pro+).</td><td><span class="tag tag-move">CI/CD에서 이동</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Tab 6: API & Tokens <i class="ri-key-2-fill" style="color:#EC4899;font-size:0.85rem"></i></h3>
+  <table>
+    <thead><tr><th>섹션</th><th>UI 요소</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td>Personal API Key</td><td>"Your API Key" 카드 — 자동 생성된 개인 API Key. 복사 버튼. Regenerate 버튼 (확인 다이얼로그). REST API 인증에 사용.</td><td><span class="tag tag-new">신규 P1</span></td></tr>
+      <tr><td>CI/CD Tokens</td><td>토큰 리스트 (이름, 생성일, 마지막 사용일, 복사, 삭제). "New Token" 버튼 → 이름 입력 모달. 티어 잠금(Pro+).</td><td><span class="tag tag-move">CI/CD에서 이동</span></td></tr>
+      <tr><td>API Documentation Link</td><td>"View API Documentation →" 링크 → <code>/docs/api</code> 페이지로 이동.</td><td><span class="tag tag-new">신규 P2</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Tab 7: Notifications <i class="ri-notification-3-fill" style="color:#EF4444;font-size:0.85rem"></i></h3>
+  <table>
+    <thead><tr><th>섹션</th><th>UI 요소</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td>Email Notifications</td><td>7개 이벤트별 토글 (Team Activity 2, Test Runs 2, Milestones 3). 그룹별 카드.</td><td><span class="tag tag-keep">기존</span></td></tr>
+      <tr><td>In-App Notifications</td><td>알림 벨 뱃지 표시 On/Off. 읽지 않은 알림 유지 기간 (7/14/30일).</td><td><span class="tag tag-new">신규 P1</span></td></tr>
+      <tr><td>Desktop Push</td><td>브라우저 푸시 알림 On/Off. "Allow Notifications" 권한 요청 버튼.</td><td><span class="tag tag-new">신규 P2</span></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §6 기능 이동 맵 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">6</span> 기능 이동 맵 — 코드 변경 영향도</div>
+
+  <table>
+    <thead><tr><th>기능</th><th>현재 위치</th><th>이동 후</th><th>코드 변경</th></tr></thead>
+    <tbody>
+      <tr><td>구독 플랜 + 비교표</td><td>General 탭</td><td>Billing 탭</td><td>탭 이름만 변경. JSX 그대로.</td></tr>
+      <tr><td>Trial 배너</td><td>General 탭 상단</td><td>Billing 탭 상단</td><td>탭 이름만 변경.</td></tr>
+      <tr><td>Jira 연동</td><td>Integrations 탭</td><td>Integrations 탭 (유지)</td><td>변경 없음.</td></tr>
+      <tr><td>Slack/Teams 웹훅</td><td>Integrations 탭</td><td>Integrations 탭 (유지)</td><td>변경 없음.</td></tr>
+      <tr><td>CI/CD Guide (GitHub/GitLab/Python)</td><td>CI/CD 탭</td><td>Integrations 탭 하단 섹션</td><td>JSX 이동. ~200줄.</td></tr>
+      <tr><td>API 토큰 CRUD</td><td>CI/CD 탭</td><td>API & Tokens 탭</td><td>JSX 이동 + state 유지. ~150줄.</td></tr>
+      <tr><td>Token Scope Guide</td><td>CI/CD 탭</td><td>Integrations 탭 (CI/CD 섹션)</td><td>JSX 이동.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout-green callout">
+    <strong>핵심:</strong> 기존 코드의 이동/재배치가 대부분. 신규 코드가 필요한 것은 Preferences 탭 (~100줄), Danger Zone (~80줄), In-App Notification (~50줄), Personal API Key (~60줄) 정도입니다. 총 신규 코드 약 <strong>290줄</strong>.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §7 Desi 핸드오프 스펙 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">7</span> Desi 디자인 핸드오프 스펙</div>
+
+  <p>Desi의 기존 목업(<code>settings-redesign.html</code>)을 기반으로, 아래 변경/추가 사항을 반영해 주세요.</p>
+
+  <h3>A. 전체 구조 변경</h3>
+  <table>
+    <thead><tr><th>ID</th><th>변경 사항</th><th>상세</th></tr></thead>
+    <tbody>
+      <tr><td>A-1</td><td>탭 수: 6 → 7</td><td>Profile, <strong>Billing</strong>(←General), <strong>Preferences</strong>(신규), Members, Integrations(←Integrations+CI/CD), <strong>API & Tokens</strong>(신규), Notifications</td></tr>
+      <tr><td>A-2</td><td>탭 아이콘 변경</td><td>Billing: <code>ri-bank-card-fill</code> (indigo). Preferences: <code>ri-equalizer-fill</code> (blue). API: <code>ri-key-2-fill</code> (pink).</td></tr>
+      <tr><td>A-3</td><td>탭 순서</td><td>Profile → Billing → Preferences → Members → Integrations → API & Tokens → Notifications</td></tr>
+      <tr><td>A-4</td><td>기존 CI/CD 탭 제거</td><td>내용물은 Integrations와 API & Tokens로 분산.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B. Profile 탭 추가 요소</h3>
+  <table>
+    <thead><tr><th>ID</th><th>요소</th><th>디자인 스펙</th></tr></thead>
+    <tbody>
+      <tr><td>B-1</td><td>Data Export 섹션</td><td>Password 아래, Danger Zone 위 배치. "Export My Data" 버튼 (outline 스타일, <code>ri-download-2-line</code> 아이콘). 클릭 시 → "Preparing export..." 로딩 → JSON/CSV 다운로드.</td></tr>
+      <tr><td>B-2</td><td>Danger Zone 섹션</td><td>빨간 테두리(<code>border-red-200</code>), 빨간 배경(<code>bg-red-50</code>). 타이틀: "Danger Zone" (빨간색). 설명: "Once you delete your account, there is no going back. Please be certain." "Delete Account" 버튼 (<code>bg-red-600 text-white</code>).</td></tr>
+      <tr><td>B-3</td><td>Delete 확인 모달</td><td>제목: "Delete Account". 경고 아이콘(<code>ri-error-warning-fill</code> 빨강). 설명: "This will permanently delete your account and all associated data after 30 days." 입력 필드: "Type DELETE to confirm". "Delete My Account" 버튼(빨강, disabled until "DELETE" 입력).</td></tr>
+    </tbody>
+  </table>
+
+  <h3>C. Billing 탭 (기존 General 리네임)</h3>
+  <table>
+    <thead><tr><th>ID</th><th>요소</th><th>디자인 스펙</th></tr></thead>
+    <tbody>
+      <tr><td>C-1</td><td>탭 이름 변경</td><td>"General" → "Billing". 아이콘: <code>ri-bank-card-fill</code> (indigo #6366F1).</td></tr>
+      <tr><td>C-2</td><td>기존 UI 유지</td><td>Trial 배너, Current Plan 카드, Plan Comparison 그리드 — 모두 그대로 유지. 코드 변경은 탭 이름/아이콘만.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>D. Preferences 탭 (전체 신규)</h3>
+  <div class="wireframe">┌─ Preferences ─────────────────────────────────────────────────┐
+│                                                               │
+│  <strong>Language</strong>                                                   │
+│  Choose your preferred language for the Testably interface.   │
+│  [▾ English                        ]                          │
+│                                                               │
+│  ─────────────────────────────────────────────────────────── │
+│                                                               │
+│  <strong>Appearance</strong>                                                  │
+│  Select your preferred theme.                                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐                   │
+│  │  ☀ Light  │  │  🌙 Dark  │  │  💻 System│                   │
+│  │  (active) │  │          │  │          │                   │
+│  └──────────┘  └──────────┘  └──────────┘                   │
+│                                                               │
+│  ─────────────────────────────────────────────────────────── │
+│                                                               │
+│  <strong>Timezone</strong>                                                    │
+│  ☑ Use browser timezone (Asia/Seoul detected)                │
+│  [▾ Asia/Seoul (UTC+9)             ]                          │
+│                                                               │
+│  ─────────────────────────────────────────────────────────── │
+│                                                               │
+│  <strong>Date & Time Format</strong>                                          │
+│  Date: [▾ YYYY-MM-DD ]   Time: [▾ 24-hour ]                 │
+│  Preview: 2026-03-27 14:30                                    │
+│                                                               │
+│  ─────────────────────────────────────────────────────────── │
+│                                                               │
+│  <strong>Default Project</strong>                                             │
+│  Open this project automatically when you log in.            │
+│  [▾ None (show project list)       ]                          │
+│                                                               │
+│                                        [ Save Preferences ]  │
+└───────────────────────────────────────────────────────────────┘</div>
+
+  <table>
+    <thead><tr><th>ID</th><th>요소</th><th>디자인 스펙</th></tr></thead>
+    <tbody>
+      <tr><td>D-1</td><td>Language 드롭다운</td><td>옵션: "English", "한국어". 기본: 브라우저 언어 감지. 변경 시 즉시 반영 (페이지 새로고침 없이).</td></tr>
+      <tr><td>D-2</td><td>Appearance 카드</td><td>3개 카드 가로 배열. 각 카드: 64x64px 아이콘 + 레이블. 선택 시 <code>border-indigo-500 bg-indigo-50</code>. 미선택: <code>border-gray-200</code>.</td></tr>
+      <tr><td>D-3</td><td>Timezone</td><td>체크박스 "Use browser timezone" + 드롭다운 (체크 시 disabled). <code>Intl.supportedValuesOf('timeZone')</code> 사용.</td></tr>
+      <tr><td>D-4</td><td>Date/Time Format</td><td>2개 인라인 드롭다운 + 하단 "Preview" 텍스트로 실시간 미리보기.</td></tr>
+      <tr><td>D-5</td><td>Default Project</td><td>프로젝트 드롭다운. "None (show project list)" 기본 옵션.</td></tr>
+      <tr><td>D-6</td><td>Save 버튼</td><td>하단 우측 "Save Preferences" (<code>bg-indigo-600</code>). 변경 사항 있을 때만 활성화.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>E. Integrations 탭 (CI/CD 통합)</h3>
+  <table>
+    <thead><tr><th>ID</th><th>요소</th><th>디자인 스펙</th></tr></thead>
+    <tbody>
+      <tr><td>E-1</td><td>3-섹션 구조</td><td>① Jira Integration → ② Slack & Teams Webhooks → ③ CI/CD Pipelines. 각 섹션은 <code>border-t</code>로 구분.</td></tr>
+      <tr><td>E-2</td><td>CI/CD Pipelines 섹션</td><td>기존 CI/CD 탭의 "Integration Guide" + "Token Scope Guide" 이동. API 토큰 관리는 제거(API & Tokens 탭으로).</td></tr>
+      <tr><td>E-3</td><td>Connected Services 뱃지</td><td>탭 제목 옆에 연결된 서비스 수 뱃지 (예: Jira ✅ + Slack 2개 = "3").</td></tr>
+    </tbody>
+  </table>
+
+  <h3>F. API & Tokens 탭 (신규)</h3>
+  <div class="wireframe">┌─ API & Tokens ────────────────────────────────────────────────┐
+│                                                               │
+│  <strong>Personal API Key</strong>                                            │
+│  Use this key to authenticate REST API requests.             │
+│  ┌──────────────────────────────────────────────┐            │
+│  │ testably_pk_a1b2c3d4e5f6g7h8i9j0...  [Copy] │            │
+│  └──────────────────────────────────────────────┘            │
+│  <span style="color:#F59E0B">⚠ Keep this key secret. Do not share it publicly.</span>           │
+│  [Regenerate Key]                                             │
+│                                                               │
+│  ─────────────────────────────────────────────────────────── │
+│                                                               │
+│  <strong>CI/CD Tokens</strong>                                 [+ New Token] │
+│  Project-scoped tokens for CI/CD pipeline authentication.    │
+│  ┌─ GitHub Actions Token ──────────────────────────────────┐ │
+│  │ 🔑 testably_ci_x9y8z7...  Created: Mar 15  [Copy] [Del]│ │
+│  └─────────────────────────────────────────────────────────┘ │
+│  ┌─ GitLab CI Token ───────────────────────────────────────┐ │
+│  │ 🔑 testably_ci_w6v5u4...  Created: Mar 20  [Copy] [Del]│ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                               │
+│  ─────────────────────────────────────────────────────────── │
+│                                                               │
+│  <strong>API Documentation</strong>                                           │
+│  <span style="color:#6366F1">→ View full API reference</span>                                   │
+└───────────────────────────────────────────────────────────────┘</div>
+
+  <h3>G. Notifications 탭 추가 요소</h3>
+  <table>
+    <thead><tr><th>ID</th><th>요소</th><th>디자인 스펙</th></tr></thead>
+    <tbody>
+      <tr><td>G-1</td><td>In-App Notifications 섹션</td><td>Email Notifications 아래. "Show badge on notification bell" 토글 + "Notification retention" 드롭다운(7d/14d/30d).</td></tr>
+      <tr><td>G-2</td><td>Desktop Push 섹션</td><td>"Enable desktop notifications" 토글. 토글 On 시 브라우저 권한 요청 트리거. 권한 거부 시 안내 메시지.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>H. 디자인 토큰 (공통)</h3>
+  <table>
+    <thead><tr><th>토큰</th><th>값</th><th>용도</th></tr></thead>
+    <tbody>
+      <tr><td>Primary</td><td>#6366F1 (Indigo 500)</td><td>활성 탭 border, CTA 버튼</td></tr>
+      <tr><td>Background</td><td>#F8FAFC (Slate 50)</td><td>페이지 배경</td></tr>
+      <tr><td>Card Background</td><td>#FFFFFF</td><td>설정 카드/섹션</td></tr>
+      <tr><td>Border</td><td>#E2E8F0 (Slate 200)</td><td>카드 경계, 섹션 구분선</td></tr>
+      <tr><td>Text Primary</td><td>#0F172A (Slate 900)</td><td>제목, 레이블</td></tr>
+      <tr><td>Text Secondary</td><td>#64748B (Slate 500)</td><td>설명, 부가 텍스트</td></tr>
+      <tr><td>Danger</td><td>#EF4444 (Red 500)</td><td>Danger Zone, Delete 버튼</td></tr>
+      <tr><td>Tab 높이</td><td>48px (py-4)</td><td>탭 버튼 높이</td></tr>
+      <tr><td>Content Padding</td><td>32px (p-8)</td><td>탭 콘텐츠 영역 패딩</td></tr>
+      <tr><td>Section Gap</td><td>32px (space-y-8)</td><td>섹션 간 간격</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §8 구현 로드맵 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">8</span> 구현 로드맵 + 우선순위</div>
+
+  <table>
+    <thead><tr><th>Phase</th><th>작업</th><th>우선순위</th><th>규모</th><th>의존성</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Phase 1</strong><br><span style="color:#64748B;font-size:0.7rem">탭 재구성</span></td>
+        <td>① General → Billing 리네임<br>② CI/CD 탭 제거, 내용 Integrations + API & Tokens로 분산<br>③ Preferences 탭 빈 셸 추가<br>④ API & Tokens 탭 빈 셸 추가</td>
+        <td><span class="priority-p0">P0</span></td>
+        <td>~2시간</td>
+        <td>없음</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 2</strong><br><span style="color:#64748B;font-size:0.7rem">필수 기능</span></td>
+        <td>⑤ Language Selector (i18n 연동)<br>⑥ Account Deletion (Danger Zone + 확인 모달)<br>⑦ Personal API Key 생성/표시</td>
+        <td><span class="priority-p0">P0</span></td>
+        <td>~4시간</td>
+        <td>Phase 1</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 3</strong><br><span style="color:#64748B;font-size:0.7rem">환경 설정</span></td>
+        <td>⑧ Appearance (Light/Dark/System)<br>⑨ Timezone 선택<br>⑩ Data Export<br>⑪ In-App Notification 설정</td>
+        <td><span class="priority-p1">P1</span></td>
+        <td>~6시간</td>
+        <td>Phase 1</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 4</strong><br><span style="color:#64748B;font-size:0.7rem">부가 기능</span></td>
+        <td>⑫ Date/Time Format<br>⑬ Default Project<br>⑭ Desktop Push Notifications<br>⑮ Invoice History<br>⑯ API Documentation 링크</td>
+        <td><span class="priority-p2">P2</span></td>
+        <td>~4시간</td>
+        <td>Phase 1-3</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>전체 예상 소요:</strong> Phase 1-2 (P0): ~6시간 · Phase 3 (P1): ~6시간 · Phase 4 (P2): ~4시간. 총 ~16시간 (2일 작업).
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §9 영향 파일 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">9</span> 영향 받는 파일</div>
+
+  <table>
+    <thead><tr><th>파일</th><th>변경 내용</th><th>규모</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/pages/settings/page.tsx</code></td><td>activeTab 타입에 'billing', 'preferences', 'api' 추가. 'general'→'billing' 리네임. 'cicd' 제거. 탭 JSX 재배치. Preferences/API 탭 콘텐츠 추가.</td><td>~300줄 수정/추가</td></tr>
+      <tr><td><code>src/pages/settings/components/PreferencesPanel.tsx</code></td><td><strong>신규.</strong> Language/Appearance/Timezone/DateFormat/DefaultProject.</td><td>~200줄 신규</td></tr>
+      <tr><td><code>src/pages/settings/components/DangerZoneSection.tsx</code></td><td><strong>신규.</strong> Account Deletion 확인 모달 + Data Export 버튼.</td><td>~150줄 신규</td></tr>
+      <tr><td><code>src/pages/settings/components/ApiTokensPanel.tsx</code></td><td><strong>신규.</strong> Personal API Key + CI/CD Tokens (기존 CI/CD 탭에서 추출).</td><td>~180줄 (120줄 이동 + 60줄 신규)</td></tr>
+      <tr><td><code>src/pages/settings/components/ProfileSettingsPanel.tsx</code></td><td>DangerZoneSection 삽입 위치 추가.</td><td>~10줄</td></tr>
+      <tr><td><code>src/pages/settings/components/NotificationSettingsPanel.tsx</code></td><td>In-App Notification + Desktop Push 섹션 추가.</td><td>~80줄 추가</td></tr>
+      <tr><td><code>src/i18n/</code></td><td>Preferences에서 언어 전환 시 locale 변경 로직.</td><td>~20줄</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- §10 체크리스트 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">10</span> 구현 체크리스트</div>
+
+  <h3>Phase 1 — 탭 재구성 (P0)</h3>
+  <ul class="checklist">
+    <li>activeTab 타입에 'billing', 'preferences', 'api' 추가, 'general' 제거</li>
+    <li>General 탭 버튼/콘텐츠를 Billing으로 리네임 (아이콘: ri-bank-card-fill)</li>
+    <li>Preferences 탭 빈 셸 추가 (아이콘: ri-equalizer-fill)</li>
+    <li>API & Tokens 탭 빈 셸 추가 (아이콘: ri-key-2-fill)</li>
+    <li>CI/CD 탭 Integration Guide + Token Scope → Integrations 탭 하단 이동</li>
+    <li>CI/CD 탭 API Tokens CRUD → API & Tokens 탭으로 이동</li>
+    <li>CI/CD 탭 버튼 제거</li>
+    <li>URL 파라미터 분기 업데이트 (?tab=billing, ?tab=preferences, ?tab=api)</li>
+  </ul>
+
+  <h3>Phase 2 — 필수 기능 (P0)</h3>
+  <ul class="checklist">
+    <li>PreferencesPanel.tsx: Language 드롭다운 (English/한국어) + i18n 연동</li>
+    <li>DangerZoneSection.tsx: Delete Account 버튼 + 확인 모달 (DELETE 텍스트 입력)</li>
+    <li>Profile 탭에 DangerZoneSection 삽입 (Password 섹션 아래)</li>
+    <li>ApiTokensPanel.tsx: Personal API Key 카드 (표시/복사/Regenerate)</li>
+    <li>QA: /settings?tab=billing URL 직접 접근 확인</li>
+    <li>QA: /settings?tab=preferences URL 직접 접근 확인</li>
+    <li>QA: /settings?tab=api URL 직접 접근 확인</li>
+  </ul>
+
+  <h3>Phase 3 — 환경 설정 (P1)</h3>
+  <ul class="checklist">
+    <li>PreferencesPanel: Appearance 3-way 토글 (Light/Dark/System) + CSS 변수 적용</li>
+    <li>PreferencesPanel: Timezone 드롭다운 + "Use browser timezone" 체크박스</li>
+    <li>DangerZoneSection: Data Export 버튼 → JSON/CSV 다운로드 구현</li>
+    <li>NotificationSettingsPanel: In-App Notification 토글 + 유지 기간 드롭다운</li>
+    <li>QA: 다크 모드 전환 시 전체 페이지 정상 렌더링 확인</li>
+    <li>QA: 언어 변경 시 실시간 반영 확인</li>
+  </ul>
+
+  <h3>Phase 4 — 부가 기능 (P2)</h3>
+  <ul class="checklist">
+    <li>PreferencesPanel: Date/Time Format 드롭다운 + 실시간 Preview</li>
+    <li>PreferencesPanel: Default Project 드롭다운</li>
+    <li>NotificationSettingsPanel: Desktop Push 토글 + 브라우저 권한 요청</li>
+    <li>Billing 탭: Invoice History 테이블 (Paddle 연동)</li>
+    <li>API & Tokens 탭: "View API Documentation →" 링크</li>
+    <li>QA: 전체 7탭 순회 테스트 + 모든 URL 파라미터 확인</li>
+  </ul>
+
+  <!-- Footer -->
+  <div style="margin-top:3rem; padding-top:1.5rem; border-top:2px solid #E2E8F0; text-align:center; color:#94A3B8; font-size:0.8rem;">
+    <p><strong>Testably</strong> — Settings 페이지 개선안 + Desi 핸드오프</p>
+    <p>CEO 요청 · 2026-03-27 · v1.0</p>
+    <p style="margin-top:0.5rem;">Author: Kyle (PM) · Target: Desi (Designer) + Dev</p>
+    <p style="margin-top:0.25rem; font-size:0.7rem;">10개 섹션 · 7탭 구성 · 10개 신규 기능 · 4-Phase 로드맵</p>
+  </div>
+
+</div>
+</body>
+</html>

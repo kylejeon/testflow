@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Ship Quality Software Faster</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #0F172A; color: #CBD5E1; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+
+  /* ===== GLOBAL ===== */
+  .wrap { max-width: 76rem; margin: 0 auto; padding: 0 2rem; }
+  .gt { background: linear-gradient(135deg, #818CF8, #C084FC); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .mesh { position: relative; overflow: hidden; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(100px); pointer-events: none; opacity: 0.55; }
+
+  /* Section header */
+  .sh-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: #818CF8; margin-bottom: 0.75rem; }
+  .sh-label i { font-size: 0.875rem; }
+  .sh-title { font-size: 2.5rem; font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -0.025em; }
+  .sh-desc { font-size: 1.0625rem; color: #94A3B8; margin-top: 0.75rem; max-width: 38rem; line-height: 1.6; }
+  .sh-center { text-align: center; }
+  .sh-center .sh-desc { margin-left: auto; margin-right: auto; }
+
+  @keyframes blobFloat {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(15px,-20px) scale(1.03); }
+    66% { transform: translate(-10px,15px) scale(0.97); }
+  }
+
+  /* Buttons */
+  .btn-p { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem; background: #6366F1; color: #fff; font-size: 0.9375rem; font-weight: 600; border-radius: 9999px; transition: all 0.25s; box-shadow: 0 4px 20px rgba(99,102,241,0.3); border: none; cursor: pointer; }
+  .btn-p:hover { background: #4F46E5; box-shadow: 0 6px 30px rgba(99,102,241,0.45); transform: translateY(-2px); }
+  .btn-s { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem; border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 0.9375rem; font-weight: 500; border-radius: 9999px; transition: all 0.25s; background: transparent; cursor: pointer; }
+  .btn-s:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.25); }
+
+  /* ===== NAV ===== */
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 0.875rem 2rem; display: flex; align-items: center; justify-content: space-between; transition: all 0.35s; }
+  nav.scrolled { background: rgba(15,23,42,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .nb { display: flex; align-items: center; gap: 0.5rem; }
+  .nl { width: 34px; height: 34px; background: #6366F1; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .nl span { font-family: 'Pacifico', cursive; color: #fff; font-size: 1.125rem; line-height: 1; }
+  .nn { font-weight: 700; color: #fff; font-size: 1.0625rem; }
+  .nk { display: flex; align-items: center; gap: 1.75rem; }
+  .nk a { color: rgba(255,255,255,0.55); font-size: 0.8125rem; font-weight: 500; transition: color 0.2s; }
+  .nk a:hover { color: #fff; }
+  .nk .nc { padding: 0.5rem 1.25rem; background: #6366F1; color: #fff !important; border-radius: 9999px; font-weight: 600; transition: all 0.25s; }
+  .nk .nc:hover { background: #4F46E5; box-shadow: 0 0 24px rgba(99,102,241,0.35); }
+
+  /* ===== HERO ===== */
+  .hero { min-height: 100vh; display: flex; align-items: center; }
+  .hero .b1 { width: 650px; height: 650px; background: rgba(99,102,241,0.2); top: 5%; left: -12%; animation: blobFloat 8s ease-in-out infinite; }
+  .hero .b2 { width: 500px; height: 500px; background: rgba(139,92,246,0.12); bottom: 8%; right: -6%; animation: blobFloat 10s ease-in-out infinite 3s; }
+  .hero .b3 { width: 380px; height: 380px; background: rgba(99,102,241,0.08); top: -8%; right: 22%; animation: blobFloat 7s ease-in-out infinite 1.5s; }
+  .hc { position: relative; z-index: 10; max-width: 76rem; margin: 0 auto; padding: 8rem 2rem 5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+  .hbadge { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: #818CF8; margin-bottom: 1.5rem; }
+  .hbadge::before { content: ''; width: 2rem; height: 1px; background: #6366F1; }
+  .htitle { font-size: 3.5rem; font-weight: 900; color: #fff; line-height: 1.08; letter-spacing: -0.03em; }
+  .hsub { font-size: 1.125rem; color: #94A3B8; line-height: 1.7; margin-top: 1.5rem; max-width: 28rem; }
+  .hctas { margin-top: 2.25rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+  .htrust { margin-top: 0.875rem; font-size: 0.75rem; color: #64748B; }
+  .sp { margin-top: 2rem; display: flex; align-items: center; gap: 0.875rem; }
+  .avs { display: flex; }
+  .avs .av { width: 2rem; height: 2rem; border-radius: 50%; border: 2px solid #0F172A; margin-left: -0.5rem; display: flex; align-items: center; justify-content: center; font-size: 0.5625rem; font-weight: 700; color: #fff; }
+  .avs .av:first-child { margin-left: 0; }
+  .spt { font-size: 0.8125rem; color: #64748B; }
+  .spt strong { color: #CBD5E1; }
+
+  /* Hero visual */
+  .hv { position: relative; }
+  .sw { position: relative; animation: hf 6s ease-in-out infinite; }
+  @keyframes hf { 0%,100%{transform:translateY(0) perspective(1000px) rotateY(-4deg)} 50%{transform:translateY(-12px) perspective(1000px) rotateY(-4deg)} }
+  .ss { width: 100%; border-radius: 0.875rem; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 25px 60px rgba(0,0,0,0.4), 0 0 40px rgba(99,102,241,0.08); overflow: hidden; }
+  .fchip { position: absolute; background: rgba(15,23,42,0.88); backdrop-filter: blur(16px); border: 1px solid rgba(99,102,241,0.25); border-radius: 0.625rem; padding: 0.5rem 0.875rem; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(99,102,241,0.1); }
+  .fc1 { left: -2.5rem; top: 28%; animation: fcf 6s ease-in-out infinite 1.5s; }
+  .fc2 { right: -1.5rem; bottom: 22%; animation: fcf 6s ease-in-out infinite 3.5s; }
+  @keyframes fcf { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+  /* ===== STATS ===== */
+  .stats { background: rgba(255,255,255,0.02); border-top: 1px solid rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); padding: 2.5rem 2rem; }
+  .sg { max-width: 76rem; margin: 0 auto; display: grid; grid-template-columns: repeat(4,1fr); gap: 2rem; }
+  .si { text-align: center; }
+  .sv { font-size: 1.5rem; font-weight: 800; color: #fff; }
+  .sv .ac { color: #818CF8; }
+  .sl { font-size: 0.8125rem; color: #64748B; margin-top: 0.25rem; }
+
+  /* ===== FEATURES ===== */
+  .features { padding: 7rem 2rem; }
+  .features .bf1 { width: 500px; height: 500px; background: rgba(99,102,241,0.08); top: 10%; right: -15%; }
+  .features .bf2 { width: 400px; height: 400px; background: rgba(139,92,246,0.06); bottom: 5%; left: -10%; }
+  .fgrid { margin-top: 3.5rem; display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; position: relative; z-index: 2; }
+  .fcard { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 1.75rem; transition: all 0.35s; position: relative; overflow: hidden; }
+  .fcard::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #6366F1, transparent); opacity: 0; transition: opacity 0.35s; }
+  .fcard:hover { background: rgba(255,255,255,0.05); border-color: rgba(99,102,241,0.2); transform: translateY(-4px); }
+  .fcard:hover::before { opacity: 1; }
+  .fi { width: 2.75rem; height: 2.75rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 1rem; }
+  .fcard h3 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+  .fcard p { font-size: 0.8125rem; color: #94A3B8; line-height: 1.6; }
+  .ftag { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.2rem 0.5rem; border-radius: 9999px; margin-top: 0.75rem; }
+
+  /* Hero differentiator cards */
+  .diff-grid { margin-top: 3rem; display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; position: relative; z-index: 2; }
+  .diff-card { background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05)); border: 1px solid rgba(99,102,241,0.15); border-radius: 1.25rem; padding: 2rem; transition: all 0.35s; position: relative; overflow: hidden; }
+  .diff-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #6366F1, #8B5CF6, #C084FC); }
+  .diff-card:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-4px); box-shadow: 0 8px 30px rgba(99,102,241,0.12); }
+  .diff-badge { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.5625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: #C084FC; background: rgba(139,92,246,0.12); padding: 0.25rem 0.625rem; border-radius: 9999px; margin-bottom: 1rem; }
+  .diff-card h3 { font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 0.625rem; }
+  .diff-card > p { font-size: 0.875rem; color: #94A3B8; line-height: 1.65; }
+  .diff-pills { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 1rem; }
+  .diff-pills span { font-size: 0.625rem; font-weight: 500; color: #818CF8; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.12); padding: 0.2rem 0.625rem; border-radius: 9999px; }
+  .diff-divider { margin-top: 3.5rem; margin-bottom: 0.5rem; text-align: center; position: relative; z-index: 2; }
+  .diff-divider span { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: #475569; background: #0F172A; padding: 0 1rem; position: relative; }
+  .diff-divider::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.06); }
+
+  /* ===== HOW IT WORKS ===== */
+  .hiw { padding: 7rem 2rem; position: relative; }
+  .hiw-grid { margin-top: 3.5rem; display: grid; grid-template-columns: repeat(4,1fr); gap: 1.5rem; position: relative; z-index: 2; }
+  .hiw-card { text-align: center; position: relative; padding: 2rem 1.25rem; }
+  .hiw-num { font-size: 3.5rem; font-weight: 900; color: rgba(99,102,241,0.12); line-height: 1; margin-bottom: 0.75rem; }
+  .hiw-icon { width: 3.5rem; height: 3.5rem; border-radius: 1rem; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem; background: rgba(99,102,241,0.1); color: #818CF8; }
+  .hiw-card h3 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+  .hiw-card p { font-size: 0.8125rem; color: #94A3B8; line-height: 1.6; }
+  /* Connector line between steps */
+  .hiw-card:not(:last-child)::after { content: ''; position: absolute; top: 4.25rem; right: -0.75rem; width: 1.5rem; height: 2px; background: linear-gradient(90deg, rgba(99,102,241,0.3), rgba(99,102,241,0.05)); }
+
+  /* ===== INTEGRATIONS ===== */
+  .integ { padding: 7rem 2rem; }
+  .integ .bi1 { width: 500px; height: 500px; background: rgba(59,130,246,0.06); top: -10%; right: -10%; }
+  .integ-grid { margin-top: 3rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; position: relative; z-index: 2; }
+  .integ-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 2rem; transition: all 0.3s; }
+  .integ-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(99,102,241,0.15); }
+  .integ-icon { width: 3rem; height: 3rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.375rem; margin-bottom: 1.25rem; }
+  .integ-card h3 { font-size: 1.125rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+  .integ-card > p { font-size: 0.875rem; color: #94A3B8; line-height: 1.6; }
+  .integ-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
+  .integ-tags span { font-size: 0.6875rem; font-weight: 500; color: #818CF8; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15); padding: 0.25rem 0.75rem; border-radius: 9999px; }
+
+  /* ===== SHOWCASE (Keyboard Shortcuts) ===== */
+  .showcase { padding: 5rem 2rem 7rem; }
+  .sc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+  .sc-visual { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 1.5rem; }
+  .kbd { display: inline-flex; align-items: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 0.375rem; padding: 0.25rem 0.5rem; font-size: 0.6875rem; font-weight: 600; color: #CBD5E1; font-family: 'Inter', monospace; }
+  .sr { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; background: rgba(255,255,255,0.02); margin-bottom: 0.375rem; transition: background 0.2s; }
+  .sr:hover { background: rgba(99,102,241,0.08); }
+  .sr-l { font-size: 0.8125rem; color: #94A3B8; flex: 1; }
+
+  /* ===== WHY TESTABLY ===== */
+  .why { padding: 7rem 2rem; }
+  .why-grid { margin-top: 3rem; display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; position: relative; z-index: 2; }
+  .why-card { background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.04)); border: 1px solid rgba(99,102,241,0.12); border-radius: 1rem; padding: 2rem; transition: all 0.3s; }
+  .why-card:hover { border-color: rgba(99,102,241,0.25); transform: translateY(-4px); }
+  .why-icon { width: 3rem; height: 3rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.375rem; margin-bottom: 1rem; background: rgba(99,102,241,0.12); color: #818CF8; }
+  .why-card h3 { font-size: 1.0625rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+  .why-card p { font-size: 0.8125rem; color: #94A3B8; line-height: 1.6; }
+
+  /* ===== TESTIMONIALS ===== */
+  .testimonials { padding: 7rem 2rem; }
+  .testimonials .bt1 { width: 450px; height: 450px; background: rgba(139,92,246,0.08); top: -10%; left: 20%; }
+  .tgrid { margin-top: 3rem; display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; position: relative; z-index: 2; }
+  .tcard { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 1.75rem; transition: all 0.3s; }
+  .tcard:hover { background: rgba(255,255,255,0.05); border-color: rgba(99,102,241,0.15); }
+  .tstar { color: #F59E0B; font-size: 0.8125rem; margin-bottom: 1rem; letter-spacing: 0.125rem; }
+  .tq { font-size: 0.9375rem; color: #E2E8F0; line-height: 1.65; font-style: italic; }
+  .ta { margin-top: 1.25rem; display: flex; align-items: center; gap: 0.75rem; }
+  .tav { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6875rem; font-weight: 700; color: #fff; }
+  .tn { font-size: 0.8125rem; font-weight: 600; color: #fff; }
+  .tr { font-size: 0.6875rem; color: #64748B; margin-top: 0.125rem; }
+
+  /* ===== PRICING ===== */
+  .pricing { padding: 7rem 2rem; }
+  .pricing .bp1 { width: 600px; height: 600px; background: rgba(99,102,241,0.1); top: -5%; left: -10%; }
+  .pricing .bp2 { width: 450px; height: 450px; background: rgba(139,92,246,0.07); bottom: 0; right: -8%; }
+  .pgrid { margin-top: 3rem; display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; position: relative; z-index: 2; }
+  .pcard { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 1rem; padding: 1.75rem; transition: all 0.3s; display: flex; flex-direction: column; }
+  .pcard:hover { background: rgba(255,255,255,0.05); transform: translateY(-4px); }
+  .pcard.feat { background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08)); border-color: rgba(99,102,241,0.3); position: relative; }
+  .pcard.feat::before { content: ''; position: absolute; inset: -1px; border-radius: 1rem; background: linear-gradient(135deg,#6366F1,#8B5CF6); z-index: -1; opacity: 0.15; }
+  .pop { position: absolute; top: -0.625rem; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.25rem 0.875rem; border-radius: 9999px; white-space: nowrap; }
+  .pt { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.375rem; }
+  .pamt { display: flex; align-items: baseline; gap: 0.25rem; }
+  .pamt .c { font-size: 1.25rem; font-weight: 700; color: #fff; }
+  .pamt .n { font-size: 2.75rem; font-weight: 900; color: #fff; line-height: 1; }
+  .pamt .pr { font-size: 0.8125rem; color: #64748B; }
+  .pu { font-size: 0.8125rem; color: #94A3B8; margin-top: 0.25rem; }
+  .pdesc { font-size: 0.75rem; color: #64748B; margin-top: 0.125rem; }
+  .pdiv { height: 1px; background: rgba(255,255,255,0.06); margin: 1.25rem 0; }
+  .pfl { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+  .pfl li { font-size: 0.8125rem; color: #94A3B8; display: flex; align-items: flex-start; gap: 0.5rem; }
+  .pfl li i { color: #6366F1; font-size: 0.875rem; margin-top: 0.125rem; flex-shrink: 0; }
+  .pfl li.hl { color: #C084FC; }
+  .pfl li.hl i { color: #C084FC; }
+  .pbtn { margin-top: 1.5rem; width: 100%; padding: 0.75rem; border-radius: 0.625rem; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: all 0.25s; text-align: center; display: block; }
+  .pbtn-p { background: #6366F1; color: #fff; border: none; }
+  .pbtn-p:hover { background: #4F46E5; box-shadow: 0 4px 20px rgba(99,102,241,0.35); }
+  .pbtn-o { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.15); }
+  .pbtn-o:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.25); }
+  .pbtn-d { background: #1E1B4B; color: #C084FC; border: 1px solid rgba(139,92,246,0.25); }
+  .pbtn-d:hover { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.4); }
+  .pnote { text-align: center; margin-top: 2rem; font-size: 0.8125rem; color: #64748B; position: relative; z-index: 2; }
+  .pnote i { color: #6366F1; margin-right: 0.25rem; }
+
+  /* Annual price line (always visible below monthly) */
+  .pannual { display: flex; align-items: center; gap: 0.625rem; margin-top: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.12); border-radius: 0.5rem; }
+  .pannual-price { font-size: 1.125rem; font-weight: 800; color: #A5B4FC; letter-spacing: -0.01em; }
+  .save-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8125rem; font-weight: 800; color: #34D399; background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.08)); border: 1px solid rgba(16,185,129,0.35); padding: 0.3rem 0.875rem; border-radius: 9999px; letter-spacing: 0.02em; box-shadow: 0 0 20px rgba(16,185,129,0.15), inset 0 1px 0 rgba(255,255,255,0.08); animation: badgePulse 3s ease-in-out infinite; }
+  .save-badge i { font-size: 0.625rem; }
+  @keyframes badgePulse { 0%,100% { box-shadow: 0 0 20px rgba(16,185,129,0.15); } 50% { box-shadow: 0 0 32px rgba(16,185,129,0.3); } }
+
+  /* ===== FAQ ===== */
+  .faq { padding: 7rem 2rem; }
+  .faq-list { margin-top: 3rem; max-width: 48rem; margin-left: auto; margin-right: auto; position: relative; z-index: 2; }
+  .faq-item { border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .faq-q { width: 100%; background: none; border: none; color: #fff; font-size: 0.9375rem; font-weight: 600; text-align: left; padding: 1.25rem 0; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-family: inherit; }
+  .faq-q i { font-size: 1.125rem; color: #6366F1; transition: transform 0.3s; flex-shrink: 0; }
+  .faq-q.open i { transform: rotate(45deg); }
+  .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.35s ease; }
+  .faq-a.open { max-height: 20rem; }
+  .faq-a p { font-size: 0.875rem; color: #94A3B8; line-height: 1.7; padding-bottom: 1.25rem; }
+
+  /* ===== CTA ===== */
+  .cta { padding: 5rem 2rem; }
+  .cta-inner { max-width: 76rem; margin: 0 auto; background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); border: 1px solid rgba(99,102,241,0.2); border-radius: 1.5rem; padding: 4rem 3rem; text-align: center; position: relative; overflow: hidden; }
+  .cta-inner::before { content: ''; position: absolute; width: 500px; height: 500px; background: rgba(99,102,241,0.12); border-radius: 50%; filter: blur(80px); top: -40%; right: -10%; pointer-events: none; }
+  .cta-inner::after { content: ''; position: absolute; width: 350px; height: 350px; background: rgba(139,92,246,0.08); border-radius: 50%; filter: blur(60px); bottom: -30%; left: -5%; pointer-events: none; }
+  .cta-t { font-size: 2.5rem; font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -0.025em; position: relative; z-index: 2; }
+  .cta-d { font-size: 1.0625rem; color: #94A3B8; margin-top: 1rem; max-width: 32rem; margin-left: auto; margin-right: auto; line-height: 1.6; position: relative; z-index: 2; }
+  .cta-btns { margin-top: 2rem; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; position: relative; z-index: 2; }
+
+  /* ===== NEWSLETTER ===== */
+  .newsletter { padding: 3rem 2rem 5rem; }
+  .nl-inner { max-width: 30rem; margin: 0 auto; text-align: center; }
+  .nl-inner h3 { font-size: 1.25rem; font-weight: 700; color: #fff; }
+  .nl-inner p { font-size: 0.875rem; color: #94A3B8; margin-top: 0.5rem; }
+  .nl-form { margin-top: 1.25rem; display: flex; gap: 0.5rem; }
+  .nl-form input { flex: 1; padding: 0.75rem 1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.625rem; color: #fff; font-size: 0.875rem; font-family: inherit; outline: none; transition: border-color 0.2s; }
+  .nl-form input:focus { border-color: #6366F1; }
+  .nl-form input::placeholder { color: #64748B; }
+  .nl-form button { padding: 0.75rem 1.5rem; background: #6366F1; color: #fff; border: none; border-radius: 0.625rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: background 0.2s; font-family: inherit; }
+  .nl-form button:hover { background: #4F46E5; }
+
+  /* ===== FOOTER ===== */
+  footer { border-top: 1px solid rgba(255,255,255,0.04); padding: 3.5rem 2rem 2rem; }
+  .fgr { max-width: 76rem; margin: 0 auto; display: grid; grid-template-columns: 2fr repeat(4,1fr); gap: 2.5rem; }
+  .fbr p { font-size: 0.8125rem; color: #64748B; margin-top: 0.75rem; line-height: 1.6; max-width: 18rem; }
+  .fso { display: flex; gap: 0.75rem; margin-top: 1rem; }
+  .fso a { width: 2rem; height: 2rem; border-radius: 0.5rem; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: #64748B; font-size: 0.9375rem; transition: all 0.2s; }
+  .fso a:hover { background: rgba(99,102,241,0.15); color: #818CF8; }
+  .fcol h4 { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: #94A3B8; margin-bottom: 1rem; }
+  .fcol a { display: block; font-size: 0.8125rem; color: #64748B; margin-bottom: 0.625rem; transition: color 0.2s; }
+  .fcol a:hover { color: #CBD5E1; }
+  .fbot { max-width: 76rem; margin: 2rem auto 0; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; align-items: center; }
+  .fbot span { font-size: 0.75rem; color: #475569; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width:1024px) {
+    .hc { grid-template-columns: 1fr; text-align: center; padding-top: 7rem; }
+    .hsub { margin-left: auto; margin-right: auto; }
+    .hctas,.sp { justify-content: center; }
+    .hv { max-width: 32rem; margin: 0 auto; }
+    .fgrid,.tgrid,.why-grid,.diff-grid { grid-template-columns: repeat(2,1fr); }
+    .pgrid { grid-template-columns: repeat(2,1fr); }
+    .hiw-grid { grid-template-columns: repeat(2,1fr); }
+    .hiw-card::after { display: none; }
+    .sc-grid { grid-template-columns: 1fr; }
+    .integ-grid { grid-template-columns: 1fr; }
+    .fgr { grid-template-columns: repeat(2,1fr); }
+  }
+  @media (max-width:640px) {
+    .htitle { font-size: 2.5rem; }
+    .sh-title { font-size: 2rem; }
+    .cta-t { font-size: 2rem; }
+    .fgrid,.tgrid,.pgrid,.why-grid,.hiw-grid,.diff-grid { grid-template-columns: 1fr; }
+    .sg { grid-template-columns: repeat(2,1fr); }
+    .fgr { grid-template-columns: 1fr; }
+    .nk a:not(.nc) { display: none; }
+    .fbot { flex-direction: column; gap: 0.5rem; text-align: center; }
+    .nl-form { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ NAV ═══════════ -->
+<nav id="mainNav">
+  <div class="nb">
+    <div class="nl"><span>T</span></div>
+    <span class="nn">Testably</span>
+  </div>
+  <div class="nk">
+    <a href="#features">Features</a>
+    <a href="#how">How It Works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#why">Why Testably</a>
+    <a href="#faq">FAQ</a>
+    <a href="#">Log in</a>
+    <a href="#" class="nc">Get Started</a>
+  </div>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="hero mesh">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="hc">
+    <div>
+      <div class="hbadge">All-in-one test management platform</div>
+      <h1 class="htitle">Ship quality<br>software<br><span class="gt">faster</span></h1>
+      <p class="hsub">Testably brings your entire QA workflow together — test cases, runs, milestones, sessions, and team collaboration — all in one place.</p>
+      <div class="hctas">
+        <a href="#" class="btn-p">Start for Free <i class="ri-arrow-right-line"></i></a>
+        <a href="#" class="btn-s"><i class="ri-play-circle-line"></i> View Demo</a>
+      </div>
+      <div class="htrust">No credit card required &middot; 14-day free trial &middot; Cancel anytime</div>
+      <div class="sp">
+        <div class="avs">
+          <div class="av" style="background:#6366F1">KJ</div>
+          <div class="av" style="background:#8B5CF6">SL</div>
+          <div class="av" style="background:#EC4899">MK</div>
+          <div class="av" style="background:#F59E0B">JP</div>
+          <div class="av" style="background:#10B981">+</div>
+        </div>
+        <div class="spt">Trusted by <strong>50+ teams</strong> worldwide</div>
+      </div>
+    </div>
+    <div class="hv">
+      <div class="sw">
+        <img src="hero-screenshot.png" alt="Testably — Project Overview Dashboard" class="ss" style="display:block;width:100%">
+      </div>
+      <div class="fchip fc1"><div style="width:8px;height:8px;border-radius:50%;background:#10B981"></div><span style="font-size:0.75rem;font-weight:600;color:#fff">87% Pass Rate</span></div>
+      <div class="fchip fc2"><i class="ri-sparkling-line" style="color:#C084FC;font-size:0.875rem"></i><span style="font-size:0.75rem;font-weight:600;color:#fff">AI-Powered</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ STATS ═══════════ -->
+<div class="stats">
+  <div class="sg">
+    <div class="si"><div class="sv"><span class="ac">10x</span></div><div class="sl">Faster test execution</div></div>
+    <div class="si"><div class="sv"><span class="ac">&lt;5min</span></div><div class="sl">Setup to first test run</div></div>
+    <div class="si"><div class="sv"><span class="ac">Jira</span></div><div class="sl">Two-way sync built-in</div></div>
+    <div class="si"><div class="sv"><span class="ac">Free</span></div><div class="sl">Up to 3 projects forever</div></div>
+  </div>
+</div>
+
+<!-- ═══════════ CORE FEATURES (9) ═══════════ -->
+<section class="features mesh" id="features">
+  <div class="blob bf1"></div>
+  <div class="blob bf2"></div>
+  <div class="wrap">
+    <div class="sh-label"><i class="ri-sparkling-2-line"></i> Core Features</div>
+    <h2 class="sh-title">Everything your QA team needs</h2>
+    <p class="sh-desc">From writing test cases to analyzing results — Testably covers the full testing lifecycle.</p>
+
+    <!-- ★ Differentiator highlight cards — what makes Testably unique -->
+    <div class="diff-grid">
+      <div class="diff-card">
+        <div class="diff-badge"><i class="ri-sparkling-line" style="font-size:0.625rem"></i> AI-Native</div>
+        <h3>AI Test Generation</h3>
+        <p>Describe what you want to test in plain language. Testably generates structured test cases, steps, and expected results. Convert Discovery Logs to test cases with one click.</p>
+        <div class="diff-pills">
+          <span>Plain text &rarr; test cases</span>
+          <span>Jira issue &rarr; test cases</span>
+          <span>Discovery &rarr; test cases</span>
+          <span>Edge case suggestions</span>
+        </div>
+      </div>
+      <div class="diff-card">
+        <div class="diff-badge"><i class="ri-focus-3-line" style="font-size:0.625rem"></i> Unique</div>
+        <h3>Focus Mode</h3>
+        <p>Execute test runs in a distraction-free fullscreen. See only the current step, mark results with a single keystroke, and auto-advance. No context switching, no clutter.</p>
+        <div class="diff-pills">
+          <span>P / F / B / S keystroke</span>
+          <span>Auto-advance 300ms</span>
+          <span>Progress bar</span>
+          <span>Inline notes</span>
+        </div>
+      </div>
+      <div class="diff-card">
+        <div class="diff-badge"><i class="ri-keyboard-line" style="font-size:0.625rem"></i> Power User</div>
+        <h3>Cmd+K Command Palette</h3>
+        <p>Navigate anywhere, create anything, execute any action — all from your keyboard. Vim-inspired G-chord shortcuts let you fly through your QA workflow at terminal speed.</p>
+        <div class="diff-pills">
+          <span>Cmd+K palette</span>
+          <span>G-chord navigation</span>
+          <span>Cmd+Shift+F Focus Mode</span>
+          <span>? shortcut help</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="diff-divider"><span>Plus everything else you need</span></div>
+
+    <div class="fgrid">
+      <!-- 1 -->
+      <div class="fcard">
+        <div class="fi" style="background:rgba(99,102,241,0.12);color:#818CF8"><i class="ri-folder-3-line"></i></div>
+        <h3>Test Case Management</h3>
+        <p>Organize thousands of test cases with a structured folder hierarchy. Filter by priority, tags, type, and status to find what you need instantly.</p>
+        <div class="ftag" style="background:rgba(99,102,241,0.1);color:#818CF8">Core</div>
+      </div>
+      <!-- 2 -->
+      <div class="fcard">
+        <div class="fi" style="background:rgba(16,185,129,0.12);color:#34D399"><i class="ri-play-circle-line"></i></div>
+        <h3>Test Run Execution</h3>
+        <p>Plan test runs, assign cases to team members, and track results in real-time. Passed, Failed, Blocked, Retest, and Untested — all at a glance.</p>
+        <div class="ftag" style="background:rgba(16,185,129,0.1);color:#34D399">Core</div>
+      </div>
+      <!-- 3 -->
+      <div class="fcard">
+        <div class="fi" style="background:rgba(245,158,11,0.12);color:#FBBF24"><i class="ri-flag-line"></i></div>
+        <h3>Milestone Tracking</h3>
+        <p>Set release goals and monitor progress visually. Keep the whole team aligned on timelines and ship with confidence.</p>
+        <div class="ftag" style="background:rgba(245,158,11,0.1);color:#FBBF24">Planning</div>
+      </div>
+      <!-- 4 -->
+      <div class="fcard">
+        <div class="fi" style="background:rgba(139,92,246,0.12);color:#C084FC"><i class="ri-search-eye-line"></i></div>
+        <h3>Discovery Logs</h3>
+        <p>Capture exploratory testing insights as you go. Log observations with rich text notes, inline screenshots, and real-time log capture. Auto-convert discoveries into formal test cases.</p>
+        <div class="ftag" style="background:rgba(139,92,246,0.1);color:#C084FC">Testing</div>
+      </div>
+      <!-- 5 -->
+      <div class="fcard">
+        <div class="fi" style="background:rgba(236,72,153,0.12);color:#F472B6"><i class="ri-team-line"></i></div>
+        <h3>Team Collaboration</h3>
+        <p>Invite team members and set role-based permissions — Admin, Member, or Viewer. Assign specific test cases to individuals for clear ownership.</p>
+        <div class="ftag" style="background:rgba(236,72,153,0.1);color:#F472B6">Team</div>
+      </div>
+      <!-- 6 -->
+      <div class="fcard">
+        <div class="fi" style="background:rgba(59,130,246,0.12);color:#60A5FA"><i class="ri-link"></i></div>
+        <h3>Jira Integration</h3>
+        <p>Automatically create Jira issues when tests fail. Map custom fields, sync status bidirectionally, and keep dev and QA in perfect sync.</p>
+        <div class="ftag" style="background:rgba(59,130,246,0.1);color:#60A5FA">Integration</div>
+      </div>
+      <!-- 7 -->
+      <div class="fcard">
+        <div class="fi" style="background:rgba(6,182,212,0.12);color:#22D3EE"><i class="ri-git-merge-line"></i></div>
+        <h3>CI/CD Integration</h3>
+        <p>Upload automated test results directly from your CI pipeline via API tokens. Seamlessly connect to GitHub Actions, Jenkins, and more.</p>
+        <div class="ftag" style="background:rgba(6,182,212,0.1);color:#22D3EE">Automation</div>
+      </div>
+      <!-- 8 -->
+      <div class="fcard">
+        <div class="fi" style="background:rgba(251,146,60,0.12);color:#FB923C"><i class="ri-notification-3-line"></i></div>
+        <h3>Smart Notifications</h3>
+        <p>Get notified on team invitations, run completions, and milestone updates. Stay informed without the noise — configure exactly what you receive.</p>
+        <div class="ftag" style="background:rgba(251,146,60,0.1);color:#FB923C">Productivity</div>
+      </div>
+      <!-- 9 -->
+      <div class="fcard">
+        <div class="fi" style="background:rgba(148,163,184,0.12);color:#94A3B8"><i class="ri-file-text-line"></i></div>
+        <h3>Project Documentation</h3>
+        <p>Centralize your test plans, release notes, and QA documents alongside your test data. Upload files and add links — everything in one workspace.</p>
+        <div class="ftag" style="background:rgba(148,163,184,0.1);color:#94A3B8">Documentation</div>
+      </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Showcase — integrated into Features -->
+    <div class="sc-grid" style="margin-top:3.5rem">
+      <div>
+        <div class="sh-label"><i class="ri-keyboard-line"></i> Keyboard-First</div>
+        <h2 class="sh-title" style="font-size:2rem">Built for speed.<br><span class="gt">Zero mouse required.</span></h2>
+        <p class="sh-desc" style="max-width:26rem">Every action in Testably has a keyboard shortcut. Navigate between projects, create test cases, execute runs — all without leaving your keyboard.</p>
+        <div style="margin-top:1.5rem"><a href="#" class="btn-p" style="font-size:0.8125rem;padding:0.625rem 1.25rem">View All Shortcuts <i class="ri-arrow-right-line"></i></a></div>
+      </div>
+      <div class="sc-visual">
+        <div class="sr"><kbd class="kbd">Ctrl</kbd><kbd class="kbd" style="margin-left:0.25rem">K</kbd><span class="sr-l">Command palette</span></div>
+        <div class="sr"><kbd class="kbd">N</kbd><span class="sr-l">New test case</span></div>
+        <div class="sr"><kbd class="kbd">R</kbd><span class="sr-l">Start test run</span></div>
+        <div class="sr" style="background:rgba(99,102,241,0.08)"><kbd class="kbd" style="border-color:rgba(99,102,241,0.3);background:rgba(99,102,241,0.15)">F</kbd><span class="sr-l" style="color:#C4B5FD">Enter Focus Mode</span><i class="ri-sparkling-line" style="color:#C084FC;font-size:0.75rem"></i></div>
+        <div class="sr"><kbd class="kbd">P</kbd> <kbd class="kbd">F</kbd> <kbd class="kbd">B</kbd> <kbd class="kbd">S</kbd><span class="sr-l">Pass / Fail / Block / Skip</span></div>
+        <div class="sr"><kbd class="kbd">Ctrl</kbd><kbd class="kbd" style="margin-left:0.25rem">Shift</kbd><kbd class="kbd" style="margin-left:0.25rem">J</kbd><span class="sr-l">Create Jira issue</span></div>
+        <div class="sr"><kbd class="kbd">?</kbd><span class="sr-l">Show all shortcuts</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ HOW IT WORKS ═══════════ -->
+<section class="hiw" id="how">
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label" style="justify-content:center"><i class="ri-route-line"></i> How It Works</div>
+      <h2 class="sh-title">Your QA process in <span class="gt">4 simple steps</span></h2>
+      <p class="sh-desc">Start in minutes — no complex setup required.</p>
+    </div>
+    <div class="hiw-grid">
+      <div class="hiw-card">
+        <div class="hiw-num">01</div>
+        <div class="hiw-icon"><i class="ri-add-circle-line"></i></div>
+        <h3>Create a Project</h3>
+        <p>Set up a project for the product or feature you are testing and invite your team members.</p>
+      </div>
+      <div class="hiw-card">
+        <div class="hiw-num">02</div>
+        <div class="hiw-icon"><i class="ri-edit-2-line"></i></div>
+        <h3>Write Test Cases</h3>
+        <p>Build a structured library of test cases with folders, priorities, tags, and preconditions.</p>
+      </div>
+      <div class="hiw-card">
+        <div class="hiw-num">03</div>
+        <div class="hiw-icon"><i class="ri-play-line"></i></div>
+        <h3>Execute Test Runs</h3>
+        <p>Create a test run tied to a milestone, assign cases to team members, and track results live.</p>
+      </div>
+      <div class="hiw-card">
+        <div class="hiw-num">04</div>
+        <div class="hiw-icon"><i class="ri-bar-chart-box-line"></i></div>
+        <h3>Analyze &amp; Ship</h3>
+        <p>Review real-time dashboards, export reports, and ship with confidence when all tests pass.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ INTEGRATIONS ═══════════ -->
+<section class="integ mesh" id="integrations">
+  <div class="blob bi1"></div>
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label" style="justify-content:center"><i class="ri-plug-line"></i> Integrations</div>
+      <h2 class="sh-title">Works with your <span class="gt">existing tools</span></h2>
+      <p class="sh-desc">Connect Testably to the tools your team already uses — no disruption to your workflow.</p>
+    </div>
+    <div class="integ-grid">
+      <div class="integ-card">
+        <div class="integ-icon" style="background:rgba(59,130,246,0.12);color:#60A5FA"><i class="ri-bug-line"></i></div>
+        <h3>Seamless Jira Integration</h3>
+        <p>When a test fails, Testably automatically creates a Jira issue with all the context — steps, screenshots, and environment info. No more copy-paste between tools.</p>
+        <div class="integ-tags">
+          <span>Auto issue creation</span>
+          <span>Bidirectional sync</span>
+          <span>Custom field mapping</span>
+          <span>Project linking</span>
+        </div>
+      </div>
+      <div class="integ-card">
+        <div class="integ-icon" style="background:rgba(6,182,212,0.12);color:#22D3EE"><i class="ri-git-branch-line"></i></div>
+        <h3>CI/CD Pipeline Ready</h3>
+        <p>Push automated test results from any CI/CD system via our REST API. Use project-specific tokens to keep your pipelines secure.</p>
+        <div class="integ-tags">
+          <span>GitHub Actions</span>
+          <span>Jenkins</span>
+          <span>GitLab CI</span>
+          <span>REST API</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ WHY TESTABLY ═══════════ -->
+<section class="why mesh" id="why">
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label" style="justify-content:center"><i class="ri-heart-3-line"></i> Why Testably</div>
+      <h2 class="sh-title">Why teams choose <span class="gt">Testably</span></h2>
+      <p class="sh-desc">Everything your QA team needs, none of the complexity you don't.</p>
+    </div>
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-icon"><i class="ri-timer-flash-line"></i></div>
+        <h3>5-Minute Setup</h3>
+        <p>Sign up, create a project, write your first test case. No configuration wizards, no onboarding calls. Just start testing.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon"><i class="ri-plug-line"></i></div>
+        <h3>Jira + CI/CD Built-in</h3>
+        <p>Failed test becomes a Jira issue automatically. GitHub Actions and GitLab CI report results back. Zero manual work.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon"><i class="ri-gift-line"></i></div>
+        <h3>Free Forever Plan</h3>
+        <p>Unlimited test cases, 3 projects, 3 team members. No credit card, no trial expiration. Upgrade only when you grow.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ TESTIMONIALS ═══════════ -->
+<section class="testimonials mesh" id="testimonials">
+  <div class="blob bt1"></div>
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label" style="justify-content:center"><i class="ri-chat-quote-line"></i> What Teams Say</div>
+      <h2 class="sh-title">Loved by QA teams<br><span class="gt">who ship fast</span></h2>
+    </div>
+    <div class="tgrid">
+      <div class="tcard">
+        <div class="tstar">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="tq">"We switched from TestRail and cut our test management time in half. The AI test generation alone saved us 10+ hours per sprint."</p>
+        <div class="ta"><div class="tav" style="background:#6366F1">SM</div><div><div class="tn">Sarah M.</div><div class="tr">QA Lead, Fintech Startup</div></div></div>
+      </div>
+      <div class="tcard">
+        <div class="tstar">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="tq">"The keyboard shortcuts are a game-changer. I can execute an entire test run without touching my mouse. It's like Vim for QA."</p>
+        <div class="ta"><div class="tav" style="background:#8B5CF6">JK</div><div><div class="tn">James K.</div><div class="tr">Senior SDET, SaaS Platform</div></div></div>
+      </div>
+      <div class="tcard">
+        <div class="tstar">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="tq">"Focus Mode is brilliant. My team stays in the zone during test execution instead of getting lost in cluttered UI. QA productivity went up 40%."</p>
+        <div class="ta"><div class="tav" style="background:#EC4899">LW</div><div><div class="tn">Lisa W.</div><div class="tr">Engineering Manager, E-commerce</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ PRICING (6 tiers) ═══════════ -->
+<section class="pricing mesh" id="pricing">
+  <div class="blob bp1"></div>
+  <div class="blob bp2"></div>
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label" style="justify-content:center"><i class="ri-price-tag-3-line"></i> Pricing</div>
+      <h2 class="sh-title">Plans that scale <span class="gt">with your team</span></h2>
+      <p class="sh-desc">Flat-rate pricing — no per-seat charges. Free forever for up to 3 members. 14-day free trial on all paid plans.</p>
+    </div>
+
+    <!-- Row 1: Free / Starter / Professional -->
+    <div class="pgrid">
+      <div class="pcard">
+        <div class="pt" style="color:#10B981">Free</div>
+        <div class="pamt"><span class="c">$</span><span class="n">0</span></div>
+        <div class="pu">Up to 3 users &middot; forever free</div>
+        <div class="pdesc">Perfect for small teams getting started</div>
+        <div class="pdiv"></div>
+        <ul class="pfl">
+          <li><i class="ri-check-line"></i> Up to 3 projects</li>
+          <li><i class="ri-check-line"></i> Test case management</li>
+          <li><i class="ri-check-line"></i> Test runs &amp; execution</li>
+          <li><i class="ri-check-line"></i> Jira integration</li>
+          <li class="hl"><i class="ri-sparkling-line"></i> 5 AI generations/mo</li>
+          <li><i class="ri-check-line"></i> Community support</li>
+        </ul>
+        <a href="#" class="pbtn pbtn-o">Get Started Free</a>
+      </div>
+      <div class="pcard">
+        <div class="pt" style="color:#818CF8">Starter</div>
+        <div class="pamt"><span class="c">$</span><span class="n">49</span><span class="pr">/mo</span></div>
+        <div class="pannual"><span class="pannual-price">$499/yr</span><span class="save-badge"><i class="ri-discount-percent-line"></i> Save 15%</span></div>
+        <div class="pu">Up to 5 users</div>
+        <div class="pdesc">For growing teams that need more power</div>
+        <div class="pdiv"></div>
+        <ul class="pfl">
+          <li><i class="ri-check-line"></i> Up to 10 projects</li>
+          <li><i class="ri-check-line"></i> Jira integration</li>
+          <li><i class="ri-check-line"></i> Slack &amp; Teams integration</li>
+          <li><i class="ri-check-line"></i> Basic reporting</li>
+          <li class="hl"><i class="ri-sparkling-line"></i> 30 AI generations/mo</li>
+          <li><i class="ri-check-line"></i> Email support</li>
+        </ul>
+        <a href="#" class="pbtn pbtn-o">Start Free Trial</a>
+      </div>
+      <div class="pcard feat">
+        <div class="pop">Most Popular</div>
+        <div class="pt" style="color:#C084FC">Professional</div>
+        <div class="pamt"><span class="c">$</span><span class="n">99</span><span class="pr">/mo</span></div>
+        <div class="pannual"><span class="pannual-price">$1,010/yr</span><span class="save-badge"><i class="ri-discount-percent-line"></i> Save 15%</span></div>
+        <div class="pu">Up to 20 users</div>
+        <div class="pdesc">Full-featured for professional QA teams</div>
+        <div class="pdiv"></div>
+        <ul class="pfl">
+          <li><i class="ri-check-line"></i> Unlimited projects</li>
+          <li><i class="ri-check-line"></i> Jira integration</li>
+          <li><i class="ri-check-line"></i> Slack &amp; Teams integration</li>
+          <li><i class="ri-check-line"></i> Advanced reporting</li>
+          <li><i class="ri-check-line"></i> CI/CD integration</li>
+          <li class="hl"><i class="ri-sparkling-line"></i> 150 AI generations/mo</li>
+          <li><i class="ri-check-line"></i> Priority support</li>
+        </ul>
+        <a href="#" class="pbtn pbtn-p">Start Free Trial</a>
+      </div>
+    </div>
+
+    <!-- Row 2: Enterprise S / M / L -->
+    <div class="pgrid" style="margin-top:1rem">
+      <div class="pcard">
+        <div class="pt" style="color:#FB923C">Enterprise S</div>
+        <div class="pamt"><span class="c">$</span><span class="n">249</span><span class="pr">/mo</span></div>
+        <div class="pannual"><span class="pannual-price">$2,540/yr</span><span class="save-badge"><i class="ri-discount-percent-line"></i> Save 15%</span></div>
+        <div class="pu">21 &ndash; 50 users</div>
+        <div class="pdesc">For teams scaling beyond 20 members</div>
+        <div class="pdiv"></div>
+        <ul class="pfl">
+          <li><i class="ri-check-line"></i> Everything in Professional</li>
+          <li><i class="ri-check-line"></i> Dedicated support</li>
+          <li><i class="ri-check-line"></i> SLA guarantee</li>
+          <li class="hl"><i class="ri-sparkling-line"></i> Unlimited AI generations</li>
+        </ul>
+        <a href="#" class="pbtn pbtn-o">Start Free Trial</a>
+      </div>
+      <div class="pcard">
+        <div class="pt" style="color:#F87171">Enterprise M</div>
+        <div class="pamt"><span class="c">$</span><span class="n">499</span><span class="pr">/mo</span></div>
+        <div class="pannual"><span class="pannual-price">$5,090/yr</span><span class="save-badge"><i class="ri-discount-percent-line"></i> Save 15%</span></div>
+        <div class="pu">51 &ndash; 100 users</div>
+        <div class="pdesc">For mid-size organizations</div>
+        <div class="pdiv"></div>
+        <ul class="pfl">
+          <li><i class="ri-check-line"></i> Everything in Enterprise S</li>
+          <li><i class="ri-check-line"></i> Dedicated support</li>
+          <li><i class="ri-check-line"></i> SLA guarantee</li>
+          <li class="hl"><i class="ri-sparkling-line"></i> Unlimited AI generations</li>
+        </ul>
+        <a href="#" class="pbtn pbtn-o">Start Free Trial</a>
+      </div>
+      <div class="pcard" style="border-color:rgba(255,255,255,0.08);background:linear-gradient(135deg,rgba(15,23,42,0.8),rgba(30,27,75,0.4))">
+        <div class="pt" style="color:#94A3B8">Enterprise L</div>
+        <div class="pamt"><span class="n" style="font-size:2rem">Custom</span></div>
+        <div class="pu">100+ users &middot; tailored plan</div>
+        <div class="pdesc">For large enterprises with custom needs</div>
+        <div class="pdiv"></div>
+        <ul class="pfl">
+          <li><i class="ri-check-line"></i> Everything in Enterprise M</li>
+          <li><i class="ri-check-line"></i> Custom contract &amp; SLA</li>
+          <li><i class="ri-check-line"></i> Dedicated infrastructure</li>
+          <li class="hl"><i class="ri-sparkling-line"></i> Unlimited AI generations</li>
+        </ul>
+        <a href="#" class="pbtn pbtn-d">Talk to Us</a>
+      </div>
+    </div>
+
+    <p class="pnote"><i class="ri-shield-check-line"></i> Free forever for up to 3 members &middot; 14-day free trial on all paid plans &middot; No per-seat charges</p>
+  </div>
+</section>
+
+<!-- ═══════════ FAQ (8 questions) ═══════════ -->
+<section class="faq" id="faq">
+  <div class="wrap">
+    <div class="sh-center">
+      <div class="sh-label" style="justify-content:center"><i class="ri-question-line"></i> FAQ</div>
+      <h2 class="sh-title">Frequently asked <span class="gt">questions</span></h2>
+      <p class="sh-desc">Everything you need to know about Testably. Can't find the answer? Reach out to our team.</p>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">What are the limits of the Free plan?<i class="ri-add-line"></i></button>
+        <div class="faq-a"><p>The Free plan lets you create up to 3 projects with up to 3 team members. You get access to core features including test case management, test runs, milestones, and Jira integration, plus 5 AI generations per month. There is no limit on the number of test cases within your projects.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">How do I integrate Testably with Jira?<i class="ri-add-line"></i></button>
+        <div class="faq-a"><p>Go to Project Settings, then Jira Integration and enter your Jira domain, email, and API token. Once connected, you can map Testably projects to Jira projects and choose which custom fields to populate. When a test fails during a run, Testably automatically creates a Jira issue with the test steps, environment info, and any screenshots attached.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">How does CI/CD pipeline integration work?<i class="ri-add-line"></i></button>
+        <div class="faq-a"><p>In your project settings, generate a CI token. Then use our REST API endpoint to upload test results directly from your pipeline — GitHub Actions, Jenkins, GitLab CI, or any other system. The results are automatically mapped to your test cases and reflected in the run dashboard.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">Can I assign specific test cases to team members?<i class="ri-add-line"></i></button>
+        <div class="faq-a"><p>Yes. When creating or editing a test run, you can assign individual test cases to specific team members. Assignees can filter the run view to see only their assigned cases, and progress is tracked per assignee in the run dashboard.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">What test result statuses does Testably support?<i class="ri-add-line"></i></button>
+        <div class="faq-a"><p>Testably supports five result statuses: Passed, Failed, Blocked, Retest, and Untested. Each status is color-coded and reflected in real-time progress charts. You can also add comments and screenshots when marking a result.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">How do Discovery Logs work?<i class="ri-add-line"></i></button>
+        <div class="faq-a"><p>Start a Discovery Log by setting a goal and time box. During the session, log bugs, observations, and notes with inline screenshots directly in the rich text editor. When you finish, a structured report is generated automatically. You can also auto-convert any discovery into a formal test case with one click.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">Can I export test results and reports?<i class="ri-add-line"></i></button>
+        <div class="faq-a"><p>Yes. You can export test cases to CSV/Excel format and export test run results as detailed reports. The export includes all result statuses, assignee info, comments, and timestamps. This is available on all plans including Free.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">Can I change or cancel my plan at any time?<i class="ri-add-line"></i></button>
+        <div class="faq-a"><p>Absolutely. You can upgrade, downgrade, or cancel your subscription at any time from your account settings. If you cancel, your account remains active until the end of your current billing period. No hidden fees or lock-in contracts.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CTA ═══════════ -->
+<section class="cta">
+  <div class="cta-inner">
+    <h2 class="cta-t">Ready to level up<br>your <span class="gt">QA workflow</span>?</h2>
+    <p class="cta-d">Start for free — no credit card needed. Get your entire QA workflow running in minutes.</p>
+    <div class="cta-btns">
+      <a href="#" class="btn-p" style="padding:1rem 2.25rem;font-size:1rem">Get Started Free <i class="ri-arrow-right-line"></i></a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ NEWSLETTER ═══════════ -->
+<section class="newsletter">
+  <div class="nl-inner">
+    <h3>Stay in the loop</h3>
+    <p>Get product updates, QA tips, and new features in your inbox</p>
+    <div class="nl-form">
+      <input type="email" placeholder="Enter your email">
+      <button>Subscribe</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <div class="fgr">
+    <div class="fbr">
+      <div class="nb"><div class="nl"><span>T</span></div><span class="nn">Testably</span></div>
+      <p>All-in-one test management platform. Build better software, ship with confidence.</p>
+      <div class="fso">
+        <a href="#"><i class="ri-twitter-x-line"></i></a>
+        <a href="#"><i class="ri-github-line"></i></a>
+        <a href="#"><i class="ri-linkedin-line"></i></a>
+      </div>
+    </div>
+    <div class="fcol">
+      <h4>Product</h4>
+      <a href="#">Features</a>
+      <a href="#">Pricing</a>
+      <a href="#">Changelog</a>
+      <a href="#">Roadmap</a>
+    </div>
+    <div class="fcol">
+      <h4>Resources</h4>
+      <a href="#">Documentation</a>
+      <a href="#">API Reference</a>
+    </div>
+    <div class="fcol">
+      <h4>Company</h4>
+      <a href="#">About</a>
+      <a href="#">Contact</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+    </div>
+    <div class="fcol">
+      <h4>Compare</h4>
+      <a href="#">Testably vs TestRail</a>
+      <a href="#">Testably vs Zephyr</a>
+      <a href="#">Testably vs Qase</a>
+    </div>
+  </div>
+  <div class="fbot">
+    <span>&copy; 2026 Testably. All rights reserved.</span>
+    <span style="font-size:0.6875rem;color:#334155">Design Mockup &middot; Desi (Designer) &middot; March 2026</span>
+  </div>
+</footer>
+
+<script>
+window.addEventListener('scroll', () => {
+  document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 50);
+});
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fcard,.tcard,.pcard,.si,.hiw-card,.integ-card,.why-card,.diff-card').forEach(el => {
+  el.style.opacity='0'; el.style.transform='translateY(20px)'; el.style.transition='opacity 0.6s ease, transform 0.6s ease'; obs.observe(el);
+});
+/* No billing toggle needed — both prices always visible */
+</script>
+</body>
+</html>

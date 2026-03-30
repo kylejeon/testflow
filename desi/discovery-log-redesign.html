@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Discovery Log Redesign (Option C: Hybrid)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* DEMO BAR                                              */
+  /* ══════════════════════════════════════════════════════ */
+  .demo-bar {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem;
+    background: #FFFBEB; border-bottom: 1px solid #FDE68A; flex-shrink: 0; flex-wrap: wrap;
+  }
+  .demo-bar label { font-size: 0.625rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.04em; }
+  .demo-chip {
+    font-size: 0.625rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px;
+    background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;
+  }
+  .demo-note { font-size: 0.5625rem; color: #92400E; margin-left: auto; font-style: italic; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TOP HEADER (52px) — Row 1                             */
+  /* ══════════════════════════════════════════════════════ */
+  .top-header {
+    background: #fff; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; padding: 0 1.25rem; height: 3.25rem; gap: 0; flex-shrink: 0;
+  }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding-right: 1.25rem; border-right: 1px solid #E2E8F0; margin-right: 1rem; }
+  .logo-icon { width: 26px; height: 26px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; }
+  .logo-text { font-family: 'Pacifico', cursive; font-size: 1rem; color: #6366F1; letter-spacing: -0.01em; }
+  .project-selector {
+    display: flex; align-items: center; gap: 0.375rem; cursor: pointer;
+    padding: 0.3125rem 0.625rem; border-radius: 0.375rem; margin-right: 0.5rem;
+  }
+  .project-selector:hover { background: #F8FAFC; }
+  .project-selector .proj-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .project-selector .proj-chevron { font-size: 0.75rem; color: #94A3B8; }
+  .header-nav { display: flex; align-items: center; height: 100%; gap: 0; }
+  .header-nav-item {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; font-weight: 500; white-space: nowrap;
+    transition: color 0.15s; position: relative;
+  }
+  .header-nav-item:hover { color: #475569; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .header-nav-item.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .header-nav-item i { font-size: 0.9375rem; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .header-icon-btn {
+    width: 2rem; height: 2rem; border-radius: 0.375rem; border: none; background: none;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;
+    position: relative;
+  }
+  .header-icon-btn:hover { background: #F1F5F9; color: #475569; }
+  .notif-dot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; border: 1.5px solid #fff; }
+  .header-avatar {
+    width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5625rem; font-weight: 700; color: #fff; cursor: pointer;
+  }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* SUBTAB ROW (42px) — Row 2                             */
+  /* ══════════════════════════════════════════════════════ */
+  .subtab-row {
+    display: flex; align-items: center; padding: 0 1.25rem; gap: 0;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; height: 2.625rem;
+    position: relative;
+  }
+  .st-tab {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; font-weight: 500; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; white-space: nowrap; transition: color 0.15s; position: relative;
+  }
+  .st-tab:hover { color: #475569; }
+  .st-tab.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .st-tab.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .st-tab i { font-size: 0.875rem; }
+  .st-badge {
+    font-size: 0.625rem; font-weight: 700; padding: 0.0625rem 0.375rem;
+    border-radius: 9999px; background: #F1F5F9; color: #64748B; min-width: 1.25rem; text-align: center;
+  }
+  .st-tab.active .st-badge { background: #EEF2FF; color: #6366F1; }
+  .st-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .count-chip {
+    font-size: 0.6875rem; font-weight: 600; color: #94A3B8; padding: 0.1875rem 0.625rem;
+    border: 1px solid #E2E8F0; border-radius: 9999px; background: #F8FAFC; white-space: nowrap;
+  }
+  .action-btn {
+    display: flex; align-items: center; gap: 0.3125rem;
+    font-size: 0.8125rem; font-weight: 600; padding: 0.375rem 0.875rem;
+    border-radius: 0.375rem; border: none; cursor: pointer; font-family: inherit;
+    background: #6366F1; color: #fff; white-space: nowrap; transition: all 0.15s;
+    box-shadow: 0 1px 3px rgba(99,102,241,0.3);
+  }
+  .action-btn:hover { box-shadow: 0 2px 8px rgba(99,102,241,0.4); transform: translateY(-0.5px); }
+  .action-btn i { font-size: 0.875rem; }
+  .action-btn.secondary {
+    background: #fff; color: #475569; border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .action-btn.secondary:hover { background: #F8FAFC; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transform: translateY(-0.5px); }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* MAIN LAYOUT                                           */
+  /* ══════════════════════════════════════════════════════ */
+  .main { flex: 1; display: flex; overflow: hidden; }
+
+  /* ── Sidebar (220px) ── */
+  .sidebar {
+    width: 220px; min-width: 220px; background: #fff; border-right: 1px solid #E2E8F0;
+    display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+  }
+  .sb-header {
+    padding: 0.75rem 0.875rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sb-title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; }
+  .sb-tree { flex: 1; overflow-y: auto; padding: 0.375rem 0; }
+  .sb-group-label {
+    font-size: 0.5625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: #94A3B8; padding: 0.625rem 0.875rem 0.25rem; margin-top: 0.25rem;
+  }
+  .sb-item {
+    display: flex; align-items: center; gap: 0.375rem; padding: 0.4375rem 0.875rem; cursor: pointer;
+    font-size: 0.8125rem; color: #475569; border-radius: 0 0.375rem 0.375rem 0; margin-right: 0.375rem;
+    transition: background 0.1s; position: relative;
+  }
+  .sb-item:hover { background: #F8FAFC; }
+  .sb-item.active { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .sb-item .sb-count { margin-left: auto; font-size: 0.6875rem; color: #94A3B8; font-weight: 500; }
+  .sb-item.active .sb-count { color: #6366F1; }
+  .sb-item i { font-size: 1rem; }
+  .sb-item.active i { color: #6366F1; }
+
+  /* ── Content Area ── */
+  .content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Stats Bar ── */
+  .stats-bar {
+    display: flex; align-items: center; gap: 1rem; padding: 0.625rem 1.25rem;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0;
+  }
+  .stat-item {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.75rem;
+    background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 0.5rem;
+  }
+  .stat-icon {
+    width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center;
+    font-size: 0.875rem;
+  }
+  .stat-icon.active { background: #DBEAFE; color: #2563EB; }
+  .stat-icon.bugs { background: #FEE2E2; color: #DC2626; }
+  .stat-icon.time { background: #F3E8FF; color: #7C3AED; }
+  .stat-val { font-size: 1rem; font-weight: 800; color: #0F172A; line-height: 1; }
+  .stat-label { font-size: 0.625rem; color: #94A3B8; font-weight: 500; }
+  .stat-sub { font-size: 0.5625rem; color: #DC2626; font-weight: 600; }
+  .stat-text { display: flex; flex-direction: column; gap: 0.0625rem; }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0;
+  }
+  .toolbar-search {
+    display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem;
+    border: 1px solid #E2E8F0; border-radius: 0.375rem; background: #F8FAFC; flex: 1; max-width: 320px;
+  }
+  .toolbar-search i { font-size: 0.875rem; color: #94A3B8; }
+  .toolbar-search input {
+    border: none; background: none; outline: none; font-size: 0.8125rem; font-family: inherit;
+    color: #1E293B; width: 100%;
+  }
+  .toolbar-search input::placeholder { color: #CBD5E1; }
+  .toolbar-search .kbd-hint {
+    font-size: 0.5625rem; font-weight: 700; color: #CBD5E1; background: #fff;
+    border: 1px solid #E2E8F0; border-radius: 0.1875rem; padding: 0 0.25rem; font-family: 'SF Mono','Fira Code',monospace;
+  }
+  .toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 0.375rem; }
+  .toolbar-btn {
+    display: flex; align-items: center; gap: 0.25rem; padding: 0.375rem 0.625rem;
+    border: 1px solid #E2E8F0; border-radius: 0.375rem; background: #fff; font-size: 0.75rem;
+    font-weight: 500; color: #475569; cursor: pointer; font-family: inherit; transition: all 0.1s;
+  }
+  .toolbar-btn:hover { background: #F8FAFC; border-color: #CBD5E1; }
+  .toolbar-btn i { font-size: 0.8125rem; }
+  .filter-badge {
+    font-size: 0.5625rem; font-weight: 700; background: #6366F1; color: #fff;
+    border-radius: 9999px; padding: 0 0.25rem; min-width: 0.875rem; text-align: center; line-height: 0.875rem;
+  }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TABLE                                                  */
+  /* ══════════════════════════════════════════════════════ */
+  .table-wrap { flex: 1; overflow-y: auto; }
+  .dl-table { width: 100%; border-collapse: collapse; }
+  .dl-table th {
+    position: sticky; top: 0; z-index: 2;
+    background: #F8FAFC; font-size: 0.6875rem; font-weight: 600; color: #64748B;
+    text-transform: uppercase; letter-spacing: 0.04em; padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #E2E8F0; text-align: left; white-space: nowrap;
+    cursor: pointer; user-select: none;
+  }
+  .dl-table th:hover { color: #475569; }
+  .dl-table th .sort-icon { font-size: 0.6875rem; margin-left: 0.125rem; opacity: 0.4; }
+  .dl-table th.sorted .sort-icon { opacity: 1; color: #6366F1; }
+  .dl-table td {
+    padding: 0.5rem 0.75rem; border-bottom: 1px solid #F1F5F9;
+    font-size: 0.8125rem; color: #334155; vertical-align: middle; white-space: nowrap;
+  }
+  .dl-table tr.data-row { cursor: pointer; transition: background 0.1s; }
+  .dl-table tr.data-row:hover { background: #FAFAFF; }
+  .dl-table tr.data-row.expanded { background: #EEF2FF; }
+  .dl-table .cb { width: 2.25rem; text-align: center; }
+  .dl-table .cb input { accent-color: #6366F1; cursor: pointer; }
+
+  /* Status pill */
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600;
+    padding: 0.125rem 0.5rem; border-radius: 9999px;
+  }
+  .status-pill.open { background: #FEF3C7; color: #92400E; }
+  .status-pill.resolved { background: #DCFCE7; color: #166534; }
+  .status-pill.dismissed { background: #F1F5F9; color: #64748B; }
+  .status-pill i { font-size: 0.6875rem; }
+
+  /* Tag chips in table */
+  .tag-chip {
+    display: inline-flex; font-size: 0.625rem; font-weight: 600;
+    padding: 0.0625rem 0.375rem; border-radius: 9999px; background: #F1F5F9; color: #475569;
+    margin-right: 0.25rem;
+  }
+
+  /* Assignee avatar */
+  .av-sm {
+    width: 1.375rem; height: 1.375rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.5rem; font-weight: 700; color: #fff; border: 1.5px solid #fff;
+  }
+  .av-stack { display: flex; }
+  .av-stack .av-sm + .av-sm { margin-left: -0.375rem; }
+
+  /* Bug count */
+  .bug-count { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; }
+  .bug-count.has-bugs { color: #DC2626; }
+  .bug-count.no-bugs { color: #CBD5E1; }
+  .bug-count i { font-size: 0.75rem; }
+
+  /* Duration */
+  .duration { font-size: 0.75rem; color: #64748B; font-weight: 500; }
+
+  /* Date */
+  .date-text { font-size: 0.75rem; color: #94A3B8; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* EXPANDED ROW (Card Detail)                            */
+  /* ══════════════════════════════════════════════════════ */
+  .expand-row { display: none; }
+  .expand-row.open { display: table-row; }
+  .expand-cell {
+    padding: 0 !important; background: #FAFBFE; border-bottom: 1px solid #E2E8F0;
+  }
+  .expand-card {
+    margin: 0.75rem 1rem 0.75rem 2.5rem; padding: 1rem 1.25rem;
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .expand-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.75rem; }
+  .expand-title { font-size: 0.875rem; font-weight: 700; color: #0F172A; margin-bottom: 0.25rem; }
+  .expand-charter { font-size: 0.8125rem; color: #64748B; line-height: 1.5; margin-bottom: 0.75rem; }
+  .expand-meta {
+    display: flex; flex-wrap: wrap; gap: 0.75rem; font-size: 0.75rem; color: #94A3B8;
+    margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #F1F5F9;
+  }
+  .expand-meta span { display: flex; align-items: center; gap: 0.25rem; }
+  .expand-meta i { font-size: 0.8125rem; }
+
+  /* Bug list inside expanded card */
+  .expand-bugs-title { font-size: 0.6875rem; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.375rem; }
+  .expand-bug-item {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.5rem;
+    background: #FEF2F2; border: 1px solid #FECACA; border-radius: 0.375rem; margin-bottom: 0.375rem;
+    font-size: 0.75rem; color: #991B1B;
+  }
+  .expand-bug-item i { font-size: 0.75rem; color: #DC2626; }
+  .expand-bug-item .bug-sev {
+    font-size: 0.5625rem; font-weight: 700; padding: 0.0625rem 0.375rem; border-radius: 9999px;
+    margin-left: auto;
+  }
+  .bug-sev.critical { background: #DC2626; color: #fff; }
+  .bug-sev.major { background: #F59E0B; color: #fff; }
+  .bug-sev.minor { background: #94A3B8; color: #fff; }
+
+  /* Attachments & TC links inside expanded card */
+  .expand-section { margin-top: 0.75rem; }
+  .expand-attachments { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .attach-chip {
+    display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 500;
+    padding: 0.25rem 0.5rem; background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 0.375rem;
+    color: #475569; cursor: pointer; transition: background 0.1s;
+  }
+  .attach-chip:hover { background: #E2E8F0; }
+  .attach-chip i { font-size: 0.75rem; color: #94A3B8; }
+  .tc-link {
+    display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600;
+    color: #6366F1; cursor: pointer; margin-right: 0.75rem;
+  }
+  .tc-link:hover { text-decoration: underline; }
+  .tc-link i { font-size: 0.75rem; }
+  .expand-footer { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.875rem; padding-top: 0.75rem; border-top: 1px solid #F1F5F9; }
+  .expand-action {
+    display: flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600;
+    padding: 0.3125rem 0.625rem; border-radius: 0.375rem; border: 1px solid #E2E8F0;
+    background: #fff; color: #475569; cursor: pointer; font-family: inherit; transition: all 0.1s;
+  }
+  .expand-action:hover { background: #F8FAFC; border-color: #CBD5E1; }
+  .expand-action.primary { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .expand-action.primary:hover { background: #4F46E5; }
+  .expand-action i { font-size: 0.75rem; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* NEW ENTRY MODAL                                       */
+  /* ══════════════════════════════════════════════════════ */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 100;
+    align-items: center; justify-content: center; backdrop-filter: blur(2px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 0.75rem; width: 480px; max-height: 90vh;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15); overflow: hidden; display: flex; flex-direction: column;
+  }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.25rem; border-bottom: 1px solid #E2E8F0;
+  }
+  .modal-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 0.375rem; }
+  .modal-title i { font-size: 1rem; color: #6366F1; }
+  .modal-close {
+    width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; border: none; background: none;
+    color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem;
+  }
+  .modal-close:hover { background: #F1F5F9; color: #64748B; }
+  .modal-body { padding: 1.25rem; overflow-y: auto; }
+  .form-group { margin-bottom: 1rem; }
+  .form-label { display: block; font-size: 0.6875rem; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.375rem; }
+  .form-input {
+    width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #E2E8F0; border-radius: 0.375rem;
+    font-size: 0.8125rem; font-family: inherit; color: #1E293B; background: #F8FAFC; transition: border-color 0.15s;
+  }
+  .form-input:focus { outline: none; border-color: #6366F1; background: #fff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+  textarea.form-input { resize: vertical; min-height: 4rem; }
+  .form-row { display: flex; gap: 0.75rem; }
+  .form-row .form-group { flex: 1; }
+  .modal-foot {
+    display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;
+    padding: 0.875rem 1.25rem; border-top: 1px solid #E2E8F0; background: #F8FAFC;
+  }
+  .modal-btn {
+    font-size: 0.8125rem; font-weight: 600; padding: 0.4375rem 1rem; border-radius: 0.375rem;
+    border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .modal-btn:hover { background: #F1F5F9; }
+  .modal-btn.primary { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .modal-btn.primary:hover { background: #4F46E5; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* SCROLLBAR                                             */
+  /* ══════════════════════════════════════════════════════ */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ DEMO BAR ══════════════ -->
+<div class="demo-bar">
+  <label>Design Mockup</label>
+  <span class="demo-chip">Discovery Log Redesign</span>
+  <span class="demo-chip">Option C: Hybrid</span>
+  <span class="demo-chip">Interactive HTML</span>
+  <span class="demo-note">Click rows to expand · Subtabs filter · Search works</span>
+</div>
+
+<!-- ══════════════ ROW 1: TOP HEADER ══════════════ -->
+<div class="top-header">
+  <div class="header-logo">
+    <div class="logo-icon">T</div>
+    <span class="logo-text">Testably</span>
+  </div>
+  <div class="project-selector">
+    <span class="proj-name">Stellar Health EMR</span>
+    <i class="ri-arrow-down-s-line proj-chevron"></i>
+  </div>
+  <nav class="header-nav">
+    <div class="header-nav-item"><i class="ri-dashboard-3-line"></i> Dashboard</div>
+    <div class="header-nav-item"><i class="ri-test-tube-line"></i> Test Cases</div>
+    <div class="header-nav-item"><i class="ri-play-circle-line"></i> Runs</div>
+    <div class="header-nav-item"><i class="ri-flag-line"></i> Milestones</div>
+    <div class="header-nav-item"><i class="ri-file-text-line"></i> Documents</div>
+    <div class="header-nav-item active"><i class="ri-search-eye-line"></i> Discovery</div>
+  </nav>
+  <div class="header-right">
+    <button class="header-icon-btn"><i class="ri-search-line"></i></button>
+    <button class="header-icon-btn"><i class="ri-notification-3-line"></i><span class="notif-dot"></span></button>
+    <button class="header-icon-btn"><i class="ri-keyboard-line"></i></button>
+    <div class="header-avatar">SK</div>
+  </div>
+</div>
+
+<!-- ══════════════ ROW 2: SUBTAB ROW ══════════════ -->
+<div class="subtab-row">
+  <div class="st-tab active" data-filter="all">
+    <i class="ri-list-check-3" style="color:#6366F1"></i> All <span class="st-badge" id="badge-all">15</span>
+  </div>
+  <div class="st-tab" data-filter="open">
+    <i class="ri-radar-fill" style="color:#F59E0B"></i> Open <span class="st-badge" id="badge-open">6</span>
+  </div>
+  <div class="st-tab" data-filter="resolved">
+    <i class="ri-checkbox-circle-fill" style="color:#22C55E"></i> Resolved <span class="st-badge" id="badge-resolved">7</span>
+  </div>
+  <div class="st-tab" data-filter="dismissed">
+    <i class="ri-close-circle-fill" style="color:#94A3B8"></i> Dismissed <span class="st-badge" id="badge-dismissed">2</span>
+  </div>
+  <div class="st-right">
+    <span class="count-chip" id="totalCount">15 entries</span>
+    <button class="action-btn" onclick="openModal()"><i class="ri-add-line"></i> New Entry</button>
+  </div>
+</div>
+
+<!-- ══════════════ MAIN LAYOUT ══════════════ -->
+<div class="main">
+
+  <!-- ── Sidebar ── -->
+  <div class="sidebar">
+    <div class="sb-header">
+      <span class="sb-title">Filter</span>
+    </div>
+    <div class="sb-tree">
+      <div class="sb-item active" data-sidebar="all"><i class="ri-list-check-3"></i> All Sessions <span class="sb-count">15</span></div>
+
+      <div class="sb-group-label">Milestones</div>
+      <div class="sb-item" data-sidebar="Sprint 24 Release"><i class="ri-flag-line"></i> Sprint 24 Release <span class="sb-count">5</span></div>
+      <div class="sb-item" data-sidebar="API v3 Certification"><i class="ri-flag-line"></i> API v3 Certification <span class="sb-count">3</span></div>
+      <div class="sb-item" data-sidebar="Mobile 2.0 Launch"><i class="ri-flag-line"></i> Mobile 2.0 Launch <span class="sb-count">4</span></div>
+      <div class="sb-item" data-sidebar="HIPAA Compliance"><i class="ri-flag-line"></i> HIPAA Compliance <span class="sb-count">3</span></div>
+
+      <div class="sb-group-label">Tags</div>
+      <div class="sb-item" data-sidebar="tag:payments"><i class="ri-price-tag-3-line"></i> payments <span class="sb-count">4</span></div>
+      <div class="sb-item" data-sidebar="tag:auth"><i class="ri-price-tag-3-line"></i> auth <span class="sb-count">3</span></div>
+      <div class="sb-item" data-sidebar="tag:mobile"><i class="ri-price-tag-3-line"></i> mobile <span class="sb-count">3</span></div>
+      <div class="sb-item" data-sidebar="tag:edge-case"><i class="ri-price-tag-3-line"></i> edge-case <span class="sb-count">6</span></div>
+      <div class="sb-item" data-sidebar="tag:api"><i class="ri-price-tag-3-line"></i> api <span class="sb-count">3</span></div>
+      <div class="sb-item" data-sidebar="tag:security"><i class="ri-price-tag-3-line"></i> security <span class="sb-count">2</span></div>
+    </div>
+  </div>
+
+  <!-- ── Content ── -->
+  <div class="content-area">
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-icon active"><i class="ri-radar-fill"></i></div>
+        <div class="stat-text">
+          <div class="stat-val" id="statActive">6</div>
+          <div class="stat-label">Active Sessions</div>
+        </div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-icon bugs"><i class="ri-bug-line"></i></div>
+        <div class="stat-text">
+          <div class="stat-val" id="statBugs">23</div>
+          <div class="stat-label">Bugs Found</div>
+          <div class="stat-sub" id="statCritical">4 critical</div>
+        </div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-icon time"><i class="ri-timer-line"></i></div>
+        <div class="stat-text">
+          <div class="stat-val" id="statTime">1h 42m</div>
+          <div class="stat-label">Avg Session Time</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-search">
+        <i class="ri-search-line"></i>
+        <input type="text" id="searchInput" placeholder="Search sessions by name, charter, or tag...">
+        <span class="kbd-hint">/</span>
+      </div>
+      <div class="toolbar-right">
+        <button class="toolbar-btn"><i class="ri-filter-3-line"></i> Filters</button>
+        <button class="toolbar-btn"><i class="ri-sort-desc"></i> Sort</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table class="dl-table">
+        <thead>
+          <tr>
+            <th class="cb"><input type="checkbox" id="selectAll"></th>
+            <th>Status</th>
+            <th class="sorted">Session Name <i class="ri-arrow-down-s-fill sort-icon"></i></th>
+            <th>Description</th>
+            <th>Bugs <i class="ri-arrow-down-s-fill sort-icon"></i></th>
+            <th>Tags</th>
+            <th>Assignee</th>
+            <th>Duration</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ NEW ENTRY MODAL ══════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title"><i class="ri-add-circle-line"></i> New Discovery Entry</div>
+      <button class="modal-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Session Name</label>
+        <input type="text" class="form-input" placeholder="e.g., Payment Flow Edge Cases">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Charter / Mission</label>
+        <textarea class="form-input" placeholder="Describe the purpose and scope of this exploratory session..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Assignee</label>
+          <select class="form-input">
+            <option value="">Select assignee...</option>
+            <option>Sarah Kim</option>
+            <option>Alex Park</option>
+            <option>Jake Lee</option>
+            <option>Min Choi</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="form-input">
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags</label>
+        <input type="text" class="form-input" placeholder="payments, edge-case, mobile (comma separated)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Milestone</label>
+        <select class="form-input">
+          <option value="">Select milestone...</option>
+          <option>Sprint 24 Release</option>
+          <option>API v3 Certification</option>
+          <option>Mobile 2.0 Launch</option>
+          <option>HIPAA Compliance</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="modal-btn" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="closeModal()">Create Entry</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════
+const sessions = [
+  { id:'DL-015', name:'Payment Flow Edge Cases', charter:'Explore edge cases in 3DS verification timeouts, concurrent payment sessions, and partial refund scenarios for the Sprint 24 release.', status:'open', bugs:3, bugList:[{t:'3DS timeout not handled',s:'critical'},{t:'Concurrent session race condition',s:'major'},{t:'Refund amount rounding error',s:'minor'}], tags:['payments','3ds','edge-case'], assignees:[{n:'SK',c:'#6366F1'}], duration:'2h 15m', date:'Mar 25', updated:'2h ago', milestone:'Sprint 24 Release', attachments:['3ds-timeout-screenshot.png','payment-log.txt'], tcLinks:['TC-042','TC-043','TC-051'] },
+  { id:'DL-014', name:'OAuth Token Refresh Scenarios', charter:'Test token refresh behavior under various network conditions: slow connections, expired tokens during active sessions, and multi-device token conflicts.', status:'open', bugs:2, bugList:[{t:'Token not refreshed on slow 3G',s:'major'},{t:'Multi-device token conflict unhandled',s:'major'}], tags:['auth','security','edge-case'], assignees:[{n:'AP',c:'#8B5CF6'}], duration:'1h 45m', date:'Mar 25', updated:'5h ago', milestone:'Sprint 24 Release', attachments:['network-trace.har'], tcLinks:['TC-015','TC-016'] },
+  { id:'DL-013', name:'Deep Link Navigation Matrix', charter:'Systematically test all 24 deep link paths in the mobile app, including authenticated vs unauthenticated states and expired link handling.', status:'open', bugs:0, bugList:[], tags:['mobile','deep-links'], assignees:[{n:'JL',c:'#EC4899'},{n:'MC',c:'#14B8A6'}], duration:'—', date:'Mar 25', updated:'today', milestone:'Mobile 2.0 Launch', attachments:[], tcLinks:['TC-080','TC-081','TC-082'] },
+  { id:'DL-012', name:'Cart Edge Cases & Race Conditions', charter:'Explore cart manipulation scenarios: simultaneous add/remove, inventory depletion during checkout, coupon stacking limits, and session timeout during payment.', status:'resolved', bugs:5, bugList:[{t:'Cart total incorrect with stacked coupons',s:'critical'},{t:'Inventory not reserved during checkout',s:'critical'},{t:'Session timeout loses cart',s:'major'},{t:'Coupon code case sensitivity',s:'minor'},{t:'Cart icon count mismatch',s:'minor'}], tags:['payments','edge-case','cart'], assignees:[{n:'SK',c:'#6366F1'}], duration:'3h 10m', date:'Mar 24', updated:'1d ago', milestone:'Sprint 24 Release', attachments:['cart-race-video.mp4','coupon-stacking.png'], tcLinks:['TC-055','TC-056'] },
+  { id:'DL-011', name:'API Timeout & Retry Behavior', charter:'Verify API timeout handling and automatic retry logic across all critical endpoints, including idempotency key management.', status:'resolved', bugs:1, bugList:[{t:'Retry sends duplicate POST without idempotency',s:'major'}], tags:['api','edge-case'], assignees:[{n:'JL',c:'#EC4899'}], duration:'1h 30m', date:'Mar 23', updated:'2d ago', milestone:'API v3 Certification', attachments:['api-timeout-log.json'], tcLinks:['TC-017'] },
+  { id:'DL-010', name:'Accessibility Keyboard Navigation', charter:'Test complete keyboard-only navigation through all major flows: login, dashboard, test case creation, run execution, and report generation.', status:'open', bugs:4, bugList:[{t:'Tab order broken in TC editor',s:'major'},{t:'Modal focus trap missing',s:'major'},{t:'Dropdown not keyboard accessible',s:'minor'},{t:'Skip-to-content link missing',s:'minor'}], tags:['a11y','keyboard'], assignees:[{n:'MC',c:'#14B8A6'}], duration:'2h 00m', date:'Mar 23', updated:'2d ago', milestone:'Sprint 24 Release', attachments:['a11y-audit.pdf'], tcLinks:['TC-090','TC-091'] },
+  { id:'DL-009', name:'File Upload Stress Test', charter:'Upload files of various sizes (0 bytes to 50MB), formats (PDF, PNG, DOCX, ZIP), and names (special characters, unicode, very long names) to identify edge cases.', status:'resolved', bugs:2, bugList:[{t:'0-byte file silently fails',s:'minor'},{t:'Unicode filename garbled on download',s:'minor'}], tags:['attachments','edge-case'], assignees:[{n:'AP',c:'#8B5CF6'}], duration:'1h 15m', date:'Mar 22', updated:'3d ago', milestone:'Sprint 24 Release', attachments:[], tcLinks:['TC-009'] },
+  { id:'DL-008', name:'Mobile Responsive Layout Audit', charter:'Verify responsive breakpoints across iPhone SE, iPhone 15, iPad Mini, and iPad Pro. Check critical flows: login, TC list, run execution.', status:'open', bugs:3, bugList:[{t:'TC table overflows on iPhone SE',s:'major'},{t:'Modal too wide on iPad Mini landscape',s:'minor'},{t:'Bottom nav overlaps content',s:'minor'}], tags:['mobile','responsive','edge-case'], assignees:[{n:'JL',c:'#EC4899'},{n:'MC',c:'#14B8A6'}], duration:'1h 50m', date:'Mar 22', updated:'3d ago', milestone:'Mobile 2.0 Launch', attachments:['iphone-se-overflow.png','ipad-modal.png'], tcLinks:['TC-085','TC-086'] },
+  { id:'DL-007', name:'Bulk Operations Performance', charter:'Test bulk select + status change with 100, 500, and 1000 test cases. Measure response time, UI responsiveness, and error handling.', status:'resolved', bugs:1, bugList:[{t:'UI freezes for 3s with 1000 TCs',s:'major'}], tags:['performance','bulk-ops'], assignees:[{n:'SK',c:'#6366F1'}], duration:'0h 55m', date:'Mar 21', updated:'4d ago', milestone:'API v3 Certification', attachments:['perf-benchmark.xlsx'], tcLinks:['TC-012'] },
+  { id:'DL-006', name:'Email Notification Templates', charter:'Trigger all 12 email notification types and verify: correct template rendering, link validity, unsubscribe functionality, and spam score.', status:'resolved', bugs:1, bugList:[{t:'Password reset link expires too early',s:'minor'}], tags:['notifications','email'], assignees:[{n:'AP',c:'#8B5CF6'}], duration:'1h 20m', date:'Mar 20', updated:'5d ago', milestone:'Sprint 24 Release', attachments:['email-templates-test.pdf'], tcLinks:['TC-025','TC-026'] },
+  { id:'DL-005', name:'HIPAA Audit Log Completeness', charter:'Verify that all 15 HIPAA-required action types are logged with correct user, timestamp, IP, and data classification fields.', status:'resolved', bugs:0, bugList:[], tags:['security','hipaa','compliance'], assignees:[{n:'SK',c:'#6366F1'}], duration:'2h 30m', date:'Mar 19', updated:'6d ago', milestone:'HIPAA Compliance', attachments:['audit-log-matrix.xlsx'], tcLinks:['TC-018','TC-019'] },
+  { id:'DL-004', name:'API Rate Limiting Boundary', charter:'Test rate limiting at boundary values: exactly at limit, 1 over, burst patterns, and verify 429 response format and Retry-After header accuracy.', status:'open', bugs:1, bugList:[{t:'Retry-After header off by 1 second',s:'minor'}], tags:['api','security','edge-case'], assignees:[{n:'JL',c:'#EC4899'}], duration:'1h 10m', date:'Mar 18', updated:'1w ago', milestone:'API v3 Certification', attachments:[], tcLinks:['TC-017'] },
+  { id:'DL-003', name:'Multi-Language Input Handling', charter:'Test CJK, RTL (Arabic, Hebrew), and emoji input across all text fields: TC names, descriptions, comments, tags, and search.', status:'resolved', bugs:1, bugList:[{t:'RTL text breaks tag display',s:'minor'}], tags:['i18n','edge-case'], assignees:[{n:'MC',c:'#14B8A6'}], duration:'1h 40m', date:'Mar 17', updated:'1w ago', milestone:'Mobile 2.0 Launch', attachments:['rtl-tag-bug.png'], tcLinks:[] },
+  { id:'DL-002', name:'Data Export Format Validation', charter:'Export test case data in CSV, XLSX, and PDF formats. Verify data integrity, encoding, date formats, and special character handling.', status:'dismissed', bugs:0, bugList:[], tags:['export','data'], assignees:[{n:'AP',c:'#8B5CF6'}], duration:'0h 45m', date:'Mar 15', updated:'2w ago', milestone:'HIPAA Compliance', attachments:[], tcLinks:[] },
+  { id:'DL-001', name:'Browser Compatibility Baseline', charter:'Establish baseline compatibility across Chrome 120+, Firefox 121+, Safari 17+, and Edge 120+. Test critical paths and visual consistency.', status:'dismissed', bugs:0, bugList:[], tags:['compatibility','baseline'], assignees:[{n:'SK',c:'#6366F1'},{n:'JL',c:'#EC4899'}], duration:'1h 30m', date:'Mar 12', updated:'2w ago', milestone:'HIPAA Compliance', attachments:['compat-matrix.xlsx'], tcLinks:[] },
+];
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let currentFilter = 'all';
+let sidebarFilter = 'all';
+let searchQuery = '';
+let expandedId = null;
+
+// ══════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════
+function getFiltered() {
+  return sessions.filter(s => {
+    // Subtab filter
+    if (currentFilter !== 'all' && s.status !== currentFilter) return false;
+    // Sidebar filter
+    if (sidebarFilter !== 'all') {
+      if (sidebarFilter.startsWith('tag:')) {
+        if (!s.tags.includes(sidebarFilter.replace('tag:',''))) return false;
+      } else {
+        if (s.milestone !== sidebarFilter) return false;
+      }
+    }
+    // Search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const hay = (s.name + ' ' + s.charter + ' ' + s.tags.join(' ') + ' ' + s.id).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderTable() {
+  const filtered = getFiltered();
+  const tbody = document.getElementById('tableBody');
+
+  // Update count chip
+  document.getElementById('totalCount').textContent = filtered.length + ' entries';
+
+  tbody.innerHTML = filtered.map(s => {
+    const statusHtml = s.status === 'open'
+      ? '<span class="status-pill open"><i class="ri-radar-fill"></i> Open</span>'
+      : s.status === 'resolved'
+      ? '<span class="status-pill resolved"><i class="ri-checkbox-circle-fill"></i> Resolved</span>'
+      : '<span class="status-pill dismissed"><i class="ri-close-circle-fill"></i> Dismissed</span>';
+
+    const tagsHtml = s.tags.slice(0,3).map(t => `<span class="tag-chip">${t}</span>`).join('');
+    const assigneesHtml = `<div class="av-stack">${s.assignees.map(a => `<div class="av-sm" style="background:${a.c}">${a.n}</div>`).join('')}</div>`;
+    const bugHtml = s.bugs > 0
+      ? `<span class="bug-count has-bugs"><i class="ri-bug-line"></i> ${s.bugs}</span>`
+      : `<span class="bug-count no-bugs"><i class="ri-bug-line"></i> 0</span>`;
+
+    const isExpanded = expandedId === s.id;
+
+    // Build expanded card bug list
+    const bugListHtml = s.bugList.map(b =>
+      `<div class="expand-bug-item"><i class="ri-bug-fill"></i> ${b.t} <span class="bug-sev ${b.s}">${b.s}</span></div>`
+    ).join('');
+
+    const attachHtml = s.attachments.length > 0
+      ? `<div class="expand-section"><div class="expand-bugs-title">Attachments</div><div class="expand-attachments">${s.attachments.map(a => `<span class="attach-chip"><i class="ri-attachment-2"></i> ${a}</span>`).join('')}</div></div>`
+      : '';
+
+    const tcHtml = s.tcLinks.length > 0
+      ? `<div class="expand-section"><div class="expand-bugs-title">Linked Test Cases</div><div>${s.tcLinks.map(tc => `<span class="tc-link"><i class="ri-link"></i> ${tc}</span>`).join('')}</div></div>`
+      : '';
+
+    return `
+      <tr class="data-row ${isExpanded ? 'expanded' : ''}" onclick="toggleExpand('${s.id}')">
+        <td class="cb" onclick="event.stopPropagation()"><input type="checkbox"></td>
+        <td>${statusHtml}</td>
+        <td style="font-weight:600; color:#0F172A; max-width:200px; overflow:hidden; text-overflow:ellipsis;"><span style="color:#94A3B8; font-weight:500; margin-right:0.375rem;">${s.id}</span>${s.name}</td>
+        <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; color:#64748B; font-size:0.75rem;">${s.charter.substring(0,60)}...</td>
+        <td>${bugHtml}</td>
+        <td>${tagsHtml}</td>
+        <td>${assigneesHtml}</td>
+        <td><span class="duration">${s.duration}</span></td>
+        <td><span class="date-text">${s.updated}</span></td>
+      </tr>
+      <tr class="expand-row ${isExpanded ? 'open' : ''}">
+        <td class="expand-cell" colspan="9">
+          <div class="expand-card">
+            <div class="expand-header">
+              <div>
+                <div class="expand-title">${s.name}</div>
+                ${statusHtml}
+              </div>
+              <span style="font-size:0.6875rem; color:#94A3B8; font-weight:500;">${s.id}</span>
+            </div>
+            <div class="expand-charter">${s.charter}</div>
+            <div class="expand-meta">
+              <span><i class="ri-calendar-line"></i> ${s.date}</span>
+              <span><i class="ri-timer-line"></i> ${s.duration}</span>
+              <span><i class="ri-flag-line"></i> ${s.milestone}</span>
+              <span><i class="ri-price-tag-3-line"></i> ${s.tags.join(', ')}</span>
+            </div>
+            ${s.bugList.length > 0 ? `<div class="expand-bugs-title">Bugs Found (${s.bugs})</div>${bugListHtml}` : '<div style="font-size:0.75rem;color:#94A3B8;">No bugs found in this session.</div>'}
+            ${attachHtml}
+            ${tcHtml}
+            <div class="expand-footer">
+              <button class="expand-action primary"><i class="ri-eye-line"></i> View Detail</button>
+              <button class="expand-action"><i class="ri-edit-line"></i> Edit</button>
+              <button class="expand-action"><i class="ri-share-line"></i> Share</button>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function updateBadges() {
+  const counts = { all: sessions.length, open: 0, resolved: 0, dismissed: 0 };
+  sessions.forEach(s => { if (counts[s.status] !== undefined) counts[s.status]++; });
+  document.getElementById('badge-all').textContent = counts.all;
+  document.getElementById('badge-open').textContent = counts.open;
+  document.getElementById('badge-resolved').textContent = counts.resolved;
+  document.getElementById('badge-dismissed').textContent = counts.dismissed;
+}
+
+// ══════════════════════════════════════════════════════
+// INTERACTIONS
+// ══════════════════════════════════════════════════════
+function toggleExpand(id) {
+  expandedId = expandedId === id ? null : id;
+  renderTable();
+}
+
+// Subtab clicks
+document.querySelectorAll('.st-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.st-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentFilter = tab.dataset.filter;
+    expandedId = null;
+    renderTable();
+  });
+});
+
+// Sidebar clicks
+document.querySelectorAll('.sb-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    sidebarFilter = item.dataset.sidebar;
+    expandedId = null;
+    renderTable();
+  });
+});
+
+// Search
+const searchInput = document.getElementById('searchInput');
+let searchTimeout;
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    searchQuery = searchInput.value.trim();
+    expandedId = null;
+    renderTable();
+  }, 300);
+});
+
+// Keyboard: / to focus search
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && document.activeElement !== searchInput) {
+    e.preventDefault();
+    searchInput.focus();
+  }
+  if (e.key === 'Escape') {
+    searchInput.blur();
+    closeModal();
+  }
+});
+
+// Select all checkbox
+document.getElementById('selectAll').addEventListener('change', function() {
+  document.querySelectorAll('.dl-table tbody input[type="checkbox"]').forEach(cb => {
+    cb.checked = this.checked;
+  });
+});
+
+// Modal
+function openModal() { document.getElementById('modalOverlay').classList.add('show'); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// INIT
+updateBadges();
+renderTable();
+</script>
+</body>
+</html>

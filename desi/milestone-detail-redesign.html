@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Milestone Detail Redesign</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* ROW 1 — TOP HEADER (ProjectHeader.tsx, 3.25rem/52px)  */
+  /* Exact copy from all-tabs-unified-header-design.html   */
+  /* ══════════════════════════════════════════════════════ */
+  .top-header {
+    background: #fff; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; padding: 0 1.25rem; height: 3.25rem; gap: 0; flex-shrink: 0;
+  }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding-right: 1.25rem; border-right: 1px solid #E2E8F0; margin-right: 1rem; }
+  .logo-icon { width: 26px; height: 26px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; }
+  .logo-text { font-family: 'Pacifico', cursive; font-size: 1rem; color: #6366F1; letter-spacing: -0.01em; }
+  .project-selector {
+    display: flex; align-items: center; gap: 0.375rem; cursor: pointer;
+    padding: 0.3125rem 0.625rem; border-radius: 0.375rem; margin-right: 0.5rem;
+  }
+  .project-selector:hover { background: #F8FAFC; }
+  .project-selector .proj-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .project-selector .proj-chevron { font-size: 0.75rem; color: #94A3B8; }
+  .header-nav { display: flex; align-items: center; height: 100%; gap: 0; }
+  .header-nav-item {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; font-weight: 500; white-space: nowrap;
+    transition: color 0.15s; position: relative;
+  }
+  .header-nav-item:hover { color: #475569; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .header-nav-item.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .header-nav-item i { font-size: 0.9375rem; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .header-icon-btn {
+    width: 2rem; height: 2rem; border-radius: 0.375rem; border: none; background: none;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;
+    position: relative;
+  }
+  .header-icon-btn:hover { background: #F1F5F9; color: #475569; }
+  .notif-dot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; border: 1.5px solid #fff; }
+  .header-avatar {
+    width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5625rem; font-weight: 700; color: #fff; cursor: pointer;
+  }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* ROW 2 — DETAIL INFO BAR                               */
+  /* ══════════════════════════════════════════════════════ */
+  /* Breadcrumb (reusable Detail page pattern) */
+  .detail-breadcrumb {
+    display: flex; align-items: center; gap: 0.375rem;
+    font-size: 0.75rem; margin-bottom: 0.625rem;
+  }
+  .detail-breadcrumb a {
+    color: #6366F1; font-weight: 500; text-decoration: none; cursor: pointer;
+    transition: color 0.15s;
+  }
+  .detail-breadcrumb a:hover { text-decoration: underline; color: #4F46E5; }
+  .detail-breadcrumb .bc-sep { color: #CBD5E1; font-size: 0.625rem; }
+  .detail-breadcrumb .bc-current { color: #94A3B8; font-weight: 500; }
+
+  .detail-info-bar {
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0;
+    padding: 1rem 1.5rem 0.875rem;
+  }
+  .info-row1 {
+    display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap;
+  }
+  .ms-icon-wrap {
+    width: 2rem; height: 2rem; background: #F1F5F9; border-radius: 0.5rem;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .ms-icon-wrap i { font-size: 1rem; color: #6366F1; }
+  .ms-name { font-size: 1.125rem; font-weight: 700; color: #0F172A; }
+  .status-badge {
+    font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.5rem;
+    border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem;
+  }
+  .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .status-started { background: #DCFCE7; color: #166534; }
+  .status-started .dot { background: #22C55E; }
+  .status-upcoming { background: #DBEAFE; color: #1E40AF; }
+  .status-upcoming .dot { background: #3B82F6; }
+  .status-past-due { background: #F97316; color: #fff; }
+  .status-past-due .dot { background: #fff; }
+  .status-completed { background: #F1F5F9; color: #475569; }
+  .status-completed .dot { background: #94A3B8; }
+  .date-range { font-size: 0.8125rem; color: #64748B; display: flex; align-items: center; gap: 0.25rem; }
+  .date-range i { font-size: 0.875rem; }
+  .dday-badge {
+    font-size: 0.75rem; font-weight: 700; padding: 0.1875rem 0.625rem;
+    border-radius: 9999px; white-space: nowrap;
+  }
+  .dday-red { background: #FEE2E2; color: #B91C1C; }
+  .dday-amber { background: #FEF3C7; color: #92400E; }
+  .dday-blue { background: #DBEAFE; color: #1E40AF; }
+  .dday-slate { background: #F1F5F9; color: #475569; }
+  .dday-overdue { background: #EF4444; color: #fff; }
+  .info-actions { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+  .btn-ghost {
+    font-size: 0.8125rem; font-weight: 500; padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; color: #475569;
+    cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 0.3125rem;
+    transition: all 0.15s;
+  }
+  .btn-ghost:hover { background: #F8FAFC; border-color: #CBD5E1; }
+  .btn-solid {
+    font-size: 0.8125rem; font-weight: 600; padding: 0.375rem 0.875rem;
+    border-radius: 0.375rem; border: none; background: #6366F1; color: #fff;
+    cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 0.3125rem;
+    transition: all 0.15s; box-shadow: 0 1px 3px rgba(99,102,241,0.3);
+  }
+  .btn-solid:hover { background: #4F46E5; box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
+
+  /* Progress bar row */
+  .info-row2 { margin-top: 0.625rem; display: flex; align-items: center; gap: 0.625rem; }
+  .progress-track {
+    flex: 1; height: 0.5rem; background: #E2E8F0; border-radius: 9999px; overflow: hidden;
+  }
+  .progress-fill { height: 100%; border-radius: 9999px; transition: width 0.3s; }
+  .progress-fill.green { background: #22C55E; }
+  .progress-fill.orange { background: #F97316; }
+  .progress-pct { font-size: 0.8125rem; font-weight: 700; color: #0F172A; white-space: nowrap; }
+
+  /* TC Summary row */
+  .info-row3 { margin-top: 0.5rem; display: flex; align-items: center; gap: 0; flex-wrap: wrap; font-size: 0.8125rem; }
+  .tc-stat { display: inline-flex; align-items: center; gap: 0.25rem; color: #475569; }
+  .tc-stat + .tc-stat { margin-left: 0.75rem; }
+  .tc-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .tc-dot.passed { background: #22C55E; }
+  .tc-dot.failed { background: #EF4444; }
+  .tc-dot.blocked { background: #F59E0B; }
+  .tc-dot.untested { background: #CBD5E1; }
+  .tc-num { font-weight: 600; color: #0F172A; }
+  .tc-sep { width: 1px; height: 1rem; background: #E2E8F0; margin: 0 0.75rem; flex-shrink: 0; }
+  .tc-label { color: #64748B; }
+  .tc-val { font-weight: 700; color: #0F172A; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* ROW 3 — CONTENT TAB ROW (42px)                        */
+  /* ══════════════════════════════════════════════════════ */
+  .content-tab-row {
+    display: flex; align-items: center; padding: 0 1.5rem; gap: 0;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; height: 2.625rem;
+    position: relative;
+  }
+  .content-tab-group { display: flex; align-items: center; height: 100%; gap: 0; }
+  .ct-tab {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; font-weight: 500; color: #64748B; cursor: pointer;
+    border-bottom: 2.5px solid transparent; white-space: nowrap; transition: color 0.15s; position: relative;
+  }
+  .ct-tab:hover { color: #475569; }
+  .ct-tab.active { color: #6366F1; border-bottom-color: transparent; font-weight: 600; }
+  .ct-tab.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2.5px; background: #6366F1; border-radius: 1px 1px 0 0;
+  }
+  .ct-tab i { font-size: 0.875rem; }
+  .ct-badge {
+    font-size: 0.625rem; font-weight: 700; padding: 0.0625rem 0.375rem;
+    border-radius: 9999px; background: #F1F5F9; color: #64748B; min-width: 1.25rem; text-align: center;
+  }
+  .ct-tab.active .ct-badge { background: #EEF2FF; color: #6366F1; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* SCROLLABLE CONTENT AREA                               */
+  /* ══════════════════════════════════════════════════════ */
+  .content-area {
+    flex: 1; overflow-y: auto; background: #F8FAFC; padding: 1.25rem 1.5rem;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Section headers */
+  .section-header {
+    font-size: 0.75rem; font-weight: 600; color: #64748B; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.375rem;
+  }
+  .section-header i { font-size: 0.8125rem; }
+  .section-count { font-size: 0.625rem; font-weight: 700; background: #F1F5F9; color: #94A3B8; padding: 0.0625rem 0.375rem; border-radius: 9999px; }
+  .section-block + .section-block { margin-top: 1.5rem; }
+
+  /* ── Sub-Milestone Card ── */
+  .sub-ms-card {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem;
+    padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .sub-ms-card:hover { border-color: #C7D2FE; box-shadow: 0 1px 4px rgba(99,102,241,0.08); }
+  .sub-ms-card + .sub-ms-card { margin-top: 0.5rem; }
+  .sub-ms-info { flex: 1; min-width: 0; }
+  .sub-ms-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sub-ms-date { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.125rem; }
+  .sub-ms-progress { width: 120px; display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+  .sub-ms-bar { flex: 1; height: 6px; background: #F1F5F9; border-radius: 3px; overflow: hidden; }
+  .sub-ms-fill { height: 100%; border-radius: 3px; }
+  .sub-ms-pct { font-size: 0.75rem; font-weight: 600; color: #475569; white-space: nowrap; }
+  .sub-status { font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.4375rem; border-radius: 9999px; white-space: nowrap; flex-shrink: 0; }
+  .sub-status.started { background: #DCFCE7; color: #166534; }
+  .sub-status.upcoming { background: #DBEAFE; color: #1E40AF; }
+  .sub-ms-chevron { font-size: 0.875rem; color: #CBD5E1; flex-shrink: 0; }
+
+  /* ── Run Card (Enhanced) ── */
+  .run-card {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem;
+    padding: 0.875rem 1rem; cursor: pointer; transition: all 0.15s;
+  }
+  .run-card:hover { border-color: #C7D2FE; box-shadow: 0 1px 4px rgba(99,102,241,0.08); }
+  .run-card + .run-card { margin-top: 0.5rem; }
+  .run-row1 { display: flex; align-items: center; gap: 0.5rem; }
+  .run-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .run-status {
+    font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem; white-space: nowrap; flex-shrink: 0;
+  }
+  .run-status.in-progress { background: #DBEAFE; color: #1E40AF; }
+  .run-status.new { background: #F1F5F9; color: #475569; }
+  .run-status.paused { background: #FEF3C7; color: #92400E; }
+  .run-status.review { background: #EDE9FE; color: #6D28D9; }
+  .run-status.completed { background: #DCFCE7; color: #166534; }
+  .run-row2 { margin-top: 0.5rem; display: flex; align-items: center; gap: 0.625rem; }
+  .run-progress-wrap { flex: 1; display: flex; align-items: center; gap: 0.5rem; }
+  .run-bar { flex: 1; height: 6px; background: #F1F5F9; border-radius: 3px; overflow: hidden; display: flex; }
+  .run-seg { height: 100%; }
+  .run-seg.pass { background: #22C55E; }
+  .run-seg.fail { background: #EF4444; }
+  .run-seg.remain { background: #E2E8F0; }
+  .run-pct { font-size: 0.75rem; font-weight: 600; color: #475569; white-space: nowrap; min-width: 2rem; }
+  .run-row3 { margin-top: 0.375rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .run-tc-stat { font-size: 0.6875rem; display: inline-flex; align-items: center; gap: 0.1875rem; color: #64748B; }
+  .run-tc-stat .n { font-weight: 600; color: #334155; }
+  .run-tc-dot { width: 6px; height: 6px; border-radius: 1.5px; flex-shrink: 0; }
+  .run-tc-dot.p { background: #22C55E; }
+  .run-tc-dot.f { background: #EF4444; }
+  .run-tc-dot.u { background: #CBD5E1; }
+  .run-avatars { margin-left: auto; display: flex; align-items: center; flex-shrink: 0; }
+  .run-avatar {
+    width: 1.375rem; height: 1.375rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.4375rem; font-weight: 700; color: #fff; border: 2px solid #fff;
+  }
+  .run-avatar + .run-avatar { margin-left: -0.375rem; }
+
+  /* ── Session Card ── */
+  .session-card {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem;
+    padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .session-card:hover { border-color: #C7D2FE; box-shadow: 0 1px 4px rgba(99,102,241,0.08); }
+  .session-card + .session-card { margin-top: 0.5rem; }
+  .session-info { flex: 1; min-width: 0; }
+  .session-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .session-meta { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.125rem; }
+  .session-status { font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.4375rem; border-radius: 9999px; white-space: nowrap; flex-shrink: 0; }
+  .session-status.active { background: #DBEAFE; color: #1E40AF; }
+  .session-status.done { background: #DCFCE7; color: #166534; }
+  .session-bar-wrap { width: 80px; display: flex; gap: 2px; flex-shrink: 0; }
+  .session-bar-seg { height: 6px; border-radius: 1.5px; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* STATUS TAB (P1 wireframe)                             */
+  /* ══════════════════════════════════════════════════════ */
+  .status-widget {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem;
+    padding: 1rem 1.25rem;
+  }
+  .status-widget + .status-widget { margin-top: 1rem; }
+  .sw-title { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.375rem; }
+  .sw-title i { font-size: 0.9375rem; }
+
+  /* TC Distribution horizontal stacked bar */
+  .tc-dist-bar { display: flex; height: 1.5rem; border-radius: 0.375rem; overflow: hidden; width: 100%; }
+  .tc-dist-seg { display: flex; align-items: center; justify-content: center; font-size: 0.5625rem; font-weight: 700; color: #fff; min-width: 1.5rem; }
+  .tc-dist-table { width: 100%; margin-top: 0.75rem; }
+  .tc-dist-table td { padding: 0.375rem 0.5rem; font-size: 0.8125rem; border-bottom: 1px solid #F1F5F9; }
+  .tc-dist-table td:first-child { display: flex; align-items: center; gap: 0.375rem; color: #475569; font-weight: 500; }
+  .tc-dist-table td:last-child { text-align: right; font-weight: 600; color: #0F172A; }
+  .tc-dist-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  /* Risk banner */
+  .risk-banner {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem;
+    border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 600;
+  }
+  .risk-banner i { font-size: 1rem; }
+  .risk-banner.at-risk { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+  .risk-banner.critical { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+
+  /* Contributors */
+  .contributor-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; border-bottom: 1px solid #F1F5F9; }
+  .contributor-row:last-child { border-bottom: none; }
+  .contributor-avatar {
+    width: 2rem; height: 2rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5625rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .contributor-info { flex: 1; }
+  .contributor-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .contributor-role { font-size: 0.6875rem; color: #94A3B8; }
+  .contributor-count { font-size: 0.8125rem; font-weight: 600; color: #475569; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* ACTIVITY TAB                                          */
+  /* ══════════════════════════════════════════════════════ */
+  .activity-chart-placeholder {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem;
+    padding: 1rem 1.25rem; height: 160px; display: flex; align-items: center; justify-content: center;
+    color: #CBD5E1; font-size: 0.8125rem; margin-bottom: 1rem;
+  }
+  .timeline-item {
+    display: flex; gap: 0.75rem; padding: 0.625rem 0; position: relative;
+  }
+  .timeline-item + .timeline-item { border-top: 1px solid #F1F5F9; }
+  .tl-icon {
+    width: 1.75rem; height: 1.75rem; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
+  }
+  .tl-content { flex: 1; }
+  .tl-text { font-size: 0.8125rem; color: #334155; line-height: 1.4; }
+  .tl-text strong { font-weight: 600; color: #0F172A; }
+  .tl-time { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.125rem; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* ISSUES TAB                                            */
+  /* ══════════════════════════════════════════════════════ */
+  .issue-card {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.625rem;
+    padding: 0.75rem 1rem; cursor: pointer; transition: all 0.15s;
+  }
+  .issue-card:hover { border-color: #FECACA; box-shadow: 0 1px 4px rgba(239,68,68,0.08); }
+  .issue-card + .issue-card { margin-top: 0.5rem; }
+  .issue-row1 { display: flex; align-items: center; gap: 0.5rem; }
+  .issue-type-icon { font-size: 0.875rem; }
+  .issue-title { font-size: 0.8125rem; font-weight: 600; color: #0F172A; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .issue-severity {
+    font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.4375rem; border-radius: 9999px; white-space: nowrap;
+  }
+  .issue-severity.critical { background: #FEE2E2; color: #991B1B; }
+  .issue-severity.major { background: #FEF3C7; color: #92400E; }
+  .issue-severity.minor { background: #DBEAFE; color: #1E40AF; }
+  .issue-row2 { margin-top: 0.375rem; display: flex; align-items: center; gap: 0.625rem; font-size: 0.6875rem; color: #94A3B8; flex-wrap: wrap; }
+  .issue-row2 i { font-size: 0.75rem; }
+  .issue-meta { display: inline-flex; align-items: center; gap: 0.1875rem; }
+  .issue-jira { display: inline-flex; align-items: center; gap: 0.1875rem; color: #6366F1; font-weight: 500; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* ANIMATIONS                                            */
+  /* ══════════════════════════════════════════════════════ */
+  .tab-panel { animation: fadeIn 0.15s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ ROW 1 — TOP HEADER (ProjectHeader.tsx) ═══════════ -->
+<div class="top-header">
+  <div class="header-logo">
+    <div class="logo-icon">T</div>
+    <span class="logo-text">Testably</span>
+  </div>
+  <div class="project-selector">
+    <span class="proj-name">Acme Healthcare</span>
+    <i class="ri-arrow-down-s-line proj-chevron"></i>
+  </div>
+  <div class="header-nav">
+    <div class="header-nav-item"><i class="ri-dashboard-line"></i> Dashboard</div>
+    <div class="header-nav-item"><i class="ri-file-list-3-line"></i> Test Cases</div>
+    <div class="header-nav-item"><i class="ri-play-circle-line"></i> Runs &amp; Results</div>
+    <div class="header-nav-item active"><i class="ri-flag-line"></i> Milestones</div>
+    <div class="header-nav-item"><i class="ri-file-text-line"></i> Documents</div>
+    <div class="header-nav-item"><i class="ri-search-eye-line"></i> Discovery Log</div>
+  </div>
+  <div class="header-right">
+    <button class="header-icon-btn"><i class="ri-search-line"></i></button>
+    <button class="header-icon-btn">
+      <i class="ri-notification-3-line"></i>
+      <span class="notif-dot"></span>
+    </button>
+    <button class="header-icon-btn"><i class="ri-keyboard-line"></i></button>
+    <div class="header-avatar">SK</div>
+  </div>
+</div>
+
+<!-- ═══════════ ROW 2 — DETAIL INFO BAR ═══════════ -->
+<div class="detail-info-bar">
+  <!-- Breadcrumb -->
+  <div class="detail-breadcrumb">
+    <a href="#milestones">Milestones</a>
+    <span class="bc-sep">›</span>
+    <span class="bc-current">v1.0.0 — Core Features</span>
+  </div>
+  <!-- Row 1: Icon + Name + Status + Date + D-day + Buttons -->
+  <div class="info-row1">
+    <div class="ms-icon-wrap"><i class="ri-flag-line"></i></div>
+    <span class="ms-name">Milestone v1.0.0 — Core Features</span>
+    <span class="status-badge status-started"><span class="dot"></span> Started</span>
+    <span class="date-range"><i class="ri-calendar-line"></i> Mar 1 – Mar 31, 2026</span>
+    <span class="dday-badge dday-amber">D-4</span>
+    <div class="info-actions">
+      <button class="btn-ghost"><i class="ri-pencil-line"></i> Edit</button>
+      <button class="btn-solid"><i class="ri-checkbox-circle-line"></i> Complete</button>
+    </div>
+  </div>
+  <!-- Row 2: Progress Bar -->
+  <div class="info-row2">
+    <div class="progress-track">
+      <div class="progress-fill green" style="width: 72%;"></div>
+    </div>
+    <span class="progress-pct">72%</span>
+  </div>
+  <!-- Row 3: TC Summary -->
+  <div class="info-row3">
+    <span class="tc-stat"><span class="tc-dot passed"></span> Passed <span class="tc-num">38</span></span>
+    <span class="tc-stat"><span class="tc-dot failed"></span> Failed <span class="tc-num">15</span></span>
+    <span class="tc-stat"><span class="tc-dot blocked"></span> Blocked <span class="tc-num">3</span></span>
+    <span class="tc-stat"><span class="tc-dot untested"></span> Untested <span class="tc-num">20</span></span>
+    <span class="tc-sep"></span>
+    <span class="tc-label">Pass Rate</span>&nbsp;<span class="tc-val">71.7%</span>
+    <span class="tc-sep"></span>
+    <span class="tc-label">Total TCs</span>&nbsp;<span class="tc-val">76</span>
+  </div>
+</div>
+
+<!-- ═══════════ ROW 3 — CONTENT TAB ROW (42px) ═══════════ -->
+<div class="content-tab-row">
+  <div class="content-tab-group">
+    <div class="ct-tab active" data-tab="results" onclick="switchContentTab('results')">
+      <i class="ri-bar-chart-box-fill" style="color:#6366F1"></i> Results <span class="ct-badge">3</span>
+    </div>
+    <div class="ct-tab" data-tab="status" onclick="switchContentTab('status')">
+      <i class="ri-pie-chart-2-fill" style="color:#3B82F6"></i> Status
+    </div>
+    <div class="ct-tab" data-tab="activity" onclick="switchContentTab('activity')">
+      <i class="ri-history-fill" style="color:#8B5CF6"></i> Activity <span class="ct-badge">24</span>
+    </div>
+    <div class="ct-tab" data-tab="issues" onclick="switchContentTab('issues')">
+      <i class="ri-bug-fill" style="color:#EF4444"></i> Issues <span class="ct-badge">5</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SCROLLABLE CONTENT AREA ═══════════ -->
+<div class="content-area">
+
+  <!-- ═══ RESULTS TAB ═══ -->
+  <div class="tab-panel active" id="panel-results">
+
+    <!-- Sub Milestones Section -->
+    <div class="section-block">
+      <div class="section-header">
+        <i class="ri-git-branch-line"></i> Sub Milestones <span class="section-count">2</span>
+      </div>
+      <div class="sub-ms-card">
+        <div class="sub-ms-info">
+          <div class="sub-ms-name">Sub 1.1 — User Authentication</div>
+          <div class="sub-ms-date">Mar 1 – Mar 20</div>
+        </div>
+        <span class="sub-status started">Started</span>
+        <div class="sub-ms-progress">
+          <div class="sub-ms-bar"><div class="sub-ms-fill" style="width:65%; background:#22C55E;"></div></div>
+          <span class="sub-ms-pct">65%</span>
+        </div>
+        <i class="ri-arrow-right-s-line sub-ms-chevron"></i>
+      </div>
+      <div class="sub-ms-card">
+        <div class="sub-ms-info">
+          <div class="sub-ms-name">Sub 1.2 — Patient Dashboard</div>
+          <div class="sub-ms-date">Mar 15 – Mar 31</div>
+        </div>
+        <span class="sub-status upcoming">Upcoming</span>
+        <div class="sub-ms-progress">
+          <div class="sub-ms-bar"><div class="sub-ms-fill" style="width:0%; background:#3B82F6;"></div></div>
+          <span class="sub-ms-pct">0%</span>
+        </div>
+        <i class="ri-arrow-right-s-line sub-ms-chevron"></i>
+      </div>
+    </div>
+
+    <!-- Runs Section -->
+    <div class="section-block">
+      <div class="section-header">
+        <i class="ri-play-circle-line"></i> Runs <span class="section-count">3</span>
+      </div>
+
+      <!-- Run Card 1 -->
+      <div class="run-card">
+        <div class="run-row1">
+          <span class="run-name">Regression — Core Workflows</span>
+          <span class="run-status in-progress">In Progress</span>
+        </div>
+        <div class="run-row2">
+          <div class="run-progress-wrap">
+            <div class="run-bar">
+              <div class="run-seg pass" style="width:50%"></div>
+              <div class="run-seg fail" style="width:20%"></div>
+              <div class="run-seg remain" style="width:30%"></div>
+            </div>
+            <span class="run-pct">72%</span>
+          </div>
+        </div>
+        <div class="run-row3">
+          <span class="run-tc-stat"><span class="run-tc-dot p"></span> <span class="n">38</span> passed</span>
+          <span class="run-tc-stat"><span class="run-tc-dot f"></span> <span class="n">15</span> failed</span>
+          <span class="run-tc-stat"><span class="run-tc-dot u"></span> <span class="n">20</span> untested</span>
+          <div class="run-avatars">
+            <div class="run-avatar" style="background:#6366F1">SK</div>
+            <div class="run-avatar" style="background:#EC4899">JD</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run Card 2 -->
+      <div class="run-card">
+        <div class="run-row1">
+          <span class="run-name">Smoke Test — Login Flow</span>
+          <span class="run-status new">New</span>
+        </div>
+        <div class="run-row2">
+          <div class="run-progress-wrap">
+            <div class="run-bar">
+              <div class="run-seg pass" style="width:25%"></div>
+              <div class="run-seg fail" style="width:10%"></div>
+              <div class="run-seg remain" style="width:65%"></div>
+            </div>
+            <span class="run-pct">25%</span>
+          </div>
+        </div>
+        <div class="run-row3">
+          <span class="run-tc-stat"><span class="run-tc-dot p"></span> <span class="n">5</span> passed</span>
+          <span class="run-tc-stat"><span class="run-tc-dot f"></span> <span class="n">2</span> failed</span>
+          <span class="run-tc-stat"><span class="run-tc-dot u"></span> <span class="n">13</span> untested</span>
+          <div class="run-avatars">
+            <div class="run-avatar" style="background:#F59E0B">MR</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run Card 3 -->
+      <div class="run-card">
+        <div class="run-row1">
+          <span class="run-name">Integration — API Endpoints</span>
+          <span class="run-status completed">Completed</span>
+        </div>
+        <div class="run-row2">
+          <div class="run-progress-wrap">
+            <div class="run-bar">
+              <div class="run-seg pass" style="width:92%"></div>
+              <div class="run-seg fail" style="width:8%"></div>
+            </div>
+            <span class="run-pct">100%</span>
+          </div>
+        </div>
+        <div class="run-row3">
+          <span class="run-tc-stat"><span class="run-tc-dot p"></span> <span class="n">23</span> passed</span>
+          <span class="run-tc-stat"><span class="run-tc-dot f"></span> <span class="n">2</span> failed</span>
+          <span class="run-tc-stat"><span class="run-tc-dot u"></span> <span class="n">0</span> untested</span>
+          <div class="run-avatars">
+            <div class="run-avatar" style="background:#22C55E">AL</div>
+            <div class="run-avatar" style="background:#6366F1">SK</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Discovery Logs Section -->
+    <div class="section-block">
+      <div class="section-header">
+        <i class="ri-search-eye-line"></i> Discovery Logs <span class="section-count">1</span>
+      </div>
+      <div class="session-card">
+        <div class="session-info">
+          <div class="session-name">Exploratory — Edge Cases</div>
+          <div class="session-meta">Started Mar 25 · 45 min</div>
+        </div>
+        <span class="session-status active">In progress</span>
+        <div class="session-bar-wrap">
+          <div class="session-bar-seg" style="width:30%; background:#6366F1;"></div>
+          <div class="session-bar-seg" style="width:20%; background:#F59E0B;"></div>
+          <div class="session-bar-seg" style="width:15%; background:#EF4444;"></div>
+          <div class="session-bar-seg" style="width:10%; background:#22C55E;"></div>
+          <div class="session-bar-seg" style="width:25%; background:#E2E8F0;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ STATUS TAB (P1 wireframe) ═══ -->
+  <div class="tab-panel" id="panel-status">
+
+    <!-- Risk Banner -->
+    <div class="risk-banner at-risk" style="margin-bottom:1rem;">
+      <i class="ri-alert-line"></i>
+      <span>At Risk — D-4 remaining with 71.7% pass rate (below 80% target)</span>
+    </div>
+
+    <!-- TC Distribution -->
+    <div class="status-widget">
+      <div class="sw-title"><i class="ri-pie-chart-2-line" style="color:#3B82F6"></i> TC Status Distribution</div>
+      <div class="tc-dist-bar">
+        <div class="tc-dist-seg" style="width:50%; background:#22C55E;">38</div>
+        <div class="tc-dist-seg" style="width:19.7%; background:#EF4444;">15</div>
+        <div class="tc-dist-seg" style="width:3.9%; background:#F59E0B;">3</div>
+        <div class="tc-dist-seg" style="width:26.3%; background:#CBD5E1; color:#475569;">20</div>
+      </div>
+      <table class="tc-dist-table">
+        <tr><td><span class="tc-dist-dot" style="background:#22C55E"></span> Passed</td><td>38 (50.0%)</td></tr>
+        <tr><td><span class="tc-dist-dot" style="background:#EF4444"></span> Failed</td><td>15 (19.7%)</td></tr>
+        <tr><td><span class="tc-dist-dot" style="background:#F59E0B"></span> Blocked</td><td>3 (3.9%)</td></tr>
+        <tr><td><span class="tc-dist-dot" style="background:#CBD5E1"></span> Untested</td><td>20 (26.3%)</td></tr>
+      </table>
+    </div>
+
+    <!-- Sub-Milestone Comparison -->
+    <div class="status-widget">
+      <div class="sw-title"><i class="ri-git-branch-line" style="color:#8B5CF6"></i> Sub-Milestone Comparison</div>
+      <div style="display:flex; flex-direction:column; gap:0.75rem;">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span style="font-size:0.8125rem; font-weight:600; color:#0F172A; width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">v1.0.0 (Parent)</span>
+          <div style="flex:1; height:8px; background:#F1F5F9; border-radius:4px; overflow:hidden;">
+            <div style="width:72%; height:100%; background:#6366F1; border-radius:4px;"></div>
+          </div>
+          <span style="font-size:0.75rem; font-weight:600; color:#475569; min-width:2.5rem; text-align:right;">72%</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span style="font-size:0.8125rem; font-weight:500; color:#475569; width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Sub 1.1 — User Auth</span>
+          <div style="flex:1; height:8px; background:#F1F5F9; border-radius:4px; overflow:hidden;">
+            <div style="width:65%; height:100%; background:#22C55E; border-radius:4px;"></div>
+          </div>
+          <span style="font-size:0.75rem; font-weight:600; color:#475569; min-width:2.5rem; text-align:right;">65%</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span style="font-size:0.8125rem; font-weight:500; color:#475569; width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Sub 1.2 — Patient Dash</span>
+          <div style="flex:1; height:8px; background:#F1F5F9; border-radius:4px; overflow:hidden;">
+            <div style="width:0%; height:100%; background:#3B82F6; border-radius:4px;"></div>
+          </div>
+          <span style="font-size:0.75rem; font-weight:600; color:#475569; min-width:2.5rem; text-align:right;">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contributors -->
+    <div class="status-widget">
+      <div class="sw-title"><i class="ri-team-line" style="color:#6366F1"></i> Contributors</div>
+      <div class="contributor-row">
+        <div class="contributor-avatar" style="background:#6366F1">SK</div>
+        <div class="contributor-info">
+          <div class="contributor-name">Sarah Kim</div>
+          <div class="contributor-role">QA Lead</div>
+        </div>
+        <span class="contributor-count">28 TCs executed</span>
+      </div>
+      <div class="contributor-row">
+        <div class="contributor-avatar" style="background:#EC4899">JD</div>
+        <div class="contributor-info">
+          <div class="contributor-name">John Doe</div>
+          <div class="contributor-role">QA Engineer</div>
+        </div>
+        <span class="contributor-count">18 TCs executed</span>
+      </div>
+      <div class="contributor-row">
+        <div class="contributor-avatar" style="background:#F59E0B">MR</div>
+        <div class="contributor-info">
+          <div class="contributor-name">Mike Ross</div>
+          <div class="contributor-role">Developer</div>
+        </div>
+        <span class="contributor-count">7 TCs executed</span>
+      </div>
+      <div class="contributor-row">
+        <div class="contributor-avatar" style="background:#22C55E">AL</div>
+        <div class="contributor-info">
+          <div class="contributor-name">Amy Lee</div>
+          <div class="contributor-role">QA Engineer</div>
+        </div>
+        <span class="contributor-count">23 TCs executed</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ACTIVITY TAB ═══ -->
+  <div class="tab-panel" id="panel-activity">
+    <div class="activity-chart-placeholder">
+      <div style="text-align:center;">
+        <i class="ri-line-chart-line" style="font-size:2rem; display:block; margin-bottom:0.5rem;"></i>
+        14-Day Activity Chart<br>
+        <span style="font-size:0.6875rem;">(Passed / Failed / Notes / Retest trends)</span>
+      </div>
+    </div>
+
+    <div class="section-header" style="margin-top:0.5rem;">
+      <i class="ri-history-line"></i> Recent Activity
+    </div>
+
+    <div class="timeline-item">
+      <div class="tl-icon" style="background:#DCFCE7; color:#166534;"><i class="ri-checkbox-circle-fill"></i></div>
+      <div class="tl-content">
+        <div class="tl-text"><strong>Sarah Kim</strong> marked TC-042 as <strong style="color:#22C55E">Passed</strong> in Regression — Core Workflows</div>
+        <div class="tl-time">2 hours ago</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-icon" style="background:#FEE2E2; color:#991B1B;"><i class="ri-close-circle-fill"></i></div>
+      <div class="tl-content">
+        <div class="tl-text"><strong>John Doe</strong> marked TC-038 as <strong style="color:#EF4444">Failed</strong> — linked Jira ACME-1284</div>
+        <div class="tl-time">3 hours ago</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-icon" style="background:#EDE9FE; color:#6D28D9;"><i class="ri-sticky-note-line"></i></div>
+      <div class="tl-content">
+        <div class="tl-text"><strong>Mike Ross</strong> added a note to TC-015: "Flaky on slow network, needs retry logic"</div>
+        <div class="tl-time">5 hours ago</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-icon" style="background:#DCFCE7; color:#166534;"><i class="ri-checkbox-circle-fill"></i></div>
+      <div class="tl-content">
+        <div class="tl-text"><strong>Amy Lee</strong> completed 5 TCs in Integration — API Endpoints</div>
+        <div class="tl-time">Yesterday at 4:32 PM</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-icon" style="background:#FEF3C7; color:#92400E;"><i class="ri-refresh-line"></i></div>
+      <div class="tl-content">
+        <div class="tl-text"><strong>Sarah Kim</strong> retested TC-021 — changed from Failed to <strong style="color:#22C55E">Passed</strong></div>
+        <div class="tl-time">Yesterday at 2:10 PM</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-icon" style="background:#DBEAFE; color:#1E40AF;"><i class="ri-play-circle-fill"></i></div>
+      <div class="tl-content">
+        <div class="tl-text"><strong>John Doe</strong> started <strong>Smoke Test — Login Flow</strong> run</div>
+        <div class="tl-time">Yesterday at 10:00 AM</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ISSUES TAB ═══ -->
+  <div class="tab-panel" id="panel-issues">
+    <div class="section-header">
+      <i class="ri-bug-line"></i> Failed &amp; Blocked Test Cases <span class="section-count">5</span>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-row1">
+        <i class="issue-type-icon ri-close-circle-fill" style="color:#EF4444"></i>
+        <span class="issue-title">Login fails with SSO when session expires mid-flow</span>
+        <span class="issue-severity critical">Critical</span>
+      </div>
+      <div class="issue-row2">
+        <span class="issue-meta"><i class="ri-play-circle-line"></i> Regression — Core Workflows</span>
+        <span class="issue-meta"><i class="ri-file-list-3-line"></i> TC-038</span>
+        <span class="issue-jira"><i class="ri-external-link-line"></i> ACME-1284</span>
+        <span class="issue-meta"><i class="ri-time-line"></i> 3h ago</span>
+      </div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-row1">
+        <i class="issue-type-icon ri-close-circle-fill" style="color:#EF4444"></i>
+        <span class="issue-title">Patient record export truncates after 500 rows</span>
+        <span class="issue-severity critical">Critical</span>
+      </div>
+      <div class="issue-row2">
+        <span class="issue-meta"><i class="ri-play-circle-line"></i> Regression — Core Workflows</span>
+        <span class="issue-meta"><i class="ri-file-list-3-line"></i> TC-045</span>
+        <span class="issue-jira"><i class="ri-external-link-line"></i> ACME-1290</span>
+        <span class="issue-meta"><i class="ri-time-line"></i> 1d ago</span>
+      </div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-row1">
+        <i class="issue-type-icon ri-close-circle-fill" style="color:#EF4444"></i>
+        <span class="issue-title">Medication dosage calculator rounding error</span>
+        <span class="issue-severity major">Major</span>
+      </div>
+      <div class="issue-row2">
+        <span class="issue-meta"><i class="ri-play-circle-line"></i> Smoke Test — Login Flow</span>
+        <span class="issue-meta"><i class="ri-file-list-3-line"></i> TC-012</span>
+        <span class="issue-jira"><i class="ri-external-link-line"></i> ACME-1275</span>
+        <span class="issue-meta"><i class="ri-time-line"></i> 2d ago</span>
+      </div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-row1">
+        <i class="issue-type-icon ri-error-warning-fill" style="color:#F59E0B"></i>
+        <span class="issue-title">Lab results import blocked by third-party API downtime</span>
+        <span class="issue-severity major">Blocked</span>
+      </div>
+      <div class="issue-row2">
+        <span class="issue-meta"><i class="ri-play-circle-line"></i> Regression — Core Workflows</span>
+        <span class="issue-meta"><i class="ri-file-list-3-line"></i> TC-051</span>
+        <span class="issue-meta"><i class="ri-time-line"></i> 1d ago</span>
+      </div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-row1">
+        <i class="issue-type-icon ri-close-circle-fill" style="color:#EF4444"></i>
+        <span class="issue-title">Dashboard chart tooltip overlaps navigation on mobile viewport</span>
+        <span class="issue-severity minor">Minor</span>
+      </div>
+      <div class="issue-row2">
+        <span class="issue-meta"><i class="ri-play-circle-line"></i> Regression — Core Workflows</span>
+        <span class="issue-meta"><i class="ri-file-list-3-line"></i> TC-067</span>
+        <span class="issue-jira"><i class="ri-external-link-line"></i> ACME-1301</span>
+        <span class="issue-meta"><i class="ri-time-line"></i> 5h ago</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchContentTab(tabId) {
+  // Update tab active states
+  document.querySelectorAll('.ct-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.ct-tab[data-tab="${tabId}"]`).classList.add('active');
+  // Update panel visibility
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${tabId}`).classList.add('active');
+}
+</script>
+
+</body>
+</html>

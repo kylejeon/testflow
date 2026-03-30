@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Analysis — Keyboard Shortcuts Conflict &amp; Guide Feature</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1e293b; --muted: #64748b; --border: #e2e8f0;
+    --accent: #6366f1; --accent-bg: #eef2ff; --green: #22c55e; --green-bg: #f0fdf4;
+    --red: #ef4444; --red-bg: #fef2f2; --amber: #f59e0b; --amber-bg: #fffbeb;
+    --violet: #8b5cf6; --violet-bg: #f5f3ff; --blue: #3b82f6; --blue-bg: #eff6ff;
+    --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--fg); background: #f8fafc; line-height: 1.7; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+  .doc-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-bg); color: var(--accent); font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+  h1 { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  .meta-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; font-size: 13px; color: var(--muted); }
+  .meta-row span { display: flex; align-items: center; gap: 4px; }
+
+  /* Sections */
+  .section { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; box-shadow: var(--shadow); }
+  .section h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .section h3 { font-size: 15px; font-weight: 700; margin: 20px 0 10px; color: var(--fg); }
+  .section p, .section li { font-size: 14px; line-height: 1.75; }
+  .section ul, .section ol { padding-left: 20px; margin: 8px 0; }
+  .section li { margin-bottom: 4px; }
+
+  .num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .4px; padding: 8px 10px; border-bottom: 2px solid var(--border); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  /* Tags / Badges */
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tag-ok { background: var(--green-bg); color: #15803d; }
+  .tag-warn { background: var(--amber-bg); color: #b45309; }
+  .tag-danger { background: var(--red-bg); color: #dc2626; }
+  .tag-info { background: var(--blue-bg); color: #2563eb; }
+  .tag-violet { background: var(--violet-bg); color: var(--violet); }
+
+  kbd { display: inline-block; padding: 2px 7px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; background: #f1f5f9; border: 1px solid var(--border); border-radius: 4px; color: var(--fg); font-weight: 500; line-height: 1.5; }
+
+  .callout { padding: 14px 18px; border-radius: 8px; font-size: 13px; margin: 12px 0; }
+  .callout-warn { background: var(--amber-bg); border-left: 3px solid var(--amber); }
+  .callout-info { background: var(--blue-bg); border-left: 3px solid var(--blue); }
+  .callout-ok { background: var(--green-bg); border-left: 3px solid var(--green); }
+  .callout-danger { background: var(--red-bg); border-left: 3px solid var(--red); }
+
+  .scope-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+  .scope-global { background: #dbeafe; color: #1d4ed8; }
+  .scope-focus { background: #ede9fe; color: #6d28d9; }
+  .scope-modal { background: #fef3c7; color: #92400e; }
+  .scope-page { background: #dcfce7; color: #166534; }
+  .scope-input { background: #f1f5f9; color: #475569; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .competitor-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .competitor-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .competitor-card p { font-size: 12px; color: var(--muted); }
+
+  .verdict { padding: 16px 20px; border-radius: 8px; background: var(--accent-bg); border-left: 4px solid var(--accent); margin: 16px 0; font-size: 14px; }
+  .verdict strong { color: var(--accent); }
+
+  .toc { background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 28px; margin-bottom: 24px; }
+  .toc h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 10px; }
+  .toc ol { padding-left: 18px; }
+  .toc li { font-size: 13px; margin-bottom: 4px; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="doc-badge">PM Analysis</div>
+<h1>Keyboard Shortcuts — Conflict Analysis &amp; Guide Feature Planning</h1>
+<p class="subtitle">Testably 전체 단축키 현황 감사, 브라우저 충돌 분석, 단축키 가이드 팝업 기능 기획</p>
+
+<div class="meta-row">
+  <span>📅 2026-03-26</span>
+  <span>👤 PM: Kyle</span>
+  <span>📋 CEO 요청 — 2건 통합</span>
+  <span>🔖 v1.0</span>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h3>목차</h3>
+  <ol>
+    <li><a href="#s1">Executive Summary</a></li>
+    <li><a href="#s2">전체 단축키 인벤토리 (Inventory)</a></li>
+    <li><a href="#s3">브라우저 기본 단축키 충돌 분석</a></li>
+    <li><a href="#s4">충돌 해결 — 대체 단축키 제안</a></li>
+    <li><a href="#s5">Focus Mode 단축키 전용 분석</a></li>
+    <li><a href="#s6">경쟁사 단축키 가이드 벤치마크</a></li>
+    <li><a href="#s7">단축키 가이드 팝업 기능 기획</a></li>
+    <li><a href="#s8">PM 권장안 &amp; 구현 우선순위</a></li>
+    <li><a href="#s9">CEO Q&amp;A</a></li>
+  </ol>
+</div>
+
+<!-- §1 Executive Summary -->
+<div class="section" id="s1">
+  <h2><span class="num">1</span> Executive Summary</h2>
+  <p>Testably 코드베이스에서 <strong>50+ 개 키보드 액션</strong>을 16개 파일에서 확인했습니다. 이 중 <strong>직접적인 브라우저 충돌은 0건</strong>이지만, <strong>잠재적 충돌 및 접근성 위험 3건</strong>을 식별했습니다.</p>
+
+  <div class="callout callout-ok">
+    <strong>✅ 핵심 결론:</strong> Testably의 현재 단축키 설계는 전반적으로 양호합니다. 대부분의 단일키 단축키는 input/textarea에서 비활성화되고, 수정자 키(Ctrl/Cmd) 조합은 브라우저와 겹치지 않습니다. 다만 <kbd>N</kbd>, <kbd>R</kbd> 단일키 글로벌 단축키는 접근성 측면에서 개선이 필요합니다.
+  </div>
+
+  <p style="margin-top:12px"><strong>단축키 가이드 팝업</strong>: <kbd>?</kbd> 키 트리거 + 헤더 버튼 이중 접근 방식을 권장합니다. GitHub, Gmail, Linear 등 모든 주요 SaaS가 이 패턴을 사용하며, Testably에는 이미 <code>useKeyboardShortcuts.ts</code>에 <kbd>?</kbd> → Show Shortcuts Help 핸들러가 구현되어 있습니다.</p>
+</div>
+
+<!-- §2 전체 단축키 인벤토리 -->
+<div class="section" id="s2">
+  <h2><span class="num">2</span> 전체 단축키 인벤토리 (Inventory)</h2>
+  <p>코드베이스 전수 검색 결과, 5개 스코프에 걸쳐 단축키가 분포되어 있습니다.</p>
+
+  <h3>2-1. Global Shortcuts <span class="scope-badge scope-global">GLOBAL</span></h3>
+  <p>파일: <code>src/hooks/useKeyboardShortcuts.ts</code></p>
+  <table>
+    <tr><th>단축키</th><th>액션</th><th>수정자</th><th>Input 내 동작</th><th>비고</th></tr>
+    <tr><td><kbd>Cmd/Ctrl</kbd>+<kbd>K</kbd></td><td>Command Palette 열기</td><td>✅</td><td>동작함</td><td>Line 45</td></tr>
+    <tr><td><kbd>Cmd/Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td>Focus Mode 진입</td><td>✅</td><td>차단됨</td><td>Line 52; Run 페이지에서만</td></tr>
+    <tr><td><kbd>?</kbd></td><td>단축키 도움말 표시</td><td>—</td><td>차단됨</td><td>Line 61; 이미 구현됨!</td></tr>
+    <tr><td><kbd>G</kbd> → <kbd>T</kbd></td><td>Test Cases 이동</td><td>—</td><td>차단됨</td><td>1초 타임아웃 Chord</td></tr>
+    <tr><td><kbd>G</kbd> → <kbd>R</kbd></td><td>Test Runs 이동</td><td>—</td><td>차단됨</td><td>프로젝트 컨텍스트 필요</td></tr>
+    <tr><td><kbd>G</kbd> → <kbd>D</kbd></td><td>Discovery Logs 이동</td><td>—</td><td>차단됨</td><td>프로젝트 컨텍스트 필요</td></tr>
+    <tr><td><kbd>G</kbd> → <kbd>M</kbd></td><td>Milestones 이동</td><td>—</td><td>차단됨</td><td>프로젝트 컨텍스트 필요</td></tr>
+    <tr><td><kbd>G</kbd> → <kbd>P</kbd></td><td>All Projects 이동</td><td>—</td><td>차단됨</td><td>어디서든 동작</td></tr>
+  </table>
+
+  <h3>2-2. Dashboard Shortcuts <span class="scope-badge scope-page">PAGE</span></h3>
+  <p>파일: <code>src/pages/project-detail/page.tsx</code></p>
+  <table>
+    <tr><th>단축키</th><th>액션</th><th>수정자</th><th>Input 내 동작</th><th>비고</th></tr>
+    <tr><td><kbd>N</kbd></td><td>New Test Case 모달</td><td>—</td><td>차단됨</td><td>Line 67; 모달 열려있으면 스킵</td></tr>
+    <tr><td><kbd>R</kbd></td><td>Continue Run 패널</td><td>—</td><td>차단됨</td><td>Line 70; 수정자 키 누르면 스킵</td></tr>
+  </table>
+
+  <h3>2-3. Focus Mode Shortcuts <span class="scope-badge scope-focus">FOCUS</span></h3>
+  <p>파일: <code>src/components/FocusMode.tsx</code></p>
+  <table>
+    <tr><th>단축키</th><th>액션</th><th>Input 내 동작</th><th>비고</th></tr>
+    <tr><td><kbd>P</kbd></td><td>Mark Passed + 다음</td><td>차단됨</td><td>markAndNext('passed')</td></tr>
+    <tr><td><kbd>F</kbd></td><td>Mark Failed → 노트 포커스</td><td>차단됨</td><td>상태 설정 후 50ms 딜레이</td></tr>
+    <tr><td><kbd>B</kbd></td><td>Mark Blocked + 다음</td><td>차단됨</td><td>markAndNext('blocked')</td></tr>
+    <tr><td><kbd>R</kbd></td><td>Mark Retest + 다음</td><td>차단됨</td><td>markAndNext('retest')</td></tr>
+    <tr><td><kbd>S</kbd></td><td>Skip(Untested) + 다음</td><td>차단됨</td><td>markAndNext('untested')</td></tr>
+    <tr><td><kbd>N</kbd></td><td>노트 입력 포커스</td><td>차단됨</td><td>noteRef.focus()</td></tr>
+    <tr><td><kbd>J</kbd> / <kbd>→</kbd></td><td>다음 테스트</td><td>차단됨</td><td>goNext()</td></tr>
+    <tr><td><kbd>K</kbd> / <kbd>←</kbd></td><td>이전 테스트</td><td>차단됨</td><td>goPrev()</td></tr>
+    <tr><td><kbd>C</kbd></td><td>Comments 패널 토글</td><td>차단됨</td><td>기본 접힘</td></tr>
+    <tr><td><kbd>H</kbd></td><td>History 패널 토글</td><td>차단됨</td><td>기본 접힘</td></tr>
+    <tr><td><kbd>Escape</kbd></td><td>Focus Mode 나가기</td><td>동작함</td><td>onExit()</td></tr>
+    <tr><td><kbd>Cmd/Ctrl</kbd>+<kbd>Enter</kbd></td><td>노트 저장 + 다음</td><td>input에서만</td><td>markAndNext() with pending</td></tr>
+  </table>
+
+  <h3>2-4. Focus Mode — Lightbox <span class="scope-badge scope-focus">FOCUS</span></h3>
+  <table>
+    <tr><th>단축키</th><th>액션</th><th>비고</th></tr>
+    <tr><td><kbd>Escape</kbd></td><td>이미지 뷰어 닫기</td><td>다른 단축키보다 우선</td></tr>
+    <tr><td><kbd>←</kbd></td><td>이전 이미지</td><td>Lightbox 전용</td></tr>
+    <tr><td><kbd>→</kbd></td><td>다음 이미지</td><td>Lightbox 전용</td></tr>
+  </table>
+
+  <h3>2-5. Modal &amp; Component Shortcuts <span class="scope-badge scope-modal">MODAL</span></h3>
+  <table>
+    <tr><th>컴포넌트</th><th>단축키</th><th>액션</th><th>비고</th></tr>
+    <tr><td>Command Palette</td><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>항목 탐색</td><td>activeIndex 증감</td></tr>
+    <tr><td>Command Palette</td><td><kbd>Enter</kbd></td><td>선택 실행</td><td>item.action() 호출</td></tr>
+    <tr><td>Command Palette</td><td><kbd>Escape</kbd></td><td>닫기</td><td>onClose()</td></tr>
+    <tr><td>QuickCreateTC</td><td><kbd>Escape</kbd></td><td>모달 닫기/폐기</td><td>dirty면 확인 대화상자</td></tr>
+    <tr><td>QuickCreateTC</td><td><kbd>Enter</kbd></td><td>TC 생성</td><td>title 포커스 시에만</td></tr>
+    <tr><td>QuickCreateTC</td><td><kbd>Cmd/Ctrl</kbd>+<kbd>Enter</kbd></td><td>폴더 포함 생성</td><td>handleCreate(true, false)</td></tr>
+    <tr><td>QuickCreateTC</td><td><kbd>Cmd/Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd></td><td>생성 후 계속</td><td>handleCreate(false, true)</td></tr>
+    <tr><td>AI Assist</td><td><kbd>Escape</kbd></td><td>닫기/뒤로</td><td>Phase-aware</td></tr>
+    <tr><td>ContinueRun</td><td><kbd>Escape</kbd></td><td>패널 닫기</td><td>preventDefault</td></tr>
+    <tr><td>AdminEditUser</td><td><kbd>Escape</kbd></td><td>모달 닫기</td><td>preventDefault</td></tr>
+    <tr><td>BulkActionBar</td><td><kbd>Escape</kbd></td><td>선택 해제</td><td>count > 0일 때만</td></tr>
+    <tr><td>LifecycleBadge</td><td><kbd>Escape</kbd></td><td>드롭다운 닫기</td><td>상태 선택 메뉴</td></tr>
+  </table>
+
+  <h3>2-6. Input-specific Shortcuts <span class="scope-badge scope-input">INPUT</span></h3>
+  <table>
+    <tr><th>컴포넌트</th><th>단축키</th><th>액션</th><th>비고</th></tr>
+    <tr><td>StepEditor</td><td><kbd>Enter</kbd></td><td>새 스텝 추가</td><td>Shift+Enter → 멀티라인</td></tr>
+    <tr><td>StepEditor</td><td><kbd>Backspace</kbd></td><td>빈 스텝 삭제</td><td>value === '' 일 때</td></tr>
+    <tr><td>StepEditor</td><td><kbd>Tab</kbd></td><td>Expected Result로 이동</td><td>step 필드에서</td></tr>
+    <tr><td>StepEditor</td><td><kbd>Shift</kbd>+<kbd>Tab</kbd></td><td>이전 스텝으로</td><td>idx > 0</td></tr>
+    <tr><td>InlineEdit</td><td><kbd>Enter</kbd></td><td>저장 (단일행)</td><td>multiline 아닐 때</td></tr>
+    <tr><td>InlineEdit</td><td><kbd>Escape</kbd></td><td>편집 취소</td><td>원래 값 복원</td></tr>
+    <tr><td>InlineEdit</td><td><kbd>Cmd/Ctrl</kbd>+<kbd>Enter</kbd></td><td>저장 (멀티행)</td><td>multiline일 때</td></tr>
+    <tr><td>Issue Input</td><td><kbd>Enter</kbd> / <kbd>,</kbd></td><td>이슈 추가</td><td>IME 인식, 대문자 변환</td></tr>
+    <tr><td>Tag Input</td><td><kbd>Enter</kbd></td><td>태그 추가</td><td>중복 방지</td></tr>
+    <tr><td>Comment</td><td><kbd>Enter</kbd></td><td>댓글 게시</td><td>Shift+Enter → 줄바꿈</td></tr>
+  </table>
+</div>
+
+<!-- §3 브라우저 충돌 분석 -->
+<div class="section" id="s3">
+  <h2><span class="num">3</span> 브라우저 기본 단축키 충돌 분석</h2>
+
+  <h3>3-1. 주요 브라우저 기본 단축키 (Chrome/Edge/Firefox/Safari)</h3>
+  <table>
+    <tr><th>단축키</th><th>브라우저 기능</th><th>Testably 사용 여부</th><th>충돌 여부</th></tr>
+    <tr><td><kbd>Ctrl/Cmd</kbd>+<kbd>N</kbd></td><td>새 창</td><td>❌ 미사용</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>Ctrl/Cmd</kbd>+<kbd>R</kbd></td><td>새로고침</td><td>❌ 미사용</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>Ctrl/Cmd</kbd>+<kbd>T</kbd></td><td>새 탭</td><td>❌ 미사용</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>Ctrl/Cmd</kbd>+<kbd>W</kbd></td><td>탭 닫기</td><td>❌ 미사용</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>Ctrl/Cmd</kbd>+<kbd>F</kbd></td><td>페이지 찾기</td><td>❌ 미사용</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>Ctrl/Cmd</kbd>+<kbd>K</kbd></td><td>주소창 포커스</td><td>✅ Command Palette</td><td><span class="tag tag-warn">잠재적</span></td></tr>
+    <tr><td><kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td>없음 (일부: 전체화면)</td><td>✅ Focus Mode</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>Ctrl/Cmd</kbd>+<kbd>L</kbd></td><td>주소창 포커스</td><td>❌ 미사용</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>Ctrl/Cmd</kbd>+<kbd>P</kbd></td><td>인쇄</td><td>❌ 미사용</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>Ctrl/Cmd</kbd>+<kbd>S</kbd></td><td>페이지 저장</td><td>❌ 미사용</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>F5</kbd></td><td>새로고침</td><td>❌ 미사용</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>Escape</kbd></td><td>요청 중단</td><td>✅ 다수 사용</td><td><span class="tag tag-ok">안전</span> — 표준 패턴</td></tr>
+    <tr><td><kbd>Tab</kbd></td><td>포커스 이동</td><td>✅ StepEditor</td><td><span class="tag tag-ok">안전</span> — input 내부</td></tr>
+  </table>
+
+  <h3>3-2. 충돌 상세 분석</h3>
+
+  <div class="callout callout-warn">
+    <strong>⚠️ 잠재적 충돌 #1: <kbd>Ctrl/Cmd</kbd>+<kbd>K</kbd> — Command Palette</strong><br>
+    Chrome에서 <kbd>Cmd+K</kbd>는 주소창 포커스입니다. Testably는 <code>preventDefault()</code>를 호출하여 브라우저 기본 동작을 차단합니다.<br>
+    <strong>위험도: 낮음</strong> — 이 패턴은 Notion, Linear, VS Code, Slack 등 모든 주요 SaaS가 동일하게 사용합니다. 사실상 업계 표준입니다.
+  </div>
+
+  <div class="callout callout-info">
+    <strong>ℹ️ 잠재적 이슈 #2: <kbd>N</kbd> / <kbd>R</kbd> 단일키 — 대시보드</strong><br>
+    브라우저와 직접 충돌하지는 않지만, 스크린 리더나 보조 기술 사용 시 단일키 단축키가 탐색을 방해할 수 있습니다.<br>
+    <strong>위험도: 중간</strong> — GitHub처럼 "접근성 설정에서 단일키 단축키 비활성화" 옵션 추가를 권장합니다.
+  </div>
+
+  <div class="callout callout-info">
+    <strong>ℹ️ 잠재적 이슈 #3: Focus Mode 단일키 밀도</strong><br>
+    <kbd>P</kbd><kbd>F</kbd><kbd>B</kbd><kbd>R</kbd><kbd>S</kbd><kbd>N</kbd><kbd>J</kbd><kbd>K</kbd><kbd>C</kbd><kbd>H</kbd> — 10개 단일키가 Focus Mode에서 활성화됩니다.<br>
+    <strong>위험도: 낮음</strong> — Focus Mode는 전용 전체화면이므로 일반 입력과 분리됩니다. Input 내 차단 로직도 정상 작동합니다. 하지만 사용자가 처음 접할 때 학습 부담이 있으므로 <strong>단축키 가이드 팝업이 필수적</strong>입니다.
+  </div>
+
+  <h3>3-3. 충돌 매트릭스 요약</h3>
+  <table>
+    <tr><th>카테고리</th><th>검토 수</th><th>직접 충돌</th><th>잠재적 이슈</th><th>안전</th></tr>
+    <tr><td>Ctrl/Cmd 조합</td><td>4개</td><td><span class="tag tag-ok">0</span></td><td><span class="tag tag-warn">1</span></td><td><span class="tag tag-ok">3</span></td></tr>
+    <tr><td>단일키 (Global)</td><td>10개</td><td><span class="tag tag-ok">0</span></td><td><span class="tag tag-warn">1</span></td><td><span class="tag tag-ok">9</span></td></tr>
+    <tr><td>단일키 (Focus)</td><td>12개</td><td><span class="tag tag-ok">0</span></td><td><span class="tag tag-warn">1</span></td><td><span class="tag tag-ok">11</span></td></tr>
+    <tr><td>Input 전용</td><td>10개</td><td><span class="tag tag-ok">0</span></td><td><span class="tag tag-ok">0</span></td><td><span class="tag tag-ok">10</span></td></tr>
+    <tr><td><strong>합계</strong></td><td><strong>36개</strong></td><td><strong class="tag tag-ok">0</strong></td><td><strong class="tag tag-warn">3</strong></td><td><strong class="tag tag-ok">33</strong></td></tr>
+  </table>
+</div>
+
+<!-- §4 충돌 해결 -->
+<div class="section" id="s4">
+  <h2><span class="num">4</span> 충돌 해결 — 대체 단축키 제안</h2>
+
+  <table>
+    <tr><th>이슈</th><th>현재</th><th>PM 권장 대안</th><th>근거</th></tr>
+    <tr>
+      <td><kbd>Cmd+K</kbd> 주소창 충돌</td>
+      <td><kbd>Cmd/Ctrl</kbd>+<kbd>K</kbd></td>
+      <td><strong>유지</strong> (변경 불필요)</td>
+      <td>Notion, Linear, Slack, VS Code 모두 동일. 업계 표준. preventDefault 정상 작동.</td>
+    </tr>
+    <tr>
+      <td><kbd>N</kbd> 접근성 우려</td>
+      <td><kbd>N</kbd> (단일키)</td>
+      <td>유지 + <strong>접근성 설정</strong> 추가</td>
+      <td>GitHub 패턴: Settings → Accessibility → "Character key shortcuts" 토글. Phase 2에서 구현.</td>
+    </tr>
+    <tr>
+      <td><kbd>R</kbd> 접근성 우려</td>
+      <td><kbd>R</kbd> (단일키)</td>
+      <td>유지 + <strong>접근성 설정</strong> 추가</td>
+      <td>위와 동일. 현재 수정자 키 감지(metaKey/ctrlKey/altKey skip)는 이미 구현됨.</td>
+    </tr>
+    <tr>
+      <td>Focus Mode 학습 부담</td>
+      <td>10개 단일키</td>
+      <td><strong>단축키 가이드 팝업</strong> 구현</td>
+      <td>이미 <kbd>?</kbd> 핸들러가 존재. UI만 연결하면 됨. 아래 §7 참조.</td>
+    </tr>
+  </table>
+
+  <h3>향후 Run Workflow 확장 시 단축키 예약 (pm-analysis-run-workflow 참조)</h3>
+  <table>
+    <tr><th>예약 키</th><th>계획된 액션</th><th>스코프</th><th>충돌 여부</th></tr>
+    <tr><td><kbd>A</kbd></td><td>Add Result 모달</td><td>Run Detail / Focus Mode</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd></td><td>모달 제출</td><td>모달 내부</td><td><span class="tag tag-ok">안전</span></td></tr>
+    <tr><td><kbd>1</kbd>~<kbd>5</kbd></td><td>Step Pass/Fail (향후)</td><td>Step-level buttons</td><td><span class="tag tag-ok">안전</span></td></tr>
+  </table>
+</div>
+
+<!-- §5 Focus Mode 전용 분석 -->
+<div class="section" id="s5">
+  <h2><span class="num">5</span> Focus Mode 단축키 전용 분석</h2>
+
+  <h3>5-1. 니모닉 매핑 품질</h3>
+  <table>
+    <tr><th>키</th><th>액션</th><th>니모닉</th><th>직관성</th></tr>
+    <tr><td><kbd>P</kbd></td><td>Pass</td><td>P = Pass ✓</td><td><span class="tag tag-ok">높음</span></td></tr>
+    <tr><td><kbd>F</kbd></td><td>Fail</td><td>F = Fail ✓</td><td><span class="tag tag-ok">높음</span></td></tr>
+    <tr><td><kbd>B</kbd></td><td>Block</td><td>B = Block ✓</td><td><span class="tag tag-ok">높음</span></td></tr>
+    <tr><td><kbd>R</kbd></td><td>Retest</td><td>R = Retest ✓</td><td><span class="tag tag-ok">높음</span></td></tr>
+    <tr><td><kbd>S</kbd></td><td>Skip</td><td>S = Skip ✓</td><td><span class="tag tag-ok">높음</span></td></tr>
+    <tr><td><kbd>J</kbd></td><td>Next</td><td>Vim: j = down ✓</td><td><span class="tag tag-warn">중간</span> — Vim 경험 필요</td></tr>
+    <tr><td><kbd>K</kbd></td><td>Previous</td><td>Vim: k = up ✓</td><td><span class="tag tag-warn">중간</span> — 화살표키도 지원하여 보완됨</td></tr>
+    <tr><td><kbd>N</kbd></td><td>Note</td><td>N = Note ✓</td><td><span class="tag tag-ok">높음</span></td></tr>
+    <tr><td><kbd>C</kbd></td><td>Comments</td><td>C = Comments ✓</td><td><span class="tag tag-ok">높음</span></td></tr>
+    <tr><td><kbd>H</kbd></td><td>History</td><td>H = History ✓</td><td><span class="tag tag-ok">높음</span></td></tr>
+  </table>
+
+  <div class="verdict">
+    <strong>PM 평가:</strong> Focus Mode 단축키의 니모닉 매핑은 우수합니다 (8/10 높은 직관성). J/K는 Vim 관습이지만 화살표 키를 병행 지원하므로 문제없습니다. 변경 불필요.
+  </div>
+
+  <h3>5-2. 입력 상태별 동작 매트릭스</h3>
+  <table>
+    <tr><th>상태</th><th>P/F/B/R/S</th><th>J/K/←/→</th><th>C/H</th><th>N</th><th>Esc</th><th>Cmd+Enter</th></tr>
+    <tr><td>일반 모드</td><td>✅ 동작</td><td>✅ 동작</td><td>✅ 동작</td><td>✅ 포커스</td><td>✅ 나가기</td><td>—</td></tr>
+    <tr><td>노트 입력 중</td><td>❌ 차단</td><td>❌ 차단</td><td>❌ 차단</td><td>❌ 차단</td><td>✅ blur</td><td>✅ 저장+다음</td></tr>
+    <tr><td>Lightbox 열림</td><td>❌ 차단</td><td>이미지 탐색</td><td>❌ 차단</td><td>❌ 차단</td><td>✅ 닫기</td><td>—</td></tr>
+  </table>
+
+  <div class="callout callout-ok">
+    <strong>✅ 안전 평가:</strong> 3가지 상태(일반/입력/라이트박스)에서 우선순위가 명확히 분리되어 있어 오동작 위험이 없습니다.
+  </div>
+</div>
+
+<!-- §6 경쟁사 벤치마크 -->
+<div class="section" id="s6">
+  <h2><span class="num">6</span> 경쟁사 단축키 가이드 벤치마크</h2>
+
+  <div class="grid-2">
+    <div class="competitor-card">
+      <h4>GitHub</h4>
+      <p><strong>접근:</strong> <kbd>?</kbd> 키</p>
+      <p><strong>UI:</strong> 모달 오버레이</p>
+      <p><strong>검색:</strong> 없음</p>
+      <p><strong>특징:</strong> 페이지 컨텍스트별 단축키만 표시. "Character key shortcuts" 비활성화 옵션 (접근성)</p>
+    </div>
+    <div class="competitor-card">
+      <h4>Gmail</h4>
+      <p><strong>접근:</strong> <kbd>?</kbd> 키</p>
+      <p><strong>UI:</strong> 대화상자 오버레이</p>
+      <p><strong>검색:</strong> 없음</p>
+      <p><strong>특징:</strong> 카테고리별(Inbox, Conversation, Compose, Advanced). 새 창으로 열기 옵션. 단축키 ON/OFF 토글</p>
+    </div>
+    <div class="competitor-card">
+      <h4>Linear</h4>
+      <p><strong>접근:</strong> <kbd>?</kbd> 키 + 사이드바 메뉴</p>
+      <p><strong>UI:</strong> 모달 오버레이</p>
+      <p><strong>검색:</strong> <strong>✅ 검색 가능</strong></p>
+      <p><strong>특징:</strong> 카테고리별 정리. 검색 기능으로 빠른 발견. G-chord 네비게이션 패턴 (Testably와 동일)</p>
+    </div>
+    <div class="competitor-card">
+      <h4>Figma</h4>
+      <p><strong>접근:</strong> <kbd>Ctrl+Shift+?</kbd> + 메뉴</p>
+      <p><strong>UI:</strong> <strong>하단 패널</strong> (비모달)</p>
+      <p><strong>검색:</strong> <strong>✅ 검색 가능</strong></p>
+      <p><strong>특징:</strong> 작업 중 열어둘 수 있음 (non-blocking). 탭 네비게이션. 단축키 사용 이력 하이라이트</p>
+    </div>
+    <div class="competitor-card">
+      <h4>Notion</h4>
+      <p><strong>접근:</strong> 도움말 센터 + <kbd>?</kbd> (Calendar)</p>
+      <p><strong>UI:</strong> 외부 문서 / 모달 (제품별 다름)</p>
+      <p><strong>검색:</strong> Calendar만 가능</p>
+      <p><strong>특징:</strong> 메인 앱은 외부 문서로 연결. Calendar은 인앱 모달</p>
+    </div>
+    <div class="competitor-card">
+      <h4>TestRail / Qase / Zephyr</h4>
+      <p><strong>접근:</strong> 도움말 센터 (외부 문서)</p>
+      <p><strong>UI:</strong> 문서 페이지</p>
+      <p><strong>검색:</strong> 없음 (인앱)</p>
+      <p><strong>특징:</strong> QA 도구 중 인앱 단축키 가이드를 제공하는 제품 없음. <strong>Testably가 선도할 기회</strong></p>
+    </div>
+  </div>
+
+  <h3>패턴 요약</h3>
+  <table>
+    <tr><th>접근 방식</th><th>사용 제품</th><th>장점</th><th>단점</th></tr>
+    <tr><td><kbd>?</kbd> 키 모달</td><td>GitHub, Gmail, Linear</td><td>발견성 높음, 즉시 접근, 업계 표준</td><td>작업 중단 필요</td></tr>
+    <tr><td>비모달 패널</td><td>Figma</td><td>작업 중 참조 가능</td><td>화면 공간 차지</td></tr>
+    <tr><td>외부 문서</td><td>TestRail, Qase, Notion</td><td>상세 설명 가능</td><td>발견성 낮음, 컨텍스트 전환</td></tr>
+    <tr><td>헤더 버튼</td><td>일부 SaaS</td><td>시각적 발견성</td><td>단축키를 안 쓰는 사용자도 노출</td></tr>
+  </table>
+
+  <div class="verdict">
+    <strong>PM 권장:</strong> <kbd>?</kbd> 키 모달 + 헤더 <kbd>⌨</kbd> 버튼 병행 — GitHub/Linear 모범 패턴 채택. QA 도구 중 최초의 인앱 단축키 가이드로 차별화 가능.
+  </div>
+</div>
+
+<!-- §7 단축키 가이드 팝업 기능 기획 -->
+<div class="section" id="s7">
+  <h2><span class="num">7</span> 단축키 가이드 팝업 기능 기획</h2>
+
+  <h3>7-1. 접근 방법 (Dual Access)</h3>
+  <table>
+    <tr><th>트리거</th><th>설명</th><th>구현 복잡도</th></tr>
+    <tr><td><kbd>?</kbd> 키</td><td>이미 <code>useKeyboardShortcuts.ts</code> Line 61에 핸들러 존재. UI 모달만 연결하면 됨.</td><td><span class="tag tag-ok">매우 낮음</span></td></tr>
+    <tr><td>헤더 버튼</td><td>글로벌 헤더 우측에 <kbd>⌨</kbd> 아이콘 버튼 추가. 클릭 시 동일 모달 열기.</td><td><span class="tag tag-ok">낮음</span></td></tr>
+  </table>
+
+  <h3>7-2. 모달 구조 설계</h3>
+  <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:20px; margin:12px 0; font-family:monospace; font-size:12px; line-height:1.8;">
+<pre>
+┌─────────────────────────────────────────────────┐
+│  ⌨ Keyboard Shortcuts                     ✕    │
+├─────────────────────────────────────────────────┤
+│  🔍 Search shortcuts...                        │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  📍 Current Page                                │
+│  ┌───────────────────────────────────────────┐  │
+│  │ N        New Test Case                    │  │
+│  │ R        Continue Run                     │  │
+│  └───────────────────────────────────────────┘  │
+│                                                 │
+│  🌐 Global                                      │
+│  ┌───────────────────────────────────────────┐  │
+│  │ ⌘K       Command Palette                 │  │
+│  │ ⌘⇧F      Focus Mode                      │  │
+│  │ ?        This help                        │  │
+│  └───────────────────────────────────────────┘  │
+│                                                 │
+│  🧭 Navigation (G + key)                        │
+│  ┌───────────────────────────────────────────┐  │
+│  │ G → T    Test Cases                       │  │
+│  │ G → R    Test Runs                        │  │
+│  │ G → D    Discovery Logs                   │  │
+│  │ G → M    Milestones                       │  │
+│  │ G → P    All Projects                     │  │
+│  └───────────────────────────────────────────┘  │
+│                                                 │
+│  🎯 Focus Mode                                  │
+│  ┌───────────────────────────────────────────┐  │
+│  │ P        Pass & Next                      │  │
+│  │ F        Fail (opens note)                │  │
+│  │ B        Block & Next                     │  │
+│  │ R        Retest & Next                    │  │
+│  │ S        Skip & Next                      │  │
+│  │ J / →    Next Test                        │  │
+│  │ K / ←    Previous Test                    │  │
+│  │ N        Focus Note                       │  │
+│  │ C        Toggle Comments                  │  │
+│  │ H        Toggle History                   │  │
+│  │ ⌘Enter   Save Note & Next                │  │
+│  │ Esc      Exit Focus Mode                  │  │
+│  └───────────────────────────────────────────┘  │
+│                                                 │
+│  ✏️ Editing                                      │
+│  ┌───────────────────────────────────────────┐  │
+│  │ Enter    Save / Submit                    │  │
+│  │ Esc      Cancel / Close                   │  │
+│  │ ⌘Enter   Save (multiline)                │  │
+│  │ Tab      Next field                       │  │
+│  │ ⇧Tab     Previous field                   │  │
+│  └───────────────────────────────────────────┘  │
+│                                                 │
+│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │
+│  ☐ Enable single-key shortcuts    Esc to close  │
+└─────────────────────────────────────────────────┘
+</pre>
+  </div>
+
+  <h3>7-3. 기능 스펙</h3>
+  <table>
+    <tr><th>기능</th><th>상세</th><th>구현 우선순위</th></tr>
+    <tr><td>컨텍스트 인식</td><td>"Current Page" 섹션에 현재 페이지의 단축키만 표시. Dashboard면 N/R, Run Detail이면 Focus Mode 관련 등</td><td><span class="tag tag-violet">Phase 1</span></td></tr>
+    <tr><td>검색</td><td>액션명 또는 키로 필터링. "pass" 입력 → "P — Pass & Next" 하이라이트</td><td><span class="tag tag-violet">Phase 1</span></td></tr>
+    <tr><td>OS 감지</td><td>macOS면 ⌘, Windows/Linux면 Ctrl 표시. <code>navigator.platform</code> 활용</td><td><span class="tag tag-violet">Phase 1</span></td></tr>
+    <tr><td>카테고리 접기/펼치기</td><td>섹션별 토글. 기본: 모두 펼침</td><td><span class="tag tag-info">Phase 2</span></td></tr>
+    <tr><td>단일키 단축키 토글</td><td>하단 체크박스: "Enable single-key shortcuts". OFF 시 수정자 없는 단축키 비활성</td><td><span class="tag tag-info">Phase 2</span></td></tr>
+    <tr><td>키 입력 하이라이트</td><td>모달 열린 상태에서 키를 누르면 해당 행 강조 (Figma 스타일)</td><td><span class="tag tag-info">Phase 3 Nice-to-have</span></td></tr>
+  </table>
+
+  <h3>7-4. 헤더 버튼 위치</h3>
+  <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:16px; margin:12px 0; font-family:monospace; font-size:12px; line-height:1.8;">
+<pre>
+┌────────────────────────────────────────────────────────┐
+│  🏠 Testably      Projects ▾      ···                  │
+│                                    [🔔] [⌨] [👤 Kyle]  │
+│                                          ↑              │
+│                                  Keyboard Shortcuts     │
+│                                  tooltip on hover       │
+└────────────────────────────────────────────────────────┘
+</pre>
+  </div>
+  <ul>
+    <li>아이콘: <code>ri-keyboard-line</code> (Remix Icons) — 24px</li>
+    <li>위치: 알림 벨과 프로필 아바타 사이</li>
+    <li>호버 tooltip: "Keyboard Shortcuts (?)"</li>
+    <li>Focus Mode에서는 별도의 <kbd>?</kbd> 힌트 배지 표시 (이미 kbd 힌트가 헤더에 존재)</li>
+  </ul>
+
+  <h3>7-5. 구현 아키텍처</h3>
+  <p>영향받는 파일 및 예상 코드량:</p>
+  <table>
+    <tr><th>파일</th><th>변경 내용</th><th>예상 라인</th></tr>
+    <tr><td><code>src/components/KeyboardShortcutsModal.tsx</code></td><td><strong>신규 생성</strong> — 모달 UI, 검색, 카테고리, OS 감지</td><td>~200줄</td></tr>
+    <tr><td><code>src/hooks/useKeyboardShortcuts.ts</code></td><td><kbd>?</kbd> 핸들러에서 모달 state 토글 연결. 현재 Line 61의 콜백 연결.</td><td>~5줄 수정</td></tr>
+    <tr><td><code>src/components/Header.tsx</code> (or AppLayout)</td><td>⌨ 버튼 추가 + onClick → 모달 열기</td><td>~15줄</td></tr>
+    <tr><td><code>src/constants/shortcuts.ts</code></td><td><strong>신규 생성</strong> — 단축키 정의 배열 (중앙 관리). 카테고리, key, action, scope, modifier 정의</td><td>~80줄</td></tr>
+    <tr><td><code>src/components/FocusMode.tsx</code></td><td>Focus Mode 전용 <kbd>?</kbd> → 모달 열기 추가 (현재 미구현)</td><td>~3줄</td></tr>
+  </table>
+  <p style="margin-top:8px"><strong>총 예상: ~300줄 신규 + ~25줄 수정 = Dev 약 4~5시간</strong></p>
+
+  <h3>7-6. 단축키 중앙 관리 구조 제안</h3>
+  <div style="background:#1e293b; color:#e2e8f0; border-radius:8px; padding:16px; margin:12px 0; font-family:'SF Mono',monospace; font-size:12px; line-height:1.7; overflow-x:auto;">
+<pre>
+<span style="color:#94a3b8">// src/constants/shortcuts.ts</span>
+<span style="color:#c084fc">export interface</span> ShortcutDef {
+  key: <span style="color:#fbbf24">string</span>;        <span style="color:#94a3b8">// 'P', 'Cmd+K', 'G → T'</span>
+  action: <span style="color:#fbbf24">string</span>;     <span style="color:#94a3b8">// 'Pass & Next'</span>
+  category: <span style="color:#fbbf24">Category</span>; <span style="color:#94a3b8">// 'global'|'navigation'|'focus'|'editing'|'page'</span>
+  scope?: <span style="color:#fbbf24">string</span>;     <span style="color:#94a3b8">// 'dashboard'|'run-detail'|'focus-mode'</span>
+  modifier?: <span style="color:#fbbf24">boolean</span>; <span style="color:#94a3b8">// true if uses Cmd/Ctrl</span>
+}
+
+<span style="color:#c084fc">export const</span> SHORTCUTS: ShortcutDef[] = [
+  { key: <span style="color:#a5f3fc">'⌘K'</span>,   action: <span style="color:#a5f3fc">'Command Palette'</span>,  category: <span style="color:#a5f3fc">'global'</span>,     modifier: <span style="color:#fbbf24">true</span> },
+  { key: <span style="color:#a5f3fc">'⌘⇧F'</span>,  action: <span style="color:#a5f3fc">'Focus Mode'</span>,       category: <span style="color:#a5f3fc">'global'</span>,     modifier: <span style="color:#fbbf24">true</span> },
+  { key: <span style="color:#a5f3fc">'?'</span>,     action: <span style="color:#a5f3fc">'Shortcuts Help'</span>,   category: <span style="color:#a5f3fc">'global'</span>,     modifier: <span style="color:#fbbf24">false</span> },
+  { key: <span style="color:#a5f3fc">'G → T'</span>, action: <span style="color:#a5f3fc">'Test Cases'</span>,       category: <span style="color:#a5f3fc">'navigation'</span>, modifier: <span style="color:#fbbf24">false</span> },
+  <span style="color:#94a3b8">// ... etc</span>
+  { key: <span style="color:#a5f3fc">'P'</span>,     action: <span style="color:#a5f3fc">'Pass & Next'</span>,     category: <span style="color:#a5f3fc">'focus'</span>,      scope: <span style="color:#a5f3fc">'focus-mode'</span> },
+  <span style="color:#94a3b8">// ...</span>
+];
+</pre>
+  </div>
+  <p>이 중앙 배열을 기준으로 모달 UI가 렌더링하고, 향후 새 단축키 추가 시 이 파일만 수정하면 됩니다.</p>
+</div>
+
+<!-- §8 PM 권장안 & 구현 우선순위 -->
+<div class="section" id="s8">
+  <h2><span class="num">8</span> PM 권장안 &amp; 구현 우선순위</h2>
+
+  <h3>8-1. 종합 권장 사항</h3>
+  <table>
+    <tr><th>#</th><th>권장 사항</th><th>영향도</th><th>노력</th><th>우선순위</th></tr>
+    <tr><td>1</td><td><strong>단축키 가이드 모달</strong> 구현 (<kbd>?</kbd> + 헤더 버튼)</td><td><span class="tag tag-ok">높음</span></td><td>4~5시간</td><td><span class="tag tag-violet">Phase 1 — 즉시</span></td></tr>
+    <tr><td>2</td><td><strong>shortcuts.ts</strong> 중앙 관리 배열 생성</td><td><span class="tag tag-ok">높음</span></td><td>1시간</td><td><span class="tag tag-violet">Phase 1 — 모달과 함께</span></td></tr>
+    <tr><td>3</td><td><strong>Focus Mode 내 <kbd>?</kbd></strong> 지원 추가</td><td><span class="tag tag-warn">중간</span></td><td>30분</td><td><span class="tag tag-violet">Phase 1</span></td></tr>
+    <tr><td>4</td><td><strong>검색 기능</strong> 모달에 추가</td><td><span class="tag tag-warn">중간</span></td><td>1시간</td><td><span class="tag tag-violet">Phase 1</span></td></tr>
+    <tr><td>5</td><td><strong>접근성 토글</strong> (단일키 단축키 비활성화)</td><td><span class="tag tag-warn">중간</span></td><td>2시간</td><td><span class="tag tag-info">Phase 2</span></td></tr>
+    <tr><td>6</td><td><strong>Tooltip에 단축키 힌트</strong> 추가 (버튼 호버 시)</td><td><span class="tag tag-info">낮음</span></td><td>3시간</td><td><span class="tag tag-info">Phase 2</span></td></tr>
+    <tr><td>7</td><td><strong>키 입력 하이라이트</strong> (Figma 스타일)</td><td><span class="tag tag-info">낮음</span></td><td>2시간</td><td><span class="tag tag-info">Phase 3</span></td></tr>
+  </table>
+
+  <h3>8-2. UX 가치 분석</h3>
+  <ul>
+    <li><strong>발견성(Discoverability)</strong>: 현재 Testably의 단축키는 Focus Mode UI의 kbd 힌트를 제외하면 전혀 노출되지 않습니다. 가이드 팝업이 없으면 사용자가 단축키 존재 자체를 모를 가능성이 높습니다.</li>
+    <li><strong>학습 곡선 완화</strong>: Focus Mode에 10개 단일키가 있어 학습 부담이 큽니다. 가이드 팝업은 이 부담을 크게 줄여줍니다.</li>
+    <li><strong>경쟁 우위</strong>: TestRail, Qase, Zephyr 중 인앱 단축키 가이드를 제공하는 제품이 없습니다. Testably가 QA 도구 최초로 이를 구현하면 "파워 유저 친화적" 이미지를 강화할 수 있습니다.</li>
+    <li><strong>온보딩 보조</strong>: 신규 사용자가 첫 Focus Mode 진입 시 자동으로 가이드 팝업을 보여주는 옵션도 검토 가능합니다 (Phase 2).</li>
+  </ul>
+
+  <h3>8-3. 충돌 해결 요약</h3>
+  <div class="callout callout-ok">
+    <strong>✅ 결론: 현재 단축키 변경 불필요</strong><br>
+    직접적인 브라우저 충돌 0건. Cmd+K는 업계 표준 패턴. 단일키(N/R)는 접근성 토글로 Phase 2에서 대응. Focus Mode 단축키는 격리된 환경이므로 안전.
+  </div>
+</div>
+
+<!-- §9 CEO Q&A -->
+<div class="section" id="s9">
+  <h2><span class="num">9</span> CEO Q&amp;A</h2>
+
+  <p><strong>Q: 브라우저 단축키와 충돌하는 것이 있나?</strong></p>
+  <p>A: 직접 충돌 0건. <kbd>Cmd+K</kbd>는 브라우저 주소창과 겹치지만, Notion/Linear/Slack/VS Code 모두 동일하게 override하는 업계 표준 패턴입니다. preventDefault()로 정상 차단 중.</p>
+
+  <p style="margin-top:16px"><strong>Q: Focus Mode 단축키(P/F/B/R 등)가 일반 타이핑과 겹치지 않나?</strong></p>
+  <p>A: INPUT/TEXTAREA에서는 모두 차단됩니다 (Line 275-286). 노트 입력 중에는 <kbd>Escape</kbd>과 <kbd>Cmd+Enter</kbd>만 동작합니다.</p>
+
+  <p style="margin-top:16px"><strong>Q: 단축키 가이드 팝업은 바로 만들 수 있나?</strong></p>
+  <p>A: 네. <kbd>?</kbd> 키 핸들러가 이미 구현되어 있어(useKeyboardShortcuts.ts Line 61), 모달 UI만 만들면 됩니다. shortcuts.ts 중앙 배열 포함 약 5시간 작업량입니다.</p>
+
+  <p style="margin-top:16px"><strong>Q: 경쟁사 QA 도구는 이런 기능이 있나?</strong></p>
+  <p>A: TestRail, Qase, Zephyr 모두 인앱 단축키 가이드가 없습니다. 외부 도움말 센터에서만 확인 가능합니다. Testably가 QA 도구 최초로 GitHub/Linear 수준의 인앱 가이드를 제공하면 차별화 포인트가 됩니다.</p>
+
+  <p style="margin-top:16px"><strong>Q: 향후 Run Workflow 단축키 추가 시 충돌 위험은?</strong></p>
+  <p>A: <kbd>A</kbd> (Add Result), <kbd>1</kbd>~<kbd>5</kbd> (Step 결과), <kbd>Ctrl+Enter</kbd> (모달 제출) — 모두 브라우저와 충돌 없습니다. shortcuts.ts에 미리 예약 등록해두면 관리가 수월합니다.</p>
+</div>
+
+</div><!-- .wrap -->
+</body>
+</html>

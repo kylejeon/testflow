@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Unified Detail Panel (TC + Run Context)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  body.show-spec { height: auto; overflow: auto; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TOP HEADER — matches real Testably app                */
+  /* ══════════════════════════════════════════════════════ */
+  .top-header {
+    background: #fff; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; padding: 0 1.25rem; height: 3.25rem; gap: 0; flex-shrink: 0;
+  }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding-right: 1.25rem; border-right: 1px solid #E2E8F0; margin-right: 1rem; }
+  .logo-icon { width: 26px; height: 26px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; }
+  .logo-text { font-family: 'Pacifico', cursive; font-size: 1rem; color: #6366F1; letter-spacing: -0.01em; }
+  /* Project selector */
+  .project-selector {
+    display: flex; align-items: center; gap: 0.375rem; cursor: pointer;
+    padding: 0.3125rem 0.625rem; border-radius: 0.375rem; margin-right: 0.5rem;
+  }
+  .project-selector:hover { background: #F8FAFC; }
+  .project-selector .proj-name { font-size: 0.8125rem; font-weight: 600; color: #0F172A; }
+  .project-selector .proj-chevron { font-size: 0.75rem; color: #94A3B8; }
+  /* Nav tabs */
+  .header-nav { display: flex; align-items: center; height: 100%; gap: 0; }
+  .header-nav-item {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.75rem; height: 100%;
+    font-size: 0.8125rem; color: #64748B; cursor: pointer;
+    border-bottom: 2px solid transparent; font-weight: 500; white-space: nowrap;
+  }
+  .header-nav-item:hover { color: #475569; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: #6366F1; font-weight: 600; }
+  .header-nav-item i { font-size: 0.9375rem; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .header-icon-btn {
+    width: 2rem; height: 2rem; border-radius: 0.375rem; border: none; background: none;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;
+    position: relative;
+  }
+  .header-icon-btn:hover { background: #F1F5F9; color: #475569; }
+  .notif-dot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; border: 1.5px solid #fff; }
+  .header-avatar {
+    width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5625rem; font-weight: 700; color: #fff; cursor: pointer;
+  }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* CONTEXT SWITCHER (demo bar)                           */
+  /* ══════════════════════════════════════════════════════ */
+  .context-switcher { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem; background: #FFFBEB; border-bottom: 1px solid #FDE68A; flex-shrink: 0; }
+  .context-switcher label { font-size: 0.625rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.04em; }
+  .ctx-btn { font-size: 0.6875rem; font-weight: 600; padding: 0.25rem 0.625rem; border-radius: 9999px; cursor: pointer; font-family: inherit; border: 1px solid #E2E8F0; background: #fff; color: #475569; transition: all 0.15s; }
+  .ctx-btn.active { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .ctx-note { font-size: 0.625rem; color: #92400E; margin-left: auto; }
+  .ctx-sep { width: 1px; height: 0.875rem; background: #D97706; opacity: 0.3; margin: 0 0.125rem; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* PAGE HEADER — "Test Cases · 40 test cases" + AI btn   */
+  /* ══════════════════════════════════════════════════════ */
+  .page-header {
+    display: flex; align-items: center; padding: 0.875rem 1.25rem;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; gap: 0.75rem;
+  }
+  .page-title { font-size: 1.125rem; font-weight: 700; color: #0F172A; }
+  .page-count { font-size: 0.8125rem; color: #94A3B8; font-weight: 500; }
+  .page-header-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .ai-gen-btn {
+    display: flex; align-items: center; gap: 0.375rem;
+    font-size: 0.8125rem; font-weight: 600; padding: 0.4375rem 0.875rem;
+    border-radius: 0.5rem; border: none; cursor: pointer; font-family: inherit;
+    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+    color: #fff; box-shadow: 0 1px 3px rgba(99,102,241,0.3);
+    transition: all 0.15s;
+  }
+  .ai-gen-btn:hover { box-shadow: 0 2px 8px rgba(99,102,241,0.4); transform: translateY(-0.5px); }
+  .ai-gen-btn .sparkle { font-size: 0.875rem; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* LIFECYCLE STATUS TABS                                 */
+  /* ══════════════════════════════════════════════════════ */
+  .lifecycle-tabs {
+    display: flex; align-items: center; padding: 0 1.25rem; gap: 0;
+    background: #fff; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; height: 2.625rem;
+  }
+  .lc-tab {
+    display: flex; align-items: center; gap: 0.3125rem; padding: 0 0.875rem; height: 100%;
+    font-size: 0.8125rem; font-weight: 500; color: #64748B; cursor: pointer;
+    border-bottom: 2px solid transparent; white-space: nowrap;
+  }
+  .lc-tab:hover { color: #475569; }
+  .lc-tab.active { color: #6366F1; border-bottom-color: #6366F1; font-weight: 600; }
+  .lc-tab i { font-size: 0.875rem; }
+  .lc-badge {
+    font-size: 0.625rem; font-weight: 700; padding: 0.0625rem 0.375rem;
+    border-radius: 9999px; background: #F1F5F9; color: #64748B; min-width: 1.25rem; text-align: center;
+  }
+  .lc-tab.active .lc-badge { background: #EEF2FF; color: #6366F1; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* MAIN LAYOUT                                           */
+  /* ══════════════════════════════════════════════════════ */
+  .main { flex: 1; display: flex; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .sidebar { width: 220px; min-width: 220px; background: #fff; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+  .sb-header { padding: 0.75rem 0.875rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .sb-header-row { display: flex; align-items: center; justify-content: space-between; }
+  .sb-title { font-size: 0.8125rem; font-weight: 700; color: #0F172A; }
+  .sb-new-btn { display: flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; color: #6366F1; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 0.375rem; border: none; background: none; font-family: inherit; }
+  .sb-search { padding: 0.5rem 0.75rem; border-bottom: 1px solid #F1F5F9; }
+  .sb-search input {
+    width: 100%; font-size: 0.75rem; padding: 0.3125rem 0.5rem 0.3125rem 1.625rem;
+    border: 1px solid #E2E8F0; border-radius: 0.375rem; background: #F8FAFC url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394A3B8' viewBox='0 0 24 24'%3E%3Cpath d='M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0111 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 01-1.969 5.617z'/%3E%3C/svg%3E") 0.5rem center no-repeat;
+    outline: none; font-family: inherit; color: #475569;
+  }
+  .sb-search input:focus { border-color: #C7D2FE; }
+  .sb-folders { flex: 1; overflow-y: auto; padding: 0.25rem 0; }
+  .sb-folder { display: flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.875rem; cursor: pointer; font-size: 0.8125rem; color: #475569; border-radius: 0 0.375rem 0.375rem 0; margin-right: 0.375rem; }
+  .sb-folder:hover { background: #F8FAFC; }
+  .sb-folder.active { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .sb-folder .count { margin-left: auto; font-size: 0.6875rem; color: #94A3B8; font-weight: 500; }
+  .sb-folder.active .count { color: #6366F1; }
+  .sb-folder i { font-size: 1rem; }
+
+  /* ── TC/Run List Center ── */
+  .list-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .list-toolbar { padding: 0.625rem 1rem; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; gap: 0.375rem; background: #fff; flex-shrink: 0; }
+  .list-search { flex: 1; display: flex; align-items: center; gap: 0.375rem; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 0.375rem; padding: 0.3125rem 0.625rem; }
+  .list-search input { border: none; background: none; outline: none; font-size: 0.8125rem; color: #1E293B; font-family: inherit; flex: 1; }
+  .list-filter { font-size: 0.75rem; padding: 0.3125rem 0.625rem; border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; font-family: inherit; font-weight: 500; }
+  .list-filter:hover { background: #F8FAFC; }
+  .list-table { flex: 1; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { position: sticky; top: 0; z-index: 2; }
+  thead th { background: #F8FAFC; font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; padding: 0.4375rem 0.75rem; text-align: left; border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+  tbody td { padding: 0.4375rem 0.75rem; font-size: 0.8125rem; color: #334155; border-bottom: 1px solid #F1F5F9; }
+  tbody tr { cursor: pointer; transition: background 0.1s; }
+  tbody tr:hover { background: #FAFAFF; }
+  tbody tr.selected { background: #EEF2FF; }
+  .item-id { font-family: 'SF Mono','Fira Code',monospace; font-size: 0.6875rem; color: #94A3B8; }
+  .item-title { font-weight: 500; color: #0F172A; max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .priority-badge { font-size: 0.5625rem; font-weight: 600; padding: 0.0625rem 0.4375rem; border-radius: 9999px; white-space: nowrap; }
+  .priority-badge.high { background: #FEE2E2; color: #991B1B; }
+  .priority-badge.medium { background: #FEF3C7; color: #92400E; }
+  .priority-badge.low { background: #DCFCE7; color: #166534; }
+  .exec-status { display: flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 500; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .status-dot.passed { background: #22C55E; }
+  .status-dot.failed { background: #EF4444; }
+  .status-dot.blocked { background: #F59E0B; }
+  .status-dot.untested { background: #94A3B8; }
+  .folder-label { font-size: 0.6875rem; color: #64748B; display: flex; align-items: center; gap: 0.25rem; }
+  .folder-label i { font-size: 0.75rem; color: #94A3B8; }
+  .av-sm { width: 1.25rem; height: 1.25rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; }
+  .updated-time { font-size: 0.6875rem; color: #94A3B8; white-space: nowrap; }
+
+  /* ══════════════════════════════════════════════════════════════ */
+  /* ★ UNIFIED DETAIL PANEL — TC + Run Context (500px)            */
+  /* ══════════════════════════════════════════════════════════════ */
+  .detail-panel {
+    width: 500px; min-width: 500px; background: #fff;
+    border-left: 1px solid #E2E8F0;
+    display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+  }
+
+  /* ── Header ── */
+  .dp-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .dp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+  .dp-id { font-size: 0.6875rem; font-family: 'SF Mono','Fira Code',monospace; color: #94A3B8; margin-bottom: 0.375rem; }
+  .dp-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; line-height: 1.3; flex: 1; }
+  .dp-close { width: 1.75rem; height: 1.75rem; display: flex; align-items: center; justify-content: center; border-radius: 0.375rem; cursor: pointer; color: #94A3B8; flex-shrink: 0; border: none; background: none; }
+  .dp-close:hover { background: #F1F5F9; color: #475569; }
+  .dp-desc { font-size: 0.75rem; color: #64748B; line-height: 1.5; margin-top: 0.5rem; }
+
+  /* ── Quick Actions Bar (Run context only) ── */
+  .dp-actions-bar { display: flex; align-items: center; gap: 0.375rem; padding: 0.625rem 1.25rem; border-bottom: 1px solid #F1F5F9; flex-shrink: 0; }
+  .dp-actions-bar.hidden { display: none; }
+  .dp-status-select { font-size: 0.75rem; font-weight: 600; padding: 0.3125rem 0.625rem; border-radius: 9999px; border: 1px solid #E2E8F0; cursor: pointer; font-family: inherit; background: #F8FAFC; color: #64748B; }
+  .dp-action-btn { font-size: 0.75rem; font-weight: 600; padding: 0.3125rem 0.625rem; border-radius: 0.375rem; cursor: pointer; font-family: inherit; border: none; display: flex; align-items: center; gap: 0.25rem; }
+  .dp-add-result { background: #F1F5F9; color: #475569; }
+  .dp-add-result:hover { background: #E2E8F0; }
+  .dp-action-pass { background: #22C55E; color: #fff; }
+  .dp-action-pass:hover { background: #16A34A; }
+  .dp-nav-btn { width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; }
+  .dp-nav-btn:hover { background: #F8FAFC; }
+  .dp-spacer { flex: 1; }
+
+  /* ── Meta Grid ── */
+  .dp-meta { padding: 0.875rem 1.25rem; border-bottom: 1px solid #F1F5F9; flex-shrink: 0; }
+  .dp-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem 1rem; }
+  .dp-field-label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 0.1875rem; }
+  .dp-field-value { font-size: 0.8125rem; color: #0F172A; font-weight: 500; display: flex; align-items: center; gap: 0.25rem; }
+  .dp-priority { font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; }
+  .dp-priority.high { background: #FEE2E2; color: #991B1B; }
+  .dp-priority.medium { background: #FEF3C7; color: #92400E; }
+  .dp-tag { font-size: 0.6875rem; font-weight: 500; padding: 0.125rem 0.4375rem; border-radius: 0.25rem; background: #EEF2FF; color: #4338CA; }
+  .dp-assignee { display: flex; align-items: center; gap: 0.375rem; }
+  .dp-av { width: 1.25rem; height: 1.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; }
+
+  /* ══════════════════════════════════════════════════ */
+  /* ★ STEPS + TABS SPLIT AREA (resizable)            */
+  /* ══════════════════════════════════════════════════ */
+  .dp-split { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+
+  /* ── Steps Toggle Bar ── */
+  .dp-steps-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.5rem 1.25rem;
+    background: #F8FAFC; border-bottom: 1px solid #E2E8F0;
+    cursor: pointer; flex-shrink: 0; user-select: none;
+  }
+  .dp-steps-toggle:hover { background: #F1F5F9; }
+  .dp-steps-toggle-left { display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; }
+  .dp-steps-toggle-left i { font-size: 0.875rem; color: #6366F1; transition: transform 0.2s; }
+  .dp-steps-toggle.collapsed .dp-steps-toggle-left i { transform: rotate(-90deg); }
+  .dp-steps-toggle-right { font-size: 0.6875rem; color: #94A3B8; font-weight: 600; display: flex; align-items: center; gap: 0.375rem; }
+  .dp-steps-progress { display: flex; align-items: center; gap: 0.125rem; font-size: 0.6875rem; font-weight: 700; }
+  .dp-steps-progress.hidden { display: none; }
+  .passed-count { color: #22C55E; }
+  .sep { color: #CBD5E1; }
+  .total-count { color: #475569; }
+
+  /* ── Steps Area (dynamic height, min for tab body) ── */
+  .dp-steps-area {
+    overflow-y: auto; padding: 0.875rem 1.25rem; border-bottom: 1px solid #E2E8F0;
+    flex-shrink: 0; transition: max-height 0.2s ease, padding 0.2s ease;
+  }
+  .dp-steps-area.collapsed { max-height: 0 !important; padding: 0 1.25rem; overflow: hidden; border-bottom: none; }
+
+  /* Precondition */
+  .dp-section { margin-bottom: 0.75rem; }
+  .dp-section-title { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 0.375rem; display: flex; align-items: center; gap: 0.25rem; }
+  .dp-section-title i { font-size: 0.75rem; }
+  .dp-precondition { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.375rem; padding: 0.5rem 0.75rem; font-size: 0.75rem; color: #92400E; line-height: 1.5; }
+
+  /* Steps */
+  .dp-steps { display: flex; flex-direction: column; gap: 0.375rem; }
+  .dp-step { display: flex; gap: 0.5rem; background: #F8FAFC; border-radius: 0.5rem; padding: 0.5rem 0.75rem; align-items: flex-start; position: relative; border: 1px solid transparent; transition: background 0.15s, border-color 0.15s; }
+  .dp-step.step-passed { background: #F0FDF4; border-color: #BBF7D0; }
+  .dp-step.step-passed .dp-step-num { background: #22C55E; color: #fff; }
+  .dp-step.step-failed { background: #FEF2F2; border-color: #FECACA; }
+  .dp-step.step-failed .dp-step-num { background: #EF4444; color: #fff; }
+  .dp-step-num { width: 1.25rem; height: 1.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700; flex-shrink: 0; margin-top: 0.0625rem; background: #EEF2FF; color: #4338CA; }
+  .dp-step-content { flex: 1; min-width: 0; }
+  .dp-step-text { font-size: 0.75rem; color: #334155; line-height: 1.5; }
+  .dp-expected { font-size: 0.6875rem; color: #16A34A; margin-top: 0.25rem; display: flex; align-items: flex-start; gap: 0.25rem; line-height: 1.4; }
+  .dp-expected i { font-size: 0.75rem; flex-shrink: 0; margin-top: 0.0625rem; }
+
+  /* Step-level mini buttons (Run context only) */
+  .dp-step-actions { display: flex; gap: 0.1875rem; flex-shrink: 0; margin-top: 0.0625rem; }
+  .dp-step-actions.hidden { display: none; }
+  .step-mini-btn { width: 22px; height: 22px; border-radius: 0.25rem; border: 1px solid #E2E8F0; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; color: #94A3B8; padding: 0; }
+  .step-mini-btn:hover { border-color: #C7D2FE; }
+  .step-mini-btn.mini-pass.active { background: #22C55E; color: #fff; border-color: #22C55E; }
+  .step-mini-btn.mini-fail.active { background: #EF4444; color: #fff; border-color: #EF4444; }
+
+  /* Attachments */
+  .dp-attachments { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.375rem; margin-top: 0.75rem; }
+  .dp-attach { height: 3rem; border-radius: 0.375rem; overflow: hidden; background: #F1F5F9; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: center; cursor: pointer; gap: 0.25rem; font-size: 0.6875rem; color: #94A3B8; }
+  .dp-attach:hover { border-color: #C7D2FE; }
+
+  /* ── ★ Drag Handle (resize between steps & tabs) ── */
+  .dp-resize-handle {
+    height: 6px; flex-shrink: 0; cursor: row-resize;
+    background: #F8FAFC; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; transition: background 0.15s;
+  }
+  .dp-resize-handle::after { content: ''; width: 32px; height: 3px; background: #CBD5E1; border-radius: 9999px; }
+  .dp-resize-handle:hover, .dp-resize-handle.dragging { background: #EEF2FF; }
+  .dp-resize-handle:hover::after, .dp-resize-handle.dragging::after { background: #6366F1; }
+  .dp-resize-handle.hidden { display: none; }
+
+  /* ── Tabs ── */
+  .dp-tabs { display: flex; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .dp-tab { flex: 1; padding: 0.5rem; font-size: 0.75rem; font-weight: 600; color: #94A3B8; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 0.25rem; }
+  .dp-tab.active { color: #6366F1; border-bottom-color: #6366F1; }
+  .dp-tab:hover:not(.active) { color: #475569; }
+  .dp-tab-badge { font-size: 0.5625rem; background: #F1F5F9; color: #64748B; padding: 0.0625rem 0.3125rem; border-radius: 9999px; font-weight: 700; }
+  .dp-tab.active .dp-tab-badge { background: #EEF2FF; color: #6366F1; }
+
+  /* ── Tab Body ── */
+  .dp-tab-body { flex: 1; overflow-y: auto; min-height: 0; }
+  .dp-tab-inner { padding: 0.875rem 1.25rem; }
+  .dp-tab-content { display: none; }
+  .dp-tab-content.active { display: block; }
+
+  /* Comments */
+  .dp-comment { margin-bottom: 0.75rem; }
+  .dp-comment-head { display: flex; align-items: center; gap: 0.375rem; margin-bottom: 0.25rem; }
+  .dp-comment-av { width: 1.25rem; height: 1.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .dp-comment-name { font-size: 0.75rem; font-weight: 600; color: #0F172A; }
+  .dp-comment-time { font-size: 0.6875rem; color: #94A3B8; }
+  .dp-comment-text { font-size: 0.75rem; color: #475569; line-height: 1.5; background: #F8FAFC; padding: 0.5rem 0.75rem; border-radius: 0.375rem; border: 1px solid #F1F5F9; margin-left: 1.625rem; }
+  .dp-comment-input { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .dp-comment-input textarea { flex: 1; font-size: 0.75rem; padding: 0.5rem 0.75rem; border: 1px solid #E2E8F0; border-radius: 0.375rem; resize: none; font-family: inherit; outline: none; height: 2.5rem; }
+  .dp-comment-input textarea:focus { border-color: #6366F1; }
+  .dp-comment-input button { font-size: 0.75rem; font-weight: 600; padding: 0.375rem 0.75rem; border-radius: 0.375rem; background: #6366F1; color: #fff; border: none; cursor: pointer; font-family: inherit; white-space: nowrap; }
+
+  /* Results */
+  .dp-result-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #F1F5F9; }
+  .dp-result-status { font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+  .dp-result-status .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .dp-result-status.passed { background: #F0FDF4; color: #166534; }
+  .dp-result-status.passed .dot { background: #22C55E; }
+  .dp-result-status.failed { background: #FEF2F2; color: #991B1B; }
+  .dp-result-status.failed .dot { background: #EF4444; }
+  .dp-result-status.untested { background: #F8FAFC; color: #64748B; }
+  .dp-result-status.untested .dot { background: #94A3B8; }
+  .dp-result-info { flex: 1; min-width: 0; }
+  .dp-result-run { font-size: 0.75rem; font-weight: 600; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dp-result-time { font-size: 0.6875rem; color: #94A3B8; }
+
+  /* Issues */
+  .dp-issue-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #F1F5F9; }
+  .dp-issue-icon { width: 1.5rem; height: 1.5rem; border-radius: 0.25rem; background: #FEF2F2; color: #EF4444; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0; }
+  .dp-issue-info { flex: 1; }
+  .dp-issue-title { font-size: 0.75rem; font-weight: 600; color: #0F172A; }
+  .dp-issue-meta { font-size: 0.6875rem; color: #94A3B8; }
+  .dp-issue-link { font-size: 0.6875rem; color: #6366F1; font-weight: 600; text-decoration: none; }
+
+  /* History */
+  .dp-history-item { display: flex; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #F1F5F9; }
+  .dp-history-dot { width: 6px; height: 6px; border-radius: 50%; background: #C7D2FE; flex-shrink: 0; margin-top: 0.4rem; }
+  .dp-history-text { font-size: 0.75rem; color: #334155; line-height: 1.4; }
+  .dp-history-text strong { font-weight: 600; color: #0F172A; }
+  .dp-history-time { font-size: 0.6875rem; color: #94A3B8; }
+
+  /* ── Bottom Action Bar (TC context only) ── */
+  .dp-bottom-actions { padding: 0.75rem 1.25rem; border-top: 1px solid #E2E8F0; display: flex; gap: 0.5rem; flex-shrink: 0; }
+  .dp-bottom-actions.hidden { display: none; }
+  .dp-btn { flex: 1; padding: 0.4375rem 0.75rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 600; cursor: pointer; text-align: center; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 0.25rem; }
+  .dp-btn.primary { background: #6366F1; color: #fff; border: none; }
+  .dp-btn.primary:hover { background: #4F46E5; }
+  .dp-btn.danger { background: #fff; color: #EF4444; border: 1px solid #FCA5A5; }
+  .dp-btn.danger:hover { background: #FEF2F2; }
+
+  /* ── Interactive Hints ── */
+  .hint-dot {
+    position: absolute; width: 8px; height: 8px; border-radius: 50%;
+    background: #6366F1; z-index: 10; pointer-events: none;
+    animation: hintPulse 2s ease-in-out infinite;
+  }
+  .hint-dot::after {
+    content: attr(data-hint);
+    position: absolute; left: 14px; top: -4px; white-space: nowrap;
+    font-size: 0.5625rem; font-weight: 600; color: #6366F1;
+    background: #EEF2FF; padding: 0.125rem 0.375rem; border-radius: 0.25rem;
+    border: 1px solid #C7D2FE; pointer-events: none;
+  }
+  @keyframes hintPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.5); }
+  }
+
+  /* ── Floating Spec Toggle ── */
+  .spec-toggle-float {
+    position: fixed; bottom: 1rem; right: 1rem; z-index: 100;
+    display: flex; align-items: center; gap: 0.375rem;
+    padding: 0.5rem 0.875rem; border-radius: 9999px;
+    background: #1E293B; color: #fff; font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; border: none; font-family: inherit;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2); transition: all 0.2s;
+  }
+  .spec-toggle-float:hover { background: #334155; transform: translateY(-1px); }
+  .spec-toggle-float i { font-size: 0.875rem; }
+  .spec-toggle-float.active { background: #6366F1; }
+
+  .spec-panel { margin-top: 0; padding: 1.5rem 2rem; border-top: 2px dashed #C7D2FE; background: #F8FAFC; display: none; }
+  .spec-panel.visible { display: block; }
+  .spec-badge { display: inline-flex; align-items: center; gap: 0.375rem; background: #EEF2FF; color: #4338CA; font-size: 0.6875rem; font-weight: 700; padding: 0.25rem 0.625rem; border-radius: 9999px; margin-bottom: 1rem; }
+  .spec-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .spec-card .label { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6366F1; margin-bottom: 0.75rem; }
+  .spec-card h4 { font-size: 0.8125rem; font-weight: 700; color: #0F172A; margin: 0.875rem 0 0.375rem; }
+  .spec-card h4:first-of-type { margin-top: 0; }
+  .spec-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.25rem 0; font-size: 0.75rem; border-bottom: 1px solid #F8FAFC; }
+  .spec-row .k { font-weight: 600; color: #475569; min-width: 160px; }
+  .spec-row .v { color: #059669; font-weight: 600; font-family: monospace; font-size: 0.6875rem; }
+  .rec-box { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.75rem; color: #92400E; line-height: 1.6; margin-top: 0.5rem; }
+  .rec-box strong { color: #78350F; }
+  pre.code { background: #1E293B; color: #E2E8F0; border-radius: 0.5rem; padding: 1rem; font-size: 0.6875rem; line-height: 1.6; overflow-x: auto; margin: 0.5rem 0; font-family: 'SF Mono','Fira Code',monospace; }
+  pre.code .cm { color: #64748B; }
+  pre.code .kw { color: #818CF8; }
+  pre.code .str { color: #34D399; }
+  pre.code .num { color: #FBBF24; }
+
+  /* Hidden helper */
+  .ctx-hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ TOP HEADER (matches real app) ═══════════ -->
+<header class="top-header">
+  <div class="header-logo">
+    <div class="logo-icon">T</div>
+    <span class="logo-text">Testably</span>
+  </div>
+  <div class="project-selector">
+    <span class="proj-name">Stellar Health EMR</span>
+    <i class="ri-arrow-down-s-line proj-chevron"></i>
+  </div>
+  <nav class="header-nav">
+    <div class="header-nav-item" id="navDashboard"><i class="ri-dashboard-line"></i> Dashboard</div>
+    <div class="header-nav-item active" id="navTC"><i class="ri-file-list-3-line"></i> Test Cases</div>
+    <div class="header-nav-item" id="navRuns"><i class="ri-play-circle-line"></i> Runs &amp; Results</div>
+    <div class="header-nav-item"><i class="ri-flag-line"></i> Milestones</div>
+    <div class="header-nav-item"><i class="ri-file-text-line"></i> Documents</div>
+    <div class="header-nav-item"><i class="ri-compass-3-line"></i> Discovery Logs</div>
+  </nav>
+  <div class="header-right">
+    <button class="header-icon-btn"><i class="ri-search-line"></i></button>
+    <button class="header-icon-btn">
+      <i class="ri-notification-3-line"></i>
+      <span class="notif-dot"></span>
+    </button>
+    <div class="header-avatar">KJ</div>
+  </div>
+</header>
+
+<!-- ═══════════ CONTEXT SWITCHER (demo bar) ═══════════ -->
+<div class="context-switcher">
+  <label>Demo:</label>
+  <button class="ctx-btn active" onclick="switchContext('tc')">TC Detail</button>
+  <button class="ctx-btn" onclick="switchContext('run')">Run Detail</button>
+  <span class="ctx-sep"></span>
+  <label>Steps:</label>
+  <button class="ctx-btn active" onclick="switchStepCount(7)">7 Steps</button>
+  <button class="ctx-btn" onclick="switchStepCount(2)">2 Steps</button>
+  <span class="ctx-note">★ 클릭으로 인터랙션 확인 — 컨텍스트 전환, 스텝 수 변경, 접기/펼치기, 드래그 리사이즈, 탭 전환</span>
+</div>
+
+<!-- ═══════════ PAGE HEADER — TC context ═══════════ -->
+<div class="page-header" id="pageHeader">
+  <span class="page-title" id="pageTitle">Test Cases</span>
+  <span class="page-count" id="pageCount">· 40 test cases</span>
+  <div class="page-header-right">
+    <button class="ai-gen-btn" id="aiGenBtn"><span class="sparkle">✨</span> Generate with AI</button>
+  </div>
+</div>
+
+<!-- ═══════════ LIFECYCLE STATUS TABS — TC context ═══════════ -->
+<div class="lifecycle-tabs" id="lifecycleTabs">
+  <div class="lc-tab active" id="lcAll"><i class="ri-list-check-3"></i> All <span class="lc-badge">40</span></div>
+  <div class="lc-tab" id="lcDraft"><i class="ri-draft-line"></i> Draft <span class="lc-badge">1</span></div>
+  <div class="lc-tab" id="lcActive"><i class="ri-checkbox-circle-line"></i> Active <span class="lc-badge">39</span></div>
+  <div class="lc-tab" id="lcDeprecated"><i class="ri-archive-line"></i> Deprecated <span class="lc-badge">0</span></div>
+</div>
+
+<!-- ═══════════ LIFECYCLE STATUS TABS — Run context (hidden) ═══════════ -->
+<div class="lifecycle-tabs ctx-hidden" id="runLifecycleTabs">
+  <div class="lc-tab active"><i class="ri-play-circle-line"></i> Active <span class="lc-badge">3</span></div>
+  <div class="lc-tab"><i class="ri-checkbox-circle-line"></i> Completed <span class="lc-badge">12</span></div>
+  <div class="lc-tab"><i class="ri-archive-line"></i> Archived <span class="lc-badge">5</span></div>
+</div>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<div class="main">
+
+  <!-- ── Sidebar ── -->
+  <div class="sidebar" id="sidebar">
+    <div class="sb-header"><div class="sb-header-row">
+      <span class="sb-title" id="sbTitle">Folders</span>
+      <button class="sb-new-btn"><i class="ri-add-line"></i> New</button>
+    </div></div>
+    <div class="sb-search"><input type="text" placeholder="Search folders..." /></div>
+    <div class="sb-folders" id="sbFolders">
+      <!-- TC folders -->
+      <div class="sb-folder active" data-ctx="tc"><i class="ri-folder-fill" style="color:#6366F1"></i><span>All Test Cases</span><span class="count">40</span></div>
+      <div class="sb-folder" data-ctx="tc"><i class="ri-folder-line" style="color:#94A3B8"></i><span>Login</span><span class="count">8</span></div>
+      <div class="sb-folder" data-ctx="tc"><i class="ri-folder-line" style="color:#94A3B8"></i><span>Patient List</span><span class="count">12</span></div>
+      <div class="sb-folder" data-ctx="tc"><i class="ri-folder-line" style="color:#94A3B8"></i><span>Viewer</span><span class="count">9</span></div>
+      <div class="sb-folder" data-ctx="tc"><i class="ri-folder-line" style="color:#94A3B8"></i><span>Settings</span><span class="count">6</span></div>
+      <div class="sb-folder" data-ctx="tc"><i class="ri-folder-line" style="color:#94A3B8"></i><span>API Integration</span><span class="count">5</span></div>
+      <!-- Run folders (hidden) -->
+      <div class="sb-folder active ctx-hidden" data-ctx="run"><i class="ri-play-circle-fill" style="color:#6366F1"></i><span>All Runs</span><span class="count">20</span></div>
+      <div class="sb-folder ctx-hidden" data-ctx="run"><i class="ri-play-circle-line" style="color:#94A3B8"></i><span>Sprint 18 Regression</span><span class="count">3</span></div>
+      <div class="sb-folder ctx-hidden" data-ctx="run"><i class="ri-play-circle-line" style="color:#94A3B8"></i><span>Hotfix Verify</span><span class="count">2</span></div>
+      <div class="sb-folder ctx-hidden" data-ctx="run"><i class="ri-play-circle-line" style="color:#94A3B8"></i><span>v2.1 Full Suite</span><span class="count">8</span></div>
+      <div class="sb-folder ctx-hidden" data-ctx="run"><i class="ri-play-circle-line" style="color:#94A3B8"></i><span>Smoke Test</span><span class="count">5</span></div>
+    </div>
+  </div>
+
+  <!-- ── Item List ── -->
+  <div class="list-area">
+    <div class="list-toolbar">
+      <div class="list-search"><i class="ri-search-line" style="font-size:0.875rem;color:#94A3B8"></i><input type="text" id="listSearchInput" placeholder="Search test cases..." /></div>
+      <button class="list-filter"><i class="ri-filter-3-line"></i> Filters</button>
+      <button class="list-filter"><i class="ri-sort-desc"></i> Sort</button>
+    </div>
+    <div class="list-table" id="listTable">
+      <!-- TC Table -->
+      <table id="tcTable">
+        <thead><tr>
+          <th style="width:32px"><input type="checkbox" /></th>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Folder</th>
+          <th>Assignee</th>
+          <th>Updated</th>
+        </tr></thead>
+        <tbody>
+          <tr class="selected">
+            <td><input type="checkbox" checked /></td>
+            <td class="item-id">TC-041</td>
+            <td><span class="item-title">Login with valid credentials on Safari 17</span></td>
+            <td><span class="priority-badge high">High</span></td>
+            <td><span class="exec-status"><span class="status-dot passed"></span> Passed</span></td>
+            <td><span class="folder-label"><i class="ri-folder-line"></i> Login</span></td>
+            <td><span class="av-sm" style="background:#6366F1">SK</span></td>
+            <td class="updated-time">2h ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" /></td>
+            <td class="item-id">TC-042</td>
+            <td><span class="item-title">Login with invalid password shows error</span></td>
+            <td><span class="priority-badge high">High</span></td>
+            <td><span class="exec-status"><span class="status-dot passed"></span> Passed</span></td>
+            <td><span class="folder-label"><i class="ri-folder-line"></i> Login</span></td>
+            <td><span class="av-sm" style="background:#6366F1">SK</span></td>
+            <td class="updated-time">3h ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" /></td>
+            <td class="item-id">TC-043</td>
+            <td><span class="item-title">OAuth SSO redirect handles timeout</span></td>
+            <td><span class="priority-badge medium">Med</span></td>
+            <td><span class="exec-status"><span class="status-dot failed"></span> Failed</span></td>
+            <td><span class="folder-label"><i class="ri-folder-line"></i> Login</span></td>
+            <td><span class="av-sm" style="background:#EC4899">JL</span></td>
+            <td class="updated-time">5h ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" /></td>
+            <td class="item-id">TC-044</td>
+            <td><span class="item-title">Patient list loads within 2 seconds</span></td>
+            <td><span class="priority-badge high">High</span></td>
+            <td><span class="exec-status"><span class="status-dot passed"></span> Passed</span></td>
+            <td><span class="folder-label"><i class="ri-folder-line"></i> Patient List</span></td>
+            <td><span class="av-sm" style="background:#10B981">MK</span></td>
+            <td class="updated-time">1d ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" /></td>
+            <td class="item-id">TC-045</td>
+            <td><span class="item-title">Search patient by name returns results</span></td>
+            <td><span class="priority-badge medium">Med</span></td>
+            <td><span class="exec-status"><span class="status-dot untested"></span> Untested</span></td>
+            <td><span class="folder-label"><i class="ri-folder-line"></i> Patient List</span></td>
+            <td><span class="av-sm" style="background:#F59E0B">AH</span></td>
+            <td class="updated-time">1d ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" /></td>
+            <td class="item-id">TC-046</td>
+            <td><span class="item-title">DICOM viewer renders CT scan correctly</span></td>
+            <td><span class="priority-badge high">High</span></td>
+            <td><span class="exec-status"><span class="status-dot passed"></span> Passed</span></td>
+            <td><span class="folder-label"><i class="ri-folder-line"></i> Viewer</span></td>
+            <td><span class="av-sm" style="background:#6366F1">SK</span></td>
+            <td class="updated-time">2d ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" /></td>
+            <td class="item-id">TC-047</td>
+            <td><span class="item-title">Zoom and pan controls on viewer</span></td>
+            <td><span class="priority-badge low">Low</span></td>
+            <td><span class="exec-status"><span class="status-dot blocked"></span> Blocked</span></td>
+            <td><span class="folder-label"><i class="ri-folder-line"></i> Viewer</span></td>
+            <td><span class="av-sm" style="background:#EC4899">JL</span></td>
+            <td class="updated-time">3d ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" /></td>
+            <td class="item-id">TC-048</td>
+            <td><span class="item-title">User settings save and persist</span></td>
+            <td><span class="priority-badge medium">Med</span></td>
+            <td><span class="exec-status"><span class="status-dot passed"></span> Passed</span></td>
+            <td><span class="folder-label"><i class="ri-folder-line"></i> Settings</span></td>
+            <td><span class="av-sm" style="background:#10B981">MK</span></td>
+            <td class="updated-time">3d ago</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Run Table (hidden by default) -->
+      <table id="runTable" class="ctx-hidden">
+        <thead><tr>
+          <th style="width:32px"><input type="checkbox" /></th>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Progress</th>
+          <th>Status</th>
+          <th>Assignee</th>
+          <th>Started</th>
+        </tr></thead>
+        <tbody>
+          <tr class="selected">
+            <td><input type="checkbox" checked /></td>
+            <td class="item-id">RUN-042</td>
+            <td><span class="item-title">Sprint 18 Regression — Login Suite</span></td>
+            <td><span class="exec-status" style="gap:0.375rem"><span style="width:48px;height:4px;border-radius:2px;background:#E2E8F0;display:inline-block;position:relative;overflow:hidden"><span style="position:absolute;left:0;top:0;height:100%;width:71%;background:#22C55E;border-radius:2px"></span></span> 5/7</span></td>
+            <td><span class="exec-status"><span class="status-dot failed"></span> In Progress</span></td>
+            <td><span class="av-sm" style="background:#6366F1">SK</span></td>
+            <td class="updated-time">2h ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" /></td>
+            <td class="item-id">RUN-041</td>
+            <td><span class="item-title">Sprint 18 Regression — Patient Suite</span></td>
+            <td><span class="exec-status" style="gap:0.375rem"><span style="width:48px;height:4px;border-radius:2px;background:#E2E8F0;display:inline-block;position:relative;overflow:hidden"><span style="position:absolute;left:0;top:0;height:100%;width:100%;background:#22C55E;border-radius:2px"></span></span> 12/12</span></td>
+            <td><span class="exec-status"><span class="status-dot passed"></span> Completed</span></td>
+            <td><span class="av-sm" style="background:#10B981">MK</span></td>
+            <td class="updated-time">5h ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" /></td>
+            <td class="item-id">RUN-040</td>
+            <td><span class="item-title">Hotfix Verify — Cookie Fix</span></td>
+            <td><span class="exec-status" style="gap:0.375rem"><span style="width:48px;height:4px;border-radius:2px;background:#E2E8F0;display:inline-block;position:relative;overflow:hidden"><span style="position:absolute;left:0;top:0;height:100%;width:100%;background:#22C55E;border-radius:2px"></span></span> 3/3</span></td>
+            <td><span class="exec-status"><span class="status-dot passed"></span> Completed</span></td>
+            <td><span class="av-sm" style="background:#EC4899">JL</span></td>
+            <td class="updated-time">1d ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" /></td>
+            <td class="item-id">RUN-039</td>
+            <td><span class="item-title">v2.1 Full Suite — All Modules</span></td>
+            <td><span class="exec-status" style="gap:0.375rem"><span style="width:48px;height:4px;border-radius:2px;background:#E2E8F0;display:inline-block;position:relative;overflow:hidden"><span style="position:absolute;left:0;top:0;height:100%;width:85%;background:#22C55E;border-radius:2px"></span></span> 34/40</span></td>
+            <td><span class="exec-status"><span class="status-dot failed"></span> In Progress</span></td>
+            <td><span class="av-sm" style="background:#6366F1">SK</span></td>
+            <td class="updated-time">2d ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" /></td>
+            <td class="item-id">RUN-038</td>
+            <td><span class="item-title">Smoke Test — Critical Paths</span></td>
+            <td><span class="exec-status" style="gap:0.375rem"><span style="width:48px;height:4px;border-radius:2px;background:#E2E8F0;display:inline-block;position:relative;overflow:hidden"><span style="position:absolute;left:0;top:0;height:100%;width:100%;background:#22C55E;border-radius:2px"></span></span> 5/5</span></td>
+            <td><span class="exec-status"><span class="status-dot passed"></span> Completed</span></td>
+            <td><span class="av-sm" style="background:#F59E0B">AH</span></td>
+            <td class="updated-time">5d ago</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- ★ UNIFIED DETAIL PANEL — Shared base, context slots      -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="detail-panel" id="detailPanel">
+
+    <!-- ─── Header ─── -->
+    <div class="dp-header">
+      <div class="dp-top">
+        <div style="flex:1">
+          <div class="dp-id">TC-041</div>
+          <div class="dp-title">Login with valid credentials on Safari 17</div>
+        </div>
+        <button class="dp-close"><i class="ri-close-line" style="font-size:1.125rem"></i></button>
+      </div>
+      <div class="dp-desc" id="dpDesc">Verify that a registered user can log in successfully using Safari 17 on macOS Sonoma with correct email and password.</div>
+    </div>
+
+    <!-- ─── Quick Actions Bar (Run context only) ─── -->
+    <div class="dp-actions-bar hidden" id="dpQuickActions">
+      <select class="dp-status-select">
+        <option>— Untested</option><option>✓ Passed</option><option>✕ Failed</option><option>⊘ Blocked</option><option>↻ Retest</option>
+      </select>
+      <button class="dp-action-btn dp-add-result"><i class="ri-add-line"></i> Add Result</button>
+      <button class="dp-action-btn dp-action-pass"><i class="ri-check-line"></i> Pass & Next</button>
+      <span class="dp-spacer"></span>
+      <button class="dp-nav-btn"><i class="ri-arrow-up-s-line"></i></button>
+      <button class="dp-nav-btn"><i class="ri-arrow-down-s-line"></i></button>
+    </div>
+
+    <!-- ─── Meta Grid (shared) ─── -->
+    <div class="dp-meta">
+      <div class="dp-meta-grid">
+        <div><div class="dp-field-label">Priority</div><div class="dp-field-value"><span class="dp-priority high"><i class="ri-flag-fill" style="font-size:0.625rem"></i> High</span></div></div>
+        <div><div class="dp-field-label">Folder</div><div class="dp-field-value"><i class="ri-folder-line" style="font-size:0.75rem;color:#94A3B8"></i> Login</div></div>
+        <div><div class="dp-field-label">Tags</div><div class="dp-field-value"><span class="dp-tag">login</span> <span class="dp-tag">safari</span></div></div>
+        <div><div class="dp-field-label">Assignee</div><div class="dp-field-value dp-assignee"><div class="dp-av" style="background:#6366F1">SK</div> Sarah Kim</div></div>
+        <div><div class="dp-field-label">Created</div><div class="dp-field-value">Mar 18, 2026</div></div>
+        <div><div class="dp-field-label">Last Run</div><div class="dp-field-value" style="color:#6366F1;cursor:pointer">Run #42 →</div></div>
+      </div>
+    </div>
+
+    <!-- ★ SPLIT AREA: Steps + Drag Handle + Tabs -->
+    <div class="dp-split" id="dpSplit">
+
+      <!-- ── Steps Toggle Bar ── -->
+      <div class="dp-steps-toggle" id="stepsToggle" onclick="toggleSteps()">
+        <div class="dp-steps-toggle-left">
+          <i class="ri-arrow-down-s-line"></i>
+          <span>7 steps · 2 attachments</span>
+        </div>
+        <div class="dp-steps-toggle-right">
+          <span class="dp-steps-progress hidden" id="stepsProgress">
+            <span class="passed-count" id="passedCount">4</span>
+            <span class="sep">/</span>
+            <span class="total-count">7</span>
+            <span style="color:#64748B;font-weight:500;margin-left:0.125rem">passed</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- ── Steps Area (dynamic height, clamped) ── -->
+      <div class="dp-steps-area" id="stepsArea">
+        <div class="dp-section">
+          <div class="dp-section-title"><i class="ri-alert-line" style="color:#F59E0B"></i> Precondition</div>
+          <div class="dp-precondition">User account "testuser@testably.app" exists with verified email. Safari 17+ installed on macOS Sonoma 14.0+.</div>
+        </div>
+        <div class="dp-section">
+          <div class="dp-steps" id="stepsList">
+            <div class="dp-step step-passed" data-step="1">
+              <div class="dp-step-num">1</div>
+              <div class="dp-step-content">
+                <div class="dp-step-text">Open Safari 17 and navigate to login page</div>
+                <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> Login page loads within 3s</div>
+              </div>
+              <div class="dp-step-actions hidden"><button class="step-mini-btn mini-pass active" onclick="toggleStep(this,1,'pass')"><i class="ri-check-line"></i></button><button class="step-mini-btn mini-fail" onclick="toggleStep(this,1,'fail')"><i class="ri-close-line"></i></button></div>
+            </div>
+            <div class="dp-step step-passed" data-step="2">
+              <div class="dp-step-num">2</div>
+              <div class="dp-step-content">
+                <div class="dp-step-text">Enter "testuser@testably.app" in email field</div>
+                <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> Email accepted, no validation errors</div>
+              </div>
+              <div class="dp-step-actions hidden"><button class="step-mini-btn mini-pass active" onclick="toggleStep(this,2,'pass')"><i class="ri-check-line"></i></button><button class="step-mini-btn mini-fail" onclick="toggleStep(this,2,'fail')"><i class="ri-close-line"></i></button></div>
+            </div>
+            <div class="dp-step step-passed" data-step="3">
+              <div class="dp-step-num">3</div>
+              <div class="dp-step-content">
+                <div class="dp-step-text">Enter correct password and click "Sign In"</div>
+                <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> Loading spinner appears, button disabled</div>
+              </div>
+              <div class="dp-step-actions hidden"><button class="step-mini-btn mini-pass active" onclick="toggleStep(this,3,'pass')"><i class="ri-check-line"></i></button><button class="step-mini-btn mini-fail" onclick="toggleStep(this,3,'fail')"><i class="ri-close-line"></i></button></div>
+            </div>
+            <div class="dp-step step-passed" data-step="4">
+              <div class="dp-step-num">4</div>
+              <div class="dp-step-content">
+                <div class="dp-step-text">Wait for redirect to Dashboard page</div>
+                <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> Redirect to /dashboard within 2s, user name visible</div>
+              </div>
+              <div class="dp-step-actions hidden"><button class="step-mini-btn mini-pass active" onclick="toggleStep(this,4,'pass')"><i class="ri-check-line"></i></button><button class="step-mini-btn mini-fail" onclick="toggleStep(this,4,'fail')"><i class="ri-close-line"></i></button></div>
+            </div>
+            <div class="dp-step step-failed" data-step="5">
+              <div class="dp-step-num">5</div>
+              <div class="dp-step-content">
+                <div class="dp-step-text">Verify session token in browser storage</div>
+                <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> auth_token present with HttpOnly + Secure flags</div>
+              </div>
+              <div class="dp-step-actions hidden"><button class="step-mini-btn mini-pass" onclick="toggleStep(this,5,'pass')"><i class="ri-check-line"></i></button><button class="step-mini-btn mini-fail active" onclick="toggleStep(this,5,'fail')"><i class="ri-close-line"></i></button></div>
+            </div>
+            <div class="dp-step" data-step="6">
+              <div class="dp-step-num">6</div>
+              <div class="dp-step-content">
+                <div class="dp-step-text">Navigate away and return — session should persist</div>
+                <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> User remains logged in after navigation</div>
+              </div>
+              <div class="dp-step-actions hidden"><button class="step-mini-btn mini-pass" onclick="toggleStep(this,6,'pass')"><i class="ri-check-line"></i></button><button class="step-mini-btn mini-fail" onclick="toggleStep(this,6,'fail')"><i class="ri-close-line"></i></button></div>
+            </div>
+            <div class="dp-step" data-step="7">
+              <div class="dp-step-num">7</div>
+              <div class="dp-step-content">
+                <div class="dp-step-text">Click "Sign Out" and verify session invalidation</div>
+                <div class="dp-expected"><i class="ri-checkbox-circle-line"></i> Redirect to login, auth_token removed from cookies</div>
+              </div>
+              <div class="dp-step-actions hidden"><button class="step-mini-btn mini-pass" onclick="toggleStep(this,7,'pass')"><i class="ri-check-line"></i></button><button class="step-mini-btn mini-fail" onclick="toggleStep(this,7,'fail')"><i class="ri-close-line"></i></button></div>
+            </div>
+          </div>
+        </div>
+        <div class="dp-attachments">
+          <div class="dp-attach"><i class="ri-image-line"></i> login.png</div>
+          <div class="dp-attach"><i class="ri-file-text-line"></i> spec.pdf</div>
+          <div class="dp-attach"><i class="ri-add-line"></i></div>
+        </div>
+      </div>
+
+      <!-- ── ★ Drag Resize Handle ── -->
+      <div class="dp-resize-handle" id="resizeHandle">
+        <span class="hint-dot" style="right:60px;top:-1px" data-hint="Drag to resize · Double-click to reset"></span>
+      </div>
+
+      <!-- ── Tabs ── -->
+      <div class="dp-tabs">
+        <button class="dp-tab active" data-tab="comments">Comments <span class="dp-tab-badge">3</span></button>
+        <button class="dp-tab" data-tab="results">Results <span class="dp-tab-badge">5</span></button>
+        <button class="dp-tab" data-tab="issues">Issues <span class="dp-tab-badge">1</span></button>
+        <button class="dp-tab" data-tab="history">History</button>
+      </div>
+
+      <!-- ── Tab Body ── -->
+      <div class="dp-tab-body" id="tabBody">
+        <div class="dp-tab-inner">
+          <div class="dp-tab-content active" id="tab-comments">
+            <div class="dp-comment">
+              <div class="dp-comment-head">
+                <div class="dp-comment-av" style="background:#6366F1">SK</div>
+                <span class="dp-comment-name">Sarah Kim</span>
+                <span class="dp-comment-time">2 hours ago</span>
+              </div>
+              <div class="dp-comment-text">Safari 17.4 has a new cookie policy that might affect Step 5. Testing both private and normal mode.</div>
+            </div>
+            <div class="dp-comment">
+              <div class="dp-comment-head">
+                <div class="dp-comment-av" style="background:#EC4899">JL</div>
+                <span class="dp-comment-name">Jake Lee</span>
+                <span class="dp-comment-time">1 hour ago</span>
+              </div>
+              <div class="dp-comment-text">Good catch. I'll add TC-052 for private mode. This one stays for normal mode.</div>
+            </div>
+            <div class="dp-comment">
+              <div class="dp-comment-head">
+                <div class="dp-comment-av" style="background:#6366F1">SK</div>
+                <span class="dp-comment-name">Sarah Kim</span>
+                <span class="dp-comment-time">45 min ago</span>
+              </div>
+              <div class="dp-comment-text">Linked TC-052. Updated precondition to explicitly specify normal browsing mode.</div>
+            </div>
+            <div class="dp-comment-input">
+              <textarea placeholder="Add a comment..."></textarea>
+              <button>Send</button>
+            </div>
+          </div>
+          <div class="dp-tab-content" id="tab-results">
+            <div class="dp-result-item">
+              <div class="dp-result-status passed"><span class="dot"></span> Passed</div>
+              <div class="dp-result-info"><div class="dp-result-run">Run #42 — Sprint 18 Regression</div><div class="dp-result-time">Mar 24, 2026 · 2:15 PM · by SK</div></div>
+            </div>
+            <div class="dp-result-item">
+              <div class="dp-result-status passed"><span class="dot"></span> Passed</div>
+              <div class="dp-result-info"><div class="dp-result-run">Run #38 — Hotfix Verify</div><div class="dp-result-time">Mar 20, 2026 · 11:30 AM · by JL</div></div>
+            </div>
+            <div class="dp-result-item">
+              <div class="dp-result-status failed"><span class="dot"></span> Failed</div>
+              <div class="dp-result-info"><div class="dp-result-run">Run #35 — v2.1 Full Suite</div><div class="dp-result-time">Mar 15, 2026 · 9:00 AM · by SK</div></div>
+            </div>
+            <div class="dp-result-item">
+              <div class="dp-result-status passed"><span class="dot"></span> Passed</div>
+              <div class="dp-result-info"><div class="dp-result-run">Run #30 — Sprint 17 Regression</div><div class="dp-result-time">Mar 10, 2026 · 3:45 PM · by MK</div></div>
+            </div>
+            <div class="dp-result-item">
+              <div class="dp-result-status untested"><span class="dot"></span> Untested</div>
+              <div class="dp-result-info"><div class="dp-result-run">Run #28 — Smoke Test</div><div class="dp-result-time">Mar 5, 2026 · 10:00 AM</div></div>
+            </div>
+          </div>
+          <div class="dp-tab-content" id="tab-issues">
+            <div class="dp-issue-item">
+              <div class="dp-issue-icon"><i class="ri-bug-line"></i></div>
+              <div class="dp-issue-info">
+                <div class="dp-issue-title">Safari 17 cookie SameSite attribute ignored</div>
+                <div class="dp-issue-meta">BUG-1042 · Opened Mar 15 · High</div>
+              </div>
+              <a class="dp-issue-link" href="#">View →</a>
+            </div>
+            <div style="margin-top:0.75rem;">
+              <button style="font-size:0.75rem;font-weight:600;padding:0.375rem 0.75rem;border-radius:0.375rem;background:#fff;color:#6366F1;border:1px solid #C7D2FE;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:0.25rem"><i class="ri-add-line"></i> Link Issue</button>
+            </div>
+          </div>
+          <div class="dp-tab-content" id="tab-history">
+            <div class="dp-history-item">
+              <div class="dp-history-dot"></div>
+              <div><div class="dp-history-text"><strong>Sarah Kim</strong> updated precondition</div><div class="dp-history-time">45 min ago</div></div>
+            </div>
+            <div class="dp-history-item">
+              <div class="dp-history-dot"></div>
+              <div><div class="dp-history-text"><strong>Sarah Kim</strong> changed priority Medium → <strong>High</strong></div><div class="dp-history-time">2 hours ago</div></div>
+            </div>
+            <div class="dp-history-item">
+              <div class="dp-history-dot"></div>
+              <div><div class="dp-history-text"><strong>Jake Lee</strong> added tag <span class="dp-tag" style="font-size:0.625rem">safari</span></div><div class="dp-history-time">3 hours ago</div></div>
+            </div>
+            <div class="dp-history-item">
+              <div class="dp-history-dot"></div>
+              <div><div class="dp-history-text"><strong>Kyle Jeon</strong> created this test case</div><div class="dp-history-time">Mar 18, 2026</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /dp-split -->
+
+    <!-- ─── Bottom Action Bar (TC context only) ─── -->
+    <div class="dp-bottom-actions" id="dpBottomActions">
+      <button class="dp-btn primary"><i class="ri-edit-line"></i> Edit</button>
+      <button class="dp-btn danger"><i class="ri-delete-bin-6-line"></i> Delete</button>
+    </div>
+
+  </div><!-- /detail-panel -->
+
+</div><!-- /main -->
+
+<!-- ── Floating Toggle Button ── -->
+<button class="spec-toggle-float" id="specToggle" onclick="toggleSpec()">
+  <i class="ri-code-s-slash-line"></i> Dev Handoff
+</button>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- DEV HANDOFF SPECIFICATION                             -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="spec-panel" id="specPanel">
+  <div class="spec-badge"><i class="ri-code-s-slash-line"></i> DEV HANDOFF — Unified Detail Panel (TC + Run)</div>
+
+  <div class="spec-card">
+    <div class="label">§1 — Problem Statement & Solution</div>
+    <h4>Problem: Steps Crowd Out Tab Content</h4>
+    <div class="spec-row"><span class="k">Symptom</span><span class="v">7+ steps → Comments/Results tab area shrinks to &lt;100px</span></div>
+    <div class="spec-row"><span class="k">Root cause</span><span class="v">Steps area used max-height: 40vh (fixed) — no awareness of remaining space</span></div>
+    <div class="spec-row"><span class="k">User impact</span><span class="v">Can't read comments or results without collapsing steps</span></div>
+    <h4>Solution: 3-Layer Space Guarantee</h4>
+    <div class="spec-row"><span class="k">Layer 1</span><span class="v">Smart max-height: calc()-based, guarantees min 220px for tab body</span></div>
+    <div class="spec-row"><span class="k">Layer 2</span><span class="v">Drag resize handle: user controls steps↔tabs ratio manually</span></div>
+    <div class="spec-row"><span class="k">Layer 3</span><span class="v">Collapse toggle: reduces steps to 0px, maximizes tab area</span></div>
+  </div>
+
+  <div class="spec-card">
+    <div class="label">§2 — Unified Panel Architecture</div>
+    <h4>Single Component, Two Contexts</h4>
+    <div class="spec-row"><span class="k">Component</span><span class="v">&lt;UnifiedDetailPanel context="tc" | "run" /&gt;</span></div>
+    <div class="spec-row"><span class="k">Panel width</span><span class="v">500px (min-width: 500px)</span></div>
+    <h4>Context Switching — Page-Level Changes</h4>
+    <div class="spec-row"><span class="k">Nav tab</span><span class="v">TC → "Test Cases" active; Run → "Runs & Results" active</span></div>
+    <div class="spec-row"><span class="k">Page header</span><span class="v">TC → "Test Cases · 40"; Run → "Runs & Results · 20 runs"</span></div>
+    <div class="spec-row"><span class="k">AI button</span><span class="v">TC → "✨ Generate with AI"; Run → "▶ Start New Run"</span></div>
+    <div class="spec-row"><span class="k">Lifecycle tabs</span><span class="v">TC → All/Draft/Active/Deprecated; Run → Active/Completed/Archived</span></div>
+    <div class="spec-row"><span class="k">Sidebar</span><span class="v">TC → Folders; Run → Runs list</span></div>
+    <div class="spec-row"><span class="k">List table</span><span class="v">TC → ID/Title/Priority/Status/Folder/Assignee/Updated; Run → ID/Title/Progress/Status/Assignee/Started</span></div>
+  </div>
+
+  <div class="spec-card">
+    <div class="label">§3 — Dynamic Steps Height Algorithm</div>
+<pre class="code"><span class="kw">const</span> MIN_TAB_BODY_HEIGHT = <span class="num">220</span>;  <span class="cm">// px — guaranteed minimum</span>
+<span class="kw">const</span> TABS_BAR_HEIGHT = <span class="num">36</span>;       <span class="cm">// px — tab buttons bar</span>
+<span class="kw">const</span> TOGGLE_HEIGHT = <span class="num">34</span>;        <span class="cm">// px — steps toggle bar</span>
+<span class="kw">const</span> RESIZE_HANDLE = <span class="num">6</span>;         <span class="cm">// px — drag handle</span>
+
+<span class="kw">function</span> calcMaxStepsHeight(splitEl) {
+  <span class="kw">const</span> splitH = splitEl.clientHeight;
+  <span class="kw">const</span> reserved = TOGGLE_HEIGHT + RESIZE_HANDLE
+                 + TABS_BAR_HEIGHT + MIN_TAB_BODY_HEIGHT;
+  <span class="kw">const</span> maxSteps = splitH - reserved;
+  <span class="kw">return</span> Math.max(<span class="num">80</span>, Math.min(maxSteps, splitH * <span class="num">0.55</span>));
+}
+</pre>
+    <div class="spec-row"><span class="k">Min steps height</span><span class="v">80px</span></div>
+    <div class="spec-row"><span class="k">Max steps height</span><span class="v">55% of dp-split</span></div>
+    <div class="spec-row"><span class="k">Min tab body</span><span class="v">220px guaranteed</span></div>
+  </div>
+
+  <div class="spec-card">
+    <div class="label">§4 — Drag Resize Handle Spec</div>
+    <div class="spec-row"><span class="k">Handle height</span><span class="v">6px</span></div>
+    <div class="spec-row"><span class="k">Grab indicator</span><span class="v">32px × 3px pill, #CBD5E1 → #6366F1 on hover</span></div>
+    <div class="spec-row"><span class="k">Cursor</span><span class="v">row-resize</span></div>
+    <div class="spec-row"><span class="k">Double-click</span><span class="v">Reset to default calc()</span></div>
+    <div class="spec-row"><span class="k">Hidden when</span><span class="v">Steps collapsed</span></div>
+  </div>
+
+  <div class="spec-card">
+    <div class="label">§5 — Context-Specific Slots</div>
+    <h4>TC Context</h4>
+    <div class="spec-row"><span class="k">dp-desc</span><span class="v">Visible</span></div>
+    <div class="spec-row"><span class="k">dp-actions-bar</span><span class="v">Hidden</span></div>
+    <div class="spec-row"><span class="k">dp-step-actions</span><span class="v">Hidden — no mini buttons</span></div>
+    <div class="spec-row"><span class="k">dp-bottom-actions</span><span class="v">Visible — Edit + Delete</span></div>
+    <h4>Run Context</h4>
+    <div class="spec-row"><span class="k">dp-desc</span><span class="v">Hidden</span></div>
+    <div class="spec-row"><span class="k">dp-actions-bar</span><span class="v">Visible — Status + Pass&Next + Nav</span></div>
+    <div class="spec-row"><span class="k">dp-step-actions</span><span class="v">Visible — 22px mini Pass/Fail</span></div>
+    <div class="spec-row"><span class="k">dp-bottom-actions</span><span class="v">Hidden</span></div>
+  </div>
+
+  <div class="spec-card">
+    <div class="label">§★ — Interactive Demo Controls</div>
+    <h4>Step Count Simulator</h4>
+    <div class="spec-row"><span class="k">Toggle</span><span class="v">"7 Steps" vs "2 Steps" — recalculates height + progress</span></div>
+    <div class="spec-row"><span class="k">Context switch</span><span class="v">Changes page header, nav, lifecycle tabs, sidebar, list table + panel slots</span></div>
+    <div class="rec-box"><strong>Test flow:</strong> Start in TC → switch to Run → toggle 2 Steps → drag resize → collapse → expand → switch back to TC.</div>
+  </div>
+</div><!-- /spec-panel -->
+
+
+<script>
+// ═══════════════════════════════════════════════
+// CONTEXT SWITCHING (demo) — now page-level too
+// ═══════════════════════════════════════════════
+let currentContext = 'tc';
+
+function switchContext(ctx) {
+  currentContext = ctx;
+  // Update demo bar buttons
+  document.querySelectorAll('.ctx-btn[onclick^="switchContext"]').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.ctx-btn[onclick="switchContext('${ctx}')"]`).classList.add('active');
+
+  // ── Page-level changes ──
+  const navTC = document.getElementById('navTC');
+  const navRuns = document.getElementById('navRuns');
+  const pageTitle = document.getElementById('pageTitle');
+  const pageCount = document.getElementById('pageCount');
+  const aiGenBtn = document.getElementById('aiGenBtn');
+  const lcTabs = document.getElementById('lifecycleTabs');
+  const runLcTabs = document.getElementById('runLifecycleTabs');
+  const tcTable = document.getElementById('tcTable');
+  const runTable = document.getElementById('runTable');
+  const listSearchInput = document.getElementById('listSearchInput');
+
+  if (ctx === 'tc') {
+    navTC.classList.add('active'); navRuns.classList.remove('active');
+    pageTitle.textContent = 'Test Cases';
+    pageCount.textContent = '· 40 test cases';
+    aiGenBtn.innerHTML = '<span class="sparkle">✨</span> Generate with AI';
+    aiGenBtn.style.background = 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)';
+    lcTabs.classList.remove('ctx-hidden'); runLcTabs.classList.add('ctx-hidden');
+    tcTable.classList.remove('ctx-hidden'); runTable.classList.add('ctx-hidden');
+    listSearchInput.placeholder = 'Search test cases...';
+  } else {
+    navTC.classList.remove('active'); navRuns.classList.add('active');
+    pageTitle.textContent = 'Runs & Results';
+    pageCount.textContent = '· 20 runs';
+    aiGenBtn.innerHTML = '<i class="ri-play-circle-line"></i> Start New Run';
+    aiGenBtn.style.background = 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)';
+    lcTabs.classList.add('ctx-hidden'); runLcTabs.classList.remove('ctx-hidden');
+    tcTable.classList.add('ctx-hidden'); runTable.classList.remove('ctx-hidden');
+    listSearchInput.placeholder = 'Search runs...';
+  }
+
+  // ── Sidebar folders ──
+  document.querySelectorAll('.sb-folder[data-ctx="tc"]').forEach(f => {
+    f.classList.toggle('ctx-hidden', ctx !== 'tc');
+  });
+  document.querySelectorAll('.sb-folder[data-ctx="run"]').forEach(f => {
+    f.classList.toggle('ctx-hidden', ctx !== 'run');
+  });
+  document.getElementById('sbTitle').textContent = ctx === 'tc' ? 'Folders' : 'Runs';
+
+  // ── Detail Panel ──
+  const desc = document.getElementById('dpDesc');
+  const quickActions = document.getElementById('dpQuickActions');
+  const bottomActions = document.getElementById('dpBottomActions');
+  const stepsProgress = document.getElementById('stepsProgress');
+  const stepActions = document.querySelectorAll('.dp-step-actions');
+
+  if (ctx === 'tc') {
+    desc.style.display = '';
+    quickActions.classList.add('hidden');
+    bottomActions.classList.remove('hidden');
+    stepsProgress.classList.add('hidden');
+    stepActions.forEach(a => a.classList.add('hidden'));
+    document.querySelectorAll('.dp-step').forEach(s => {
+      s.classList.remove('step-passed', 'step-failed');
+    });
+  } else {
+    desc.style.display = 'none';
+    quickActions.classList.remove('hidden');
+    bottomActions.classList.add('hidden');
+    stepsProgress.classList.remove('hidden');
+    stepActions.forEach(a => a.classList.remove('hidden'));
+    restoreStepStates();
+  }
+  requestAnimationFrame(calcAndApplyStepsHeight);
+}
+
+// ═══════════════════════════════════════════════
+// ★ STEP COUNT SIMULATOR (7 vs 2 steps)
+// ═══════════════════════════════════════════════
+let currentStepCount = 7;
+
+function switchStepCount(count) {
+  currentStepCount = count;
+  document.querySelectorAll('.ctx-btn[onclick^="switchStepCount"]').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.ctx-btn[onclick="switchStepCount(${count})"]`).classList.add('active');
+
+  document.querySelectorAll('.dp-step').forEach((step, i) => {
+    step.style.display = (count === 2 && i >= 2) ? 'none' : '';
+  });
+
+  const toggleText = document.querySelector('.dp-steps-toggle-left span');
+  if (toggleText) toggleText.textContent = `${count} steps · 2 attachments`;
+
+  updateProgressCounter();
+  requestAnimationFrame(calcAndApplyStepsHeight);
+}
+
+function restoreStepStates() {
+  const states = { 1: 'pass', 2: 'pass', 3: 'pass', 4: 'pass', 5: 'fail', 6: null, 7: null };
+  document.querySelectorAll('.dp-step').forEach(step => {
+    const num = step.dataset.step;
+    step.classList.remove('step-passed', 'step-failed');
+    if (states[num] === 'pass') step.classList.add('step-passed');
+    else if (states[num] === 'fail') step.classList.add('step-failed');
+    step.querySelectorAll('.step-mini-btn').forEach(btn => btn.classList.remove('active'));
+    if (states[num] === 'pass') step.querySelector('.mini-pass')?.classList.add('active');
+    if (states[num] === 'fail') step.querySelector('.mini-fail')?.classList.add('active');
+  });
+}
+
+// ═══════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════
+document.querySelectorAll('.dp-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.dp-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.dp-tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// Lifecycle tab clicks
+document.querySelectorAll('.lc-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    this.closest('.lifecycle-tabs').querySelectorAll('.lc-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ═══════════════════════════════════════════════
+// STEPS COLLAPSE/EXPAND
+// ═══════════════════════════════════════════════
+function toggleSteps() {
+  const area = document.getElementById('stepsArea');
+  const toggle = document.getElementById('stepsToggle');
+  const handle = document.getElementById('resizeHandle');
+  const collapsed = !area.classList.contains('collapsed');
+  area.classList.toggle('collapsed');
+  toggle.classList.toggle('collapsed');
+  if (collapsed) {
+    handle.classList.add('hidden');
+  } else {
+    handle.classList.remove('hidden');
+    requestAnimationFrame(calcAndApplyStepsHeight);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ★ DYNAMIC STEPS HEIGHT
+// ═══════════════════════════════════════════════
+const MIN_TAB_BODY = 220;
+const TABS_BAR_H = 36;
+const TOGGLE_H = 34;
+const HANDLE_H = 6;
+
+function calcAndApplyStepsHeight() {
+  const split = document.getElementById('dpSplit');
+  const area = document.getElementById('stepsArea');
+  if (!split || !area || area.classList.contains('collapsed')) return;
+  const splitH = split.clientHeight;
+  const reserved = TOGGLE_H + HANDLE_H + TABS_BAR_H + MIN_TAB_BODY;
+  const maxSteps = splitH - reserved;
+  const clamped = Math.max(80, Math.min(maxSteps, splitH * 0.55));
+  area.style.maxHeight = clamped + 'px';
+}
+
+requestAnimationFrame(calcAndApplyStepsHeight);
+window.addEventListener('resize', () => requestAnimationFrame(calcAndApplyStepsHeight));
+
+// ═══════════════════════════════════════════════
+// ★ DRAG RESIZE HANDLE
+// ═══════════════════════════════════════════════
+(function initDragResize() {
+  const handle = document.getElementById('resizeHandle');
+  const area = document.getElementById('stepsArea');
+  const split = document.getElementById('dpSplit');
+  let isDragging = false, startY = 0, startH = 0;
+
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    isDragging = true;
+    startY = e.clientY;
+    startH = area.offsetHeight;
+    handle.classList.add('dragging');
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const delta = e.clientY - startY;
+    const splitH = split.clientHeight;
+    const maxH = splitH - TOGGLE_H - HANDLE_H - TABS_BAR_H - MIN_TAB_BODY;
+    const newH = Math.max(80, Math.min(startH + delta, maxH));
+    area.style.maxHeight = newH + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+  handle.addEventListener('dblclick', () => calcAndApplyStepsHeight());
+})();
+
+// ═══════════════════════════════════════════════
+// STEP MINI BUTTONS (Run context)
+// ═══════════════════════════════════════════════
+function toggleStep(btn, stepNum, type) {
+  const step = btn.closest('.dp-step');
+  const passBtn = step.querySelector('.mini-pass');
+  const failBtn = step.querySelector('.mini-fail');
+  if (btn.classList.contains('active')) {
+    btn.classList.remove('active');
+    step.classList.remove('step-passed', 'step-failed');
+  } else {
+    passBtn.classList.remove('active');
+    failBtn.classList.remove('active');
+    btn.classList.add('active');
+    step.classList.remove('step-passed', 'step-failed');
+    if (type === 'pass') step.classList.add('step-passed');
+    else step.classList.add('step-failed');
+  }
+  updateProgressCounter();
+}
+
+// ═══════════════════════════════════════════════
+// SPEC PANEL TOGGLE
+// ═══════════════════════════════════════════════
+function toggleSpec() {
+  const panel = document.getElementById('specPanel');
+  const btn = document.getElementById('specToggle');
+  const isVisible = panel.classList.contains('visible');
+  panel.classList.toggle('visible');
+  btn.classList.toggle('active');
+  document.body.classList.toggle('show-spec');
+  if (!isVisible) {
+    requestAnimationFrame(() => panel.scrollIntoView({ behavior: 'smooth' }));
+  }
+}
+
+function updateProgressCounter() {
+  const visibleSteps = [...document.querySelectorAll('.dp-step')].filter(s => s.style.display !== 'none');
+  const passed = visibleSteps.filter(s => s.classList.contains('step-passed')).length;
+  const counter = document.getElementById('passedCount');
+  if (counter) counter.textContent = passed;
+  const totalEl = document.querySelector('.total-count');
+  if (totalEl) totalEl.textContent = visibleSteps.length;
+}
+</script>
+</body>
+</html>

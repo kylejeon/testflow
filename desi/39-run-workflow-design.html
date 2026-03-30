@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — 39. Run Workflow Usability Enhancement</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  /* ─── Reset & Base ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #F8FAFC; color: #1E293B; font-size: 13px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── Design Spec Document Layout ─── */
+  .spec-container {
+    max-width: 1120px; margin: 0 auto; padding: 2.5rem 2rem 4rem;
+  }
+
+  /* ─── Header ─── */
+  .spec-header {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding-bottom: 1.5rem; border-bottom: 1px solid #E2E8F0; margin-bottom: 2rem;
+  }
+  .spec-logo {
+    width: 34px; height: 34px; background: #6366F1; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-family: 'Pacifico', cursive; font-size: 16px;
+  }
+  .spec-title-group { flex: 1; }
+  .spec-title { font-size: 1.375rem; font-weight: 700; color: #0F172A; }
+  .spec-subtitle { font-size: 0.8125rem; color: #64748B; margin-top: 2px; }
+  .spec-badge {
+    padding: 4px 10px; border-radius: 6px; font-size: 0.6875rem; font-weight: 600;
+    background: #EEF2FF; color: #6366F1;
+  }
+
+  /* ─── Section ─── */
+  .spec-section {
+    margin-bottom: 2.5rem;
+  }
+  .spec-section-title {
+    font-size: 1rem; font-weight: 700; color: #0F172A;
+    margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .spec-section-title .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 8px; font-size: 0.75rem; font-weight: 700;
+    background: #6366F1; color: #fff; flex-shrink: 0;
+  }
+  .spec-section-desc {
+    font-size: 0.8125rem; color: #64748B; margin-bottom: 1.25rem; line-height: 1.6;
+  }
+
+  /* ─── Mockup Frame ─── */
+  .mockup-frame {
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 12px;
+    overflow: hidden; margin-bottom: 1.5rem;
+  }
+  .mockup-label {
+    padding: 10px 16px; background: #F8FAFC; border-bottom: 1px solid #E2E8F0;
+    font-size: 0.6875rem; font-weight: 600; color: #64748B; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .mockup-body {
+    padding: 1.75rem;
+  }
+
+  /* ─── Quick Status Bar (Item ①) ─── */
+  .quick-status-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px; background: #fff; border: 1px solid #E2E8F0; border-radius: 10px;
+  }
+  .qs-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 32px; border-radius: 6px; font-size: 0.8125rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s ease; border: none; position: relative;
+  }
+  .qs-btn-pass {
+    background: #22C55E; color: #fff; min-width: 80px; padding: 0 14px;
+  }
+  .qs-btn-pass:hover { background: #16A34A; }
+  .qs-btn-fail {
+    background: #EF4444; color: #fff; min-width: 80px; padding: 0 14px;
+  }
+  .qs-btn-fail:hover { background: #DC2626; }
+  .qs-btn-block {
+    background: #fff; color: #F59E0B; border: 1.5px solid #F59E0B; min-width: 60px; padding: 0 12px;
+  }
+  .qs-btn-block:hover { background: #FFFBEB; }
+  .qs-btn-retest {
+    background: #fff; color: #8B5CF6; border: 1.5px solid #8B5CF6; min-width: 60px; padding: 0 12px;
+  }
+  .qs-btn-retest:hover { background: #F5F3FF; }
+  .qs-separator {
+    width: 1px; height: 20px; background: #E2E8F0; margin: 0 4px;
+  }
+  .qs-btn-add {
+    background: #fff; color: #6366F1; border: 1.5px solid #6366F1;
+    padding: 0 14px; min-width: 100px;
+  }
+  .qs-btn-add:hover { background: #EEF2FF; }
+  .qs-btn-add i { font-size: 14px; }
+  .qs-nav-group { display: flex; gap: 4px; margin-left: auto; }
+  .qs-nav-btn {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid #E2E8F0;
+    background: #fff; color: #64748B; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px; transition: all 0.15s ease;
+  }
+  .qs-nav-btn:hover { background: #F1F5F9; color: #1E293B; }
+
+  /* Keyboard hints */
+  .qs-btn .kbd-hint {
+    display: block; font-size: 0.5625rem; color: rgba(255,255,255,0.7);
+    font-weight: 500; margin-top: -2px; letter-spacing: 0.02em;
+  }
+  .qs-btn-block .kbd-hint, .qs-btn-retest .kbd-hint {
+    color: inherit; opacity: 0.5;
+  }
+  .qs-btn-add .kbd-hint { color: #6366F1; opacity: 0.5; }
+  .qs-nav-btn .kbd-hint {
+    font-size: 0.5rem; color: #94A3B8; position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%);
+  }
+  .qs-nav-btn { position: relative; }
+
+  /* ─── Inline Note Popup (Item ②) ─── */
+  .popup-demo-container {
+    position: relative; display: flex; justify-content: flex-start; min-height: 300px; padding-top: 60px;
+  }
+  .inline-popup {
+    width: 340px; background: #fff; border: 1px solid #E2E8F0; border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12); z-index: 50;
+    animation: popupFadeIn 0.15s ease-out;
+  }
+  @keyframes popupFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .popup-arrow {
+    position: absolute; top: -6px; left: 24px;
+    width: 12px; height: 12px; background: #fff; border: 1px solid #E2E8F0;
+    border-right: none; border-bottom: none;
+    transform: rotate(45deg);
+  }
+  .popup-header {
+    padding: 14px 16px 10px; display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid #F1F5F9;
+  }
+  .popup-status-icon {
+    width: 20px; height: 20px; border-radius: 5px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #fff;
+  }
+  .popup-status-icon.fail { background: #EF4444; }
+  .popup-status-icon.block { background: #F59E0B; }
+  .popup-header-text { font-size: 0.8125rem; font-weight: 500; color: #475569; }
+  .popup-body { padding: 12px 16px; }
+  .popup-textarea {
+    width: 100%; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 12px;
+    font-family: 'Inter', sans-serif; font-size: 0.8125rem; color: #1E293B;
+    resize: none; outline: none; transition: border-color 0.15s;
+    line-height: 1.5;
+  }
+  .popup-textarea:focus { border-color: #6366F1; }
+  .popup-textarea::placeholder { color: #94A3B8; }
+  .popup-footer {
+    padding: 10px 16px 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .popup-btn {
+    height: 32px; border-radius: 6px; font-size: 0.8125rem; font-weight: 600;
+    cursor: pointer; padding: 0 14px; transition: all 0.15s; display: inline-flex;
+    align-items: center; justify-content: center;
+  }
+  .popup-btn-skip {
+    background: #fff; color: #64748B; border: 1px solid #E2E8F0;
+  }
+  .popup-btn-skip:hover { background: #F8FAFC; }
+  .popup-btn-save-fail {
+    background: #EF4444; color: #fff; border: none;
+  }
+  .popup-btn-save-fail:hover { background: #DC2626; }
+  .popup-btn-save-block {
+    background: #F59E0B; color: #fff; border: none;
+  }
+  .popup-btn-save-block:hover { background: #D97706; }
+  .popup-escalation {
+    margin-left: auto; font-size: 0.75rem; color: #6366F1; cursor: pointer;
+    text-decoration: none; font-weight: 500;
+  }
+  .popup-escalation:hover { text-decoration: underline; }
+
+  /* ─── Step-Level Results (Item ③) ─── */
+  .steps-area { }
+  .step-toggle-bar {
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+    background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
+    cursor: pointer; user-select: none; margin-bottom: 10px;
+  }
+  .step-toggle-bar i { font-size: 14px; color: #64748B; transition: transform 0.2s; }
+  .step-toggle-bar .label { font-size: 0.75rem; font-weight: 600; color: #475569; }
+  .step-toggle-bar .progress { font-size: 0.6875rem; color: #22C55E; font-weight: 600; margin-left: auto; }
+
+  .step-row {
+    display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+    border: 1px solid #E2E8F0; border-radius: 8px; margin-bottom: 6px;
+    transition: background 0.15s;
+  }
+  .step-row.step-passed { background: #F0FDF4; border-color: #BBF7D0; }
+  .step-row.step-failed { background: #FEF2F2; border-color: #FECACA; }
+
+  .step-num {
+    width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center;
+    justify-content: center; font-size: 0.6875rem; font-weight: 700; flex-shrink: 0;
+    background: #F1F5F9; color: #64748B;
+  }
+  .step-passed .step-num { background: #22C55E; color: #fff; }
+  .step-failed .step-num { background: #EF4444; color: #fff; }
+
+  .step-content { flex: 1; min-width: 0; }
+  .step-action { font-size: 0.8125rem; color: #1E293B; }
+  .step-expected {
+    font-size: 0.75rem; color: #64748B; margin-top: 4px;
+    padding-left: 10px; border-left: 2px solid #E2E8F0;
+  }
+
+  .step-mini-btns {
+    display: flex; gap: 4px; flex-shrink: 0; margin-top: 1px;
+  }
+  .step-mini-btn {
+    width: 22px; height: 22px; border-radius: 4px; border: 1px solid #E2E8F0;
+    background: #fff; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 11px; color: #94A3B8; transition: all 0.15s;
+  }
+  .step-mini-btn:hover { border-color: #CBD5E1; }
+  .step-mini-btn.pass-active {
+    background: #22C55E; border-color: #22C55E; color: #fff;
+  }
+  .step-mini-btn.fail-active {
+    background: #EF4444; border-color: #EF4444; color: #fff;
+  }
+
+  /* ─── Add Result Modal (Item ④) ─── */
+  .modal-overlay {
+    background: rgba(0,0,0,0.4); border-radius: 12px; padding: 2rem;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 500px;
+  }
+  .modal {
+    background: #fff; border-radius: 12px; width: 520px; max-height: 480px;
+    overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+  .modal-header {
+    padding: 18px 24px; border-bottom: 1px solid #E2E8F0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 1rem; font-weight: 700; color: #0F172A; }
+  .modal-close {
+    width: 28px; height: 28px; border-radius: 6px; border: none; background: #F1F5F9;
+    color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .modal-body { padding: 20px 24px; }
+  .modal-field { margin-bottom: 16px; }
+  .modal-label {
+    font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 6px; display: block;
+  }
+  .modal-status-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  }
+  .modal-status-opt {
+    height: 36px; border-radius: 8px; border: 1.5px solid #E2E8F0; background: #fff;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .modal-status-opt.active-pass { border-color: #22C55E; background: #F0FDF4; color: #22C55E; }
+  .modal-status-opt.active-fail { border-color: #EF4444; background: #FEF2F2; color: #EF4444; }
+  .modal-status-opt.active-block { border-color: #F59E0B; background: #FFFBEB; color: #F59E0B; }
+  .modal-status-opt.active-retest { border-color: #8B5CF6; background: #F5F3FF; color: #8B5CF6; }
+
+  .modal-textarea {
+    width: 100%; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 12px;
+    font-family: 'Inter', sans-serif; font-size: 0.8125rem; resize: none; outline: none;
+    transition: border-color 0.15s; color: #1E293B;
+  }
+  .modal-textarea:focus { border-color: #6366F1; }
+  .modal-show-more {
+    font-size: 0.75rem; color: #6366F1; cursor: pointer; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;
+  }
+  .modal-expanded-section {
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid #F1F5F9;
+  }
+  .modal-attach-zone {
+    border: 1.5px dashed #E2E8F0; border-radius: 8px; padding: 20px;
+    text-align: center; color: #94A3B8; font-size: 0.8125rem; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .modal-attach-zone:hover { border-color: #6366F1; color: #6366F1; background: #FAFAFE; }
+  .modal-attach-zone i { font-size: 20px; display: block; margin-bottom: 4px; }
+
+  .modal-footer {
+    padding: 14px 24px; border-top: 1px solid #E2E8F0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .modal-footer-left { display: flex; align-items: center; gap: 10px; }
+  .modal-footer-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .auto-advance-check {
+    display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #64748B;
+    cursor: pointer; user-select: none;
+  }
+  .auto-advance-check input[type="checkbox"] {
+    width: 14px; height: 14px; accent-color: #6366F1;
+  }
+  .modal-btn {
+    height: 34px; border-radius: 8px; font-size: 0.8125rem; font-weight: 600;
+    cursor: pointer; padding: 0 16px; transition: all 0.15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .modal-btn-cancel {
+    background: #fff; color: #64748B; border: 1px solid #E2E8F0;
+  }
+  .modal-btn-cancel:hover { background: #F8FAFC; }
+  .modal-btn-save {
+    background: #6366F1; color: #fff; border: none;
+  }
+  .modal-btn-save:hover { background: #4F46E5; }
+  .modal-btn-save-next {
+    border: none; color: #fff;
+  }
+
+  /* ─── Keyboard Shortcuts Table (Item ⑤) ─── */
+  .kbd-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1px solid #E2E8F0; border-radius: 10px; overflow: hidden;
+  }
+  .kbd-table th {
+    background: #F8FAFC; padding: 10px 16px; font-size: 0.6875rem;
+    font-weight: 600; color: #64748B; text-align: left; text-transform: uppercase;
+    letter-spacing: 0.05em; border-bottom: 1px solid #E2E8F0;
+  }
+  .kbd-table td {
+    padding: 10px 16px; font-size: 0.8125rem; border-bottom: 1px solid #F1F5F9;
+  }
+  .kbd-table tr:last-child td { border-bottom: none; }
+  .kbd-key {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 24px; height: 24px; padding: 0 7px; border-radius: 5px;
+    background: #F1F5F9; border: 1px solid #E2E8F0; font-size: 0.6875rem;
+    font-weight: 700; color: #475569; font-family: 'Inter', monospace;
+  }
+
+  /* ─── Flow Map (Item ⑧) ─── */
+  .flow-map {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+  .flow-node {
+    padding: 10px 20px; border-radius: 10px; font-size: 0.8125rem; font-weight: 600;
+    text-align: center; min-width: 180px;
+  }
+  .flow-node-start { background: #EEF2FF; color: #6366F1; border: 1.5px solid #C7D2FE; }
+  .flow-node-action { background: #fff; color: #1E293B; border: 1.5px solid #E2E8F0; }
+  .flow-node-pass { background: #F0FDF4; color: #22C55E; border: 1.5px solid #BBF7D0; }
+  .flow-node-fail { background: #FEF2F2; color: #EF4444; border: 1.5px solid #FECACA; }
+  .flow-node-modal { background: #F5F3FF; color: #8B5CF6; border: 1.5px solid #DDD6FE; }
+  .flow-node-db { background: #F8FAFC; color: #64748B; border: 1.5px solid #E2E8F0; }
+  .flow-arrow {
+    display: flex; flex-direction: column; align-items: center; color: #CBD5E1;
+    font-size: 18px; line-height: 1; padding: 4px 0;
+  }
+  .flow-arrow-label {
+    font-size: 0.625rem; color: #94A3B8; font-weight: 500; margin-top: 2px;
+  }
+  .flow-branch {
+    display: flex; gap: 24px; align-items: flex-start; justify-content: center;
+  }
+  .flow-branch-col {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+
+  /* ─── Competitor Table (Item ⑦) ─── */
+  .comp-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1px solid #E2E8F0; border-radius: 10px; overflow: hidden;
+    font-size: 0.8125rem;
+  }
+  .comp-table th {
+    background: #F8FAFC; padding: 10px 14px; font-size: 0.6875rem; font-weight: 600;
+    color: #64748B; text-align: left; text-transform: uppercase; letter-spacing: 0.05em;
+    border-bottom: 1px solid #E2E8F0;
+  }
+  .comp-table td {
+    padding: 10px 14px; border-bottom: 1px solid #F1F5F9; vertical-align: top;
+  }
+  .comp-table tr:last-child td { border-bottom: none; }
+  .comp-table .highlight { background: #FAFAFE; }
+  .comp-check { color: #22C55E; font-weight: 700; }
+  .comp-cross { color: #EF4444; font-weight: 700; }
+  .comp-partial { color: #F59E0B; font-weight: 700; }
+
+  /* ─── Dev Handoff Spec ─── */
+  .handoff-section {
+    margin-top: 3rem; padding-top: 2rem; border-top: 2px solid #6366F1;
+  }
+  .handoff-title {
+    font-size: 1.125rem; font-weight: 700; color: #6366F1; margin-bottom: 0.25rem;
+  }
+  .handoff-subtitle {
+    font-size: 0.8125rem; color: #64748B; margin-bottom: 2rem;
+  }
+  .handoff-h2 {
+    font-size: 0.9375rem; font-weight: 700; color: #0F172A; margin: 2rem 0 0.75rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid #E2E8F0;
+  }
+  .handoff-h3 {
+    font-size: 0.8125rem; font-weight: 700; color: #334155; margin: 1.25rem 0 0.5rem;
+  }
+  .handoff-p {
+    font-size: 0.8125rem; color: #475569; line-height: 1.7; margin-bottom: 0.75rem;
+  }
+  .handoff-code {
+    background: #1E293B; color: #E2E8F0; border-radius: 10px; padding: 16px 20px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.75rem;
+    line-height: 1.7; overflow-x: auto; margin: 0.75rem 0 1rem; white-space: pre;
+  }
+  .handoff-code .comment { color: #64748B; }
+  .handoff-code .keyword { color: #C084FC; }
+  .handoff-code .string { color: #34D399; }
+  .handoff-code .type { color: #38BDF8; }
+  .handoff-code .prop { color: #FB923C; }
+  .handoff-code .tag { color: #F472B6; }
+  .handoff-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;
+    margin: 0.75rem 0 1rem; font-size: 0.75rem;
+  }
+  .handoff-table th {
+    background: #F8FAFC; padding: 8px 12px; font-weight: 600; color: #475569;
+    text-align: left; border-bottom: 1px solid #E2E8F0;
+  }
+  .handoff-table td {
+    padding: 8px 12px; border-bottom: 1px solid #F1F5F9; color: #1E293B;
+  }
+  .handoff-table tr:last-child td { border-bottom: none; }
+  .handoff-ul {
+    font-size: 0.8125rem; color: #475569; line-height: 1.8; margin: 0.5rem 0 1rem 1.25rem;
+  }
+  .handoff-note {
+    padding: 12px 16px; border-radius: 8px; font-size: 0.75rem; line-height: 1.6;
+    margin: 0.75rem 0 1rem;
+  }
+  .handoff-note.info { background: #EFF6FF; color: #1E40AF; border-left: 3px solid #3B82F6; }
+  .handoff-note.warn { background: #FFFBEB; color: #92400E; border-left: 3px solid #F59E0B; }
+  .handoff-note.success { background: #F0FDF4; color: #166534; border-left: 3px solid #22C55E; }
+
+  /* ─── Tab Switcher for Modal States ─── */
+  .state-tabs {
+    display: flex; gap: 0; border: 1px solid #E2E8F0; border-radius: 8px;
+    overflow: hidden; margin-bottom: 16px; width: fit-content;
+  }
+  .state-tab {
+    padding: 7px 16px; font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    background: #fff; color: #64748B; border-right: 1px solid #E2E8F0;
+    transition: all 0.15s; user-select: none;
+  }
+  .state-tab:last-child { border-right: none; }
+  .state-tab.active { background: #6366F1; color: #fff; }
+  .state-tab:hover:not(.active) { background: #F8FAFC; }
+
+  .state-panel { display: none; }
+  .state-panel.active { display: block; }
+
+  /* ─── Jira Integration (Item ⑨) ─── */
+  .jira-actions {
+    display: flex; gap: 6px; padding: 8px 16px; border-top: 1px solid #F1F5F9;
+  }
+  .jira-btn {
+    display: inline-flex; align-items: center; gap: 5px; height: 28px;
+    padding: 0 10px; border-radius: 6px; font-size: 0.6875rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; border: 1px solid #E2E8F0; background: #fff;
+    color: #2563EB;
+  }
+  .jira-btn:hover { background: #EFF6FF; border-color: #BFDBFE; }
+  .jira-btn i { font-size: 12px; }
+  .jira-btn.jira-create { color: #6366F1; }
+  .jira-btn.jira-create:hover { background: #EEF2FF; border-color: #C7D2FE; }
+
+  .jira-logo-sm {
+    width: 14px; height: 14px; border-radius: 3px; background: #2563EB;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 8px; font-weight: 800; flex-shrink: 0;
+  }
+
+  /* Jira Link Issue section in modal */
+  .jira-issue-section {
+    margin-top: 12px; padding: 12px; background: #F8FAFC; border: 1px solid #E2E8F0;
+    border-radius: 10px;
+  }
+  .jira-section-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .jira-logo {
+    width: 20px; height: 20px; border-radius: 5px; background: #2563EB;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 10px; font-weight: 800;
+  }
+  .jira-section-title { font-size: 0.8125rem; font-weight: 600; color: #1E293B; }
+  .jira-search-row {
+    display: flex; gap: 8px; margin-bottom: 8px;
+  }
+  .jira-search-input {
+    flex: 1; height: 34px; border: 1px solid #E2E8F0; border-radius: 8px;
+    padding: 0 12px 0 32px; font-size: 0.8125rem; font-family: 'Inter', sans-serif;
+    outline: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") no-repeat 10px center;
+    transition: border-color 0.15s;
+  }
+  .jira-search-input:focus { border-color: #2563EB; }
+  .jira-search-input::placeholder { color: #94A3B8; }
+  .jira-create-btn {
+    height: 34px; padding: 0 14px; border-radius: 8px; border: 1.5px solid #6366F1;
+    background: #fff; color: #6366F1; font-size: 0.8125rem; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 5px;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .jira-create-btn:hover { background: #EEF2FF; }
+  .jira-linked-issue {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 8px;
+  }
+  .jira-issue-key {
+    font-size: 0.75rem; font-weight: 700; color: #2563EB; font-family: 'SF Mono', 'Consolas', monospace;
+  }
+  .jira-issue-title { font-size: 0.8125rem; color: #475569; flex: 1; }
+  .jira-issue-remove {
+    width: 20px; height: 20px; border-radius: 4px; border: none; background: none;
+    color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .jira-issue-remove:hover { color: #EF4444; background: #FEF2F2; }
+
+  /* Jira Create Issue Modal */
+  .jira-create-modal {
+    background: #fff; border-radius: 12px; width: 560px; max-height: 540px;
+    overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+  .jira-form-field { margin-bottom: 14px; }
+  .jira-form-label {
+    font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 5px; display: block;
+  }
+  .jira-form-input {
+    width: 100%; height: 34px; border: 1px solid #E2E8F0; border-radius: 8px;
+    padding: 0 12px; font-size: 0.8125rem; font-family: 'Inter', sans-serif;
+    outline: none; color: #1E293B; transition: border-color 0.15s;
+  }
+  .jira-form-input:focus { border-color: #2563EB; }
+  .jira-form-select {
+    width: 100%; height: 34px; border: 1px solid #E2E8F0; border-radius: 8px;
+    padding: 0 12px; font-size: 0.8125rem; font-family: 'Inter', sans-serif;
+    outline: none; color: #1E293B; background: #fff; cursor: pointer;
+    appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  .jira-form-textarea {
+    width: 100%; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 12px;
+    font-size: 0.8125rem; font-family: 'Inter', sans-serif; resize: none;
+    outline: none; color: #1E293B; line-height: 1.5; transition: border-color 0.15s;
+  }
+  .jira-form-textarea:focus { border-color: #2563EB; }
+  .jira-form-row { display: flex; gap: 12px; }
+  .jira-form-row > * { flex: 1; }
+  .jira-autofill-badge {
+    display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+    background: #F0FDF4; color: #16A34A; border-radius: 4px;
+    font-size: 0.625rem; font-weight: 600; margin-left: 6px;
+  }
+  .jira-footer {
+    padding: 14px 24px; border-top: 1px solid #E2E8F0;
+    display: flex; align-items: center; gap: 8px; justify-content: flex-end;
+  }
+  .jira-btn-cancel {
+    height: 34px; padding: 0 16px; border-radius: 8px; border: 1px solid #E2E8F0;
+    background: #fff; color: #64748B; font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+  }
+  .jira-btn-cancel:hover { background: #F8FAFC; }
+  .jira-btn-submit {
+    height: 34px; padding: 0 16px; border-radius: 8px; border: none;
+    background: #2563EB; color: #fff; font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .jira-btn-submit:hover { background: #1D4ED8; }
+</style>
+</head>
+<body>
+<div class="spec-container">
+
+  <!-- ═══ Header ═══ -->
+  <div class="spec-header">
+    <div class="spec-logo">t</div>
+    <div class="spec-title-group">
+      <div class="spec-title">Run Workflow Usability Enhancement</div>
+      <div class="spec-subtitle">Design Spec #39 — Interactive Mockups + Dev Handoff</div>
+    </div>
+    <span class="spec-badge">9 Design Items</span>
+  </div>
+
+  <!-- ═══ Item ① Quick Status Bar ═══ -->
+  <div class="spec-section">
+    <div class="spec-section-title"><span class="num">1</span> Quick Status Bar</div>
+    <div class="spec-section-desc">
+      4-button quick status bar with primary (filled) and secondary (outline) button hierarchy.
+      Pass & Retest are instant-apply; Fail & Block trigger inline note popup.
+      Includes Add Result (full modal) and TC navigation.
+    </div>
+    <div class="mockup-frame">
+      <div class="mockup-label">Quick Status Bar — Default State</div>
+      <div class="mockup-body" style="background: #F8FAFC;">
+        <div class="quick-status-bar">
+          <button class="qs-btn qs-btn-pass" onclick="demoQuickPass(this)">
+            <i class="ri-check-line"></i> Pass
+            <span class="kbd-hint">[P]</span>
+          </button>
+          <button class="qs-btn qs-btn-fail" id="failBtn" onclick="togglePopup('fail')">
+            <i class="ri-close-line"></i> Fail
+            <span class="kbd-hint">[F]</span>
+          </button>
+          <button class="qs-btn qs-btn-block" onclick="togglePopup('block')">
+            <i class="ri-spam-2-line"></i> Block
+            <span class="kbd-hint">[B]</span>
+          </button>
+          <button class="qs-btn qs-btn-retest" onclick="demoQuickPass(this)">
+            <i class="ri-refresh-line"></i> Retest
+            <span class="kbd-hint">[R]</span>
+          </button>
+          <div class="qs-separator"></div>
+          <button class="qs-btn qs-btn-add" onclick="showModal()">
+            <i class="ri-add-line"></i> Add Result
+            <span class="kbd-hint">[A]</span>
+          </button>
+          <div class="qs-nav-group">
+            <button class="qs-nav-btn" title="Previous TC">
+              <i class="ri-arrow-up-s-line"></i>
+              <span class="kbd-hint">K</span>
+            </button>
+            <button class="qs-nav-btn" title="Next TC">
+              <i class="ri-arrow-down-s-line"></i>
+              <span class="kbd-hint">J</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Item ② Fail/Block Inline Note Popup ═══ -->
+  <div class="spec-section">
+    <div class="spec-section-title"><span class="num">2</span> Fail / Block Inline Note Popup</div>
+    <div class="spec-section-desc">
+      340px absolute popup appears below the Fail or Block button. Optional note with auto-focus textarea.
+      "Skip & Next" submits without note; "Save & Next" submits with note.
+      "Open full modal →" escalates to full Add Result modal.
+    </div>
+    <div class="mockup-frame">
+      <div class="mockup-label">Fail Popup — Active State</div>
+      <div class="mockup-body">
+        <div class="popup-demo-container">
+          <!-- Anchoring button row -->
+          <div style="position: absolute; top: 16px; left: 0; display: flex; gap: 8px;">
+            <button class="qs-btn qs-btn-fail" style="opacity: 0.6;"><i class="ri-close-line"></i> Fail</button>
+          </div>
+          <!-- Popup -->
+          <div class="inline-popup" style="margin-top: 0; position: relative;">
+            <div class="popup-arrow"></div>
+            <div class="popup-header">
+              <div class="popup-status-icon fail"><i class="ri-close-line"></i></div>
+              <span class="popup-header-text">Add a note (optional)</span>
+            </div>
+            <div class="popup-body">
+              <textarea class="popup-textarea" rows="3" placeholder="What went wrong?"></textarea>
+            </div>
+            <div class="jira-actions">
+              <button class="jira-btn"><span class="jira-logo-sm">J</span> Link Jira Issue</button>
+              <button class="jira-btn jira-create"><i class="ri-add-line"></i> Create Jira Issue</button>
+            </div>
+            <div class="popup-footer">
+              <button class="popup-btn popup-btn-skip">Skip & Next</button>
+              <button class="popup-btn popup-btn-save-fail">Save & Next</button>
+              <a class="popup-escalation">Open full modal →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-frame">
+      <div class="mockup-label">Block Popup — Active State</div>
+      <div class="mockup-body">
+        <div style="position: relative; display: inline-block;">
+          <div class="inline-popup" style="position: relative;">
+            <div class="popup-arrow"></div>
+            <div class="popup-header">
+              <div class="popup-status-icon block"><i class="ri-spam-2-line"></i></div>
+              <span class="popup-header-text">Add a note (optional)</span>
+            </div>
+            <div class="popup-body">
+              <textarea class="popup-textarea" rows="3" placeholder="What's blocking this test?"></textarea>
+            </div>
+            <div class="jira-actions">
+              <button class="jira-btn"><span class="jira-logo-sm">J</span> Link Jira Issue</button>
+              <button class="jira-btn jira-create"><i class="ri-add-line"></i> Create Jira Issue</button>
+            </div>
+            <div class="popup-footer">
+              <button class="popup-btn popup-btn-skip">Skip & Next</button>
+              <button class="popup-btn popup-btn-save-block">Save & Next</button>
+              <a class="popup-escalation">Open full modal →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Item ③ Step-Level Inline Results ═══ -->
+  <div class="spec-section">
+    <div class="spec-section-title"><span class="num">3</span> Step-Level Inline Results</div>
+    <div class="spec-section-desc">
+      22px mini Pass/Fail buttons on each step row. Toggle bar shows real-time step progress count.
+      Step background changes on state: passed = green bg, failed = red bg.
+    </div>
+    <div class="mockup-frame">
+      <div class="mockup-label">Steps with Inline Pass/Fail — Mixed States</div>
+      <div class="mockup-body">
+        <div class="steps-area">
+          <div class="step-toggle-bar">
+            <i class="ri-arrow-down-s-line"></i>
+            <span class="label">5 steps · 1 attachment</span>
+            <span class="progress" id="stepProgress">3/5 steps passed</span>
+          </div>
+          <!-- Step 1: Passed -->
+          <div class="step-row step-passed" id="stepRow1">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-action">Navigate to the login page</div>
+              <div class="step-expected">Expected: Login form displayed with email and password fields</div>
+            </div>
+            <div class="step-mini-btns">
+              <button class="step-mini-btn pass-active" onclick="toggleStepBtn(this, 'pass', 1)"><i class="ri-check-line"></i></button>
+              <button class="step-mini-btn" onclick="toggleStepBtn(this, 'fail', 1)"><i class="ri-close-line"></i></button>
+            </div>
+          </div>
+          <!-- Step 2: Passed -->
+          <div class="step-row step-passed" id="stepRow2">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-action">Enter valid email and password</div>
+              <div class="step-expected">Expected: Input fields accept values, no validation errors</div>
+            </div>
+            <div class="step-mini-btns">
+              <button class="step-mini-btn pass-active" onclick="toggleStepBtn(this, 'pass', 2)"><i class="ri-check-line"></i></button>
+              <button class="step-mini-btn" onclick="toggleStepBtn(this, 'fail', 2)"><i class="ri-close-line"></i></button>
+            </div>
+          </div>
+          <!-- Step 3: Failed -->
+          <div class="step-row step-failed" id="stepRow3">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-action">Click "Sign In" button</div>
+              <div class="step-expected">Expected: User redirected to dashboard</div>
+            </div>
+            <div class="step-mini-btns">
+              <button class="step-mini-btn" onclick="toggleStepBtn(this, 'pass', 3)"><i class="ri-check-line"></i></button>
+              <button class="step-mini-btn fail-active" onclick="toggleStepBtn(this, 'fail', 3)"><i class="ri-close-line"></i></button>
+            </div>
+          </div>
+          <!-- Step 4: Passed -->
+          <div class="step-row step-passed" id="stepRow4">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-action">Verify welcome message on dashboard</div>
+              <div class="step-expected">Expected: "Welcome, [username]" displayed in header</div>
+            </div>
+            <div class="step-mini-btns">
+              <button class="step-mini-btn pass-active" onclick="toggleStepBtn(this, 'pass', 4)"><i class="ri-check-line"></i></button>
+              <button class="step-mini-btn" onclick="toggleStepBtn(this, 'fail', 4)"><i class="ri-close-line"></i></button>
+            </div>
+          </div>
+          <!-- Step 5: Untested -->
+          <div class="step-row" id="stepRow5">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-action">Check navigation menu items are visible</div>
+              <div class="step-expected">Expected: Dashboard, Projects, Settings links visible</div>
+            </div>
+            <div class="step-mini-btns">
+              <button class="step-mini-btn" onclick="toggleStepBtn(this, 'pass', 5)"><i class="ri-check-line"></i></button>
+              <button class="step-mini-btn" onclick="toggleStepBtn(this, 'fail', 5)"><i class="ri-close-line"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Item ④ Add Result Modal ═══ -->
+  <div class="spec-section">
+    <div class="spec-section-title"><span class="num">4</span> Add Result Modal — Status-Driven UI</div>
+    <div class="spec-section-desc">
+      Modal fields adapt to selected status. Passed = minimal (just note). Failed = expanded with Steps, Attachments, Issues.
+      Rich text toolbar removed → plain textarea. "Show more options" toggle for secondary fields.
+      3-button footer: Cancel / Add Result / Add & Next (status-colored).
+    </div>
+
+    <div class="state-tabs">
+      <div class="state-tab active" onclick="switchModalState('passed')">Passed</div>
+      <div class="state-tab" onclick="switchModalState('failed')">Failed</div>
+      <div class="state-tab" onclick="switchModalState('blocked')">Blocked</div>
+    </div>
+
+    <!-- Passed State -->
+    <div class="state-panel active" id="modal-passed">
+      <div class="mockup-frame">
+        <div class="mockup-label">Add Result — Passed (Minimal)</div>
+        <div class="mockup-body" style="padding: 0;">
+          <div class="modal-overlay">
+            <div class="modal">
+              <div class="modal-header">
+                <span class="modal-title">Add Test Result</span>
+                <button class="modal-close"><i class="ri-close-line"></i></button>
+              </div>
+              <div class="modal-body">
+                <div class="modal-field">
+                  <label class="modal-label">Status</label>
+                  <div class="modal-status-grid">
+                    <div class="modal-status-opt active-pass"><i class="ri-check-line"></i> Passed</div>
+                    <div class="modal-status-opt"><i class="ri-close-line"></i> Failed</div>
+                    <div class="modal-status-opt"><i class="ri-spam-2-line"></i> Blocked</div>
+                    <div class="modal-status-opt"><i class="ri-refresh-line"></i> Retest</div>
+                  </div>
+                </div>
+                <div class="modal-field">
+                  <label class="modal-label">Note <span style="color: #94A3B8; font-weight: 400;">(optional)</span></label>
+                  <textarea class="modal-textarea" rows="2" placeholder="Everything looks good!"></textarea>
+                </div>
+                <div class="modal-show-more"><i class="ri-arrow-down-s-line"></i> Show more options</div>
+              </div>
+              <div class="modal-footer">
+                <div class="modal-footer-left">
+                  <label class="auto-advance-check">
+                    <input type="checkbox"> Auto-advance after submit
+                  </label>
+                </div>
+                <div class="modal-footer-right">
+                  <button class="modal-btn modal-btn-cancel">Cancel</button>
+                  <button class="modal-btn modal-btn-save">Add result</button>
+                  <button class="modal-btn modal-btn-save-next" style="background: #22C55E;">Add & Next</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Failed State -->
+    <div class="state-panel" id="modal-failed">
+      <div class="mockup-frame">
+        <div class="mockup-label">Add Result — Failed (Expanded)</div>
+        <div class="mockup-body" style="padding: 0;">
+          <div class="modal-overlay">
+            <div class="modal" style="max-height: 560px;">
+              <div class="modal-header">
+                <span class="modal-title">Add Test Result</span>
+                <button class="modal-close"><i class="ri-close-line"></i></button>
+              </div>
+              <div class="modal-body">
+                <div class="modal-field">
+                  <label class="modal-label">Status</label>
+                  <div class="modal-status-grid">
+                    <div class="modal-status-opt"><i class="ri-check-line"></i> Passed</div>
+                    <div class="modal-status-opt active-fail"><i class="ri-close-line"></i> Failed</div>
+                    <div class="modal-status-opt"><i class="ri-spam-2-line"></i> Blocked</div>
+                    <div class="modal-status-opt"><i class="ri-refresh-line"></i> Retest</div>
+                  </div>
+                </div>
+                <div class="modal-field">
+                  <label class="modal-label">Note</label>
+                  <textarea class="modal-textarea" rows="3" placeholder="Describe what went wrong..."></textarea>
+                </div>
+                <div class="modal-expanded-section">
+                  <div class="modal-field">
+                    <label class="modal-label">Step Results</label>
+                    <div style="font-size: 0.75rem; color: #64748B; padding: 8px 12px; background: #F8FAFC; border-radius: 8px;">
+                      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <span style="color: #22C55E;">✓</span> Step 1 — Navigate to login page
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <span style="color: #22C55E;">✓</span> Step 2 — Enter valid credentials
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: #EF4444;">✗</span> Step 3 — Click "Sign In" button
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-field">
+                    <label class="modal-label">Attachments</label>
+                    <div class="modal-attach-zone">
+                      <i class="ri-upload-cloud-2-line"></i>
+                      Drop files here or click to upload
+                    </div>
+                  </div>
+                  <div class="modal-field">
+                    <div class="jira-issue-section">
+                      <div class="jira-section-header">
+                        <div class="jira-logo">J</div>
+                        <span class="jira-section-title">Jira Issue</span>
+                      </div>
+                      <div class="jira-search-row">
+                        <input class="jira-search-input" type="text" placeholder="Search Jira issues by key or title...">
+                        <button class="jira-create-btn"><i class="ri-add-line"></i> Create New</button>
+                      </div>
+                      <div class="jira-linked-issue">
+                        <span class="jira-logo-sm">J</span>
+                        <span class="jira-issue-key">PROJ-142</span>
+                        <span class="jira-issue-title">Login button not responding on mobile</span>
+                        <button class="jira-issue-remove"><i class="ri-close-line"></i></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <div class="modal-footer-left">
+                  <label class="auto-advance-check">
+                    <input type="checkbox"> Auto-advance after submit
+                  </label>
+                </div>
+                <div class="modal-footer-right">
+                  <button class="modal-btn modal-btn-cancel">Cancel</button>
+                  <button class="modal-btn modal-btn-save">Add result</button>
+                  <button class="modal-btn modal-btn-save-next" style="background: #EF4444;">Add & Next</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Blocked State -->
+    <div class="state-panel" id="modal-blocked">
+      <div class="mockup-frame">
+        <div class="mockup-label">Add Result — Blocked (Medium)</div>
+        <div class="mockup-body" style="padding: 0;">
+          <div class="modal-overlay">
+            <div class="modal">
+              <div class="modal-header">
+                <span class="modal-title">Add Test Result</span>
+                <button class="modal-close"><i class="ri-close-line"></i></button>
+              </div>
+              <div class="modal-body">
+                <div class="modal-field">
+                  <label class="modal-label">Status</label>
+                  <div class="modal-status-grid">
+                    <div class="modal-status-opt"><i class="ri-check-line"></i> Passed</div>
+                    <div class="modal-status-opt"><i class="ri-close-line"></i> Failed</div>
+                    <div class="modal-status-opt active-block"><i class="ri-spam-2-line"></i> Blocked</div>
+                    <div class="modal-status-opt"><i class="ri-refresh-line"></i> Retest</div>
+                  </div>
+                </div>
+                <div class="modal-field">
+                  <label class="modal-label">Note</label>
+                  <textarea class="modal-textarea" rows="3" placeholder="What's blocking this test?"></textarea>
+                </div>
+                <div class="modal-field">
+                  <div class="jira-issue-section">
+                    <div class="jira-section-header">
+                      <div class="jira-logo">J</div>
+                      <span class="jira-section-title">Jira Issue</span>
+                    </div>
+                    <div class="jira-search-row">
+                      <input class="jira-search-input" type="text" placeholder="Search Jira issues by key or title...">
+                      <button class="jira-create-btn"><i class="ri-add-line"></i> Create New</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-show-more"><i class="ri-arrow-down-s-line"></i> Show more options</div>
+              </div>
+              <div class="modal-footer">
+                <div class="modal-footer-left">
+                  <label class="auto-advance-check">
+                    <input type="checkbox"> Auto-advance after submit
+                  </label>
+                </div>
+                <div class="modal-footer-right">
+                  <button class="modal-btn modal-btn-cancel">Cancel</button>
+                  <button class="modal-btn modal-btn-save">Add result</button>
+                  <button class="modal-btn modal-btn-save-next" style="background: #F59E0B;">Add & Next</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Item ⑤ Keyboard Shortcuts ═══ -->
+  <div class="spec-section">
+    <div class="spec-section-title"><span class="num">5</span> Keyboard Shortcuts</div>
+    <div class="spec-section-desc">
+      Complete keyboard shortcut map for Run Workflow. Hints displayed below buttons as [P] [F] etc.
+      in 9px #94A3B8. Active in Run Details page when no modal/popup is open.
+    </div>
+    <div class="mockup-frame">
+      <div class="mockup-label">Shortcut Reference</div>
+      <div class="mockup-body">
+        <table class="kbd-table">
+          <thead>
+            <tr>
+              <th style="width: 120px;">Key</th>
+              <th>Action</th>
+              <th style="width: 160px;">Context</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="kbd-key">P</span></td>
+              <td>Pass — instant apply, auto-advance</td>
+              <td>Quick Status Bar</td>
+            </tr>
+            <tr>
+              <td><span class="kbd-key">F</span></td>
+              <td>Fail — opens inline note popup</td>
+              <td>Quick Status Bar</td>
+            </tr>
+            <tr>
+              <td><span class="kbd-key">B</span></td>
+              <td>Block — opens inline note popup</td>
+              <td>Quick Status Bar</td>
+            </tr>
+            <tr>
+              <td><span class="kbd-key">R</span></td>
+              <td>Retest — instant apply, auto-advance</td>
+              <td>Quick Status Bar</td>
+            </tr>
+            <tr>
+              <td><span class="kbd-key">A</span></td>
+              <td>Open full Add Result modal</td>
+              <td>Quick Status Bar</td>
+            </tr>
+            <tr>
+              <td><span class="kbd-key">↑</span> / <span class="kbd-key">K</span></td>
+              <td>Previous test case</td>
+              <td>TC Navigation</td>
+            </tr>
+            <tr>
+              <td><span class="kbd-key">↓</span> / <span class="kbd-key">J</span></td>
+              <td>Next test case</td>
+              <td>TC Navigation</td>
+            </tr>
+            <tr>
+              <td><span class="kbd-key">Ctrl</span> + <span class="kbd-key">Enter</span></td>
+              <td>Submit (in popup or modal)</td>
+              <td>Popup / Modal</td>
+            </tr>
+            <tr>
+              <td><span class="kbd-key">Esc</span></td>
+              <td>Cancel / Close popup or modal</td>
+              <td>Popup / Modal</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Item ⑥ Auto-Advance & "Add & Next" ═══ -->
+  <div class="spec-section">
+    <div class="spec-section-title"><span class="num">6</span> Auto-Advance & "Add & Next"</div>
+    <div class="spec-section-desc">
+      Checkbox persisted in localStorage: "Auto-advance to next test case after submit."
+      3-button footer: Cancel (outline) / Add result (indigo) / Add & Next (status-colored).
+      500ms delay before auto-advance for visual feedback.
+    </div>
+    <div class="mockup-frame">
+      <div class="mockup-label">Footer — 3-Button Pattern with Auto-Advance</div>
+      <div class="mockup-body" style="background: #F8FAFC;">
+        <div style="background: #fff; border: 1px solid #E2E8F0; border-radius: 10px; padding: 14px 20px; display: flex; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <label class="auto-advance-check">
+              <input type="checkbox" checked> Auto-advance to next test case after submit
+            </label>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+            <button class="modal-btn modal-btn-cancel">Cancel</button>
+            <button class="modal-btn modal-btn-save">Add result</button>
+            <button class="modal-btn modal-btn-save-next" style="background: #22C55E;">Add & Next <i class="ri-arrow-right-s-line" style="font-size: 14px;"></i></button>
+          </div>
+        </div>
+        <div style="margin-top: 16px; display: flex; gap: 12px;">
+          <div style="flex: 1; background: #fff; border: 1px solid #E2E8F0; border-radius: 10px; padding: 14px 20px; display: flex; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <label class="auto-advance-check"><input type="checkbox" checked> Auto-advance</label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+              <button class="modal-btn modal-btn-cancel">Cancel</button>
+              <button class="modal-btn modal-btn-save">Add result</button>
+              <button class="modal-btn modal-btn-save-next" style="background: #EF4444;">Add & Next <i class="ri-arrow-right-s-line" style="font-size: 14px;"></i></button>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 8px;">
+          <div style="font-size: 0.6875rem; color: #94A3B8; padding: 4px 0;">
+            ↑ Pass context (green) &nbsp;&nbsp;|&nbsp;&nbsp; ↓ Fail context (red) — "Add & Next" button color adapts to selected status
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Item ⑨ Jira Integration — Create Issue Modal ═══ -->
+  <div class="spec-section">
+    <div class="spec-section-title"><span class="num">9</span> Jira Integration — Issue Link & Create</div>
+    <div class="spec-section-desc">
+      When a TC is marked as Failed or Blocked, users can link an existing Jira issue or create a new one.
+      Available in both the inline note popup (compact buttons) and the Add Result modal (full section).
+      "Create Jira Issue" opens a dedicated modal pre-filled with TC data (title, steps, expected results, note).
+    </div>
+
+    <div class="mockup-frame">
+      <div class="mockup-label">Create Jira Issue Modal — Pre-filled from TC Data</div>
+      <div class="mockup-body" style="padding: 0;">
+        <div class="modal-overlay">
+          <div class="jira-create-modal">
+            <div class="modal-header" style="border-bottom: 1px solid #E2E8F0;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="jira-logo">J</div>
+                <span class="modal-title">Create Jira Issue</span>
+              </div>
+              <button class="modal-close"><i class="ri-close-line"></i></button>
+            </div>
+            <div style="padding: 20px 24px;">
+              <div class="jira-form-row" style="margin-bottom: 14px;">
+                <div class="jira-form-field" style="margin-bottom: 0;">
+                  <label class="jira-form-label">Project</label>
+                  <select class="jira-form-select">
+                    <option>PROJ — Testably App</option>
+                    <option>QA — QA Team</option>
+                    <option>INFRA — Infrastructure</option>
+                  </select>
+                </div>
+                <div class="jira-form-field" style="margin-bottom: 0;">
+                  <label class="jira-form-label">Issue Type</label>
+                  <select class="jira-form-select">
+                    <option>Bug</option>
+                    <option>Task</option>
+                    <option>Story</option>
+                  </select>
+                </div>
+              </div>
+              <div class="jira-form-field">
+                <label class="jira-form-label">Summary <span class="jira-autofill-badge"><i class="ri-magic-line" style="font-size: 8px;"></i> Auto-filled</span></label>
+                <input class="jira-form-input" type="text" value="[TC-012] Login — Sign In button not responding">
+              </div>
+              <div class="jira-form-field">
+                <label class="jira-form-label">Description <span class="jira-autofill-badge"><i class="ri-magic-line" style="font-size: 8px;"></i> Auto-filled</span></label>
+                <textarea class="jira-form-textarea" rows="5">**Test Case:** TC-012 Login Flow
+**Run:** Sprint 24 Regression
+**Status:** Failed at Step 3
+
+**Steps to Reproduce:**
+1. Navigate to the login page
+2. Enter valid email and password
+3. Click "Sign In" button ← FAILED HERE
+
+**Expected Result:** User redirected to dashboard
+**Actual Result:** Button click has no response. No network request sent.
+
+**Note:** Intermittent issue, occurs ~50% of the time on Chrome.</textarea>
+              </div>
+              <div class="jira-form-row" style="margin-bottom: 14px;">
+                <div class="jira-form-field" style="margin-bottom: 0;">
+                  <label class="jira-form-label">Priority</label>
+                  <select class="jira-form-select">
+                    <option>Low</option>
+                    <option selected>Medium</option>
+                    <option>High</option>
+                    <option>Critical</option>
+                  </select>
+                </div>
+                <div class="jira-form-field" style="margin-bottom: 0;">
+                  <label class="jira-form-label">Assignee</label>
+                  <select class="jira-form-select">
+                    <option>Unassigned</option>
+                    <option>Sarah Kim</option>
+                    <option>David Park</option>
+                  </select>
+                </div>
+              </div>
+              <div class="jira-form-field">
+                <label class="jira-form-label">Labels</label>
+                <input class="jira-form-input" type="text" placeholder="Add labels..." value="qa-regression, login">
+              </div>
+              <div class="jira-form-field" style="margin-bottom: 0;">
+                <label class="jira-form-label">Attachments</label>
+                <div class="modal-attach-zone" style="padding: 14px;">
+                  <i class="ri-upload-cloud-2-line"></i>
+                  Drop screenshots or files · Auto-attaches TC screenshots
+                </div>
+              </div>
+            </div>
+            <div class="jira-footer">
+              <label class="auto-advance-check" style="margin-right: auto;">
+                <input type="checkbox" checked> Link to this test result
+              </label>
+              <button class="jira-btn-cancel">Cancel</button>
+              <button class="jira-btn-submit"><span class="jira-logo-sm" style="background: #fff; color: #2563EB;">J</span> Create Issue</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mockup-frame">
+      <div class="mockup-label">Jira Search Dropdown — Link Existing Issue</div>
+      <div class="mockup-body">
+        <div style="width: 400px;">
+          <div class="jira-issue-section" style="background: #fff; border: 1px solid #CBD5E1; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+            <div class="jira-section-header" style="margin-bottom: 8px;">
+              <div class="jira-logo">J</div>
+              <span class="jira-section-title">Link Jira Issue</span>
+            </div>
+            <input class="jira-search-input" type="text" placeholder="Search by key or title..." value="login" style="margin-bottom: 8px; width: 100%;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; cursor: pointer; background: #EFF6FF;">
+                <span style="font-size: 14px; color: #EF4444;"><i class="ri-bug-line"></i></span>
+                <span class="jira-issue-key" style="font-size: 0.6875rem;">PROJ-142</span>
+                <span style="font-size: 0.8125rem; color: #1E293B; flex: 1;">Login button not responding on mobile</span>
+                <span style="font-size: 0.6875rem; color: #94A3B8;">Open</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; cursor: pointer;">
+                <span style="font-size: 14px; color: #EF4444;"><i class="ri-bug-line"></i></span>
+                <span class="jira-issue-key" style="font-size: 0.6875rem;">PROJ-138</span>
+                <span style="font-size: 0.8125rem; color: #1E293B; flex: 1;">Login page CSS broken in Safari</span>
+                <span style="font-size: 0.6875rem; color: #94A3B8;">In Progress</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; cursor: pointer;">
+                <span style="font-size: 14px; color: #F59E0B;"><i class="ri-task-line"></i></span>
+                <span class="jira-issue-key" style="font-size: 0.6875rem;">PROJ-125</span>
+                <span style="font-size: 0.8125rem; color: #1E293B; flex: 1;">Add OAuth login support</span>
+                <span style="font-size: 0.6875rem; color: #94A3B8;">To Do</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Item ⑦ Competitor Benchmark ═══ -->
+  <div class="spec-section">
+    <div class="spec-section-title"><span class="num">7</span> Competitor Benchmark</div>
+    <div class="spec-section-desc">
+      Quick comparison of Run Workflow features across TestRail, Qase, Zephyr Scale, and Testably (proposed).
+    </div>
+    <div class="mockup-frame">
+      <div class="mockup-label">Feature Comparison Matrix</div>
+      <div class="mockup-body" style="padding: 0;">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>TestRail</th>
+              <th>Qase</th>
+              <th>Zephyr Scale</th>
+              <th class="highlight" style="color: #6366F1;">Testably</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Quick Status Bar</td>
+              <td><span class="comp-check">✓</span> Inline dropdown</td>
+              <td><span class="comp-check">✓</span> Button bar</td>
+              <td><span class="comp-partial">~</span> Dropdown only</td>
+              <td class="highlight"><span class="comp-check">✓</span> 4-button + Add Result</td>
+            </tr>
+            <tr>
+              <td>Inline Note Popup</td>
+              <td><span class="comp-cross">✗</span> Full modal only</td>
+              <td><span class="comp-cross">✗</span> Full modal only</td>
+              <td><span class="comp-cross">✗</span></td>
+              <td class="highlight"><span class="comp-check">✓</span> 340px popup + escalation</td>
+            </tr>
+            <tr>
+              <td>Step-Level Results</td>
+              <td><span class="comp-check">✓</span> Dropdown per step</td>
+              <td><span class="comp-check">✓</span> Inline buttons</td>
+              <td><span class="comp-check">✓</span> Dropdown per step</td>
+              <td class="highlight"><span class="comp-check">✓</span> 22px mini buttons</td>
+            </tr>
+            <tr>
+              <td>Keyboard Shortcuts</td>
+              <td><span class="comp-partial">~</span> Limited</td>
+              <td><span class="comp-cross">✗</span></td>
+              <td><span class="comp-cross">✗</span></td>
+              <td class="highlight"><span class="comp-check">✓</span> P/F/B/R/A/J/K + hints</td>
+            </tr>
+            <tr>
+              <td>Auto-Advance</td>
+              <td><span class="comp-check">✓</span> Always on</td>
+              <td><span class="comp-cross">✗</span></td>
+              <td><span class="comp-partial">~</span> Config only</td>
+              <td class="highlight"><span class="comp-check">✓</span> Toggle + "Add & Next"</td>
+            </tr>
+            <tr>
+              <td>Status-Driven UI</td>
+              <td><span class="comp-cross">✗</span> Same form always</td>
+              <td><span class="comp-partial">~</span> Minor changes</td>
+              <td><span class="comp-cross">✗</span></td>
+              <td class="highlight"><span class="comp-check">✓</span> Passed=minimal, Failed=expanded</td>
+            </tr>
+            <tr>
+              <td>Escalation Path</td>
+              <td><span class="comp-cross">✗</span></td>
+              <td><span class="comp-cross">✗</span></td>
+              <td><span class="comp-cross">✗</span></td>
+              <td class="highlight"><span class="comp-check">✓</span> Quick → Popup → Modal → Focus</td>
+            </tr>
+            <tr>
+              <td>Jira Integration on Fail</td>
+              <td><span class="comp-check">✓</span> "Push to Jira" button</td>
+              <td><span class="comp-check">✓</span> Defect auto-create</td>
+              <td><span class="comp-check">✓</span> Native Jira link</td>
+              <td class="highlight"><span class="comp-check">✓</span> Search+Link / Create with auto-fill</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Item ⑧ Full Flow Map ═══ -->
+  <div class="spec-section">
+    <div class="spec-section-title"><span class="num">8</span> Full Flow Map — Escalation Path</div>
+    <div class="spec-section-desc">
+      End-to-end flow from TC selection to result submission, showing the escalation path:
+      Quick Status → Inline Popup → Full Modal → Focus Mode.
+    </div>
+    <div class="mockup-frame">
+      <div class="mockup-label">Escalation Flow Diagram</div>
+      <div class="mockup-body" style="padding: 2rem;">
+        <div class="flow-map">
+          <!-- Start -->
+          <div class="flow-node flow-node-start">
+            <i class="ri-cursor-line" style="margin-right: 4px;"></i> Select Test Case
+          </div>
+          <div class="flow-arrow"><i class="ri-arrow-down-s-line"></i></div>
+
+          <!-- Quick Status Bar -->
+          <div class="flow-node flow-node-action" style="min-width: 280px;">
+            <div style="font-size: 0.6875rem; color: #94A3B8; margin-bottom: 4px;">QUICK STATUS BAR</div>
+            <div>Pass [P] · Fail [F] · Block [B] · Retest [R]</div>
+          </div>
+          <div class="flow-arrow"><i class="ri-arrow-down-s-line"></i></div>
+
+          <!-- Branch -->
+          <div class="flow-branch">
+            <!-- Pass / Retest Path -->
+            <div class="flow-branch-col">
+              <div class="flow-node flow-node-pass" style="min-width: 140px;">
+                Pass / Retest<br><span style="font-size: 0.6875rem; font-weight: 400;">Instant apply</span>
+              </div>
+              <div class="flow-arrow">
+                <i class="ri-arrow-down-s-line"></i>
+                <span class="flow-arrow-label">500ms</span>
+              </div>
+              <div class="flow-node flow-node-db" style="min-width: 140px;">
+                <i class="ri-database-2-line" style="margin-right: 4px;"></i> DB Save
+              </div>
+              <div class="flow-arrow"><i class="ri-arrow-down-s-line"></i></div>
+              <div class="flow-node flow-node-start" style="min-width: 140px;">
+                → Next TC
+              </div>
+            </div>
+
+            <!-- Fail / Block Path -->
+            <div class="flow-branch-col">
+              <div class="flow-node flow-node-fail" style="min-width: 160px;">
+                Fail / Block<br><span style="font-size: 0.6875rem; font-weight: 400;">Opens popup</span>
+              </div>
+              <div class="flow-arrow"><i class="ri-arrow-down-s-line"></i></div>
+              <div class="flow-node flow-node-action" style="min-width: 180px; font-size: 0.75rem;">
+                <div style="font-size: 0.6875rem; color: #94A3B8; margin-bottom: 2px;">INLINE POPUP</div>
+                Note + Jira Link/Create<br>Skip & Next · Save & Next
+              </div>
+              <div class="flow-arrow">
+                <i class="ri-arrow-down-s-line"></i>
+                <span class="flow-arrow-label">or escalate ↗</span>
+              </div>
+              <div class="flow-node flow-node-db" style="min-width: 180px;">
+                <i class="ri-database-2-line" style="margin-right: 4px;"></i> DB Save + Jira Link
+              </div>
+              <div class="flow-arrow"><i class="ri-arrow-down-s-line"></i></div>
+              <div class="flow-node flow-node-start" style="min-width: 160px;">
+                → Next TC
+              </div>
+            </div>
+
+            <!-- Full Modal Path -->
+            <div class="flow-branch-col">
+              <div class="flow-node flow-node-modal" style="min-width: 160px;">
+                Add Result [A]<br><span style="font-size: 0.6875rem; font-weight: 400;">or escalation</span>
+              </div>
+              <div class="flow-arrow"><i class="ri-arrow-down-s-line"></i></div>
+              <div class="flow-node flow-node-action" style="min-width: 180px; font-size: 0.75rem;">
+                <div style="font-size: 0.6875rem; color: #94A3B8; margin-bottom: 2px;">FULL MODAL</div>
+                Status-driven fields<br>Steps · Attach · Jira
+              </div>
+              <div class="flow-arrow"><i class="ri-arrow-down-s-line"></i></div>
+              <div class="flow-node flow-node-db" style="min-width: 160px;">
+                <i class="ri-database-2-line" style="margin-right: 4px;"></i> DB Save
+              </div>
+              <div class="flow-arrow"><i class="ri-arrow-down-s-line"></i></div>
+              <div class="flow-node flow-node-start" style="min-width: 160px;">
+                → Next TC
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       DEV HANDOFF SPECIFICATION
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="handoff-section">
+    <div class="handoff-title">Dev Handoff Specification</div>
+    <div class="handoff-subtitle">Run Workflow Usability Enhancement — Implementation Guide for Engineers</div>
+
+    <!-- §1 Quick Status Bar -->
+    <div class="handoff-h2">§1. Quick Status Bar Component</div>
+
+    <div class="handoff-h3">1.1 Component Structure</div>
+    <div class="handoff-code"><span class="comment">// QuickStatusBar.tsx</span>
+<span class="keyword">interface</span> <span class="type">QuickStatusBarProps</span> {
+  <span class="prop">testCaseId</span>: <span class="type">string</span>;
+  <span class="prop">runId</span>: <span class="type">string</span>;
+  <span class="prop">currentStatus</span>: <span class="type">TestStatus</span> | <span class="keyword">null</span>;
+  <span class="prop">onStatusChange</span>: (<span class="prop">status</span>: <span class="type">TestStatus</span>, <span class="prop">note</span>?: <span class="type">string</span>) => <span class="keyword">void</span>;
+  <span class="prop">onNavigate</span>: (<span class="prop">direction</span>: <span class="string">'prev'</span> | <span class="string">'next'</span>) => <span class="keyword">void</span>;
+  <span class="prop">onOpenModal</span>: () => <span class="keyword">void</span>;
+}</div>
+
+    <div class="handoff-h3">1.2 Button Specifications</div>
+    <table class="handoff-table">
+      <thead>
+        <tr><th>Button</th><th>Type</th><th>Color</th><th>Min Width</th><th>Height</th><th>Behavior</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Pass</td><td>Filled primary</td><td>bg #22C55E, text #fff</td><td>80px</td><td>32px</td><td>Instant apply → auto-advance</td></tr>
+        <tr><td>Fail</td><td>Filled primary</td><td>bg #EF4444, text #fff</td><td>80px</td><td>32px</td><td>Opens inline popup</td></tr>
+        <tr><td>Block</td><td>Outline secondary</td><td>border #F59E0B, text #F59E0B</td><td>60px</td><td>32px</td><td>Opens inline popup</td></tr>
+        <tr><td>Retest</td><td>Outline secondary</td><td>border #8B5CF6, text #8B5CF6</td><td>60px</td><td>32px</td><td>Instant apply → auto-advance</td></tr>
+        <tr><td>Add Result</td><td>Outline</td><td>border #6366F1, text #6366F1</td><td>100px</td><td>32px</td><td>Opens full modal</td></tr>
+        <tr><td>↑ / ↓ Nav</td><td>Icon button</td><td>border #E2E8F0, text #64748B</td><td>28px</td><td>28px</td><td>Navigate prev/next TC</td></tr>
+      </tbody>
+    </table>
+
+    <div class="handoff-h3">1.3 Separator & Layout</div>
+    <div class="handoff-p">
+      Separator: 1px width × 20px height, color #E2E8F0, margin 0 4px. Placed between Retest and Add Result.
+      Container: flex row, align-items center, gap 8px, padding 12px 16px, bg #fff, border 1px solid #E2E8F0, border-radius 10px.
+      Nav group: margin-left auto to push to right edge.
+    </div>
+
+    <!-- §2 Inline Note Popup -->
+    <div class="handoff-h2">§2. Inline Note Popup</div>
+
+    <div class="handoff-h3">2.1 Popup Dimensions & Position</div>
+    <table class="handoff-table">
+      <thead><tr><th>Property</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Width</td><td>340px</td></tr>
+        <tr><td>Position</td><td>absolute, below trigger button</td></tr>
+        <tr><td>Border radius</td><td>12px</td></tr>
+        <tr><td>Shadow</td><td>0 4px 24px rgba(0,0,0,0.12)</td></tr>
+        <tr><td>Z-index</td><td>50</td></tr>
+        <tr><td>Animation</td><td>150ms fade-in (opacity 0→1, translateY -4px→0)</td></tr>
+        <tr><td>Arrow</td><td>CSS triangle, 12×12px rotated 45deg, positioned top -6px</td></tr>
+      </tbody>
+    </table>
+
+    <div class="handoff-h3">2.2 Component Interface</div>
+    <div class="handoff-code"><span class="comment">// InlineNotePopup.tsx</span>
+<span class="keyword">interface</span> <span class="type">InlineNotePopupProps</span> {
+  <span class="prop">status</span>: <span class="string">'failed'</span> | <span class="string">'blocked'</span>;
+  <span class="prop">anchorRef</span>: <span class="type">React.RefObject</span><<span class="type">HTMLButtonElement</span>>;
+  <span class="prop">onSkipAndNext</span>: () => <span class="keyword">void</span>;
+  <span class="prop">onSaveAndNext</span>: (<span class="prop">note</span>: <span class="type">string</span>) => <span class="keyword">void</span>;
+  <span class="prop">onEscalate</span>: () => <span class="keyword">void</span>;   <span class="comment">// opens full modal</span>
+  <span class="prop">onClose</span>: () => <span class="keyword">void</span>;
+}
+
+<span class="comment">// Behavior:</span>
+<span class="comment">// - Textarea: 3 rows default, auto-expand to 6 rows</span>
+<span class="comment">// - Auto-focus textarea on open</span>
+<span class="comment">// - ESC key or outside click = close (cancel)</span>
+<span class="comment">// - Ctrl+Enter = submit (Save & Next)</span>
+<span class="comment">// - Status-specific placeholder:</span>
+<span class="comment">//   failed  → "What went wrong?"</span>
+<span class="comment">//   blocked → "What's blocking this test?"</span></div>
+
+    <div class="handoff-h3">2.3 Button Colors per Status</div>
+    <div class="handoff-p">
+      "Save & Next" button inherits the status color: Failed = #EF4444, Blocked = #F59E0B.
+      "Skip & Next" is always outline gray (border #E2E8F0, text #64748B).
+      "Open full modal →" is always indigo text #6366F1, positioned margin-left auto.
+    </div>
+
+    <div class="handoff-note info">
+      <strong>Escalation Flow:</strong> When "Open full modal →" is clicked, close the popup and open AddResultModal
+      pre-filled with the current status and any note text already typed.
+    </div>
+
+    <!-- §3 Step-Level Results -->
+    <div class="handoff-h2">§3. Step-Level Inline Results</div>
+
+    <div class="handoff-h3">3.1 Mini Button Spec</div>
+    <table class="handoff-table">
+      <thead><tr><th>Property</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Size</td><td>22px × 22px</td></tr>
+        <tr><td>Border radius</td><td>4px (0.25rem)</td></tr>
+        <tr><td>Default state</td><td>border #E2E8F0, bg #fff, icon #94A3B8</td></tr>
+        <tr><td>Pass active</td><td>bg #22C55E, border #22C55E, icon #fff</td></tr>
+        <tr><td>Fail active</td><td>bg #EF4444, border #EF4444, icon #fff</td></tr>
+        <tr><td>Icon size</td><td>11px (ri-check-line / ri-close-line)</td></tr>
+        <tr><td>Transition</td><td>all 0.15s ease</td></tr>
+      </tbody>
+    </table>
+
+    <div class="handoff-h3">3.2 Step Row States</div>
+    <div class="handoff-code"><span class="comment">// Step row background changes based on result</span>
+<span class="keyword">const</span> stepRowStyles = {
+  <span class="prop">untested</span>: { <span class="prop">bg</span>: <span class="string">'transparent'</span>, <span class="prop">border</span>: <span class="string">'#E2E8F0'</span>, <span class="prop">numBg</span>: <span class="string">'#F1F5F9'</span>, <span class="prop">numColor</span>: <span class="string">'#64748B'</span> },
+  <span class="prop">passed</span>:   { <span class="prop">bg</span>: <span class="string">'#F0FDF4'</span>, <span class="prop">border</span>: <span class="string">'#BBF7D0'</span>, <span class="prop">numBg</span>: <span class="string">'#22C55E'</span>, <span class="prop">numColor</span>: <span class="string">'#fff'</span> },
+  <span class="prop">failed</span>:   { <span class="prop">bg</span>: <span class="string">'#FEF2F2'</span>, <span class="prop">border</span>: <span class="string">'#FECACA'</span>, <span class="prop">numBg</span>: <span class="string">'#EF4444'</span>, <span class="prop">numColor</span>: <span class="string">'#fff'</span> },
+};</div>
+
+    <div class="handoff-h3">3.3 Toggle Bar Progress Counter</div>
+    <div class="handoff-p">
+      Toggle bar displays real-time count: "{passed}/{total} steps passed" in #22C55E font-weight 600.
+      Count updates immediately on every mini button click. Also shows attachment count: "5 steps · 1 attachment".
+    </div>
+
+    <div class="handoff-h3">3.4 Data Model</div>
+    <div class="handoff-code"><span class="comment">-- step_results table (from file 37 spec)</span>
+<span class="keyword">CREATE TABLE</span> step_results (
+  <span class="prop">id</span>          <span class="type">uuid</span> <span class="keyword">PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  <span class="prop">result_id</span>   <span class="type">uuid</span> <span class="keyword">REFERENCES</span> results(id) <span class="keyword">ON DELETE CASCADE</span>,
+  <span class="prop">step_id</span>     <span class="type">uuid</span> <span class="keyword">REFERENCES</span> steps(id),
+  <span class="prop">step_index</span>  <span class="type">int2</span> <span class="keyword">NOT NULL</span>,
+  <span class="prop">status</span>      <span class="type">text</span> <span class="keyword">CHECK</span> (status <span class="keyword">IN</span> (<span class="string">'passed'</span>,<span class="string">'failed'</span>,<span class="string">'untested'</span>)),
+  <span class="prop">created_at</span>  <span class="type">timestamptz</span> <span class="keyword">DEFAULT</span> now()
+);
+
+<span class="keyword">CREATE INDEX</span> idx_step_results_result
+  <span class="keyword">ON</span> step_results(result_id, step_index);</div>
+
+    <!-- §4 Add Result Modal -->
+    <div class="handoff-h2">§4. Add Result Modal — Status-Driven UI</div>
+
+    <div class="handoff-h3">4.1 Field Visibility Matrix</div>
+    <table class="handoff-table">
+      <thead><tr><th>Field</th><th>Passed</th><th>Failed</th><th>Blocked</th><th>Retest</th></tr></thead>
+      <tbody>
+        <tr><td>Status selector</td><td>✓ always</td><td>✓ always</td><td>✓ always</td><td>✓ always</td></tr>
+        <tr><td>Note</td><td>Optional, collapsed placeholder</td><td>Shown, auto-focus</td><td>Shown, auto-focus</td><td>Optional</td></tr>
+        <tr><td>Step Results</td><td>Hidden</td><td>Shown</td><td>Hidden</td><td>Hidden</td></tr>
+        <tr><td>Attachments</td><td>Behind "Show more"</td><td>Shown</td><td>Behind "Show more"</td><td>Behind "Show more"</td></tr>
+        <tr><td>Link Issue</td><td>Hidden</td><td>Shown</td><td>Shown</td><td>Hidden</td></tr>
+        <tr><td>"Show more" toggle</td><td>✓</td><td>Hidden (all shown)</td><td>✓</td><td>✓</td></tr>
+      </tbody>
+    </table>
+
+    <div class="handoff-h3">4.2 Component Interface</div>
+    <div class="handoff-code"><span class="keyword">interface</span> <span class="type">AddResultModalProps</span> {
+  <span class="prop">isOpen</span>: <span class="type">boolean</span>;
+  <span class="prop">testCaseId</span>: <span class="type">string</span>;
+  <span class="prop">runId</span>: <span class="type">string</span>;
+  <span class="prop">steps</span>: <span class="type">Step</span>[];
+  <span class="prop">stepResults</span>: <span class="type">StepResult</span>[];
+  <span class="prop">prefilledStatus</span>?: <span class="type">TestStatus</span>;      <span class="comment">// from popup escalation</span>
+  <span class="prop">prefilledNote</span>?: <span class="type">string</span>;           <span class="comment">// from popup escalation</span>
+  <span class="prop">autoAdvance</span>: <span class="type">boolean</span>;
+  <span class="prop">onAutoAdvanceChange</span>: (<span class="prop">v</span>: <span class="type">boolean</span>) => <span class="keyword">void</span>;
+  <span class="prop">onSubmit</span>: (<span class="prop">data</span>: <span class="type">ResultPayload</span>) => <span class="keyword">void</span>;
+  <span class="prop">onSubmitAndNext</span>: (<span class="prop">data</span>: <span class="type">ResultPayload</span>) => <span class="keyword">void</span>;
+  <span class="prop">onClose</span>: () => <span class="keyword">void</span>;
+}</div>
+
+    <div class="handoff-h3">4.3 Key UX Details</div>
+    <ul class="handoff-ul">
+      <li>Rich text toolbar removed — use plain <code>&lt;textarea&gt;</code>, no WYSIWYG editor</li>
+      <li>Status-specific placeholders: Passed → "Everything looks good!", Failed → "Describe what went wrong...", Blocked → "What's blocking this test?"</li>
+      <li>"Show more options" is an inline text link with arrow icon, toggles Attachments (and Issues for Passed/Retest)</li>
+      <li>3-button footer: Cancel (outline) / Add result (#6366F1) / Add & Next (status color)</li>
+      <li>"Add & Next" button color: Pass=#22C55E, Fail=#EF4444, Block=#F59E0B, Retest=#8B5CF6</li>
+      <li>Ctrl+Enter submits (respects auto-advance setting)</li>
+    </ul>
+
+    <!-- §5 Keyboard Shortcuts -->
+    <div class="handoff-h2">§5. Keyboard Shortcuts Implementation</div>
+
+    <div class="handoff-h3">5.1 Hook Design</div>
+    <div class="handoff-code"><span class="comment">// useRunWorkflowShortcuts.ts</span>
+<span class="keyword">export function</span> <span class="prop">useRunWorkflowShortcuts</span>({
+  <span class="prop">onPass</span>, <span class="prop">onFail</span>, <span class="prop">onBlock</span>, <span class="prop">onRetest</span>,
+  <span class="prop">onAddResult</span>, <span class="prop">onPrev</span>, <span class="prop">onNext</span>,
+  <span class="prop">enabled</span> = <span class="keyword">true</span>,  <span class="comment">// disable when modal/popup open</span>
+}: <span class="type">ShortcutHandlers</span>) {
+  useEffect(() => {
+    <span class="keyword">if</span> (!enabled) <span class="keyword">return</span>;
+    <span class="keyword">const</span> handler = (<span class="prop">e</span>: <span class="type">KeyboardEvent</span>) => {
+      <span class="comment">// Skip if user is typing in an input/textarea</span>
+      <span class="keyword">if</span> (e.target <span class="keyword">instanceof</span> HTMLInputElement ||
+          e.target <span class="keyword">instanceof</span> HTMLTextAreaElement) <span class="keyword">return</span>;
+
+      <span class="keyword">switch</span>(e.key.toLowerCase()) {
+        <span class="keyword">case</span> <span class="string">'p'</span>: onPass(); <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'f'</span>: onFail(); <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'b'</span>: onBlock(); <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'r'</span>: onRetest(); <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'a'</span>: onAddResult(); <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'k'</span>:
+        <span class="keyword">case</span> <span class="string">'arrowup'</span>: e.preventDefault(); onPrev(); <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'j'</span>:
+        <span class="keyword">case</span> <span class="string">'arrowdown'</span>: e.preventDefault(); onNext(); <span class="keyword">break</span>;
+      }
+    };
+    window.addEventListener(<span class="string">'keydown'</span>, handler);
+    <span class="keyword">return</span> () => window.removeEventListener(<span class="string">'keydown'</span>, handler);
+  }, [enabled, onPass, onFail, onBlock, onRetest, onAddResult, onPrev, onNext]);
+}</div>
+
+    <div class="handoff-h3">5.2 Hint Display</div>
+    <div class="handoff-p">
+      Keyboard hints are shown below each button as [P] [F] [B] [R] [A].
+      Font: 0.5625rem (9px), color rgba(255,255,255,0.7) for filled buttons, inherit with opacity 0.5 for outline buttons.
+      Nav buttons show K/J hints as absolute-positioned labels below the button (font-size 0.5rem, color #94A3B8).
+    </div>
+
+    <div class="handoff-h3">5.3 Context-Aware Disabling</div>
+    <div class="handoff-p">
+      Shortcuts are disabled when: (1) InlineNotePopup is open, (2) AddResultModal is open, (3) Focus Mode is active
+      (Focus Mode has its own shortcut set defined in file 38). Inside popup/modal, only Ctrl+Enter (submit)
+      and Esc (close) are active.
+    </div>
+
+    <!-- §6 Auto-Advance -->
+    <div class="handoff-h2">§6. Auto-Advance & "Add & Next"</div>
+
+    <div class="handoff-h3">6.1 localStorage Persistence</div>
+    <div class="handoff-code"><span class="comment">// Key: 'testably:autoAdvance'</span>
+<span class="comment">// Value: 'true' | 'false'</span>
+<span class="comment">// Default: false (unchecked)</span>
+
+<span class="keyword">const</span> [autoAdvance, setAutoAdvance] = useState(() => {
+  <span class="keyword">return</span> localStorage.getItem(<span class="string">'testably:autoAdvance'</span>) === <span class="string">'true'</span>;
+});
+
+<span class="keyword">const</span> toggleAutoAdvance = (<span class="prop">value</span>: <span class="type">boolean</span>) => {
+  setAutoAdvance(value);
+  localStorage.setItem(<span class="string">'testably:autoAdvance'</span>, String(value));
+};</div>
+
+    <div class="handoff-h3">6.2 Auto-Advance Timing</div>
+    <ul class="handoff-ul">
+      <li><strong>Quick Status (Pass/Retest):</strong> Save to DB → 500ms delay → navigate to next TC</li>
+      <li><strong>Inline Popup (Save & Next / Skip & Next):</strong> Save to DB → close popup → 500ms delay → navigate</li>
+      <li><strong>"Add & Next" button in modal:</strong> Save to DB → close modal → 500ms delay → navigate</li>
+      <li>500ms delay provides visual feedback (brief status indicator flash on the row)</li>
+      <li>If current TC is the last in the run, show toast: "All test cases completed" instead of advancing</li>
+    </ul>
+
+    <div class="handoff-h3">6.3 Three-Button Footer Pattern</div>
+    <div class="handoff-code"><span class="comment">// Footer button order (left to right):</span>
+<span class="comment">// [Auto-advance checkbox] ............ [Cancel] [Add result] [Add & Next]</span>
+
+<span class="comment">// "Add & Next" button color by status:</span>
+<span class="keyword">const</span> addNextColor = {
+  <span class="prop">passed</span>:  <span class="string">'#22C55E'</span>,
+  <span class="prop">failed</span>:  <span class="string">'#EF4444'</span>,
+  <span class="prop">blocked</span>: <span class="string">'#F59E0B'</span>,
+  <span class="prop">retest</span>:  <span class="string">'#8B5CF6'</span>,
+};
+
+<span class="comment">// "Add result" is always #6366F1 (indigo)</span>
+<span class="comment">// "Cancel" is always outline (border #E2E8F0, text #64748B)</span></div>
+
+    <!-- §7 React Component Architecture -->
+    <div class="handoff-h2">§7. React Component Architecture</div>
+
+    <div class="handoff-h3">7.1 Component Tree</div>
+    <div class="handoff-code"><span class="comment">// Run Details Page — Component Hierarchy</span>
+
+RunDetailsPage
+├── RunHeader
+├── RunStatsBar
+├── TestCaseList
+│   └── TestCaseRow (× N)
+├── <span class="type">QuickStatusBar</span>          <span class="comment">// §1 — New</span>
+│   ├── StatusButton (× 4)
+│   ├── Separator
+│   ├── AddResultButton
+│   └── NavButtons
+├── DetailPanel (context=<span class="string">'run'</span>)
+│   ├── MetaGrid
+│   ├── StepsArea
+│   │   ├── StepToggleBar
+│   │   └── StepRow (× N)
+│   │       └── <span class="type">StepMiniButtons</span>  <span class="comment">// §3 — Existing (file 37)</span>
+│   ├── TabBar
+│   └── TabBody
+├── <span class="type">InlineNotePopup</span>          <span class="comment">// §2 — New (portal)</span>
+└── <span class="type">AddResultModal</span>           <span class="comment">// §4 — Refactored</span>
+    ├── StatusSelector
+    ├── NoteTextarea
+    ├── StepResultsSummary    <span class="comment">// conditional: failed only</span>
+    ├── AttachmentZone        <span class="comment">// conditional: "show more" or failed</span>
+    ├── <span class="type">JiraIssueSection</span>      <span class="comment">// §10 — New (failed/blocked)</span>
+    │   ├── JiraSearchInput
+    │   ├── JiraLinkedIssue
+    │   └── JiraCreateButton   <span class="comment">// opens JiraCreateModal</span>
+    └── ThreeButtonFooter     <span class="comment">// §6</span>
+├── <span class="type">JiraCreateModal</span>          <span class="comment">// §10 — New (portal)</span>
+    ├── ProjectSelector
+    ├── IssueTypeSelector
+    ├── SummaryInput          <span class="comment">// auto-filled from TC title</span>
+    ├── DescriptionTextarea   <span class="comment">// auto-filled from TC data</span>
+    ├── PrioritySelector
+    ├── AssigneeSelector
+    ├── LabelsInput
+    └── AttachmentZone</div>
+
+    <div class="handoff-h3">7.2 State Management</div>
+    <div class="handoff-code"><span class="comment">// Shared state for run workflow</span>
+<span class="keyword">interface</span> <span class="type">RunWorkflowState</span> {
+  <span class="prop">selectedTcIndex</span>: <span class="type">number</span>;
+  <span class="prop">activePopup</span>: <span class="string">'fail'</span> | <span class="string">'block'</span> | <span class="keyword">null</span>;
+  <span class="prop">isModalOpen</span>: <span class="type">boolean</span>;
+  <span class="prop">isJiraModalOpen</span>: <span class="type">boolean</span>;
+  <span class="prop">autoAdvance</span>: <span class="type">boolean</span>;
+  <span class="prop">stepResults</span>: <span class="type">Record</span><<span class="type">string</span>, <span class="type">StepResult</span>[]>;  <span class="comment">// keyed by tcId</span>
+  <span class="prop">linkedJiraIssues</span>: <span class="type">Record</span><<span class="type">string</span>, <span class="type">JiraIssue</span>[]>; <span class="comment">// keyed by resultId</span>
+}
+
+<span class="comment">// Mutations (Supabase)</span>
+<span class="comment">// 1. upsert into results (run_id, test_case_id, status, note)</span>
+<span class="comment">// 2. batch upsert into step_results (result_id, step_id, step_index, status)</span>
+<span class="comment">// 3. Optimistic update: update UI immediately, rollback on error</span></div>
+
+    <!-- §8 Accessibility -->
+    <div class="handoff-h2">§8. Accessibility & Animation</div>
+
+    <div class="handoff-h3">8.1 ARIA Attributes</div>
+    <div class="handoff-code"><span class="comment">// Quick Status Bar</span>
+&lt;<span class="tag">div</span> <span class="prop">role</span>=<span class="string">"toolbar"</span> <span class="prop">aria-label</span>=<span class="string">"Quick status actions"</span>&gt;
+  &lt;<span class="tag">button</span> <span class="prop">aria-label</span>=<span class="string">"Mark as passed (P)"</span> <span class="prop">aria-pressed</span>=<span class="string">{isActive}</span>&gt;
+
+<span class="comment">// Inline Popup</span>
+&lt;<span class="tag">div</span> <span class="prop">role</span>=<span class="string">"dialog"</span> <span class="prop">aria-label</span>=<span class="string">"Add note for failed result"</span>&gt;
+  &lt;<span class="tag">textarea</span> <span class="prop">aria-label</span>=<span class="string">"Result note"</span> <span class="prop">aria-required</span>=<span class="string">"false"</span>&gt;
+
+<span class="comment">// Add Result Modal</span>
+&lt;<span class="tag">dialog</span> <span class="prop">aria-label</span>=<span class="string">"Add test result"</span> <span class="prop">aria-modal</span>=<span class="string">"true"</span>&gt;
+
+<span class="comment">// Step mini buttons</span>
+&lt;<span class="tag">button</span> <span class="prop">aria-label</span>=<span class="string">"Mark step 3 as passed"</span> <span class="prop">aria-pressed</span>=<span class="string">"false"</span>&gt;</div>
+
+    <div class="handoff-h3">8.2 Focus Management</div>
+    <ul class="handoff-ul">
+      <li><strong>Inline popup:</strong> Auto-focus textarea on open. Focus trap within popup. ESC returns focus to trigger button.</li>
+      <li><strong>Modal:</strong> Focus trap. Auto-focus first interactive element (Status selector or Note textarea based on prefill). ESC or Cancel returns focus to Quick Status Bar.</li>
+      <li><strong>Quick Status Bar:</strong> Tab order: Pass → Fail → Block → Retest → Add Result → ↑ → ↓</li>
+    </ul>
+
+    <div class="handoff-h3">8.3 Transitions</div>
+    <table class="handoff-table">
+      <thead><tr><th>Element</th><th>Transition</th><th>Duration</th></tr></thead>
+      <tbody>
+        <tr><td>Inline popup appear</td><td>opacity 0→1, translateY -4px→0</td><td>150ms ease-out</td></tr>
+        <tr><td>Inline popup close</td><td>opacity 1→0, translateY 0→-4px</td><td>100ms ease-in</td></tr>
+        <tr><td>Step row state change</td><td>background-color transition</td><td>150ms ease</td></tr>
+        <tr><td>Mini button toggle</td><td>background + border-color</td><td>150ms ease</td></tr>
+        <tr><td>Modal overlay</td><td>opacity 0→1</td><td>200ms ease-out</td></tr>
+        <tr><td>Modal content</td><td>scale 0.95→1, opacity 0→1</td><td>200ms ease-out</td></tr>
+        <tr><td>Auto-advance flash</td><td>Row bg pulse (status color at 10% opacity)</td><td>500ms ease</td></tr>
+      </tbody>
+    </table>
+
+    <!-- §10 Jira Integration -->
+    <div class="handoff-h2">§10. Jira Integration</div>
+
+    <div class="handoff-h3">10.1 Feature Overview</div>
+    <div class="handoff-p">
+      When a TC is marked Failed or Blocked, users can: (1) search and link an existing Jira issue, or
+      (2) create a new Jira issue with TC data auto-filled. Available in both the inline note popup
+      (compact button row) and the full Add Result modal (dedicated section).
+    </div>
+
+    <div class="handoff-h3">10.2 Inline Popup — Jira Action Buttons</div>
+    <div class="handoff-code"><span class="comment">// Added below textarea, above footer buttons</span>
+<span class="comment">// Only shown when status = 'failed' | 'blocked'</span>
+
+&lt;<span class="tag">div</span> <span class="prop">className</span>=<span class="string">"jira-actions"</span>&gt;
+  &lt;<span class="tag">button</span> <span class="prop">onClick</span>={openJiraSearch}&gt;
+    &lt;<span class="tag">JiraLogo</span> <span class="prop">size</span>={14} /&gt; Link Jira Issue
+  &lt;/<span class="tag">button</span>&gt;
+  &lt;<span class="tag">button</span> <span class="prop">onClick</span>={openJiraCreateModal}&gt;
+    &lt;<span class="tag">PlusIcon</span> /&gt; Create Jira Issue
+  &lt;/<span class="tag">button</span>&gt;
+&lt;/<span class="tag">div</span>&gt;
+
+<span class="comment">// Container: flex row, gap 6px, padding 8px 16px</span>
+<span class="comment">// border-top: 1px solid #F1F5F9</span>
+<span class="comment">// Buttons: height 28px, border-radius 6px, font-size 0.6875rem</span>
+<span class="comment">// "Link" button: color #2563EB, hover bg #EFF6FF</span>
+<span class="comment">// "Create" button: color #6366F1, hover bg #EEF2FF</span></div>
+
+    <div class="handoff-h3">10.3 Add Result Modal — Jira Issue Section</div>
+    <div class="handoff-code"><span class="comment">// JiraIssueSection.tsx</span>
+<span class="keyword">interface</span> <span class="type">JiraIssueSectionProps</span> {
+  <span class="prop">linkedIssues</span>: <span class="type">JiraIssue</span>[];
+  <span class="prop">onSearch</span>: (<span class="prop">query</span>: <span class="type">string</span>) => <span class="keyword">void</span>;
+  <span class="prop">onLink</span>: (<span class="prop">issueKey</span>: <span class="type">string</span>) => <span class="keyword">void</span>;
+  <span class="prop">onUnlink</span>: (<span class="prop">issueKey</span>: <span class="type">string</span>) => <span class="keyword">void</span>;
+  <span class="prop">onCreateNew</span>: () => <span class="keyword">void</span>;      <span class="comment">// opens JiraCreateModal</span>
+  <span class="prop">searchResults</span>: <span class="type">JiraIssue</span>[];
+  <span class="prop">isSearching</span>: <span class="type">boolean</span>;
+}
+
+<span class="keyword">interface</span> <span class="type">JiraIssue</span> {
+  <span class="prop">key</span>: <span class="type">string</span>;          <span class="comment">// e.g. "PROJ-142"</span>
+  <span class="prop">summary</span>: <span class="type">string</span>;
+  <span class="prop">status</span>: <span class="type">string</span>;       <span class="comment">// "Open" | "In Progress" | "Done"</span>
+  <span class="prop">type</span>: <span class="string">'bug'</span> | <span class="string">'task'</span> | <span class="string">'story'</span>;
+  <span class="prop">url</span>: <span class="type">string</span>;
+}</div>
+
+    <div class="handoff-h3">10.4 Jira Search Behavior</div>
+    <ul class="handoff-ul">
+      <li>Debounced search: 300ms after last keystroke</li>
+      <li>Searches by issue key (exact match) and summary (fuzzy match)</li>
+      <li>Dropdown: max 5 results, shows icon (bug/task/story), key, summary, status</li>
+      <li>Click to select → adds to linked issues list</li>
+      <li>Multiple issues can be linked to one result</li>
+      <li>Linked issue chip: key (monospace, blue) + summary + remove (×) button</li>
+    </ul>
+
+    <div class="handoff-h3">10.5 Create Jira Issue Modal</div>
+    <div class="handoff-code"><span class="comment">// JiraCreateModal.tsx</span>
+<span class="keyword">interface</span> <span class="type">JiraCreateModalProps</span> {
+  <span class="prop">isOpen</span>: <span class="type">boolean</span>;
+  <span class="prop">testCase</span>: <span class="type">TestCase</span>;
+  <span class="prop">run</span>: <span class="type">Run</span>;
+  <span class="prop">failedStepIndex</span>?: <span class="type">number</span>;
+  <span class="prop">note</span>?: <span class="type">string</span>;               <span class="comment">// from popup/modal note</span>
+  <span class="prop">stepResults</span>: <span class="type">StepResult</span>[];
+  <span class="prop">attachments</span>: <span class="type">Attachment</span>[];   <span class="comment">// auto-attach TC screenshots</span>
+  <span class="prop">jiraProjects</span>: <span class="type">JiraProject</span>[]; <span class="comment">// from Jira API</span>
+  <span class="prop">onSubmit</span>: (<span class="prop">data</span>: <span class="type">JiraCreatePayload</span>) => <span class="keyword">void</span>;
+  <span class="prop">onClose</span>: () => <span class="keyword">void</span>;
+}
+
+<span class="comment">// Auto-fill logic:</span>
+<span class="comment">// Summary: "[{TC-ID}] {TC Title} — {failed step action}"</span>
+<span class="comment">// Description template (Markdown):</span>
+<span class="comment">//   **Test Case:** {tc.id} {tc.title}</span>
+<span class="comment">//   **Run:** {run.name}</span>
+<span class="comment">//   **Status:** Failed at Step {failedStepIndex}</span>
+<span class="comment">//   **Steps to Reproduce:** (numbered list from TC steps)</span>
+<span class="comment">//   **Expected Result:** {step.expected}</span>
+<span class="comment">//   **Actual Result:** (from note)</span>
+<span class="comment">//   **Note:** {note}</span></div>
+
+    <div class="handoff-h3">10.6 Field Visibility in Modal</div>
+    <table class="handoff-table">
+      <thead><tr><th>Field</th><th>Source</th><th>Auto-filled?</th><th>Editable?</th></tr></thead>
+      <tbody>
+        <tr><td>Project</td><td>User's last-used project (localStorage)</td><td>Yes (default)</td><td>Yes</td></tr>
+        <tr><td>Issue Type</td><td>Default: Bug for Failed, Task for Blocked</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>Summary</td><td>[TC-ID] TC Title</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>Description</td><td>TC steps + expected + note (template)</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>Priority</td><td>TC priority mapping</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>Assignee</td><td>Unassigned (default)</td><td>No</td><td>Yes</td></tr>
+        <tr><td>Labels</td><td>"qa-{run.name}" auto-tag</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>Attachments</td><td>TC screenshots auto-attached</td><td>Yes</td><td>Yes (add/remove)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="handoff-h3">10.7 Jira API Integration</div>
+    <div class="handoff-code"><span class="comment">// Jira Cloud REST API endpoints needed:</span>
+
+<span class="comment">// 1. Search issues</span>
+GET /rest/api/3/search?jql=summary~<span class="string">"{query}"</span>&maxResults=5
+
+<span class="comment">// 2. Create issue</span>
+POST /rest/api/3/issue
+{
+  <span class="prop">fields</span>: {
+    <span class="prop">project</span>: { <span class="prop">key</span>: <span class="string">"PROJ"</span> },
+    <span class="prop">issuetype</span>: { <span class="prop">name</span>: <span class="string">"Bug"</span> },
+    <span class="prop">summary</span>: <span class="string">"..."</span>,
+    <span class="prop">description</span>: { <span class="comment">/* ADF format */</span> },
+    <span class="prop">priority</span>: { <span class="prop">name</span>: <span class="string">"Medium"</span> },
+    <span class="prop">labels</span>: [<span class="string">"qa-regression"</span>]
+  }
+}
+
+<span class="comment">// 3. Add attachment</span>
+POST /rest/api/3/issue/{issueKey}/attachments
+<span class="comment">// multipart/form-data with file</span>
+
+<span class="comment">// 4. Get projects (for selector)</span>
+GET /rest/api/3/project/search
+
+<span class="comment">// Auth: OAuth 2.0 (Jira Cloud) — stored per workspace</span>
+<span class="comment">// Settings page: Project Settings → Integrations → Jira</span></div>
+
+    <div class="handoff-h3">10.8 Data Model</div>
+    <div class="handoff-code"><span class="comment">-- Jira integration tables</span>
+
+<span class="keyword">CREATE TABLE</span> jira_connections (
+  <span class="prop">id</span>            <span class="type">uuid</span> <span class="keyword">PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  <span class="prop">workspace_id</span>  <span class="type">uuid</span> <span class="keyword">REFERENCES</span> workspaces(id),
+  <span class="prop">jira_site_url</span> <span class="type">text</span> <span class="keyword">NOT NULL</span>,         <span class="comment">-- e.g. "myteam.atlassian.net"</span>
+  <span class="prop">access_token</span>  <span class="type">text</span>,                    <span class="comment">-- encrypted OAuth token</span>
+  <span class="prop">refresh_token</span> <span class="type">text</span>,
+  <span class="prop">connected_by</span>  <span class="type">uuid</span> <span class="keyword">REFERENCES</span> users(id),
+  <span class="prop">created_at</span>    <span class="type">timestamptz</span> <span class="keyword">DEFAULT</span> now()
+);
+
+<span class="keyword">CREATE TABLE</span> result_jira_issues (
+  <span class="prop">id</span>         <span class="type">uuid</span> <span class="keyword">PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  <span class="prop">result_id</span>  <span class="type">uuid</span> <span class="keyword">REFERENCES</span> results(id) <span class="keyword">ON DELETE CASCADE</span>,
+  <span class="prop">jira_key</span>   <span class="type">text</span> <span class="keyword">NOT NULL</span>,           <span class="comment">-- e.g. "PROJ-142"</span>
+  <span class="prop">jira_url</span>   <span class="type">text</span> <span class="keyword">NOT NULL</span>,
+  <span class="prop">summary</span>    <span class="type">text</span>,
+  <span class="prop">status</span>     <span class="type">text</span>,
+  <span class="prop">created_by</span> <span class="type">uuid</span> <span class="keyword">REFERENCES</span> users(id),
+  <span class="prop">created_at</span> <span class="type">timestamptz</span> <span class="keyword">DEFAULT</span> now()
+);
+
+<span class="keyword">CREATE INDEX</span> idx_result_jira_issues_result
+  <span class="keyword">ON</span> result_jira_issues(result_id);</div>
+
+    <div class="handoff-note warn">
+      <strong>Jira Connection Required:</strong> If no Jira connection exists for the workspace, show an inline
+      banner: "Connect Jira to link issues → Go to Settings" instead of the search/create UI.
+      The Jira OAuth setup lives in Project Settings → Integrations → Jira.
+    </div>
+
+    <div class="handoff-note info">
+      <strong>Escalation Context Passing:</strong> When "Create Jira Issue" is clicked from the inline popup,
+      carry over: (1) the status, (2) any typed note, (3) the current TC context. If clicked from the
+      Add Result modal, additionally carry: (4) step results, (5) attachments already added.
+    </div>
+
+    <!-- §9 Implementation Priority -->
+    <div class="handoff-h2">§9. Implementation Priority</div>
+
+    <div class="handoff-h3">Phase 1 — Core (P0)</div>
+    <ul class="handoff-ul">
+      <li><strong>① Quick Status Bar</strong> — 4 buttons + Add Result + Nav. Pass/Retest instant-apply.</li>
+      <li><strong>② Inline Note Popup</strong> — Fail/Block popup with note, Skip & Next, Save & Next, escalation.</li>
+      <li><strong>④ Add Result Modal Refactor</strong> — Status-driven field visibility. Remove rich text toolbar. 3-button footer.</li>
+    </ul>
+
+    <div class="handoff-h3">Phase 1 — Enhanced (P1)</div>
+    <ul class="handoff-ul">
+      <li><strong>⑤ Keyboard Shortcuts</strong> — P/F/B/R/A/J/K with context-aware disabling.</li>
+      <li><strong>⑥ Auto-Advance</strong> — Checkbox + localStorage + 500ms delay + "Add & Next" button.</li>
+    </ul>
+
+    <div class="handoff-h3">Phase 2 — Step-Level & Jira (P1–P2)</div>
+    <ul class="handoff-ul">
+      <li><strong>③ Step-Level Inline Results</strong> — Mini Pass/Fail per step. Toggle bar progress. Data model (step_results table).</li>
+      <li><strong>⑨ Jira Integration</strong> — OAuth connection setup, search+link existing issues, create new issue with auto-fill. Inline popup buttons + modal section.</li>
+      <li>Step progress visualization in toggle bar.</li>
+      <li>3-option auto-advance setting (Off / Next untested / Next in list).</li>
+    </ul>
+
+    <div class="handoff-note success">
+      <strong>Design Principles:</strong>
+      (1) Escalation Path — Quick Status → Inline Popup → Full Modal → Focus Mode.
+      (2) Status-Driven UI — Passed = minimal friction, Failed = expanded detail capture.
+      (3) Keyboard-First — Every action reachable via keyboard.
+      (4) Zero-Friction Pass — Single click/key to pass and advance.
+      (5) Fail-to-Fix Pipeline — Fail → Note → Jira Issue in one flow, no context switching.
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ─── Step Mini Button Interactivity ───
+  const stepStates = { 1: 'passed', 2: 'passed', 3: 'failed', 4: 'passed', 5: 'untested' };
+
+  function toggleStepBtn(btn, type, stepNum) {
+    const row = document.getElementById('stepRow' + stepNum);
+    const btns = row.querySelectorAll('.step-mini-btn');
+    const passBtn = btns[0], failBtn = btns[1];
+
+    if (type === 'pass') {
+      if (passBtn.classList.contains('pass-active')) {
+        passBtn.classList.remove('pass-active');
+        stepStates[stepNum] = 'untested';
+      } else {
+        passBtn.classList.add('pass-active');
+        failBtn.classList.remove('fail-active');
+        stepStates[stepNum] = 'passed';
+      }
+    } else {
+      if (failBtn.classList.contains('fail-active')) {
+        failBtn.classList.remove('fail-active');
+        stepStates[stepNum] = 'untested';
+      } else {
+        failBtn.classList.add('fail-active');
+        passBtn.classList.remove('pass-active');
+        stepStates[stepNum] = 'failed';
+      }
+    }
+
+    // Update row state
+    row.classList.remove('step-passed', 'step-failed');
+    if (stepStates[stepNum] === 'passed') row.classList.add('step-passed');
+    if (stepStates[stepNum] === 'failed') row.classList.add('step-failed');
+
+    // Update step num circle
+    const numEl = row.querySelector('.step-num');
+    numEl.style.background = stepStates[stepNum] === 'passed' ? '#22C55E' :
+                              stepStates[stepNum] === 'failed' ? '#EF4444' : '#F1F5F9';
+    numEl.style.color = stepStates[stepNum] === 'untested' ? '#64748B' : '#fff';
+
+    updateStepProgress();
+  }
+
+  function updateStepProgress() {
+    const passed = Object.values(stepStates).filter(s => s === 'passed').length;
+    const total = Object.keys(stepStates).length;
+    document.getElementById('stepProgress').textContent = passed + '/' + total + ' steps passed';
+  }
+
+  // ─── Modal State Tabs ───
+  function switchModalState(state) {
+    document.querySelectorAll('.state-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.state-panel').forEach(p => p.classList.remove('active'));
+
+    const tabs = document.querySelectorAll('.state-tab');
+    const panels = { passed: 0, failed: 1, blocked: 2 };
+    tabs[panels[state]].classList.add('active');
+    document.getElementById('modal-' + state).classList.add('active');
+  }
+
+  // ─── Quick Status Demo ───
+  function demoQuickPass(btn) {
+    const original = btn.innerHTML;
+    btn.style.opacity = '0.7';
+    btn.innerHTML = '<i class="ri-check-double-line"></i> Done!';
+    setTimeout(() => {
+      btn.innerHTML = original;
+      btn.style.opacity = '1';
+    }, 1200);
+  }
+
+  // ─── Popup Toggle Demo ───
+  let activePopup = null;
+  function togglePopup(type) {
+    // Just a visual indicator for the demo
+    const btn = type === 'fail' ? document.getElementById('failBtn') : null;
+    if (btn) {
+      btn.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.2)';
+      setTimeout(() => { btn.style.boxShadow = 'none'; }, 1500);
+    }
+  }
+
+  function showModal() {
+    // Visual indicator
+    const btn = document.querySelector('.qs-btn-add');
+    btn.style.background = '#EEF2FF';
+    setTimeout(() => { btn.style.background = '#fff'; }, 1000);
+  }
+</script>
+</body>
+</html>

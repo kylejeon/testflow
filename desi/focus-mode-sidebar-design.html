@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — Focus Mode Sidebar Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* DEMO BAR                                              */
+  /* ══════════════════════════════════════════════════════ */
+  .demo-bar {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem;
+    background: #FFFBEB; border-bottom: 1px solid #FDE68A; flex-shrink: 0; flex-wrap: wrap;
+  }
+  .demo-bar label { font-size: 0.625rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.04em; }
+  .demo-chip {
+    font-size: 0.625rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px;
+    background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;
+  }
+  .demo-note { font-size: 0.5625rem; color: #92400E; margin-left: auto; font-style: italic; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* FOCUS MODE OVERLAY — Full Screen (original structure) */
+  /* ══════════════════════════════════════════════════════ */
+  .focus-overlay {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #fff;
+  }
+
+  /* ── Progress Bar ── */
+  .focus-progress { height: 4px; background: #F1F5F9; flex-shrink: 0; }
+  .focus-progress-fill { height: 100%; background: #6366F1; border-radius: 0 2px 2px 0; transition: width 0.4s ease; }
+
+  /* ── Header with Keyboard Hints (original position) ── */
+  .focus-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1.5rem; border-bottom: 1px solid #E2E8F0;
+    flex-shrink: 0; background: #fff;
+  }
+  .focus-header-left { display: flex; align-items: center; gap: 0.75rem; }
+  .focus-run-name { font-size: 0.875rem; font-weight: 600; color: #0F172A; }
+  .focus-counter { font-size: 0.8125rem; color: #94A3B8; font-weight: 500; }
+  .focus-header-center { display: flex; align-items: center; gap: 0.375rem; }
+  .kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 1.25rem; height: 1.25rem; padding: 0 0.25rem; background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 0.25rem; font-size: 0.625rem; font-weight: 700; color: #64748B; font-family: 'SF Mono','Fira Code',monospace; }
+  .kbd-label { font-size: 0.625rem; color: #94A3B8; margin-right: 0.5rem; }
+  .kbd-sep { width: 1px; height: 16px; background: #E2E8F0; margin: 0 0.5rem; }
+  .focus-close { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; font-weight: 600; color: #64748B; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; cursor: pointer; font-family: inherit; }
+  .focus-close:hover { background: #F8FAFC; color: #475569; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TIER 2 — Metadata Bar                                 */
+  /* ══════════════════════════════════════════════════════ */
+  .meta-bar {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.625rem 1.5rem; background: #F8FAFC;
+    border-bottom: 1px solid #E2E8F0; flex-shrink: 0; height: 40px;
+  }
+  .meta-bar-id { font-family: 'SF Mono','Fira Code',monospace; font-size: 0.8125rem; font-weight: 600; color: #7C3AED; }
+  .meta-bar-sep { color: #CBD5E1; font-size: 0.75rem; }
+  .meta-bar-item { display: flex; align-items: center; gap: 0.25rem; font-size: 0.8125rem; color: #64748B; font-weight: 500; }
+  .meta-bar-item i { font-size: 0.875rem; color: #94A3B8; }
+  .meta-priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .meta-priority-text { font-weight: 600; }
+  .meta-priority-high .meta-priority-dot { background: #F59E0B; }
+  .meta-priority-high .meta-priority-text { color: #92400E; }
+  .meta-priority-medium .meta-priority-dot { background: #6366F1; }
+  .meta-priority-medium .meta-priority-text { color: #4338CA; }
+  .meta-tag { font-size: 0.6875rem; font-weight: 500; padding: 0.0625rem 0.375rem; border-radius: 0.25rem; background: #EEF2FF; color: #4338CA; }
+  .meta-bar-av { width: 1.375rem; height: 1.375rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* MAIN LAYOUT: Sidebar + Body                           */
+  /* ══════════════════════════════════════════════════════ */
+  .focus-layout { flex: 1; display: flex; overflow: hidden; position: relative; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* SIDEBAR (280px) — NEW                                 */
+  /* ══════════════════════════════════════════════════════ */
+  .sidebar {
+    width: 280px; min-width: 0; background: #FAFBFC; border-right: 1px solid #E2E8F0;
+    display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+    transition: width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+  }
+  .sidebar.collapsed { width: 0; min-width: 0; border-right: none; }
+  .sidebar.collapsed .sidebar-inner { opacity: 0; pointer-events: none; }
+  .sidebar-inner { display: flex; flex-direction: column; height: 100%; width: 280px; transition: opacity 0.15s; }
+
+  .sidebar-toggle {
+    position: absolute; top: 50%; right: -12px; transform: translateY(-50%);
+    width: 24px; height: 56px; border-radius: 0 8px 8px 0;
+    background: #fff; border: 1px solid #E2E8F0; border-left: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 10; transition: all 0.15s;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+  }
+  .sidebar-toggle:hover { background: #EEF2FF; }
+  .sidebar-toggle i { font-size: 0.875rem; color: #94A3B8; transition: transform 0.25s; }
+  .sidebar.collapsed .sidebar-toggle i { transform: rotate(180deg); }
+
+  .collapsed-tab {
+    display: none; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 12px; height: 56px; background: #EEF2FF; border-radius: 0 6px 6px 0;
+    border: 1px solid #C7D2FE; border-left: none;
+    cursor: pointer; z-index: 10; align-items: center; justify-content: center;
+  }
+  .collapsed-tab:hover { width: 16px; background: #C7D2FE; }
+  .sidebar.collapsed ~ .collapsed-tab { display: flex; }
+
+  /* Sidebar Progress */
+  .sb-progress { padding: 0.875rem 1rem 0.625rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .sb-progress-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+  .sb-progress-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; }
+  .sb-progress-count { font-size: 0.75rem; font-weight: 700; }
+  .sb-progress-count .done { color: #6366F1; }
+  .sb-progress-count .total { color: #94A3B8; font-weight: 500; }
+  .sb-segment-bar { height: 6px; background: #E2E8F0; border-radius: 3px; overflow: hidden; display: flex; }
+  .sb-segment { height: 100%; transition: width 0.4s ease; }
+  .sb-segment:first-child { border-radius: 3px 0 0 3px; }
+  .sb-segment:last-child { border-radius: 0 3px 3px 0; }
+  .seg-passed { background: #22C55E; } .seg-failed { background: #EF4444; }
+  .seg-blocked { background: #F59E0B; } .seg-retest { background: #8B5CF6; }
+  .seg-untested { background: #E2E8F0; }
+
+  /* Sidebar Filters */
+  .sb-filters { display: flex; gap: 0.25rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; flex-wrap: wrap; }
+  .filter-chip {
+    font-size: 0.625rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: 9999px;
+    border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer;
+    display: flex; align-items: center; gap: 0.25rem; transition: all 0.15s; white-space: nowrap;
+  }
+  .filter-chip:hover { border-color: #C7D2FE; }
+  .filter-chip.active { background: #6366F1; color: #fff; border-color: #6366F1; }
+  .filter-chip .chip-count { font-size: 0.5625rem; font-weight: 700; opacity: 0.8; }
+  .filter-chip .chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .filter-chip.active .chip-dot { background: rgba(255,255,255,0.5) !important; }
+
+  /* Sidebar Search */
+  .sb-search { padding: 0.5rem 0.75rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .sb-search-inner {
+    display: flex; align-items: center; gap: 0.375rem;
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.375rem;
+    padding: 0.3125rem 0.5rem; transition: border-color 0.15s;
+  }
+  .sb-search-inner:focus-within { border-color: #6366F1; box-shadow: 0 0 0 3px rgba(99,102,241,0.08); }
+  .sb-search-inner i { font-size: 0.8125rem; color: #94A3B8; flex-shrink: 0; }
+  .sb-search-inner input { border: none; background: none; outline: none; font-size: 0.75rem; color: #1E293B; font-family: inherit; flex: 1; min-width: 0; }
+  .sb-search-inner input::placeholder { color: #94A3B8; }
+
+  /* Sidebar TC List */
+  .sb-tc-list { flex: 1; overflow-y: auto; padding: 0.25rem 0; }
+  .tc-item {
+    display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem 0.75rem; margin: 0.0625rem 0.375rem;
+    border-radius: 0.5rem; cursor: pointer; transition: all 0.15s;
+    border: 1.5px solid transparent; min-height: 48px;
+  }
+  .tc-item:hover { background: #F1F5F9; }
+  .tc-item.active { background: #EEF2FF; border-color: #C7D2FE; }
+  .tc-item.active .tc-name { color: #4338CA; font-weight: 600; }
+  .tc-item.active .tc-id { color: #818CF8; }
+  .tc-status-icon {
+    width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.6875rem; flex-shrink: 0; margin-top: 0.0625rem;
+  }
+  .tc-status-icon.passed { background: #DCFCE7; color: #16A34A; }
+  .tc-status-icon.failed { background: #FEE2E2; color: #DC2626; }
+  .tc-status-icon.blocked { background: #FEF3C7; color: #D97706; }
+  .tc-status-icon.retest { background: #EDE9FE; color: #7C3AED; }
+  .tc-status-icon.untested { background: #F1F5F9; color: #94A3B8; }
+  .tc-info { flex: 1; min-width: 0; }
+  .tc-id { font-size: 0.625rem; font-family: 'SF Mono','Fira Code',monospace; color: #94A3B8; font-weight: 500; line-height: 1.2; }
+  .tc-name { font-size: 0.8125rem; color: #334155; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TIER 1 — Main Scrollable Body                         */
+  /* ══════════════════════════════════════════════════════ */
+  .focus-body-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .focus-body { flex: 1; overflow-y: auto; padding: 2rem 3rem; }
+  .focus-body-inner { max-width: 720px; margin: 0 auto; width: 100%; }
+
+  .prev-failed-badge { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; font-weight: 600; color: #991B1B; background: #FEF2F2; padding: 0.25rem 0.625rem; border-radius: 9999px; margin-bottom: 0.75rem; }
+  .prev-failed-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: #EF4444; }
+  .focus-tc-title { font-size: 1.25rem; font-weight: 700; color: #0F172A; margin-bottom: 0.5rem; line-height: 1.4; }
+  .focus-tc-desc { font-size: 0.875rem; color: #64748B; margin-bottom: 1.5rem; line-height: 1.6; }
+
+  /* Precondition */
+  .focus-precondition { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem; padding: 0.875rem 1rem; margin-bottom: 1.25rem; }
+  .focus-precondition-label { font-size: 0.6875rem; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.375rem; display: flex; align-items: center; gap: 0.375rem; }
+  .focus-precondition-label i { font-size: 0.875rem; }
+  .focus-precondition-text { font-size: 0.8125rem; color: #92400E; line-height: 1.6; }
+
+  /* Attachments */
+  .focus-attachments { margin-bottom: 1.5rem; }
+  .focus-attach-label { font-size: 0.75rem; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.375rem; }
+  .focus-attach-label i { font-size: 0.875rem; color: #94A3B8; }
+  .focus-attach-grid { display: flex; gap: 0.625rem; flex-wrap: wrap; }
+  .focus-attach-img { width: 120px; height: 80px; border-radius: 0.5rem; overflow: hidden; border: 1px solid #E2E8F0; cursor: zoom-in; background: #F1F5F9; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .focus-attach-img:hover { border-color: #A5B4FC; transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .focus-attach-img .placeholder { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; color: #94A3B8; }
+  .focus-attach-img .placeholder i { font-size: 1.25rem; }
+  .focus-attach-img .placeholder span { font-size: 0.5625rem; font-weight: 500; }
+  .focus-attach-file { height: 80px; min-width: 140px; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #F8FAFC; padding: 0.625rem 0.75rem; display: flex; flex-direction: column; justify-content: center; cursor: pointer; transition: all 0.15s; }
+  .focus-attach-file:hover { border-color: #A5B4FC; }
+  .focus-attach-file-name { font-size: 0.75rem; font-weight: 600; color: #334155; display: flex; align-items: center; gap: 0.25rem; }
+  .focus-attach-file-name i { font-size: 0.875rem; color: #94A3B8; }
+  .focus-attach-file-size { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.125rem; }
+  .focus-attach-file-dl { font-size: 0.6875rem; color: #6366F1; font-weight: 600; margin-top: 0.25rem; display: flex; align-items: center; gap: 0.125rem; }
+
+  /* Test Steps with Step-Level Results */
+  .focus-steps-label { font-size: 0.75rem; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.625rem; }
+  .focus-steps { display: flex; flex-direction: column; gap: 0; margin-bottom: 1.25rem; }
+  .focus-step { display: flex; gap: 0.75rem; padding: 0.875rem 1rem; border: 1px solid #E2E8F0; border-top: none; background: #fff; position: relative; }
+  .focus-step:first-child { border-top: 1px solid #E2E8F0; border-radius: 0.5rem 0.5rem 0 0; }
+  .focus-step:last-child { border-radius: 0 0 0.5rem 0.5rem; }
+  .focus-step.step-passed { background: #F0FDF4; border-color: #BBF7D0; }
+  .focus-step.step-passed + .focus-step { border-top-color: #BBF7D0; }
+  .focus-step.step-failed { background: #FEF2F2; border-color: #FECACA; }
+  .focus-step.step-failed + .focus-step { border-top-color: #FECACA; }
+  .focus-step-num { width: 1.5rem; height: 1.5rem; border-radius: 50%; background: #EEF2FF; color: #6366F1; font-size: 0.6875rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .focus-step.step-passed .focus-step-num { background: #22C55E; color: #fff; }
+  .focus-step.step-failed .focus-step-num { background: #EF4444; color: #fff; }
+  .focus-step-content { flex: 1; min-width: 0; }
+  .focus-step-text { font-size: 0.875rem; color: #334155; line-height: 1.6; }
+  .focus-step-expected { margin-top: 0.375rem; font-size: 0.8125rem; color: #16A34A; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 0.375rem; padding: 0.375rem 0.625rem; display: flex; align-items: flex-start; gap: 0.25rem; line-height: 1.5; }
+  .focus-step-expected i { font-size: 0.875rem; flex-shrink: 0; margin-top: 0.125rem; }
+  .focus-step-actions { display: flex; gap: 0.25rem; flex-shrink: 0; margin-top: 0.125rem; }
+  .step-btn { width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: #94A3B8; transition: all 0.1s; }
+  .step-btn.btn-pass:hover { background: #F0FDF4; color: #16A34A; border-color: #86EFAC; }
+  .step-btn.btn-fail:hover { background: #FEF2F2; color: #DC2626; border-color: #FCA5A5; }
+  .step-btn.btn-pass.active { background: #22C55E; color: #fff; border-color: #22C55E; }
+  .step-btn.btn-fail.active { background: #EF4444; color: #fff; border-color: #EF4444; }
+
+
+  /* ══════════════════════════════════════════════════════ */
+  /* TIER 3 — Collapsible Panels (Comments / History)      */
+  /* ══════════════════════════════════════════════════════ */
+  .collapse-panel { margin-bottom: 0.75rem; }
+  .collapse-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.625rem 1rem; background: #F8FAFC; border: 1px solid #E2E8F0;
+    border-radius: 0.5rem; cursor: pointer; user-select: none; transition: all 0.15s;
+  }
+  .collapse-header:hover { background: #F1F5F9; }
+  .collapse-header.expanded { border-radius: 0.5rem 0.5rem 0 0; }
+  .collapse-header-left { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; font-weight: 600; color: #475569; }
+  .collapse-header-left i { font-size: 1rem; color: #94A3B8; }
+  .collapse-badge { font-size: 0.6875rem; background: #F1F5F9; color: #64748B; padding: 0.0625rem 0.375rem; border-radius: 9999px; font-weight: 700; }
+  .collapse-chevron { font-size: 1rem; color: #94A3B8; transition: transform 0.2s; }
+  .collapse-header.expanded .collapse-chevron { transform: rotate(90deg); }
+  .collapse-body { display: none; border: 1px solid #E2E8F0; border-top: none; border-radius: 0 0 0.5rem 0.5rem; padding: 0.75rem 1rem; background: #fff; }
+  .collapse-body.visible { display: block; }
+
+  /* Comment items */
+  .fm-comment { background: #F8FAFC; border-radius: 0.375rem; padding: 0.625rem 0.75rem; margin-bottom: 0.5rem; }
+  .fm-comment:last-child { margin-bottom: 0; }
+  .fm-comment-head { display: flex; align-items: center; gap: 0.375rem; margin-bottom: 0.25rem; }
+  .fm-comment-av { width: 1.25rem; height: 1.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .fm-comment-name { font-size: 0.8125rem; font-weight: 600; color: #4338CA; }
+  .fm-comment-time { font-size: 0.75rem; color: #94A3B8; }
+  .fm-comment-text { font-size: 0.8125rem; color: #475569; line-height: 1.5; }
+
+  /* History items */
+  .fm-history-item { display: flex; align-items: flex-start; gap: 0.625rem; padding: 0.5rem 0; border-bottom: 1px solid #F1F5F9; }
+  .fm-history-item:last-child { border-bottom: none; }
+  .fm-history-status { font-size: 0.75rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; flex-shrink: 0; }
+  .fm-history-status .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .fh-passed { background: #F0FDF4; color: #166534; } .fh-passed .dot { background: #22C55E; }
+  .fh-failed { background: #FEF2F2; color: #991B1B; } .fh-failed .dot { background: #EF4444; }
+  .fm-history-info { flex: 1; }
+  .fm-history-run { font-size: 0.8125rem; font-weight: 500; color: #475569; }
+  .fm-history-meta { font-size: 0.75rem; color: #94A3B8; }
+  .fm-history-note { font-size: 0.75rem; color: #94A3B8; font-style: italic; margin-top: 0.125rem; padding-left: 0.25rem; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* Note Input                                            */
+  /* ══════════════════════════════════════════════════════ */
+  .focus-note { margin-bottom: 1rem; }
+  .focus-note-label { font-size: 0.75rem; font-weight: 600; color: #64748B; margin-bottom: 0.375rem; }
+  .focus-note-input { width: 100%; min-height: 5rem; padding: 0.75rem 1rem; border: 1px solid #E2E8F0; border-radius: 0.5rem; font-size: 0.875rem; font-family: inherit; color: #334155; resize: vertical; outline: none; line-height: 1.6; }
+  .focus-note-input:focus { border-color: #6366F1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+  .focus-note-hint { font-size: 0.6875rem; color: #94A3B8; margin-top: 0.25rem; text-align: right; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* Footer — Status Buttons (original position: fixed)    */
+  /* ══════════════════════════════════════════════════════ */
+  .focus-footer {
+    display: flex; align-items: center; justify-content: center;
+    padding: 0.875rem 1.5rem; border-top: 1px solid #E2E8F0;
+    background: #fff; flex-shrink: 0; gap: 0.5rem;
+  }
+  .focus-nav-btn {
+    display: flex; align-items: center; gap: 0.25rem;
+    font-size: 0.8125rem; font-weight: 600; color: #64748B;
+    padding: 0.5rem 0.875rem; border-radius: 0.5rem;
+    border: 1px solid #E2E8F0; background: #fff; cursor: pointer;
+    font-family: inherit; transition: all 0.15s;
+  }
+  .focus-nav-btn:hover { background: #F8FAFC; }
+  .focus-nav-btn i { font-size: 1rem; }
+  .focus-status-btns { display: flex; gap: 0.375rem; margin: 0 0.75rem; }
+  .focus-status-btn {
+    padding: 0.5rem 1.125rem; border-radius: 0.5rem;
+    font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    border: none; color: #fff; font-family: inherit;
+    display: flex; align-items: center; gap: 0.375rem; transition: all 0.15s;
+  }
+  .focus-status-btn .key { font-size: 0.6875rem; opacity: 0.7; padding: 0.0625rem 0.25rem; background: rgba(255,255,255,0.2); border-radius: 0.25rem; }
+  .fs-passed { background: #22C55E; } .fs-passed:hover { background: #16A34A; }
+  .fs-failed { background: #EF4444; } .fs-failed:hover { background: #DC2626; }
+  .fs-blocked { background: #F59E0B; } .fs-blocked:hover { background: #D97706; }
+  .fs-retest { background: #8B5CF6; } .fs-retest:hover { background: #7C3AED; }
+  .fs-skip { background: #94A3B8; } .fs-skip:hover { background: #64748B; }
+
+  /* ══════════════════════════════════════════════════════ */
+  /* DEV HANDOFF SPEC                                      */
+  /* ══════════════════════════════════════════════════════ */
+  .dev-spec {
+    position: fixed; bottom: 1rem; right: 1rem; width: 22rem; max-height: 28rem;
+    background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15); z-index: 50; overflow: hidden;
+    font-size: 0.6875rem; transition: all 0.2s;
+  }
+  .dev-spec.collapsed { max-height: 2.5rem; }
+  .dev-spec-header { display: flex; align-items: center; justify-content: space-between; padding: 0.625rem 0.875rem; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; cursor: pointer; user-select: none; }
+  .dev-spec-header span { font-weight: 700; color: #6366F1; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dev-spec-header i { color: #94A3B8; transition: transform 0.2s; }
+  .dev-spec.collapsed .dev-spec-header i { transform: rotate(180deg); }
+  .dev-spec-body { padding: 0.875rem; overflow-y: auto; max-height: 24rem; line-height: 1.6; color: #475569; }
+  .dev-spec-body h4 { font-size: 0.6875rem; font-weight: 700; color: #0F172A; margin-top: 0.625rem; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dev-spec-body h4:first-child { margin-top: 0; }
+  .dev-spec-body code { font-size: 0.625rem; background: #F1F5F9; padding: 0.0625rem 0.25rem; border-radius: 0.1875rem; color: #6366F1; font-family: 'SF Mono','Fira Code',monospace; }
+  .dev-spec-body ul { padding-left: 1rem; margin: 0.25rem 0; }
+  .dev-spec-body li { margin-bottom: 0.125rem; }
+  .spec-color { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 0.25rem; vertical-align: middle; }
+
+  /* Scrollbar */
+  .sidebar ::-webkit-scrollbar, .focus-body::-webkit-scrollbar { width: 5px; }
+  .sidebar ::-webkit-scrollbar-track, .focus-body::-webkit-scrollbar-track { background: transparent; }
+  .sidebar ::-webkit-scrollbar-thumb, .focus-body::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+  mark { background: #FEF08A; padding: 0 1px; border-radius: 2px; color: #1E293B; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ DEMO BAR ═══════════════ -->
+<div class="demo-bar">
+  <label>Testably Design</label>
+  <span class="demo-chip">Focus Mode + Sidebar</span>
+  <span class="demo-chip">3-Tier Preserved</span>
+  <span class="demo-chip">Comments · History · Note</span>
+  <span class="demo-note">[ sidebar · J/K nav · C comments · H history · P/F/B/R status</span>
+</div>
+
+<!-- ═══════════════ FOCUS MODE OVERLAY ═══════════════ -->
+<div class="focus-overlay">
+
+  <!-- Progress Bar (original) -->
+  <div class="focus-progress">
+    <div class="focus-progress-fill" id="progressFill" style="width:55%"></div>
+  </div>
+
+  <!-- Header with Keyboard Hints (ORIGINAL POSITION) -->
+  <div class="focus-header">
+    <div class="focus-header-left">
+      <span class="focus-run-name">Sprint 24 Regression</span>
+      <span class="focus-counter" id="headerCounter">22 / 40</span>
+    </div>
+    <div class="focus-header-center">
+      <span class="kbd">P</span><span class="kbd-label">Pass</span>
+      <span class="kbd">F</span><span class="kbd-label">Fail</span>
+      <span class="kbd">B</span><span class="kbd-label">Block</span>
+      <span class="kbd">R</span><span class="kbd-label">Retest</span>
+      <span class="kbd">S</span><span class="kbd-label">Skip</span>
+      <span class="kbd-sep"></span>
+      <span class="kbd">C</span><span class="kbd-label">Comments</span>
+      <span class="kbd">H</span><span class="kbd-label">History</span>
+      <span class="kbd">N</span><span class="kbd-label">Note</span>
+      <span class="kbd-sep"></span>
+      <span class="kbd">[</span><span class="kbd-label">Sidebar</span>
+      <span class="kbd">/</span><span class="kbd-label">Search</span>
+    </div>
+    <button class="focus-close"><i class="ri-close-line"></i> Exit <span class="kbd" style="margin-left:0.25rem">Esc</span></button>
+  </div>
+
+  <!-- TIER 2: Metadata Bar (original) -->
+  <div class="meta-bar" id="metaBar">
+    <span class="meta-bar-id" id="metaTcId">TC-006</span>
+    <span class="meta-bar-sep">·</span>
+    <span class="meta-bar-item" id="metaFolder"><i class="ri-folder-line"></i> Dashboard</span>
+    <span class="meta-bar-sep">·</span>
+    <span class="meta-bar-item meta-priority-medium" id="metaPriority"><span class="meta-priority-dot"></span><span class="meta-priority-text">Medium</span></span>
+    <span class="meta-bar-sep">·</span>
+    <span class="meta-bar-item"><i class="ri-price-tag-3-line"></i> <span class="meta-tag">dashboard</span> <span class="meta-tag">widgets</span></span>
+    <span class="meta-bar-sep">·</span>
+    <span class="meta-bar-item"><span class="meta-bar-av" style="background:#6366F1">KJ</span> Kyle Jeon</span>
+  </div>
+
+  <!-- MAIN LAYOUT: Sidebar + Body + Footer -->
+  <div class="focus-layout">
+
+    <!-- ── SIDEBAR (NEW — 280px collapsible) ── -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="sb-progress">
+          <div class="sb-progress-top">
+            <span class="sb-progress-label">Progress</span>
+            <span class="sb-progress-count"><span class="done" id="progressDone">22</span> <span class="total">/ 40 completed</span></span>
+          </div>
+          <div class="sb-segment-bar" id="segmentBar"></div>
+        </div>
+        <div class="sb-filters">
+          <div class="filter-chip active" data-filter="all" onclick="setFilter('all', this)">All</div>
+          <div class="filter-chip" data-filter="passed" onclick="setFilter('passed', this)"><span class="chip-dot" style="background:#22C55E"></span> Passed <span class="chip-count" id="countPassed"></span></div>
+          <div class="filter-chip" data-filter="failed" onclick="setFilter('failed', this)"><span class="chip-dot" style="background:#EF4444"></span> Failed <span class="chip-count" id="countFailed"></span></div>
+          <div class="filter-chip" data-filter="blocked" onclick="setFilter('blocked', this)"><span class="chip-dot" style="background:#F59E0B"></span> Blocked <span class="chip-count" id="countBlocked"></span></div>
+          <div class="filter-chip" data-filter="retest" onclick="setFilter('retest', this)"><span class="chip-dot" style="background:#8B5CF6"></span> Retest <span class="chip-count" id="countRetest"></span></div>
+          <div class="filter-chip" data-filter="untested" onclick="setFilter('untested', this)"><span class="chip-dot" style="background:#94A3B8"></span> Untested <span class="chip-count" id="countUntested"></span></div>
+        </div>
+        <div class="sb-search">
+          <div class="sb-search-inner">
+            <i class="ri-search-line"></i>
+            <input type="text" placeholder="Search TC..." id="tcSearchInput" oninput="searchTCs()">
+            <span class="kbd" style="font-size:0.5rem">/</span>
+          </div>
+        </div>
+        <div class="sb-tc-list" id="tcList"></div>
+      </div>
+      <div class="sidebar-toggle" onclick="toggleSidebar()"><i class="ri-arrow-left-s-line"></i></div>
+    </div>
+    <div class="collapsed-tab" onclick="toggleSidebar()"><i class="ri-arrow-right-s-line" style="font-size:0.625rem;color:#6366F1"></i></div>
+
+    <!-- ── MAIN BODY (original 3-Tier structure) ── -->
+    <div class="focus-body-wrap">
+      <div class="focus-body" id="focusBody">
+        <div class="focus-body-inner" id="focusBodyInner">
+
+          <!-- Previously failed badge -->
+          <div class="prev-failed-badge"><span class="dot"></span> Previously failed</div>
+
+          <!-- TC Title & Description -->
+          <h1 class="focus-tc-title" id="mainTitle">Dashboard Widget Loading</h1>
+          <p class="focus-tc-desc" id="mainDesc">Verify that all dashboard widgets render correctly and display current project data when navigating to the dashboard.</p>
+
+          <!-- Precondition -->
+          <div class="focus-precondition">
+            <div class="focus-precondition-label"><i class="ri-alert-line"></i> Precondition</div>
+            <div class="focus-precondition-text">User must be logged in. At least 1 project created with test data. Stable network connection.</div>
+          </div>
+
+          <!-- Attachments -->
+          <div class="focus-attachments">
+            <div class="focus-attach-label"><i class="ri-attachment-2"></i> Attachments (2)</div>
+            <div class="focus-attach-grid">
+              <div class="focus-attach-img"><div class="placeholder"><i class="ri-image-line"></i><span>dashboard-ui.png</span></div></div>
+              <div class="focus-attach-file">
+                <div class="focus-attach-file-name"><i class="ri-file-text-line"></i> widget-spec.md</div>
+                <div class="focus-attach-file-size">2.1 KB</div>
+                <div class="focus-attach-file-dl"><i class="ri-download-2-line"></i> Download</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TIER 1: Test Steps with Step-Level Results -->
+          <div class="focus-steps-label">Test Steps</div>
+          <div class="focus-steps" id="mainSteps">
+            <!-- rendered by JS -->
+          </div>
+
+          <!-- TIER 3: Comments (collapsible, C key) -->
+          <div class="collapse-panel" id="commentsPanel">
+            <div class="collapse-header" onclick="toggleCollapse('comments')">
+              <div class="collapse-header-left"><i class="ri-chat-3-line"></i> Comments <span class="collapse-badge">3</span></div>
+              <div style="display:flex;align-items:center;gap:0.375rem;">
+                <span class="kbd" style="font-size:0.5rem">C</span>
+                <i class="ri-arrow-right-s-line collapse-chevron" id="commentsChevron"></i>
+              </div>
+            </div>
+            <div class="collapse-body" id="commentsBody">
+              <div class="fm-comment">
+                <div class="fm-comment-head">
+                  <div class="fm-comment-av" style="background:#EC4899">ML</div>
+                  <span class="fm-comment-name">Mike Lee</span>
+                  <span class="fm-comment-time">· 2d ago</span>
+                </div>
+                <div class="fm-comment-text">Activity widget sometimes shows stale data. Might be a caching issue — check Redis TTL.</div>
+              </div>
+              <div class="fm-comment">
+                <div class="fm-comment-head">
+                  <div class="fm-comment-av" style="background:#6366F1">KJ</div>
+                  <span class="fm-comment-name">Kyle Jeon</span>
+                  <span class="fm-comment-time">· 5d ago</span>
+                </div>
+                <div class="fm-comment-text">Milestone widget doesn't render when project has no milestones. Need empty state handling.</div>
+              </div>
+              <div class="fm-comment">
+                <div class="fm-comment-head">
+                  <div class="fm-comment-av" style="background:#10B981">SY</div>
+                  <span class="fm-comment-name">Su Yeon</span>
+                  <span class="fm-comment-time">· 7d ago</span>
+                </div>
+                <div class="fm-comment-text">First report — dashboard takes 3+ seconds on slow connections. Performance optimization needed.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TIER 3: Execution History (collapsible, H key) -->
+          <div class="collapse-panel" id="historyPanel">
+            <div class="collapse-header" onclick="toggleCollapse('history')">
+              <div class="collapse-header-left"><i class="ri-history-line"></i> Execution History <span class="collapse-badge">4</span></div>
+              <div style="display:flex;align-items:center;gap:0.375rem;">
+                <span class="kbd" style="font-size:0.5rem">H</span>
+                <i class="ri-arrow-right-s-line collapse-chevron" id="historyChevron"></i>
+              </div>
+            </div>
+            <div class="collapse-body" id="historyBody">
+              <div class="fm-history-item">
+                <div class="fm-history-status fh-passed"><span class="dot"></span> Passed</div>
+                <div class="fm-history-info">
+                  <div class="fm-history-run">Sprint 23 Regression</div>
+                  <div class="fm-history-meta">3d ago · by KJ</div>
+                </div>
+              </div>
+              <div class="fm-history-item">
+                <div class="fm-history-status fh-failed"><span class="dot"></span> Failed</div>
+                <div class="fm-history-info">
+                  <div class="fm-history-run">Sprint 22 Hotfix</div>
+                  <div class="fm-history-meta">10d ago · by ML</div>
+                  <div class="fm-history-note">"Activity widget blank after deploy — cache not invalidated"</div>
+                </div>
+              </div>
+              <div class="fm-history-item">
+                <div class="fm-history-status fh-passed"><span class="dot"></span> Passed</div>
+                <div class="fm-history-info">
+                  <div class="fm-history-run">Sprint 21 Release</div>
+                  <div class="fm-history-meta">17d ago · by SY</div>
+                </div>
+              </div>
+              <div class="fm-history-item">
+                <div class="fm-history-status fh-passed"><span class="dot"></span> Passed</div>
+                <div class="fm-history-info">
+                  <div class="fm-history-run">Sprint 20 Regression</div>
+                  <div class="fm-history-meta">24d ago · by KJ</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Note Input -->
+          <div class="focus-note" id="noteArea">
+            <div class="focus-note-label">Note (optional)</div>
+            <textarea class="focus-note-input" placeholder="Describe what you observed..."></textarea>
+            <div class="focus-note-hint">Cmd + Enter to save with status</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Footer — Status Buttons (ORIGINAL POSITION: fixed bottom) -->
+      <div class="focus-footer">
+        <button class="focus-nav-btn" onclick="navigate(-1)"><i class="ri-arrow-left-s-line"></i> Previous</button>
+        <div class="focus-status-btns">
+          <button class="focus-status-btn fs-passed" onclick="setStatus('passed')"><i class="ri-check-line"></i> Passed <span class="key">P</span></button>
+          <button class="focus-status-btn fs-failed" onclick="setStatus('failed')"><i class="ri-close-line"></i> Failed <span class="key">F</span></button>
+          <button class="focus-status-btn fs-blocked" onclick="setStatus('blocked')"><i class="ri-forbid-line"></i> Blocked <span class="key">B</span></button>
+          <button class="focus-status-btn fs-retest" onclick="setStatus('retest')"><i class="ri-refresh-line"></i> Retest <span class="key">R</span></button>
+          <button class="focus-status-btn fs-skip"><i class="ri-skip-forward-line"></i> Skip <span class="key">S</span></button>
+        </div>
+        <button class="focus-nav-btn" onclick="navigate(1)">Next <i class="ri-arrow-right-s-line"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ DEV HANDOFF SPEC ═══════════════ -->
+<div class="dev-spec" id="devSpec">
+  <div class="dev-spec-header" onclick="toggleDevSpec()">
+    <span><i class="ri-code-s-slash-line" style="margin-right:0.25rem"></i> Dev Handoff Spec</span>
+    <i class="ri-arrow-down-s-line"></i>
+  </div>
+  <div class="dev-spec-body">
+    <h4>Architecture: Sidebar + 3-Tier</h4>
+    <ul>
+      <li>NEW: 280px collapsible sidebar (left) with TC list</li>
+      <li>PRESERVED: Original 3-Tier Focus Mode layout (right)</li>
+      <li>Tier 1 (always visible): Precondition, Attachments, Steps + Expected</li>
+      <li>Tier 2 (metadata bar): TC-ID · Folder · Priority · Tags · Assignee</li>
+      <li>Tier 3 (collapsible): Comments (<code>C</code>) + History (<code>H</code>)</li>
+      <li>Note input below Tier 3</li>
+      <li>Footer: P/F/B/R/S status buttons + Prev/Next nav (fixed bottom)</li>
+    </ul>
+
+    <h4>Layout Stack (top → bottom)</h4>
+    <ul>
+      <li>① Progress bar: <code>4px</code>, fill <code>#6366F1</code></li>
+      <li>② Header: Run name + counter + <strong>ALL kbd hints</strong> + Exit</li>
+      <li>③ Metadata bar (Tier 2): <code>40px</code>, bg <code>#F8FAFC</code></li>
+      <li>④ Focus layout: Sidebar (280px) + Body (flex:1, scrollable, max-width 720px)</li>
+      <li>⑤ Footer: Status buttons centered — <strong>fixed bottom</strong></li>
+    </ul>
+
+    <h4>Sidebar (NEW)</h4>
+    <ul>
+      <li>Width: <code>280px</code> expanded, <code>0px</code> collapsed</li>
+      <li>Background: <code>#FAFBFC</code>, border-right: <code>1px solid #E2E8F0</code></li>
+      <li>Toggle: handle (24×56px) + <code>[</code> keyboard</li>
+      <li>Collapsed: 12px tab handle on left edge</li>
+      <li>Sections: Progress bar → Filter chips → Search → TC list</li>
+      <li>TC items: status icon + TC-ID + name only (no steps — shown in main area)</li>
+    </ul>
+
+    <h4>Keyboard Shortcuts (ALL in header)</h4>
+    <ul>
+      <li><code>P</code>/<code>F</code>/<code>B</code>/<code>R</code>/<code>S</code> — set status</li>
+      <li><code>C</code> — toggle Comments panel</li>
+      <li><code>H</code> — toggle History panel</li>
+      <li><code>N</code> — focus Note input</li>
+      <li><code>[</code> — toggle sidebar</li>
+      <li><code>/</code> — focus sidebar search</li>
+      <li><code>J</code>/<code>K</code> — next/prev TC + sidebar sync</li>
+      <li><code>Esc</code> — clear search → exit focus mode</li>
+    </ul>
+
+    <h4>Collapsible Panels (Tier 3)</h4>
+    <ul>
+      <li>Comments: <code>ri-chat-3-line</code> + badge count + <code>C</code> key toggle</li>
+      <li>History: <code>ri-history-line</code> + badge count + <code>H</code> key toggle</li>
+      <li>Default: collapsed. Auto-collapse on TC navigation</li>
+      <li>Container: bg <code>#F8FAFC</code>, border <code>#E2E8F0</code>, radius <code>0.5rem</code></li>
+    </ul>
+
+    <h4>Status Buttons (Footer)</h4>
+    <ul>
+      <li>Passed: <code>#22C55E</code> → hover <code>#16A34A</code></li>
+      <li>Failed: <code>#EF4444</code> → hover <code>#DC2626</code></li>
+      <li>Blocked: <code>#F59E0B</code> → hover <code>#D97706</code></li>
+      <li>Retest: <code>#8B5CF6</code> → hover <code>#7C3AED</code></li>
+      <li>Skip: <code>#94A3B8</code> → hover <code>#64748B</code></li>
+      <li>Padding: <code>0.5rem 1.125rem</code>, radius <code>0.5rem</code>, font <code>0.875rem 600</code></li>
+    </ul>
+
+    <h4>Status Icons (Sidebar)</h4>
+    <ul>
+      <li><span class="spec-color" style="background:#16A34A"></span> Passed: <code>ri-check-line</code> · <code>#16A34A</code> / <code>#DCFCE7</code></li>
+      <li><span class="spec-color" style="background:#DC2626"></span> Failed: <code>ri-close-line</code> · <code>#DC2626</code> / <code>#FEE2E2</code></li>
+      <li><span class="spec-color" style="background:#D97706"></span> Blocked: <code>ri-forbid-line</code> · <code>#D97706</code> / <code>#FEF3C7</code></li>
+      <li><span class="spec-color" style="background:#7C3AED"></span> Retest: <code>ri-refresh-line</code> · <code>#7C3AED</code> / <code>#EDE9FE</code></li>
+      <li><span class="spec-color" style="background:#94A3B8"></span> Untested: <code>ri-subtract-line</code> · <code>#94A3B8</code> / <code>#F1F5F9</code></li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// TC DATA (40 test cases — same as before)
+// ════════════════════════════════════════════════════════
+const testCases = [
+  { id:'TC-001', name:'Login — Valid Email', section:'Auth / Login', priority:'high', status:'passed', steps:[{s:'Navigate to login page',e:'Login form displayed with email and password fields'},{s:'Enter valid email and password',e:'Credentials accepted, no validation errors'},{s:'Click "Sign In" button',e:'Redirected to dashboard within 2 seconds'}] },
+  { id:'TC-002', name:'Login — Google SSO', section:'Auth / Login', priority:'medium', status:'passed', steps:[{s:'Click "Sign in with Google"',e:'Google OAuth popup appears'},{s:'Select Google account',e:'Authentication completes, redirected to dashboard'}] },
+  { id:'TC-003', name:'Login — 2FA Verification Failure', section:'Auth / Login', priority:'high', status:'failed', steps:[{s:'Login with 2FA-enabled account',e:'2FA code input screen displayed'},{s:'Enter incorrect 2FA code 3 times',e:'Account locked with "Too many attempts"'},{s:'Verify lockout timer',e:'30-minute countdown timer shown'}] },
+  { id:'TC-004', name:'Registration — Email Verification', section:'Auth / Registration', priority:'medium', status:'passed', steps:[{s:'Fill registration form with valid data',e:'Form accepts input without errors'},{s:'Submit registration',e:'Confirmation page shows "Check your email"'},{s:'Click verification link',e:'Account activated, redirected to onboarding'}] },
+  { id:'TC-005', name:'Password Reset Flow', section:'Auth / Password', priority:'medium', status:'blocked', steps:[{s:'Click "Forgot Password" link',e:'Password reset form displayed'},{s:'Enter registered email address',e:'Success: "Reset link sent"'},{s:'Click reset link in email',e:'New password form with validation rules'}] },
+  { id:'TC-006', name:'Dashboard Widget Loading', section:'Dashboard', priority:'medium', status:'untested', steps:[{s:'Navigate to dashboard',e:'Dashboard page loads within 1.5 seconds'},{s:'Verify all widget cards render',e:'5 widgets: Summary, Recent Runs, Pass Rate, Activity, Milestones'},{s:'Check data population in each widget',e:'All widgets show current project data, no empty states'}] },
+  { id:'TC-007', name:'Project Creation Permission', section:'Projects', priority:'high', status:'retest', steps:[{s:'Login as Team Member role',e:'Dashboard with limited navigation'},{s:'Attempt to create new project',e:'"Create Project" button disabled/hidden'},{s:'Login as Admin role',e:'"Create Project" visible and enabled'}] },
+  { id:'TC-008', name:'TC Drag-and-Drop Reorder', section:'Test Cases', priority:'low', status:'untested', steps:[{s:'Open test case list view',e:'TC list with drag handles'},{s:'Drag TC-003 above TC-001',e:'Smooth drag animation, drop target highlighted'},{s:'Release to drop',e:'Order updated, saved automatically'}] },
+  { id:'TC-009', name:'File Upload 5MB Limit', section:'Attachments', priority:'high', status:'failed', steps:[{s:'Click "Attach File"',e:'File picker opens'},{s:'Select file > 5MB',e:'Error: "File exceeds 5MB limit"'},{s:'Select file < 5MB',e:'Upload progress, file attached'}] },
+  { id:'TC-010', name:'Report PDF Download', section:'Reports', priority:'medium', status:'untested', steps:[{s:'Navigate to Reports tab',e:'Report list displayed'},{s:'Click "Export PDF"',e:'PDF generation with progress'},{s:'Wait for completion',e:'PDF downloaded, size > 0 bytes'}] },
+  { id:'TC-011', name:'Milestone Progress Calculation', section:'Milestones', priority:'medium', status:'passed', steps:[{s:'Create milestone with 10 TCs',e:'0% progress'},{s:'Mark 5 as Passed',e:'50% progress'},{s:'Mark remaining 5',e:'100%, auto Completed'}] },
+  { id:'TC-012', name:'Test Run Bulk Status Update', section:'Runs', priority:'high', status:'passed', steps:[{s:'Open run with 20 TCs',e:'All TCs listed'},{s:'Select all via header checkbox',e:'All 20 selected, action bar'},{s:'Click "Mark as Passed"',e:'All 20 updated, 100%'}] },
+  { id:'TC-013', name:'Search — Full Text Query', section:'Search', priority:'medium', status:'passed', steps:[{s:'Type search query',e:'Results in 300ms'},{s:'Verify results include TC names/steps/descriptions',e:'Full-text matches highlighted'}] },
+  { id:'TC-014', name:'Notification — Real-time Updates', section:'Notifications', priority:'low', status:'passed', steps:[{s:'Open app in two tabs',e:'Both WebSocket connected'},{s:'Create run in Tab 1',e:'Badge in Tab 2 within 2s'}] },
+  { id:'TC-015', name:'User Role — Viewer Read-Only', section:'Permissions', priority:'high', status:'passed', steps:[{s:'Login as Viewer',e:'Read-only indicators'},{s:'Attempt edit TC',e:'Edit disabled, tooltip'},{s:'Attempt create run',e:'Start Run hidden'}] },
+  { id:'TC-016', name:'API v3 — GET /test-cases', section:'API', priority:'medium', status:'passed', steps:[{s:'GET /api/v3/test-cases',e:'200 OK, JSON array'},{s:'Verify pagination',e:'X-Total-Count + Link headers'}] },
+  { id:'TC-017', name:'API v3 — POST /test-runs', section:'API', priority:'high', status:'failed', steps:[{s:'POST with valid payload',e:'201 Created'},{s:'POST missing fields',e:'400 with errors'},{s:'Verify rate limiting',e:'429 after limit'}] },
+  { id:'TC-018', name:'HIPAA — Audit Log', section:'Compliance', priority:'high', status:'passed', steps:[{s:'5 different actions',e:'Each logged'},{s:'Verify entries',e:'All 5 with user/timestamp/IP'}] },
+  { id:'TC-019', name:'HIPAA — Encryption at Rest', section:'Compliance', priority:'high', status:'passed', steps:[{s:'Query DB for PHI',e:'AES-256 encrypted'},{s:'Key rotation check',e:'Rotated within 90 days'}] },
+  { id:'TC-020', name:'Performance — Dashboard Load', section:'Performance', priority:'medium', status:'passed', steps:[{s:'Clear cache',e:'Cache cleared'},{s:'Navigate to dashboard',e:'FCP < 1.5s'},{s:'Measure TTI',e:'TTI < 3.0s'}] },
+  { id:'TC-021', name:'Performance — 500+ TC List', section:'Performance', priority:'medium', status:'retest', steps:[{s:'Load 500 TCs',e:'Renders in 2s'},{s:'Scroll through',e:'Smooth, >30fps'},{s:'Apply filter',e:'Filter in 200ms'}] },
+  { id:'TC-022', name:'A11y — Keyboard Navigation', section:'A11y', priority:'medium', status:'passed', steps:[{s:'Tab through elements',e:'Focus ring visible'},{s:'ARIA labels',e:'Screen reader OK'}] },
+  { id:'TC-023', name:'A11y — Color Contrast', section:'A11y', priority:'low', status:'passed', steps:[{s:'Lighthouse audit',e:'Score >= 95'},{s:'WCAG AA check',e:'All > 4.5:1'}] },
+  { id:'TC-024', name:'Mobile — Responsive Layout', section:'Responsive', priority:'medium', status:'blocked', steps:[{s:'375px viewport',e:'Mobile layout, sidebar collapsed'},{s:'Navigate all views',e:'No overflow'},{s:'Touch test',e:'Targets >= 44px'}] },
+  { id:'TC-025', name:'Integration — Slack', section:'Integrations', priority:'low', status:'untested', steps:[{s:'Connect Slack',e:'OAuth complete'},{s:'Create run',e:'Slack msg in 5s'}] },
+  { id:'TC-026', name:'Integration — Jira Sync', section:'Integrations', priority:'medium', status:'untested', steps:[{s:'Link failed TC to Jira',e:'Issue created'},{s:'Update in Jira',e:'Reflected in 30s'}] },
+  { id:'TC-027', name:'Bulk Import — CSV', section:'Import/Export', priority:'medium', status:'passed', steps:[{s:'Upload 50 TC CSV',e:'Preview shows 50 rows'},{s:'Confirm import',e:'50 TCs created'}] },
+  { id:'TC-028', name:'Export — Report PDF', section:'Import/Export', priority:'low', status:'untested', steps:[{s:'Select 100 TC report',e:'Export enabled'},{s:'Export as PDF',e:'PDF with results/charts'}] },
+  { id:'TC-029', name:'Billing — Plan Upgrade', section:'Billing', priority:'high', status:'passed', steps:[{s:'Go to billing',e:'Current plan shown'},{s:'Upgrade to Pro',e:'Comparison table'},{s:'Stripe checkout',e:'Plan upgraded'}] },
+  { id:'TC-030', name:'Billing — Seat Management', section:'Billing', priority:'medium', status:'passed', steps:[{s:'Add 3 members',e:'Seats + prorated charge'},{s:'Remove 1',e:'Seat freed, billing adjusted'}] },
+  { id:'TC-031', name:'Collaboration — Real-time', section:'Collaboration', priority:'medium', status:'blocked', steps:[{s:'Open TC in 2 sessions',e:'Both show latest'},{s:'Edit in Session 1',e:'Updates Session 2 in 1s'},{s:'Simultaneous edit',e:'Conflict resolution'}] },
+  { id:'TC-032', name:'Tags — Create and Filter', section:'Tags', priority:'low', status:'untested', steps:[{s:'Create "Smoke Test" tag',e:'Tag in list'},{s:'Assign to 5 TCs',e:'Count shows 5'},{s:'Filter by tag',e:'5 TCs displayed'}] },
+  { id:'TC-033', name:'Custom Fields', section:'Custom Fields', priority:'medium', status:'untested', steps:[{s:'Create text field',e:'In TC form'},{s:'Create dropdown',e:'Options render'},{s:'Save with values',e:'Persisted correctly'}] },
+  { id:'TC-034', name:'Session Timeout 30min', section:'Security', priority:'high', status:'passed', steps:[{s:'Idle 30 min',e:'Warning at 25 min'},{s:'Continue past 30',e:'Redirected to login'}] },
+  { id:'TC-035', name:'XSS Prevention', section:'Security', priority:'high', status:'passed', steps:[{s:'Script tag in name',e:'Escaped, not executed'},{s:'Script in description',e:'Plain text'}] },
+  { id:'TC-036', name:'SQL Injection Prevention', section:'Security', priority:'high', status:'retest', steps:[{s:'SQL injection in search',e:'No results, no error'},{s:'Check parameter binding',e:'Parameterized queries'}] },
+  { id:'TC-037', name:'Webhook — Run Completion', section:'Webhooks', priority:'low', status:'untested', steps:[{s:'Configure webhook',e:'Saved, ping OK'},{s:'Complete run',e:'Fired in 5s'}] },
+  { id:'TC-038', name:'Dark Mode Toggle', section:'UI / Theme', priority:'low', status:'untested', steps:[{s:'Toggle theme',e:'Dark mode all views'},{s:'Verify components',e:'No white bg/unreadable text'},{s:'Refresh',e:'Preference persisted'}] },
+  { id:'TC-039', name:'Korean Localization', section:'i18n', priority:'low', status:'untested', steps:[{s:'Switch to Korean',e:'UI updates'},{s:'All views',e:'No untranslated strings'},{s:'Date format',e:'YYYY-MM-DD'}] },
+  { id:'TC-040', name:'Data Backup Export', section:'Admin', priority:'medium', status:'untested', steps:[{s:'Admin > Data Management',e:'Export options'},{s:'Export Full Project',e:'ZIP generated'},{s:'Verify contents',e:'JSON + attachments'}] },
+];
+
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+let currentFilter = 'all';
+let currentTcIndex = 5;
+let sidebarOpen = true;
+
+const statusConfig = {
+  passed:  { icon:'ri-check-line',   color:'#16A34A', bg:'#DCFCE7' },
+  failed:  { icon:'ri-close-line',   color:'#DC2626', bg:'#FEE2E2' },
+  blocked: { icon:'ri-forbid-line',  color:'#D97706', bg:'#FEF3C7' },
+  retest:  { icon:'ri-refresh-line', color:'#7C3AED', bg:'#EDE9FE' },
+  untested:{ icon:'ri-subtract-line',color:'#94A3B8', bg:'#F1F5F9' },
+};
+
+// ════════════════════════════════════════════════════════
+// SEGMENT BAR + COUNTS
+// ════════════════════════════════════════════════════════
+function updateSegmentBar() {
+  const total = testCases.length;
+  const counts = { passed:0, failed:0, blocked:0, retest:0, untested:0 };
+  testCases.forEach(tc => counts[tc.status]++);
+  document.getElementById('segmentBar').innerHTML = ['passed','failed','blocked','retest','untested'].map(s =>
+    `<div class="sb-segment seg-${s}" style="width:${(counts[s]/total*100).toFixed(1)}%"></div>`
+  ).join('');
+  const completed = counts.passed + counts.failed + counts.blocked + counts.retest;
+  document.getElementById('progressDone').textContent = completed;
+  document.getElementById('headerCounter').textContent = completed + ' / ' + total;
+  document.getElementById('progressFill').style.width = (completed/total*100).toFixed(1) + '%';
+  document.getElementById('countPassed').textContent = counts.passed;
+  document.getElementById('countFailed').textContent = counts.failed;
+  document.getElementById('countBlocked').textContent = counts.blocked;
+  document.getElementById('countRetest').textContent = counts.retest;
+  document.getElementById('countUntested').textContent = counts.untested;
+}
+
+// ════════════════════════════════════════════════════════
+// TC LIST RENDER (sidebar)
+// ════════════════════════════════════════════════════════
+function getFilteredTCs() {
+  let filtered = testCases.map((tc, i) => ({...tc, _idx: i}));
+  if (currentFilter !== 'all') filtered = filtered.filter(tc => tc.status === currentFilter);
+  const q = document.getElementById('tcSearchInput').value.toLowerCase().trim();
+  if (q) filtered = filtered.filter(tc => tc.id.toLowerCase().includes(q) || tc.name.toLowerCase().includes(q));
+  return filtered;
+}
+function highlightText(text) {
+  const q = document.getElementById('tcSearchInput').value.trim();
+  if (!q) return text;
+  return text.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark>$1</mark>');
+}
+function renderTCList() {
+  const list = document.getElementById('tcList');
+  const filtered = getFilteredTCs();
+  list.innerHTML = filtered.map(tc => {
+    const s = statusConfig[tc.status];
+    const isActive = tc._idx === currentTcIndex;
+    return `<div class="tc-item${isActive?' active':''}" onclick="selectTC(${tc._idx})" id="tc-item-${tc._idx}">
+      <div class="tc-status-icon ${tc.status}"><i class="${s.icon}"></i></div>
+      <div class="tc-info"><div class="tc-id">${highlightText(tc.id)}</div><div class="tc-name">${highlightText(tc.name)}</div></div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// MAIN CONTENT (3-Tier body)
+// ════════════════════════════════════════════════════════
+// Step-level Pass/Fail toggle
+function toggleStepResult(stepIndex, result) {
+  const tc = testCases[currentTcIndex];
+  if (!tc.stepResults) tc.stepResults = new Array(tc.steps.length).fill(null);
+
+  // Toggle: if already set to this result, clear it; otherwise set it
+  if (tc.stepResults[stepIndex] === result) {
+    tc.stepResults[stepIndex] = null;
+  } else {
+    tc.stepResults[stepIndex] = result;
+  }
+
+  // Update DOM directly (no full re-render needed)
+  const row = document.querySelector(`.focus-step[data-step-index="${stepIndex}"]`);
+  if (!row) return;
+  const r = tc.stepResults[stepIndex];
+
+  // Row classes
+  row.classList.remove('step-passed', 'step-failed');
+  if (r === 'passed') row.classList.add('step-passed');
+  if (r === 'failed') row.classList.add('step-failed');
+
+  // Step number circle
+  const numEl = row.querySelector('.focus-step-num');
+  numEl.style.background = r === 'passed' ? '#22C55E' : r === 'failed' ? '#EF4444' : '';
+  numEl.style.color = r ? '#fff' : '';
+
+  // Button active states
+  const passBtn = row.querySelector('.btn-pass');
+  const failBtn = row.querySelector('.btn-fail');
+  passBtn.classList.toggle('active', r === 'passed');
+  failBtn.classList.toggle('active', r === 'failed');
+}
+
+// ════════════════════════════════════════════════════════
+function renderMainContent() {
+  const tc = testCases[currentTcIndex];
+  document.getElementById('metaTcId').textContent = tc.id;
+  document.getElementById('mainTitle').textContent = tc.name;
+  document.getElementById('mainDesc').textContent = `Test case ${tc.id} — ${tc.section}. Verify the expected behavior for this scenario.`;
+  // Render steps in main body
+  const stepsEl = document.getElementById('mainSteps');
+  if (tc.steps) {
+    // Initialize step results array if not present
+    if (!tc.stepResults) tc.stepResults = new Array(tc.steps.length).fill(null);
+    stepsEl.innerHTML = tc.steps.map((step, i) => {
+      const r = tc.stepResults[i];
+      const rowClass = r === 'passed' ? ' step-passed' : r === 'failed' ? ' step-failed' : '';
+      const passActive = r === 'passed' ? ' active' : '';
+      const failActive = r === 'failed' ? ' active' : '';
+      return `<div class="focus-step${rowClass}" data-step-index="${i}">
+        <div class="focus-step-num">${i+1}</div>
+        <div class="focus-step-content">
+          <div class="focus-step-text">${step.s}</div>
+          <div class="focus-step-expected"><i class="ri-checkbox-circle-line"></i> ${step.e}</div>
+        </div>
+        <div class="focus-step-actions">
+          <button class="step-btn btn-pass${passActive}" onclick="toggleStepResult(${i},'passed')"><i class="ri-check-line"></i></button>
+          <button class="step-btn btn-fail${failActive}" onclick="toggleStepResult(${i},'failed')"><i class="ri-close-line"></i></button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Auto-collapse Tier 3 on navigation
+  collapsePanel('comments');
+  collapsePanel('history');
+}
+
+// ════════════════════════════════════════════════════════
+// INTERACTIONS
+// ════════════════════════════════════════════════════════
+function selectTC(idx) {
+  currentTcIndex = idx;
+  renderTCList(); renderMainContent(); scrollToActiveTC();
+  document.getElementById('focusBody').scrollTop = 0;
+}
+function navigate(dir) {
+  const filtered = getFilteredTCs();
+  if (!filtered.length) return;
+  const cur = filtered.findIndex(tc => tc._idx === currentTcIndex);
+  let next = cur + dir;
+  if (next < 0) next = 0;
+  if (next >= filtered.length) next = filtered.length - 1;
+  selectTC(filtered[next]._idx);
+}
+function scrollToActiveTC() {
+  const el = document.getElementById('tc-item-' + currentTcIndex);
+  if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function setFilter(filter, el) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderTCList(); scrollToActiveTC();
+}
+function searchTCs() { renderTCList(); }
+function setStatus(status) {
+  testCases[currentTcIndex].status = status;
+  updateSegmentBar(); renderTCList(); renderMainContent();
+  setTimeout(() => navigate(1), 300);
+}
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('collapsed', !sidebarOpen);
+}
+
+// Collapsible panels (Tier 3)
+function toggleCollapse(panel) {
+  const body = document.getElementById(panel + 'Body');
+  const chevron = document.getElementById(panel + 'Chevron');
+  const header = chevron.closest('.collapse-header');
+  const isVisible = body.classList.contains('visible');
+  if (isVisible) { collapsePanel(panel); } else { expandPanel(panel); }
+}
+function expandPanel(panel) {
+  document.getElementById(panel + 'Body').classList.add('visible');
+  document.getElementById(panel + 'Chevron').closest('.collapse-header').classList.add('expanded');
+}
+function collapsePanel(panel) {
+  document.getElementById(panel + 'Body').classList.remove('visible');
+  const header = document.getElementById(panel + 'Chevron')?.closest('.collapse-header');
+  if (header) header.classList.remove('expanded');
+}
+
+function toggleDevSpec() { document.getElementById('devSpec').classList.toggle('collapsed'); }
+
+// ════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ════════════════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  const searchInput = document.getElementById('tcSearchInput');
+  const noteInput = document.querySelector('.focus-note-input');
+  const isSearchFocused = document.activeElement === searchInput;
+  const isNoteFocused = document.activeElement === noteInput;
+
+  if (e.key === 'Escape') {
+    if (isSearchFocused) { searchInput.blur(); e.preventDefault(); return; }
+    if (isNoteFocused) { noteInput.blur(); e.preventDefault(); return; }
+    return;
+  }
+  if (isSearchFocused || isNoteFocused) return;
+
+  if (e.key === '[') { e.preventDefault(); toggleSidebar(); }
+  if (e.key === '/') { e.preventDefault(); if (!sidebarOpen) toggleSidebar(); searchInput.focus(); }
+  if (e.key === 'j' || e.key === 'J') { e.preventDefault(); navigate(1); }
+  if (e.key === 'k' || e.key === 'K') { e.preventDefault(); navigate(-1); }
+  if (e.key === 'p' || e.key === 'P') { e.preventDefault(); setStatus('passed'); }
+  if (e.key === 'f' || e.key === 'F') { e.preventDefault(); setStatus('failed'); }
+  if (e.key === 'b' || e.key === 'B') { e.preventDefault(); setStatus('blocked'); }
+  if (e.key === 'r' || e.key === 'R') { e.preventDefault(); setStatus('retest'); }
+  if (e.key === 'c' || e.key === 'C') { e.preventDefault(); toggleCollapse('comments'); }
+  if (e.key === 'h' || e.key === 'H') { e.preventDefault(); toggleCollapse('history'); }
+  if (e.key === 'n' || e.key === 'N') { e.preventDefault(); noteInput.focus(); noteInput.scrollIntoView({ behavior: 'smooth' }); }
+});
+
+// INIT — Pre-set demo step results on TC-001 to showcase interactive states
+testCases[0].stepResults = ['passed', 'passed', null]; // Step 1 passed, Step 2 passed, Step 3 default
+updateSegmentBar(); renderTCList(); renderMainContent(); scrollToActiveTC();
+</script>
+</body>
+</html>

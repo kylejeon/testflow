@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dev Handoff — Team Activity + Pass Rate 최종 구현 스펙</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:#F8FAFC;color:#1E293B;padding:2rem;line-height:1.6}
+  .ctr{max-width:960px;margin:0 auto}
+  h1{font-size:1.5rem;font-weight:800;color:#0F172A;margin-bottom:0.25rem}
+  .sub{font-size:0.875rem;color:#64748B;margin-bottom:2rem}
+  h2{font-size:1.125rem;font-weight:700;color:#0F172A;margin:2rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:2px solid #E2E8F0}
+  h3{font-size:0.9375rem;font-weight:700;color:#334155;margin:1.25rem 0 0.5rem}
+  p,li{font-size:0.8125rem;color:#475569}
+  ul{padding-left:1.25rem;margin-bottom:0.75rem}
+  li{margin-bottom:0.375rem}
+  code{font-family:'SF Mono','Fira Code',monospace;font-size:0.75rem;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:4px;padding:0.125rem 0.375rem;color:#6366F1}
+  pre{background:#1E293B;color:#E2E8F0;border-radius:0.5rem;padding:1rem 1.25rem;font-size:0.75rem;line-height:1.6;overflow-x:auto;margin:0.75rem 0;font-family:'SF Mono','Fira Code',monospace}
+  .cm{color:#64748B} .kw{color:#818CF8} .str{color:#34D399} .tp{color:#F59E0B}
+  .card{background:#fff;border:1px solid #E2E8F0;border-radius:0.75rem;padding:1.25rem;margin:0.75rem 0}
+  .b{display:inline-block;font-size:0.625rem;font-weight:600;padding:0.125rem 0.5rem;border-radius:9999px;text-transform:uppercase;letter-spacing:0.04em;vertical-align:middle}
+  .b-done{background:#ECFDF5;color:#16A34A} .b-todo{background:#FEF3C7;color:#D97706} .b-new{background:#DBEAFE;color:#2563EB} .b-db{background:#F3E8FF;color:#7C3AED}
+  table{width:100%;border-collapse:collapse;margin:0.75rem 0;font-size:0.8125rem}
+  th{background:#F8FAFC;font-weight:600;color:#334155;text-align:left;padding:0.625rem 0.75rem;border:1px solid #E2E8F0;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.04em}
+  td{padding:0.625rem 0.75rem;border:1px solid #E2E8F0;color:#475569;vertical-align:top}
+  td code{font-size:0.6875rem}
+  .ft{display:inline-block;font-size:0.6875rem;font-weight:600;color:#6366F1;background:#EEF2FF;border-radius:4px;padding:0.125rem 0.5rem}
+  .sn{display:inline-flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem;background:#6366F1;color:#fff;border-radius:50%;font-size:0.75rem;font-weight:700;margin-right:0.5rem}
+  .p0{color:#DC2626;font-weight:700} .p1{color:#D97706;font-weight:700}
+  .hr{border:none;border-top:1px dashed #CBD5E1;margin:1.5rem 0}
+  .sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:middle;margin-right:4px;border:1px solid rgba(0,0,0,0.08)}
+  .status-banner{padding:0.625rem 0.875rem;border-radius:0.5rem;font-size:0.8125rem;font-weight:600;display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem}
+  .status-done{background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0}
+  .status-todo{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
+</style>
+</head>
+<body>
+<div class="ctr">
+
+<h1>Dev Handoff — Team Activity + Pass Rate 최종 구현 스펙</h1>
+<p class="sub">PM: Kyle &nbsp;|&nbsp; 2026-03-26 &nbsp;|&nbsp; CEO 최종 승인 완료 &nbsp;|&nbsp; 통합 문서: 히트맵 + Avg Response Time + TC-ID + Pass Rate 필터</p>
+
+<!-- STATUS OVERVIEW -->
+<div class="card" style="padding:1rem 1.25rem">
+  <h3 style="margin-top:0">구현 현황 요약</h3>
+  <table>
+    <tr><th>Feature</th><th>Hook (데이터)</th><th>UI (페이지)</th><th>DB</th></tr>
+    <tr>
+      <td>52주 히트맵</td>
+      <td><span class="b b-done">DONE</span> useTeamActivity.ts</td>
+      <td><span class="b b-done">DONE</span> TeamActivityPage.tsx</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>Avg Response Time 카드</td>
+      <td><span class="b b-done">DONE</span> avgResponseTimeHours</td>
+      <td><span class="b b-done">DONE</span> 4번째 카드</td>
+      <td><span class="b b-todo">TODO</span> resolved_at 컬럼</td>
+    </tr>
+    <tr>
+      <td>TC-ID 형식 (TC-001)</td>
+      <td><span class="b b-done">DONE</span> tcIdLabelMap</td>
+      <td><span class="b b-done">DONE</span> Feed + Members</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>Pass Rate 기간 필터</td>
+      <td><span class="b b-todo">TODO</span> usePassRateReport.ts</td>
+      <td><span class="b b-todo">TODO</span> PassRateReportPage.tsx</td>
+      <td>—</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ================================================================== -->
+<!-- PART A: TEAM ACTIVITY — ALREADY IMPLEMENTED IN HOOK/PAGE -->
+<!-- ================================================================== -->
+
+<h2><span class="sn">A</span>Team Activity — 구현 완료 항목 (검증 + DB만 남음)</h2>
+
+<p>아래 4개 항목은 <code>useTeamActivity.ts</code> 및 <code>TeamActivityPage.tsx</code>에 이미 코드가 반영되어 있습니다. Dev는 <strong>DB 마이그레이션 1건</strong>과 <strong>result upsert 로직 2곳</strong>만 추가하면 됩니다.</p>
+
+<!-- A1 -->
+<h3>A1. 52주 GitHub-style 히트맵 <span class="b b-done">DONE</span></h3>
+<div class="card">
+  <p><strong>현재 구현 상태:</strong> 완료. Hook에서 364셀(52주×7일) 데이터를 생성하고, Page에서 52열×7행 그리드로 렌더링합니다.</p>
+  <table>
+    <tr><th>항목</th><th>구현 상태</th><th>비고</th></tr>
+    <tr><td>그리드</td><td>52 cols × 7 rows, Sun–Sat</td><td>Lines 91–106 (Page)</td></tr>
+    <tr><td>셀</td><td><code>aspect-ratio: 1</code>, gap 2px, border-radius 2px</td><td>Line 99 (Page)</td></tr>
+    <tr><td>색상 6단계</td><td><code>#F1F5F9 → #6366F1</code></td><td>Line 13 (Page), Quantile-based bucketing Lines 302–315 (Hook)</td></tr>
+    <tr><td>요일 라벨</td><td>Mon/Wed/Fri만 표시</td><td>Lines 16, 69–76 (Page)</td></tr>
+    <tr><td>월 라벨</td><td>월 첫 주 column에 Jan–Dec</td><td>Lines 33–42 (Page)</td></tr>
+    <tr><td>헤더</td><td><code>{totalActivities} activities in the last year</code></td><td>Lines 258–259 (Page)</td></tr>
+    <tr><td>Legend</td><td>Less — [6색] — More</td><td>Lines 113–119 (Page)</td></tr>
+    <tr><td>툴팁</td><td>hover시 날짜 표시 (absolute positioned)</td><td>Lines 44–61, 110–111 (Page)</td></tr>
+  </table>
+  <p style="margin-top:0.5rem"><strong>Dev 확인 필요:</strong> 툴팁에 현재 날짜만 표시. 디자인 시안은 <code>{count} activities on {date}</code> 형식. → 툴팁에 activity count 추가 필요 (minor).</p>
+</div>
+
+<!-- A2 -->
+<h3>A2. Avg Response Time 카드 <span class="b b-done">DONE</span> + <span class="b b-db">DB TODO</span></h3>
+<div class="card">
+  <p><strong>현재 구현 상태:</strong> Hook에서 <code>avgResponseTimeHours</code> 계산, Page에서 4번째 카드로 렌더링. 조건부 색상 + 포맷팅 완료.</p>
+  <table>
+    <tr><th>항목</th><th>구현</th><th>위치</th></tr>
+    <tr><td>계산</td><td><code>resolved_at - created_at</code> 평균 (오늘 resolved 건)</td><td>Hook Lines 266–277</td></tr>
+    <tr><td>포맷팅</td><td>&lt;1h → <code>{n}m</code>, ≥1h → <code>{n.n}h</code></td><td>Page Lines 131–135</td></tr>
+    <tr><td>조건부 색상</td><td>&lt;1h green, 1–4h amber, &gt;4h red, null gray</td><td>Page Lines 124–129</td></tr>
+    <tr><td>서브텍스트</td><td>null→"no resolutions today", &lt;1h→"great response today", 1–4h→"acceptable today", &gt;4h→"needs attention"</td><td>Page Line 250</td></tr>
+    <tr><td>Fallback</td><td><code>—</code> (em dash)</td><td>Page Line 132</td></tr>
+  </table>
+
+  <div class="status-banner status-todo" style="margin-top:0.75rem">
+    <i class="ri-alert-line"></i>
+    <span>DB 마이그레이션 + result upsert 로직 추가 필요 — 아래 §A2-DB 참조</span>
+  </div>
+
+  <h3 id="a2-db">A2-DB. resolved_at 컬럼 추가 <span class="b b-db">DB MIGRATION</span></h3>
+  <pre><span class="cm">-- P0: test_results에 resolved_at 컬럼 추가</span>
+<span class="kw">ALTER TABLE</span> test_results
+  <span class="kw">ADD COLUMN</span> resolved_at <span class="tp">TIMESTAMPTZ</span> <span class="kw">NULL</span>;</pre>
+
+  <p><strong>resolved_at 기록 로직 (2곳 수정):</strong></p>
+  <table>
+    <tr><th>파일</th><th>위치</th><th>변경</th></tr>
+    <tr>
+      <td><span class="ft">run-detail/page.tsx</span></td>
+      <td>Lines 764–778</td>
+      <td>result upsert 전에 기존 result를 SELECT → 이전 status가 <code>failed</code>/<code>blocked</code>이고 새 status가 <code>passed</code>/<code>retest</code>이면 <code>resolved_at: new Date().toISOString()</code> 추가</td>
+    </tr>
+    <tr>
+      <td><span class="ft">supabase/functions/upload-ci-results/index.ts</span></td>
+      <td>Line 232</td>
+      <td>CI/CD bulk upsert에 동일 로직. batch SELECT 후 조건부 resolved_at</td>
+    </tr>
+  </table>
+</div>
+
+<!-- A3 -->
+<h3>A3. TC-ID 형식 표시 (TC-001) <span class="b b-done">DONE</span></h3>
+<div class="card">
+  <p><strong>현재 구현 상태:</strong> 완료.</p>
+  <table>
+    <tr><th>항목</th><th>구현</th><th>위치</th></tr>
+    <tr><td>TC-ID Map 생성</td><td>모든 TC를 <code>created_at ASC</code>로 가져와 <code>TC-{padStart(3,'0')}</code> 매핑</td><td>Hook Lines 163–178</td></tr>
+    <tr><td>Members 섹션 lastAction</td><td><code>Created TC-001</code> 형식</td><td>Hook Lines 210, 235</td></tr>
+    <tr><td>Activity Feed target</td><td><code>tcIdLabelMap[tc.id]</code> 사용</td><td>Hook Line 336</td></tr>
+    <tr><td>Fallback</td><td>UUID 첫 6자 대문자</td><td><code>?? tc.id.slice(0,6).toUpperCase()</code></td></tr>
+  </table>
+  <p style="margin-top:0.5rem"><strong>주의:</strong> TC-ID는 프로젝트 전체 범위에서 순번 매김. 프로젝트별 독립 넘버링이 필요하면 추후 수정. 현재는 MVP로 충분.</p>
+</div>
+
+<!-- A4 -->
+<h3>A4. Activity Feed <span class="b b-done">DONE</span></h3>
+<div class="card">
+  <p>TC 생성 + test result 실행을 결합, <code>created_at DESC</code>로 정렬, 상위 15건 표시. Badge: New(created), Passed/Failed/Blocked(executed). TC-ID 형식 적용 완료.</p>
+  <p><strong>Dev 확인 필요 없음.</strong></p>
+</div>
+
+<hr class="hr">
+
+<!-- ================================================================== -->
+<!-- PART B: PASS RATE PERIOD FILTER — NEW IMPLEMENTATION -->
+<!-- ================================================================== -->
+
+<h2><span class="sn">B</span>Pass Rate 기간 필터 — 신규 구현 <span class="b b-todo">TODO</span></h2>
+
+<!-- B1 -->
+<h3>B1. 필터 옵션 정의</h3>
+<table>
+  <tr><th>옵션</th><th>value</th><th>쿼리 범위</th><th>Delta 비교 기준</th><th>Delta Badge 텍스트</th></tr>
+  <tr>
+    <td><strong>Active Run</strong> <span class="b b-new">DEFAULT</span></td>
+    <td><code>'active_run'</code></td>
+    <td><code>test_runs.status IN ('new','in_progress','paused','under_review')</code>의 results (날짜 무관)</td>
+    <td>직전 completed Run(들)</td>
+    <td><code>vs prev run</code></td>
+  </tr>
+  <tr>
+    <td><strong>Last 7 Days</strong></td>
+    <td><code>'7d'</code></td>
+    <td><code>created_at >= now() - 7d</code></td>
+    <td>이전 7일 (8~14일 전)</td>
+    <td><code>vs last week</code></td>
+  </tr>
+  <tr>
+    <td><strong>Last 30 Days</strong></td>
+    <td><code>'30d'</code></td>
+    <td><code>created_at >= now() - 30d</code></td>
+    <td>이전 30일 (31~60일 전)</td>
+    <td><code>vs prev 30d</code></td>
+  </tr>
+  <tr>
+    <td><strong>All Time</strong></td>
+    <td><code>'all'</code></td>
+    <td>전체 (필터 없음)</td>
+    <td>—</td>
+    <td><em>Delta 숨김</em></td>
+  </tr>
+</table>
+
+<div class="card">
+  <p><strong>"Active Run" 정의:</strong> <code>test_runs.status IN ('new','in_progress','paused','under_review')</code> — 이미 <code>ProjectsContent.tsx</code> Line 194에서 동일 조건 사용 중.</p>
+  <p style="margin-top:0.375rem"><strong>Active Run 0개일 때:</strong> Pass Rate = <code>"—"</code>, 안내 메시지 표시.</p>
+  <p style="margin-top:0.375rem"><strong>필터 저장:</strong> <code>localStorage</code> key: <code>'testably_pr_period'</code>. Report 페이지에서 변경 → Dashboard 카드에도 자동 반영.</p>
+</div>
+
+<!-- B2 -->
+<h3>B2. UI — 드롭다운 (PassRateReportPage만)</h3>
+<table>
+  <tr><th>항목</th><th>스펙</th></tr>
+  <tr><td>위치</td><td>Sub-header 오른쪽 — 기존 날짜 라벨 버튼 (<code>Line 184–186</code>) 교체</td></tr>
+  <tr><td>Trigger 스타일</td><td><code>border-radius: 9999px; border: 1px solid #E2E8F0; font-size: 0.75rem</code></td></tr>
+  <tr><td>Active 상태</td><td><code>border-color: #6366F1; color: #6366F1; bg: #EEF2FF</code></td></tr>
+  <tr><td>Menu</td><td><code>min-width: 180px; box-shadow: 0 4px 12px rgba(0,0,0,0.08)</code></td></tr>
+  <tr><td>Selected</td><td><code>color: #6366F1; font-weight: 600</code> + <code>ri-check-line</code></td></tr>
+  <tr><td>닫기</td><td>외부 클릭 또는 옵션 선택</td></tr>
+  <tr><td>Dashboard 카드</td><td>드롭다운 없음 — localStorage에서 읽은 필터값으로 delta label만 변경</td></tr>
+</table>
+
+<!-- B3 -->
+<h3>B3. 쿼리 로직 — 옵션별</h3>
+<pre><span class="cm">// Active Run</span>
+<span class="kw">const</span> { data: activeRuns } = <span class="kw">await</span> supabase
+  .from(<span class="str">'test_runs'</span>).select(<span class="str">'id, project_id'</span>)
+  .in(<span class="str">'project_id'</span>, projectIds)
+  .in(<span class="str">'status'</span>, [<span class="str">'new'</span>, <span class="str">'in_progress'</span>, <span class="str">'paused'</span>, <span class="str">'under_review'</span>]);
+<span class="cm">// → .in('run_id', activeRunIds)  (날짜 필터 없음)</span>
+
+<span class="cm">// Delta: 직전 completed Run</span>
+<span class="kw">const</span> { data: prevRuns } = <span class="kw">await</span> supabase
+  .from(<span class="str">'test_runs'</span>).select(<span class="str">'id'</span>)
+  .in(<span class="str">'project_id'</span>, projectIds)
+  .eq(<span class="str">'status'</span>, <span class="str">'completed'</span>)
+  .order(<span class="str">'updated_at'</span>, { ascending: <span class="kw">false</span> })
+  .limit(activeRunIds.length || 1);
+
+<span class="cm">// Last 7 Days — 현재 로직과 동일</span>
+.gte(<span class="str">'created_at'</span>, sevenDaysAgo)
+<span class="cm">// Delta: .gte(fourteenDaysAgo).lt(sevenDaysAgo)</span>
+
+<span class="cm">// Last 30 Days</span>
+.gte(<span class="str">'created_at'</span>, thirtyDaysAgo)
+<span class="cm">// Delta: .gte(sixtyDaysAgo).lt(thirtyDaysAgo)</span>
+
+<span class="cm">// All Time</span>
+<span class="cm">// 날짜 필터 없음, Delta = null</span></pre>
+
+<!-- B4 -->
+<h3>B4. Daily Trend 차트 조정</h3>
+<table>
+  <tr><th>필터</th><th>X축</th><th>포인트 수</th></tr>
+  <tr><td>Active Run</td><td>Run 시작일~오늘, 일별 (30일 초과 시 주별)</td><td>가변</td></tr>
+  <tr><td>7 Days</td><td>7일 일별</td><td>7 (현재 동일)</td></tr>
+  <tr><td>30 Days</td><td>30일 일별</td><td>30</td></tr>
+  <tr><td>All Time</td><td>월별 집계 (최대 12개월)</td><td>가변</td></tr>
+</table>
+
+<!-- B5 -->
+<h3>B5. 코드 변경 포인트</h3>
+<table>
+  <tr><th>파일</th><th>#</th><th>변경</th><th>상세</th></tr>
+  <tr>
+    <td rowspan="4"><span class="ft">usePassRateReport.ts</span></td>
+    <td>1</td>
+    <td>period 파라미터 추가</td>
+    <td><code>usePassRateReport(period: 'active_run' | '7d' | '30d' | 'all' = 'active_run')</code></td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Lines 83–85: 동적 날짜 범위</td>
+    <td>하드코딩 <code>sevenDaysAgo</code>/<code>fourteenDaysAgo</code> → period 기반 분기</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>Lines 100–113: Active Run 분기</td>
+    <td><code>active_run</code>: Run ID 기반 필터 + completed Run Delta</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>PassRateData 확장</td>
+    <td><code>deltaLabel: string | null</code> 추가 ("vs last week" 등)</td>
+  </tr>
+  <tr>
+    <td rowspan="4"><span class="ft">PassRateReportPage.tsx</span></td>
+    <td>5</td>
+    <td>period state + 드롭다운 UI</td>
+    <td><code>useState('active_run')</code> + 드롭다운 컴포넌트</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>Line 178: 제목 동적화</td>
+    <td><code>"Pass Rate Report — Last 7 Days"</code> → <code>`— ${periodLabel}`</code></td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>Line 207: 부제 동적화</td>
+    <td><code>"7-day test execution…"</code> → 필터별 문구</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>Line 231: delta sub 동적화</td>
+    <td><code>'vs previous 7 days'</code> → <code>data.deltaLabel</code></td>
+  </tr>
+  <tr>
+    <td rowspan="2"><span class="ft">ProjectsContent.tsx</span></td>
+    <td>9</td>
+    <td>Lines 144–187: 필터 연동</td>
+    <td>localStorage에서 period 읽기 → passRate 계산에 적용</td>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td>Line 391: 하드코딩 Delta 제거</td>
+    <td><code>passRateDelta: 2.1</code> → 실제 계산 값</td>
+  </tr>
+  <tr>
+    <td><span class="ft">StatCards.tsx</span></td>
+    <td>11</td>
+    <td>Line 332: delta label 동적화</td>
+    <td><code>"vs last week"</code> → <code>data.deltaLabel</code></td>
+  </tr>
+</table>
+
+<hr class="hr">
+
+<!-- ================================================================== -->
+<!-- PART C: EDGE CASES & PRIORITIES -->
+<!-- ================================================================== -->
+
+<h2><span class="sn">C</span>Edge Cases</h2>
+<table>
+  <tr><th>#</th><th>케이스</th><th>처리</th></tr>
+  <tr><td>1</td><td>Active Run 0개 (Pass Rate 필터)</td><td>Pass Rate = <code>"—"</code>, 안내 메시지, Delta 숨김</td></tr>
+  <tr><td>2</td><td>선택 기간 내 results 0건</td><td>Pass Rate = <code>"—"</code>, 차트 all-zero</td></tr>
+  <tr><td>3</td><td>All Time 데이터 대량 (10k+)</td><td><code>.limit(5000)</code> 적용, 향후 RPC 전환</td></tr>
+  <tr><td>4</td><td>resolved_at NULL (마이그레이션 전 기존 데이터)</td><td>Avg Response Time 계산에서 자동 제외 (<code>r.resolved_at && r.resolved_at >= todayISO</code> 조건)</td></tr>
+  <tr><td>5</td><td>히트맵 툴팁: 아직 count 미표시</td><td>날짜만 표시 중 → <code>{count} activities on {date}</code>로 개선 필요</td></tr>
+  <tr><td>6</td><td>필터 변경 중 로딩</td><td>기존 데이터 유지 + spinner overlay → 새 데이터로 교체</td></tr>
+  <tr><td>7</td><td>PDF Export (Pass Rate Report)</td><td>선택 기간 + 날짜 범위를 PDF 헤더에 반영</td></tr>
+</table>
+
+<hr class="hr">
+
+<!-- ================================================================== -->
+<!-- PART D: IMPLEMENTATION ORDER -->
+<!-- ================================================================== -->
+
+<h2><span class="sn">D</span>구현 순서</h2>
+<table>
+  <tr><th>순서</th><th>작업</th><th>우선순위</th><th>예상</th><th>카테고리</th></tr>
+  <tr style="background:#F0FDF4">
+    <td>1</td>
+    <td>Supabase migration: <code>ALTER TABLE test_results ADD COLUMN resolved_at</code></td>
+    <td><span class="p0">P0</span></td>
+    <td>5분</td>
+    <td>A: Team Activity</td>
+  </tr>
+  <tr style="background:#F0FDF4">
+    <td>2</td>
+    <td><code>run-detail/page.tsx</code>: result upsert에 resolved_at 조건부 세팅</td>
+    <td><span class="p0">P0</span></td>
+    <td>30분</td>
+    <td>A: Team Activity</td>
+  </tr>
+  <tr style="background:#F0FDF4">
+    <td>3</td>
+    <td><code>upload-ci-results/index.ts</code>: CI/CD upsert에 동일 로직</td>
+    <td><span class="p0">P0</span></td>
+    <td>20분</td>
+    <td>A: Team Activity</td>
+  </tr>
+  <tr style="background:#FEF3C7">
+    <td>4</td>
+    <td><code>usePassRateReport.ts</code>: period 파라미터 + 쿼리 분기 (#1–4)</td>
+    <td><span class="p0">P0</span></td>
+    <td>1.5h</td>
+    <td>B: Pass Rate 필터</td>
+  </tr>
+  <tr style="background:#FEF3C7">
+    <td>5</td>
+    <td><code>PassRateReportPage.tsx</code>: 드롭다운 UI + 동적 텍스트 (#5–8)</td>
+    <td><span class="p0">P0</span></td>
+    <td>1.5h</td>
+    <td>B: Pass Rate 필터</td>
+  </tr>
+  <tr style="background:#FEF3C7">
+    <td>6</td>
+    <td><code>ProjectsContent.tsx</code>: 필터 연동 + Delta 실제 계산 (#9–10)</td>
+    <td><span class="p0">P0</span></td>
+    <td>1h</td>
+    <td>B: Pass Rate 필터</td>
+  </tr>
+  <tr style="background:#FEF3C7">
+    <td>7</td>
+    <td><code>StatCards.tsx</code>: delta label 동적화 (#11)</td>
+    <td><span class="p0">P0</span></td>
+    <td>15분</td>
+    <td>B: Pass Rate 필터</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>히트맵 툴팁: activity count 추가</td>
+    <td><span class="p1">P1</span></td>
+    <td>30분</td>
+    <td>A: Team Activity</td>
+  </tr>
+  <tr>
+    <td>9</td>
+    <td>Daily Trend 차트: 30일/월별 집계 대응</td>
+    <td><span class="p1">P1</span></td>
+    <td>1h</td>
+    <td>B: Pass Rate 필터</td>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td>PDF Export: 선택 기간 헤더 반영</td>
+    <td><span class="p1">P1</span></td>
+    <td>30분</td>
+    <td>B: Pass Rate 필터</td>
+  </tr>
+</table>
+
+<div class="card" style="margin-top:1rem">
+  <p><strong>총 예상:</strong> P0 = 약 5시간 &nbsp;|&nbsp; P1 = 약 2시간 &nbsp;|&nbsp; <strong>DB 변경:</strong> ALTER TABLE 1건</p>
+  <p style="margin-top:0.375rem"><strong>참조 파일:</strong></p>
+  <ul>
+    <li><code>dev-handoff-team-activity.html</code> — 히트맵 상세 스펙 (색상 테이블, CSS 토큰, RPC 함수 SQL)</li>
+    <li><code>dev-handoff-passrate-filter.html</code> — Pass Rate 필터 상세 스펙 (드롭다운 모양, 저장 방식, edge cases)</li>
+    <li><code>13-team-activity.html</code> — CEO 승인된 디자인 시안</li>
+  </ul>
+  <p style="margin-top:0.375rem"><strong>질문:</strong> Kyle(PM)에게 Slack</p>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM 기획안 — Runs &amp; Results 첫 화면(리스트) 개선</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F8FAFC;color:#1E293B;line-height:1.7}
+    .container{max-width:960px;margin:0 auto;padding:2.5rem 2rem 4rem}
+    h1{font-size:1.6rem;font-weight:800;color:#0F172A;margin-bottom:0.3rem}
+    .subtitle{font-size:0.85rem;color:#64748B;margin-bottom:2rem}
+    .meta-row{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:2rem;font-size:0.8rem;color:#64748B}
+    .meta-row span{display:flex;align-items:center;gap:0.3rem}
+    .section-title{font-size:1.15rem;font-weight:700;color:#0F172A;margin:2.5rem 0 1rem;padding-bottom:0.5rem;border-bottom:2px solid #E2E8F0;display:flex;align-items:center;gap:0.5rem}
+    .section-num{display:inline-flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;background:#6366F1;color:#fff;border-radius:0.4rem;font-size:0.75rem;font-weight:700}
+    h3{font-size:0.95rem;font-weight:700;color:#1E293B;margin:1.5rem 0 0.5rem}
+    p,li{font-size:0.85rem;color:#334155;margin-bottom:0.5rem}
+    ul,ol{padding-left:1.5rem;margin-bottom:1rem}
+    li{margin-bottom:0.4rem}
+    code{background:#EEF2FF;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.8rem;color:#4338CA;font-family:'SF Mono',Consolas,monospace}
+    strong{color:#0F172A}
+    table{width:100%;border-collapse:collapse;margin:1rem 0 1.5rem;font-size:0.8rem}
+    th{background:#F1F5F9;color:#475569;font-weight:600;text-align:left;padding:0.6rem 0.75rem;border:1px solid #E2E8F0}
+    td{padding:0.55rem 0.75rem;border:1px solid #E2E8F0;vertical-align:top}
+    .wireframe{background:#0F172A;color:#94A3B8;font-family:'SF Mono',Consolas,monospace;font-size:0.72rem;line-height:1.6;padding:1.25rem;border-radius:0.75rem;overflow-x:auto;white-space:pre;margin:1rem 0 1.5rem}
+    .wireframe strong{color:#E2E8F0}
+    .tag{display:inline-block;padding:0.15rem 0.5rem;border-radius:0.25rem;font-size:0.7rem;font-weight:600}
+    .priority-p0{background:#FEE2E2;color:#B91C1C}
+    .priority-p1{background:#FEF3C7;color:#92400E}
+    .priority-p2{background:#DBEAFE;color:#1E40AF}
+    .callout{background:#EEF2FF;border-left:4px solid #6366F1;padding:1rem 1.25rem;border-radius:0 0.5rem 0.5rem 0;margin:1rem 0 1.5rem;font-size:0.82rem}
+    .callout-warn{background:#FFF7ED;border-left-color:#F59E0B}
+    .callout-green{background:#F0FDF4;border-left-color:#22C55E}
+    .gap-badge{display:inline-block;padding:0.1rem 0.45rem;border-radius:0.2rem;font-size:0.65rem;font-weight:700;margin-right:0.3rem}
+    .gap-missing{background:#FEE2E2;color:#B91C1C}
+    .gap-diff{background:#FEF3C7;color:#92400E}
+    .gap-ok{background:#DCFCE7;color:#15803D}
+    .checklist{list-style:none;padding-left:0}
+    .checklist li{padding:0.4rem 0.5rem;border-bottom:1px solid #F1F5F9;display:flex;align-items:flex-start;gap:0.5rem}
+    .checklist li::before{content:'☐';flex-shrink:0;color:#94A3B8;font-size:0.9rem}
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1><i class="ri-play-circle-line" style="color:#6366F1"></i> Runs &amp; Results 첫 화면(리스트) 개선 기획안</h1>
+  <p class="subtitle">다른 탭과의 통일성을 기반으로 한 Runs &amp; Results 리스트 페이지 개선</p>
+
+  <div class="meta-row">
+    <span><i class="ri-calendar-line"></i> 2026-03-27</span>
+    <span><i class="ri-user-line"></i> Author: Kyle (PM)</span>
+    <span><i class="ri-git-branch-line"></i> v1.1</span>
+    <span><i class="ri-file-line"></i> 참고: runs-results-redesign.html (Desi 목업)</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §1 현재 상태 분석 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">1</span><i class="ri-search-eye-line"></i> 현재 Runs &amp; Results 첫 화면 분석</div>
+
+  <h3>1-1. 현재 레이아웃 구조</h3>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────────────┐
+│ <strong>Row 1 (ProjectHeader 56px)</strong>                                          │
+│ [T] Testably · ▾ Project Name · Dashboard · TC · <strong>Runs</strong> · MS · Docs · DL │ 🔔 ⌨ 👤 │
+├─────────────────────────────────────────────────────────────────────┤
+│ <strong>Row 2 (Subtab Row 42px)</strong>                                              │
+│ ▶ Active(N)  ✅ Completed(N)                      [▶ Start New Run] │
+├─────────────────────────────────────────────────────────────────────┤
+│ <strong>Scrollable Content (bg: #F8FAFC)</strong>                                     │
+│                                                                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
+│  │ Active Runs   │  │ Latest Results│  │ Recently Closed│            │
+│  │ <strong>3</strong>             │  │ <strong>87.3%</strong>         │  │ <strong>12</strong>             │            │
+│  └──────────────┘  └──────────────┘  └──────────────┘              │
+│                                                                     │
+│  [🔍 Search runs...]  [Filter ✕]                                    │
+│                                                                     │
+│  ┌─ 🏁 Sprint 12 Release ──── [Active] ── Mar 1 – Mar 15 ────────┐ │
+│  │  ┌─ Run Card ────────────────────────────────────────────────┐ │ │
+│  │  │ Sprint 12 Full Regression  [● In Progress] [🤖 Automated] │ │ │
+│  │  │ ████████░░░░ 72%                                          │ │ │
+│  │  │ ● 38 passed  ● 15 failed  ● 0 untested                   │ │ │
+│  │  │ Assigned to [SK] · Started Mar 15                         │ │ │
+│  │  └───────────────────────────────────────────────────────────┘ │ │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+│  ┌─ 📥 Unassigned Milestones ──── [3 runs] ──────────────────────┐ │
+│  │  (runs without milestone_id)                                   │ │
+│  └──────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘</div>
+
+  <h3>1-2. 현재 기능 요약</h3>
+  <table>
+    <thead><tr><th>요소</th><th>현재 구현 상태</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>Row 1 (ProjectHeader)</td><td>공유 컴포넌트 <code>ProjectHeader.tsx</code></td><td>56px. 6개 탭. 모든 탭에서 동일.</td></tr>
+      <tr><td>Row 2 (Subtab)</td><td>2개 탭: Active / Completed</td><td>42px. "Start New Run" 버튼 우측.</td></tr>
+      <tr><td>Stats Cards</td><td>3개 카드 (Active Runs, Latest Results%, Recently Closed)</td><td>grid-cols-3. 스크롤 영역 내부.</td></tr>
+      <tr><td>Search + Filter</td><td>Search input + Filter 버튼 (✕ 포함)</td><td>Sort 버튼 없음.</td></tr>
+      <tr><td>Run 표시 방식</td><td>Milestone 그룹별 → 카드 레이아웃</td><td>각 카드: Name/Badge → Progress bar → Stats → Assignees</td></tr>
+      <tr><td>Run Actions</td><td>⋯ 메뉴 (Edit, Pause/Resume, Delete)</td><td>드롭다운 메뉴. Focus Mode 진입 없음.</td></tr>
+      <tr><td>Sidebar</td><td>없음</td><td>—</td></tr>
+      <tr><td>Focus Mode 진입</td><td>ContinueRunPanel (slide-over)</td><td>Dashboard에서만 접근 가능. Runs 리스트에서는 불가.</td></tr>
+      <tr><td>PDF Export</td><td>Completed 탭에서 Milestone별 Export PDF</td><td>기존 기능 유지 필요.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1-3. 현재 문제점</h3>
+  <ol>
+    <li><strong>서브탭 부족:</strong> Active/Completed 2개만 존재. 다른 탭은 3~4개 서브탭 + 컬러 아이콘 패턴 사용.</li>
+    <li><strong>Focus Mode 진입 경로 부재:</strong> Runs 리스트에서 바로 Focus Mode로 진입할 수 없음. ContinueRunPanel은 Dashboard 전용.</li>
+    <li><strong>Stats 카드 위치:</strong> 스크롤 영역 내부에 위치하여 스크롤 시 사라짐. Desi 목업처럼 고정 Stats bar가 더 효과적.</li>
+    <li><strong>Sort 기능 부재:</strong> 검색과 필터만 있고 정렬 버튼이 없음.</li>
+    <li><strong>Run 상태 불완전:</strong> DB에는 5개 상태(new, in_progress, paused, under_review, completed)가 있으나, 서브탭은 Active/Completed 2개로만 분류.</li>
+    <li><strong>Priority 정보 없음:</strong> CEO 확정된 Milestone 기한 기반 Priority가 리스트에 표시되지 않음.</li>
+    <li><strong>Bulk Actions 없음:</strong> 체크박스 선택 후 일괄 작업 불가.</li>
+  </ol>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §2 크로스 탭 통일성 비교 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">2</span><i class="ri-layout-grid-line"></i> 다른 탭과의 통일성 비교</div>
+
+  <h3>2-1. 탭별 패턴 비교표</h3>
+  <table>
+    <thead>
+      <tr><th>패턴 요소</th><th>Milestones</th><th>Discovery Log</th><th>Runs &amp; Results (현재)</th><th>통일 기준</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Row 1</strong></td>
+        <td><code>ProjectHeader</code> 공유</td>
+        <td><code>ProjectHeader</code> 공유</td>
+        <td><code>ProjectHeader</code> 공유</td>
+        <td><span class="gap-badge gap-ok">OK</span> 모두 동일</td>
+      </tr>
+      <tr>
+        <td><strong>Row 2 높이</strong></td>
+        <td>42px (h-[2.625rem])</td>
+        <td>42px (h-[2.625rem])</td>
+        <td>42px (h-[2.625rem])</td>
+        <td><span class="gap-badge gap-ok">OK</span> 동일</td>
+      </tr>
+      <tr>
+        <td><strong>서브탭 개수</strong></td>
+        <td>4개 (All, In Progress, Completed, Overdue)</td>
+        <td>4개 (All, Open, Resolved, Dismissed)</td>
+        <td><span class="gap-badge gap-diff">GAP</span> 2개 (Active, Completed)</td>
+        <td>3~4개 서브탭</td>
+      </tr>
+      <tr>
+        <td><strong>서브탭 아이콘</strong></td>
+        <td>✅ 컬러 아이콘 (ri-list-check, ri-loader, ri-checkbox-circle, ri-error-warning)</td>
+        <td>✅ 컬러 아이콘</td>
+        <td>✅ 컬러 아이콘 (ri-play-circle, ri-checkbox-circle)</td>
+        <td><span class="gap-badge gap-ok">OK</span> 적용됨</td>
+      </tr>
+      <tr>
+        <td><strong>서브탭 Badge</strong></td>
+        <td>✅ 카운트 배지 (활성 시 EEF2FF/6366F1)</td>
+        <td>✅ 카운트 배지</td>
+        <td>✅ 카운트 배지</td>
+        <td><span class="gap-badge gap-ok">OK</span> 동일</td>
+      </tr>
+      <tr>
+        <td><strong>Action 버튼</strong></td>
+        <td>"New Milestone" (Indigo gradient)</td>
+        <td>"+ New Entry" (Indigo gradient)</td>
+        <td>"Start New Run" (Indigo gradient)</td>
+        <td><span class="gap-badge gap-ok">OK</span> 동일 패턴</td>
+      </tr>
+      <tr>
+        <td><strong>Toolbar</strong></td>
+        <td>Search + Filters + Sort</td>
+        <td>Search + Filters + Sort</td>
+        <td><span class="gap-badge gap-diff">GAP</span> Search + Filter (Sort 없음)</td>
+        <td>Search + Filters + Sort 3종</td>
+      </tr>
+      <tr>
+        <td><strong>Sidebar</strong></td>
+        <td>없음</td>
+        <td>없음</td>
+        <td>없음 (Desi 목업에만 존재)</td>
+        <td><span class="gap-badge gap-ok">OK</span> 사이드바 없는 게 통일</td>
+      </tr>
+      <tr>
+        <td><strong>리스트 형태</strong></td>
+        <td>카드 리스트</td>
+        <td>테이블</td>
+        <td>Milestone 그룹별 카드 리스트</td>
+        <td>탭 성격에 따라 결정</td>
+      </tr>
+      <tr>
+        <td><strong>Stats 영역</strong></td>
+        <td>없음 (Progress가 카드 내 포함)</td>
+        <td>없음</td>
+        <td>3개 카드 (스크롤 내부)</td>
+        <td><span class="gap-badge gap-diff">GAP</span> 위치/필요성 검토</td>
+      </tr>
+      <tr>
+        <td><strong>Focus Mode 진입</strong></td>
+        <td>N/A</td>
+        <td>N/A</td>
+        <td><span class="gap-badge gap-missing">MISS</span> 없음</td>
+        <td>▶ Continue 버튼 필요</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>2-2. 핵심 불일치 요약</h3>
+  <div class="callout-warn callout">
+    <strong>🔺 총 5개 불일치 항목:</strong><br>
+    ① 서브탭 2개 → 3개로 확장 + Result Filter 추가 필요<br>
+    ② Sort 버튼 없음 → Toolbar에 추가 필요<br>
+    ③ Stats 카드 위치 → 고정 bar vs 제거 결정 필요<br>
+    ④ Focus Mode 리스트 진입 경로 없음 → ▶ 버튼 추가<br>
+    ⑤ Priority 표시 없음 → CEO 확정 Priority 컬럼/뱃지 추가
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §3 Desi 목업 분석 + 채택/수정 판단 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">3</span><i class="ri-artboard-2-line"></i> Desi 목업 분석 — 채택/수정/기각 판단</div>
+
+  <p>Desi가 작성한 <code>runs-results-redesign.html</code> 목업을 요소별로 분석하고, 통일성 기준과 CEO 피드백을 반영하여 채택/수정/기각을 판단합니다.</p>
+
+  <table>
+    <thead><tr><th>목업 요소</th><th>Desi 제안</th><th>판단</th><th>근거</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Row 1 Header</td>
+        <td>자체 top-header (52px, 인라인 nav)</td>
+        <td><span class="tag priority-p0">수정</span></td>
+        <td>실제 코드는 <code>ProjectHeader.tsx</code> (56px) 공유. 목업은 별도 구현이므로 공유 컴포넌트 사용으로 변경.</td>
+      </tr>
+      <tr>
+        <td>Row 2 서브탭 4개</td>
+        <td>All / Active / Completed / Archived</td>
+        <td><span class="tag" style="background:#DCFCE7;color:#15803D">채택+수정</span></td>
+        <td>3개 서브탭으로 축소 (All/Active/Completed). "Archived"와 "Failed"는 서브탭이 아닌 Toolbar Result Filter로 이관. <strong>(v1.1 CEO 확정)</strong></td>
+      </tr>
+      <tr>
+        <td>Sidebar (220px)</td>
+        <td>Milestones + Tags 필터 사이드바</td>
+        <td><span class="tag priority-p0">기각</span></td>
+        <td>다른 탭(Milestones, Discovery Log, Test Cases)에 사이드바 없음. 통일성 위배. Toolbar Filter로 대체.</td>
+      </tr>
+      <tr>
+        <td>Stats Bar (고정)</td>
+        <td>4개 카드 (Active Runs, Pass Rate, Open Bugs, Avg Duration)</td>
+        <td><span class="tag" style="background:#DCFCE7;color:#15803D">채택+수정</span></td>
+        <td>Compact 1줄 bar로 축소. Toolbar 위에 고정. 4개 → 핵심 3개로.</td>
+      </tr>
+      <tr>
+        <td>Table 레이아웃</td>
+        <td>9컬럼 테이블 (☐, ID, Name, Progress, Status, Pass/Fail, Assignee, Started, Duration)</td>
+        <td><span class="tag priority-p1">수정</span></td>
+        <td>현재 카드 레이아웃이 정보 밀도 높음. 카드 유지하되, 테이블 뷰 토글 옵션 추가 (P2).</td>
+      </tr>
+      <tr>
+        <td>"Start New Run" 버튼</td>
+        <td>서브탭 Row 우측 Indigo gradient 버튼</td>
+        <td><span class="tag" style="background:#DCFCE7;color:#15803D">채택</span></td>
+        <td>현재 코드와 동일 패턴. 유지.</td>
+      </tr>
+      <tr>
+        <td>Toolbar (Search + Filters + Sort)</td>
+        <td>3종 세트</td>
+        <td><span class="tag" style="background:#DCFCE7;color:#15803D">채택</span></td>
+        <td>Milestones/Discovery Log과 동일. Sort 버튼 추가.</td>
+      </tr>
+      <tr>
+        <td>Focus Mode 진입</td>
+        <td>없음 (목업에 누락)</td>
+        <td><span class="tag priority-p0">추가 필요</span></td>
+        <td>CEO 관심사항. 각 Run 카드에 ▶ Continue/Start 버튼 추가.</td>
+      </tr>
+      <tr>
+        <td>Priority 표시</td>
+        <td>없음 (목업에 누락)</td>
+        <td><span class="tag priority-p0">추가 필요</span></td>
+        <td>CEO 확정 B+A 하이브리드. Milestone 기한 기반 자동 Priority + 수동 Override.</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §4 개선 방향 및 구체적 변경 사항 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">4</span><i class="ri-pencil-ruler-2-line"></i> 개선 방향 및 구체적 변경 사항</div>
+
+  <h3>4-1. 개선 후 와이어프레임</h3>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────────────┐
+│ <strong>Row 1 — ProjectHeader (56px, 공유 컴포넌트)</strong>                          │
+│ [T] Testably · ▾ Project Name · Dashboard · TC · <strong>Runs</strong> · MS · Docs · DL │ 🔔 ⌨ 👤 │
+├─────────────────────────────────────────────────────────────────────┤
+│ <strong>Row 2 — Subtab Row (42px)</strong>                                            │
+│ 📋 All(20) · ▶ Active(5) · ✅ Completed(12)                    [▶ Start New Run] │
+├─────────────────────────────────────────────────────────────────────┤
+│ <strong>Stats Bar (40px, 고정, border-bottom)</strong>                                │
+│  ▶ Active 5 of 20  │  ✅ Pass Rate 87.3% (+2.1%)  │  🕐 Avg 2h18m              │
+├─────────────────────────────────────────────────────────────────────┤
+│ <strong>Toolbar (44px, 고정)</strong>                                                 │
+│ [🔍 Search runs...]          [Result ▾] [Milestone ▾] [Filters] [Sort] │
+├─────────────────────────────────────────────────────────────────────┤
+│ <strong>Scrollable Content Area</strong>                                              │
+│                                                                     │
+│  ── 🔴 CRITICAL (Milestone due ≤3d) ───────────────────────────── │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │ Sprint 12 Full Regression  [● In Progress] [🔴 Critical]      │ │
+│  │ 🏁 Sprint 12 Release · Due Mar 28                             │ │
+│  │ █████████░░░ 72%  · 38✅ 15❌ 0⬜                             │ │
+│  │ Assigned to [SK][JD] · 1h45m              [▶ <strong>Continue</strong>] │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  ── 🟡 HIGH (4~7d) ────────────────────────────────────────────── │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │ Login Module Smoke Test  [● In Progress] [🟡 High]            │ │
+│  │ 🏁 Smoke Test Suite · Due Apr 2                               │ │
+│  │ █████░░░░░░ 45%  · 9✅ 11❌ 0⬜                               │ │
+│  │ Assigned to [JD] · 58m                    [▶ <strong>Continue</strong>] │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  ── 🟢 MEDIUM / LOW ───────────────────────────────────────────── │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │ API Integration Sanity  [◻ New] [🟢 Low]                      │ │
+│  │ No Milestone                                                   │ │
+│  │ ██░░░░░░░░░ 15%  · 3✅ 0❌ 17⬜                               │ │
+│  │ Assigned to [MR] · 22m                      [▶ <strong>Start</strong>] │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  ── ✅ Completed (최근 완료) ───────────────────────────────────── │
+│  (Completed 탭 선택 시 표시)                                       │
+└─────────────────────────────────────────────────────────────────────┘</div>
+
+  <h3>4-2. 변경 사항 상세</h3>
+
+  <h3>A. 서브탭 확장 (2개 → 3개) + Result Filter 신규 <span class="tag" style="background:#DCFCE7;color:#15803D;font-size:0.7rem;vertical-align:middle;margin-left:0.5rem">v1.1 CEO 확정</span></h3>
+  <table>
+    <thead><tr><th>#</th><th>서브탭</th><th>아이콘</th><th>아이콘 색상</th><th>필터 조건</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>All</td><td>ri-list-check-3</td><td>#6366F1 (Indigo)</td><td>전체 (archived 제외)</td></tr>
+      <tr><td>2</td><td>Active</td><td>ri-play-circle-fill</td><td>#3B82F6 (Blue)</td><td>status ∈ {new, in_progress, paused, under_review}</td></tr>
+      <tr><td>3</td><td>Completed</td><td>ri-checkbox-circle-fill</td><td>#22C55E (Green)</td><td>status = completed</td></tr>
+    </tbody>
+  </table>
+  <div class="callout-green callout">
+    <strong>✅ v1.1 변경 (CEO 확정):</strong> 기존 Failed 서브탭을 제거하고 <strong>Toolbar Result Filter 드롭다운</strong>으로 대체합니다.<br>
+    <strong>근거:</strong> Failed는 Completed의 부분집합이라 서브탭 상호 배타성 원칙에 위배. 필터가 더 유연하고 크로스 탭 패턴과 일치합니다.
+  </div>
+
+  <h3>A-2. Result Filter 드롭다운 (신규, P0)</h3>
+  <table>
+    <thead><tr><th>#</th><th>옵션</th><th>필터 조건</th><th>적용 탭</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>All Results</td><td>(필터 없음 — 기본값)</td><td>All, Active, Completed</td></tr>
+      <tr><td>2</td><td>Has Failures</td><td><code>failed &gt; 0</code></td><td>All, Completed (주 사용)</td></tr>
+      <tr><td>3</td><td>All Passed</td><td><code>failed === 0 &amp;&amp; blocked === 0</code></td><td>All, Completed</td></tr>
+      <tr><td>4</td><td>Has Blocked</td><td><code>blocked &gt; 0</code></td><td>All, Active, Completed</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <strong>💡 UI 스펙:</strong> Toolbar에서 Milestone Filter 왼쪽에 배치. 기본값 "All Results"일 때는 회색 텍스트, 필터 활성화 시 Indigo 배경 + 텍스트로 시각적 구분.<br>
+    <code>&lt;select&gt;</code> 스타일: <code>h-8 px-3 text-xs font-medium rounded-md border border-slate-200</code>. 활성: <code>bg-indigo-50 text-indigo-700 border-indigo-200</code>.
+  </div>
+
+  <h3>B. Stats Bar 리디자인</h3>
+  <p>현재의 3개 대형 카드(grid-cols-3)를 <strong>1줄 compact bar</strong>로 변경합니다. 스크롤 콘텐츠 밖에 고정 배치하여 항상 보이도록 합니다.</p>
+  <table>
+    <thead><tr><th>Stat</th><th>아이콘</th><th>표시 형식</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>Active Runs</td><td>ri-play-circle-line (#3B82F6)</td><td><strong>5</strong> of 20 total</td><td>전체 대비 진행 중 비율</td></tr>
+      <tr><td>Pass Rate</td><td>ri-checkbox-circle-line (#22C55E)</td><td><strong>87.3%</strong> <span style="color:#22C55E">+2.1%</span></td><td>전 스프린트 대비 변동</td></tr>
+      <tr><td>Avg Duration</td><td>ri-time-line (#8B5CF6)</td><td><strong>2h 18m</strong></td><td>전체 Run 평균 실행 시간</td></tr>
+    </tbody>
+  </table>
+  <p>Open Bugs 카드는 제거합니다 (bug tracking은 별도 기능이며, 현재 Runs 페이지에서 직접 보여줄 데이터 소스가 없음).</p>
+
+  <h3>C. Toolbar 통일</h3>
+  <p>Milestones/Discovery Log 탭과 동일한 Toolbar 패턴으로 통일합니다:</p>
+  <ul>
+    <li><strong>Search:</strong> <code>🔍 Search runs...</code> (flex-1)</li>
+    <li><strong>Result Filter (신규):</strong> All Results / Has Failures / All Passed / Has Blocked 드롭다운. <span class="tag" style="background:#DCFCE7;color:#15803D;font-size:0.65rem">v1.1</span></li>
+    <li><strong>Milestone Filter:</strong> 드롭다운으로 Milestone 필터 (현재 사이드바 대체)</li>
+    <li><strong>Filters:</strong> Status, Assignee, Tags, Automated/Manual 복합 필터</li>
+    <li><strong>Sort:</strong> Created date, Name, Progress, Priority (기본: Priority desc → Created desc)</li>
+  </ul>
+  <div class="callout">
+    <strong>💡 사이드바 대신 Milestone Filter:</strong> Desi 목업의 사이드바(220px Milestones + Tags)는 기각하되, 해당 필터 기능은 Toolbar의 "Milestone ▾" 드롭다운과 "Filters" 패널로 이관합니다. 이를 통해 다른 탭과의 레이아웃 통일성을 유지하면서 동일한 필터링 기능을 제공합니다.
+  </div>
+
+  <h3>D. Run 카드 리디자인</h3>
+  <p>기존 카드 레이아웃을 유지하되 다음 정보를 추가합니다:</p>
+  <table>
+    <thead><tr><th>행</th><th>현재</th><th>변경 후</th></tr></thead>
+    <tbody>
+      <tr><td>Row 1</td><td>Run Name + Status Badge + ⋯ menu</td><td>Run Name + Status Badge + <strong>Priority Badge</strong> + ⋯ menu</td></tr>
+      <tr><td>Row 2 (NEW)</td><td>—</td><td><strong>🏁 Milestone Name · Due {date}</strong> (연결된 Milestone 표시)</td></tr>
+      <tr><td>Row 3</td><td>Progress bar + %</td><td>Progress bar + % (변동 없음)</td></tr>
+      <tr><td>Row 4</td><td>passed/failed/blocked/retest/untested stats</td><td>동일 (변동 없음)</td></tr>
+      <tr><td>Row 5</td><td>Assigned to + Started date</td><td>Assigned to + Duration + <strong>▶ Continue/Start 버튼</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h3>E. Priority Badge 스펙</h3>
+  <p>CEO 확정 B+A 하이브리드 방안에 따라 Run 카드에 Priority badge를 표시합니다:</p>
+  <table>
+    <thead><tr><th>Priority</th><th>조건 (Auto)</th><th>Badge 색상</th><th>아이콘</th></tr></thead>
+    <tbody>
+      <tr><td>🔴 Critical</td><td>Milestone due ≤ 3일</td><td>bg-red-50 text-red-700</td><td>ri-alarm-warning-fill</td></tr>
+      <tr><td>🟡 High</td><td>Milestone due 4~7일</td><td>bg-amber-50 text-amber-700</td><td>ri-arrow-up-line</td></tr>
+      <tr><td>🔵 Medium</td><td>Milestone due 8~14일</td><td>bg-blue-50 text-blue-700</td><td>ri-subtract-line</td></tr>
+      <tr><td>🟢 Low</td><td>Milestone due &gt;14일 또는 없음</td><td>bg-green-50 text-green-700</td><td>ri-arrow-down-line</td></tr>
+    </tbody>
+  </table>
+  <p><code>priority_override</code>가 설정된 경우 수동 우선순위를 사용하며, badge 옆에 <code>ri-pushpin-fill</code> 아이콘으로 수동 지정임을 표시합니다.</p>
+
+  <h3>F. Priority 그룹핑</h3>
+  <p>Active 탭에서 Run 카드들을 Priority 그룹별로 나누어 표시합니다:</p>
+  <ul>
+    <li><strong>그룹 헤더:</strong> <code>🔴 CRITICAL (2)</code> — Priority 색상 + 이름 + 카운트</li>
+    <li><strong>정렬 순서:</strong> Critical → High → Medium → Low. 동일 Priority 내에서는 Milestone due date ASC.</li>
+    <li><strong>Completed 탭:</strong> Priority 그룹핑 없이 완료 시간 순 정렬 (최근 완료 우선). Result Filter로 실패/통과/차단 Run 필터링 가능.</li>
+    <li>기존 Milestone 그룹핑은 Toolbar의 "Group by" 옵션에서 선택 가능 (기본: Priority).</li>
+  </ul>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §5 Focus Mode 진입 경로 개선 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">5</span><i class="ri-focus-3-line"></i> Focus Mode 진입 경로 개선</div>
+
+  <h3>5-1. 현재 Focus Mode 진입 경로</h3>
+  <table>
+    <thead><tr><th>경로</th><th>시작점</th><th>동작</th><th>문제점</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>경로 A</td>
+        <td>Dashboard → Overview 탭 → ContinueRunPanel</td>
+        <td>Slide-over에서 Run 선택 → Enter Focus Mode</td>
+        <td>Runs 탭이 아닌 Dashboard에서만 접근 가능</td>
+      </tr>
+      <tr>
+        <td>경로 B</td>
+        <td>Runs 리스트 → Run 카드 클릭</td>
+        <td>Run Detail 페이지로 이동</td>
+        <td>Focus Mode가 아닌 Detail 페이지. 추가 클릭 필요.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5-2. 개선 방안: 3중 진입 경로</h3>
+  <div class="callout-green callout">
+    <strong>✅ CEO 확정 사항:</strong> Focus Mode는 QA 엔지니어의 핵심 워크플로우. Runs 리스트에서 <strong>1-click 진입</strong>이 가능해야 합니다.
+  </div>
+
+  <table>
+    <thead><tr><th>경로</th><th>시작점</th><th>UI 요소</th><th>동작</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>경로 1 (신규)</strong></td>
+        <td>Runs 리스트 → Run 카드</td>
+        <td>카드 우측 하단 <strong>▶ Continue</strong> 버튼</td>
+        <td><code>navigate(`/projects/${projectId}/runs/${runId}`)</code> → Focus Mode 진입<br>
+            In Progress: "▶ Continue" (Indigo)<br>
+            New/Paused: "▶ Start" (Green)</td>
+      </tr>
+      <tr>
+        <td><strong>경로 2 (기존)</strong></td>
+        <td>Dashboard → Overview</td>
+        <td>ContinueRunPanel slide-over</td>
+        <td>유지 (기존 동작 그대로)</td>
+      </tr>
+      <tr>
+        <td><strong>경로 3 (기존)</strong></td>
+        <td>Run 카드 클릭 (이름 영역)</td>
+        <td>Run Detail 페이지</td>
+        <td>유지. Detail에서 "Enter Focus Mode" 버튼으로 Focus Mode 진입 가능.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5-3. ▶ Continue/Start 버튼 스펙</h3>
+  <table>
+    <thead><tr><th>속성</th><th>Continue (In Progress)</th><th>Start (New/Paused)</th></tr></thead>
+    <tbody>
+      <tr><td>텍스트</td><td>▶ Continue</td><td>▶ Start</td></tr>
+      <tr><td>배경색</td><td>#6366F1 (Indigo)</td><td>#22C55E (Green)</td></tr>
+      <tr><td>호버</td><td>opacity 0.9 + translateY(-1px)</td><td>opacity 0.9 + translateY(-1px)</td></tr>
+      <tr><td>위치</td><td>Run 카드 Row 5, 우측 끝</td><td>Run 카드 Row 5, 우측 끝</td></tr>
+      <tr><td>크기</td><td>px-3 py-1.5, text-[0.75rem], font-semibold</td><td>동일</td></tr>
+      <tr><td>아이콘</td><td>ri-play-line (좌측)</td><td>ri-play-line (좌측)</td></tr>
+      <tr><td>Completed Run</td><td colspan="2">버튼 숨김. "View Report" 텍스트 링크로 대체.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5-4. 클릭 영역 분리</h3>
+  <p>Run 카드 내 클릭 영역을 명확하게 분리합니다:</p>
+  <ul>
+    <li><strong>카드 전체 클릭:</strong> Run Detail 페이지 이동 (현재 동작 유지)</li>
+    <li><strong>▶ Continue/Start 버튼:</strong> <code>e.stopPropagation()</code> → Focus Mode 직접 진입</li>
+    <li><strong>⋯ 메뉴 버튼:</strong> <code>e.stopPropagation()</code> → 드롭다운 메뉴 (기존 동작 유지)</li>
+    <li><strong>Run Name 클릭:</strong> Run Detail 이동 (카드 클릭과 동일)</li>
+  </ul>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §6 경쟁 제품 벤치마킹 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">6</span><i class="ri-bar-chart-grouped-line"></i> 경쟁 제품 벤치마킹</div>
+
+  <table>
+    <thead><tr><th>기능</th><th>TestRail</th><th>Zephyr Scale</th><th>Qase</th><th>Testably (개선 후)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Run 리스트 뷰</td>
+        <td>테이블 (Milestone 그룹)</td>
+        <td>카드 + 테이블 토글</td>
+        <td>카드 리스트</td>
+        <td>카드 (Priority 그룹) + 테이블 토글(P2)</td>
+      </tr>
+      <tr>
+        <td>Stats 영역</td>
+        <td>없음</td>
+        <td>상단 요약 bar</td>
+        <td>없음</td>
+        <td>Compact Stats bar (고정)</td>
+      </tr>
+      <tr>
+        <td>Priority 표시</td>
+        <td>없음 (수동 정렬만)</td>
+        <td>Priority 컬럼</td>
+        <td>없음</td>
+        <td>Auto(Milestone 기한) + Manual Override</td>
+      </tr>
+      <tr>
+        <td>Focus Mode 진입</td>
+        <td>Run → Test 클릭 → 실행</td>
+        <td>Run → Execute 클릭</td>
+        <td>Run → Start 버튼</td>
+        <td>리스트에서 ▶ 1-click + Detail + Dashboard</td>
+      </tr>
+      <tr>
+        <td>Milestone 필터</td>
+        <td>사이드바</td>
+        <td>상단 필터</td>
+        <td>드롭다운</td>
+        <td>Toolbar 드롭다운 (통일)</td>
+      </tr>
+      <tr>
+        <td>Bulk Actions</td>
+        <td>체크박스 → Bulk close</td>
+        <td>체크박스 → Export</td>
+        <td>없음</td>
+        <td>체크박스 → Close/Archive/Export (P2)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout-green callout">
+    <strong>✅ 차별점:</strong> Testably의 Auto Priority (Milestone 기한 기반)는 경쟁 제품에 없는 기능. QA 엔지니어가 "지금 가장 급한 Run"을 별도 판단 없이 바로 알 수 있습니다.
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §7 PM 권고 및 우선순위 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">7</span><i class="ri-flag-line"></i> PM 권고 및 우선순위</div>
+
+  <h3>7-1. 우선순위 분류</h3>
+  <table>
+    <thead><tr><th>Priority</th><th>변경 사항</th><th>근거</th><th>예상 공수</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag priority-p0">P0</span></td><td>서브탭 3개 확장 (All/Active/Completed) + Result Filter 드롭다운</td><td>크로스 탭 통일성 + CEO 확정. <span class="tag" style="background:#DCFCE7;color:#15803D;font-size:0.6rem">v1.1</span></td><td>S</td></tr>
+      <tr><td><span class="tag priority-p0">P0</span></td><td>▶ Continue/Start 버튼 추가 (Focus Mode 진입)</td><td>CEO 관심사항. QA 핵심 워크플로우.</td><td>M</td></tr>
+      <tr><td><span class="tag priority-p0">P0</span></td><td>Priority Badge 표시 + 그룹핑</td><td>CEO 확정 기능. pm-plan-project-overview에 Dev 스펙 확정됨.</td><td>M</td></tr>
+      <tr><td><span class="tag priority-p1">P1</span></td><td>Stats bar compact 리디자인 (고정 위치)</td><td>정보 가시성 개선.</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p1">P1</span></td><td>Toolbar에 Sort + Milestone Filter 추가</td><td>크로스 탭 통일성 + 사이드바 대체.</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p1">P1</span></td><td>Run 카드에 Milestone 정보 Row 추가</td><td>Priority 컨텍스트 제공.</td><td>S</td></tr>
+      <tr><td><span class="tag priority-p2">P2</span></td><td>테이블 뷰 토글 (카드 ↔ 테이블)</td><td>Desi 목업 테이블 디자인 활용.</td><td>L</td></tr>
+      <tr><td><span class="tag priority-p2">P2</span></td><td>Bulk Actions (체크박스 → Close/Archive/Export)</td><td>대량 Run 관리 편의.</td><td>L</td></tr>
+      <tr><td><span class="tag priority-p2">P2</span></td><td>Archived 상태 추가 + 서브탭</td><td>장기 보관 Run 분리.</td><td>M</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7-2. 구현 로드맵</h3>
+  <table>
+    <thead><tr><th>Phase</th><th>범위</th><th>예상 기간</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Phase 1</strong></td><td>P0 전체: 서브탭 3개 + Result Filter + ▶ Continue 버튼 + Priority Badge/그룹핑</td><td>1~1.5 스프린트</td></tr>
+      <tr><td><strong>Phase 2</strong></td><td>P1 전체: Stats bar 리디자인 + Toolbar 통일 + Milestone Row</td><td>0.5~1 스프린트</td></tr>
+      <tr><td><strong>Phase 3</strong></td><td>P2: 테이블 뷰 토글 + Bulk Actions + Archived 상태</td><td>1~2 스프린트</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7-3. 설계 원칙</h3>
+  <ol>
+    <li><strong>크로스 탭 통일성 우선:</strong> Milestones, Discovery Log, Test Cases와 동일한 Row 1 + Row 2 + Toolbar 패턴 준수.</li>
+    <li><strong>카드 레이아웃 유지:</strong> 현재 카드 기반 Run 표시가 정보 밀도와 가독성 면에서 우수. 테이블은 P2 옵션.</li>
+    <li><strong>Focus Mode 1-click 진입:</strong> QA 엔지니어의 핵심 동선 = Runs 리스트 → ▶ Continue → Focus Mode. 최소 클릭.</li>
+    <li><strong>Priority = Milestone 기한:</strong> 자동 계산으로 인지 부담 최소화. 수동 Override는 예외적 상황용.</li>
+    <li><strong>사이드바 금지:</strong> 현재 어떤 탭도 사이드바를 사용하지 않음. 필터는 Toolbar로 통일.</li>
+  </ol>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §8 Desi Handoff 스펙 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">8</span><i class="ri-palette-line"></i> Desi Handoff 스펙</div>
+
+  <h3>A. 서브탭 Row 변경</h3>
+  <table>
+    <thead><tr><th>항목</th><th>현재</th><th>변경</th></tr></thead>
+    <tbody>
+      <tr><td>A-1</td><td>2개 탭 (Active, Completed)</td><td>3개 탭: All (ri-list-check-3, #6366F1) · Active (ri-play-circle-fill, #3B82F6) · Completed (ri-checkbox-circle-fill, #22C55E) <span class="tag" style="background:#DCFCE7;color:#15803D;font-size:0.6rem">v1.1 CEO 확정</span></td></tr>
+      <tr><td>A-2</td><td>Active 필터: status ≠ completed</td><td>Active 필터: status ∈ {new, in_progress, paused, under_review}</td></tr>
+      <tr><td>A-3</td><td>—</td><td><strong>Result Filter 드롭다운 (Toolbar 내):</strong> All Results (기본) / Has Failures (<code>failed &gt; 0</code>) / All Passed (<code>failed===0 &amp;&amp; blocked===0</code>) / Has Blocked (<code>blocked &gt; 0</code>). All·Completed 탭에서 동작. <span class="tag" style="background:#DCFCE7;color:#15803D;font-size:0.6rem">v1.1</span></td></tr>
+      <tr><td>A-4</td><td>badge 스타일 그대로</td><td>활성: bg-[#EEF2FF] text-[#6366F1] / 비활성: bg-[#F1F5F9] text-[#64748B] (변동 없음)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B. Stats Bar (Compact)</h3>
+  <table>
+    <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>B-1</td><td><strong>위치:</strong> Subtab Row 아래, Toolbar 위. 고정(flex-shrink-0). <code>border-bottom: 1px solid #E2E8F0</code></td></tr>
+      <tr><td>B-2</td><td><strong>높이:</strong> 40px. <code>padding: 0 1.25rem</code>. flex row, items-center, gap-6.</td></tr>
+      <tr><td>B-3</td><td><strong>각 Stat:</strong> Icon(16px) + Label(text-[0.75rem] #94A3B8) + Value(text-[0.8125rem] font-bold #0F172A) + Delta(text-[0.7rem] color per sign).</td></tr>
+      <tr><td>B-4</td><td><strong>구분선:</strong> 각 Stat 사이 <code>border-right: 1px solid #E2E8F0</code>, padding-right: 1.5rem. 마지막 항목 제외.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>C. Toolbar 통일</h3>
+  <table>
+    <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>C-1</td><td><strong>높이:</strong> 44px. Milestones/Discovery Log와 동일한 flex layout.</td></tr>
+      <tr><td>C-2</td><td><strong>Search:</strong> flex-1, bg-[#F8FAFC] border-[#E2E8F0] rounded-md. Placeholder: "Search runs..."</td></tr>
+      <tr><td>C-3</td><td><strong>Milestone Filter (신규):</strong> "🏁 Milestone ▾" 드롭다운. 선택 시 해당 Milestone의 Run만 표시. "All Milestones" 기본값.</td></tr>
+      <tr><td>C-4</td><td><strong>Filters:</strong> 기존 Filter 버튼 유지. 패널에 Status, Assignee, Tags, Automated/Manual 필터 추가.</td></tr>
+      <tr><td>C-5</td><td><strong>Sort (신규):</strong> "Sort ▾" 버튼 추가. 옵션: Priority (default), Created Date, Name, Progress.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>D. Run Card 리디자인</h3>
+  <table>
+    <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>D-1</td><td><strong>Row 1 (Name):</strong> Run Name (font-semibold text-[0.9375rem]) + Status Badge (기존) + <strong>Priority Badge (신규)</strong>. Priority Badge: 10px dot + text, rounded-full, font-size 0.6875rem.</td></tr>
+      <tr><td>D-2</td><td><strong>Row 2 (Milestone, 신규):</strong> <code>ri-flag-line</code> 14px #94A3B8 + Milestone Name (text-[0.75rem] #64748B) + "· Due {date}" (text-[0.75rem] #94A3B8). Milestone 없으면 "No Milestone" (italic #CBD5E1).</td></tr>
+      <tr><td>D-3</td><td><strong>Row 3 (Progress):</strong> 기존 4-color progress bar 유지. height 6px.</td></tr>
+      <tr><td>D-4</td><td><strong>Row 4 (Stats):</strong> 기존 passed/failed/blocked/retest/untested dot-labels 유지.</td></tr>
+      <tr><td>D-5</td><td><strong>Row 5 (Footer):</strong> 좌측 = Assigned to [Avatars] · Duration. 우측 = <strong>▶ Continue/Start 버튼</strong>.</td></tr>
+      <tr><td>D-6</td><td><strong>▶ 버튼:</strong> In Progress = "▶ Continue" bg-[#6366F1] text-white. New/Paused = "▶ Start" bg-[#22C55E] text-white. Completed = 숨김, "View Report" 텍스트 링크. <code>px-3 py-1.5 rounded-md text-[0.75rem] font-semibold shadow-sm</code>.</td></tr>
+      <tr><td>D-7</td><td><strong>Priority Override 표시:</strong> Priority badge 옆에 <code>ri-pushpin-fill</code> 10px #94A3B8 (수동 지정 시에만 표시).</td></tr>
+    </tbody>
+  </table>
+
+  <h3>E. Priority 그룹 헤더</h3>
+  <table>
+    <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>E-1</td><td><strong>구조:</strong> 색상 dot(8px) + Priority Label (text-[0.8125rem] font-semibold) + Count badge (text-[0.6875rem]).</td></tr>
+      <tr><td>E-2</td><td><strong>색상:</strong> Critical=#EF4444, High=#F59E0B, Medium=#3B82F6, Low=#22C55E.</td></tr>
+      <tr><td>E-3</td><td><strong>간격:</strong> 그룹 헤더 mb-2, 그룹 간 mt-4.</td></tr>
+      <tr><td>E-4</td><td><strong>비어있는 그룹:</strong> 해당 Priority에 Run이 없으면 그룹 헤더를 표시하지 않음.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>F. Focus Mode 진입 흐름</h3>
+  <table>
+    <thead><tr><th>항목</th><th>스펙</th></tr></thead>
+    <tbody>
+      <tr><td>F-1</td><td><strong>▶ Continue 클릭:</strong> <code>e.stopPropagation()</code> → <code>navigate(`/projects/${projectId}/runs/${runId}`)</code>. 기존 ContinueRunPanel 진입 로직 재활용.</td></tr>
+      <tr><td>F-2</td><td><strong>카드 본체 클릭:</strong> <code>navigate(`/projects/${projectId}/runs/${runId}`)</code> → Run Detail 페이지 (기존 동작).</td></tr>
+      <tr><td>F-3</td><td><strong>⋯ 메뉴:</strong> <code>e.stopPropagation()</code> → Edit / Pause·Resume / Delete (기존 동작).</td></tr>
+      <tr><td>F-4</td><td><strong>키보드 단축키 (P2):</strong> Run 카드 focus 시 <code>Enter</code> = Detail, <code>Shift+Enter</code> = Focus Mode.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>G. 영향 받는 파일</h3>
+  <table>
+    <thead><tr><th>파일</th><th>변경 내용</th><th>예상 규모</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/pages/project-runs/page.tsx</code></td><td>서브탭 3개, Result Filter, Stats bar, Toolbar Sort/Milestone Filter, Run Card 리디자인, Priority 표시/그룹핑, ▶ 버튼</td><td>~200줄 변경</td></tr>
+      <tr><td><code>src/hooks/useActiveRuns.ts</code></td><td>Priority 계산 로직 추가 (Milestone end_date 기반)</td><td>~50줄 추가</td></tr>
+      <tr><td><code>src/utils/runPriority.ts</code> (신규)</td><td>computeRunPriority() util 함수</td><td>~30줄</td></tr>
+      <tr><td><code>supabase/migrations/</code></td><td><code>priority_override</code> 컬럼 이미 pm-plan-project-overview-redesign에서 확정. 동일 migration 사용.</td><td>확정됨</td></tr>
+      <tr><td><code>src/pages/project-detail/components/ContinueRunPanel.tsx</code></td><td>변경 없음 (기존 유지). ▶ 버튼은 동일 navigate 패턴 사용.</td><td>0줄</td></tr>
+      <tr><td><code>src/i18n/local/{ko,en}/runs.ts</code></td><td>서브탭 라벨, Result Filter 라벨, Priority 라벨, Stats 라벨 i18n 추가</td><td>~20줄씩</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- §9 구현 체크리스트 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section-title"><span class="section-num">9</span><i class="ri-checkbox-multiple-line"></i> 구현 체크리스트</div>
+
+  <ul class="checklist">
+    <li>서브탭 3개 구현: All / Active / Completed + 컬러 아이콘 + badge counts <span class="tag" style="background:#DCFCE7;color:#15803D;font-size:0.6rem">v1.1</span></li>
+    <li>Stats bar compact 구현: 3개 stat, 고정 위치, 40px height</li>
+    <li>Toolbar에 Sort 버튼 추가 (Priority/Created/Name/Progress)</li>
+    <li>Toolbar에 Milestone Filter 드롭다운 추가</li>
+    <li>Run Card Row 1에 Priority badge 추가</li>
+    <li>Run Card Row 2 (Milestone 정보) 추가</li>
+    <li>Run Card Row 5에 ▶ Continue/Start 버튼 추가</li>
+    <li>Priority 그룹 헤더 구현 (Active 탭)</li>
+    <li><code>computeRunPriority()</code> util 함수 구현 (Milestone end_date 기반)</li>
+    <li>priority_override 반영 로직 구현</li>
+    <li>Toolbar Result Filter 드롭다운 구현 (All Results / Has Failures / All Passed / Has Blocked) <span class="tag" style="background:#DCFCE7;color:#15803D;font-size:0.6rem">v1.1</span></li>
+    <li>클릭 영역 분리 검증: ▶ 버튼 vs 카드 vs ⋯ 메뉴</li>
+    <li>i18n 라벨 추가 (ko/en)</li>
+    <li>기존 PDF Export 기능 Completed 탭에서 정상 작동 확인</li>
+    <li>크로스 탭 통일성 QA: Milestones/Discovery Log와 시각적 비교</li>
+  </ul>
+
+
+  <!-- ═══ FOOTER ═══ -->
+  <div style="margin-top:3rem; padding-top:1.5rem; border-top:2px solid #E2E8F0; text-align:center; color:#94A3B8; font-size:0.8rem;">
+    <p>Testably — Runs &amp; Results 첫 화면(리스트) 개선 기획안 v1.1</p>
+    <p>참고 문서: runs-results-redesign.html (Desi 목업) · pm-plan-project-overview-redesign.html (My Runs Priority 확정안)</p>
+    <p style="margin-top:0.5rem;">Last updated: 2026-03-27 · Author: Kyle (PM) · Reviewer: CEO · <strong>v1.1: Failed 서브탭 제거 → Result Filter 전환 (CEO 확정)</strong></p>
+  </div>
+
+</div>
+</body>
+</html>

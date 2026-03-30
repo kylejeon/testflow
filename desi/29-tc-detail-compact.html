@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — TC Detail Compact + Sidebar Fix</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Top Header ── */
+  .top-header { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0 1.5rem; height: 3.5rem; gap: 1.5rem; flex-shrink: 0; }
+  .header-logo { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+  .logo-icon { width: 28px; height: 28px; background: #6366F1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.875rem; }
+  .header-logo span { font-weight: 700; color: #0F172A; font-size: 0.9375rem; }
+  .header-nav { display: flex; align-items: center; height: 100%; margin-left: 0.5rem; }
+  .header-nav-item { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.875rem; height: 100%; font-size: 0.8125rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; }
+  .header-nav-item.active { color: #6366F1; border-bottom-color: #6366F1; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.625rem; }
+  .header-btn { font-size: 0.75rem; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; }
+  .header-avatar { width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #6366F1; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700; color: #fff; cursor: pointer; }
+
+  /* ── Sub-header ── */
+  .sub-header { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0 1.5rem; height: 3rem; flex-shrink: 0; }
+  .tab-item { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.875rem; height: 100%; font-size: 0.8125rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; }
+  .tab-item.active { color: #6366F1; border-bottom-color: #6366F1; }
+  .tab-item i { font-size: 0.9375rem; }
+
+  /* ── Main Content ── */
+  .main { flex: 1; display: flex; overflow: hidden; }
+
+  /* ══════════════════════════════════════════ */
+  /* §1 — FOLDER SIDEBAR (FIXED)              */
+  /* ══════════════════════════════════════════ */
+  .sidebar { width: 220px; min-width: 220px; background: #fff; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+
+  /* Sidebar header: title + NEW FOLDER button together at top */
+  .sb-header { padding: 0.75rem 0.875rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .sb-header-row { display: flex; align-items: center; justify-content: space-between; }
+  .sb-title { font-size: 0.8125rem; font-weight: 700; color: #0F172A; }
+  .sb-new-btn { display: flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; color: #6366F1; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 0.375rem; border: none; background: none; }
+  .sb-new-btn:hover { background: #EEF2FF; }
+  .sb-new-btn i { font-size: 0.875rem; }
+
+  /* Folder list: flex-1 scrollable */
+  .sb-folders { flex: 1; overflow-y: auto; padding: 0.375rem 0; }
+  .sb-folder { display: flex; align-items: center; gap: 0.375rem; padding: 0.4375rem 0.875rem; cursor: pointer; font-size: 0.8125rem; color: #475569; border-radius: 0; transition: background 0.1s; }
+  .sb-folder:hover { background: #F8FAFC; }
+  .sb-folder.active { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .sb-folder i { font-size: 1rem; flex-shrink: 0; }
+  .sb-folder.active i { color: #6366F1; }
+  .sb-folder .count { margin-left: auto; font-size: 0.75rem; color: #94A3B8; font-weight: 500; }
+  .sb-folder.active .count { color: #6366F1; }
+
+  /* ══════════════════════════════════════════ */
+  /* §2 — TC LIST (CENTER)                     */
+  /* ══════════════════════════════════════════ */
+  .tc-list-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .tc-toolbar { padding: 0.875rem 1.25rem; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; gap: 0.5rem; background: #fff; flex-shrink: 0; }
+  .tc-search { flex: 1; display: flex; align-items: center; gap: 0.375rem; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 0.5rem; padding: 0.375rem 0.75rem; font-size: 0.8125rem; color: #64748B; }
+  .tc-search i { font-size: 0.9375rem; color: #94A3B8; }
+  .tc-search input { border: none; background: none; outline: none; font-size: 0.8125rem; color: #1E293B; font-family: inherit; flex: 1; }
+  .tc-filter-btn { font-size: 0.8125rem; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; font-family: inherit; font-weight: 500; }
+  .tc-add-btn { font-size: 0.8125rem; padding: 0.4375rem 0.875rem; border-radius: 0.5rem; border: none; background: #6366F1; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; font-family: inherit; font-weight: 600; }
+
+  .tc-table-wrap { flex: 1; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { position: sticky; top: 0; z-index: 2; }
+  thead th { background: #F8FAFC; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #64748B; padding: 0.5rem 1rem; text-align: left; border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+  tbody td { padding: 0.5rem 1rem; font-size: 0.8125rem; color: #334155; border-bottom: 1px solid #F1F5F9; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #FAFAFF; }
+  tbody tr.selected { background: #EEF2FF; }
+  .tc-id { font-family: monospace; font-size: 0.75rem; color: #94A3B8; }
+  .tc-title-cell { font-weight: 600; color: #0F172A; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .priority-badge { font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; white-space: nowrap; }
+  .priority-badge.high { background: #FEE2E2; color: #991B1B; }
+  .priority-badge.medium { background: #FEF3C7; color: #92400E; }
+  .priority-badge.low { background: #DCFCE7; color: #166534; }
+  .av-sm { width: 1.375rem; height: 1.375rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.5rem; font-weight: 700; color: #fff; }
+
+  /* ══════════════════════════════════════════ */
+  /* §3 — TC DETAIL PANEL (COMPACT)            */
+  /* ══════════════════════════════════════════ */
+  .detail-panel { width: 500px; min-width: 500px; background: #fff; border-left: 1px solid #E2E8F0; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+
+  /* Detail Header — compact */
+  .dp-header { padding: 1rem 1.25rem 0.875rem; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .dp-header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .dp-id { font-size: 0.6875rem; font-family: monospace; color: #94A3B8; margin-bottom: 0.25rem; }
+  .dp-title { font-size: 0.9375rem; font-weight: 700; color: #0F172A; line-height: 1.3; }
+  .dp-close { width: 1.75rem; height: 1.75rem; display: flex; align-items: center; justify-content: center; border-radius: 0.375rem; cursor: pointer; color: #94A3B8; flex-shrink: 0; border: none; background: none; }
+  .dp-close:hover { background: #F1F5F9; color: #475569; }
+  .dp-close i { font-size: 1.125rem; }
+  .dp-desc { font-size: 0.75rem; color: #64748B; line-height: 1.5; margin-top: 0.375rem; }
+
+  /* Detail Meta Fields — compact 2-column grid */
+  .dp-meta { padding: 0.875rem 1.25rem; border-bottom: 1px solid #F1F5F9; flex-shrink: 0; }
+  .dp-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem 1rem; }
+  .dp-field {}
+  .dp-field-label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 0.1875rem; }
+  .dp-field-value { font-size: 0.8125rem; color: #0F172A; font-weight: 500; display: flex; align-items: center; gap: 0.25rem; }
+  .dp-priority { font-size: 0.625rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.25rem; }
+  .dp-priority.high { background: #FEE2E2; color: #991B1B; }
+  .dp-priority.medium { background: #FEF3C7; color: #92400E; }
+  .dp-tag { font-size: 0.6875rem; font-weight: 500; padding: 0.125rem 0.4375rem; border-radius: 0.25rem; background: #EEF2FF; color: #4338CA; }
+  .dp-assignee { display: flex; align-items: center; gap: 0.375rem; }
+  .dp-av { width: 1.25rem; height: 1.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.4375rem; font-weight: 700; color: #fff; }
+
+  /* Detail Tabs — compact */
+  .dp-tabs { display: flex; border-bottom: 1px solid #E2E8F0; flex-shrink: 0; }
+  .dp-tab { flex: 1; padding: 0.5rem 0.5rem; font-size: 0.75rem; font-weight: 600; color: #94A3B8; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+  .dp-tab.active { color: #6366F1; border-bottom-color: #6366F1; }
+  .dp-tab:hover:not(.active) { color: #475569; }
+
+  /* Detail Body — scrollable */
+  .dp-body { flex: 1; overflow-y: auto; padding: 0.875rem 1.25rem; }
+
+  /* Precondition */
+  .dp-section { margin-bottom: 0.875rem; }
+  .dp-section-title { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 0.375rem; display: flex; align-items: center; gap: 0.25rem; }
+  .dp-section-title i { font-size: 0.75rem; }
+  .dp-precondition { background: #F8FAFC; border-radius: 0.5rem; padding: 0.625rem 0.75rem; font-size: 0.75rem; color: #475569; line-height: 1.5; }
+
+  /* Steps — compact list */
+  .dp-steps { display: flex; flex-direction: column; gap: 0.375rem; }
+  .dp-step { display: flex; gap: 0.5rem; background: #F8FAFC; border-radius: 0.5rem; padding: 0.5rem 0.75rem; }
+  .dp-step-num { width: 1.25rem; height: 1.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700; flex-shrink: 0; margin-top: 0.0625rem; }
+  .dp-step-num.action { background: #EEF2FF; color: #4338CA; }
+  .dp-step-num.expected { background: #DCFCE7; color: #166534; }
+  .dp-step-text { font-size: 0.75rem; color: #475569; line-height: 1.5; flex: 1; }
+
+  /* Attachments — compact grid */
+  .dp-attachments { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.375rem; }
+  .dp-attach { aspect-ratio: 1; border-radius: 0.375rem; overflow: hidden; background: #F1F5F9; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .dp-attach:hover { border-color: #C7D2FE; }
+  .dp-attach i { font-size: 1.25rem; color: #94A3B8; }
+
+  /* Action buttons — compact */
+  .dp-actions { padding: 0.75rem 1.25rem; border-top: 1px solid #E2E8F0; display: flex; gap: 0.5rem; flex-shrink: 0; }
+  .dp-btn { flex: 1; padding: 0.4375rem 0.75rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 600; cursor: pointer; text-align: center; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 0.25rem; }
+  .dp-btn.primary { background: #6366F1; color: #fff; border: none; }
+  .dp-btn.primary:hover { background: #4F46E5; }
+  .dp-btn.danger { background: #fff; color: #EF4444; border: 1px solid #FCA5A5; }
+  .dp-btn.danger:hover { background: #FEF2F2; }
+  .dp-btn i { font-size: 0.875rem; }
+
+  /* ══════════════════════════════════════════ */
+  /* ANNOTATIONS                               */
+  /* ══════════════════════════════════════════ */
+  .anno-layer { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 100; }
+  .anno { position: absolute; pointer-events: auto; }
+  .anno-tag { display: inline-flex; align-items: center; gap: 0.25rem; background: #6366F1; color: #fff; font-size: 0.5625rem; font-weight: 700; padding: 0.1875rem 0.5rem; border-radius: 9999px; white-space: nowrap; box-shadow: 0 2px 8px rgba(99,102,241,0.3); }
+  .anno-line { position: absolute; border: 1px dashed #818CF8; }
+
+  /* ══════════════════════════════════════════ */
+  /* DESIGN SPEC PANEL (bottom)                */
+  /* ══════════════════════════════════════════ */
+  .spec-panel { background: #1E293B; color: #E2E8F0; padding: 1.5rem 2rem; overflow-y: auto; max-height: 50vh; }
+  .spec-panel h2 { font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .spec-panel h3 { font-size: 0.875rem; font-weight: 700; color: #818CF8; margin: 1.25rem 0 0.5rem; }
+  .spec-panel h4 { font-size: 0.8125rem; font-weight: 600; color: #94A3B8; margin: 0.75rem 0 0.375rem; }
+  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .spec-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; padding: 0.75rem 1rem; }
+  .spec-card .label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748B; margin-bottom: 0.375rem; }
+  .spec-row { display: flex; justify-content: space-between; align-items: center; padding: 0.1875rem 0; font-size: 0.75rem; }
+  .spec-row .k { color: #94A3B8; }
+  .spec-row .old { color: #EF4444; text-decoration: line-through; font-family: monospace; font-size: 0.6875rem; }
+  .spec-row .new { color: #34D399; font-weight: 600; font-family: monospace; font-size: 0.6875rem; }
+  .spec-row .arrow { color: #475569; margin: 0 0.25rem; }
+
+  .rec-box { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); border-radius: 0.5rem; padding: 0.75rem 1rem; margin: 0.75rem 0; font-size: 0.75rem; color: #C7D2FE; }
+  .rec-box strong { color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ TOP HEADER ═══════════ -->
+<header class="top-header">
+  <div class="header-logo"><div class="logo-icon">T</div><span>Testably</span></div>
+  <nav class="header-nav">
+    <div class="header-nav-item active"><i class="ri-folder-3-line"></i> Projects</div>
+    <div class="header-nav-item"><i class="ri-team-line"></i> Team</div>
+    <div class="header-nav-item"><i class="ri-settings-3-line"></i> Settings</div>
+  </nav>
+  <div class="header-right">
+    <div class="header-btn"><i class="ri-command-line"></i> ⌘K</div>
+    <div class="header-btn"><i class="ri-notification-3-line"></i></div>
+    <div class="header-avatar">KJ</div>
+  </div>
+</header>
+
+<!-- ═══════════ SUB-HEADER (TABS) ═══════════ -->
+<div class="sub-header">
+  <div class="tab-item active"><i class="ri-file-list-3-line"></i> Test Cases</div>
+  <div class="tab-item"><i class="ri-play-circle-line"></i> Runs</div>
+  <div class="tab-item"><i class="ri-flag-line"></i> Milestones</div>
+  <div class="tab-item"><i class="ri-file-text-line"></i> Docs</div>
+  <div class="tab-item"><i class="ri-compass-3-line"></i> Discovery</div>
+</div>
+
+<!-- ═══════════ MAIN: SIDEBAR + LIST + DETAIL ═══════════ -->
+<div class="main">
+
+  <!-- ════ §1 FOLDER SIDEBAR ════ -->
+  <div class="sidebar">
+    <div class="sb-header">
+      <div class="sb-header-row">
+        <span class="sb-title">Folders</span>
+        <button class="sb-new-btn"><i class="ri-add-line"></i> New</button>
+      </div>
+    </div>
+    <div class="sb-folders">
+      <div class="sb-folder active">
+        <i class="ri-folder-fill" style="color:#6366F1"></i>
+        <span>All Test Cases</span>
+        <span class="count">148</span>
+      </div>
+      <div class="sb-folder">
+        <i class="ri-folder-line"></i>
+        <span>Authentication</span>
+        <span class="count">24</span>
+      </div>
+      <div class="sb-folder">
+        <i class="ri-folder-line"></i>
+        <span>Payment Integration</span>
+        <span class="count">31</span>
+      </div>
+      <div class="sb-folder">
+        <i class="ri-folder-line"></i>
+        <span>User Management</span>
+        <span class="count">18</span>
+      </div>
+      <div class="sb-folder">
+        <i class="ri-folder-line"></i>
+        <span>Dashboard</span>
+        <span class="count">22</span>
+      </div>
+      <div class="sb-folder">
+        <i class="ri-folder-line"></i>
+        <span>API Gateway</span>
+        <span class="count">15</span>
+      </div>
+      <div class="sb-folder">
+        <i class="ri-folder-line"></i>
+        <span>Mobile App</span>
+        <span class="count">19</span>
+      </div>
+      <div class="sb-folder">
+        <i class="ri-folder-line"></i>
+        <span>Reporting</span>
+        <span class="count">12</span>
+      </div>
+      <div class="sb-folder">
+        <i class="ri-folder-line"></i>
+        <span>Notifications</span>
+        <span class="count">7</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ §2 TC LIST ════ -->
+  <div class="tc-list-area">
+    <div class="tc-toolbar">
+      <div class="tc-search">
+        <i class="ri-search-line"></i>
+        <input type="text" placeholder="Search test cases...">
+      </div>
+      <button class="tc-filter-btn"><i class="ri-filter-3-line"></i> Filter</button>
+      <button class="tc-add-btn"><i class="ri-add-line"></i> Add TC</button>
+    </div>
+    <div class="tc-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px"><input type="checkbox" style="accent-color:#6366F1"></th>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Priority</th>
+            <th>Assignee</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="checkbox" style="accent-color:#6366F1"></td>
+            <td class="tc-id">TC-2847</td>
+            <td class="tc-title-cell">Verify credit card payment flow</td>
+            <td><span class="priority-badge high">High</span></td>
+            <td><span class="av-sm" style="background:#6366F1">SK</span></td>
+            <td style="color:#94A3B8;font-size:0.75rem">4 min ago</td>
+          </tr>
+          <tr class="selected">
+            <td><input type="checkbox" checked style="accent-color:#6366F1"></td>
+            <td class="tc-id">TC-2846</td>
+            <td class="tc-title-cell">Admin user can bulk delete inactive accounts</td>
+            <td><span class="priority-badge high">High</span></td>
+            <td><span class="av-sm" style="background:#10B981">AP</span></td>
+            <td style="color:#94A3B8;font-size:0.75rem">12 min ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" style="accent-color:#6366F1"></td>
+            <td class="tc-id">TC-2845</td>
+            <td class="tc-title-cell">Email notification sent on password reset</td>
+            <td><span class="priority-badge medium">Medium</span></td>
+            <td><span class="av-sm" style="background:#EC4899">JL</span></td>
+            <td style="color:#94A3B8;font-size:0.75rem">1h ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" style="accent-color:#6366F1"></td>
+            <td class="tc-id">TC-2844</td>
+            <td class="tc-title-cell">Login rate limiting after 5 failed attempts</td>
+            <td><span class="priority-badge medium">Medium</span></td>
+            <td><span class="av-sm" style="background:#F59E0B">MC</span></td>
+            <td style="color:#94A3B8;font-size:0.75rem">2h ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" style="accent-color:#6366F1"></td>
+            <td class="tc-id">TC-2843</td>
+            <td class="tc-title-cell">Dashboard chart renders correctly on Safari</td>
+            <td><span class="priority-badge low">Low</span></td>
+            <td><span class="av-sm" style="background:#06B6D4">DK</span></td>
+            <td style="color:#94A3B8;font-size:0.75rem">3h ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" style="accent-color:#6366F1"></td>
+            <td class="tc-id">TC-2842</td>
+            <td class="tc-title-cell">Webhook retry logic on 5xx errors</td>
+            <td><span class="priority-badge high">High</span></td>
+            <td><span class="av-sm" style="background:#8B5CF6">YH</span></td>
+            <td style="color:#94A3B8;font-size:0.75rem">5h ago</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" style="accent-color:#6366F1"></td>
+            <td class="tc-id">TC-2841</td>
+            <td class="tc-title-cell">Pagination on search results page</td>
+            <td><span class="priority-badge low">Low</span></td>
+            <td><span class="av-sm" style="background:#6366F1">SK</span></td>
+            <td style="color:#94A3B8;font-size:0.75rem">Yesterday</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════ §3 TC DETAIL PANEL (COMPACT) ════ -->
+  <div class="detail-panel">
+    <!-- Header -->
+    <div class="dp-header">
+      <div class="dp-header-top">
+        <div>
+          <div class="dp-id">TC-2846</div>
+          <div class="dp-title">Admin user can bulk delete inactive accounts</div>
+        </div>
+        <button class="dp-close"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="dp-desc">Verify that admin users with appropriate permissions can select multiple inactive accounts and delete them in a single bulk operation.</div>
+    </div>
+
+    <!-- Meta Fields — 2-column grid -->
+    <div class="dp-meta">
+      <div class="dp-meta-grid">
+        <div class="dp-field">
+          <div class="dp-field-label">Priority</div>
+          <div class="dp-field-value">
+            <span class="dp-priority high"><i class="ri-arrow-up-line" style="font-size:0.625rem"></i> High</span>
+          </div>
+        </div>
+        <div class="dp-field">
+          <div class="dp-field-label">Assignee</div>
+          <div class="dp-field-value">
+            <div class="dp-assignee">
+              <div class="dp-av" style="background:#10B981">AP</div>
+              <span style="font-size:0.75rem">Alex Park</span>
+            </div>
+          </div>
+        </div>
+        <div class="dp-field">
+          <div class="dp-field-label">Folder</div>
+          <div class="dp-field-value" style="font-size:0.75rem"><i class="ri-folder-line" style="font-size:0.75rem;color:#94A3B8"></i> User Management</div>
+        </div>
+        <div class="dp-field">
+          <div class="dp-field-label">Created</div>
+          <div class="dp-field-value" style="font-size:0.75rem;color:#64748B">Mar 25, 2026</div>
+        </div>
+        <div class="dp-field" style="grid-column: span 2">
+          <div class="dp-field-label">Tags</div>
+          <div class="dp-field-value" style="gap:0.25rem;flex-wrap:wrap">
+            <span class="dp-tag">admin</span>
+            <span class="dp-tag">bulk-ops</span>
+            <span class="dp-tag">regression</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="dp-tabs">
+      <button class="dp-tab active">Details</button>
+      <button class="dp-tab">Comments <span style="color:#94A3B8;font-weight:500">(3)</span></button>
+      <button class="dp-tab">Results</button>
+      <button class="dp-tab">History</button>
+    </div>
+
+    <!-- Body (scrollable) -->
+    <div class="dp-body">
+      <!-- Precondition -->
+      <div class="dp-section">
+        <div class="dp-section-title"><i class="ri-shield-check-line"></i> Precondition</div>
+        <div class="dp-precondition">Admin user is logged in with "Super Admin" role. At least 3 inactive accounts exist in the system (inactive for 90+ days).</div>
+      </div>
+
+      <!-- Test Steps -->
+      <div class="dp-section">
+        <div class="dp-section-title"><i class="ri-list-ordered"></i> Test Steps</div>
+        <div class="dp-steps">
+          <div class="dp-step">
+            <div class="dp-step-num action">1</div>
+            <div class="dp-step-text">Navigate to Admin Panel → User Management</div>
+          </div>
+          <div class="dp-step">
+            <div class="dp-step-num action">2</div>
+            <div class="dp-step-text">Apply filter "Status = Inactive" and verify inactive users are listed</div>
+          </div>
+          <div class="dp-step">
+            <div class="dp-step-num action">3</div>
+            <div class="dp-step-text">Select 3 inactive accounts using checkboxes</div>
+          </div>
+          <div class="dp-step">
+            <div class="dp-step-num action">4</div>
+            <div class="dp-step-text">Click "Bulk Actions" → "Delete Selected"</div>
+          </div>
+          <div class="dp-step">
+            <div class="dp-step-num action">5</div>
+            <div class="dp-step-text">Confirm deletion in the confirmation dialog</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expected Results -->
+      <div class="dp-section">
+        <div class="dp-section-title"><i class="ri-checkbox-circle-line"></i> Expected Results</div>
+        <div class="dp-steps">
+          <div class="dp-step">
+            <div class="dp-step-num expected">1</div>
+            <div class="dp-step-text">All 3 selected accounts are removed from the user list</div>
+          </div>
+          <div class="dp-step">
+            <div class="dp-step-num expected">2</div>
+            <div class="dp-step-text">Success toast shows "3 accounts deleted successfully"</div>
+          </div>
+          <div class="dp-step">
+            <div class="dp-step-num expected">3</div>
+            <div class="dp-step-text">Audit log records the bulk deletion with admin user info</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attachments -->
+      <div class="dp-section">
+        <div class="dp-section-title"><i class="ri-attachment-2"></i> Attachments <span style="font-weight:400;color:#CBD5E1">(2)</span></div>
+        <div class="dp-attachments">
+          <div class="dp-attach"><i class="ri-image-line"></i></div>
+          <div class="dp-attach"><i class="ri-file-pdf-2-line"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="dp-actions">
+      <button class="dp-btn primary"><i class="ri-edit-line"></i> Edit</button>
+      <button class="dp-btn danger"><i class="ri-delete-bin-line"></i> Delete</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- DESIGN SPEC PANEL                                 -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="spec-panel" id="specPanel">
+  <h2><i class="ri-ruler-line"></i> Design Spec — Sidebar Fix + TC Detail Compact</h2>
+
+  <div class="spec-grid">
+
+    <!-- §1 SIDEBAR FIX -->
+    <div class="spec-card">
+      <div class="label">§1 Folder Sidebar — "New Folder" Fix</div>
+
+      <h4>Recommendation: Move to Header (Option B)</h4>
+      <div class="rec-box">
+        <strong>Best Option:</strong> Move "New Folder" button to the sidebar header row, next to the "Folders" title. This keeps it always visible regardless of folder count, removes the sticky footer complexity, and matches GitHub/Linear sidebar patterns.
+      </div>
+
+      <div class="spec-row"><span class="k">Current button position</span><span class="old">Bottom, border-t, py-3</span></div>
+      <div class="spec-row"><span class="k">New button position</span><span class="new">Header row, right of "Folders" title</span></div>
+      <div class="spec-row"><span class="k">Button style</span><span class="new">Ghost — text #6366F1, no bg, hover: bg #EEF2FF</span></div>
+      <div class="spec-row"><span class="k">Button label</span><span class="new">icon ri-add-line + "New" (compact text)</span></div>
+      <div class="spec-row"><span class="k">Button padding</span><span class="new">0.25rem 0.5rem (4px 8px)</span></div>
+      <div class="spec-row"><span class="k">Button font</span><span class="new">0.6875rem (11px), weight 600</span></div>
+
+      <h4>Sidebar Height</h4>
+      <div class="spec-row"><span class="k">Sidebar height</span><span class="new">h-full (100% of main area)</span></div>
+      <div class="spec-row"><span class="k">Header</span><span class="new">flex-shrink: 0 (fixed)</span></div>
+      <div class="spec-row"><span class="k">Folder list</span><span class="new">flex: 1, overflow-y: auto</span></div>
+      <div class="spec-row"><span class="k">Footer</span><span class="new">Removed (button moved to header)</span></div>
+
+      <h4>Alternative: Sticky Footer (Option A)</h4>
+      <div class="spec-row"><span class="k">Footer</span><span>flex-shrink: 0, border-t, sticky bottom</span></div>
+      <div class="spec-row"><span class="k">Folder list</span><span>flex: 1, overflow-y: auto, max-h: calc(100vh - 280px)</span></div>
+      <div class="spec-row"><span class="k">280px breakdown</span><span>Header 56px + Tab 48px + Sidebar header 44px + Footer 52px + buffer 80px</span></div>
+    </div>
+
+    <!-- §3 DETAIL PANEL COMPACT -->
+    <div class="spec-card">
+      <div class="label">§3 TC Detail Panel — Compact Changes</div>
+
+      <h4>Panel Width</h4>
+      <div class="spec-row"><span class="k">Width</span><span><span class="old">w-2/5 (40%)</span> <span class="arrow">→</span> <span class="new">w-[500px] (fixed)</span></span></div>
+
+      <h4>Header</h4>
+      <div class="spec-row"><span class="k">Padding</span><span><span class="old">p-6 (24px)</span> <span class="arrow">→</span> <span class="new">1rem 1.25rem (16px 20px)</span></span></div>
+      <div class="spec-row"><span class="k">Title font</span><span><span class="old">text-xl (20px)</span> <span class="arrow">→</span> <span class="new">0.9375rem (15px)</span></span></div>
+      <div class="spec-row"><span class="k">ID font</span><span><span class="old">text-sm (14px)</span> <span class="arrow">→</span> <span class="new">0.6875rem (11px)</span></span></div>
+      <div class="spec-row"><span class="k">Description</span><span><span class="old">text-sm (14px)</span> <span class="arrow">→</span> <span class="new">0.75rem (12px)</span></span></div>
+      <div class="spec-row"><span class="k">Close button</span><span><span class="old">w-8 h-8</span> <span class="arrow">→</span> <span class="new">w-7 h-7 (1.75rem)</span></span></div>
+
+      <h4>Meta Fields (2-column grid)</h4>
+      <div class="spec-row"><span class="k">Layout</span><span><span class="old">space-y-6 vertical</span> <span class="arrow">→</span> <span class="new">grid 2-col, gap 10px 16px</span></span></div>
+      <div class="spec-row"><span class="k">Padding</span><span><span class="old">(inside p-6)</span> <span class="arrow">→</span> <span class="new">0.875rem 1.25rem (14px 20px)</span></span></div>
+      <div class="spec-row"><span class="k">Labels</span><span><span class="old">text-xs (12px)</span> <span class="arrow">→</span> <span class="new">0.625rem (10px) uppercase</span></span></div>
+      <div class="spec-row"><span class="k">Values</span><span><span class="old">text-sm (14px)</span> <span class="arrow">→</span> <span class="new">0.8125rem (13px)</span></span></div>
+      <div class="spec-row"><span class="k">Assignee avatar</span><span><span class="old">w-8 h-8</span> <span class="arrow">→</span> <span class="new">w-5 h-5 (1.25rem)</span></span></div>
+
+      <h4>Tabs</h4>
+      <div class="spec-row"><span class="k">Tab padding</span><span><span class="old">px-4 py-3</span> <span class="arrow">→</span> <span class="new">0.5rem each</span></span></div>
+      <div class="spec-row"><span class="k">Tab font</span><span><span class="old">text-sm (14px)</span> <span class="arrow">→</span> <span class="new">0.75rem (12px)</span></span></div>
+    </div>
+
+    <!-- BODY SECTIONS -->
+    <div class="spec-card">
+      <div class="label">§3 Detail Body — Sections</div>
+
+      <h4>Body Scroll Area</h4>
+      <div class="spec-row"><span class="k">Padding</span><span><span class="old">p-6 (24px)</span> <span class="arrow">→</span> <span class="new">0.875rem 1.25rem (14px 20px)</span></span></div>
+      <div class="spec-row"><span class="k">Section spacing</span><span><span class="old">space-y-6 (24px)</span> <span class="arrow">→</span> <span class="new">mb-0.875rem (14px)</span></span></div>
+
+      <h4>Section Titles</h4>
+      <div class="spec-row"><span class="k">Font</span><span><span class="old">text-xs (12px)</span> <span class="arrow">→</span> <span class="new">0.625rem (10px)</span></span></div>
+      <div class="spec-row"><span class="k">Style</span><span class="new">uppercase, 600 weight, #94A3B8</span></div>
+      <div class="spec-row"><span class="k">Icon</span><span class="new">inline 0.75rem icon left</span></div>
+
+      <h4>Precondition</h4>
+      <div class="spec-row"><span class="k">Container</span><span><span class="old">p-4 (16px)</span> <span class="arrow">→</span> <span class="new">0.625rem 0.75rem (10px 12px)</span></span></div>
+      <div class="spec-row"><span class="k">Text font</span><span><span class="old">text-sm (14px)</span> <span class="arrow">→</span> <span class="new">0.75rem (12px)</span></span></div>
+
+      <h4>Steps</h4>
+      <div class="spec-row"><span class="k">Step gap</span><span><span class="old">space-y-2 (8px)</span> <span class="arrow">→</span> <span class="new">gap 6px</span></span></div>
+      <div class="spec-row"><span class="k">Step padding</span><span><span class="old">p-3 (12px)</span> <span class="arrow">→</span> <span class="new">0.5rem 0.75rem (8px 12px)</span></span></div>
+      <div class="spec-row"><span class="k">Step number</span><span><span class="old">w-6 h-6</span> <span class="arrow">→</span> <span class="new">w-5 h-5 (1.25rem)</span></span></div>
+      <div class="spec-row"><span class="k">Step text</span><span><span class="old">text-sm (14px)</span> <span class="arrow">→</span> <span class="new">0.75rem (12px)</span></span></div>
+
+      <h4>Attachments</h4>
+      <div class="spec-row"><span class="k">Grid</span><span><span class="old">grid-cols-2 gap-3</span> <span class="arrow">→</span> <span class="new">grid-cols-3 gap-0.375rem</span></span></div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="spec-card">
+      <div class="label">§3 Actions + Totals</div>
+
+      <h4>Bottom Actions Bar</h4>
+      <div class="spec-row"><span class="k">Padding</span><span><span class="old">pt-6</span> <span class="arrow">→</span> <span class="new">0.75rem 1.25rem</span></span></div>
+      <div class="spec-row"><span class="k">Button py</span><span><span class="old">py-2 (8px)</span> <span class="arrow">→</span> <span class="new">py-[0.4375rem] (7px)</span></span></div>
+      <div class="spec-row"><span class="k">Button font</span><span><span class="old">font-semibold</span> <span class="arrow">→</span> <span class="new">0.8125rem weight 600</span></span></div>
+      <div class="spec-row"><span class="k">Button gap</span><span><span class="old">gap-3</span> <span class="arrow">→</span> <span class="new">gap-0.5rem (8px)</span></span></div>
+
+      <h4>Space Savings Summary</h4>
+      <div class="rec-box">
+        <strong>Total vertical space saved:</strong> ~80px per screen<br>
+        • Header: p-6 → p-4 = <strong>−16px</strong><br>
+        • Meta: vertical → 2-col grid = <strong>−40px</strong> (removes 3 field rows)<br>
+        • Body padding: p-6 → 14px = <strong>−20px</strong><br>
+        • Section gaps: 24px → 14px × 4 = <strong>−40px</strong><br>
+        • Steps: p-3 → 8px pad + 6px gap = <strong>−12px per 5 steps</strong><br>
+        <br>
+        <strong>Total horizontal saved:</strong> w-2/5 → 500px fixed = predictable layout, no content jump on resize
+      </div>
+
+      <h4>CSS Custom Properties (Recommended)</h4>
+      <div class="spec-row"><span class="k">--dp-width</span><span class="new">500px</span></div>
+      <div class="spec-row"><span class="k">--dp-header-px</span><span class="new">1.25rem</span></div>
+      <div class="spec-row"><span class="k">--dp-header-py</span><span class="new">1rem</span></div>
+      <div class="spec-row"><span class="k">--dp-body-px</span><span class="new">1.25rem</span></div>
+      <div class="spec-row"><span class="k">--dp-body-py</span><span class="new">0.875rem</span></div>
+      <div class="spec-row"><span class="k">--dp-title</span><span class="new">0.9375rem</span></div>
+      <div class="spec-row"><span class="k">--dp-body-text</span><span class="new">0.75rem</span></div>
+      <div class="spec-row"><span class="k">--dp-label</span><span class="new">0.625rem</span></div>
+      <div class="spec-row"><span class="k">--dp-section-gap</span><span class="new">0.875rem</span></div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

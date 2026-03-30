@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testably - Runs & Results Redesign</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Pacifico&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.5.0/remixicon.min.css">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background-color: #F8FAFC;
+      color: #0F172A;
+      overflow: hidden;
+    }
+
+    /* ===== DEMO BAR ===== */
+    .demo-bar {
+      background-color: #FEF08A;
+      border-bottom: 1px solid #EAB308;
+      padding: 0 20px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: #0F172A;
+    }
+
+    /* ===== HEADER ROW 1 (Unified — matches all-tabs-unified-header-design.html) ===== */
+    .header-row-1 {
+      background: #fff;
+      border-bottom: 1px solid #E2E8F0;
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+      height: 3.25rem;
+      gap: 0;
+      flex-shrink: 0;
+    }
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      padding-right: 1.25rem;
+      border-right: 1px solid #E2E8F0;
+      margin-right: 1rem;
+    }
+
+    .logo {
+      width: 26px;
+      height: 26px;
+      background: #6366F1;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Pacifico', cursive;
+      font-weight: 800;
+      font-size: 0.8125rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-family: 'Pacifico', cursive;
+      font-size: 1rem;
+      color: #6366F1;
+      letter-spacing: -0.01em;
+    }
+
+    .project-selector {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      cursor: pointer;
+      padding: 0.3125rem 0.625rem;
+      border-radius: 0.375rem;
+      margin-right: 0.5rem;
+    }
+
+    .project-selector:hover {
+      background: #F8FAFC;
+    }
+
+    .project-selector .proj-name {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #0F172A;
+    }
+
+    .project-selector .proj-chevron {
+      font-size: 0.75rem;
+      color: #94A3B8;
+    }
+
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      gap: 0;
+    }
+
+    .nav-tab {
+      display: flex;
+      align-items: center;
+      gap: 0.3125rem;
+      padding: 0 0.75rem;
+      height: 100%;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #64748B;
+      cursor: pointer;
+      border-bottom: 2.5px solid transparent;
+      white-space: nowrap;
+      transition: color 0.15s;
+      position: relative;
+    }
+
+    .nav-tab:hover {
+      color: #475569;
+    }
+
+    .nav-tab.active {
+      color: #6366F1;
+      border-bottom-color: transparent;
+      font-weight: 600;
+    }
+
+    .nav-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2.5px;
+      background: #6366F1;
+      border-radius: 1px 1px 0 0;
+    }
+
+    .nav-tab i {
+      font-size: 0.9375rem;
+    }
+
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .icon-button {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.375rem;
+      border: none;
+      background: none;
+      color: #64748B;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.125rem;
+      position: relative;
+    }
+
+    .icon-button:hover {
+      background: #F1F5F9;
+      color: #475569;
+    }
+
+    .notif-dot {
+      position: absolute;
+      top: 4px;
+      right: 5px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #EF4444;
+      border: 1.5px solid #fff;
+    }
+
+    .avatar-circle {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 50%;
+      background: #6366F1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.5625rem;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    /* ===== SUBTAB ROW (Unified — matches all-tabs-unified-header-design.html) ===== */
+    .subtab-row {
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+      gap: 0;
+      background: #fff;
+      border-bottom: 1px solid #E2E8F0;
+      flex-shrink: 0;
+      height: 2.625rem;
+      position: relative;
+    }
+
+    .subtab-group {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      gap: 0;
+    }
+
+    .subtab {
+      display: flex;
+      align-items: center;
+      gap: 0.3125rem;
+      padding: 0 0.75rem;
+      height: 100%;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #64748B;
+      cursor: pointer;
+      border-bottom: 2.5px solid transparent;
+      white-space: nowrap;
+      transition: color 0.15s;
+      position: relative;
+    }
+
+    .subtab:hover {
+      color: #475569;
+    }
+
+    .subtab.active {
+      color: #6366F1;
+      border-bottom-color: transparent;
+      font-weight: 600;
+    }
+
+    .subtab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2.5px;
+      background: #6366F1;
+      border-radius: 1px 1px 0 0;
+    }
+
+    .subtab i {
+      font-size: 0.875rem;
+    }
+
+    .subtab-icon {
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .badge {
+      font-size: 0.625rem;
+      font-weight: 700;
+      padding: 0.0625rem 0.375rem;
+      border-radius: 9999px;
+      background: #F1F5F9;
+      color: #64748B;
+      min-width: 1.25rem;
+      text-align: center;
+    }
+
+    .badge.active-subtab {
+      background: #EEF2FF;
+      color: #6366F1;
+    }
+
+    .badge.inactive {
+      background: #F1F5F9;
+      color: #64748B;
+    }
+
+    .subtab.active .badge {
+      background: #EEF2FF;
+      color: #6366F1;
+    }
+
+    .st-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .count-chip {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      color: #94A3B8;
+      padding: 0.1875rem 0.625rem;
+      border: 1px solid #E2E8F0;
+      border-radius: 9999px;
+      background: #F8FAFC;
+      white-space: nowrap;
+    }
+
+    .start-run-button {
+      display: flex;
+      align-items: center;
+      gap: 0.3125rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.375rem 0.875rem;
+      border-radius: 0.375rem;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      color: #fff;
+      white-space: nowrap;
+      transition: all 0.15s;
+      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+      box-shadow: 0 1px 3px rgba(99,102,241,0.3);
+    }
+
+    .start-run-button:hover {
+      transform: translateY(-0.5px);
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+    }
+
+    .start-run-button i {
+      font-size: 0.875rem;
+    }
+
+    /* ===== STATS BAR ===== */
+    .stats-bar {
+      background-color: white;
+      border-bottom: 1px solid #E2E8F0;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 24px;
+      flex-shrink: 0;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #94A3B8;
+    }
+
+    .stat-item.has-right-border {
+      padding-right: 24px;
+      border-right: 1px solid #E2E8F0;
+    }
+
+    .stat-icon {
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #94A3B8;
+    }
+
+    .stat-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0F172A;
+      margin-left: 4px;
+    }
+
+    .stat-subvalue {
+      font-size: 12px;
+      color: #64748B;
+      margin-left: 2px;
+    }
+
+    .stat-change {
+      font-size: 12px;
+      color: #22C55E;
+      margin-left: 2px;
+    }
+
+    /* ===== TOOLBAR ===== */
+    .toolbar {
+      background-color: white;
+      border-bottom: 1px solid #E2E8F0;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      background-color: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      color: #0F172A;
+      transition: all 0.15s ease;
+    }
+
+    .search-input::placeholder {
+      color: #94A3B8;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #6366F1;
+      background-color: white;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .toolbar-right {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+      align-items: center;
+    }
+
+    .toolbar-button {
+      background-color: white;
+      border: 1px solid #E2E8F0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #0F172A;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .toolbar-button:hover {
+      background-color: #F8FAFC;
+      border-color: #CBD5E1;
+    }
+
+    .toolbar-button-icon {
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ===== CONTENT AREA ===== */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      background-color: #F8FAFC;
+      padding: 20px;
+    }
+
+    .content-area::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .content-area::-webkit-scrollbar-track {
+      background-color: transparent;
+    }
+
+    .content-area::-webkit-scrollbar-thumb {
+      background-color: #CBD5E1;
+      border-radius: 4px;
+    }
+
+    .content-area::-webkit-scrollbar-thumb:hover {
+      background-color: #94A3B8;
+    }
+
+    /* ===== PRIORITY GROUP ===== */
+    .priority-group {
+      margin-top: 24px;
+    }
+
+    .priority-group:first-child {
+      margin-top: 0;
+    }
+
+    .priority-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      user-select: none;
+      padding: 4px 0;
+    }
+
+    .priority-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .priority-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0F172A;
+    }
+
+    .priority-count {
+      background-color: #F1F5F9;
+      color: #64748B;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .priority-toggle {
+      margin-left: auto;
+      font-size: 14px;
+      color: #94A3B8;
+      transition: transform 0.2s ease;
+    }
+
+    .priority-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .priority-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 2000px;
+      opacity: 1;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .priority-cards.collapsed {
+      max-height: 0;
+      opacity: 0;
+      gap: 0;
+    }
+
+    /* ===== RUN CARD ===== */
+    .run-card {
+      background-color: white;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .run-card:hover {
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+      border-color: #CBD5E1;
+    }
+
+    .card-row-1 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
+    .card-row-1-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .run-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #0F172A;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-badge, .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .status-badge {
+      background-color: #DBEAFE;
+      color: #1E40AF;
+    }
+
+    .status-badge.new {
+      background-color: #F3F4F6;
+      color: #6B7280;
+    }
+
+    .status-badge.paused {
+      background-color: #FEF3C7;
+      color: #92400E;
+    }
+
+    .status-badge.under-review {
+      background-color: #EDE9FE;
+      color: #6D28D9;
+    }
+
+    .status-badge.completed {
+      background-color: #DCFCE7;
+      color: #166534;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-badge .badge-dot {
+      background-color: #3B82F6;
+    }
+
+    .status-badge.new .badge-dot {
+      background-color: #94A3B8;
+    }
+
+    .status-badge.paused .badge-dot {
+      background-color: #F59E0B;
+    }
+
+    .status-badge.under-review .badge-dot {
+      background-color: #8B5CF6;
+    }
+
+    .status-badge.completed .badge-dot {
+      background-color: #22C55E;
+    }
+
+    .priority-badge {
+      background-color: #FEE2E2;
+      color: #B91C1C;
+    }
+
+    .priority-badge.high {
+      background-color: #FEF3C7;
+      color: #92400E;
+    }
+
+    .priority-badge.medium {
+      background-color: #DBEAFE;
+      color: #1E40AF;
+    }
+
+    .priority-badge.low {
+      background-color: #DCFCE7;
+      color: #166534;
+    }
+
+    .priority-badge-icon {
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+    }
+
+    .priority-override-pin {
+      font-size: 10px;
+      color: #94A3B8;
+      margin-left: 4px;
+    }
+
+    .more-menu {
+      font-size: 18px;
+      color: #94A3B8;
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .more-menu:hover {
+      color: #0F172A;
+    }
+
+    /* ===== CARD ROW 2: MILESTONE + DUE DATE ===== */
+    .card-row-2 {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #64748B;
+    }
+
+    .card-row-2-icon {
+      font-size: 14px;
+      color: #94A3B8;
+      display: flex;
+      align-items: center;
+    }
+
+    .due-date.overdue {
+      color: #EF4444;
+      font-weight: 600;
+    }
+
+    /* ===== CARD ROW 3: PROGRESS BAR ===== */
+    .card-row-3 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 6px;
+      background-color: #E2E8F0;
+      border-radius: 3px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .progress-segment {
+      height: 100%;
+    }
+
+    .progress-pass {
+      background-color: #22C55E;
+    }
+
+    .progress-fail {
+      background-color: #EF4444;
+    }
+
+    .progress-remaining {
+      background-color: #E2E8F0;
+    }
+
+    .progress-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0F172A;
+      white-space: nowrap;
+      min-width: 50px;
+      text-align: right;
+    }
+
+    /* ===== CARD ROW 4: STATS DOTS ===== */
+    .card-row-4 {
+      display: flex;
+      gap: 16px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #64748B;
+    }
+
+    .stat-dot {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .dot-pass {
+      background-color: #22C55E;
+    }
+
+    .dot-fail {
+      background-color: #EF4444;
+    }
+
+    .dot-blocked {
+      background-color: #F59E0B;
+    }
+
+    .dot-untested {
+      background-color: #94A3B8;
+    }
+
+    /* ===== CARD ROW 5: FOOTER ===== */
+    .card-row-5 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #F1F5F9;
+      font-size: 12px;
+      color: #94A3B8;
+    }
+
+    .card-row-5-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .avatar-small {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 600;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .avatar-sk {
+      background-color: #EC4899;
+    }
+
+    .avatar-jd {
+      background-color: #3B82F6;
+    }
+
+    .avatar-mr {
+      background-color: #F59E0B;
+    }
+
+    .duration {
+      font-size: 12px;
+      color: #94A3B8;
+    }
+
+    .action-button {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .action-button.continue-btn {
+      background-color: #6366F1;
+      color: white;
+    }
+
+    .action-button.continue-btn:hover {
+      background-color: #4F46E5;
+    }
+
+    .action-button.start-btn {
+      background-color: #22C55E;
+      color: white;
+    }
+
+    .action-button.start-btn:hover {
+      background-color: #16A34A;
+    }
+
+    .action-button.report-btn {
+      background-color: transparent;
+      color: #6366F1;
+    }
+
+    .action-button.report-btn:hover {
+      background-color: #EEF2FF;
+    }
+
+    .action-button-icon {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ===== CONTAINER ===== */
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- DEMO BAR -->
+    <div class="demo-bar">
+      DEMO · Runs &amp; Results — Redesigned per PM plan · Date: 2026-03-27
+    </div>
+
+    <!-- HEADER ROW 1 (Unified) -->
+    <div class="header-row-1">
+      <div class="logo-section">
+        <div class="logo">T</div>
+        <span class="logo-text">Testably</span>
+      </div>
+      <div class="project-selector">
+        <span class="proj-name">Acme Healthcare</span>
+        <i class="ri-arrow-down-s-line proj-chevron"></i>
+      </div>
+      <div class="nav-tabs">
+        <div class="nav-tab"><i class="ri-dashboard-line"></i> Dashboard</div>
+        <div class="nav-tab"><i class="ri-file-list-3-line"></i> Test Cases</div>
+        <div class="nav-tab active"><i class="ri-play-circle-line"></i> Runs &amp; Results</div>
+        <div class="nav-tab"><i class="ri-flag-line"></i> Milestones</div>
+        <div class="nav-tab"><i class="ri-file-text-line"></i> Documents</div>
+        <div class="nav-tab"><i class="ri-search-eye-line"></i> Discovery Log</div>
+      </div>
+      <div class="header-right">
+        <div class="icon-button"><i class="ri-search-line"></i></div>
+        <div class="icon-button">
+          <i class="ri-notification-3-line"></i>
+          <span class="notif-dot"></span>
+        </div>
+        <div class="icon-button"><i class="ri-keyboard-line"></i></div>
+        <div class="avatar-circle">SK</div>
+      </div>
+    </div>
+
+    <!-- SUBTAB ROW (Unified) -->
+    <div class="subtab-row">
+      <div class="subtab-group">
+        <div class="subtab active" data-filter="all">
+          <i class="ri-list-check-3" style="color:#6366F1"></i> All <span class="badge">20</span>
+        </div>
+        <div class="subtab" data-filter="active">
+          <i class="ri-play-circle-fill" style="color:#3B82F6"></i> Active <span class="badge">5</span>
+        </div>
+        <div class="subtab" data-filter="completed">
+          <i class="ri-checkbox-circle-fill" style="color:#22C55E"></i> Completed <span class="badge">12</span>
+        </div>
+        <div class="subtab" data-filter="failed">
+          <i class="ri-close-circle-fill" style="color:#EF4444"></i> Failed <span class="badge">3</span>
+        </div>
+      </div>
+      <div class="st-right">
+        <span class="count-chip">20 runs</span>
+        <button class="start-run-button"><i class="ri-play-line"></i> Start New Run</button>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <!-- STATS BAR -->
+      <div class="stats-bar">
+        <div class="stat-item has-right-border">
+          <div class="stat-icon" style="color: #3B82F6;"><i class="ri-play-circle-line"></i></div>
+          <div class="stat-label">Active</div>
+          <div class="stat-value">5<span class="stat-subvalue"> of 20</span></div>
+        </div>
+        <div class="stat-item has-right-border">
+          <div class="stat-icon" style="color: #22C55E;"><i class="ri-checkbox-circle-line"></i></div>
+          <div class="stat-label">Pass Rate</div>
+          <div class="stat-value">87.3%<span class="stat-change"> +2.1%</span></div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon" style="color: #8B5CF6;"><i class="ri-time-line"></i></div>
+          <div class="stat-label">Avg Duration</div>
+          <div class="stat-value">2h 18m</div>
+        </div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <input type="text" class="search-input" placeholder="Search runs...">
+        <div class="toolbar-right">
+          <button class="toolbar-button">
+            <span class="toolbar-button-icon"><i class="ri-flag-line"></i></span>
+            Milestone ▾
+          </button>
+          <button class="toolbar-button">
+            <span class="toolbar-button-icon"><i class="ri-filter-3-line"></i></span>
+            Filters
+          </button>
+          <button class="toolbar-button">
+            <span class="toolbar-button-icon"><i class="ri-arrow-up-down-line"></i></span>
+            Sort
+          </button>
+        </div>
+      </div>
+
+      <!-- SCROLLABLE CONTENT AREA -->
+      <div class="content-area">
+        <!-- CRITICAL GROUP -->
+        <div class="priority-group">
+          <div class="priority-header" data-group="critical">
+            <div class="priority-dot" style="background-color: #EF4444;"></div>
+            <span class="priority-label">Critical</span>
+            <div class="priority-count">2</div>
+            <div class="priority-toggle"><i class="ri-chevron-down-line"></i></div>
+          </div>
+          <div class="priority-cards" data-group="critical">
+            <!-- Card 1: Sprint 12 Full Regression -->
+            <div class="run-card">
+              <div class="card-row-1">
+                <div class="card-row-1-left">
+                  <span class="run-name">Sprint 12 Full Regression</span>
+                  <div class="status-badge">
+                    <span class="badge-dot"></span>
+                    In Progress
+                  </div>
+                  <div class="priority-badge">
+                    <span class="priority-badge-icon"><i class="ri-alarm-warning-fill"></i></span>
+                    Critical
+                  </div>
+                </div>
+                <div class="more-menu">⋯</div>
+              </div>
+              <div class="card-row-2">
+                <div class="card-row-2-icon"><i class="ri-flag-line"></i></div>
+                <span>Sprint 12 Release</span>
+                <span>·</span>
+                <span class="due-date overdue">Due Mar 28 (1d)</span>
+              </div>
+              <div class="card-row-3">
+                <div class="progress-bar">
+                  <div class="progress-segment progress-pass" style="width: 71.7%;"></div>
+                  <div class="progress-segment progress-fail" style="width: 28.3%;"></div>
+                </div>
+                <div class="progress-text">72%</div>
+              </div>
+              <div class="card-row-4">
+                <div class="stat-dot">
+                  <span class="dot dot-pass"></span>
+                  38 passed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-fail"></span>
+                  15 failed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-blocked"></span>
+                  0 blocked
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-untested"></span>
+                  0 untested
+                </div>
+              </div>
+              <div class="card-row-5">
+                <div class="card-row-5-left">
+                  <div class="avatar-small avatar-sk">SK</div>
+                  <div class="avatar-small avatar-jd">JD</div>
+                  <span class="duration">· 1h 45m</span>
+                </div>
+                <button class="action-button continue-btn">
+                  <span class="action-button-icon"><i class="ri-play-line"></i></span>
+                  Continue
+                </button>
+              </div>
+            </div>
+
+            <!-- Card 2: Payment 3DS Edge Cases -->
+            <div class="run-card">
+              <div class="card-row-1">
+                <div class="card-row-1-left">
+                  <span class="run-name">Payment 3DS Edge Cases</span>
+                  <div class="status-badge">
+                    <span class="badge-dot"></span>
+                    In Progress
+                  </div>
+                  <div class="priority-badge">
+                    <span class="priority-badge-icon"><i class="ri-alarm-warning-fill"></i></span>
+                    Critical
+                  </div>
+                </div>
+                <div class="more-menu">⋯</div>
+              </div>
+              <div class="card-row-2">
+                <div class="card-row-2-icon"><i class="ri-flag-line"></i></div>
+                <span>Sprint 12 Release</span>
+                <span>·</span>
+                <span class="due-date overdue">Due Mar 29 (2d)</span>
+              </div>
+              <div class="card-row-3">
+                <div class="progress-bar">
+                  <div class="progress-segment progress-pass" style="width: 42.8%;"></div>
+                  <div class="progress-segment progress-fail" style="width: 14.3%;"></div>
+                  <div class="progress-segment progress-remaining" style="width: 42.9%;"></div>
+                </div>
+                <div class="progress-text">38%</div>
+              </div>
+              <div class="card-row-4">
+                <div class="stat-dot">
+                  <span class="dot dot-pass"></span>
+                  3 passed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-fail"></span>
+                  1 failed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-blocked"></span>
+                  0 blocked
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-untested"></span>
+                  4 untested
+                </div>
+              </div>
+              <div class="card-row-5">
+                <div class="card-row-5-left">
+                  <div class="avatar-small avatar-sk">SK</div>
+                  <span class="duration">· 42m</span>
+                </div>
+                <button class="action-button continue-btn">
+                  <span class="action-button-icon"><i class="ri-play-line"></i></span>
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HIGH GROUP -->
+        <div class="priority-group">
+          <div class="priority-header" data-group="high">
+            <div class="priority-dot" style="background-color: #F59E0B;"></div>
+            <span class="priority-label">High</span>
+            <div class="priority-count">2</div>
+            <div class="priority-toggle"><i class="ri-chevron-down-line"></i></div>
+          </div>
+          <div class="priority-cards" data-group="high">
+            <!-- Card 3: Login Module Smoke Test -->
+            <div class="run-card">
+              <div class="card-row-1">
+                <div class="card-row-1-left">
+                  <span class="run-name">Login Module Smoke Test</span>
+                  <div class="status-badge">
+                    <span class="badge-dot"></span>
+                    In Progress
+                  </div>
+                  <div class="priority-badge high">
+                    <span class="priority-badge-icon"><i class="ri-arrow-up-line"></i></span>
+                    High
+                  </div>
+                </div>
+                <div class="more-menu">⋯</div>
+              </div>
+              <div class="card-row-2">
+                <div class="card-row-2-icon"><i class="ri-flag-line"></i></div>
+                <span>Sprint 12 Release</span>
+                <span>·</span>
+                <span class="due-date">Due Apr 1 (5d)</span>
+              </div>
+              <div class="card-row-3">
+                <div class="progress-bar">
+                  <div class="progress-segment progress-pass" style="width: 45%;"></div>
+                  <div class="progress-segment progress-fail" style="width: 55%;"></div>
+                </div>
+                <div class="progress-text">45%</div>
+              </div>
+              <div class="card-row-4">
+                <div class="stat-dot">
+                  <span class="dot dot-pass"></span>
+                  9 passed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-fail"></span>
+                  11 failed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-blocked"></span>
+                  0 blocked
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-untested"></span>
+                  0 untested
+                </div>
+              </div>
+              <div class="card-row-5">
+                <div class="card-row-5-left">
+                  <div class="avatar-small avatar-jd">JD</div>
+                  <span class="duration">· 58m</span>
+                </div>
+                <button class="action-button continue-btn">
+                  <span class="action-button-icon"><i class="ri-play-line"></i></span>
+                  Continue
+                </button>
+              </div>
+            </div>
+
+            <!-- Card 4: Patient Record Search Suite -->
+            <div class="run-card">
+              <div class="card-row-1">
+                <div class="card-row-1-left">
+                  <span class="run-name">Patient Record Search Suite</span>
+                  <div class="status-badge paused">
+                    <span class="badge-dot"></span>
+                    Paused
+                  </div>
+                  <div class="priority-badge high">
+                    <span class="priority-badge-icon"><i class="ri-arrow-up-line"></i></span>
+                    High
+                  </div>
+                  <span class="priority-override-pin"><i class="ri-pushpin-fill"></i></span>
+                </div>
+                <div class="more-menu">⋯</div>
+              </div>
+              <div class="card-row-2">
+                <div class="card-row-2-icon"><i class="ri-flag-line"></i></div>
+                <span>Sprint 13 API v3</span>
+                <span>·</span>
+                <span class="due-date">Due Apr 3 (7d)</span>
+              </div>
+              <div class="card-row-3">
+                <div class="progress-bar">
+                  <div class="progress-segment progress-pass" style="width: 55.5%;"></div>
+                  <div class="progress-segment progress-fail" style="width: 11.1%;"></div>
+                  <div class="progress-segment progress-remaining" style="width: 33.4%;"></div>
+                </div>
+                <div class="progress-text">42%</div>
+              </div>
+              <div class="card-row-4">
+                <div class="stat-dot">
+                  <span class="dot dot-pass"></span>
+                  5 passed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-fail"></span>
+                  1 failed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-blocked"></span>
+                  0 blocked
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-untested"></span>
+                  6 untested
+                </div>
+              </div>
+              <div class="card-row-5">
+                <div class="card-row-5-left">
+                  <div class="avatar-small avatar-mr">MR</div>
+                  <span class="duration">· 1h 12m</span>
+                </div>
+                <button class="action-button start-btn">
+                  <span class="action-button-icon"><i class="ri-play-line"></i></span>
+                  Start
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MEDIUM GROUP -->
+        <div class="priority-group">
+          <div class="priority-header" data-group="medium">
+            <div class="priority-dot" style="background-color: #3B82F6;"></div>
+            <span class="priority-label">Medium</span>
+            <div class="priority-count">2</div>
+            <div class="priority-toggle"><i class="ri-chevron-down-line"></i></div>
+          </div>
+          <div class="priority-cards" data-group="medium">
+            <!-- Card 5: API Integration Sanity -->
+            <div class="run-card">
+              <div class="card-row-1">
+                <div class="card-row-1-left">
+                  <span class="run-name">API Integration Sanity</span>
+                  <div class="status-badge new">
+                    <span class="badge-dot"></span>
+                    New
+                  </div>
+                  <div class="priority-badge medium">
+                    <span class="priority-badge-icon"><i class="ri-subtract-line"></i></span>
+                    Medium
+                  </div>
+                </div>
+                <div class="more-menu">⋯</div>
+              </div>
+              <div class="card-row-2">
+                <div class="card-row-2-icon"><i class="ri-flag-line"></i></div>
+                <span>Sprint 13 API v3</span>
+                <span>·</span>
+                <span class="due-date">Due Apr 8 (12d)</span>
+              </div>
+              <div class="card-row-3">
+                <div class="progress-bar">
+                  <div class="progress-segment progress-pass" style="width: 15%;"></div>
+                  <div class="progress-segment progress-remaining" style="width: 85%;"></div>
+                </div>
+                <div class="progress-text">15%</div>
+              </div>
+              <div class="card-row-4">
+                <div class="stat-dot">
+                  <span class="dot dot-pass"></span>
+                  3 passed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-fail"></span>
+                  0 failed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-blocked"></span>
+                  0 blocked
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-untested"></span>
+                  17 untested
+                </div>
+              </div>
+              <div class="card-row-5">
+                <div class="card-row-5-left">
+                  <div class="avatar-small avatar-mr">MR</div>
+                  <span class="duration">· 22m</span>
+                </div>
+                <button class="action-button start-btn">
+                  <span class="action-button-icon"><i class="ri-play-line"></i></span>
+                  Start
+                </button>
+              </div>
+            </div>
+
+            <!-- Card 6: Session Timeout Handling -->
+            <div class="run-card">
+              <div class="card-row-1">
+                <div class="card-row-1-left">
+                  <span class="run-name">Session Timeout Handling</span>
+                  <div class="status-badge under-review">
+                    <span class="badge-dot"></span>
+                    Under Review
+                  </div>
+                  <div class="priority-badge medium">
+                    <span class="priority-badge-icon"><i class="ri-subtract-line"></i></span>
+                    Medium
+                  </div>
+                </div>
+                <div class="more-menu">⋯</div>
+              </div>
+              <div class="card-row-2">
+                <div class="card-row-2-icon"><i class="ri-flag-line"></i></div>
+                <span>Sprint 13 API v3</span>
+                <span>·</span>
+                <span class="due-date">Due Apr 10 (14d)</span>
+              </div>
+              <div class="card-row-3">
+                <div class="progress-bar">
+                  <div class="progress-segment progress-pass" style="width: 57.1%;"></div>
+                  <div class="progress-segment progress-remaining" style="width: 42.9%;"></div>
+                </div>
+                <div class="progress-text">57%</div>
+              </div>
+              <div class="card-row-4">
+                <div class="stat-dot">
+                  <span class="dot dot-pass"></span>
+                  4 passed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-fail"></span>
+                  0 failed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-blocked"></span>
+                  1 blocked
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-untested"></span>
+                  2 untested
+                </div>
+              </div>
+              <div class="card-row-5">
+                <div class="card-row-5-left">
+                  <div class="avatar-small avatar-jd">JD</div>
+                  <span class="duration">· 35m</span>
+                </div>
+                <button class="action-button continue-btn">
+                  <span class="action-button-icon"><i class="ri-play-line"></i></span>
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOW GROUP -->
+        <div class="priority-group">
+          <div class="priority-header" data-group="low">
+            <div class="priority-dot" style="background-color: #22C55E;"></div>
+            <span class="priority-label">Low</span>
+            <div class="priority-count">2</div>
+            <div class="priority-toggle"><i class="ri-chevron-down-line"></i></div>
+          </div>
+          <div class="priority-cards" data-group="low">
+            <!-- Card 7: Dark Mode Toggle Validation -->
+            <div class="run-card">
+              <div class="card-row-1">
+                <div class="card-row-1-left">
+                  <span class="run-name">Dark Mode Toggle Validation</span>
+                  <div class="status-badge new">
+                    <span class="badge-dot"></span>
+                    New
+                  </div>
+                  <div class="priority-badge low">
+                    <span class="priority-badge-icon"><i class="ri-arrow-down-line"></i></span>
+                    Low
+                  </div>
+                </div>
+                <div class="more-menu">⋯</div>
+              </div>
+              <div class="card-row-2">
+                <div class="card-row-2-icon"><i class="ri-flag-line"></i></div>
+                <span>No Milestone</span>
+              </div>
+              <div class="card-row-3">
+                <div class="progress-bar">
+                  <div class="progress-segment progress-remaining" style="width: 100%;"></div>
+                </div>
+                <div class="progress-text">0%</div>
+              </div>
+              <div class="card-row-4">
+                <div class="stat-dot">
+                  <span class="dot dot-pass"></span>
+                  0 passed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-fail"></span>
+                  0 failed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-blocked"></span>
+                  0 blocked
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-untested"></span>
+                  2 untested
+                </div>
+              </div>
+              <div class="card-row-5">
+                <div class="card-row-5-left">
+                  <div class="avatar-small avatar-mr">MR</div>
+                </div>
+                <button class="action-button start-btn">
+                  <span class="action-button-icon"><i class="ri-play-line"></i></span>
+                  Start
+                </button>
+              </div>
+            </div>
+
+            <!-- Card 8: Accessibility Labels Audit -->
+            <div class="run-card">
+              <div class="card-row-1">
+                <div class="card-row-1-left">
+                  <span class="run-name">Accessibility Labels Audit</span>
+                  <div class="status-badge new">
+                    <span class="badge-dot"></span>
+                    New
+                  </div>
+                  <div class="priority-badge low">
+                    <span class="priority-badge-icon"><i class="ri-arrow-down-line"></i></span>
+                    Low
+                  </div>
+                </div>
+                <div class="more-menu">⋯</div>
+              </div>
+              <div class="card-row-2">
+                <div class="card-row-2-icon"><i class="ri-flag-line"></i></div>
+                <span>No Milestone</span>
+              </div>
+              <div class="card-row-3">
+                <div class="progress-bar">
+                  <div class="progress-segment progress-remaining" style="width: 100%;"></div>
+                </div>
+                <div class="progress-text">0%</div>
+              </div>
+              <div class="card-row-4">
+                <div class="stat-dot">
+                  <span class="dot dot-pass"></span>
+                  0 passed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-fail"></span>
+                  0 failed
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-blocked"></span>
+                  0 blocked
+                </div>
+                <div class="stat-dot">
+                  <span class="dot dot-untested"></span>
+                  5 untested
+                </div>
+              </div>
+              <div class="card-row-5">
+                <div class="card-row-5-left">
+                  <div class="avatar-small avatar-jd">JD</div>
+                </div>
+                <button class="action-button start-btn">
+                  <span class="action-button-icon"><i class="ri-play-line"></i></span>
+                  Start
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Subtab switching (badge styling handled by CSS .subtab.active .badge)
+    document.querySelectorAll('.subtab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Priority group collapsible
+    document.querySelectorAll('.priority-header').forEach(header => {
+      header.addEventListener('click', function() {
+        const group = this.getAttribute('data-group');
+        const cards = document.querySelector(`.priority-cards[data-group="${group}"]`);
+        const toggle = this.querySelector('.priority-toggle');
+
+        cards.classList.toggle('collapsed');
+        toggle.classList.toggle('collapsed');
+      });
+    });
+
+    // Hover effects (subtle, already in CSS)
+  </script>
+</body>
+</html>

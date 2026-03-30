@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably 홈페이지 콘텐츠 감사 & 업데이트 제안</title>
+<style>
+  :root {
+    --primary: #6366f1; --primary-bg: #eef2ff;
+    --success: #22c55e; --success-bg: #f0fdf4;
+    --warning: #f59e0b; --warning-bg: #fffbeb;
+    --danger: #ef4444; --danger-bg: #fef2f2;
+    --info: #3b82f6; --info-bg: #eff6ff;
+    --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+    --gray-500: #6b7280; --gray-700: #374151; --gray-900: #111827;
+    --border: #e5e7eb;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--gray-50); color: var(--gray-900); line-height: 1.7; font-size: 15px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 32px; }
+  .doc-header { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 48px 40px; border-radius: 16px; margin-bottom: 32px; }
+  .doc-header h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+  .doc-header .subtitle { font-size: 16px; opacity: 0.85; margin-bottom: 20px; }
+  .doc-meta { display: flex; gap: 24px; font-size: 13px; opacity: 0.8; flex-wrap: wrap; }
+
+  .section { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .section-header h2 { font-size: 18px; font-weight: 700; }
+  .section-header .badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 6px; }
+  .section-body { padding: 24px 28px; }
+  .section-body h3 { font-size: 16px; font-weight: 700; margin: 20px 0 10px 0; padding-bottom: 6px; border-bottom: 1px solid var(--gray-100); }
+  .section-body h3:first-child { margin-top: 0; }
+  .section-body p { margin-bottom: 10px; color: var(--gray-700); font-size: 14px; }
+
+  /* Status tags */
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; margin: 2px 4px 2px 0; }
+  .tag.reflected { background: var(--success-bg); color: #166534; border: 1px solid #bbf7d0; }
+  .tag.missing { background: var(--danger-bg); color: #991b1b; border: 1px solid #fecaca; }
+  .tag.partial { background: var(--warning-bg); color: #92400e; border: 1px solid #fde68a; }
+  .tag.new { background: var(--primary-bg); color: #4338ca; border: 1px solid #c7d2fe; }
+
+  /* Comparison table */
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  th { background: var(--gray-100); text-align: left; padding: 10px 14px; font-weight: 600; font-size: 12px; color: var(--gray-700); border-bottom: 2px solid var(--gray-200); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); vertical-align: top; }
+  tr:hover td { background: var(--gray-50); }
+
+  /* Callout */
+  .callout { border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 13px; line-height: 1.6; }
+  .callout-title { font-weight: 600; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .callout.danger { background: var(--danger-bg); border-left: 4px solid var(--danger); }
+  .callout.danger .callout-title { color: var(--danger); }
+  .callout.warning { background: var(--warning-bg); border-left: 4px solid var(--warning); }
+  .callout.warning .callout-title { color: var(--warning); }
+  .callout.success { background: var(--success-bg); border-left: 4px solid var(--success); }
+  .callout.success .callout-title { color: var(--success); }
+  .callout.info { background: var(--info-bg); border-left: 4px solid var(--info); }
+  .callout.info .callout-title { color: var(--info); }
+
+  /* Priority indicator */
+  .priority { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+  .priority .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .priority.critical .dot { background: #ef4444; }
+  .priority.high .dot { background: #f59e0b; }
+  .priority.medium .dot { background: #3b82f6; }
+  .priority.low .dot { background: #6b7280; }
+
+  /* Score card */
+  .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 16px 0; }
+  .score-card { text-align: center; padding: 20px; border-radius: 10px; border: 1px solid var(--border); }
+  .score-card .value { font-size: 28px; font-weight: 800; }
+  .score-card .label { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+
+  /* Suggestion block */
+  .suggestion { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 18px 20px; margin: 12px 0; font-size: 14px; }
+  .suggestion .s-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary); margin-bottom: 8px; }
+  .suggestion.action { background: var(--primary-bg); border-color: #c7d2fe; }
+
+  /* Dev summary */
+  .dev-summary { background: linear-gradient(135deg, #1e293b, #334155); color: white; border-radius: 12px; padding: 32px; margin-top: 32px; }
+  .dev-summary h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+  .dev-summary p { font-size: 14px; opacity: 0.85; margin-bottom: 12px; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ══════════ HEADER ══════════ -->
+<div class="doc-header">
+  <h1>Testably 홈페이지 콘텐츠 감사 & 업데이트 제안</h1>
+  <div class="subtitle">현재 홈페이지 콘텐츠 vs 실제 구현 기능 비교 분석</div>
+  <div class="doc-meta">
+    <span>작성일: 2026-03-30</span>
+    <span>작성자: PM</span>
+    <span>소스: home/page.tsx (1,649 lines) + 실제 구현 소스코드 전수 분석</span>
+    <span>대상: CEO, Dev팀</span>
+  </div>
+</div>
+
+<!-- ══════════ EXECUTIVE SUMMARY ══════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>Executive Summary</h2>
+    <span class="badge" style="background:#fef2f2; color:#991b1b;">업데이트 필요</span>
+  </div>
+  <div class="section-body">
+
+    <div class="score-grid">
+      <div class="score-card" style="border-color:#22c55e;">
+        <div class="value" style="color:#22c55e;">15</div>
+        <div class="label">홈페이지에 이미 반영된 기능</div>
+      </div>
+      <div class="score-card" style="border-color:#ef4444;">
+        <div class="value" style="color:#ef4444;">11</div>
+        <div class="label">구현됐지만 미반영 기능</div>
+      </div>
+      <div class="score-card" style="border-color:#f59e0b;">
+        <div class="value" style="color:#f59e0b;">5</div>
+        <div class="label">부분 반영 / 설명 부족</div>
+      </div>
+      <div class="score-card" style="border-color:#6366f1;">
+        <div class="value" style="color:#6366f1;">7</div>
+        <div class="label">업데이트 필요 섹션</div>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <div class="callout-title">핵심 결론</div>
+      홈페이지는 핵심 기능(TC 관리, Test Run, Milestone, Discovery Log, Jira, CI/CD, AI 생성, Focus Mode, Cmd+K)을 <strong>잘 반영</strong>하고 있으나, 최근 추가된 <strong>11개 기능이 전혀 노출되지 않고 있습니다.</strong> 특히 Export/Import, Documentation, Webhooks, 4-Role 시스템, Stats/Reporting 페이지 등 경쟁사 대비 차별 포인트가 되는 기능들이 빠져있어 잠재 고객에게 전달되지 않고 있습니다.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════ PART 1: 현재 홈페이지 구조 분석 ══════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>Part 1 — 현재 홈페이지 섹션 구조</h2>
+    <span class="badge" style="background:var(--gray-100); color:var(--gray-700);">소스 기반 분석</span>
+  </div>
+  <div class="section-body">
+    <p>소스코드 <code>home/page.tsx</code> (1,649 lines) 분석 결과, 현재 홈페이지는 다음 10개 섹션으로 구성:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>섹션</th>
+          <th>포함 콘텐츠</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Hero</strong></td>
+          <td>"Ship quality software faster" + 부제 + CTA</td>
+          <td><span class="tag reflected">OK</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Stats Bar</strong></td>
+          <td>10x / &lt;5min / Jira / Free 4개 지표</td>
+          <td><span class="tag partial">업데이트 가능</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Differentiators</strong> (3장)</td>
+          <td>AI Test Generation, Focus Mode, Cmd+K Command Palette</td>
+          <td><span class="tag reflected">OK</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>Core Features</strong> (9장)</td>
+          <td>TC관리, Run실행, Milestone, Discovery, Team, Jira, CI/CD, Notifications, Docs</td>
+          <td><span class="tag partial">추가 필요</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>How It Works</strong> (4단계)</td>
+          <td>프로젝트 생성 → TC 작성 → Run 실행 → 분석 & 배포</td>
+          <td><span class="tag reflected">OK</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>Integrations</strong></td>
+          <td>Jira + CI/CD (GitHub Actions, Jenkins, GitLab CI)</td>
+          <td><span class="tag partial">추가 필요</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Why Testably</strong> (3장)</td>
+          <td>5분 설정, Jira+CI/CD, 영구 무료</td>
+          <td><span class="tag partial">추가 필요</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><strong>Pricing</strong> (6개 플랜)</td>
+          <td>Free ~ Enterprise L, Monthly/Annual 토글, Paddle 결제</td>
+          <td><span class="tag partial">부분 수정 필요</span></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><strong>Testimonials</strong> (3개)</td>
+          <td>Sarah M. / James K. / Lisa W. — AI, Keyboard, Focus Mode</td>
+          <td><span class="tag reflected">OK</span></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><strong>FAQ</strong> (8개)</td>
+          <td>Free 플랜, Jira, CI/CD, 할당, 상태, Discovery, Export, 플랜 변경</td>
+          <td><span class="tag partial">추가 필요</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ══════════ PART 2: 기능별 반영 상태 비교 ══════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>Part 2 — 기능별 반영 상태 비교</h2>
+    <span class="badge" style="background:var(--success-bg); color:#166534;">반영</span>
+    <span class="badge" style="background:var(--danger-bg); color:#991b1b;">미반영</span>
+    <span class="badge" style="background:var(--warning-bg); color:#92400e;">부분</span>
+  </div>
+  <div class="section-body">
+
+    <h3>✅ 이미 반영된 기능 (15개)</h3>
+    <table>
+      <thead>
+        <tr><th>기능</th><th>홈페이지 위치</th><th>비고</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Test Case Management</td><td>Core Features #1</td><td>폴더, 필터, 우선순위, 태그 언급</td></tr>
+        <tr><td>Test Run Execution</td><td>Core Features #2</td><td>5가지 결과 상태 언급</td></tr>
+        <tr><td>Milestone Tracking</td><td>Core Features #3</td><td>릴리즈 목표, 진행률 시각화</td></tr>
+        <tr><td>Discovery Logs</td><td>Core Features #4 + Differentiators</td><td>리치 텍스트, 스크린샷, TC 변환 언급</td></tr>
+        <tr><td>Team Collaboration</td><td>Core Features #5</td><td>역할 권한 언급</td></tr>
+        <tr><td>Jira Integration</td><td>Core Features #6 + Integrations 섹션</td><td>자동 이슈 생성, 양방향 동기화</td></tr>
+        <tr><td>CI/CD Integration</td><td>Core Features #7 + Integrations 섹션</td><td>GitHub Actions, Jenkins, GitLab CI</td></tr>
+        <tr><td>Smart Notifications</td><td>Core Features #8</td><td>알림 설정</td></tr>
+        <tr><td>Project Documentation</td><td>Core Features #9</td><td>테스트 플랜, 릴리즈 노트</td></tr>
+        <tr><td>AI Test Case Generation</td><td>Differentiators #1</td><td>텍스트/Jira/Discovery → TC</td></tr>
+        <tr><td>Focus Mode</td><td>Differentiators #2</td><td>P/F/B/S 키, 자동 진행, 진행바</td></tr>
+        <tr><td>Cmd+K Command Palette</td><td>Differentiators #3</td><td>G-chord, 단축키 도움말</td></tr>
+        <tr><td>6단계 Pricing</td><td>Pricing 섹션</td><td>Free~Enterprise L, Annual 15% 할인</td></tr>
+        <tr><td>Paddle 결제</td><td>Pricing 섹션 (코드)</td><td>openPaddleCheckout 연동</td></tr>
+        <tr><td>다국어 (EN/KO)</td><td>전체</td><td>content.en / content.ko 완전 이중화</td></tr>
+      </tbody>
+    </table>
+
+    <h3>❌ 구현됐지만 미반영 기능 (11개)</h3>
+    <table>
+      <thead>
+        <tr><th>기능</th><th>구현 위치</th><th>중요도</th><th>추천 반영 위치</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Import from TestRail</strong></td>
+          <td><code>utils/testRailExport.ts</code> — CSV 양방향 Import/Export</td>
+          <td><span class="priority critical"><span class="dot"></span>Critical</span></td>
+          <td>Core Features 신규 카드 + Why Testably 카드 + FAQ 추가</td>
+        </tr>
+        <tr>
+          <td><strong>Export (CSV/JSON/PDF Report)</strong></td>
+          <td><code>settings/page.tsx</code> handleExportJSON/CSV + <code>stats/PassRateReportPage.tsx</code> exportPDF</td>
+          <td><span class="priority critical"><span class="dot"></span>Critical</span></td>
+          <td>Core Features 신규 카드 또는 기존 카드 확장</td>
+        </tr>
+        <tr>
+          <td><strong>Documentation / API Reference 페이지</strong></td>
+          <td><code>pages/docs/</code> — 15+ 페이지 (API, Getting Started, TC, Runs, Milestones 등)</td>
+          <td><span class="priority high"><span class="dot"></span>High</span></td>
+          <td>Footer "Resources" 링크 + 별도 CTA</td>
+        </tr>
+        <tr>
+          <td><strong>Webhooks</strong></td>
+          <td><code>hooks/useWebhooks.ts</code> + <code>docs/webhooks/</code></td>
+          <td><span class="priority high"><span class="dot"></span>High</span></td>
+          <td>Integrations 섹션에 3번째 카드 추가</td>
+        </tr>
+        <tr>
+          <td><strong>Stats/Reporting 대시보드</strong></td>
+          <td><code>pages/stats/</code> — PassRateReport, ActiveRuns, TeamActivity, TestCasesOverview</td>
+          <td><span class="priority high"><span class="dot"></span>High</span></td>
+          <td>Core Features 신규 카드 "Advanced Reporting"</td>
+        </tr>
+        <tr>
+          <td><strong>Release Readiness Dashboard</strong></td>
+          <td><code>project-detail/page.tsx</code> line 651 — Release Readiness 위젯</td>
+          <td><span class="priority high"><span class="dot"></span>High</span></td>
+          <td>Milestone 카드 설명 확장 또는 별도 카드</td>
+        </tr>
+        <tr>
+          <td><strong>4-Role System (Owner/Admin/Member/Viewer)</strong></td>
+          <td><code>ProjectMembersPanel.tsx</code> — ROLE_ORDER: owner/admin/member/viewer</td>
+          <td><span class="priority medium"><span class="dot"></span>Medium</span></td>
+          <td>Team Collaboration 카드 설명 수정</td>
+        </tr>
+        <tr>
+          <td><strong>Settings 7탭 구조</strong></td>
+          <td><code>settings/page.tsx</code> — profile/billing/preferences/members/integrations/api/notifications</td>
+          <td><span class="priority low"><span class="dot"></span>Low</span></td>
+          <td>직접 노출 불필요, 다만 "Comprehensive Settings" 언급 가능</td>
+        </tr>
+        <tr>
+          <td><strong>Keyboard Shortcuts 전체 시스템</strong></td>
+          <td><code>hooks/useKeyboardShortcuts.ts</code> + <code>components/KeyboardShortcutsHelp.tsx</code></td>
+          <td><span class="priority medium"><span class="dot"></span>Medium</span></td>
+          <td>이미 Differentiator로 반영, 하지만 전체 단축키 수(30+)를 강조 가능</td>
+        </tr>
+        <tr>
+          <td><strong>Viewer 무료 정책</strong></td>
+          <td><code>InviteMemberModal.tsx</code> line 67-72 — .neq('role', 'viewer')</td>
+          <td><span class="priority critical"><span class="dot"></span>Critical</span></td>
+          <td>Pricing 섹션에 "Viewers are always free" 배너 추가</td>
+        </tr>
+        <tr>
+          <td><strong>Sub-Milestones</strong></td>
+          <td><code>project-milestones/page.tsx</code> — parent_milestone_id</td>
+          <td><span class="priority low"><span class="dot"></span>Low</span></td>
+          <td>Milestone 카드 설명 확장</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>⚠️ 부분 반영 / 설명이 부정확한 항목 (5개)</h3>
+    <table>
+      <thead>
+        <tr><th>항목</th><th>현재 홈페이지</th><th>실제 구현</th><th>수정 필요</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Team Collaboration 역할</strong></td>
+          <td>"Admin, Member, or Viewer" (3 roles)</td>
+          <td><strong>Owner, Admin, Member, Viewer</strong> (4 roles)</td>
+          <td>Core Features #5 텍스트 수정 — "Owner, Admin, Member, or Viewer"</td>
+        </tr>
+        <tr>
+          <td><strong>Free 플랜 팀 멤버</strong></td>
+          <td>Pricing: "Up to 3 users"</td>
+          <td>Settings TIER_INFO: "Up to 3 team members"</td>
+          <td>일관성 확인 (users vs members). 또한 <strong>Viewer 무료 정책 미언급</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Starter 기능 목록</strong></td>
+          <td>Pricing에 6개 기능 나열</td>
+          <td>Settings TIER_INFO에 8개 기능: + "Testcase Export/Import" + "Export PDF Report"</td>
+          <td>2개 기능 누락 — Export/Import, PDF Report 추가 필요</td>
+        </tr>
+        <tr>
+          <td><strong>Professional 기능 목록</strong></td>
+          <td>Pricing에 7개 기능 나열</td>
+          <td>Settings TIER_INFO에 10개 기능: + "Testcase Export/Import" + "Export PDF Report"</td>
+          <td>동일하게 Export/Import, PDF Report 추가 필요</td>
+        </tr>
+        <tr>
+          <td><strong>Footer Resources</strong></td>
+          <td>"Resources" 섹션 존재하지만 링크 내용 미확인</td>
+          <td>Documentation 15+ 페이지, API Reference, Changelog, Roadmap 모두 구현됨</td>
+          <td>Resources 링크에 Docs, API Reference, Changelog 추가</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+
+<!-- ══════════ PART 3: 섹션별 업데이트 제안 ══════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>Part 3 — 섹션별 업데이트 제안</h2>
+    <span class="badge" style="background:var(--primary-bg); color:#4338ca;">Action Items</span>
+  </div>
+  <div class="section-body">
+
+    <!-- 3.1 -->
+    <h3>3.1 Core Features 섹션 — 카드 추가 (현재 9장 → 12장)</h3>
+
+    <div class="suggestion action">
+      <div class="s-label">신규 카드 #10 — Import & Export</div>
+      <strong>icon:</strong> <code>ri-upload-download-line</code> &nbsp; <strong>tag:</strong> Data &nbsp; <strong>color:</strong> bg-emerald-50 / text-emerald-600<br><br>
+      <strong>EN title:</strong> "Import & Export"<br>
+      <strong>EN description:</strong> "Migrate from TestRail, Zephyr, or Qase in minutes. Import test cases via CSV, export to CSV/JSON for backup, and generate PDF reports for stakeholders. Your data, your way."<br><br>
+      <strong>KO title:</strong> "가져오기 & 내보내기"<br>
+      <strong>KO description:</strong> "TestRail, Zephyr, Qase에서 몇 분 만에 마이그레이션하세요. CSV로 테스트 케이스를 가져오고, CSV/JSON으로 백업하고, PDF 리포트를 생성하세요."
+    </div>
+
+    <div class="suggestion action">
+      <div class="s-label">신규 카드 #11 — Advanced Reporting</div>
+      <strong>icon:</strong> <code>ri-pie-chart-2-line</code> &nbsp; <strong>tag:</strong> Analytics &nbsp; <strong>color:</strong> bg-rose-50 / text-rose-600<br><br>
+      <strong>EN title:</strong> "Advanced Reporting"<br>
+      <strong>EN description:</strong> "Visualize your QA health with 4 built-in dashboards: Pass Rate trends, Active Runs status, Team Activity heatmap, and Test Case Overview. Export any report as PDF."<br><br>
+      <strong>KO title:</strong> "고급 리포팅"<br>
+      <strong>KO description:</strong> "4개의 내장 대시보드로 QA 현황을 시각화하세요: Pass Rate 추이, Active Runs 현황, Team Activity 히트맵, Test Case 개요. 모든 리포트를 PDF로 내보낼 수 있습니다."
+    </div>
+
+    <div class="suggestion action">
+      <div class="s-label">신규 카드 #12 — Webhooks</div>
+      <strong>icon:</strong> <code>ri-webhook-line</code> &nbsp; <strong>tag:</strong> Automation &nbsp; <strong>color:</strong> bg-amber-50 / text-amber-600<br><br>
+      <strong>EN title:</strong> "Webhooks"<br>
+      <strong>EN description:</strong> "Get real-time notifications when tests pass, fail, or runs complete. Push events to Slack, Discord, or any HTTP endpoint. Build custom automations around your QA events."<br><br>
+      <strong>KO title:</strong> "웹훅"<br>
+      <strong>KO description:</strong> "테스트 통과, 실패, 실행 완료 시 실시간 알림을 받으세요. Slack, Discord 또는 모든 HTTP 엔드포인트로 이벤트를 전송합니다. QA 이벤트를 중심으로 커스텀 자동화를 구축하세요."
+    </div>
+
+    <!-- 3.2 -->
+    <h3>3.2 Core Features #5 (Team Collaboration) — 텍스트 수정</h3>
+
+    <div class="suggestion action">
+      <div class="s-label">역할 명칭 수정</div>
+      <strong>현재 (EN):</strong> "Invite team members and set role-based permissions — Admin, Member, or Viewer."<br>
+      <strong>수정 (EN):</strong> "Invite team members and set role-based permissions — <strong>Owner, Admin, Member, or Viewer</strong>. The project creator is automatically the Owner. Assign test cases to specific team members for clear ownership."<br><br>
+      <strong>현재 (KO):</strong> "Admin, Member, Viewer 권한과 테스트 케이스별 담당자 지정"<br>
+      <strong>수정 (KO):</strong> "<strong>Owner, Admin, Member, Viewer</strong> 4단계 역할 권한과 테스트 케이스별 담당자 지정으로 명확한 책임을 부여합니다."
+    </div>
+
+    <!-- 3.3 -->
+    <h3>3.3 Integrations 섹션 — Webhooks 카드 추가</h3>
+
+    <div class="suggestion action">
+      <div class="s-label">3번째 Integration 카드 추가</div>
+      현재 Jira + CI/CD 2개 카드만 존재합니다. 여기에 <strong>Webhooks</strong> 카드를 추가하여 3열 레이아웃으로 확장하세요.<br><br>
+      <strong>Title:</strong> "Webhooks & Automations"<br>
+      <strong>Description:</strong> "Push real-time events to any HTTP endpoint — Slack, Discord, Teams, or your own systems. Trigger automations when test runs complete, tests fail, or members join."<br>
+      <strong>Tags:</strong> ['Slack', 'Discord', 'Custom HTTP', 'Real-time Events']
+    </div>
+
+    <!-- 3.4 -->
+    <h3>3.4 Pricing 섹션 — 3가지 수정</h3>
+
+    <div class="suggestion action">
+      <div class="s-label">수정 A: Viewer 무료 정책 배너 추가</div>
+      Pricing 섹션 상단 또는 하단에 눈에 띄는 배너를 추가하세요:<br><br>
+      <strong>EN:</strong> "💡 Viewers are always free — they don't count toward your plan's seat limit. Invite unlimited stakeholders, managers, and executives at no extra cost."<br>
+      <strong>KO:</strong> "💡 Viewer는 항상 무료 — 요금제 좌석 제한에 포함되지 않습니다. 이해관계자, 매니저, 임원을 추가 비용 없이 무제한 초대하세요."<br><br>
+      <span class="priority critical"><span class="dot"></span>Critical</span> — 경쟁사 대비 큰 차별점. TestRail/Qase는 모든 유저가 유료.
+    </div>
+
+    <div class="suggestion action">
+      <div class="s-label">수정 B: Starter/Professional 기능 목록 보완</div>
+      <strong>Starter</strong>에 추가: "Testcase Export/Import", "Export PDF Report"<br>
+      <strong>Professional</strong>에 추가: "Testcase Export/Import", "Export PDF Report"<br><br>
+      Settings의 TIER_INFO에는 이미 포함되어 있으나 홈페이지 pricing에는 누락.
+    </div>
+
+    <div class="suggestion action">
+      <div class="s-label">수정 C: Free 플랜 Viewer 정책 언급</div>
+      Free 플랜 설명에 추가: "Viewers don't count toward the 3-member limit"<br>
+      이를 통해 "3명까지"라는 제한이 실질적으로 더 유연하다는 것을 전달.
+    </div>
+
+    <!-- 3.5 -->
+    <h3>3.5 Why Testably 섹션 — 카드 추가/수정</h3>
+
+    <div class="suggestion action">
+      <div class="s-label">신규 Why 카드: "TestRail Migration in Minutes"</div>
+      <strong>icon:</strong> <code>ri-arrow-left-right-line</code><br>
+      <strong>EN title:</strong> "Switch from TestRail in Minutes"<br>
+      <strong>EN content:</strong> "Import your entire test library via CSV. TestRail field mapping is built-in — priority, steps, expected results all transfer automatically."<br><br>
+      <strong>KO title:</strong> "TestRail에서 몇 분 만에 전환"<br>
+      <strong>KO content:</strong> "CSV로 전체 테스트 라이브러리를 가져오세요. TestRail 필드 매핑이 내장되어 있어 우선순위, 단계, 예상 결과가 자동으로 변환됩니다."<br><br>
+      <span class="priority critical"><span class="dot"></span>Critical</span> — TestRail 사용자 유입 핵심 CTA. Footer에 이미 "vs TestRail" 비교 페이지 링크가 있어 시너지 가능.
+    </div>
+
+    <!-- 3.6 -->
+    <h3>3.6 FAQ 섹션 — 3개 질문 추가</h3>
+
+    <div class="suggestion action">
+      <div class="s-label">추가 FAQ #9: Import/Migration</div>
+      <strong>Q:</strong> "Can I import test cases from TestRail or other tools?"<br>
+      <strong>A:</strong> "Yes. Testably supports CSV import with built-in TestRail field mapping. Export your test cases from TestRail as CSV, then import them into Testably — priorities, steps, and expected results are automatically mapped. You can also import from Zephyr and Qase."
+    </div>
+
+    <div class="suggestion action">
+      <div class="s-label">추가 FAQ #10: Viewer 무료 정책</div>
+      <strong>Q:</strong> "Do Viewers count toward my plan's member limit?"<br>
+      <strong>A:</strong> "No. Viewer roles are completely free and excluded from your seat count. On the Starter plan (5 seats), you could have 1 Owner + 1 Admin + 3 Members + unlimited Viewers. This lets your entire organization observe testing progress without extra cost."
+    </div>
+
+    <div class="suggestion action">
+      <div class="s-label">추가 FAQ #11: Webhooks</div>
+      <strong>Q:</strong> "Does Testably support webhooks?"<br>
+      <strong>A:</strong> "Yes. You can configure webhooks to send real-time event notifications to any HTTP endpoint — including Slack, Discord, Microsoft Teams, or your custom automation system. Events include test run completions, test failures, member joins, and more."
+    </div>
+
+    <!-- 3.7 -->
+    <h3>3.7 Footer — Resources 링크 보강</h3>
+
+    <div class="suggestion action">
+      <div class="s-label">Resources 섹션 링크 추가</div>
+      현재 Footer의 "Resources" 섹션에 다음 링크를 추가하세요:<br><br>
+      <strong>추가 링크:</strong><br>
+      • Documentation → <code>/docs</code><br>
+      • API Reference → <code>/docs/api</code><br>
+      • Keyboard Shortcuts → <code>/docs/keyboard-shortcuts</code><br>
+      • Changelog → <code>/changelog</code> (이미 구현됨)<br>
+      • Roadmap → <code>/roadmap</code> (이미 구현됨)<br><br>
+      현재 <code>footer.productLinks</code>에 "Changelog", "Roadmap"이 있지만 Resources에 Documentation/API가 없음.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════ PART 4: 우선순위 정리 ══════════ -->
+<div class="section">
+  <div class="section-header">
+    <h2>Part 4 — 업데이트 우선순위</h2>
+    <span class="badge" style="background:var(--danger-bg); color:#991b1b;">Action Required</span>
+  </div>
+  <div class="section-body">
+
+    <h3>🔴 P0 — 즉시 수정 (잘못된 정보)</h3>
+    <table>
+      <thead><tr><th>#</th><th>항목</th><th>문제</th><th>작업량</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Team Collaboration 역할</td>
+          <td>"Admin, Member, Viewer" → 실제는 <strong>Owner, Admin, Member, Viewer</strong> 4 roles</td>
+          <td>텍스트 2줄 수정 (EN/KO)</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Pricing: Starter 기능 목록</td>
+          <td>Export/Import, PDF Report 미포함 (Settings TIER_INFO와 불일치)</td>
+          <td>features 배열에 2개 항목 추가</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Pricing: Professional 기능 목록</td>
+          <td>동일 — Export/Import, PDF Report 미포함</td>
+          <td>features 배열에 2개 항목 추가</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>🟠 P1 — 이번 스프린트 (경쟁 차별점 미노출)</h3>
+    <table>
+      <thead><tr><th>#</th><th>항목</th><th>효과</th><th>작업량</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>4</td>
+          <td>Pricing: Viewer 무료 정책 배너</td>
+          <td>경쟁사 대비 큰 차별점, 유료 전환 장벽 낮춤</td>
+          <td>배너 컴포넌트 1개 + 텍스트 (EN/KO)</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Core Features: Import & Export 카드</td>
+          <td>TestRail 마이그레이션 유입 핵심 CTA</td>
+          <td>features 배열에 1개 객체 추가</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Core Features: Advanced Reporting 카드</td>
+          <td>4개 대시보드 + PDF Export — Enterprise 고객 어필</td>
+          <td>features 배열에 1개 객체 추가</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>Why Testably: "Switch from TestRail" 카드</td>
+          <td>vs TestRail 페이지와 시너지, 마이그레이션 유도</td>
+          <td>whyCards 배열에 1개 객체 추가</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>FAQ: Viewer/Import/Webhook 3개 추가</td>
+          <td>SEO + 잠재 고객 질문 사전 해결</td>
+          <td>faqs 배열에 3개 객체 추가</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>🔵 P2 — 다음 스프린트</h3>
+    <table>
+      <thead><tr><th>#</th><th>항목</th><th>효과</th><th>작업량</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>9</td>
+          <td>Core Features: Webhooks 카드</td>
+          <td>자동화 사용자 어필</td>
+          <td>features 배열에 1개 객체 추가</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td>Integrations: Webhooks 3번째 카드</td>
+          <td>통합 섹션 3열 완성</td>
+          <td>통합 섹션 UI 수정 + 텍스트</td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td>Footer: Documentation/API 링크</td>
+          <td>SEO + 개발자 유입</td>
+          <td>footer.resources에 링크 추가</td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td>Stats Bar: 신규 지표</td>
+          <td>"30+ Keyboard Shortcuts" 또는 "4 Analytics Dashboards" 등으로 교체 가능</td>
+          <td>stats 배열 수정</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+
+<!-- ══════════ DEV SUMMARY ══════════ -->
+<div class="dev-summary">
+  <h2>Dev Summary — 구현 가이드</h2>
+
+  <p><strong>수정 파일:</strong> <code>src/pages/home/page.tsx</code> — content.en 및 content.ko 객체 내 수정</p>
+
+  <p><strong>P0 수정 (텍스트만, 10분):</strong></p>
+  <p>
+    1. <code>features[4].description</code> (Team Collaboration) — "Admin, Member, or Viewer" → "Owner, Admin, Member, or Viewer" (EN/KO 양쪽)<br>
+    2. <code>pricingPlans[1].features</code> (Starter) — "Testcase Export/Import", "Export PDF Report" 2항목 추가 (EN/KO)<br>
+    3. <code>pricingPlans[2].features</code> (Professional) — 동일 2항목 추가 (EN/KO)
+  </p>
+
+  <p style="margin-top:16px;"><strong>P1 추가 (콘텐츠 추가, 2-3시간):</strong></p>
+  <p>
+    4. Pricing 섹션 내 "Viewers are always free" 배너 — 기존 pricingSection.note 아래에 UI 컴포넌트 추가<br>
+    5. <code>features</code> 배열에 Import&amp;Export + Advanced Reporting 2개 객체 추가<br>
+    6. <code>whyCards</code> 배열에 "Switch from TestRail" 1개 추가 (4장 → Why 섹션 레이아웃 조정 필요)<br>
+    7. <code>faqs</code> 배열에 3개 Q&amp;A 객체 추가
+  </p>
+
+  <p style="margin-top:16px;"><strong>P2 추가 (UI 변경 포함, 1일):</strong></p>
+  <p>
+    8. <code>features</code> 배열에 Webhooks 카드 추가 (총 12장 → 그리드 레이아웃 4x3 확인)<br>
+    9. Integrations 섹션: 3번째 카드(Webhooks) 추가 → UI 레이아웃 조정 (2열→3열)<br>
+    10. Footer: resources 링크에 Documentation, API Reference, Keyboard Shortcuts 추가<br>
+    11. Stats Bar: 선택적 지표 교체
+  </p>
+
+  <p style="margin-top:16px;"><strong>예상 총 작업 기간: P0(10분) + P1(2-3시간) + P2(1일) = 약 1.5일</strong></p>
+</div>
+
+</div>
+</body>
+</html>

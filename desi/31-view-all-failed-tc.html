@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testably — View All Failed Test Cases</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #F8FAFC; color: #1E293B; min-height: 100vh; display: flex; }
+
+  /* ── Project Header (shared chrome, unchanged) ── */
+  .project-header { background: #fff; display: flex; align-items: center; padding: 0 1.5rem; height: 3.5rem; gap: 0.75rem; border-bottom: 1px solid #E2E8F0; }
+  .ph-logo { width: 30px; height: 30px; background: #6366F1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.8125rem; flex-shrink: 0; }
+  .ph-sep { width: 1px; height: 20px; background: #E2E8F0; }
+  .ph-project { font-size: 0.875rem; color: #64748B; font-weight: 500; }
+  .ph-right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+  .ph-btn { font-size: 0.8125rem; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #64748B; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; }
+  .ph-avatar { width: 2rem; height: 2rem; border-radius: 50%; background: #6366F1; display: flex; align-items: center; justify-content: center; font-size: 0.6875rem; font-weight: 700; color: #fff; cursor: pointer; }
+
+  /* ── Tab Bar (shared chrome, unchanged) ── */
+  .tab-bar { background: #fff; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; padding: 0 1.5rem; height: 3rem; gap: 0; }
+  .tab-item { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.875rem; height: 100%; font-size: 0.875rem; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; transition: all 0.15s; white-space: nowrap; }
+  .tab-item:hover { color: #334155; }
+  .tab-item.active { color: #6366F1; border-bottom-color: #6366F1; font-weight: 600; }
+  .tab-item i { font-size: 1rem; }
+  .tab-count { font-size: 0.6875rem; background: #F1F5F9; color: #64748B; padding: 0.125rem 0.4375rem; border-radius: 9999px; font-weight: 600; }
+  .tab-item.active .tab-count { background: #EEF2FF; color: #6366F1; }
+
+  /* ── Main ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .content-layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Folders Panel ── */
+  .folders-panel { width: 220px; min-width: 220px; background: #fff; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; overflow-y: auto; }
+  .folders-header { padding: 0.75rem 0.875rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; }
+  .folders-title { font-size: 0.8125rem; font-weight: 700; color: #0F172A; }
+  .sb-new-btn { display: flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; color: #6366F1; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 0.375rem; border: none; background: none; }
+  .sb-new-btn:hover { background: #EEF2FF; }
+  .sb-new-btn i { font-size: 0.875rem; }
+  .folders-list { flex: 1; overflow-y: auto; padding: 0.375rem 0; }
+  .folder-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.875rem; font-size: 0.8125rem; color: #475569; cursor: pointer; transition: all 0.15s; }
+  .folder-item:hover { background: #F8FAFC; }
+  .folder-item.active { background: #EEF2FF; color: #4338CA; font-weight: 600; }
+  .folder-item.sub { padding-left: 1.5rem; }
+  .folder-icon { font-size: 1rem; }
+  .folder-count { margin-left: auto; font-size: 0.75rem; color: #94A3B8; }
+  .folder-item.active .folder-count { color: #6366F1; }
+
+  /* ── Content Right ── */
+  .content-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; overflow-y: auto; }
+
+  /* ═══════════════════════════════════════════ */
+  /* ② DYNAMIC HEADER                           */
+  /* ═══════════════════════════════════════════ */
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 1.75rem 1.75rem 0; }
+  .page-head-left { display: flex; flex-direction: column; gap: 0.25rem; }
+  .page-title-row { display: flex; align-items: center; gap: 0.5rem; }
+  .page-icon { font-size: 1.25rem; }
+  .page-icon.failed { color: #EF4444; }
+  .page-title { font-size: 1.375rem; font-weight: 700; color: #0F172A; }
+  .page-title-badge { font-size: 0.75rem; font-weight: 700; padding: 0.125rem 0.5rem; border-radius: 9999px; }
+  .page-title-badge.failed { background: #FEF2F2; color: #DC2626; }
+  .page-subtitle { font-size: 0.8125rem; color: #94A3B8; }
+  .back-link { display: flex; align-items: center; gap: 0.25rem; font-size: 0.8125rem; font-weight: 600; color: #6366F1; text-decoration: none; cursor: pointer; padding-top: 0.5rem; }
+  .back-link:hover { color: #4338CA; text-decoration: underline; }
+  .back-link i { font-size: 1rem; }
+
+  /* ═══════════════════════════════════════════ */
+  /* FILTER + TABS AREA                          */
+  /* ═══════════════════════════════════════════ */
+  .filter-area { padding: 1.25rem 1.75rem 0; }
+
+  /* ── Filter Row 1: Search + dropdowns ── */
+  .filter-row { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.75rem; }
+  .search-wrap { flex: 1; position: relative; }
+  .search-wrap i { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 1rem; color: #94A3B8; }
+  .search-box { font-size: 0.8125rem; padding: 0.4375rem 0.875rem 0.4375rem 2.25rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #334155; outline: none; width: 100%; font-family: inherit; }
+  .search-box:focus { border-color: #6366F1; box-shadow: 0 0 0 2px rgba(99,102,241,0.15); }
+  .filter-select { font-size: 0.8125rem; padding: 0.4375rem 0.875rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #334155; cursor: pointer; font-family: inherit; font-weight: 500; }
+
+  /* ═══════════════════════════════════════════ */
+  /* ① EXECUTION STATUS TAB BAR                  */
+  /* ═══════════════════════════════════════════ */
+  .status-tabs { display: flex; align-items: center; gap: 0; border-bottom: 1px solid #E2E8F0; }
+  .status-tab { display: flex; align-items: center; gap: 0.375rem; padding: 0.625rem 1rem; font-size: 0.8125rem; font-weight: 500; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+  .status-tab:hover { color: #334155; border-bottom-color: #E2E8F0; }
+  .status-tab.active { color: #4F46E5; font-weight: 600; border-bottom-color: #6366F1; }
+  .status-tab i { font-size: 0.9375rem; }
+  .st-badge { font-size: 0.625rem; font-weight: 700; padding: 0.0625rem 0.4375rem; border-radius: 9999px; }
+  .st-badge.slate { background: #F1F5F9; color: #64748B; }
+  .st-badge.red { background: #FEF2F2; color: #DC2626; }
+  .st-badge.green { background: #F0FDF4; color: #16A34A; }
+  .st-badge.amber { background: #FFFBEB; color: #D97706; }
+  .status-tab.active .st-badge.slate { background: #EEF2FF; color: #6366F1; }
+
+  /* ═══════════════════════════════════════════ */
+  /* ⑤ SUMMARY BAR                               */
+  /* ═══════════════════════════════════════════ */
+  .summary-bar { display: flex; align-items: center; gap: 0.5rem; background: #F8FAFC; padding: 0.75rem 1.25rem; border: 1px solid #E2E8F0; border-top: none; font-size: 0.8125rem; color: #64748B; font-weight: 500; }
+  .summary-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .summary-dot.red { background: #EF4444; }
+  .summary-bar strong { color: #0F172A; font-weight: 700; }
+  .summary-sep { color: #CBD5E1; margin: 0 0.25rem; }
+  .summary-period { color: #94A3B8; }
+
+  /* ═══════════════════════════════════════════ */
+  /* TABLE CARD                                   */
+  /* ═══════════════════════════════════════════ */
+  .table-card { margin: 0 1.75rem 1.75rem; border: 1px solid #E2E8F0; border-radius: 0.75rem; background: #fff; overflow: hidden; flex: 1; display: flex; flex-direction: column; }
+
+  /* ── Table ── */
+  .tc-table { flex: 1; overflow-y: auto; }
+  .tc-table table { width: 100%; border-collapse: collapse; }
+  .tc-table th { background: #F8FAFC; padding: 0.6875rem 1rem; text-align: left; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; border-bottom: 1px solid #E2E8F0; white-space: nowrap; cursor: pointer; user-select: none; }
+  .tc-table th .sort-icon { font-size: 0.75rem; color: #CBD5E1; margin-left: 0.25rem; vertical-align: middle; }
+  .tc-table th.sorted .sort-icon { color: #6366F1; }
+  .tc-table th:hover .sort-icon { color: #94A3B8; }
+  .tc-table th.no-sort { cursor: default; }
+  .tc-table td { padding: 0.6875rem 1rem; font-size: 0.8125rem; color: #334155; border-bottom: 1px solid #F1F5F9; }
+  .tc-table tr:last-child td { border-bottom: none; }
+  .tc-table tbody tr { cursor: pointer; transition: background 0.1s; }
+  .tc-table tbody tr:hover td { background: #FAFAFF; }
+  .tc-table .cb { width: 36px; }
+  .tc-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: #6366F1; cursor: pointer; }
+
+  .tc-id { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8125rem; color: #94A3B8; font-weight: 400; }
+  .tc-name { font-weight: 600; color: #0F172A; font-size: 0.8125rem; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .project-badge { font-size: 0.75rem; font-weight: 500; padding: 0.125rem 0.4375rem; border-radius: 0.25rem; background: #EEF2FF; color: #4338CA; white-space: nowrap; }
+  .priority-badge { font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 9999px; white-space: nowrap; }
+  .priority-badge.critical { background: #FEF2F2; color: #991B1B; }
+  .priority-badge.high { background: #FEF3C7; color: #92400E; }
+  .priority-badge.medium { background: #EEF2FF; color: #4338CA; }
+  .priority-badge.low { background: #F1F5F9; color: #64748B; }
+
+  /* ④ Extended columns */
+  .fail-count { font-size: 0.8125rem; font-weight: 700; color: #EF4444; text-align: center; }
+  .last-failed { font-size: 0.75rem; font-weight: 400; color: #94A3B8; white-space: nowrap; }
+  .last-run-link { font-size: 0.75rem; font-weight: 500; color: #6366F1; cursor: pointer; text-decoration: none; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .last-run-link:hover { text-decoration: underline; color: #4338CA; }
+  .assignee-sm { width: 1.75rem; height: 1.75rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.5625rem; font-weight: 700; color: #fff; }
+  .assignee-none { font-size: 0.8125rem; color: #CBD5E1; }
+
+  /* ═══════════════════════════════════════════ */
+  /* ⑥ PAGINATION                                */
+  /* ═══════════════════════════════════════════ */
+  .pagination { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.25rem; border-top: 1px solid #E2E8F0; background: #fff; flex-shrink: 0; }
+  .pag-info { font-size: 0.8125rem; color: #64748B; font-weight: 500; }
+  .pag-center { display: flex; align-items: center; gap: 0.375rem; }
+  .pag-nav { font-size: 0.8125rem; font-weight: 600; color: #6366F1; cursor: pointer; background: none; border: none; font-family: inherit; padding: 0.25rem 0.5rem; border-radius: 0.375rem; }
+  .pag-nav:hover { background: #EEF2FF; }
+  .pag-nav:disabled { color: #CBD5E1; cursor: not-allowed; }
+  .pag-nav:disabled:hover { background: none; }
+  .pag-num { width: 2rem; height: 2rem; border-radius: 0.375rem; border: none; background: none; color: #334155; cursor: pointer; font-size: 0.8125rem; font-family: inherit; font-weight: 500; display: flex; align-items: center; justify-content: center; }
+  .pag-num:hover { background: #F8FAFC; }
+  .pag-num.active { background: #6366F1; color: #fff; font-weight: 600; }
+  .pag-right { display: flex; align-items: center; gap: 0.5rem; }
+  .per-page-select { font-size: 0.8125rem; padding: 0.3125rem 0.5rem; border-radius: 0.375rem; border: 1px solid #E2E8F0; background: #fff; color: #334155; cursor: pointer; font-family: inherit; font-weight: 500; }
+  .per-page-label { font-size: 0.75rem; color: #94A3B8; }
+
+  /* ═══════════════════════════════════════════ */
+  /* ⑦ EMPTY STATE                               */
+  /* ═══════════════════════════════════════════ */
+  .empty-state { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 3.75rem 2rem; text-align: center; }
+  .empty-icon { width: 4rem; height: 4rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
+  .empty-icon.green { background: #F0FDF4; }
+  .empty-icon i { font-size: 1.75rem; }
+  .empty-icon.green i { color: #10B981; }
+  .empty-title { font-size: 1.125rem; font-weight: 700; color: #0F172A; margin-bottom: 0.25rem; }
+  .empty-sub { font-size: 0.875rem; color: #64748B; margin-bottom: 1rem; }
+  .empty-back { display: flex; align-items: center; gap: 0.25rem; font-size: 0.875rem; font-weight: 600; color: #6366F1; cursor: pointer; text-decoration: none; background: none; border: none; font-family: inherit; }
+  .empty-back:hover { text-decoration: underline; color: #4338CA; }
+
+  /* ── Animations ── */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .content-right { animation: fadeIn 0.3s ease-out; }
+
+  /* ── Toggle for demo ── */
+  .demo-toggle { position: fixed; bottom: 1rem; right: 1rem; z-index: 100; display: flex; gap: 0.5rem; }
+  .demo-btn { font-size: 0.6875rem; font-weight: 600; padding: 0.375rem 0.75rem; border-radius: 0.5rem; border: 1px solid #E2E8F0; background: #fff; color: #475569; cursor: pointer; font-family: inherit; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .demo-btn.active { background: #6366F1; color: #fff; border-color: #6366F1; }
+</style>
+</head>
+<body>
+
+<div class="main">
+  <!-- ═══ Project Header ═══ -->
+  <header class="project-header">
+    <div class="ph-logo">T</div>
+    <div class="ph-sep"></div>
+    <span class="ph-project">Mobile App v2</span>
+    <div class="ph-right">
+      <div class="ph-btn"><i class="ri-command-line"></i> ⌘K</div>
+      <div class="ph-btn"><i class="ri-notification-3-line"></i></div>
+      <div class="ph-avatar">KJ</div>
+    </div>
+  </header>
+
+  <!-- ═══ Project Tab Bar ═══ -->
+  <div class="tab-bar">
+    <div class="tab-item"><i class="ri-dashboard-3-line"></i> Dashboard</div>
+    <div class="tab-item active"><i class="ri-file-list-3-line"></i> Test Cases <span class="tab-count">203</span></div>
+    <div class="tab-item"><i class="ri-play-circle-line"></i> Runs <span class="tab-count">12</span></div>
+    <div class="tab-item"><i class="ri-bar-chart-grouped-line"></i> Reports</div>
+    <div class="tab-item"><i class="ri-flag-line"></i> Milestones <span class="tab-count">3</span></div>
+    <div class="tab-item"><i class="ri-file-text-line"></i> Docs <span class="tab-count">8</span></div>
+  </div>
+
+  <div class="content-layout">
+    <!-- ═══ Folders Sidebar ═══ -->
+    <aside class="folders-panel">
+      <div class="folders-header">
+        <span class="folders-title">Folders</span>
+        <button class="sb-new-btn"><i class="ri-add-line"></i> New</button>
+      </div>
+      <div class="folders-list">
+        <div class="folder-item active">
+          <i class="ri-folder-3-line folder-icon" style="color:#6366F1"></i>
+          <span>All Test Cases</span>
+          <span class="folder-count">203</span>
+        </div>
+        <div class="folder-item sub">
+          <i class="ri-folder-3-line folder-icon" style="color:#8B5CF6"></i>
+          <span>Authentication</span>
+          <span class="folder-count">42</span>
+        </div>
+        <div class="folder-item sub">
+          <i class="ri-folder-3-line folder-icon" style="color:#10B981"></i>
+          <span>Payments</span>
+          <span class="folder-count">38</span>
+        </div>
+        <div class="folder-item sub">
+          <i class="ri-folder-3-line folder-icon" style="color:#EF4444"></i>
+          <span>Reports</span>
+          <span class="folder-count">27</span>
+        </div>
+        <div class="folder-item sub">
+          <i class="ri-folder-3-line folder-icon" style="color:#F59E0B"></i>
+          <span>User Profile</span>
+          <span class="folder-count">31</span>
+        </div>
+        <div class="folder-item sub">
+          <i class="ri-folder-3-line folder-icon" style="color:#06B6D4"></i>
+          <span>Data Import</span>
+          <span class="folder-count">18</span>
+        </div>
+        <div class="folder-item sub">
+          <i class="ri-folder-3-line folder-icon" style="color:#94A3B8"></i>
+          <span>Mobile</span>
+          <span class="folder-count">47</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ═══ Content Right ═══ -->
+    <div class="content-right">
+
+      <!-- ② Dynamic Header -->
+      <div class="page-head" id="pageHead">
+        <div class="page-head-left">
+          <div class="page-title-row">
+            <i class="ri-close-circle-line page-icon failed"></i>
+            <h1 class="page-title">Failed Test Cases</h1>
+            <span class="page-title-badge failed">47</span>
+          </div>
+          <p class="page-subtitle">Test cases with failed results in the selected period</p>
+        </div>
+        <a class="back-link" id="backLink"><i class="ri-arrow-left-line"></i> Back to Report</a>
+      </div>
+
+      <!-- Filter Area -->
+      <div class="filter-area">
+
+        <!-- Filter Row 1: Search + Dropdowns (③ Period dropdown) -->
+        <div class="filter-row">
+          <div class="search-wrap">
+            <i class="ri-search-line"></i>
+            <input type="text" class="search-box" placeholder="Search test cases..." />
+          </div>
+          <select class="filter-select">
+            <option>All Projects</option>
+            <option>Auth Project</option>
+            <option>Payment</option>
+            <option>Reports</option>
+          </select>
+          <select class="filter-select">
+            <option>All Priority</option>
+            <option>Critical</option>
+            <option>High</option>
+            <option>Medium</option>
+            <option>Low</option>
+          </select>
+          <select class="filter-select" id="periodSelect">
+            <option selected>Active Run</option>
+            <option>Last 7 Days</option>
+            <option>Last 30 Days</option>
+            <option>All Time</option>
+          </select>
+        </div>
+
+        <!-- ① Execution Status Tab Bar -->
+        <div class="status-tabs" id="statusTabs">
+          <button class="status-tab" data-status="all">
+            <i class="ri-list-check"></i> All <span class="st-badge slate">203</span>
+          </button>
+          <button class="status-tab active" data-status="failed">
+            <i class="ri-close-circle-line"></i> Failed <span class="st-badge red">47</span>
+          </button>
+          <button class="status-tab" data-status="passed">
+            <i class="ri-checkbox-circle-line"></i> Passed <span class="st-badge green">128</span>
+          </button>
+          <button class="status-tab" data-status="blocked">
+            <i class="ri-forbid-line"></i> Blocked <span class="st-badge amber">5</span>
+          </button>
+          <button class="status-tab" data-status="untested">
+            <i class="ri-question-line"></i> Untested <span class="st-badge slate">23</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Table Card -->
+      <div class="table-card">
+
+        <!-- ⑤ Summary Bar -->
+        <div class="summary-bar" id="summaryBar">
+          <span class="summary-dot red"></span>
+          Showing <strong>47</strong> failed test cases across <strong>5</strong> projects
+          <span class="summary-sep">|</span>
+          <span class="summary-period">Active Run</span>
+        </div>
+
+        <!-- ④ Table with extended columns -->
+        <div class="tc-table" id="tableArea">
+          <table>
+            <thead>
+              <tr>
+                <th class="cb no-sort"><input type="checkbox" /></th>
+                <th class="sorted">TC-ID <i class="ri-arrow-up-down-line sort-icon"></i></th>
+                <th>Title <i class="ri-arrow-up-down-line sort-icon"></i></th>
+                <th>Project <i class="ri-arrow-up-down-line sort-icon"></i></th>
+                <th>Priority <i class="ri-arrow-up-down-line sort-icon"></i></th>
+                <th class="sorted">Fail Count <i class="ri-arrow-down-line sort-icon"></i></th>
+                <th>Last Failed <i class="ri-arrow-up-down-line sort-icon"></i></th>
+                <th class="no-sort">Last Run</th>
+                <th>Assignee <i class="ri-arrow-up-down-line sort-icon"></i></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-012</span></td>
+                <td><span class="tc-name">Login validation fails on Safari 17.4</span></td>
+                <td><span class="project-badge">Auth Project</span></td>
+                <td><span class="priority-badge critical">Critical</span></td>
+                <td><span class="fail-count">5x</span></td>
+                <td><span class="last-failed">2h ago</span></td>
+                <td><a class="last-run-link">Sprint 24 Regression</a></td>
+                <td style="text-align:center"><span class="assignee-sm" style="background:#6366F1">JK</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-045</span></td>
+                <td><span class="tc-name">Payment timeout on slow 3G connection</span></td>
+                <td><span class="project-badge">Payment</span></td>
+                <td><span class="priority-badge high">High</span></td>
+                <td><span class="fail-count">3x</span></td>
+                <td><span class="last-failed">5h ago</span></td>
+                <td><a class="last-run-link">Payment v2.1 Smoke</a></td>
+                <td style="text-align:center"><span class="assignee-sm" style="background:#EC4899">ML</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-078</span></td>
+                <td><span class="tc-name">CSV export missing header row for localized columns</span></td>
+                <td><span class="project-badge">Reports</span></td>
+                <td><span class="priority-badge medium">Medium</span></td>
+                <td><span class="fail-count">2x</span></td>
+                <td><span class="last-failed">1d ago</span></td>
+                <td><a class="last-run-link">Data Export QA</a></td>
+                <td style="text-align:center"><span class="assignee-none">—</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-103</span></td>
+                <td><span class="tc-name">OAuth token refresh race condition under load</span></td>
+                <td><span class="project-badge">Auth Project</span></td>
+                <td><span class="priority-badge critical">Critical</span></td>
+                <td><span class="fail-count">8x</span></td>
+                <td><span class="last-failed">30m ago</span></td>
+                <td><a class="last-run-link">Sprint 24 Regression</a></td>
+                <td style="text-align:center"><span class="assignee-sm" style="background:#10B981">AP</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-156</span></td>
+                <td><span class="tc-name">Push notification deep-link fails on Android 14</span></td>
+                <td><span class="project-badge">Mobile</span></td>
+                <td><span class="priority-badge high">High</span></td>
+                <td><span class="fail-count">4x</span></td>
+                <td><span class="last-failed">3h ago</span></td>
+                <td><a class="last-run-link">Mobile Nightly</a></td>
+                <td style="text-align:center"><span class="assignee-sm" style="background:#F59E0B">MC</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-189</span></td>
+                <td><span class="tc-name">Biometric login fallback when Face ID unavailable</span></td>
+                <td><span class="project-badge">Auth Project</span></td>
+                <td><span class="priority-badge critical">Critical</span></td>
+                <td><span class="fail-count">6x</span></td>
+                <td><span class="last-failed">1h ago</span></td>
+                <td><a class="last-run-link">Sprint 24 Regression</a></td>
+                <td style="text-align:center"><span class="assignee-sm" style="background:#EC4899">JL</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-201</span></td>
+                <td><span class="tc-name">Dashboard chart data mismatch with raw API response</span></td>
+                <td><span class="project-badge">Reports</span></td>
+                <td><span class="priority-badge medium">Medium</span></td>
+                <td><span class="fail-count">1x</span></td>
+                <td><span class="last-failed">6h ago</span></td>
+                <td><a class="last-run-link">Report v3 QA</a></td>
+                <td style="text-align:center"><span class="assignee-sm" style="background:#8B5CF6">YH</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-217</span></td>
+                <td><span class="tc-name">Rate limiter bypass with concurrent API requests</span></td>
+                <td><span class="project-badge">Auth Project</span></td>
+                <td><span class="priority-badge high">High</span></td>
+                <td><span class="fail-count">3x</span></td>
+                <td><span class="last-failed">8h ago</span></td>
+                <td><a class="last-run-link">Security Scan v2</a></td>
+                <td style="text-align:center"><span class="assignee-sm" style="background:#10B981">AP</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-234</span></td>
+                <td><span class="tc-name">User avatar upload WebP conversion crashes on iOS</span></td>
+                <td><span class="project-badge">Mobile</span></td>
+                <td><span class="priority-badge low">Low</span></td>
+                <td><span class="fail-count">1x</span></td>
+                <td><span class="last-failed">2d ago</span></td>
+                <td><a class="last-run-link">Mobile Nightly</a></td>
+                <td style="text-align:center"><span class="assignee-sm" style="background:#6366F1">JK</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-256</span></td>
+                <td><span class="tc-name">Dark mode toggle state lost after logout/login cycle</span></td>
+                <td><span class="project-badge">User Profile</span></td>
+                <td><span class="priority-badge low">Low</span></td>
+                <td><span class="fail-count">2x</span></td>
+                <td><span class="last-failed">1d ago</span></td>
+                <td><a class="last-run-link">UI Regression Pack</a></td>
+                <td style="text-align:center"><span class="assignee-sm" style="background:#F59E0B">MC</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-271</span></td>
+                <td><span class="tc-name">Webhook retry backoff exceeds max delay threshold</span></td>
+                <td><span class="project-badge">Payment</span></td>
+                <td><span class="priority-badge medium">Medium</span></td>
+                <td><span class="fail-count">2x</span></td>
+                <td><span class="last-failed">12h ago</span></td>
+                <td><a class="last-run-link">Payment v2.1 Smoke</a></td>
+                <td style="text-align:center"><span class="assignee-none">—</span></td>
+              </tr>
+              <tr>
+                <td class="cb"><input type="checkbox" /></td>
+                <td><span class="tc-id">TC-288</span></td>
+                <td><span class="tc-name">Concurrent file upload progress bar freezes at 99%</span></td>
+                <td><span class="project-badge">Data Import</span></td>
+                <td><span class="priority-badge high">High</span></td>
+                <td><span class="fail-count">4x</span></td>
+                <td><span class="last-failed">4h ago</span></td>
+                <td><a class="last-run-link">Data Pipeline QA</a></td>
+                <td style="text-align:center"><span class="assignee-sm" style="background:#06B6D4">DK</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ⑦ Empty State (hidden by default, toggled via demo) -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon green">
+            <i class="ri-checkbox-circle-line"></i>
+          </div>
+          <div class="empty-title">No failures found</div>
+          <div class="empty-sub">All test cases passed in this period</div>
+          <button class="empty-back"><i class="ri-arrow-left-line"></i> Back to Report</button>
+        </div>
+
+        <!-- ⑥ Pagination -->
+        <div class="pagination" id="paginationBar">
+          <span class="pag-info">Showing 1–20 of 47</span>
+          <div class="pag-center">
+            <button class="pag-nav" disabled>← Prev</button>
+            <button class="pag-num active">1</button>
+            <button class="pag-num">2</button>
+            <button class="pag-num">3</button>
+            <button class="pag-nav">Next →</button>
+          </div>
+          <div class="pag-right">
+            <select class="per-page-select">
+              <option selected>20</option>
+              <option>50</option>
+              <option>100</option>
+            </select>
+            <span class="per-page-label">per page</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Demo Toggle Buttons -->
+<div class="demo-toggle">
+  <button class="demo-btn active" onclick="showData()">With Data (47)</button>
+  <button class="demo-btn" onclick="showEmpty()">Empty State</button>
+</div>
+
+<script>
+// Demo toggle: show table vs empty state
+function showData() {
+  document.getElementById('tableArea').style.display = '';
+  document.getElementById('paginationBar').style.display = '';
+  document.getElementById('summaryBar').style.display = '';
+  document.getElementById('emptyState').style.display = 'none';
+  document.querySelectorAll('.demo-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+}
+function showEmpty() {
+  document.getElementById('tableArea').style.display = 'none';
+  document.getElementById('paginationBar').style.display = 'none';
+  document.getElementById('summaryBar').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'flex';
+  document.querySelectorAll('.demo-btn').forEach((b, i) => b.classList.toggle('active', i === 1));
+}
+
+// Status tab click interaction (demo)
+document.querySelectorAll('.status-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>
