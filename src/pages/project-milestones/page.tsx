@@ -483,7 +483,7 @@ export default function ProjectMilestones() {
               <div className="h-full bg-[#EF4444] transition-all" style={{ width: `${failedPct}%` }} />
             </div>
             <div className="flex items-center gap-2 text-[0.6875rem] text-[#64748B] whitespace-nowrap flex-shrink-0">
-              <span className="font-semibold text-[#475569]">{Math.round(passedPct)}%</span>
+              <span className="font-semibold text-[#475569]">{sub.actualProgress}%</span>
               <span className="text-[#10B981] font-semibold">{sub.passedTests} passed</span>
               <span className="text-[#EF4444] font-semibold">{sub.failedTests} failed</span>
               {sub.totalTests > 0 && <span>{remaining} remaining</span>}
@@ -514,7 +514,10 @@ export default function ProjectMilestones() {
               ? 'border-[#C7D2FE] shadow-[0_1px_6px_rgba(99,102,241,0.1)]'
               : 'border-[#E2E8F0] hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:border-[#C7D2FE]'
           }`}
-          onClick={() => hasSubMilestones && toggleExpanded(milestone.id)}
+          onClick={() => {
+            if (hasSubMilestones) toggleExpanded(milestone.id);
+            else navigate(`/projects/${id}/milestones/${milestone.id}`);
+          }}
         >
           {/* Top row */}
           <div className="flex items-center gap-[0.625rem] mb-[0.5625rem]">
@@ -522,7 +525,7 @@ export default function ProjectMilestones() {
             {hasSubMilestones ? (
               <button
                 onClick={e => { e.stopPropagation(); toggleExpanded(milestone.id); }}
-                className={`w-[1.375rem] h-[1.375rem] rounded flex items-center justify-center flex-shrink-0 text-base transition-all hover:bg-[#F1F5F9] ${isExpanded ? 'text-[#6366F1] rotate-90' : 'text-[#94A3B8]'}`}
+                className={`w-[1.75rem] h-[1.75rem] rounded flex items-center justify-center flex-shrink-0 text-lg transition-all hover:bg-[#F1F5F9] ${isExpanded ? 'text-[#6366F1] rotate-90 bg-[#EEF2FF]' : 'text-[#94A3B8]'}`}
               >
                 <i className="ri-arrow-right-s-line" />
               </button>
@@ -633,6 +636,20 @@ export default function ProjectMilestones() {
                 <span className="text-[#64748B]">{remaining} remaining</span>
               </span>
             </div>
+            {(() => {
+              const assigneeIds = milestoneRunAssignees.get(milestone.id) || [];
+              if (assigneeIds.length === 0) return null;
+              return (
+                <AvatarStack
+                  size="xs"
+                  max={3}
+                  members={assigneeIds.map(uid => {
+                    const p = milestoneAssigneeProfiles.get(uid);
+                    return { userId: uid, name: p?.name ?? undefined, email: p?.email, photoUrl: p?.url ?? undefined };
+                  })}
+                />
+              );
+            })()}
           </div>
         </div>
 
