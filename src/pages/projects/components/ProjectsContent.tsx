@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import PageLoader from '../../../components/PageLoader';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
 import { supabase, type Project } from '../../../lib/supabase';
@@ -651,8 +650,31 @@ export default function ProjectsContent() {
     return (
       <div className="flex flex-col h-full">
         {SubHeader}
-        <div className="flex-1 flex items-center justify-center">
-          <PageLoader />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden animate-pulse">
+              <div className="h-2 bg-gray-200 w-full" />
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="h-5 bg-gray-200 rounded w-2/3" />
+                  <div className="h-5 bg-gray-200 rounded-full w-16" />
+                </div>
+                <div className="h-3 bg-gray-100 rounded w-full mb-1.5" />
+                <div className="h-3 bg-gray-100 rounded w-4/5 mb-4" />
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex -space-x-1">
+                    {[...Array(3)].map((_, j) => (
+                      <div key={j} className="w-6 h-6 rounded-full bg-gray-200 border-2 border-white" />
+                    ))}
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="h-3 bg-gray-100 rounded w-10" />
+                    <div className="h-3 bg-gray-100 rounded w-10" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

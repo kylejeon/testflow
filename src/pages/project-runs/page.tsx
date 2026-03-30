@@ -1,5 +1,4 @@
 import { LogoMark } from '../../components/Logo';
-import PageLoader from '../../components/PageLoader';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -1681,7 +1680,22 @@ export default function ProjectRunsPage() {
           <div className="flex-1 overflow-y-auto bg-[#F8FAFC]">
           <div className="p-5">
             {loading ? (
-              <PageLoader />
+              <div className="animate-pulse space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="h-4 bg-gray-200 rounded w-1/2" />
+                      <div className="h-5 bg-gray-200 rounded-full w-20" />
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full w-full mb-2" />
+                    <div className="flex items-center gap-4 mt-2">
+                      <div className="h-3 bg-gray-100 rounded w-16" />
+                      <div className="h-3 bg-gray-100 rounded w-20" />
+                      <div className="h-3 bg-gray-100 rounded w-14" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (() => {
               const filteredRuns = getSortedRuns(getFilteredRuns());
               if (filteredRuns.length === 0) {
