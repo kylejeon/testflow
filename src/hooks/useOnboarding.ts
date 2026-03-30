@@ -71,12 +71,14 @@ function computeState(row: Record<string, unknown>): OnboardingState {
 
   const completedCount = Object.values(steps).filter(Boolean).length;
 
-  // Auto-complete if all 6 done OR 14 days have passed since signup
+  // Auto-complete if required 5 steps done, all 6 done, OR 14 days have passed
   const createdAt = (row.created_at as string) ?? '';
   const daysSinceSignup = createdAt
     ? (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24)
     : 0;
-  const isComplete = completedCount === 6 || daysSinceSignup >= 14;
+  const requiredSteps = ['createProject', 'createTestcase', 'tryAi', 'runTest', 'inviteMember'] as const;
+  const requiredComplete = requiredSteps.every(k => steps[k as keyof typeof steps]);
+  const isComplete = requiredComplete || completedCount === 6 || daysSinceSignup >= 14;
 
   return {
     isLoading: false,

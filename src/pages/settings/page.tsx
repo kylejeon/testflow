@@ -195,6 +195,7 @@ export default function SettingsPage() {
   const [scopeGuideTab, setScopeGuideTab] = useState<'github' | 'gitlab'>('github');
 
   // Preferences state
+  const [checklistDismissed, setChecklistDismissed] = useState(false);
   const [language, setLanguage] = useState<'en'>('en');
   const [timezone, setTimezone] = useState('UTC');
   const [autoDetectTz, setAutoDetectTz] = useState(true);
@@ -363,6 +364,16 @@ export default function SettingsPage() {
             if (av?.avatar_url) setUserProfile(prev => prev ? { ...prev, avatar_url: av.avatar_url } : prev);
           })
           .catch(() => {/* avatar_url 컬럼 없는 환경 — 무시 */});
+
+        // Load checklist dismissed state
+        supabase.from('user_onboarding')
+          .select('checklist_dismissed')
+          .eq('user_id', user.id)
+          .maybeSingle()
+          .then(({ data: ob }) => {
+            if (ob) setChecklistDismissed(Boolean(ob.checklist_dismissed));
+          })
+          .catch(() => {});
 
         // Preferences 컬럼 로드 (migration으로 추가된 컬럼 — 없는 환경 대비 별도 쿼리)
         supabase.from('profiles')
@@ -2285,6 +2296,38 @@ def pytest_sessionfinish(session, exitstatus):
                           <i className="ri-eye-line"></i>
                           <span>Preview: {new Date().toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US')} {timeFormat === '24h' ? new Date().toLocaleTimeString('en-US', { hour12: false }) : new Date().toLocaleTimeString('en-US', { hour12: true })}</span>
                         </div>
+
+                        <div className="border-t border-[#E2E8F0] my-6"></div>
+
+                        {/* Get Started Checklist */}
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">Get Started Checklist</h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-3">Show the onboarding checklist widget in the bottom-right corner.</p>
+                        <label className="inline-flex items-center gap-3 cursor-pointer select-none">
+                          <button
+                            role="switch"
+                            aria-checked={!checklistDismissed}
+                            onClick={async () => {
+                              const next = !checklistDismissed;
+                              setChecklistDismissed(next);
+                              try {
+                                const { data: { user: u } } = await supabase.auth.getUser();
+                                if (!u) return;
+                                await supabase
+                                  .from('user_onboarding')
+                                  .upsert(
+                                    { user_id: u.id, checklist_dismissed: next, welcome_completed: true },
+                                    { onConflict: 'user_id' },
+                                  );
+                              } catch { /* silent */ }
+                            }}
+                            className={`relative w-10 h-6 rounded-full transition-colors focus:outline-none ${!checklistDismissed ? 'bg-[#6366F1]' : 'bg-[#CBD5E1]'}`}
+                          >
+                            <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${!checklistDismissed ? 'translate-x-4' : 'translate-x-0'}`} />
+                          </button>
+                          <span className="text-[0.8125rem] text-[#334155]">
+                            {checklistDismissed ? 'Hidden' : 'Visible'}
+                          </span>
+                        </label>
 
                         <div className="border-t border-[#E2E8F0] my-6"></div>
 
