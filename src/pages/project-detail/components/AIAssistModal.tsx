@@ -6,6 +6,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   projectId: string;
+  onOpenGenerate: () => void;
 }
 
 interface Action {
@@ -16,14 +17,16 @@ interface Action {
   iconBg: string;
   iconColor: string;
   comingSoon: boolean;
+  comingSoonFeatures?: { icon: string; iconColor: string; label: string }[];
+  comingSoonDesc?: string;
 }
 
 const ACTIONS: Action[] = [
   {
     id: 'generate',
     title: 'Generate Test Cases',
-    description: 'Generate test cases from plain text, Jira issue, or Discovery log',
-    icon: 'ri-magic-line',
+    description: 'Auto-generate structured test cases from text, Jira issues, or discovery logs',
+    icon: 'ri-magic-fill',
     iconBg: 'bg-indigo-500/20',
     iconColor: 'text-indigo-400',
     comingSoon: false,
@@ -31,8 +34,8 @@ const ACTIONS: Action[] = [
   {
     id: 'edge-cases',
     title: 'Suggest Edge Cases',
-    description: 'Get edge case suggestions for your existing test cases',
-    icon: 'ri-radar-line',
+    description: 'Discover boundary conditions and edge scenarios AI identifies',
+    icon: 'ri-lightbulb-flash-fill',
     iconBg: 'bg-violet-500/20',
     iconColor: 'text-violet-400',
     comingSoon: false,
@@ -40,51 +43,71 @@ const ACTIONS: Action[] = [
   {
     id: 'summarize',
     title: 'Summarize Run Results',
-    description: 'AI-generated summary report of a recent test run',
-    icon: 'ri-file-chart-line',
+    description: 'AI-generated summary with risk assessment and key findings',
+    icon: 'ri-file-chart-fill',
     iconBg: 'bg-emerald-500/20',
     iconColor: 'text-emerald-400',
     comingSoon: true,
+    comingSoonDesc: 'AI-powered run analysis is coming soon. Get instant summaries with risk assessment, key findings, and actionable recommendations.',
+    comingSoonFeatures: [
+      { icon: 'ri-bar-chart-line', iconColor: 'text-emerald-400', label: 'Pass/Fail/Skip breakdown' },
+      { icon: 'ri-alert-line', iconColor: 'text-amber-400', label: 'Risk level assessment' },
+      { icon: 'ri-search-eye-line', iconColor: 'text-indigo-400', label: 'Key findings & patterns' },
+      { icon: 'ri-lightbulb-line', iconColor: 'text-violet-400', label: 'Actionable recommendations' },
+    ],
   },
   {
     id: 'analyze',
     title: 'Analyze Failed Tests',
-    description: 'Identify failure patterns and get prioritized recommendations',
-    icon: 'ri-bug-line',
+    description: 'Cluster failures, detect flaky tests, and suggest root causes',
+    icon: 'ri-bug-fill',
     iconBg: 'bg-red-500/20',
     iconColor: 'text-red-400',
     comingSoon: true,
+    comingSoonDesc: 'AI failure analysis is coming soon. Automatically cluster related failures, detect flaky tests, and get root cause hypotheses.',
+    comingSoonFeatures: [
+      { icon: 'ri-stack-line', iconColor: 'text-red-400', label: 'Failure pattern clustering' },
+      { icon: 'ri-flashlight-line', iconColor: 'text-amber-400', label: 'Flaky test detection' },
+      { icon: 'ri-search-2-line', iconColor: 'text-indigo-400', label: 'Root cause hypotheses' },
+      { icon: 'ri-tools-line', iconColor: 'text-emerald-400', label: 'Fix suggestions per cluster' },
+    ],
   },
   {
     id: 'coverage',
     title: 'Coverage Gap Analysis',
-    description: 'Identify under-tested areas and suggest new test cases',
-    icon: 'ri-pie-chart-2-line',
+    description: 'Identify untested areas and auto-suggest test cases to fill gaps',
+    icon: 'ri-shield-check-fill',
     iconBg: 'bg-amber-500/20',
     iconColor: 'text-amber-400',
     comingSoon: true,
+    comingSoonDesc: 'AI coverage analysis is coming soon. Identify untested modules, visualize coverage heatmaps, and get TC suggestions to fill gaps.',
+    comingSoonFeatures: [
+      { icon: 'ri-layout-grid-line', iconColor: 'text-amber-400', label: 'Module coverage heatmap' },
+      { icon: 'ri-pie-chart-2-line', iconColor: 'text-indigo-400', label: 'TC type balance analysis' },
+      { icon: 'ri-add-circle-line', iconColor: 'text-emerald-400', label: 'Auto-suggested test cases' },
+      { icon: 'ri-alert-line', iconColor: 'text-red-400', label: 'Gap severity ranking' },
+    ],
   },
 ];
 
-type Phase = 'menu' | 'generate' | 'edge-cases';
-type GenerateTab = 'text' | 'jira' | 'discovery';
+type Phase = 'menu' | 'edge-cases' | 'summarize' | 'analyze' | 'coverage';
 
 interface GeneratedTC {
   id: string;
   title: string;
+  description?: string;
   type: string;
   selected: boolean;
   isEdgeCase?: boolean;
 }
 
-export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
+export default function AIAssistModal({ isOpen, onClose, projectId, onOpenGenerate }: Props) {
   const navigate = useNavigate();
   const searchRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [phase, setPhase] = useState<Phase>('menu');
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<GenerateTab>('text');
   const [inputText, setInputText] = useState('');
   const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
   const [targetFolderId, setTargetFolderId] = useState('');
@@ -134,7 +157,17 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
   );
 
   const handleActionClick = (action: Action) => {
-    if (action.comingSoon) return;
+    if (action.id === 'generate') {
+      // Delegate to AIGenerateModal
+      onClose();
+      onOpenGenerate();
+      return;
+    }
+    if (action.comingSoon) {
+      // Show Coming Soon phase
+      setPhase(action.id as Phase);
+      return;
+    }
     setPhase(action.id as Phase);
     setError('');
     setGeneratedTCs([]);
@@ -145,7 +178,7 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
-      setError('Please describe the feature to test.');
+      setError('Please describe the feature to analyze for edge cases.');
       return;
     }
     setError('');
@@ -153,14 +186,13 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
     setGeneratedTCs([]);
 
     try {
-      // Call AI generation endpoint
-      const { data, error: fnError } = await supabase.functions.invoke('generate-test-cases', {
+      const { data, error: fnError } = await supabase.functions.invoke('generate-testcases', {
         body: {
           project_id: projectId,
-          source: activeTab,
+          source: 'text',
           input: inputText.trim(),
           folder_id: targetFolderId || null,
-          include_edge_cases: phase === 'edge-cases',
+          include_edge_cases: true,
         },
       });
 
@@ -168,23 +200,15 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
 
       const tcs: GeneratedTC[] = (data?.test_cases || []).map((tc: any, i: number) => ({
         id: `tc-${i}`,
-        title: tc.title || `Test Case ${i + 1}`,
-        type: tc.type || 'Functional',
+        title: tc.title || `Edge Case ${i + 1}`,
+        description: tc.description || '',
+        type: tc.type || 'Edge Case',
         selected: true,
-        isEdgeCase: tc.is_edge_case || false,
+        isEdgeCase: true,
       }));
       setGeneratedTCs(tcs);
-    } catch (err: any) {
-      // Fallback: show mock results for demo purposes
-      const mockTCs: GeneratedTC[] = [
-        { id: 'tc-1', title: 'Verify successful login with valid credentials', type: 'Functional', selected: true },
-        { id: 'tc-2', title: 'Verify login fails with incorrect password', type: 'Functional', selected: true },
-        { id: 'tc-3', title: 'Verify login fails with empty username', type: 'Smoke', selected: true },
-        { id: 'tc-4', title: 'Verify session persists after page refresh', type: 'Regression', selected: true },
-        { id: 'tc-5', title: 'Verify login with extremely long username string', type: 'Edge Case', selected: false, isEdgeCase: true },
-        { id: 'tc-6', title: 'Verify login with special characters in password', type: 'Edge Case', selected: false, isEdgeCase: true },
-      ];
-      setGeneratedTCs(mockTCs);
+    } catch {
+      setError('Failed to generate edge cases. Please try again.');
     } finally {
       setGenerating(false);
     }
@@ -227,7 +251,7 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
       }
 
       setAddSuccess(true);
-    } catch (err: any) {
+    } catch {
       setError('Failed to add test cases. Please try again.');
     } finally {
       setAdding(false);
@@ -236,12 +260,12 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
 
   if (!isOpen) return null;
 
-  const typeColor: Record<string, string> = {
-    'Functional': 'bg-indigo-500/20 text-indigo-300',
-    'Smoke': 'bg-emerald-500/20 text-emerald-300',
-    'Regression': 'bg-amber-500/20 text-amber-300',
-    'Edge Case': 'bg-purple-500/20 text-purple-300',
-  };
+  const currentAction = ACTIONS.find(a => a.id === phase);
+  const isComingSoonPhase = phase !== 'menu' && phase !== 'edge-cases' && currentAction?.comingSoon;
+
+  const phaseTitle = phase === 'menu'
+    ? 'AI Assist'
+    : currentAction?.title || 'AI Assist';
 
   return (
     <>
@@ -271,7 +295,7 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
             <div className="flex items-center gap-2.5">
               {phase !== 'menu' && (
                 <button
-                  onClick={() => setPhase('menu')}
+                  onClick={() => { setPhase('menu'); setGeneratedTCs([]); setError(''); setAddSuccess(false); }}
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors mr-0.5"
                 >
                   <i className="ri-arrow-left-line text-base"></i>
@@ -280,9 +304,7 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
               <div className="w-7 h-7 rounded-lg bg-violet-500/20 flex items-center justify-center">
                 <i className="ri-sparkling-line text-violet-400 text-sm"></i>
               </div>
-              <h2 className="text-sm font-semibold text-white">
-                {phase === 'menu' ? 'AI Assist' : phase === 'generate' ? 'Generate Test Cases' : 'Suggest Edge Cases'}
-              </h2>
+              <h2 className="text-sm font-semibold text-white">{phaseTitle}</h2>
             </div>
             <button
               onClick={onClose}
@@ -316,10 +338,10 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
                     <div
                       key={action.id}
                       onClick={() => handleActionClick(action)}
-                      className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all ${
+                      className={`flex items-center gap-3.5 p-3.5 rounded-xl transition-all cursor-pointer ${
                         action.comingSoon
-                          ? 'opacity-50 cursor-not-allowed'
-                          : 'cursor-pointer hover:bg-white/[0.05]'
+                          ? 'opacity-70 hover:bg-white/[0.03]'
+                          : 'hover:bg-white/[0.05]'
                       }`}
                       style={{ border: '1px solid rgba(255,255,255,0.04)' }}
                     >
@@ -330,16 +352,14 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-white">{action.title}</p>
                           {action.comingSoon && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/20">
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 uppercase tracking-wider">
                               Coming Soon
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-slate-400 mt-0.5 truncate">{action.description}</p>
                       </div>
-                      {!action.comingSoon && (
-                        <i className="ri-arrow-right-s-line text-slate-500 flex-shrink-0"></i>
-                      )}
+                      <i className="ri-arrow-right-s-line text-slate-500 flex-shrink-0"></i>
                     </div>
                   ))}
                   {filteredActions.length === 0 && (
@@ -349,29 +369,53 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
               </div>
             )}
 
-            {/* GENERATE / EDGE-CASES phase */}
-            {(phase === 'generate' || phase === 'edge-cases') && (
+            {/* COMING SOON phase */}
+            {isComingSoonPhase && currentAction && (
+              <div className="px-5 py-6">
+                <div className="text-center">
+                  <div className={`w-14 h-14 rounded-2xl ${currentAction.iconBg} flex items-center justify-center mx-auto mb-3`}>
+                    <i className={`${currentAction.icon} text-2xl ${currentAction.iconColor}`}></i>
+                  </div>
+                  <h3 className="text-base font-bold text-white mb-1">{currentAction.title}</h3>
+                  <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded bg-amber-500/15 text-amber-400 uppercase tracking-wider mb-3">
+                    Coming Soon
+                  </span>
+                  <p className="text-sm text-slate-400 leading-relaxed max-w-sm mx-auto mb-5">
+                    {currentAction.comingSoonDesc}
+                  </p>
+
+                  {currentAction.comingSoonFeatures && (
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 text-left max-w-xs mx-auto">
+                      <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2.5">What you'll get:</p>
+                      <div className="space-y-2">
+                        {currentAction.comingSoonFeatures.map(f => (
+                          <div key={f.label} className="flex items-center gap-2.5 text-sm text-slate-300">
+                            <i className={`${f.icon} ${f.iconColor} text-sm`}></i>
+                            <span>{f.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* EDGE-CASES phase */}
+            {phase === 'edge-cases' && (
               <div className="px-5 py-4 space-y-4">
                 {generatedTCs.length === 0 && !generating && (
                   <>
-                    {/* Tabs — only for generate */}
-                    {phase === 'generate' && (
-                      <div className="flex gap-1 bg-white/[0.03] p-1 rounded-lg border border-white/[0.06]">
-                        {(['text', 'jira', 'discovery'] as GenerateTab[]).map(tab => (
-                          <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all capitalize ${
-                              activeTab === tab
-                                ? 'bg-white/[0.08] text-white'
-                                : 'text-slate-400 hover:text-slate-300'
-                            }`}
-                          >
-                            {tab === 'text' ? 'Plain Text' : tab === 'jira' ? 'Jira Issue' : 'Discovery Log'}
-                          </button>
-                        ))}
+                    {/* Phase header */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                        <i className="ri-lightbulb-flash-fill text-violet-400 text-base"></i>
                       </div>
-                    )}
+                      <div>
+                        <p className="text-sm font-semibold text-white">Suggest Edge Cases</p>
+                        <p className="text-[11px] text-slate-500">Describe a feature or paste existing TC titles</p>
+                      </div>
+                    </div>
 
                     {/* Input */}
                     <div>
@@ -379,15 +423,7 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
                         ref={textareaRef}
                         value={inputText}
                         onChange={e => { setInputText(e.target.value); setError(''); }}
-                        placeholder={
-                          phase === 'edge-cases'
-                            ? 'Describe the feature or paste existing test case titles to find edge cases...'
-                            : activeTab === 'text'
-                            ? 'Describe the feature to test...'
-                            : activeTab === 'jira'
-                            ? 'Paste Jira issue URL or key (e.g. PROJ-123)...'
-                            : 'Paste Discovery Log content or describe what was explored...'
-                        }
+                        placeholder="Describe the feature or paste test case titles to analyze for edge cases...&#10;&#10;Example: User login with email/password, Google SSO, magic link..."
                         rows={5}
                         className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 outline-none focus:border-violet-500 focus:bg-white/[0.06] transition-all resize-none"
                       />
@@ -423,71 +459,51 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
                 {generating && (
                   <div className="flex flex-col items-center justify-center py-10 gap-3">
                     <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-sm text-slate-400 animate-pulse">Generating test cases...</p>
+                    <p className="text-sm text-slate-400 animate-pulse">Analyzing for edge cases...</p>
                   </div>
                 )}
 
-                {/* Generated TC list */}
+                {/* Generated edge case list */}
                 {generatedTCs.length > 0 && !generating && (
                   <div className="space-y-3">
-                    {/* Normal TCs */}
-                    {generatedTCs.filter(tc => !tc.isEdgeCase).length > 0 && (
-                      <div>
-                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                          Test Cases ({generatedTCs.filter(tc => !tc.isEdgeCase && tc.selected).length} selected)
-                        </p>
-                        <div className="space-y-1.5">
-                          {generatedTCs.filter(tc => !tc.isEdgeCase).map(tc => (
-                            <label key={tc.id} className="flex items-start gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/[0.04] transition-colors" style={{ border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <input
-                                type="checkbox"
-                                checked={tc.selected}
-                                onChange={() => setGeneratedTCs(prev => prev.map(t => t.id === tc.id ? { ...t, selected: !t.selected } : t))}
-                                className="mt-0.5 flex-shrink-0 accent-violet-500"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-white">{tc.title}</p>
-                              </div>
-                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${typeColor[tc.type] || 'bg-slate-500/20 text-slate-300'}`}>
-                                {tc.type}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <i className="ri-lightbulb-line text-violet-400 text-sm"></i>
+                      <p className="text-xs font-semibold text-slate-300">
+                        {generatedTCs.length} edge cases identified
+                      </p>
+                      <span className="ml-auto text-[11px] text-slate-500">Select to add to project</span>
+                    </div>
 
-                    {/* Edge case TCs */}
-                    {generatedTCs.filter(tc => tc.isEdgeCase).length > 0 && (
-                      <div>
-                        <p className="text-[11px] font-semibold text-purple-400 uppercase tracking-wide mb-2">
-                          Edge Cases ({generatedTCs.filter(tc => tc.isEdgeCase && tc.selected).length} selected)
-                        </p>
-                        <div className="space-y-1.5">
-                          {generatedTCs.filter(tc => tc.isEdgeCase).map(tc => (
-                            <label key={tc.id} className="flex items-start gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/[0.04] transition-colors" style={{ border: '1px solid rgba(139,92,246,0.15)' }}>
-                              <input
-                                type="checkbox"
-                                checked={tc.selected}
-                                onChange={() => setGeneratedTCs(prev => prev.map(t => t.id === tc.id ? { ...t, selected: !t.selected } : t))}
-                                className="mt-0.5 flex-shrink-0 accent-violet-500"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-white">{tc.title}</p>
-                              </div>
-                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 bg-purple-500/20 text-purple-300">
-                                Edge Case
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      {generatedTCs.map(tc => (
+                        <label
+                          key={tc.id}
+                          className="flex items-start gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/[0.04] transition-colors"
+                          style={{ border: '1px solid rgba(139,92,246,0.15)', background: tc.selected ? 'rgba(139,92,246,0.06)' : 'transparent' }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={tc.selected}
+                            onChange={() => setGeneratedTCs(prev => prev.map(t => t.id === tc.id ? { ...t, selected: !t.selected } : t))}
+                            className="mt-0.5 flex-shrink-0 accent-violet-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white font-medium">{tc.title}</p>
+                            {tc.description && (
+                              <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{tc.description}</p>
+                            )}
+                          </div>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-400 uppercase tracking-wider flex-shrink-0">
+                            Edge Case
+                          </span>
+                        </label>
+                      ))}
+                    </div>
 
                     {addSuccess && (
                       <div className="flex items-center gap-2 text-xs text-green-400 bg-green-500/10 rounded-lg px-3 py-2.5 border border-green-500/20">
                         <i className="ri-checkbox-circle-fill flex-shrink-0"></i>
-                        <span>{generatedTCs.filter(tc => tc.selected).length} test cases added to project.</span>
+                        <span>{generatedTCs.filter(tc => tc.selected).length} edge cases added to project.</span>
                         <button
                           onClick={() => { navigate(`/projects/${projectId}/testcases`); onClose(); }}
                           className="ml-auto text-green-400 hover:text-green-300 font-semibold"
@@ -502,8 +518,34 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
             )}
           </div>
 
-          {/* Footer — for generate/edge-cases phase */}
-          {(phase === 'generate' || phase === 'edge-cases') && (
+          {/* Footer */}
+          {phase === 'menu' && (
+            <div className="px-5 py-3 border-t border-white/[0.06] flex-shrink-0 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                <i className="ri-sparkling-line text-violet-400"></i>
+                AI Assist
+              </span>
+              <button
+                onClick={onClose}
+                className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-white/[0.06] hover:bg-white/[0.04] transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {isComingSoonPhase && (
+            <div className="px-5 py-3 border-t border-white/[0.06] flex-shrink-0 flex items-center justify-end">
+              <button
+                onClick={onClose}
+                className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-white/[0.06] hover:bg-white/[0.04] transition-all"
+              >
+                Close
+              </button>
+            </div>
+          )}
+
+          {phase === 'edge-cases' && (
             <div className="px-5 py-4 border-t border-white/[0.06] flex-shrink-0">
               {generatedTCs.length === 0 ? (
                 <button
@@ -514,33 +556,46 @@ export default function AIAssistModal({ isOpen, onClose, projectId }: Props) {
                   {generating ? (
                     <>
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      Generating...
+                      Analyzing...
                     </>
                   ) : (
                     <>
-                      <i className="ri-sparkling-line"></i>
-                      Generate
+                      <i className="ri-sparkling-2-fill"></i>
+                      Suggest Edge Cases
                     </>
                   )}
                 </button>
               ) : !addSuccess ? (
-                <button
-                  onClick={handleAddToProject}
-                  disabled={adding || generatedTCs.filter(tc => tc.selected).length === 0}
-                  className="w-full py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                >
-                  {adding ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      Adding...
-                    </>
-                  ) : (
-                    <>
-                      <i className="ri-add-line"></i>
-                      Add {generatedTCs.filter(tc => tc.selected).length} to Project
-                    </>
-                  )}
-                </button>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-slate-500">
+                    {generatedTCs.filter(tc => tc.selected).length} selected
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={onClose}
+                      className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-white/[0.06] hover:bg-white/[0.04] transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddToProject}
+                      disabled={adding || generatedTCs.filter(tc => tc.selected).length === 0}
+                      className="text-xs font-semibold text-white bg-violet-600 hover:bg-violet-500 px-3 py-1.5 rounded-lg transition-all disabled:opacity-40 flex items-center gap-1.5"
+                    >
+                      {adding ? (
+                        <>
+                          <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <i className="ri-add-line"></i>
+                          Add {generatedTCs.filter(tc => tc.selected).length} to Project
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <button
                   onClick={onClose}

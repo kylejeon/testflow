@@ -13,6 +13,7 @@ import ProjectHeader from '../../components/ProjectHeader';
 import QuickCreateTCModal from './components/QuickCreateTCModal';
 import ContinueRunPanel from './components/ContinueRunPanel';
 import AIAssistModal from './components/AIAssistModal';
+import AIGenerateModal from '../project-testcases/components/AIGenerateModal';
 
 interface UserProfile {
   email: string;
@@ -46,6 +47,7 @@ export default function ProjectDetail() {
   const [showQuickCreateTC, setShowQuickCreateTC] = useState(false);
   const [showContinueRun, setShowContinueRun] = useState(false);
   const [showAIAssist, setShowAIAssist] = useState(false);
+  const [showAIGenerate, setShowAIGenerate] = useState(false);
   const [dashboardTab, setDashboardTab] = useState<'overview' | 'analytics' | 'activity'>('overview');
   const [projectPassRateData, setProjectPassRateData] = useState<{ total: number; passed: number } | null>(null);
   const [rawTestResults, setRawTestResults] = useState<any[]>([]);
@@ -71,7 +73,7 @@ export default function ProjectDetail() {
         target.isContentEditable
       ) return;
       // Skip if any modal is open
-      if (showQuickCreateTC || showContinueRun || showAIAssist) return;
+      if (showQuickCreateTC || showContinueRun || showAIAssist || showAIGenerate) return;
 
       if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
@@ -83,7 +85,7 @@ export default function ProjectDetail() {
     };
     window.addEventListener('keydown', handleDashboardShortcuts);
     return () => window.removeEventListener('keydown', handleDashboardShortcuts);
-  }, [showQuickCreateTC, showContinueRun, showAIAssist]);
+  }, [showQuickCreateTC, showContinueRun, showAIAssist, showAIGenerate]);
 
   const queryClient = useQueryClient();
 
@@ -1397,7 +1399,33 @@ export default function ProjectDetail() {
         isOpen={showAIAssist}
         onClose={() => setShowAIAssist(false)}
         projectId={id!}
+        onOpenGenerate={() => setShowAIGenerate(true)}
       />
+
+      {showAIGenerate && (
+        <AIGenerateModal
+          projectId={id!}
+          subscriptionTier={userProfile?.subscription_tier || 1}
+          onSave={async (cases) => {
+            const { data: { user } } = await supabase.auth.getUser();
+            for (const tc of cases) {
+              const stepsStr = Array.isArray(tc.steps) ? tc.steps.join('\n') : '';
+              await supabase.from('test_cases').insert({
+                project_id: id!,
+                title: tc.title,
+                description: tc.description || '',
+                steps: stepsStr,
+                expected_result: tc.expected_result || '',
+                priority: tc.priority || 'medium',
+                status: 'untested',
+                created_by: user?.id || null,
+                is_automated: false,
+              });
+            }
+          }}
+          onClose={() => setShowAIGenerate(false)}
+        />
+      )}
     </>
   );
 }
