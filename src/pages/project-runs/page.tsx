@@ -918,6 +918,22 @@ export default function ProjectRunsPage() {
 
         if (error) throw error;
 
+        if (insertedData && insertedData[0]) {
+          const newRunId = insertedData[0].id;
+          const tcAssigneeRows = testCases
+            .filter(tc => testCaseIds.includes(tc.id) && tc.assignee)
+            .map(tc => ({
+              run_id: newRunId,
+              test_case_id: tc.id,
+              assignee: tc.assignee,
+            }));
+          if (tcAssigneeRows.length > 0) {
+            await supabase
+              .from('run_testcase_assignees')
+              .upsert(tcAssigneeRows, { onConflict: 'run_id,test_case_id' });
+          }
+        }
+
         void markOnboardingStep('runTest');
 
         // Notify all project members when a new run is created

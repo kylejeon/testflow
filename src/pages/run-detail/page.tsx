@@ -1896,7 +1896,7 @@ export default function RunDetail() {
                         </div>
                         <div className="col-span-2 flex items-center" onClick={(e) => e.stopPropagation()}>
                           {(() => {
-                            const assigneeName = runAssignees.get(testCase.id) || '';
+                            const assigneeName = runAssignees.get(testCase.id) || testCase.assignee || '';
                             const assignedMember = assigneeName
                               ? projectMembers.find(m => (m.full_name || m.email) === assigneeName)
                               : null;

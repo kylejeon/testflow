@@ -892,23 +892,30 @@ export default function MilestoneDetail() {
                             </span>
                           ))}
                           {(() => {
-                            const hasAssignees = run.assignees && run.assignees.length > 0;
-                            const hasAuthors = run.authors && run.authors.length > 0;
-                            if (!hasAssignees && !hasAuthors) return null;
-                            const members = hasAssignees
-                              ? run.assignees!.map((uid: string) => {
-                                  const p = assigneeProfiles.get(uid);
-                                  return { userId: uid, name: p?.name ?? undefined, email: p?.email || undefined, photoUrl: p?.url ?? undefined };
-                                })
-                              : run.authors!.map((author: string) => {
-                                  const p = contributorProfiles.get(author);
-                                  const isEmail = author.includes('@');
-                                  return {
-                                    name: p?.name ?? (isEmail ? undefined : author),
-                                    email: p?.name ? undefined : (isEmail ? author : undefined),
-                                    photoUrl: p?.url ?? undefined,
-                                  };
-                                });
+                            const assigneeIds = run.assignees || [];
+                            const authorNames = run.authors || [];
+
+                            const assigneeMembers = assigneeIds.map((uid: string) => {
+                              const p = assigneeProfiles.get(uid);
+                              return { userId: uid, name: p?.name ?? undefined, email: p?.email || undefined, photoUrl: p?.url ?? undefined };
+                            });
+
+                            const assigneeNameSet = new Set(assigneeMembers.map(m => m.name || m.email).filter(Boolean));
+                            const authorMembers = authorNames
+                              .filter((author: string) => !assigneeNameSet.has(author))
+                              .map((author: string) => {
+                                const p = contributorProfiles.get(author);
+                                const isEmail = author.includes('@');
+                                return {
+                                  name: p?.name ?? (isEmail ? undefined : author),
+                                  email: p?.name ? undefined : (isEmail ? author : undefined),
+                                  photoUrl: p?.url ?? undefined,
+                                };
+                              });
+
+                            const members = [...assigneeMembers, ...authorMembers];
+                            if (members.length === 0) return null;
+
                             return (
                               <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
                                 <AvatarStack size="xs" max={4} members={members} style={{ gap: 0 }} />
