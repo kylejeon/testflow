@@ -55,8 +55,8 @@ export default function ContactPage() {
       icon: 'ri-twitter-x-line',
       title: 'Twitter / X',
       content: (
-        <a href="https://twitter.com/testably" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 transition-colors font-medium">
-          @testably
+        <a href="https://x.com/GetTestably" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 transition-colors font-medium">
+          @GetTestably
         </a>
       ),
       desc: 'Follow for product updates and announcements.',

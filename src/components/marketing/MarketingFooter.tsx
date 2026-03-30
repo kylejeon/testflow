@@ -75,7 +75,7 @@ export default function MarketingFooter() {
               </svg>
             </a>
             <a
-              href="https://twitter.com/testably"
+              href="https://x.com/GetTestably"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-gray-600 transition-colors"

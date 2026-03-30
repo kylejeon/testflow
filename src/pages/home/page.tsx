@@ -1716,7 +1716,7 @@ export default function HomePage() {
                 <p className="text-gray-500 text-sm leading-relaxed">{t.footer.tagline}</p>
                 <div className="flex gap-2 mt-4">
                   {[
-                    { icon: 'ri-twitter-x-line', href: 'https://x.com/testably' },
+                    { icon: 'ri-twitter-x-line', href: 'https://x.com/GetTestably' },
                     { icon: 'ri-github-line', href: 'https://github.com/testably' },
                     { icon: 'ri-linkedin-box-line', href: 'https://linkedin.com/company/testably' },
                   ].map(({ icon, href }) => (
