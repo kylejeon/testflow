@@ -49,7 +49,7 @@ export function useSampleProject() {
     const testCasesTemplate: SampleTestCase[] = template.test_cases as SampleTestCase[];
 
     // 4. Insert test cases
-    const VALID_TC_STATUSES = new Set(['untested', 'passed', 'failed', 'blocked', 'retest']);
+    const VALID_TC_STATUSES = new Set(['untested', 'passed', 'failed', 'blocked', 'retest', 'skipped', 'not_run']);
     const normalizeStatus = (s: string) => VALID_TC_STATUSES.has(s) ? s : 'untested';
 
     const testCaseRows = testCasesTemplate.map((tc, idx) => ({
