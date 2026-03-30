@@ -76,13 +76,22 @@ export default function ProjectsContent() {
   const [userProjectRoles, setUserProjectRoles] = useState<Record<string, string>>({});
   const { toasts, showToast, dismiss } = useToast();
   const menuRef = useRef<HTMLDivElement>(null);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const clearActionParam = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('action');
+      return next;
+    }, { replace: true });
+  };
 
   useEffect(() => {
     if (searchParams.get('action') === 'create') {
       setShowCreateModal(true);
+      clearActionParam();
     }
-  }, [searchParams]);
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -680,7 +689,7 @@ export default function ProjectsContent() {
           />
         </div>
         {showCreateModal && (
-          <CreateProjectModal onClose={() => setShowCreateModal(false)} onCreate={handleCreateProject} />
+          <CreateProjectModal onClose={() => { setShowCreateModal(false); clearActionParam(); }} onCreate={handleCreateProject} />
         )}
       </>
     );
@@ -717,7 +726,7 @@ export default function ProjectsContent() {
           </div>
         </div>
         {showCreateModal && (
-          <CreateProjectModal onClose={() => setShowCreateModal(false)} onCreate={handleCreateProject} />
+          <CreateProjectModal onClose={() => { setShowCreateModal(false); clearActionParam(); }} onCreate={handleCreateProject} />
         )}
         {editingProject && (
           <EditProjectModal project={editingProject} onClose={() => setEditingProject(null)} onUpdate={handleUpdateProject} />
@@ -978,7 +987,7 @@ export default function ProjectsContent() {
       </div>
 
       {showCreateModal && (
-        <CreateProjectModal onClose={() => setShowCreateModal(false)} onCreate={handleCreateProject} />
+        <CreateProjectModal onClose={() => { setShowCreateModal(false); clearActionParam(); }} onCreate={handleCreateProject} />
       )}
       {editingProject && (
         <EditProjectModal project={editingProject} onClose={() => setEditingProject(null)} onUpdate={handleUpdateProject} />
