@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { FocusMode, type FocusTestCase, type TestStatus } from '../../components/FocusMode';
 import { StatusBadge } from '../../components/StatusBadge';
 import { DetailPanel } from '../../components/DetailPanel';
+import { Avatar } from '../../components/Avatar';
 
 interface TestCase {
   id: string;
@@ -1833,13 +1834,16 @@ export default function RunDetail() {
                     <div className="col-span-1">
                       <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">ID</span>
                     </div>
-                    <div className="col-span-4">
+                    <div className="col-span-3">
                       <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Test Case</span>
                     </div>
                     <div className="col-span-1">
                       <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Priority</span>
                     </div>
-                    <div className="col-span-2 flex items-center">
+                    <div className="col-span-2">
+                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Folder</span>
+                    </div>
+                    <div className="col-span-1 flex items-center">
                       <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Assignee</span>
                     </div>
                     <div className="col-span-3 flex items-center">
@@ -1878,45 +1882,52 @@ export default function RunDetail() {
                             {(testCase as any).custom_id || '-'}
                           </span>
                         </div>
-                        <div className="col-span-4 flex items-center">
-                          <span className="text-[0.8125rem] font-semibold text-[#0F172A] truncate block max-w-[320px] hover:text-indigo-600">
+                        <div className="col-span-3 flex items-center">
+                          <span className="text-[0.8125rem] font-semibold text-[#0F172A] truncate block max-w-[260px] hover:text-indigo-600">
                             {testCase.title}
                           </span>
                         </div>
                         <div className="col-span-1 flex items-center">
-                          <span className={`inline-flex items-center gap-1 text-[0.6875rem] font-semibold ${
-                            testCase.priority === 'critical' ? 'text-[#DC2626]' :
-                            testCase.priority === 'high' ? 'text-[#DC2626]' :
-                            testCase.priority === 'medium' ? 'text-[#D97706]' :
-                            'text-[#64748B]'
-                          }`}>
-                            <i className="ri-flag-fill"></i>
-                            {testCase.priority === 'medium' ? 'Med' : testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1)}
+                          <span className="inline-flex items-center gap-1.5 text-[0.6875rem] text-[#475569]">
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                              testCase.priority === 'critical' ? 'bg-[#EF4444]' :
+                              testCase.priority === 'high' ? 'bg-[#F59E0B]' :
+                              testCase.priority === 'medium' ? 'bg-[#6366F1]' :
+                              'bg-[#94A3B8]'
+                            }`} />
+                            {testCase.priority.charAt(0).toUpperCase() + testCase.priority.slice(1)}
                           </span>
                         </div>
-                        <div className="col-span-2 flex items-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="col-span-2 flex items-center">
+                          {(() => {
+                            const folder = folders.find(f => f.name === testCase.folder);
+                            if (!testCase.folder) return <span className="text-sm text-gray-400">—</span>;
+                            const fs = FOLDER_COLOR_MAP[folder?.color || 'indigo'] || { bg: '#EEF2FF', fg: '#6366F1' };
+                            return (
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="flex-shrink-0 flex items-center justify-center" style={{ width: 18, height: 18, borderRadius: 4, background: fs.bg }}>
+                                  <i className={`${folder?.icon || 'ri-folder-line'} text-[0.6875rem]`} style={{ color: fs.fg }}></i>
+                                </span>
+                                <span className="text-[0.75rem] text-[#475569] truncate">{testCase.folder}</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                           {(() => {
                             const assigneeName = runAssignees.get(testCase.id) || testCase.assignee || '';
-                            const assignedMember = assigneeName
-                              ? projectMembers.find(m => (m.full_name || m.email) === assigneeName)
-                              : null;
                             const isOpen = openAssigneeDropdown === testCase.id;
                             return (
                               <div className="relative w-full">
                                 <div
-                                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors w-full"
+                                  className="flex items-center px-1 py-1 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setOpenAssigneeDropdown(isOpen ? null : testCase.id);
                                   }}
                                 >
                                   {assigneeName ? (
-                                    <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0" title={assigneeName}>
-                                      {(assignedMember
-                                        ? (assignedMember.full_name || assignedMember.email)
-                                        : assigneeName
-                                      ).substring(0, 2).toUpperCase()}
-                                    </div>
+                                    <Avatar size="sm" name={assigneeName} title={assigneeName} />
                                   ) : (
                                     <span className="text-sm text-gray-400">—</span>
                                   )}
@@ -1942,9 +1953,7 @@ export default function RunDetail() {
                                             className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center gap-2"
                                             onClick={(e) => { e.stopPropagation(); handleAssigneeChange(testCase.id, name); setOpenAssigneeDropdown(null); }}
                                           >
-                                            <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                                              {name.substring(0, 2).toUpperCase()}
-                                            </div>
+                                            <Avatar size="sm" name={name} />
                                             <span className="truncate">{name}</span>
                                           </button>
                                         );
