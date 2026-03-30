@@ -855,6 +855,7 @@ export default function ProjectRunsPage() {
             tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
             test_case_ids: testCaseIds,
             is_automated: formData.is_ci_cd_run,
+            assignees: runAssignees,
           })
           .eq('id', editingRunId);
 
@@ -1236,6 +1237,7 @@ export default function ProjectRunsPage() {
       include_all_cases: run.test_case_ids.length === testCases.length,
       is_ci_cd_run: run.is_automated || false,
     });
+    setRunAssignees(run.assignees || []);
     setSelectedTestCases(run.test_case_ids);
     setShowAddRunModal(true);
     setOpenMenuId(null);

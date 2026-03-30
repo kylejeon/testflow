@@ -821,6 +821,14 @@ export default function MilestoneDetail() {
                           <div style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '0.125rem' }}>{formatDateRange(sub.start_date, sub.end_date)}</div>
                         </div>
                         <span style={{ fontSize: '0.625rem', fontWeight: 600, padding: '0.125rem 0.4375rem', borderRadius: '9999px', background: subBadge.bg, color: subBadge.color, whiteSpace: 'nowrap', flexShrink: 0 }}>{subBadge.label}</span>
+                        <div style={{ width: 120, display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                          <div style={{ flex: 1, height: 6, background: '#F1F5F9', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${subMilestoneProgress.get(sub.id) ?? 0}%`, background: '#22C55E', borderRadius: 3 }} />
+                          </div>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' }}>
+                            {subMilestoneProgress.get(sub.id) ?? 0}%
+                          </span>
+                        </div>
                         <i className="ri-arrow-right-s-line" style={{ fontSize: '0.875rem', color: '#CBD5E1', flexShrink: 0 }} />
                       </Link>
                     );
