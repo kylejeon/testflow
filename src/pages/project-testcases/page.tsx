@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import TestCaseList from './components/TestCaseList';
 import AIGenerateModal from './components/AIGenerateModal';
+import { markOnboardingStep } from '../../lib/onboardingMarker';
 import ProjectHeader from '../../components/ProjectHeader';
 
 export default function ProjectTestCases() {
@@ -165,6 +166,8 @@ export default function ProjectTestCases() {
         .single();
 
       if (error) throw error;
+
+      void markOnboardingStep('createTestcase');
 
       // 생성 히스토리 기록
       if (data && user) {

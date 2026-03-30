@@ -111,8 +111,14 @@ export function useOnboarding(): UseOnboardingReturn {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // No onboarding record found — this is an existing user who signed up
-          // before the onboarding feature was introduced. Skip onboarding for them.
+          // No onboarding record — existing user from before onboarding feature.
+          // Insert a row so future markOnboardingStep upserts have a target.
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          if (currentUser) {
+            await supabase
+              .from('user_onboarding')
+              .insert({ user_id: currentUser.id, welcome_completed: true });
+          }
           setState({ ...DEFAULT_STATE, isLoading: false, welcomeCompleted: true });
         } else {
           throw error;

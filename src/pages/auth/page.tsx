@@ -246,8 +246,10 @@ export default function AuthPage() {
       if (data.user) {
         supabase
           .from('user_onboarding')
-          .update({ welcome_completed: true })
-          .eq('user_id', data.user.id)
+          .upsert(
+            { user_id: data.user.id, welcome_completed: true },
+            { onConflict: 'user_id' },
+          )
           .then(() => {/* fire-and-forget */});
 
         // Loops.so: track login event

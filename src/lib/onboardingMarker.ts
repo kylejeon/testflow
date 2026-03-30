@@ -18,8 +18,10 @@ export async function markOnboardingStep(step: OnboardingStepKey): Promise<void>
     const field = STEP_FIELD_MAP[step];
     const { error } = await supabase
       .from('user_onboarding')
-      .update({ [field]: true })
-      .eq('user_id', user.id);
+      .upsert(
+        { user_id: user.id, [field]: true, welcome_completed: true },
+        { onConflict: 'user_id' },
+      );
     if (!error) {
       // Notify useOnboarding (in App.tsx) to refetch — does not depend on Realtime being enabled
       window.dispatchEvent(new CustomEvent('onboarding:step-marked'));
