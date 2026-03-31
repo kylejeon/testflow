@@ -577,9 +577,9 @@ export default function RunDetail() {
       `Test Case: ${tc.title}\n` +
       `Run: ${run?.name || 'Unknown'}\n` +
       `Priority: ${tc.priority || 'Medium'}\n\n` +
+      (tc.precondition ? `--- Precondition ---\n${tc.precondition}\n\n` : '') +
       `--- Steps ---\n${steps}\n\n` +
-      `--- Expected Result ---\n${expectedResult}\n\n` +
-      (tc.precondition ? `--- Precondition ---\n${tc.precondition}` : '');
+      `--- Expected Result ---\n${expectedResult}`;
   };
 
   const showToast = (type: 'success' | 'error', message: string) => {
