@@ -182,10 +182,9 @@ export default function RunDetail() {
 
   useEffect(() => {
     if (projectId && runId) {
-      fetchData();
+      fetchData();  // fetchData 안에서 currentUser도 함께 로드
       fetchJiraSettings();
       fetchProjectMembers();
-      fetchCurrentUser();
     }
   }, [projectId, runId]);
 
@@ -388,7 +387,28 @@ export default function RunDetail() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
+      // ★ currentUser를 fetchData 내에서 동기적으로 로드 (race condition 방지)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email, full_name, subscription_tier, avatar_emoji')
+          .eq('id', user.id)
+          .maybeSingle();
+        setCurrentUser({
+          id: user.id,
+          email: profile?.email || user.email || '',
+          full_name: profile?.full_name || null,
+        });
+        setUserProfile({
+          email: profile?.email || user.email || '',
+          full_name: profile?.full_name || '',
+          subscription_tier: profile?.subscription_tier || 1,
+          avatar_emoji: profile?.avatar_emoji || '',
+        });
+      }
+
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .select('*')
@@ -427,6 +447,7 @@ export default function RunDetail() {
           .order('created_at', { ascending: false });
 
         if (testResultsError) throw testResultsError;
+        console.log('[fetchData] test_results:', testResultsData?.length, '건');
 
         const statusMap = new Map<string, string>();
         testResultsData?.forEach((result: any) => {
@@ -634,10 +655,10 @@ export default function RunDetail() {
   };
 
   const handleStatusChange = async (testCaseId: string, newStatus: string) => {
+    console.log('[handleStatusChange] currentUser:', currentUser?.email, 'testCaseId:', testCaseId);
     try {
       if (!currentUser) {
-        alert('사용자 정보를 불러올 수 없습니다.');
-        return;
+        throw new Error('사용자 정보를 불러올 수 없습니다. 페이지를 새로고침해주세요.');
       }
 
       // Persist the status change as a test_result row so it survives page refresh
@@ -657,6 +678,7 @@ export default function RunDetail() {
         .single();
 
       if (insertError) throw insertError;
+      console.log('[handleStatusChange] ✅ INSERT 성공');
 
       // Auto-create Jira issue on failure
       if (newStatus === 'failed' && jiraSettings?.auto_create_on_failure && jiraSettings.auto_create_on_failure !== 'disabled' && jiraSettings.project_key) {
