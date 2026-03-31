@@ -139,6 +139,7 @@ export default function RunDetail() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showAddIssueModal, setShowAddIssueModal] = useState(false);
   const [showJiraSetupModal, setShowJiraSetupModal] = useState(false);
+  const [toast, setToast] = useState<{type: 'success' | 'error'; message: string} | null>(null);
   const [jiraSettings, setJiraSettings] = useState<JiraSettings | null>(null);
   const [issueFormData, setIssueFormData] = useState({
     summary: '',
@@ -571,12 +572,19 @@ export default function RunDetail() {
 
   const buildAutoJiraDescription = (tc: TestCase): string => {
     const steps = tc.steps || 'No steps defined';
+    const expectedResult = tc.expected_result || 'Not specified';
     return `*Auto-created by Testably*\n\n` +
       `Test Case: ${tc.title}\n` +
       `Run: ${run?.name || 'Unknown'}\n` +
       `Priority: ${tc.priority || 'Medium'}\n\n` +
       `--- Steps ---\n${steps}\n\n` +
+      `--- Expected Result ---\n${expectedResult}\n\n` +
       (tc.precondition ? `--- Precondition ---\n${tc.precondition}` : '');
+  };
+
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), type === 'success' ? 3000 : 5000);
   };
 
   const mapTestPriorityToJira = (priority?: string): string => {
@@ -636,9 +644,11 @@ export default function RunDetail() {
                 await supabase.from('test_results')
                   .update({ issues: [...existingIssues, jiraData.issue.key] })
                   .eq('id', newResultData.id);
+                showToast('success', `Jira issue ${jiraData.issue.key} created automatically`);
               }
             } catch (err) {
               console.warn('Auto Jira issue creation failed:', err);
+              showToast('error', 'Failed to auto-create Jira issue');
             }
           }
         }
@@ -925,6 +935,43 @@ export default function RunDetail() {
         .single();
 
       if (error) throw error;
+
+      // Auto-create Jira issue on failure (from Add Result modal)
+      if (resultFormData.status === 'failed' && jiraSettings?.auto_create_on_failure && jiraSettings.auto_create_on_failure !== 'disabled' && jiraSettings.project_key) {
+        const tc = testCases.find(t => t.id === selectedTestCase.id);
+        if (tc) {
+          const existingIssues = data?.issues || [];
+          const shouldCreate =
+            jiraSettings.auto_create_on_failure === 'all_failures' ||
+            (jiraSettings.auto_create_on_failure === 'first_failure_only' && existingIssues.length === 0);
+
+          if (shouldCreate) {
+            try {
+              const { data: jiraData } = await supabase.functions.invoke('create-jira-issue', {
+                body: {
+                  domain: jiraSettings.domain,
+                  email: jiraSettings.email,
+                  apiToken: jiraSettings.api_token,
+                  projectKey: jiraSettings.project_key,
+                  summary: `[Auto] Test Failed: ${tc.title}`,
+                  description: buildAutoJiraDescription(tc),
+                  issueType: jiraSettings.issue_type || 'Bug',
+                  priority: mapTestPriorityToJira(tc.priority),
+                },
+              });
+              if (jiraData?.success && jiraData?.issue?.key && data?.id) {
+                await supabase.from('test_results')
+                  .update({ issues: [...existingIssues, jiraData.issue.key] })
+                  .eq('id', data.id);
+                showToast('success', `Jira issue ${jiraData.issue.key} created automatically`);
+              }
+            } catch (err) {
+              console.warn('Auto Jira issue creation failed:', err);
+              showToast('error', 'Failed to auto-create Jira issue');
+            }
+          }
+        }
+      }
 
       const newResult: TestResult = {
         id: data.id,
@@ -1538,6 +1585,22 @@ export default function RunDetail() {
       );
     })()}
     <div className="flex h-screen bg-white">
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+            toast.type === 'success'
+              ? 'bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46]'
+              : 'bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B]'
+          }`}
+        >
+          <i className={toast.type === 'success' ? 'ri-check-line text-[#10B981]' : 'ri-error-warning-line text-[#EF4444]'} />
+          <span className="text-[0.8125rem] font-medium">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="ml-2 text-current opacity-50 hover:opacity-100 cursor-pointer">
+            <i className="ri-close-line" />
+          </button>
+        </div>
+      )}
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={projectId || ''} projectName={project?.name || ''} />
         
