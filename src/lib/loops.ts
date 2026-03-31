@@ -1,4 +1,4 @@
-const LOOPS_API_URL = 'https://app.loops.so/api/v1/events/send';
+import { supabase } from './supabase';
 
 const TIER_PLAN_NAMES: Record<number, string> = {
   1: 'free',
@@ -18,17 +18,9 @@ export async function sendLoopsEvent(
   eventName: string,
   contactProperties: Record<string, string>,
 ): Promise<void> {
-  const apiKey = import.meta.env.VITE_LOOPS_API_KEY;
-  if (!apiKey) return;
-
   try {
-    await fetch(LOOPS_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({ email, eventName, contactProperties }),
+    await supabase.functions.invoke('send-loops-event', {
+      body: { email, eventName, contactProperties },
     });
   } catch (err) {
     console.warn('Loops event error:', err);
