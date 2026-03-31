@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM 기획안: Run Detail Jira Issue 워크플로우 UX 개선</title>
+<style>
+  :root { --indigo: #6366F1; --indigo-light: #EEF2FF; --red: #EF4444; --red-light: #FEF2F2; --amber: #F59E0B; --amber-light: #FFFBEB; --green: #22C55E; --green-light: #F0FDF4; --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0; --gray-500: #64748B; --gray-700: #334155; --gray-900: #0F172A; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--gray-50); color: var(--gray-900); line-height: 1.6; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+  .header { text-align: center; margin-bottom: 48px; }
+  .header .badge { display: inline-flex; align-items: center; gap: 6px; background: var(--indigo-light); color: var(--indigo); font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; margin-bottom: 16px; }
+  .header h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .header .meta { font-size: 13px; color: var(--gray-500); }
+  .section { background: white; border: 1px solid var(--gray-200); border-radius: 16px; padding: 32px; margin-bottom: 24px; }
+  .section h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .section h2 .icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .section h3 { font-size: 15px; font-weight: 700; margin: 20px 0 10px; color: var(--gray-700); }
+  .section p { font-size: 14px; color: var(--gray-700); margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th { text-align: left; background: var(--gray-100); padding: 10px 14px; font-weight: 600; color: var(--gray-700); border-bottom: 2px solid var(--gray-200); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tag-create { background: var(--green-light); color: #15803D; }
+  .tag-link { background: #DBEAFE; color: #1D4ED8; }
+  .tag-auto { background: #F3E8FF; color: #7C3AED; }
+  .tag-bug { background: var(--red-light); color: #DC2626; }
+  .alert { padding: 16px; border-radius: 12px; margin: 16px 0; font-size: 13px; }
+  .alert-red { background: var(--red-light); border: 1px solid #FECACA; color: #991B1B; }
+  .alert-amber { background: var(--amber-light); border: 1px solid #FDE68A; color: #92400E; }
+  .alert-green { background: var(--green-light); border: 1px solid #BBF7D0; color: #166534; }
+  .alert strong { font-weight: 700; }
+  .flow-box { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 20px; margin: 16px 0; }
+  .flow-step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+  .flow-step:last-child { margin-bottom: 0; }
+  .flow-num { width: 24px; height: 24px; border-radius: 50%; background: var(--indigo); color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .flow-content { font-size: 13px; color: var(--gray-700); }
+  .flow-content strong { color: var(--gray-900); }
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .comp-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 20px; }
+  .comp-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .comp-card.current { border-color: #FECACA; background: #FFF5F5; }
+  .comp-card.proposed { border-color: #BBF7D0; background: #F0FDF9; }
+  .wireframe { background: #1E293B; border-radius: 12px; padding: 20px; margin: 16px 0; font-family: 'Courier New', monospace; font-size: 12px; color: #94A3B8; line-height: 1.7; white-space: pre; overflow-x: auto; }
+  .wireframe .highlight { color: #38BDF8; }
+  .wireframe .accent { color: #A78BFA; }
+  .wireframe .warn { color: #FBBF24; }
+  .wireframe .good { color: #4ADE80; }
+  ul { margin: 8px 0 8px 20px; font-size: 13px; color: var(--gray-700); }
+  li { margin-bottom: 4px; }
+  .footer { text-align: center; padding: 32px 0; font-size: 12px; color: var(--gray-500); }
+  code { background: var(--gray-100); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+  <div class="badge">PM Plan</div>
+  <h1>Run Detail — Jira Issue Workflow UX Improvement</h1>
+  <div class="meta">Date: 2026-03-31 · PM · CEO Review</div>
+</div>
+
+<div class="section">
+  <h2><span class="icon" style="background: var(--indigo-light); color: var(--indigo);">1</span> Current Jira Actions Analysis</h2>
+  <p>Source code analysis reveals <strong>4 distinct Jira actions</strong> in Run Detail (3 CEO-identified + 1 auto-create).</p>
+  <table>
+    <thead><tr><th>#</th><th>Entry Point</th><th>Actual Action</th><th>UI Label</th><th>Analysis</th></tr></thead>
+    <tbody>
+      <tr><td><b>1</b></td><td>Add Result Modal → Issues input field</td><td><span class="tag tag-link">Link Existing</span></td><td>"Issues" label, placeholder: "Enter issue keys"</td><td>Text input → Enter adds issue key string to <code>test_results.issues[]</code>. No Jira API call. Pure key recording — a true "link".</td></tr>
+      <tr><td><b>2</b></td><td>Add Result Modal → <b>"Add Issue"</b> button</td><td><span class="tag tag-create">Create New</span></td><td>Button: <b>"Add Issue"</b><br>Modal title: "Create Jira Issue"</td><td>Calls <code>create-jira-issue</code> Edge Function → creates new Jira issue → auto-adds key to latest result's <code>issues[]</code>. Full form: Summary, Description, Type, Priority, Labels, Assignee, Components.</td></tr>
+      <tr><td><b>3</b></td><td>Sidebar Issues Tab → <b>"Link Issue"</b> button</td><td><span class="tag tag-create">Create New</span></td><td>Empty: <b>"Link Issue"</b><br>With items: <b>"Link an issue"</b></td><td>Opens <b>exact same modal</b> as #2 (<code>showAddIssueModal</code>). Says "Link" but actually Creates. If no test result exists, auto-creates a <code>status: 'failed'</code> result as side-effect.</td></tr>
+      <tr><td><b>4</b></td><td>Quick Status → Failed</td><td><span class="tag tag-auto">Auto Create</span></td><td>None (background)</td><td>When <code>auto_create_on_failure</code> is enabled in Settings, automatically creates Jira issue on Failed status. No user notification.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2><span class="icon" style="background: var(--red-light); color: var(--red);">2</span> UX Confusion Points</h2>
+  <div class="alert alert-red"><strong>Core Problem: "Link Issue" actually Creates a new issue.</strong><br>The sidebar Issues tab buttons "Link Issue" / "Link an issue" (DetailPanel.tsx lines 897, 948) open a <b>Create Jira Issue modal</b>, not a search/link interface. This is the exact confusion CEO identified.</div>
+  <table>
+    <thead><tr><th>#</th><th>Confusion Point</th><th>Severity</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><b>A</b></td><td>"Link Issue" ≠ Link</td><td><span class="tag tag-bug">Critical</span></td><td>Sidebar "Link Issue" button opens Create Issue modal. Users expecting to search/connect existing Jira issues get a creation form instead.</td></tr>
+      <tr><td><b>B</b></td><td>"Add Issue" ambiguous</td><td><span class="tag" style="background:var(--amber-light);color:#92400E;">High</span></td><td>Add Result modal's "Add Issue" button could mean "add existing" or "add new". Only revealed as "Create" after clicking when modal title shows.</td></tr>
+      <tr><td><b>C</b></td><td>No link entry in sidebar</td><td><span class="tag" style="background:var(--amber-light);color:#92400E;">High</span></td><td>Sidebar Issues tab has <b>no way</b> to manually link existing Jira issues. Only possible via Add Result modal's text input (#1).</td></tr>
+      <tr><td><b>D</b></td><td>Silent failed result creation</td><td><span class="tag" style="background:var(--amber-light);color:#92400E;">High</span></td><td>Creating issue from Issues tab when no result exists auto-creates a <code>status: 'failed'</code> result (line 1325-1340). User intended to create an issue, not fail the test case.</td></tr>
+      <tr><td><b>E</b></td><td>Same modal, different labels</td><td><span class="tag" style="background:var(--gray-100);color:var(--gray-700);">Medium</span></td><td>#2 and #3 share identical <code>showAddIssueModal</code> but use different button labels ("Add Issue" vs "Link Issue").</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Current UX Flow Visualization</h3>
+  <div class="wireframe"><span class="warn">CURRENT STATE — Source of Confusion</span>
+
+┌─────────────────────────────────────────────────┐
+│ <span class="highlight">Add Result Modal</span>                                    │
+│                                                 │
+│  Status: [Failed ▼]   Note: [_______________]   │
+│                                                 │
+│  <span class="accent">Issues</span>                          <span class="warn">[+ Add Issue]</span>  │  ← Label "Add" → Actual: <span class="good">CREATE</span>
+│  ┌───────────────────────────────────────────┐   │
+│  │ Enter issue keys (e.g., PROJ-123)        │   │  ← Text input: <span class="good">LINK (existing)</span>
+│  └───────────────────────────────────────────┘   │
+│  [PROJ-101] [PROJ-102]                          │
+│                              [Cancel] [Submit]  │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ <span class="highlight">Sidebar Issues Tab</span>                                │
+│                                                 │
+│  (empty state)                                  │
+│  No linked issues                               │
+│       <span class="warn">[+ Link Issue]</span>                          │  ← Label "Link" → Actual: <span class="good">CREATE</span>
+│                                                 │
+│  (with issues)                                  │
+│  ┌─────────────────────────────┐                │
+│  │ PROJ-101  · Bug · Mar 31   │                │
+│  └─────────────────────────────┘                │
+│       <span class="warn">[+ Link an issue]</span>                     │  ← Label "Link" → Actual: <span class="good">CREATE</span>
+└─────────────────────────────────────────────────┘</div>
+</div>
+
+<div class="section">
+  <h2><span class="icon" style="background: var(--green-light); color: var(--green);">3</span> Improvement Proposal</h2>
+  <p>Core principle: <strong>"Clearly separate Link and Create at every entry point so users instantly know what action they're performing."</strong></p>
+
+  <h3>3-1. Label/Button Name Corrections</h3>
+  <table>
+    <thead><tr><th>Location</th><th>Current</th><th>→</th><th>Proposed</th></tr></thead>
+    <tbody>
+      <tr><td>Add Result Modal → button</td><td>"Add Issue"</td><td>→</td><td><b>"Create Jira Issue"</b></td></tr>
+      <tr><td>Add Result Modal → section label</td><td>"Issues"</td><td>→</td><td><b>"Linked Issues"</b></td></tr>
+      <tr><td>Add Result Modal → placeholder</td><td>"Enter issue keys (e.g., PROJ-123, PROJ-124)"</td><td>→</td><td>"Link existing Jira issue (e.g., PROJ-123)"</td></tr>
+      <tr><td>Add Result Modal → helper text</td><td>"Jira 이슈 키를 입력하고 Enter를 누르세요"</td><td>→</td><td>"Enter an existing Jira issue key and press Enter to link"</td></tr>
+      <tr><td>Sidebar Issues Tab → empty state</td><td>"Link Issue"</td><td>→</td><td><b>Split into 2 buttons</b> (see below)</td></tr>
+      <tr><td>Sidebar Issues Tab → with items</td><td>"Link an issue"</td><td>→</td><td><b>Split into 2 buttons</b> (see below)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3-2. Sidebar Issues Tab Redesign</h3>
+  <div class="comparison">
+    <div class="comp-card current"><h4>Before (Current)</h4><ul><li>Single "Link Issue" button</li><li>Click → Create modal opens</li><li>No way to link existing issues</li><li>Misleading label</li></ul></div>
+    <div class="comp-card proposed"><h4>After (Proposed)</h4><ul><li>"Create Jira Issue" button (Primary)</li><li>"Link Existing Issue" button (Secondary)</li><li>Each button does exactly what it says</li><li>Instantly clear</li></ul></div>
+  </div>
+
+  <h3>3-3. Improved UX Flow</h3>
+  <div class="wireframe"><span class="good">PROPOSED — Clear Separation</span>
+
+┌─────────────────────────────────────────────────┐
+│ <span class="highlight">Add Result Modal</span> (updated)                         │
+│                                                 │
+│  Status: [Failed ▼]   Note: [_______________]   │
+│                                                 │
+│  <span class="accent">Linked Issues</span>                                    │  ← Renamed section
+│  ┌───────────────────────────────────────────┐   │
+│  │ Link existing Jira issue (e.g., PROJ-123)│   │  ← Clear placeholder
+│  └───────────────────────────────────────────┘   │
+│  [PROJ-101 ✕] [PROJ-102 ✕]                      │
+│                                                 │
+│  <span class="good">[+ Create New Jira Issue]</span>                      │  ← Clear label
+│                              [Cancel] [Submit]  │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ <span class="highlight">Sidebar Issues Tab</span> (updated)                       │
+│                                                 │
+│  (empty state)                                  │
+│  No linked issues                               │
+│                                                 │
+│  <span class="good">[+ Create Jira Issue]</span>   ← Primary (indigo)   │
+│  <span class="highlight">[  Link Existing   ]</span>   ← Secondary (outline) │
+│                                                 │
+│  (with issues)                                  │
+│  ┌─────────────────────────────┐                │
+│  │ PROJ-101  · Bug · Mar 31   │                │
+│  │   <span class="accent">Created from Testably</span>     │  ← Origin label  │
+│  └─────────────────────────────┘                │
+│  ┌─────────────────────────────┐                │
+│  │ PROJ-102  · Task           │                │
+│  │   <span class="highlight">Manually linked</span>          │  ← Origin label  │
+│  └─────────────────────────────┘                │
+│  <span class="good">[+ Create]</span>  <span class="highlight">[Link Existing]</span>              │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ <span class="highlight">"Link Existing" Inline Input</span> (new)                 │
+│                                                 │
+│  ┌───────────────────────────────────────────┐   │
+│  │ Enter Jira issue key (e.g., PROJ-456)    │   │
+│  └───────────────────────────────────────────┘   │
+│  [Cancel]                         [Link Issue]  │
+└─────────────────────────────────────────────────┘</div>
+
+  <h3>3-4. "Link Existing Issue" Feature Detail</h3>
+  <div class="flow-box">
+    <div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><strong>"Link Existing" click</strong> → inline input field expands within the tab (not a modal)</div></div>
+    <div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><strong>Enter Jira issue key</strong> (e.g., PROJ-456) → press Enter or click "Link"</div></div>
+    <div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><strong>(Optional) Verify existence:</strong> Jira API call to confirm issue exists. Show title preview if found, warning if not.</div></div>
+    <div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><strong>On confirm:</strong> Add key to latest test_result's <code>issues[]</code>. If no result exists, show message: "Please add a test result first" instead of silently creating a failed result.</div></div>
+  </div>
+
+  <div class="alert alert-amber"><strong>Side-effect removal (fixes issue D):</strong> Remove the current logic that auto-creates a <code>status: 'failed'</code> result when creating/linking an issue from the Issues tab with no existing result. Replace with a user-friendly message: "This test case has no results yet. Please add a result first."</div>
+</div>
+
+<div class="section">
+  <h2><span class="icon" style="background: #DBEAFE; color: #2563EB;">4</span> Implementation Scope &amp; Priority</h2>
+
+  <h3>Phase 1: Label Fix (Immediate, 0.5 day)</h3>
+  <p>Minimal code changes to eliminate confusion immediately.</p>
+  <table>
+    <thead><tr><th>File</th><th>Line</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td><code>DetailPanel.tsx</code></td><td>897</td><td>"Link Issue" → <b>"Create Jira Issue"</b></td></tr>
+      <tr><td><code>DetailPanel.tsx</code></td><td>948</td><td>"Link an issue" → <b>"Create Jira Issue"</b></td></tr>
+      <tr><td><code>run-detail/page.tsx</code></td><td>2387</td><td>"Add Issue" → <b>"Create Jira Issue"</b></td></tr>
+      <tr><td><code>run-detail/page.tsx</code></td><td>~2365</td><td>Section: "Issues" → <b>"Linked Issues"</b></td></tr>
+      <tr><td><code>run-detail/page.tsx</code></td><td>2395</td><td>Placeholder → "Link existing Jira issue (e.g., PROJ-123)"</td></tr>
+      <tr><td><code>run-detail/page.tsx</code></td><td>2398</td><td>Helper → "Enter an existing Jira issue key and press Enter to link"</td></tr>
+    </tbody>
+  </table>
+  <div class="alert alert-green"><strong>Phase 1 alone resolves the core confusion.</strong> The misleading "Link Issue" label becomes "Create Jira Issue", making the action immediately clear.</div>
+
+  <h3>Phase 2: Add "Link Existing" to Sidebar (1-2 days)</h3>
+  <table>
+    <thead><tr><th>Task</th><th>File</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>"Link Existing" button</td><td><code>DetailPanel.tsx</code></td><td>Add secondary button next to Create in Issues tab</td></tr>
+      <tr><td>Inline input UI</td><td><code>DetailPanel.tsx</code></td><td>Issue key input field + Link confirm button on click</td></tr>
+      <tr><td>Link handler</td><td><code>run-detail/page.tsx</code></td><td>Add entered key to latest result's issues[] array</td></tr>
+      <tr><td>No-result guard</td><td><code>run-detail/page.tsx</code></td><td>Remove auto failed-result creation → show message instead</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Phase 3 (Optional): Jira API Verification (1 day)</h3>
+  <table>
+    <thead><tr><th>Task</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Jira issue lookup Edge Function</td><td>New <code>get-jira-issue</code> function. GET <code>/rest/api/3/issue/{issueKey}</code></td></tr>
+      <tr><td>Preview before link</td><td>Debounced API call → show issue title/status preview</td></tr>
+      <tr><td>Non-existent issue warning</td><td>"Issue not found" warning (don't block — could be network issue)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2><span class="icon" style="background: var(--indigo-light); color: var(--indigo);">5</span> PM Recommendation</h2>
+  <div class="alert alert-green"><strong>Recommend Phase 1 immediately + Phase 2 in current sprint.</strong></div>
+  <p><b>Phase 1</b> is 6 text/label changes that eliminate the core "Link vs Create" confusion with zero risk. 0.5 day effort.</p>
+  <p><b>Phase 2</b> adds the missing "Link Existing" capability to the sidebar, enabling both actions where users expect them. Currently, linking existing issues is only possible inside the Add Result modal.</p>
+  <p><b>Phase 3</b> is nice-to-have. Prevents typos in issue keys but requires a new Edge Function.</p>
+  <table>
+    <thead><tr><th>Phase</th><th>Effort</th><th>Priority</th><th>Impact</th></tr></thead>
+    <tbody>
+      <tr><td>Phase 1: Label fix</td><td>0.5 day</td><td>P0 — Immediate</td><td>Resolves core confusion</td></tr>
+      <tr><td>Phase 2: Link Existing</td><td>1-2 days</td><td>P1 — This sprint</td><td>Complete Link/Create separation</td></tr>
+      <tr><td>Phase 3: Jira verification</td><td>1 day</td><td>P2 — Next sprint</td><td>Prevents input errors</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">Testably PM Plan · 2026-03-31 · Internal Review</div>
+</div>
+</body>
+</html>
