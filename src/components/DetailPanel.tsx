@@ -62,6 +62,7 @@ export interface DetailPanelProps {
   jiraDomain?: string;
   isProfessionalOrHigher?: boolean;
   onAddIssue?: () => void;
+  onLinkExistingIssue?: (issueKey: string) => Promise<void>;
 
   // Assignee
   projectMembers?: any[];
@@ -275,6 +276,7 @@ export function DetailPanel({
   jiraDomain,
   isProfessionalOrHigher = false,
   onAddIssue,
+  onLinkExistingIssue,
   projectMembers = [],
   assigneeName,
   onAssigneeChange,
@@ -285,6 +287,9 @@ export function DetailPanel({
   const [stepsCollapsed, setStepsCollapsed] = useState(false);
   const [stepsHeightPx, setStepsHeightPx] = useState<number | null>(null);
   const [localStepResults, setLocalStepResults] = useState<Record<number, 'passed' | 'failed'>>({});
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkIssueKey, setLinkIssueKey] = useState('');
+  const [linkingIssue, setLinkingIssue] = useState(false);
   const detailBodyRef = useRef<HTMLDivElement>(null);
   const stepsAreaRef = useRef<HTMLDivElement>(null);
   const stepsHeightRef = useRef<number | null>(null);
@@ -304,6 +309,19 @@ export function DetailPanel({
         else next[index] = status;
         return next;
       });
+    }
+  };
+
+  const handleLinkExistingIssue = async () => {
+    const key = linkIssueKey.trim();
+    if (!key || !onLinkExistingIssue) return;
+    setLinkingIssue(true);
+    try {
+      await onLinkExistingIssue(key);
+      setShowLinkInput(false);
+      setLinkIssueKey('');
+    } finally {
+      setLinkingIssue(false);
     }
   };
 
@@ -899,13 +917,22 @@ export function DetailPanel({
               <div className="text-center py-6">
                 <i className="ri-bug-line text-2xl text-gray-300 block mb-2" />
                 <p className="text-xs text-gray-400 mb-3">No linked issues</p>
-                <button
-                  onClick={onAddIssue}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
-                >
-                  <i className="ri-add-line" />
-                  Create Jira Issue
-                </button>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => { setShowLinkInput(true); setLinkIssueKey(''); }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-link" />
+                    Link Existing Issue
+                  </button>
+                  <button
+                    onClick={onAddIssue}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-add-line" />
+                    Create Jira Issue
+                  </button>
+                </div>
               </div>
             ) : (
               <>
@@ -949,7 +976,14 @@ export function DetailPanel({
                     </div>
                   );
                 })}
-                <div className="flex justify-center pt-2">
+                <div className="flex items-center justify-center gap-2 pt-2 flex-wrap">
+                  <button
+                    onClick={() => { setShowLinkInput(true); setLinkIssueKey(''); }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <i className="ri-link" />
+                    Link Existing Issue
+                  </button>
                   <button
                     onClick={onAddIssue}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
@@ -959,6 +993,46 @@ export function DetailPanel({
                   </button>
                 </div>
               </>
+            )}
+
+            {/* Link Existing Issue inline input */}
+            {showLinkInput && (
+              <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-xs font-semibold text-gray-700 mb-2">Link Existing Issue</p>
+                <input
+                  type="text"
+                  value={linkIssueKey}
+                  onChange={(e) => setLinkIssueKey(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && linkIssueKey.trim()) {
+                      e.preventDefault();
+                      handleLinkExistingIssue();
+                    } else if (e.key === 'Escape') {
+                      setShowLinkInput(false);
+                      setLinkIssueKey('');
+                    }
+                  }}
+                  placeholder="Enter issue key, e.g. PROJ-123"
+                  className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleLinkExistingIssue}
+                    disabled={!linkIssueKey.trim() || linkingIssue}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    {linkingIssue ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-link" />}
+                    Link
+                  </button>
+                  <button
+                    onClick={() => { setShowLinkInput(false); setLinkIssueKey(''); }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
