@@ -606,7 +606,16 @@ export default function RunDetail() {
       setProject(projectData);
 
       if (projectData?.jira_project_key) {
-        setJiraSettings(prev => prev ? { ...prev, project_key: projectData.jira_project_key } : null);
+        setJiraSettings(prev => ({
+          domain: prev?.domain || '',
+          email: prev?.email || '',
+          api_token: prev?.api_token || '',
+          project_key: projectData.jira_project_key,
+          issue_type: prev?.issue_type || 'Bug',
+          auto_create_on_failure: prev?.auto_create_on_failure || 'disabled',
+          auto_issue_summary_template: prev?.auto_issue_summary_template,
+          auto_issue_description_template: prev?.auto_issue_description_template,
+        }));
       }
 
       const { data: runData, error: runError } = await supabase
