@@ -776,6 +776,29 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveTemplates = async () => {
+    try {
+      setSaving(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: existing } = await supabase.from('jira_settings').select('id').eq('user_id', user.id).single();
+      if (!existing) { setSaving(false); return; }
+      const { error } = await supabase.from('jira_settings')
+        .update({
+          auto_issue_summary_template: jiraSettings.autoIssueSummaryTemplate,
+          auto_issue_description_template: jiraSettings.autoIssueDescriptionTemplate,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['settingsData'] });
+    } catch (err) {
+      console.error('Save templates error:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDisconnectJira = async () => {
     if (!confirm('Disconnect Jira? This will remove your Jira credentials.')) return;
     const { data: { user } } = await supabase.auth.getUser();
@@ -1987,18 +2010,29 @@ def pytest_sessionfinish(session, exitstatus):
                                   />
                                 </div>
 
-                                {/* Reset to Default */}
-                                <button
-                                  type="button"
-                                  onClick={() => setJiraSettings((prev: any) => ({
-                                    ...prev,
-                                    autoIssueSummaryTemplate: DEFAULT_SUMMARY_TEMPLATE,
-                                    autoIssueDescriptionTemplate: DEFAULT_DESCRIPTION_TEMPLATE,
-                                  }))}
-                                  className="text-[0.8125rem] text-[#6366F1] hover:text-[#4F46E5] font-medium cursor-pointer"
-                                >
-                                  ↩ Reset to Default Templates
-                                </button>
+                                {/* Template actions */}
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => setJiraSettings((prev: any) => ({
+                                      ...prev,
+                                      autoIssueSummaryTemplate: DEFAULT_SUMMARY_TEMPLATE,
+                                      autoIssueDescriptionTemplate: DEFAULT_DESCRIPTION_TEMPLATE,
+                                    }))}
+                                    className="text-[0.8125rem] text-[#6366F1] hover:text-[#4F46E5] font-medium cursor-pointer"
+                                  >
+                                    ↩ Reset to Default Templates
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleSaveTemplates}
+                                    disabled={saving}
+                                    className="inline-flex items-center gap-1.5 px-4 py-[0.4375rem] bg-[#6366F1] text-white rounded-md hover:bg-[#4F46E5] transition-colors text-[0.8125rem] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {saving ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-save-line"></i>}
+                                    Save Templates
+                                  </button>
+                                </div>
                               </div>
                             )}
 
