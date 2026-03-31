@@ -2354,7 +2354,7 @@ export default function RunDetail() {
                     {/* Issues */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-semibold text-gray-700">Issues</label>
+                        <label className="block text-sm font-semibold text-gray-700">Linked Issues</label>
                         <button
                           type="button"
                           onClick={() => {
@@ -2373,7 +2373,7 @@ export default function RunDetail() {
                           className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
                         >
                           <i className="ri-add-line"></i>
-                          Add Issue
+                          Create Jira Issue
                         </button>
                       </div>
                       <input
@@ -2381,7 +2381,7 @@ export default function RunDetail() {
                         value={resultFormData.issues}
                         onChange={(e) => setResultFormData({ ...resultFormData, issues: e.target.value })}
                         onKeyDown={handleIssueKeyDown}
-                        placeholder="Enter issue keys (e.g., PROJ-123, PROJ-124)"
+                        placeholder="Enter issue key (e.g., PROJ-123)"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                       />
                       <p className="text-xs text-gray-500 mt-1">Jira 이슈 키를 입력하고 Enter를 누르세요 (예: PROJ-123)</p>

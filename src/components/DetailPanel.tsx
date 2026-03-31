@@ -901,10 +901,10 @@ export function DetailPanel({
                 <p className="text-xs text-gray-400 mb-3">No linked issues</p>
                 <button
                   onClick={onAddIssue}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-[#C7D2FE] text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
                 >
                   <i className="ri-add-line" />
-                  Link Issue
+                  Create Jira Issue
                 </button>
               </div>
             ) : (
@@ -952,10 +952,10 @@ export function DetailPanel({
                 <div className="flex justify-center pt-2">
                   <button
                     onClick={onAddIssue}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-[#C7D2FE] text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
                   >
                     <i className="ri-add-circle-line" />
-                    Link an issue
+                    Create Jira Issue
                   </button>
                 </div>
               </>
