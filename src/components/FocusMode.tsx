@@ -347,7 +347,8 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
               '입력 중인 결과가 있습니다.\n확인: 저장 후 종료\n취소: 저장하지 않고 종료'
             );
             if (save) {
-              await markAndNext(pending);
+              markAndNext(pending).then(() => onExit());
+              break;
             }
           }
           onExit();
