@@ -7,18 +7,20 @@ interface OnboardingChecklistProps {
   state: OnboardingState;
   onDismiss: () => void;
   firstProjectId?: string | null;
+  userId?: string;
 }
 
 const HIDDEN_PATHS = ['/auth', '/', '/pricing'];
 
-export default function OnboardingChecklist({ state, onDismiss, firstProjectId }: OnboardingChecklistProps) {
+export default function OnboardingChecklist({ state, onDismiss, firstProjectId, userId }: OnboardingChecklistProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [loginCount] = useState(() => {
-    const stored = Number(localStorage.getItem('_tc_logins') ?? '0');
+    const key = userId ? `_tc_logins_${userId}` : '_tc_logins';
+    const stored = Number(localStorage.getItem(key) ?? '0');
     const next = stored + 1;
-    localStorage.setItem('_tc_logins', String(next));
+    localStorage.setItem(key, String(next));
     return next;
   });
   const [expanded, setExpanded] = useState(loginCount <= 3);

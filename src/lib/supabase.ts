@@ -15,13 +15,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// 로컬 스토리지에서 Supabase 관련 토큰 제거
+// 로컬 스토리지에서 Supabase 토큰 및 앱 사용자별 데이터 제거
 const clearSupabaseTokens = () => {
   Object.keys(localStorage).forEach((key) => {
-    if (key.startsWith('sb-')) {
+    if (key.startsWith('sb-') || key.startsWith('_tc_logins')) {
       localStorage.removeItem(key);
     }
   });
+  ['cmdpalette_recent', 'testably_tips_dismissed_1', 'testably_tips_dismissed_2'].forEach(key =>
+    localStorage.removeItem(key)
+  );
 };
 
 // 인증 상태 변경 감지 - 토큰 갱신 실패 시 자동 로그아웃

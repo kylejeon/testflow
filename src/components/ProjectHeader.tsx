@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { queryClient } from '../lib/queryClient';
 import { LogoMark } from './Logo';
 import NotificationBell from './feature/NotificationBell';
 import { Avatar } from './Avatar';
@@ -131,6 +132,7 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      queryClient.clear();
       navigate('/auth');
     } catch {}
   };

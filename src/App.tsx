@@ -55,6 +55,7 @@ function AppContent() {
   const { createSampleProject } = useSampleProject();
 
   const [userName, setUserName] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [firstProjectId, setFirstProjectId] = useState<string | null>(null);
   const [welcomeForceHidden, setWelcomeForceHidden] = useState(false);
@@ -66,6 +67,7 @@ function AppContent() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       setIsAuthenticated(true);
+      setUserId(user.id);
       const name =
         user.user_metadata?.full_name ||
         user.user_metadata?.name ||
@@ -75,9 +77,14 @@ function AppContent() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'SIGNED_OUT') {
+        queryClient.clear();
+        setUserId(null);
+      }
       setIsAuthenticated(!!session?.user);
       if (session?.user) {
         const u = session.user;
+        setUserId(u.id);
         const name =
           u.user_metadata?.full_name ||
           u.user_metadata?.name ||
@@ -168,6 +175,7 @@ function AppContent() {
           state={state}
           onDismiss={dismissChecklist}
           firstProjectId={firstProjectId}
+          userId={userId ?? undefined}
         />
       )}
 

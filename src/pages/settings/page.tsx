@@ -2,6 +2,7 @@ import { LogoMark } from '../../components/Logo';
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '../../lib/queryClient';
 import { markOnboardingStep } from '../../lib/onboardingMarker';
 import { supabase } from '../../lib/supabase';
 import { WEBHOOK_EVENTS, WebhookEventType } from '../../hooks/useWebhooks';
@@ -182,8 +183,8 @@ async function loadSettingsData(): Promise<{
   // Build jiraSettings
   const jiraData = jiraResult.data;
   const jiraSettings: JiraSettings = jiraData
-    ? { domain: jiraData.domain || '', email: jiraData.email || '', apiToken: jiraData.api_token || '', issueType: jiraData.issue_type || 'Bug' }
-    : { domain: '', email: '', apiToken: '', issueType: 'Bug' };
+    ? { domain: jiraData.domain || '', email: jiraData.email || '', apiToken: jiraData.api_token || '', issueType: jiraData.issue_type || 'Bug', autoCreateOnFailure: jiraData.auto_create_on_failure || 'disabled', fieldMappings: jiraData.field_mappings || [] }
+    : { domain: '', email: '', apiToken: '', issueType: 'Bug', autoCreateOnFailure: 'disabled', fieldMappings: [] };
 
   // Build userProjects
   const userProjects: Array<{ id: string; name: string }> = memberResult.data
@@ -417,6 +418,7 @@ export default function SettingsPage() {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      queryClient.clear();
       setShowProfileMenu(false);
       navigate('/auth');
     } catch (err) {
