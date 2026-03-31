@@ -295,7 +295,7 @@ export default function SettingsPage() {
   const [jiraEditMode, setJiraEditMode] = useState(false);
   const isJiraLocked = !!jiraSavedDomain && !jiraEditMode;
   const [availableJiraFields, setAvailableJiraFields] = useState<JiraField[]>([
-    { id: 'priority', name: 'Priority', required: false, type: 'priority', custom: false },
+
     { id: 'labels', name: 'Labels', required: false, type: 'array', custom: false },
     { id: 'components', name: 'Components', required: false, type: 'array', custom: false },
     { id: 'fixVersions', name: 'Fix Version/s', required: false, type: 'array', custom: false },
@@ -668,7 +668,7 @@ export default function SettingsPage() {
       if (error) throw error;
       if (data?.fields) {
         const builtInFields: JiraField[] = [
-          { id: 'priority', name: 'Priority', required: false, type: 'priority', custom: false },
+      
           { id: 'labels', name: 'Labels', required: false, type: 'array', custom: false },
           { id: 'components', name: 'Components', required: false, type: 'array', custom: false },
           { id: 'fixVersions', name: 'Fix Version/s', required: false, type: 'array', custom: false },
@@ -1932,6 +1932,7 @@ def pytest_sessionfinish(session, exitstatus):
                                             const pos = input.selectionStart || input.value.length;
                                             const newVal = input.value.slice(0, pos) + v + input.value.slice(pos);
                                             setJiraSettings((prev: any) => ({ ...prev, autoIssueSummaryTemplate: newVal }));
+                                            setTimeout(() => { input.focus(); input.setSelectionRange(pos + v.length, pos + v.length); }, 0);
                                           }
                                         }}
                                         className="px-2 py-0.5 bg-[#DBEAFE] text-[#1D4ED8] text-[0.75rem] font-mono rounded cursor-pointer hover:bg-[#BFDBFE] transition-colors"
@@ -1968,6 +1969,7 @@ def pytest_sessionfinish(session, exitstatus):
                                             const pos = textarea.selectionStart || textarea.value.length;
                                             const newVal = textarea.value.slice(0, pos) + v + textarea.value.slice(pos);
                                             setJiraSettings((prev: any) => ({ ...prev, autoIssueDescriptionTemplate: newVal }));
+                                            setTimeout(() => { textarea.focus(); textarea.setSelectionRange(pos + v.length, pos + v.length); }, 0);
                                           }
                                         }}
                                         className="px-2 py-0.5 bg-[#DBEAFE] text-[#1D4ED8] text-[0.75rem] font-mono rounded cursor-pointer hover:bg-[#BFDBFE] transition-colors"
