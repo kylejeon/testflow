@@ -329,7 +329,7 @@ export default function ProjectDetail() {
   };
 
   const handleExportPDF = async () => {
-    if (!project || isLoading) {
+    if (!project || isLoading || !projectData) {
       showExportToast('error', 'Project data is still loading. Please try again.');
       return;
     }
@@ -346,14 +346,18 @@ export default function ProjectDetail() {
       pdf.addFileToVFS('NotoSansKR-Bold.ttf', NotoSansKRBold);
       pdf.addFont('NotoSansKR-Bold.ttf', 'NotoSansKR', 'bold');
 
+      const safeAllRuns = allRunsRaw || [];
+      const safeResults = rawTestResults || [];
+      const safeMilestones = milestones || [];
+
       const pageW = 210, pageH = 297, margin = 20, contentW = 170;
       const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       const projectName = project?.name || 'Project';
 
       // ── resultsByRun 집계 ──
       const resultsByRun = new Map<string, {passed:number, failed:number, blocked:number, retest:number, untested:number}>();
-      allRunsRaw.forEach((run: any) => resultsByRun.set(run.id, {passed:0, failed:0, blocked:0, retest:0, untested:0}));
-      rawTestResults.forEach((r: any) => {
+      safeAllRuns.forEach((run: any) => resultsByRun.set(run.id, {passed:0, failed:0, blocked:0, retest:0, untested:0}));
+      safeResults.forEach((r: any) => {
         const counts = resultsByRun.get(r.run_id);
         if (!counts) return;
         if (r.status === 'passed') counts.passed++;
@@ -381,9 +385,9 @@ export default function ProjectDetail() {
         ? Math.round((projectPassRateData.passed / projectPassRateData.total) * 100) : 0;
       const stats = [
         { label: 'Test Cases', value: String(testCaseCount) },
-        { label: 'Test Runs', value: String(allRunsRaw.length) },
+        { label: 'Test Runs', value: String(safeAllRuns.length) },
         { label: 'Pass Rate', value: `${passRate}%` },
-        { label: 'Results', value: String(rawTestResults.length) },
+        { label: 'Results', value: String(safeResults.length) },
       ];
       let y = 44;
       const cardW = (contentW - 12) / 4;
@@ -400,13 +404,13 @@ export default function ProjectDetail() {
       pdf.setFontSize(11); pdf.setFont('NotoSansKR', 'bold'); pdf.setTextColor(15, 23, 42);
       pdf.text('Overall Pass Rate', margin, y); y += 6;
       const statusCounts = {
-        passed: rawTestResults.filter((r: any) => r.status === 'passed').length,
-        failed: rawTestResults.filter((r: any) => r.status === 'failed').length,
-        blocked: rawTestResults.filter((r: any) => r.status === 'blocked').length,
-        retest: rawTestResults.filter((r: any) => r.status === 'retest').length,
-        untested: rawTestResults.filter((r: any) => r.status === 'untested').length,
+        passed: safeResults.filter((r: any) => r.status === 'passed').length,
+        failed: safeResults.filter((r: any) => r.status === 'failed').length,
+        blocked: safeResults.filter((r: any) => r.status === 'blocked').length,
+        retest: safeResults.filter((r: any) => r.status === 'retest').length,
+        untested: safeResults.filter((r: any) => r.status === 'untested').length,
       };
-      const totalRes = rawTestResults.length || 1;
+      const totalRes = safeResults.length || 1;
       const statusColors: Record<string, [number, number, number]> = {
         passed: [34, 197, 94], failed: [239, 68, 68], blocked: [249, 115, 22], retest: [234, 179, 8], untested: [203, 213, 225],
       };
@@ -444,7 +448,7 @@ export default function ProjectDetail() {
 
       // ── Milestone 진행 현황 ──
       const flatMilestones: any[] = [];
-      milestones.forEach((m: any) => {
+      safeMilestones.forEach((m: any) => {
         flatMilestones.push(m);
         (m.subMilestones || []).forEach((s: any) => flatMilestones.push(s));
       });
@@ -452,7 +456,7 @@ export default function ProjectDetail() {
         pdf.setFontSize(11); pdf.setFont('NotoSansKR', 'bold'); pdf.setTextColor(15, 23, 42);
         pdf.text('Milestone Progress', margin, y); y += 7;
         flatMilestones.slice(0, 6).forEach((m: any) => {
-          const mRuns = allRunsRaw.filter((r: any) => r.milestone_id === m.id);
+          const mRuns = safeAllRuns.filter((r: any) => r.milestone_id === m.id);
           const mCompleted = mRuns.filter((r: any) => r.status === 'completed').length;
           const mTotal = mRuns.length;
           const pct = mTotal > 0 ? Math.round((mCompleted / mTotal) * 100) : 0;
@@ -477,7 +481,7 @@ export default function ProjectDetail() {
       y = 30;
       // milestoneMap for Page 2
       const msMap = new Map<string, string>();
-      milestones.forEach((m: any) => {
+      safeMilestones.forEach((m: any) => {
         msMap.set(m.id, m.name);
         (m.subMilestones || []).forEach((s: any) => msMap.set(s.id, s.name));
       });
@@ -488,7 +492,7 @@ export default function ProjectDetail() {
       pdf.text('Fail', margin + 134, y + 5.5); pdf.text('Total', margin + 146, y + 5.5);
       pdf.text('Pass Rate', margin + 158, y + 5.5);
       y += 8;
-      allRunsRaw.slice(0, 10).forEach((run: any, i: number) => {
+      safeAllRuns.slice(0, 10).forEach((run: any, i: number) => {
         const rowY = y + i * 10;
         if (i % 2 === 1) { pdf.setFillColor(248, 250, 252); pdf.rect(margin, rowY, contentW, 10, 'F'); }
         const runCounts = resultsByRun.get(run.id) || {passed:0, failed:0, blocked:0, retest:0, untested:0};
@@ -514,11 +518,11 @@ export default function ProjectDetail() {
         const prc: [number, number, number] = pr >= 80 ? [34, 197, 94] : pr >= 50 ? [234, 179, 8] : [239, 68, 68];
         pdf.setTextColor(...prc); pdf.text(`${pr}%`, margin + 158, rowY + 6.5);
       });
-      y += allRunsRaw.slice(0, 10).length * 10 + 10;
-      const activeRuns = allRunsRaw.filter((r: any) => ['active', 'in_progress', 'new'].includes(r.status)).length;
-      const completedRuns = allRunsRaw.filter((r: any) => r.status === 'completed').length;
+      y += safeAllRuns.slice(0, 10).length * 10 + 10;
+      const activeRuns = safeAllRuns.filter((r: any) => ['active', 'in_progress', 'new'].includes(r.status)).length;
+      const completedRuns = safeAllRuns.filter((r: any) => r.status === 'completed').length;
       pdf.setFontSize(9); pdf.setFont('NotoSansKR', 'normal'); pdf.setTextColor(100, 116, 139);
-      pdf.text(`Total: ${allRunsRaw.length} runs  |  Active: ${activeRuns}  |  Completed: ${completedRuns}`, margin, y);
+      pdf.text(`Total: ${safeAllRuns.length} runs  |  Active: ${activeRuns}  |  Completed: ${completedRuns}`, margin, y);
       addFooter(2);
 
       // ── Page 3: Test Case Overview ──
@@ -609,7 +613,7 @@ export default function ProjectDetail() {
         if (i % 2 === 1) { pdf.setFillColor(248, 250, 252); pdf.rect(margin, rowY, contentW, 10, 'F'); }
         pdf.setFontSize(8); pdf.setFont('NotoSansKR', 'normal'); pdf.setTextColor(30, 41, 59);
         const safeTitle = String(tc.title || '');
-        const titleLines = safeTitle ? pdf.splitTextToSize(safeTitle, 100) : ['-'];
+        const titleLines = safeTitle ? (pdf.splitTextToSize(safeTitle, 100) || ['-']) : ['-'];
         const titleText = String(titleLines[0] || '-') + (titleLines.length > 1 ? '...' : '');
         pdf.text(titleText, margin + 2, rowY + 6.5);
         const ptc: Record<string, [number, number, number]> = { critical: [239, 68, 68], high: [249, 115, 22], medium: [234, 179, 8], low: [34, 197, 94] };
@@ -625,8 +629,15 @@ export default function ProjectDetail() {
       const safeName = projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
       pdf.save(`${safeName}-report-${new Date().toISOString().split('T')[0]}.pdf`);
       showExportToast('success', 'PDF report exported successfully');
-    } catch (err) {
+    } catch (err: any) {
       console.error('PDF export error:', err);
+      console.error('PDF export stack:', err?.stack);
+      console.error('PDF export data state:', {
+        hasProject: !!project,
+        allRunsRawLen: allRunsRaw?.length,
+        rawTestResultsLen: rawTestResults?.length,
+        milestonesLen: milestones?.length,
+      });
       showExportToast('error', 'Failed to export PDF report');
     } finally {
       setIsExporting(false);

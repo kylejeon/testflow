@@ -90,11 +90,11 @@ export async function loadProjectDetailData(id: string): Promise<ProjectDetailDa
         if (!statusMap.has(r.test_case_id)) statusMap.set(r.test_case_id, r.status);
       });
 
-      const totalTests = run.test_case_ids.length;
+      const totalTests = (run.test_case_ids || []).length;
       totalTestsSum += totalTests;
       if (totalTests === 0) return;
 
-      run.test_case_ids.forEach((tcId: string) => {
+      (run.test_case_ids || []).forEach((tcId: string) => {
         const s = statusMap.get(tcId);
         if (s === 'passed' || s === 'failed' || s === 'blocked' || s === 'retest') completedTestsSum++;
       });
