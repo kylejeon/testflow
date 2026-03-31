@@ -280,6 +280,7 @@ export default function SettingsPage() {
     autoCreateOnFailure: 'disabled',
     fieldMappings: [],
   });
+  const [jiraSavedDomain, setJiraSavedDomain] = useState('');
   const [availableJiraFields, setAvailableJiraFields] = useState<JiraField[]>([]);
   const [fetchingFields, setFetchingFields] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -349,6 +350,7 @@ export default function SettingsPage() {
       setSettingsInitialized(true);
       if (settingsData.userProfile) setUserProfile(settingsData.userProfile);
       setJiraSettings(settingsData.jiraSettings);
+      if (settingsData.jiraSettings.domain) setJiraSavedDomain(settingsData.jiraSettings.domain);
       setUserProjects(settingsData.userProjects);
       setLoading(false);
       if (!selectedProjectId && settingsData.userProjects.length > 0) {
@@ -582,6 +584,7 @@ export default function SettingsPage() {
           autoCreateOnFailure: data.auto_create_on_failure || 'disabled',
           fieldMappings: data.field_mappings || [],
         });
+        if (data.domain) setJiraSavedDomain(data.domain);
       }
     } catch (error) {
       console.error('Jira settings load error:', error);
@@ -685,8 +688,6 @@ export default function SettingsPage() {
             email: jiraSettings.email,
             api_token: jiraSettings.apiToken,
             issue_type: jiraSettings.issueType,
-            auto_create_on_failure: jiraSettings.autoCreateOnFailure,
-            field_mappings: jiraSettings.fieldMappings,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingData.id);
@@ -701,13 +702,12 @@ export default function SettingsPage() {
             email: jiraSettings.email,
             api_token: jiraSettings.apiToken,
             issue_type: jiraSettings.issueType,
-            auto_create_on_failure: jiraSettings.autoCreateOnFailure,
-            field_mappings: jiraSettings.fieldMappings,
           });
 
         if (error) throw error;
       }
 
+      setJiraSavedDomain(jiraSettings.domain);
       setJiraSaveResult({ success: true, message: 'Jira settings saved successfully!' });
       void markOnboardingStep('connectJira');
       setTimeout(() => setJiraSaveResult(null), 4000);
@@ -1692,13 +1692,13 @@ def pytest_sessionfinish(session, exitstatus):
                         ) : (
                           <div className={`${!isStarterOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
                             {/* Connected status card */}
-                            {jiraSettings.domain && (
+                            {jiraSavedDomain && (
                               <div className="flex items-center gap-3 p-3 mb-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-[0.625rem]">
                                 <div className="w-9 h-9 bg-[#DBEAFE] rounded-[0.5rem] flex items-center justify-center flex-shrink-0">
                                   <i className="ri-links-fill text-[#1E40AF]" style={{ fontSize: '1.125rem' }}></i>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-[0.8125rem] font-semibold text-[#0F172A] truncate">{jiraSettings.domain}</div>
+                                  <div className="text-[0.8125rem] font-semibold text-[#0F172A] truncate">{jiraSavedDomain}</div>
                                   <div className="text-[0.6875rem] text-[#64748B]">Issue type: {jiraSettings.issueType} · Linked issue creation enabled</div>
                                 </div>
                                 <span className="px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded-full text-[0.625rem] font-semibold flex items-center gap-1 flex-shrink-0">
@@ -1828,7 +1828,7 @@ def pytest_sessionfinish(session, exitstatus):
                             </div>
 
                             {/* Field Mapping */}
-                            {jiraSettings.domain && (
+                            {jiraSavedDomain && (
                               <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
                                 <div className="flex items-center justify-between mb-3">
                                   <h4 className="text-sm font-semibold text-gray-900">Field Mapping</h4>

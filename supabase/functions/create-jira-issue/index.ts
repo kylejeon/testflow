@@ -37,8 +37,9 @@ serve(async (req) => {
       );
     }
 
+    const cleanDomain = domain.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
     const auth = btoa(`${email}:${apiToken}`);
-    
+
     // Prepare issue data
     const issueData: any = {
       fields: {
@@ -105,7 +106,7 @@ serve(async (req) => {
     }
 
     // Create issue in Jira
-    const response = await fetch(`https://${domain}/rest/api/3/issue`, {
+    const response = await fetch(`https://${cleanDomain}/rest/api/3/issue`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,

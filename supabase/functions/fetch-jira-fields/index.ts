@@ -20,9 +20,10 @@ serve(async (req) => {
       });
     }
 
+    const cleanDomain = domain.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
     const auth = btoa(`${email}:${apiToken}`);
     const resp = await fetch(
-      `https://${domain}/rest/api/3/issue/createmeta/${projectKey}/issuetypes`,
+      `https://${cleanDomain}/rest/api/3/issue/createmeta/${projectKey}/issuetypes`,
       {
         headers: {
           'Authorization': `Basic ${auth}`,
