@@ -286,6 +286,8 @@ export function DetailPanel({
   const [stepsHeightPx, setStepsHeightPx] = useState<number | null>(null);
   const [localStepResults, setLocalStepResults] = useState<Record<number, 'passed' | 'failed'>>({});
   const detailBodyRef = useRef<HTMLDivElement>(null);
+  const stepsAreaRef = useRef<HTMLDivElement>(null);
+  const stepsHeightRef = useRef<number | null>(null);
 
   const isRun = context === 'run';
   const effectiveStepResults = Object.keys(stepResults).length > 0 ? stepResults : localStepResults;
@@ -584,6 +586,7 @@ export function DetailPanel({
       {/* ⑤ Steps Area — collapsible, dynamic height */}
       {!stepsCollapsed && (
         <div
+          ref={stepsAreaRef}
           className="overflow-y-auto px-5 py-3.5 border-b border-gray-200 flex-shrink-0 space-y-3"
           style={{
             height: stepsHeightPx !== null ? `${stepsHeightPx}px` : undefined,
@@ -673,14 +676,21 @@ export function DetailPanel({
             const startY = e.clientY;
             const startHeight = stepsHeightPx !== null
               ? stepsHeightPx
-              : (detailBodyRef.current ? Math.round(detailBodyRef.current.clientHeight * 0.4) : 200);
+              : (stepsAreaRef.current?.getBoundingClientRect().height ?? 200);
             const onMove = (ev: MouseEvent) => {
+              ev.preventDefault();
               const newH = Math.max(60, startHeight + (ev.clientY - startY));
-              setStepsHeightPx(newH);
+              stepsHeightRef.current = newH;
+              if (stepsAreaRef.current) {
+                stepsAreaRef.current.style.height = `${newH}px`;
+              }
             };
             const onUp = () => {
               document.removeEventListener('mousemove', onMove);
               document.removeEventListener('mouseup', onUp);
+              if (stepsHeightRef.current !== null) {
+                setStepsHeightPx(stepsHeightRef.current);
+              }
             };
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onUp);
