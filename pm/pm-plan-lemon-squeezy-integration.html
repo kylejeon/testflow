@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Plan: Lemon Squeezy 결제 병행 연동</title>
+<style>
+  :root { --primary: #6366F1; --primary-light: #EEF2FF; --success: #10B981; --success-light: #ECFDF5; --warning: #F59E0B; --warning-light: #FFFBEB; --danger: #EF4444; --danger-light: #FEF2F2; --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0; --gray-300: #CBD5E1; --gray-500: #64748B; --gray-700: #334155; --gray-900: #0F172A; --lemon: #FFC233; --lemon-light: #FFF8E1; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--gray-900); background: var(--gray-50); line-height: 1.6; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 8px; }
+  .subtitle { color: var(--gray-500); font-size: 0.9375rem; margin-bottom: 32px; }
+  .meta { display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap; }
+  .meta-item { background: white; border: 1px solid var(--gray-200); border-radius: 10px; padding: 16px 20px; flex: 1; min-width: 180px; }
+  .meta-label { font-size: 0.75rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .meta-value { font-size: 0.9375rem; font-weight: 600; }
+  .section { background: white; border: 1px solid var(--gray-200); border-radius: 12px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 20px 24px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; gap: 12px; }
+  .section-number { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: white; }
+  .section-title { font-size: 1.125rem; font-weight: 600; }
+  .section-body { padding: 24px; }
+  .problem-box { background: var(--danger-light); border-left: 3px solid var(--danger); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .solution-box { background: var(--success-light); border-left: 3px solid var(--success); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .info-box { background: var(--primary-light); border-left: 3px solid var(--primary); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .warning-box { background: var(--warning-light); border-left: 3px solid var(--warning); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .lemon-box { background: var(--lemon-light); border-left: 3px solid var(--lemon); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .code-block { background: #1E293B; color: #E2E8F0; border-radius: 8px; padding: 16px; font-family: 'SF Mono', monospace; font-size: 0.8125rem; line-height: 1.7; overflow-x: auto; margin: 12px 0; white-space: pre; }
+  .code-inline { background: var(--gray-100); color: var(--danger); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; }
+  .change-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  .change-table th, .change-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--gray-200); font-size: 0.875rem; }
+  .change-table th { background: var(--gray-50); font-weight: 600; color: var(--gray-700); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+  .badge-danger { background: var(--danger-light); color: var(--danger); }
+  .badge-warning { background: var(--warning-light); color: var(--warning); }
+  .badge-primary { background: var(--primary-light); color: var(--primary); }
+  .badge-success { background: var(--success-light); color: var(--success); }
+  .badge-lemon { background: var(--lemon-light); color: #B8860B; }
+  p { margin-bottom: 12px; font-size: 0.9375rem; }
+  ul, ol { margin: 8px 0 12px 20px; font-size: 0.9375rem; }
+  li { margin-bottom: 6px; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 20px 0 8px; }
+  h4 { font-size: 0.9375rem; font-weight: 600; margin: 16px 0 8px; color: var(--gray-700); }
+  .file-ref { display: inline-flex; align-items: center; gap: 4px; background: var(--gray-100); padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 0.8125rem; color: var(--gray-700); }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .compare-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; }
+  .compare-card h4 { margin-top: 0; }
+  .flow-step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+  .flow-num { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+  .flow-content { flex: 1; }
+  .arch-diagram { background: #1E293B; color: #E2E8F0; border-radius: 8px; padding: 20px; font-family: 'SF Mono', monospace; font-size: 0.75rem; line-height: 1.8; overflow-x: auto; margin: 16px 0; white-space: pre; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🍋 Lemon Squeezy 결제 병행 연동 기획</h1>
+<p class="subtitle">Paddle 유지 + Lemon Squeezy 추가 — Dual Payment Provider 아키텍처</p>
+
+<div class="meta">
+  <div class="meta-item">
+    <div class="meta-label">작성일</div>
+    <div class="meta-value">2026-03-31</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">배경</div>
+    <div class="meta-value">Paddle 승인 지연</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">전략</div>
+    <div class="meta-value">Dual Provider (병행)</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">예상 공수</div>
+    <div class="meta-value">Dev 3~4일</div>
+  </div>
+</div>
