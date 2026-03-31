@@ -48,6 +48,10 @@ export default function ProjectDetail() {
   const [activityFilter, setActivityFilter] = useState<string>('all');
   const [showAllActivity, setShowAllActivity] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportToast, setExportToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const navigate = useNavigate();
 
   // Dashboard-specific keyboard shortcuts (N → New TC, R → Continue Run)
@@ -229,6 +233,288 @@ export default function ProjectDetail() {
       navigate('/auth');
     } catch (err) {
       console.error('Logout failed:', err);
+    }
+  };
+
+  // ── Export menu outside-click ──────────────────────────────────────────
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    if (showExportMenu) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showExportMenu]);
+
+  const showExportToast = (type: 'success' | 'error', message: string) => {
+    setExportToast({ type, message });
+    setTimeout(() => setExportToast(null), type === 'success' ? 3000 : 5000);
+  };
+
+  const handleExportRunsCSV = () => {
+    try {
+      const dateStr = new Date().toISOString().split('T')[0];
+      const projectName = (project?.name || 'project').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const milestoneMap = new Map<string, string>();
+      milestones.forEach((m: any) => {
+        milestoneMap.set(m.id, m.name);
+        (m.subMilestones || []).forEach((s: any) => milestoneMap.set(s.id, s.name));
+      });
+      const headers = ['Run Name', 'Milestone', 'Status', 'Total TCs', 'Passed', 'Failed', 'Blocked', 'Retest', 'Not Tested', 'Pass Rate', 'Created At'];
+      const rows = allRunsRaw.map((run: any) => {
+        const total = (run.passed || 0) + (run.failed || 0) + (run.blocked || 0) + (run.retest || 0) + (run.untested || 0);
+        const tested = total - (run.untested || 0);
+        const passRate = tested > 0 ? Math.round(((run.passed || 0) / tested) * 100) : 0;
+        return [run.name, milestoneMap.get(run.milestone_id) || '', run.status || 'active', total, run.passed || 0, run.failed || 0, run.blocked || 0, run.retest || 0, run.untested || 0, `${passRate}%`, new Date(run.created_at).toLocaleDateString()];
+      });
+      const csv = [headers, ...rows].map(r => r.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${projectName}-runs-${dateStr}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      showExportToast('success', 'Runs data exported successfully');
+    } catch {
+      showExportToast('error', 'Failed to export runs data');
+    }
+  };
+
+  const handleExportTestCasesCSV = async () => {
+    try {
+      setIsExporting(true);
+      const dateStr = new Date().toISOString().split('T')[0];
+      const projectName = (project?.name || 'project').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const { data: cases, error } = await supabase
+        .from('test_cases')
+        .select('custom_id, title, priority, lifecycle_status, created_at')
+        .eq('project_id', id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const headers = ['TC ID', 'Title', 'Priority', 'Lifecycle Status', 'Created At'];
+      const rows = (cases || []).map((tc: any) => [tc.custom_id || '', tc.title || '', tc.priority || 'medium', tc.lifecycle_status || 'active', new Date(tc.created_at).toLocaleDateString()]);
+      const csv = [headers, ...rows].map(r => r.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${projectName}-testcases-${dateStr}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      showExportToast('success', 'Test cases exported successfully');
+    } catch {
+      showExportToast('error', 'Failed to export test cases');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      const { default: jsPDF } = await import('jspdf');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = 210, pageH = 297, margin = 20, contentW = 170;
+      const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      const projectName = project?.name || 'Project';
+
+      const addFooter = (pageNum: number) => {
+        pdf.setFontSize(8); pdf.setTextColor(148, 163, 184);
+        pdf.text(`Generated by Testably — ${dateStr}`, margin, pageH - 10);
+        pdf.text(`Page ${pageNum} of 3`, pageW - margin, pageH - 10, { align: 'right' });
+      };
+
+      // ── Page 1: Executive Summary ──
+      pdf.setFillColor(99, 102, 241); pdf.rect(0, 0, pageW, 32, 'F');
+      pdf.setFontSize(18); pdf.setTextColor(255, 255, 255); pdf.setFont('helvetica', 'bold');
+      pdf.text(projectName, margin, 14);
+      pdf.setFontSize(10); pdf.setFont('helvetica', 'normal');
+      pdf.text('Project Executive Report', margin, 22);
+      pdf.text(dateStr, pageW - margin, 22, { align: 'right' });
+
+      const passRate = projectPassRateData && projectPassRateData.total > 0
+        ? Math.round((projectPassRateData.passed / projectPassRateData.total) * 100) : 0;
+      const stats = [
+        { label: 'Test Cases', value: String(testCaseCount) },
+        { label: 'Test Runs', value: String(allRunsRaw.length) },
+        { label: 'Pass Rate', value: `${passRate}%` },
+        { label: 'Results', value: String(rawTestResults.length) },
+      ];
+      let y = 44;
+      const cardW = (contentW - 12) / 4;
+      stats.forEach((s, i) => {
+        const x = margin + i * (cardW + 4);
+        pdf.setFillColor(248, 250, 252); pdf.setDrawColor(226, 232, 240); pdf.roundedRect(x, y, cardW, 22, 2, 2, 'FD');
+        pdf.setFontSize(16); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42);
+        pdf.text(s.value, x + cardW / 2, y + 12, { align: 'center' });
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100, 116, 139);
+        pdf.text(s.label, x + cardW / 2, y + 19, { align: 'center' });
+      });
+      y += 30;
+
+      pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42);
+      pdf.text('Overall Pass Rate', margin, y); y += 6;
+      const statusCounts = {
+        passed: rawTestResults.filter((r: any) => r.status === 'passed').length,
+        failed: rawTestResults.filter((r: any) => r.status === 'failed').length,
+        blocked: rawTestResults.filter((r: any) => r.status === 'blocked').length,
+        retest: rawTestResults.filter((r: any) => r.status === 'retest').length,
+        untested: rawTestResults.filter((r: any) => r.status === 'untested').length,
+      };
+      const totalRes = rawTestResults.length || 1;
+      const statusColors: Record<string, [number, number, number]> = {
+        passed: [34, 197, 94], failed: [239, 68, 68], blocked: [249, 115, 22], retest: [234, 179, 8], untested: [203, 213, 225],
+      };
+      let barX = margin;
+      Object.entries(statusCounts).forEach(([status, count]) => {
+        const w = contentW * (count / totalRes);
+        if (w > 0) { const [r, g, b] = statusColors[status]; pdf.setFillColor(r, g, b); pdf.rect(barX, y, w, 8, 'F'); barX += w; }
+      });
+      y += 12;
+      let legX = margin;
+      Object.entries(statusCounts).forEach(([status, count]) => {
+        const [r, g, b] = statusColors[status]; pdf.setFillColor(r, g, b); pdf.rect(legX, y, 4, 4, 'F');
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(71, 85, 105);
+        pdf.text(`${status.charAt(0).toUpperCase() + status.slice(1)}: ${count}`, legX + 6, y + 3.5);
+        legX += 36;
+      });
+      y += 14;
+
+      pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42);
+      pdf.text('Project Information', margin, y); y += 6;
+      pdf.setFillColor(248, 250, 252); pdf.setDrawColor(226, 232, 240); pdf.roundedRect(margin, y, contentW, 30, 2, 2, 'FD');
+      const infoItems = [
+        { label: 'Project Name', value: projectName },
+        { label: 'Status', value: project?.status || 'active' },
+        { label: 'Created', value: project?.created_at ? new Date(project.created_at).toLocaleDateString() : '-' },
+        { label: 'Updated', value: project?.updated_at ? new Date(project.updated_at).toLocaleDateString() : '-' },
+      ];
+      infoItems.forEach((item, i) => {
+        const col = i % 2, row = Math.floor(i / 2);
+        const ix = margin + 6 + col * (contentW / 2), iy = y + 8 + row * 12;
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100, 116, 139); pdf.text(item.label.toUpperCase(), ix, iy);
+        pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42); pdf.text(item.value, ix, iy + 5);
+      });
+      addFooter(1);
+
+      // ── Page 2: Recent Test Runs ──
+      pdf.addPage();
+      pdf.setFillColor(99, 102, 241); pdf.rect(0, 0, pageW, 20, 'F');
+      pdf.setFontSize(13); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(255, 255, 255);
+      pdf.text('Recent Test Runs', margin, 13);
+      y = 30;
+      pdf.setFillColor(241, 245, 249); pdf.rect(margin, y, contentW, 8, 'F');
+      pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(71, 85, 105);
+      pdf.text('Run Name', margin + 2, y + 5.5); pdf.text('Status', margin + 82, y + 5.5);
+      pdf.text('Pass', margin + 112, y + 5.5); pdf.text('Fail', margin + 127, y + 5.5);
+      pdf.text('Total', margin + 142, y + 5.5); pdf.text('Pass Rate', margin + 158, y + 5.5);
+      y += 8;
+      allRunsRaw.slice(0, 10).forEach((run: any, i: number) => {
+        const rowY = y + i * 10;
+        if (i % 2 === 1) { pdf.setFillColor(248, 250, 252); pdf.rect(margin, rowY, contentW, 10, 'F'); }
+        const total = (run.passed || 0) + (run.failed || 0) + (run.blocked || 0) + (run.retest || 0) + (run.untested || 0);
+        const tested = total - (run.untested || 0);
+        const pr = tested > 0 ? Math.round(((run.passed || 0) / tested) * 100) : 0;
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(30, 41, 59);
+        const runName = run.name.length > 38 ? run.name.slice(0, 35) + '...' : run.name;
+        pdf.text(runName, margin + 2, rowY + 6.5);
+        const sc: Record<string, [number, number, number]> = { active: [99, 102, 241], completed: [34, 197, 94] };
+        const [sr, sg, sb] = sc[run.status || 'active'] || [148, 163, 184];
+        pdf.setTextColor(sr, sg, sb); pdf.text(run.status || 'active', margin + 82, rowY + 6.5);
+        pdf.setTextColor(30, 41, 59);
+        pdf.text(String(run.passed || 0), margin + 112, rowY + 6.5);
+        pdf.text(String(run.failed || 0), margin + 127, rowY + 6.5);
+        pdf.text(String(total), margin + 142, rowY + 6.5);
+        const prc: [number, number, number] = pr >= 80 ? [34, 197, 94] : pr >= 50 ? [234, 179, 8] : [239, 68, 68];
+        pdf.setTextColor(...prc); pdf.text(`${pr}%`, margin + 158, rowY + 6.5);
+      });
+      y += allRunsRaw.slice(0, 10).length * 10 + 10;
+      const activeRuns = allRunsRaw.filter((r: any) => r.status === 'active').length;
+      const completedRuns = allRunsRaw.filter((r: any) => r.status === 'completed').length;
+      pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100, 116, 139);
+      pdf.text(`Total: ${allRunsRaw.length} runs  |  Active: ${activeRuns}  |  Completed: ${completedRuns}`, margin, y);
+      addFooter(2);
+
+      // ── Page 3: Test Case Overview ──
+      pdf.addPage();
+      pdf.setFillColor(99, 102, 241); pdf.rect(0, 0, pageW, 20, 'F');
+      pdf.setFontSize(13); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(255, 255, 255);
+      pdf.text('Test Case Overview', margin, 13);
+      y = 30;
+      const { data: tcData } = await supabase.from('test_cases').select('title, priority, lifecycle_status, created_at').eq('project_id', id).order('created_at', { ascending: false });
+      const tcs = tcData || [];
+      const priorityCounts = {
+        critical: tcs.filter((t: any) => t.priority === 'critical').length,
+        high: tcs.filter((t: any) => t.priority === 'high').length,
+        medium: tcs.filter((t: any) => t.priority === 'medium' || !t.priority).length,
+        low: tcs.filter((t: any) => t.priority === 'low').length,
+      };
+      const lifecycleCounts = {
+        active: tcs.filter((t: any) => t.lifecycle_status === 'active' || !t.lifecycle_status).length,
+        draft: tcs.filter((t: any) => t.lifecycle_status === 'draft').length,
+        deprecated: tcs.filter((t: any) => t.lifecycle_status === 'deprecated').length,
+      };
+      pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42);
+      pdf.text('Priority Distribution', margin, y); y += 8;
+      const priorityColors: Record<string, [number, number, number]> = {
+        critical: [239, 68, 68], high: [249, 115, 22], medium: [234, 179, 8], low: [34, 197, 94],
+      };
+      Object.entries(priorityCounts).forEach(([priority, count], i) => {
+        const barW = tcs.length > 0 ? (count / tcs.length) * (contentW - 50) : 0;
+        const [r, g, b] = priorityColors[priority];
+        pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(71, 85, 105);
+        pdf.text(priority.charAt(0).toUpperCase() + priority.slice(1), margin, y + i * 10 + 5);
+        pdf.setFillColor(241, 245, 249); pdf.rect(margin + 25, y + i * 10, contentW - 50, 7, 'F');
+        if (barW > 0) { pdf.setFillColor(r, g, b); pdf.rect(margin + 25, y + i * 10, barW, 7, 'F'); }
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42);
+        pdf.text(String(count), margin + contentW - 20, y + i * 10 + 5);
+      });
+      y += 52;
+      pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42);
+      pdf.text('Lifecycle Status', margin, y); y += 8;
+      const lifecycleColors: Record<string, [number, number, number]> = {
+        active: [34, 197, 94], draft: [99, 102, 241], deprecated: [148, 163, 184],
+      };
+      const lcCardW = (contentW - 8) / 3;
+      Object.entries(lifecycleCounts).forEach(([lc, count], i) => {
+        const x = margin + i * (lcCardW + 4);
+        const [r, g, b] = lifecycleColors[lc];
+        pdf.setFillColor(248, 250, 252); pdf.setDrawColor(226, 232, 240); pdf.roundedRect(x, y, lcCardW, 20, 2, 2, 'FD');
+        pdf.setFillColor(r, g, b); pdf.circle(x + 8, y + 10, 3, 'F');
+        pdf.setFontSize(14); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42);
+        pdf.text(String(count), x + lcCardW / 2, y + 10, { align: 'center' });
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100, 116, 139);
+        pdf.text(lc.charAt(0).toUpperCase() + lc.slice(1), x + lcCardW / 2, y + 17, { align: 'center' });
+      });
+      y += 28;
+      pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42);
+      pdf.text('Recently Added Test Cases', margin, y); y += 6;
+      pdf.setFillColor(241, 245, 249); pdf.rect(margin, y, contentW, 8, 'F');
+      pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(71, 85, 105);
+      pdf.text('Title', margin + 2, y + 5.5); pdf.text('Priority', margin + 110, y + 5.5);
+      pdf.text('Status', margin + 138, y + 5.5); pdf.text('Created', margin + 163, y + 5.5);
+      y += 8;
+      tcs.slice(0, 10).forEach((tc: any, i: number) => {
+        const rowY = y + i * 10;
+        if (i % 2 === 1) { pdf.setFillColor(248, 250, 252); pdf.rect(margin, rowY, contentW, 10, 'F'); }
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(30, 41, 59);
+        const title = tc.title.length > 50 ? tc.title.slice(0, 47) + '...' : tc.title;
+        pdf.text(title, margin + 2, rowY + 6.5);
+        const ptc: Record<string, [number, number, number]> = { critical: [239, 68, 68], high: [249, 115, 22], medium: [234, 179, 8], low: [34, 197, 94] };
+        const [pr2, pg2, pb2] = ptc[tc.priority || 'medium'] || [100, 116, 139];
+        pdf.setTextColor(pr2, pg2, pb2); pdf.text(tc.priority || 'medium', margin + 110, rowY + 6.5);
+        pdf.setTextColor(30, 41, 59);
+        pdf.text(tc.lifecycle_status || 'active', margin + 138, rowY + 6.5);
+        pdf.text(new Date(tc.created_at).toLocaleDateString(), margin + 163, rowY + 6.5);
+      });
+      addFooter(3);
+
+      const safeName = projectName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      pdf.save(`${safeName}-report-${new Date().toISOString().split('T')[0]}.pdf`);
+      showExportToast('success', 'PDF report exported successfully');
+    } catch (err) {
+      console.error('PDF export error:', err);
+      showExportToast('error', 'Failed to export PDF report');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -459,6 +745,13 @@ export default function ProjectDetail() {
   // ── Main render ──
   return (
     <>
+      {exportToast && (
+        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[300] flex items-center gap-2.5 px-4 py-2.5 rounded-[10px] text-[13px] font-medium shadow-[0_4px_12px_rgba(0,0,0,0.08)] whitespace-nowrap ${exportToast.type === 'success' ? 'bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46]' : 'bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B]'}`}>
+          <i className={`text-base flex-shrink-0 ${exportToast.type === 'success' ? 'ri-check-line text-[#10B981]' : 'ri-error-warning-line text-[#EF4444]'}`} />
+          <span>{exportToast.message}</span>
+          <i className="ri-close-line text-sm opacity-50 cursor-pointer ml-2 flex-shrink-0" onClick={() => setExportToast(null)} />
+        </div>
+      )}
       <SEOHead title={`${project.name} — Dashboard | Testably`} description={`Project dashboard for ${project.name}.`} noindex />
       <div className="flex h-screen bg-white">
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -513,10 +806,73 @@ export default function ProjectDetail() {
                   <i className="ri-sparkling-line"></i>
                   <span>AI Assist</span>
                 </button>
-                <button className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem] font-medium hover:bg-[#4F46E5] transition-colors cursor-pointer whitespace-nowrap">
-                  <i className="ri-download-line text-sm" />
-                  Export Report
-                </button>
+                {/* Export Report */}
+                <div className="relative" ref={exportMenuRef}>
+                  <button
+                    onClick={() => { if (!isExporting) setShowExportMenu(prev => !prev); }}
+                    disabled={isExporting}
+                    className={`flex items-center gap-1.5 px-[0.875rem] py-[0.375rem] text-white rounded-[0.375rem] text-[0.8125rem] font-medium transition-colors whitespace-nowrap ${isExporting ? 'bg-[#818CF8] opacity-80 cursor-not-allowed' : showExportMenu ? 'bg-[#4F46E5] cursor-pointer' : 'bg-[#6366F1] hover:bg-[#4F46E5] cursor-pointer'}`}
+                  >
+                    {isExporting
+                      ? <><i className="ri-loader-4-line text-sm animate-spin" />Exporting...</>
+                      : <><i className={`${showExportMenu ? 'ri-arrow-up-s-line' : 'ri-download-line'} text-sm`} />Export Report</>
+                    }
+                  </button>
+                  {showExportMenu && !isExporting && (
+                    <div className="absolute top-[calc(100%+4px)] right-0 w-64 bg-white border border-[#E2E8F0] rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] z-50 py-1" role="menu">
+                      {currentTier <= 1 ? (
+                        <>
+                          {[
+                            { icon: 'ri-file-pdf-line', iconColor: '#EF4444', main: 'Export as PDF', sub: 'Project summary report' },
+                            { icon: 'ri-file-excel-2-line', iconColor: '#10B981', main: 'Export Runs (CSV)', sub: 'All runs with results' },
+                            { icon: 'ri-file-excel-2-line', iconColor: '#10B981', main: 'Export Test Cases (CSV)', sub: 'All test cases data' },
+                          ].map(item => (
+                            <div key={item.main} role="menuitem" onClick={() => { setShowExportMenu(false); navigate('/settings?tab=billing'); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer border-b border-[#F1F5F9] last:border-b-0">
+                              <i className={`${item.icon} text-lg flex-shrink-0 mt-0.5`} style={{ color: item.iconColor, opacity: 0.45 }} />
+                              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                                <span className="text-[13px] font-medium text-[#94A3B8]">{item.main}</span>
+                                <span className="text-[11px] text-[#CBD5E1]">{item.sub}</span>
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                                <i className="ri-lock-line text-[12px] text-[#94A3B8]" />
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#D97706] whitespace-nowrap">Starter+</span>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="px-3 py-2.5 border-t border-[#E2E8F0] bg-[#F8FAFC] rounded-b-lg flex items-center gap-2">
+                            <i className="ri-vip-crown-2-fill text-base text-[#D97706]" />
+                            <span className="text-[12px] text-[#475569] font-medium">Upgrade to unlock all exports</span>
+                            <button onClick={(e) => { e.stopPropagation(); setShowExportMenu(false); navigate('/settings?tab=billing'); }} className="ml-auto px-3 py-1 bg-[#6366F1] text-white rounded-[6px] text-[11px] font-semibold cursor-pointer hover:bg-[#4F46E5] transition-colors">Upgrade</button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div role="menuitem" onClick={() => { setShowExportMenu(false); handleExportPDF(); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors">
+                            <i className="ri-file-pdf-line text-lg flex-shrink-0 mt-0.5 text-[#EF4444]" />
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[13px] font-medium text-[#334155]">Export as PDF</span>
+                              <span className="text-[11px] text-[#94A3B8]">Project summary report</span>
+                            </div>
+                          </div>
+                          <div role="menuitem" onClick={() => { setShowExportMenu(false); handleExportRunsCSV(); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors">
+                            <i className="ri-file-excel-2-line text-lg flex-shrink-0 mt-0.5 text-[#10B981]" />
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[13px] font-medium text-[#334155]">Export Runs (CSV)</span>
+                              <span className="text-[11px] text-[#94A3B8]">All runs with results</span>
+                            </div>
+                          </div>
+                          <div role="menuitem" onClick={() => { setShowExportMenu(false); handleExportTestCasesCSV(); }} className="flex items-start gap-2.5 px-3 py-3 cursor-pointer hover:bg-[#F8FAFC] transition-colors">
+                            <i className="ri-file-excel-2-line text-lg flex-shrink-0 mt-0.5 text-[#10B981]" />
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[13px] font-medium text-[#334155]">Export Test Cases (CSV)</span>
+                              <span className="text-[11px] text-[#94A3B8]">All test cases data</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
