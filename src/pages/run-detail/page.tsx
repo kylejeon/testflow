@@ -454,7 +454,7 @@ export default function RunDetail() {
       if (!user) return;
       const { data, error } = await supabase
         .from('jira_settings')
-        .select('domain, email, api_token, issue_type, auto_create_on_failure, auto_issue_summary_template, auto_issue_description_template')
+        .select('domain, email, api_token, issue_type, project_key, auto_create_on_failure, auto_issue_summary_template, auto_issue_description_template')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -469,7 +469,7 @@ export default function RunDetail() {
           domain: data.domain,
           email: data.email || '',
           api_token: data.api_token || '',
-          project_key: prev?.project_key || '',
+          project_key: data.project_key || prev?.project_key || '',
           issue_type: data.issue_type || 'Bug',
           auto_create_on_failure: data.auto_create_on_failure || 'disabled',
           auto_issue_summary_template: data.auto_issue_summary_template || undefined,
