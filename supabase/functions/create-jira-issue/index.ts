@@ -11,18 +11,20 @@ serve(async (req) => {
   }
 
   try {
-    const { 
-      domain, 
-      email, 
-      apiToken, 
-      projectKey, 
-      summary, 
-      description, 
-      issueType, 
-      priority, 
+    const {
+      domain,
+      email,
+      apiToken,
+      projectKey,
+      summary,
+      description,
+      issueType,
+      priority,
       labels,
       assignee,
       components,
+      fieldMappings,
+      fieldContext,
     } = await req.json();
 
     if (!domain || !email || !apiToken || !projectKey || !summary) {
@@ -92,6 +94,16 @@ serve(async (req) => {
       issueData.fields.components = components.map((name: string) => ({ name }));
     }
 
+    // Apply custom field mappings
+    if (fieldMappings && fieldMappings.length > 0 && fieldContext) {
+      for (const mapping of fieldMappings) {
+        const value = resolveTestablyFieldValue(mapping.testably_field, fieldContext);
+        if (value && mapping.jira_field_id) {
+          issueData.fields[mapping.jira_field_id] = value;
+        }
+      }
+    }
+
     // Create issue in Jira
     const response = await fetch(`https://${domain}/rest/api/3/issue`, {
       method: 'POST',
@@ -148,14 +160,25 @@ serve(async (req) => {
     }
   } catch (error) {
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message 
+      JSON.stringify({
+        success: false,
+        error: error.message
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
 });
+
+function resolveTestablyFieldValue(field: string, ctx: any): any {
+  switch (field) {
+    case 'tc_tags': return ctx.tags?.join(', ') || null;
+    case 'tc_precondition': return ctx.precondition || null;
+    case 'milestone_name': return ctx.milestoneName || null;
+    case 'run_name': return ctx.runName || null;
+    case 'custom_text': return ctx.customValue || null;
+    default: return null;
+  }
+}

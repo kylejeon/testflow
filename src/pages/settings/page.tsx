@@ -17,6 +17,21 @@ interface JiraSettings {
   apiToken: string;
   issueType: string;
   autoCreateOnFailure: string;
+  fieldMappings: JiraFieldMapping[];
+}
+
+interface JiraFieldMapping {
+  testably_field: string;
+  jira_field_id: string;
+  jira_field_name: string;
+}
+
+interface JiraField {
+  id: string;
+  name: string;
+  required: boolean;
+  type: string;
+  custom: boolean;
 }
 
 interface UserProfile {
@@ -262,7 +277,10 @@ export default function SettingsPage() {
     apiToken: '',
     issueType: 'Bug',
     autoCreateOnFailure: 'disabled',
+    fieldMappings: [],
   });
+  const [availableJiraFields, setAvailableJiraFields] = useState<JiraField[]>([]);
+  const [fetchingFields, setFetchingFields] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -560,6 +578,7 @@ export default function SettingsPage() {
           apiToken: data.api_token || '',
           issueType: data.issue_type || 'Bug',
           autoCreateOnFailure: data.auto_create_on_failure || 'disabled',
+          fieldMappings: data.field_mappings || [],
         });
       }
     } catch (error) {
@@ -602,6 +621,48 @@ export default function SettingsPage() {
     }
   };
 
+  const handleFetchJiraFields = async () => {
+    try {
+      setFetchingFields(true);
+      const { data, error } = await supabase.functions.invoke('fetch-jira-fields', {
+        body: {
+          domain: jiraSettings.domain,
+          email: jiraSettings.email,
+          apiToken: jiraSettings.apiToken,
+          projectKey: jiraSettings.domain, // will be overridden by project-level key
+        },
+      });
+      if (error) throw error;
+      if (data?.fields) {
+        setAvailableJiraFields(data.fields);
+      }
+    } catch (err) {
+      console.error('Failed to fetch Jira fields:', err);
+    } finally {
+      setFetchingFields(false);
+    }
+  };
+
+  const addFieldMapping = () => {
+    setJiraSettings({
+      ...jiraSettings,
+      fieldMappings: [...jiraSettings.fieldMappings, { testably_field: 'tc_tags', jira_field_id: '', jira_field_name: '' }],
+    });
+  };
+
+  const removeFieldMapping = (idx: number) => {
+    setJiraSettings({
+      ...jiraSettings,
+      fieldMappings: jiraSettings.fieldMappings.filter((_, i) => i !== idx),
+    });
+  };
+
+  const updateFieldMapping = (idx: number, field: Partial<JiraFieldMapping>) => {
+    const updated = [...jiraSettings.fieldMappings];
+    updated[idx] = { ...updated[idx], ...field };
+    setJiraSettings({ ...jiraSettings, fieldMappings: updated });
+  };
+
   const handleSaveJiraSettings = async () => {
     try {
       setSaving(true);
@@ -623,6 +684,7 @@ export default function SettingsPage() {
             api_token: jiraSettings.apiToken,
             issue_type: jiraSettings.issueType,
             auto_create_on_failure: jiraSettings.autoCreateOnFailure,
+            field_mappings: jiraSettings.fieldMappings,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingData.id);
@@ -638,6 +700,7 @@ export default function SettingsPage() {
             api_token: jiraSettings.apiToken,
             issue_type: jiraSettings.issueType,
             auto_create_on_failure: jiraSettings.autoCreateOnFailure,
+            field_mappings: jiraSettings.fieldMappings,
           });
 
         if (error) throw error;
@@ -1761,6 +1824,73 @@ def pytest_sessionfinish(session, exitstatus):
                                 <option value="first_failure_only">Create for first failure only</option>
                               </select>
                             </div>
+
+                            {/* Field Mapping */}
+                            {jiraSettings.domain && (
+                              <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
+                                <div className="flex items-center justify-between mb-3">
+                                  <h4 className="text-sm font-semibold text-gray-900">Field Mapping</h4>
+                                  <button
+                                    onClick={handleFetchJiraFields}
+                                    disabled={fetchingFields || !jiraSettings.apiToken || !isStarterOrHigher}
+                                    className="text-xs font-medium px-3 py-1.5 rounded-md border border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {fetchingFields ? <><i className="ri-loader-4-line animate-spin mr-1" />Fetching...</> : <><i className="ri-refresh-line mr-1" />Fetch Jira Fields</>}
+                                  </button>
+                                </div>
+
+                                <table className="w-full text-xs mb-3">
+                                  <thead>
+                                    <tr className="text-gray-500 border-b">
+                                      <th className="text-left py-1.5">Testably Field</th>
+                                      <th className="text-left py-1.5 px-2">→</th>
+                                      <th className="text-left py-1.5">Jira Field</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr><td className="py-1">Test Case Title</td><td className="px-2">→</td><td className="text-gray-400">summary (auto)</td></tr>
+                                    <tr><td className="py-1">Description + Steps</td><td className="px-2">→</td><td className="text-gray-400">description (auto)</td></tr>
+                                    <tr><td className="py-1">Priority</td><td className="px-2">→</td><td className="text-gray-400">priority (auto)</td></tr>
+                                  </tbody>
+                                </table>
+
+                                {jiraSettings.fieldMappings.map((mapping, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 mb-2">
+                                    <select
+                                      className="flex-1 text-xs px-2 py-1.5 border border-gray-300 rounded bg-white"
+                                      value={mapping.testably_field}
+                                      onChange={(e) => updateFieldMapping(idx, { testably_field: e.target.value })}
+                                    >
+                                      <option value="tc_tags">Tags</option>
+                                      <option value="tc_precondition">Precondition</option>
+                                      <option value="milestone_name">Milestone Name</option>
+                                      <option value="run_name">Run Name</option>
+                                      <option value="custom_text">Custom Text</option>
+                                    </select>
+                                    <span className="text-gray-400 text-xs">→</span>
+                                    <select
+                                      className="flex-1 text-xs px-2 py-1.5 border border-gray-300 rounded bg-white"
+                                      value={mapping.jira_field_id}
+                                      onChange={(e) => {
+                                        const f = availableJiraFields.find(f => f.id === e.target.value);
+                                        updateFieldMapping(idx, { jira_field_id: e.target.value, jira_field_name: f?.name || '' });
+                                      }}
+                                    >
+                                      <option value="">Select Jira field...</option>
+                                      {availableJiraFields.map(f => (
+                                        <option key={f.id} value={f.id}>{f.name}{f.custom ? ' (custom)' : ''}</option>
+                                      ))}
+                                    </select>
+                                    <button onClick={() => removeFieldMapping(idx)} className="text-red-400 hover:text-red-600 cursor-pointer flex-shrink-0">
+                                      <i className="ri-delete-bin-line" />
+                                    </button>
+                                  </div>
+                                ))}
+                                <button onClick={addFieldMapping} disabled={!isStarterOrHigher} className="text-xs text-indigo-600 font-medium mt-1 cursor-pointer disabled:opacity-50">
+                                  + Add Custom Field Mapping
+                                </button>
+                              </div>
+                            )}
 
                             {/* Test Result Message */}
                             {testResult && (
