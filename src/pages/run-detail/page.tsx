@@ -138,6 +138,7 @@ export default function RunDetail() {
   const [userProfile, setUserProfile] = useState<{ email: string; full_name: string; subscription_tier: number; avatar_emoji: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showAddIssueModal, setShowAddIssueModal] = useState(false);
+  const [showJiraSetupModal, setShowJiraSetupModal] = useState(false);
   const [jiraSettings, setJiraSettings] = useState<JiraSettings | null>(null);
   const [issueFormData, setIssueFormData] = useState({
     summary: '',
@@ -1251,9 +1252,7 @@ export default function RunDetail() {
     }
 
     if (!jiraSettings || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.api_token) {
-      if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) {
-        navigate('/settings');
-      }
+      setShowJiraSetupModal(true);
       return;
     }
 
@@ -2070,9 +2069,7 @@ export default function RunDetail() {
               isProfessionalOrHigher={isProfessionalOrHigher}
               onAddIssue={() => {
                 if (!jiraSettings?.domain) {
-                  if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) {
-                    navigate('/settings');
-                  }
+                  setShowJiraSetupModal(true);
                   return;
                 }
                 setShowAddIssueModal(true);
@@ -2124,6 +2121,40 @@ export default function RunDetail() {
                       className="flex-1 px-4 py-2.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-all font-semibold cursor-pointer whitespace-nowrap"
                     >
                       플랜 업그레이드
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Jira Setup Modal */}
+          {showJiraSetupModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+              <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+                <div className="p-6 text-center">
+                  <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i className="ri-links-line text-blue-500 text-2xl"></i>
+                  </div>
+                  <h2 className="text-lg font-bold text-gray-900 mb-2">Jira 연동이 필요합니다</h2>
+                  <p className="text-gray-500 text-sm mb-6">
+                    Jira 이슈를 생성하려면 먼저 Settings에서 Jira 계정을 연결해 주세요.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowJiraSetupModal(false)}
+                      className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer"
+                    >
+                      닫기
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowJiraSetupModal(false);
+                        navigate('/settings?tab=integrations');
+                      }}
+                      className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer"
+                    >
+                      Connect Jira
                     </button>
                   </div>
                 </div>
