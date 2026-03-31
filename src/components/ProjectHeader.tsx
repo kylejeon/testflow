@@ -164,14 +164,14 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
       active: path.includes('/milestones'),
     },
     {
-      label: 'Documents',
-      to: `/projects/${projectId}/documentation`,
-      active: path.includes('/documentation'),
-    },
-    {
       label: 'Discovery Logs',
       to: `/projects/${projectId}/discovery-logs`,
       active: path.includes('/discovery-logs') || path.includes('/sessions'),
+    },
+    {
+      label: 'Documents',
+      to: `/projects/${projectId}/documentation`,
+      active: path.includes('/documentation'),
     },
   ];
 

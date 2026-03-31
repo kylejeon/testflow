@@ -763,7 +763,14 @@ export default function SessionDetail() {
 
   const handleReopenSession = async () => {
     try {
-      const now = new Date().toISOString();
+      const nowMs = Date.now();
+      const now = new Date(nowMs).toISOString();
+
+      // Accumulate dead time (completed → reopen) into paused_duration
+      // so the timer resumes from where it left off at close time.
+      const closedAt = session.ended_at ? new Date(session.ended_at).getTime() : nowMs;
+      const deadTimeMs = nowMs - closedAt;
+      const newPausedDuration = (session.paused_duration || 0) + deadTimeMs;
 
       const { error } = await supabase
         .from('sessions')
@@ -771,6 +778,7 @@ export default function SessionDetail() {
           status: 'active',
           ended_at: null,
           paused_at: null,
+          paused_duration: newPausedDuration,
           updated_at: now,
         })
         .eq('id', sessionId);
@@ -782,6 +790,7 @@ export default function SessionDetail() {
         status: 'active',
         ended_at: null,
         paused_at: null,
+        paused_duration: newPausedDuration,
         updated_at: now,
       }));
       setShowReopenConfirmModal(false);
