@@ -2015,7 +2015,7 @@ export default function RunDetail() {
                           selectedTestCase?.id === testCase.id ? 'bg-[#EEF2FF]' : ''
                         }`}
                         style={(testCase as any).lifecycle_status === 'deprecated' ? { opacity: 0.6 } : undefined}
-                        onClick={() => setSelectedTestCase(testCase)}
+                        onClick={() => selectTestCase(testCase)}
                       >
                         <div className="col-span-1 flex items-center" onClick={(e) => e.stopPropagation()}>
                           <input
@@ -2145,7 +2145,7 @@ export default function RunDetail() {
                 attachments: selectedTestCase.attachments,
               }}
               runStatus={selectedTestCase.runStatus}
-              onClose={() => setSelectedTestCase(null)}
+              onClose={() => selectTestCase(null)}
               onStatusChange={(status) => handleStatusChange(selectedTestCase.id, status)}
               onPassAndNext={handlePassAndNext}
               onAddResult={handleAddResult}
