@@ -241,7 +241,145 @@ export default function RunDetail() {
 
   const handleExportPDF = () => {
     setShowMoreMenu(false);
-    window.print();
+
+    const passedCount = testCases.filter(tc => tc.runStatus === 'passed').length;
+    const failedCount = testCases.filter(tc => tc.runStatus === 'failed').length;
+    const blockedCount = testCases.filter(tc => tc.runStatus === 'blocked').length;
+    const retestCount = testCases.filter(tc => tc.runStatus === 'retest').length;
+    const untestedCount = testCases.filter(tc => tc.runStatus === 'untested').length;
+    const totalCount = testCases.length;
+    const completedCount = totalCount - untestedCount;
+    const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+    const statusColors: Record<string, string> = {
+      passed: '#16A34A',
+      failed: '#DC2626',
+      blocked: '#D97706',
+      retest: '#7C3AED',
+      untested: '#64748B',
+    };
+    const statusBg: Record<string, string> = {
+      passed: '#DCFCE7',
+      failed: '#FEE2E2',
+      blocked: '#FEF3C7',
+      retest: '#EDE9FE',
+      untested: '#F1F5F9',
+    };
+
+    const tcRows = testCases.map((tc, i) => {
+      const status = tc.runStatus || 'untested';
+      const color = statusColors[status] || '#64748B';
+      const bg = statusBg[status] || '#F1F5F9';
+      const assignee = runAssignees.get(tc.id) || (tc as any).assignee || '';
+      return `
+        <tr style="background:${i % 2 === 0 ? '#fff' : '#F8FAFC'};">
+          <td style="padding:7px 10px; font-size:11px; color:#64748B; font-family:monospace; white-space:nowrap;">${(tc as any).custom_id || ''}</td>
+          <td style="padding:7px 10px; font-size:12px; color:#0F172A; max-width:280px;">${tc.title || ''}</td>
+          <td style="padding:7px 10px; font-size:11px; color:#475569; text-align:center;">${tc.priority || ''}</td>
+          <td style="padding:7px 10px; font-size:11px; color:#475569;">${tc.folder || ''}</td>
+          <td style="padding:7px 10px; font-size:11px; color:#475569;">${assignee}</td>
+          <td style="padding:7px 10px; text-align:center;">
+            <span style="display:inline-block; padding:2px 8px; border-radius:9999px; font-size:10px; font-weight:600; color:${color}; background:${bg};">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
+          </td>
+        </tr>`;
+    }).join('');
+
+    const startDate = run?.created_at
+      ? new Date(run.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      : '';
+    const exportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${run?.name || 'Run Report'}</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; color: #0F172A; background: white; }
+    .header { border-bottom: 2px solid #6366F1; padding-bottom: 14px; margin-bottom: 18px; }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .run-name { font-size: 20px; font-weight: 700; color: #0F172A; }
+    .project-name { font-size: 12px; color: #64748B; margin-top: 3px; }
+    .export-date { font-size: 11px; color: #94A3B8; text-align: right; }
+    .meta { display: flex; gap: 18px; margin-top: 10px; font-size: 12px; color: #475569; }
+    .meta span { display: flex; align-items: center; gap: 4px; }
+    .summary { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 18px; }
+    .stat { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px; text-align: center; }
+    .stat-value { font-size: 22px; font-weight: 700; }
+    .stat-label { font-size: 10px; color: #64748B; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .progress-bar { height: 8px; background: #E2E8F0; border-radius: 4px; margin-bottom: 18px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #6366F1; border-radius: 4px; width: ${progressPct}%; }
+    .progress-label { font-size: 11px; color: #64748B; text-align: right; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead tr { background: #6366F1; }
+    thead th { padding: 8px 10px; font-size: 10px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
+    thead th:nth-child(3), thead th:nth-child(6) { text-align: center; }
+    tbody tr { border-bottom: 1px solid #F1F5F9; }
+    tbody tr:hover { background: #F0F9FF; }
+    .footer { margin-top: 14px; font-size: 10px; color: #94A3B8; display: flex; justify-content: space-between; border-top: 1px solid #E2E8F0; padding-top: 8px; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      tr { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="run-name">${run?.name || 'Run Report'}</div>
+        <div class="project-name">${project?.name || ''}</div>
+      </div>
+      <div class="export-date">Exported ${exportDate}<br>Started ${startDate}</div>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="stat"><div class="stat-value" style="color:#0F172A;">${totalCount}</div><div class="stat-label">Total</div></div>
+    <div class="stat"><div class="stat-value" style="color:#16A34A;">${passedCount}</div><div class="stat-label">Passed</div></div>
+    <div class="stat"><div class="stat-value" style="color:#DC2626;">${failedCount}</div><div class="stat-label">Failed</div></div>
+    <div class="stat"><div class="stat-value" style="color:#D97706;">${blockedCount}</div><div class="stat-label">Blocked</div></div>
+    <div class="stat"><div class="stat-value" style="color:#7C3AED;">${retestCount}</div><div class="stat-label">Retest</div></div>
+    <div class="stat"><div class="stat-value" style="color:#64748B;">${untestedCount}</div><div class="stat-label">Untested</div></div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill"></div></div>
+  <div class="progress-label">${progressPct}% completed (${completedCount} / ${totalCount})</div>
+  <br>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:80px;">ID</th>
+        <th>Test Case</th>
+        <th style="width:72px;">Priority</th>
+        <th style="width:110px;">Folder</th>
+        <th style="width:100px;">Assignee</th>
+        <th style="width:82px;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tcRows}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <span>Testably — Run Report</span>
+    <span>${run?.name || ''} · ${totalCount} test cases</span>
+  </div>
+</body>
+</html>`;
+
+    const w = window.open('', '_blank', 'width=900,height=700');
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    w.onload = () => {
+      w.focus();
+      w.print();
+    };
   };
 
   const fetchCurrentUser = async () => {
