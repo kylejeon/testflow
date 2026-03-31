@@ -2011,7 +2011,7 @@ def pytest_sessionfinish(session, exitstatus):
                                 </div>
 
                                 {/* Template actions */}
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-between">
                                   <button
                                     type="button"
                                     onClick={() => setJiraSettings((prev: any) => ({
@@ -2028,6 +2028,7 @@ def pytest_sessionfinish(session, exitstatus):
                                     onClick={handleSaveTemplates}
                                     disabled={saving}
                                     className="inline-flex items-center gap-1.5 px-4 py-[0.4375rem] bg-[#6366F1] text-white rounded-md hover:bg-[#4F46E5] transition-colors text-[0.8125rem] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
                                   >
                                     {saving ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-save-line"></i>}
                                     Save Templates
