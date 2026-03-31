@@ -805,6 +805,28 @@ export default function RunDetail() {
     setShowAddResultModal(true);
   };
 
+  const handleLinkExistingIssue = async (issueKey: string) => {
+    if (!selectedTestCase) return;
+    const trimmedKey = issueKey.trim().toUpperCase();
+    if (!trimmedKey) return;
+
+    if (testResults.length > 0) {
+      const latestResult = testResults[0];
+      const updatedIssues = [...(latestResult.issues || []), trimmedKey];
+      const { error } = await supabase
+        .from('test_results')
+        .update({ issues: updatedIssues })
+        .eq('id', latestResult.id);
+      if (error) throw error;
+      setTestResults(testResults.map(r =>
+        r.id === latestResult.id ? { ...r, issues: updatedIssues } : r
+      ));
+    } else {
+      // No existing result — show guidance instead of creating a failed result
+      alert('먼저 Add Result로 테스트 결과를 기록한 후 이슈를 연결해주세요.');
+    }
+  };
+
   const handleStepStatusChange = (stepIndex: number, status: string) => {
     setStepStatuses({
       ...stepStatuses,
@@ -1369,49 +1391,12 @@ export default function RunDetail() {
               : r
           ));
         } else {
-          // testResults가 없을 경우 새 result 생성 (Issues 탭에서 Add Issue 시)
-          const { data: newResultData, error: insertError } = await supabase
-            .from('test_results')
-            .insert({
-              test_case_id: selectedTestCase.id,
-              run_id: runId,
-              status: 'failed',
-              author: currentUser?.full_name || currentUser?.email || '',
-              note: `Jira 이슈 생성: ${newIssueKey}`,
-              elapsed: '00:00',
-              attachments: [],
-              step_statuses: {},
-              issues: [newIssueKey],
-            })
-            .select()
-            .single();
-
-          if (insertError) throw insertError;
-
-          const newResult: TestResult = {
-            id: newResultData.id,
-            status: newResultData.status,
-            note: newResultData.note,
-            elapsed: newResultData.elapsed,
-            attachments: newResultData.attachments || [],
-            author: newResultData.author,
-            timestamp: new Date(newResultData.created_at),
-            stepStatuses: newResultData.step_statuses,
-            issues: newResultData.issues || [],
-            run: { id: runId!, name: run?.name || '' },
-          };
-
-          setTestResults([newResult]);
-
-          // 테스트케이스 상태도 업데이트
-          const updatedTestCases = testCases.map(tc =>
-            tc.id === selectedTestCase.id ? { ...tc, runStatus: 'failed' as any } : tc
-          );
-          setTestCases(updatedTestCases);
-          setSelectedTestCase({ ...selectedTestCase, runStatus: 'failed' as any });
-
-          const untestedCount = updatedTestCases.filter(tc => tc.runStatus === 'untested').length;
-          await updateRunStatus(runId!, { untested: untestedCount });
+          // result가 없는 경우: 이슈 키만 메모리에 임시 보관 (자동 failed result 생성 없음)
+          // 사용자에게 결과 기록을 안내하고 모달을 닫음
+          alert(`Jira issue created: ${newIssueKey}\n\n이슈가 생성되었습니다. Add Result로 테스트 결과를 기록하면 이슈가 자동으로 연결됩니다.`);
+          setShowAddIssueModal(false);
+          setIssueFormData({ summary: '', description: '', issueType: 'Bug', priority: 'Medium', labels: '', assignee: '', components: '' });
+          return;
         }
 
         alert(`Jira issue created: ${newIssueKey}`);
@@ -2137,6 +2122,7 @@ export default function RunDetail() {
                 }
                 setShowAddIssueModal(true);
               }}
+              onLinkExistingIssue={handleLinkExistingIssue}
               projectMembers={projectMembers}
               assigneeName={runAssignees.get(selectedTestCase.id) || ''}
               onAssigneeChange={(name) => handleAssigneeChange(selectedTestCase.id, name)}
