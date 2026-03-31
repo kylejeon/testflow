@@ -1,7 +1,8 @@
 import PageLoader from '../../components/PageLoader';
 import { StatusBadge, type TestStatus } from '../../components/StatusBadge';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import { AvatarStack } from '../../components/Avatar';
@@ -85,441 +86,385 @@ interface TcStats {
   passRate: number;
 }
 
+// ── Standalone queryFn (outside component for stable reference) ──────────────
+
+type MilestoneDetailData = {
+  project: any | null;
+  milestone: Milestone | null;
+  subMilestones: Milestone[];
+  runs: Run[];
+  sessions: Session[];
+  issues: Issue[];
+  activityLogs: ActivityLog[];
+  activityStats: { notes: number; passed: number; failed: number; retest: number };
+  contributorProfiles: Map<string, { name: string | null; url: string | null }>;
+  assigneeProfiles: Map<string, { name: string | null; email: string; url: string | null }>;
+  runAssigneeMap: Map<string, string[]>;
+  tcStats: TcStats;
+  failedBlockedTcs: FailedBlockedTcItem[];
+  subMilestoneProgress: Map<string, number>;
+};
+
+async function loadMilestoneDetailData(projectId: string, milestoneId: string): Promise<MilestoneDetailData> {
+  const { data: projectData, error: projectError } = await supabase
+    .from('projects').select('*').eq('id', projectId).single();
+  if (projectError) throw projectError;
+
+  const { data: milestoneData, error: milestoneError } = await supabase
+    .from('milestones').select('*').eq('id', milestoneId).single();
+  if (milestoneError) throw milestoneError;
+
+  // Auto-correct milestone status
+  let correctedMilestone = { ...milestoneData };
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  if (correctedMilestone.start_date && correctedMilestone.status === 'upcoming') {
+    const [sy, sm, sd] = correctedMilestone.start_date.split('T')[0].split('-');
+    const startDate = new Date(parseInt(sy), parseInt(sm) - 1, parseInt(sd));
+    if (startDate <= today) {
+      correctedMilestone.status = 'started';
+      await supabase.from('milestones').update({ status: 'started' }).eq('id', milestoneId);
+    }
+  }
+  if (correctedMilestone.end_date && correctedMilestone.status !== 'completed') {
+    const [ey, em, ed] = correctedMilestone.end_date.split('T')[0].split('-');
+    const endDate = new Date(parseInt(ey), parseInt(em) - 1, parseInt(ed));
+    if (endDate < today) {
+      correctedMilestone.status = 'past_due';
+      await supabase.from('milestones').update({ status: 'past_due' }).eq('id', milestoneId);
+    } else if (correctedMilestone.status === 'past_due') {
+      correctedMilestone.status = 'started';
+      await supabase.from('milestones').update({ status: 'started' }).eq('id', milestoneId);
+    }
+  }
+
+  const { data: subMilestonesData } = await supabase
+    .from('milestones').select('*').eq('parent_milestone_id', milestoneId).order('start_date', { ascending: true });
+  const subMilestoneIds = (subMilestonesData || []).map((s: any) => s.id);
+
+  const { data: runsData, error: runsError } = await supabase
+    .from('test_runs').select('*').eq('milestone_id', milestoneId).order('created_at', { ascending: false });
+  if (runsError) throw runsError;
+
+  const allTestCaseIds = new Set<string>();
+  (runsData || []).forEach(run => { run.test_case_ids.forEach((id: string) => allTestCaseIds.add(id)); });
+
+  const testCaseNameMap = new Map<string, string>();
+  if (allTestCaseIds.size > 0) {
+    const { data: testCasesData } = await supabase
+      .from('test_cases').select('id, title').in('id', Array.from(allTestCaseIds));
+    (testCasesData || []).forEach(tc => { testCaseNameMap.set(tc.id, tc.title); });
+  }
+
+  const allIssues: Issue[] = [];
+  const allActivityLogs: ActivityLog[] = [];
+  let notesCount = 0, passedCount = 0, failedCount = 0, retestCount = 0;
+  const allRawResults: Array<{ tcId: string; status: string; createdAt: string; runId: string; runName: string; author: string }> = [];
+
+  const runsWithProgress = await Promise.all(
+    (runsData || []).map(async (run) => {
+      const { data: testResultsData } = await supabase
+        .from('test_results')
+        .select('test_case_id, status, issues, created_at, note, author')
+        .eq('run_id', run.id)
+        .order('created_at', { ascending: false });
+
+      const statusMap = new Map<string, string>();
+      const runAuthors = new Set<string>();
+
+      testResultsData?.forEach(result => {
+        allRawResults.push({ tcId: result.test_case_id, status: result.status, createdAt: result.created_at, runId: run.id, runName: run.name, author: result.author || '' });
+        if (result.author && result.author.trim()) runAuthors.add(result.author);
+        if (!statusMap.has(result.test_case_id)) statusMap.set(result.test_case_id, result.status);
+
+        if (result.status && result.status !== 'untested') {
+          allActivityLogs.push({
+            id: `${run.id}-${result.test_case_id}-${result.created_at}-status`,
+            type: result.status as ActivityLog['type'],
+            testCaseName: testCaseNameMap.get(result.test_case_id) || 'Unknown Test Case',
+            runName: run.name,
+            timestamp: new Date(result.created_at),
+            author: result.author || 'Unknown',
+          });
+        }
+
+        const autoNotePatterns = ['Status changed to', 'Passed via', 'via Pass', 'via pass'];
+        const isAutoNote = autoNotePatterns.some(pattern => result.note?.includes(pattern));
+        if (result.note && result.note.trim() && !isAutoNote) {
+          allActivityLogs.push({
+            id: `${run.id}-${result.test_case_id}-${result.created_at}-note`,
+            type: 'note',
+            testCaseName: testCaseNameMap.get(result.test_case_id) || 'Unknown Test Case',
+            runName: run.name,
+            timestamp: new Date(result.created_at),
+            author: result.author || 'Unknown',
+          });
+          notesCount++;
+        }
+
+        if (result.status === 'passed') passedCount++;
+        if (result.status === 'failed') failedCount++;
+        if (result.status === 'retest') retestCount++;
+      });
+
+      let passed_count = 0, failed_count = 0, blocked_count = 0, retest_count = 0, untested_count = 0;
+      run.test_case_ids.forEach((tcId: string) => {
+        const status = statusMap.get(tcId) || 'untested';
+        switch (status) {
+          case 'passed': passed_count++; break;
+          case 'failed': failed_count++; break;
+          case 'blocked': blocked_count++; break;
+          case 'retest': retest_count++; break;
+          default: untested_count++;
+        }
+      });
+
+      return { ...run, passed_count, failed_count, blocked_count, retest_count, untested_count, authors: Array.from(runAuthors).slice(0, 4) };
+    })
+  );
+
+  // Sub milestone progress
+  let parentTotal = 0, parentTested = 0;
+  runsWithProgress.forEach(run => {
+    parentTotal += run.test_case_ids.length;
+    parentTested += (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0);
+  });
+  const parentProgressPct = parentTotal > 0 ? Math.round((parentTested / parentTotal) * 100) : 0;
+
+  const subMilestoneProgress = new Map<string, number>();
+  if (subMilestoneIds.length > 0) {
+    const { data: subRunsData } = await supabase
+      .from('test_runs').select('id, milestone_id, test_case_ids').in('milestone_id', subMilestoneIds);
+
+    if (subRunsData && subRunsData.length > 0) {
+      const subRunIds = subRunsData.map((r: any) => r.id);
+      const { data: subResultsData } = await supabase
+        .from('test_results').select('run_id, test_case_id, status, created_at').in('run_id', subRunIds).order('created_at', { ascending: false });
+
+      const runStatusMaps = new Map<string, Map<string, string>>();
+      (subResultsData || []).forEach((r: any) => {
+        if (!runStatusMaps.has(r.run_id)) runStatusMaps.set(r.run_id, new Map());
+        const sm = runStatusMaps.get(r.run_id)!;
+        if (!sm.has(r.test_case_id)) sm.set(r.test_case_id, r.status);
+      });
+
+      const subProgressAccum = new Map<string, { tested: number; total: number }>();
+      subRunsData.forEach((run: any) => {
+        const statusMap = runStatusMaps.get(run.id) || new Map();
+        const total = (run.test_case_ids || []).length;
+        if (total === 0) return;
+        let tested = 0;
+        (run.test_case_ids || []).forEach((tcId: string) => {
+          const s = statusMap.get(tcId);
+          if (s && s !== 'untested') tested++;
+        });
+        const mid = run.milestone_id;
+        const existing = subProgressAccum.get(mid) || { tested: 0, total: 0 };
+        subProgressAccum.set(mid, { tested: existing.tested + tested, total: existing.total + total });
+      });
+
+      subProgressAccum.forEach((v, k) => {
+        subMilestoneProgress.set(k, v.total > 0 ? Math.round((v.tested / v.total) * 100) : parentProgressPct);
+      });
+    }
+
+    subMilestoneIds.forEach(id => {
+      if (!subMilestoneProgress.has(id)) subMilestoneProgress.set(id, parentProgressPct);
+    });
+  }
+
+  // Assignees
+  const runIds = runsWithProgress.map(r => r.id);
+  const newRunAssigneeMap = new Map<string, string[]>();
+  const allAssigneeIds = new Set<string>();
+  if (runIds.length > 0) {
+    const { data: rtaData } = await supabase
+      .from('run_testcase_assignees').select('run_id, assignee').in('run_id', runIds);
+    (rtaData || []).forEach((row: any) => {
+      if (!row.assignee) return;
+      const existing = newRunAssigneeMap.get(row.run_id) || [];
+      if (!existing.includes(row.assignee)) existing.push(row.assignee);
+      newRunAssigneeMap.set(row.run_id, existing);
+      allAssigneeIds.add(row.assignee);
+    });
+  }
+  if (allTestCaseIds.size > 0) {
+    const { data: tcAssigneeData } = await supabase
+      .from('test_cases').select('id, assignee').in('id', Array.from(allTestCaseIds)).not('assignee', 'is', null);
+    const tcAssigneeMap = new Map<string, string>();
+    (tcAssigneeData || []).forEach((tc: any) => { if (tc.assignee) tcAssigneeMap.set(tc.id, tc.assignee); });
+    runsWithProgress.forEach(r => {
+      if (!newRunAssigneeMap.has(r.id)) {
+        const assignees = new Set<string>();
+        r.test_case_ids.forEach((tcId: string) => {
+          const a = tcAssigneeMap.get(tcId);
+          if (a) assignees.add(a);
+        });
+        if (assignees.size > 0) {
+          newRunAssigneeMap.set(r.id, Array.from(assignees));
+          assignees.forEach(id => allAssigneeIds.add(id));
+        }
+      }
+    });
+  }
+
+  const assigneeProfilesMap = new Map<string, { name: string | null; email: string; url: string | null }>();
+  if (allAssigneeIds.size > 0) {
+    const assigneeNames = Array.from(allAssigneeIds);
+    const { data: apData } = await supabase
+      .from('profiles').select('id, full_name, email, avatar_url')
+      .or(assigneeNames.map(n => `full_name.eq.${n},email.eq.${n}`).join(','));
+    (apData || []).forEach((p: any) => {
+      if (p.full_name) assigneeProfilesMap.set(p.full_name, { name: p.full_name, email: p.email || '', url: p.avatar_url || null });
+      if (p.email) assigneeProfilesMap.set(p.email, { name: p.full_name, email: p.email || '', url: p.avatar_url || null });
+    });
+  }
+
+  // Global TC stats
+  const globalTcStatusMap = new Map<string, string>();
+  allRawResults.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .forEach(r => { globalTcStatusMap.set(r.tcId, r.status); });
+
+  let aggPassed = 0, aggFailed = 0, aggBlocked = 0, aggRetest = 0;
+  globalTcStatusMap.forEach(status => {
+    if (status === 'passed') aggPassed++;
+    else if (status === 'failed') aggFailed++;
+    else if (status === 'blocked') aggBlocked++;
+    else if (status === 'retest') aggRetest++;
+  });
+  const aggTotal = allTestCaseIds.size;
+  const aggTested = aggPassed + aggFailed + aggBlocked + aggRetest;
+  const aggUntested = aggTotal - Math.min(globalTcStatusMap.size, aggTotal);
+  const aggPassRate = aggTested > 0 ? Math.round((aggPassed / aggTested) * 100) : 0;
+
+  const failedBlockedTcList: FailedBlockedTcItem[] = [];
+  globalTcStatusMap.forEach((status, tcId) => {
+    if (status === 'failed' || status === 'blocked') {
+      const latestResult = [...allRawResults]
+        .filter(r => r.tcId === tcId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+      failedBlockedTcList.push({
+        tcId,
+        tcName: testCaseNameMap.get(tcId) || tcId,
+        status: status as 'failed' | 'blocked',
+        runName: latestResult?.runName || '',
+        author: latestResult?.author || '',
+        createdAt: latestResult?.createdAt || '',
+      });
+    }
+  });
+
+  // Contributor profiles
+  const allAuthorsSet = new Set([
+    ...allActivityLogs.map(l => l.author),
+    ...runsWithProgress.flatMap(r => r.authors || []),
+  ]);
+  const contributorProfiles = new Map<string, { name: string | null; url: string | null }>();
+  const validAuthors = Array.from(allAuthorsSet).filter(a => a && a !== 'Unknown');
+  if (validAuthors.length > 0) {
+    const [byName, byEmail] = await Promise.all([
+      supabase.from('profiles').select('full_name, email, avatar_url').in('full_name', validAuthors),
+      supabase.from('profiles').select('full_name, email, avatar_url').in('email', validAuthors),
+    ]);
+    [...(byName.data || []), ...(byEmail.data || [])].forEach((p: any) => {
+      const info = { name: p.full_name || null, url: p.avatar_url || null };
+      if (p.full_name) contributorProfiles.set(p.full_name, info);
+      if (p.email) contributorProfiles.set(p.email, info);
+    });
+  }
+
+  // Sessions
+  const { data: sessionsData } = await supabase
+    .from('sessions').select('*').eq('milestone_id', milestoneId).order('created_at', { ascending: false });
+
+  const sessionIds = (sessionsData || []).map((s: any) => s.id);
+  const { data: sessionLogsData } = await supabase
+    .from('session_logs').select('*').in('session_id', sessionIds).order('created_at', { ascending: false });
+
+  const logsBySession = new Map<string, any[]>();
+  (sessionLogsData || []).forEach((log: any) => {
+    if (!logsBySession.has(log.session_id)) logsBySession.set(log.session_id, []);
+    logsBySession.get(log.session_id)!.push(log);
+  });
+
+  const generateActivityData = (logs: any[]) => {
+    if (!logs || logs.length === 0) return [{ color: '#E2E8F0', pct: 100 }];
+    const counts: Record<string, number> = { note: 0, passed: 0, failed: 0, blocked: 0 };
+    logs.forEach(log => { if (log.type in counts) counts[log.type]++; });
+    const total = logs.length;
+    const segments = [
+      { color: '#6366F1', count: counts.note },
+      { color: '#7C3AED', count: counts.passed },
+      { color: '#EF4444', count: counts.failed },
+      { color: '#F59E0B', count: counts.blocked },
+    ].filter(s => s.count > 0);
+    if (segments.length === 0) return [{ color: '#E2E8F0', pct: 100 }];
+    const result = segments.map(s => ({ color: s.color, pct: Math.round((s.count / total) * 100) }));
+    const sum = result.reduce((a, s) => a + s.pct, 0);
+    if (sum < 100) result[result.length - 1].pct += 100 - sum;
+    return result;
+  };
+
+  const sessionsWithActivity = (sessionsData || []).map((session: any) => {
+    const sessionLogs = logsBySession.get(session.id) || [];
+    let actualStatus = session.status;
+    if (session.status === 'active') actualStatus = sessionLogs.length === 0 ? 'new' : 'in_progress';
+    return { ...session, actualStatus, activityData: generateActivityData(sessionLogs) };
+  });
+
+  return {
+    project: projectData,
+    milestone: correctedMilestone,
+    subMilestones: subMilestonesData || [],
+    runs: runsWithProgress,
+    sessions: sessionsWithActivity,
+    issues: allIssues.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    activityLogs: allActivityLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()),
+    activityStats: { notes: notesCount, passed: passedCount, failed: failedCount, retest: retestCount },
+    contributorProfiles,
+    assigneeProfiles: assigneeProfilesMap,
+    runAssigneeMap: newRunAssigneeMap,
+    tcStats: { passed: aggPassed, failed: aggFailed, blocked: aggBlocked, retest: aggRetest, untested: Math.max(0, aggUntested), total: aggTotal, passRate: aggPassRate },
+    failedBlockedTcs: failedBlockedTcList,
+    subMilestoneProgress,
+  };
+}
+
 export default function MilestoneDetail() {
   const { projectId, milestoneId } = useParams();
   const navigate = useNavigate();
-  const [project, setProject] = useState<any>(null);
-  const [milestone, setMilestone] = useState<Milestone | null>(null);
-  const [subMilestones, setSubMilestones] = useState<Milestone[]>([]);
-  const [runs, setRuns] = useState<Run[]>([]);
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [issues, setIssues] = useState<Issue[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  // ── UI state (user-interactive) ─────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<'results' | 'status' | 'activity' | 'issues'>('results');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({ name: '', start_date: '', end_date: '' });
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [activityStats, setActivityStats] = useState({ notes: 0, passed: 0, failed: 0, retest: 0 });
   const [activityStatusFilter, setActivityStatusFilter] = useState<string>('all');
   const [activityPage, setActivityPage] = useState(1);
-  const [contributorProfiles, setContributorProfiles] = useState<Map<string, { name: string | null; url: string | null }>>(new Map());
-  const [assigneeProfiles, setAssigneeProfiles] = useState<Map<string, { name: string | null; email: string; url: string | null }>>(new Map());
-  const [runAssigneeMap, setRunAssigneeMap] = useState<Map<string, string[]>>(new Map());
-  const [tcStats, setTcStats] = useState<TcStats>({ passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, total: 0, passRate: 0 });
-  const [failedBlockedTcs, setFailedBlockedTcs] = useState<FailedBlockedTcItem[]>([]);
-  const [subMilestoneProgress, setSubMilestoneProgress] = useState<Map<string, number>>(new Map());
   const activityPerPage = 10;
 
-  useEffect(() => {
-    if (projectId && milestoneId) {
-      fetchData();
-    }
-  }, [projectId, milestoneId]);
+  // ── React Query ─────────────────────────────────────────────────────────────
+  const { data, isLoading } = useQuery({
+    queryKey: ['milestone-detail', milestoneId],
+    queryFn: () => loadMilestoneDetailData(projectId!, milestoneId!),
+    enabled: !!projectId && !!milestoneId,
+    staleTime: 60_000,
+  });
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-
-      const { data: projectData, error: projectError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .single();
-
-      if (projectError) throw projectError;
-      setProject(projectData);
-
-      const { data: milestoneData, error: milestoneError } = await supabase
-        .from('milestones')
-        .select('*')
-        .eq('id', milestoneId)
-        .single();
-
-      if (milestoneError) throw milestoneError;
-
-      // Auto-correct milestone status
-      let correctedMilestone = { ...milestoneData };
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (correctedMilestone.start_date && correctedMilestone.status === 'upcoming') {
-        const [sy, sm, sd] = correctedMilestone.start_date.split('T')[0].split('-');
-        const startDate = new Date(parseInt(sy), parseInt(sm) - 1, parseInt(sd));
-        if (startDate <= today) {
-          correctedMilestone.status = 'started';
-          await supabase.from('milestones').update({ status: 'started' }).eq('id', milestoneId);
-        }
-      }
-
-      if (correctedMilestone.end_date && correctedMilestone.status !== 'completed') {
-        const [ey, em, ed] = correctedMilestone.end_date.split('T')[0].split('-');
-        const endDate = new Date(parseInt(ey), parseInt(em) - 1, parseInt(ed));
-        if (endDate < today) {
-          correctedMilestone.status = 'past_due';
-          await supabase.from('milestones').update({ status: 'past_due' }).eq('id', milestoneId);
-        } else if (correctedMilestone.status === 'past_due') {
-          correctedMilestone.status = 'started';
-          await supabase.from('milestones').update({ status: 'started' }).eq('id', milestoneId);
-        }
-      }
-
-      setMilestone(correctedMilestone);
-
-      const { data: subMilestonesData } = await supabase
-        .from('milestones')
-        .select('*')
-        .eq('parent_milestone_id', milestoneId)
-        .order('start_date', { ascending: true });
-
-      setSubMilestones(subMilestonesData || []);
-      const subMilestoneIds = (subMilestonesData || []).map((s: any) => s.id);
-
-      const { data: runsData, error: runsError } = await supabase
-        .from('test_runs')
-        .select('*')
-        .eq('milestone_id', milestoneId)
-        .order('created_at', { ascending: false });
-
-      if (runsError) throw runsError;
-
-      const allTestCaseIds = new Set<string>();
-      (runsData || []).forEach(run => {
-        run.test_case_ids.forEach((id: string) => allTestCaseIds.add(id));
-      });
-
-      const testCaseNameMap = new Map<string, string>();
-      if (allTestCaseIds.size > 0) {
-        const { data: testCasesData } = await supabase
-          .from('test_cases')
-          .select('id, title')
-          .in('id', Array.from(allTestCaseIds));
-        (testCasesData || []).forEach(tc => { testCaseNameMap.set(tc.id, tc.title); });
-      }
-
-      const allIssues: Issue[] = [];
-      const issueIdSet = new Set<string>();
-      const allActivityLogs: ActivityLog[] = [];
-      let notesCount = 0;
-      let passedCount = 0;
-      let failedCount = 0;
-      let retestCount = 0;
-
-      // For global TC stats
-      const allRawResults: Array<{ tcId: string; status: string; createdAt: string; runId: string; runName: string; author: string }> = [];
-
-      const runsWithProgress = await Promise.all(
-        (runsData || []).map(async (run) => {
-          const { data: testResultsData } = await supabase
-            .from('test_results')
-            .select('test_case_id, status, issues, created_at, note, author')
-            .eq('run_id', run.id)
-            .order('created_at', { ascending: false });
-
-          const statusMap = new Map<string, string>();
-          const runAuthors = new Set<string>();
-
-          testResultsData?.forEach(result => {
-            // Accumulate for global stats
-            allRawResults.push({ tcId: result.test_case_id, status: result.status, createdAt: result.created_at, runId: run.id, runName: run.name, author: result.author || '' });
-            // Track authors per run
-            if (result.author && result.author.trim()) runAuthors.add(result.author);
-
-            if (!statusMap.has(result.test_case_id)) {
-              statusMap.set(result.test_case_id, result.status);
-            }
-
-            if (result.status && result.status !== 'untested') {
-              allActivityLogs.push({
-                id: `${run.id}-${result.test_case_id}-${result.created_at}-status`,
-                type: result.status as ActivityLog['type'],
-                testCaseName: testCaseNameMap.get(result.test_case_id) || 'Unknown Test Case',
-                runName: run.name,
-                timestamp: new Date(result.created_at),
-                author: result.author || 'Unknown',
-              });
-            }
-
-            const autoNotePatterns = ['Status changed to', 'Passed via', 'via Pass', 'via pass'];
-            const isAutoNote = autoNotePatterns.some(pattern => result.note?.includes(pattern));
-            if (result.note && result.note.trim() && !isAutoNote) {
-              allActivityLogs.push({
-                id: `${run.id}-${result.test_case_id}-${result.created_at}-note`,
-                type: 'note',
-                testCaseName: testCaseNameMap.get(result.test_case_id) || 'Unknown Test Case',
-                runName: run.name,
-                timestamp: new Date(result.created_at),
-                author: result.author || 'Unknown',
-              });
-              notesCount++;
-            }
-
-            if (result.status === 'passed') passedCount++;
-            if (result.status === 'failed') failedCount++;
-            if (result.status === 'retest') retestCount++;
-          });
-
-          let passed_count = 0, failed_count = 0, blocked_count = 0, retest_count = 0, untested_count = 0;
-          run.test_case_ids.forEach((tcId: string) => {
-            const status = statusMap.get(tcId) || 'untested';
-            switch (status) {
-              case 'passed': passed_count++; break;
-              case 'failed': failed_count++; break;
-              case 'blocked': blocked_count++; break;
-              case 'retest': retest_count++; break;
-              default: untested_count++;
-            }
-          });
-
-          return { ...run, passed_count, failed_count, blocked_count, retest_count, untested_count, authors: Array.from(runAuthors).slice(0, 4) };
-        })
-      );
-
-      setRuns(runsWithProgress);
-      setIssues(allIssues.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setActivityLogs(allActivityLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
-      setActivityStats({ notes: notesCount, passed: passedCount, failed: failedCount, retest: retestCount });
-
-      // Calculate parent milestone progress for sub milestone fallback
-      let parentTotal = 0, parentTested = 0;
-      runsWithProgress.forEach(run => {
-        parentTotal += run.test_case_ids.length;
-        parentTested += (run.passed_count || 0) + (run.failed_count || 0) + (run.blocked_count || 0) + (run.retest_count || 0);
-      });
-      const parentProgressPct = parentTotal > 0 ? Math.round((parentTested / parentTotal) * 100) : 0;
-
-      // Calculate sub milestone progress: own runs first, fallback to parent progress
-      if (subMilestoneIds.length > 0) {
-        const { data: subRunsData } = await supabase
-          .from('test_runs')
-          .select('id, milestone_id, test_case_ids')
-          .in('milestone_id', subMilestoneIds);
-
-        const newSubProgressMap = new Map<string, number>();
-
-        if (subRunsData && subRunsData.length > 0) {
-          const subRunIds = subRunsData.map((r: any) => r.id);
-          const { data: subResultsData } = await supabase
-            .from('test_results')
-            .select('run_id, test_case_id, status, created_at')
-            .in('run_id', subRunIds)
-            .order('created_at', { ascending: false });
-
-          const runStatusMaps = new Map<string, Map<string, string>>();
-          (subResultsData || []).forEach((r: any) => {
-            if (!runStatusMaps.has(r.run_id)) runStatusMaps.set(r.run_id, new Map());
-            const sm = runStatusMaps.get(r.run_id)!;
-            if (!sm.has(r.test_case_id)) sm.set(r.test_case_id, r.status);
-          });
-
-          const subProgressAccum = new Map<string, { tested: number; total: number }>();
-          subRunsData.forEach((run: any) => {
-            const statusMap = runStatusMaps.get(run.id) || new Map();
-            const total = (run.test_case_ids || []).length;
-            if (total === 0) return;
-            let tested = 0;
-            (run.test_case_ids || []).forEach((tcId: string) => {
-              const s = statusMap.get(tcId);
-              if (s && s !== 'untested') tested++;
-            });
-            const mid = run.milestone_id;
-            const existing = subProgressAccum.get(mid) || { tested: 0, total: 0 };
-            subProgressAccum.set(mid, { tested: existing.tested + tested, total: existing.total + total });
-          });
-
-          subProgressAccum.forEach((v, k) => {
-            newSubProgressMap.set(k, v.total > 0 ? Math.round((v.tested / v.total) * 100) : parentProgressPct);
-          });
-        }
-
-        // Sub milestones with no dedicated runs → fallback to parent progress
-        subMilestoneIds.forEach(id => {
-          if (!newSubProgressMap.has(id)) newSubProgressMap.set(id, parentProgressPct);
-        });
-
-        setSubMilestoneProgress(newSubProgressMap);
-      }
-
-      // Fetch per-run TC assignees from run_testcase_assignees table
-      const runIds = runsWithProgress.map(r => r.id);
-      const newRunAssigneeMap = new Map<string, string[]>();
-      const allAssigneeIds = new Set<string>();
-      if (runIds.length > 0) {
-        const { data: rtaData } = await supabase
-          .from('run_testcase_assignees')
-          .select('run_id, assignee')
-          .in('run_id', runIds);
-        (rtaData || []).forEach((row: any) => {
-          if (!row.assignee) return;
-          const existing = newRunAssigneeMap.get(row.run_id) || [];
-          if (!existing.includes(row.assignee)) existing.push(row.assignee);
-          newRunAssigneeMap.set(row.run_id, existing);
-          allAssigneeIds.add(row.assignee);
-        });
-      }
-      // Also collect assignees from test_cases directly for runs without run_testcase_assignees
-      if (allTestCaseIds.size > 0) {
-        const { data: tcAssigneeData } = await supabase
-          .from('test_cases')
-          .select('id, assignee')
-          .in('id', Array.from(allTestCaseIds))
-          .not('assignee', 'is', null);
-        const tcAssigneeMap = new Map<string, string>();
-        (tcAssigneeData || []).forEach((tc: any) => { if (tc.assignee) tcAssigneeMap.set(tc.id, tc.assignee); });
-        runsWithProgress.forEach(r => {
-          if (!newRunAssigneeMap.has(r.id)) {
-            const assignees = new Set<string>();
-            r.test_case_ids.forEach((tcId: string) => {
-              const a = tcAssigneeMap.get(tcId);
-              if (a) assignees.add(a);
-            });
-            if (assignees.size > 0) {
-              newRunAssigneeMap.set(r.id, Array.from(assignees));
-              assignees.forEach(id => allAssigneeIds.add(id));
-            }
-          }
-        });
-      }
-      setRunAssigneeMap(newRunAssigneeMap);
-      if (allAssigneeIds.size > 0) {
-        const assigneeNames = Array.from(allAssigneeIds);
-        const { data: apData } = await supabase
-          .from('profiles')
-          .select('id, full_name, email, avatar_url')
-          .or(
-            assigneeNames.map(n => `full_name.eq.${n},email.eq.${n}`).join(',')
-          );
-        const apMap = new Map<string, { name: string | null; email: string; url: string | null }>();
-        (apData || []).forEach((p: any) => {
-          if (p.full_name) apMap.set(p.full_name, { name: p.full_name, email: p.email || '', url: p.avatar_url || null });
-          if (p.email) apMap.set(p.email, { name: p.full_name, email: p.email || '', url: p.avatar_url || null });
-        });
-        setAssigneeProfiles(apMap);
-      }
-
-      // Compute global TC stats (unique TCs, latest result wins)
-      const globalTcStatusMap = new Map<string, string>();
-      allRawResults
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-        .forEach(r => { globalTcStatusMap.set(r.tcId, r.status); });
-
-      let aggPassed = 0, aggFailed = 0, aggBlocked = 0, aggRetest = 0;
-      globalTcStatusMap.forEach(status => {
-        if (status === 'passed') aggPassed++;
-        else if (status === 'failed') aggFailed++;
-        else if (status === 'blocked') aggBlocked++;
-        else if (status === 'retest') aggRetest++;
-      });
-      const aggTotal = allTestCaseIds.size;
-      const aggTested = aggPassed + aggFailed + aggBlocked + aggRetest;
-      const aggUntested = aggTotal - Math.min(globalTcStatusMap.size, aggTotal);
-      const aggPassRate = aggTested > 0 ? Math.round((aggPassed / aggTested) * 100) : 0;
-      setTcStats({ passed: aggPassed, failed: aggFailed, blocked: aggBlocked, retest: aggRetest, untested: Math.max(0, aggUntested), total: aggTotal, passRate: aggPassRate });
-
-      // Build failed/blocked TCs list for Issues tab
-      const failedBlockedTcList: FailedBlockedTcItem[] = [];
-      globalTcStatusMap.forEach((status, tcId) => {
-        if (status === 'failed' || status === 'blocked') {
-          const latestResult = [...allRawResults]
-            .filter(r => r.tcId === tcId)
-            .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-          failedBlockedTcList.push({
-            tcId,
-            tcName: testCaseNameMap.get(tcId) || tcId,
-            status: status as 'failed' | 'blocked',
-            runName: latestResult?.runName || '',
-            author: latestResult?.author || '',
-            createdAt: latestResult?.createdAt || '',
-          });
-        }
-      });
-      setFailedBlockedTcs(failedBlockedTcList);
-
-      // Include ALL run authors so Run card avatars always resolve correctly
-      const allAuthorsSet = new Set([
-        ...allActivityLogs.map(l => l.author),
-        ...runsWithProgress.flatMap(r => r.authors || []),
-      ]);
-      fetchContributorProfiles(Array.from(allAuthorsSet));
-
-      const { data: sessionsData } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('milestone_id', milestoneId)
-        .order('created_at', { ascending: false });
-
-      const sessionIds = (sessionsData || []).map((s: any) => s.id);
-      const { data: sessionLogsData } = await supabase
-        .from('session_logs')
-        .select('*')
-        .in('session_id', sessionIds)
-        .order('created_at', { ascending: false });
-
-      const logsBySession = new Map<string, any[]>();
-      (sessionLogsData || []).forEach((log: any) => {
-        if (!logsBySession.has(log.session_id)) logsBySession.set(log.session_id, []);
-        logsBySession.get(log.session_id)!.push(log);
-      });
-
-      const generateActivityData = (logs: any[]) => {
-        if (!logs || logs.length === 0) return [{ color: '#E2E8F0', pct: 100 }];
-        const counts: Record<string, number> = { note: 0, passed: 0, failed: 0, blocked: 0 };
-        logs.forEach(log => { if (log.type in counts) counts[log.type]++; });
-        const total = logs.length;
-        const segments = [
-          { color: '#6366F1', count: counts.note },    // Note → indigo
-          { color: '#7C3AED', count: counts.passed },  // Step → violet
-          { color: '#EF4444', count: counts.failed },  // Bug → red
-          { color: '#F59E0B', count: counts.blocked }, // Observation → amber
-        ].filter(s => s.count > 0);
-        if (segments.length === 0) return [{ color: '#E2E8F0', pct: 100 }];
-        const result = segments.map(s => ({ color: s.color, pct: Math.round((s.count / total) * 100) }));
-        // fix rounding so total = 100
-        const sum = result.reduce((a, s) => a + s.pct, 0);
-        if (sum < 100) result[result.length - 1].pct += 100 - sum;
-        return result;
-      };
-
-      const sessionsWithActivity = (sessionsData || []).map((session: any) => {
-        const sessionLogs = logsBySession.get(session.id) || [];
-        let actualStatus = session.status;
-        if (session.status === 'active') actualStatus = sessionLogs.length === 0 ? 'new' : 'in_progress';
-        return { ...session, actualStatus, activityData: generateActivityData(sessionLogs) };
-      });
-
-      setSessions(sessionsWithActivity);
-    } catch (error) {
-      console.error('데이터 로딩 오류:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchContributorProfiles = async (authors: string[]) => {
-    if (authors.length === 0) return;
-    try {
-      const validAuthors = authors.filter(a => a && a !== 'Unknown');
-      if (validAuthors.length === 0) return;
-
-      // Use .in() instead of .or() — .or('full_name.eq.Kyle Jeon') breaks on spaces
-      const [byName, byEmail] = await Promise.all([
-        supabase.from('profiles').select('full_name, email, avatar_url').in('full_name', validAuthors),
-        supabase.from('profiles').select('full_name, email, avatar_url').in('email', validAuthors),
-      ]);
-
-      const nameRows = byName.data || [];
-      const emailRows = byEmail.data || [];
-
-      const profileMap = new Map<string, { name: string | null; url: string | null }>();
-      [...nameRows, ...emailRows].forEach((p: any) => {
-        const info = { name: p.full_name || null, url: p.avatar_url || null };
-        if (p.full_name) profileMap.set(p.full_name, info);
-        if (p.email) profileMap.set(p.email, info);
-      });
-      setContributorProfiles(profileMap);
-    } catch (e) {
-      console.error('contributor profiles fetch error:', e);
-    }
-  };
+  const project = data?.project ?? null;
+  const milestone = data?.milestone ?? null;
+  const subMilestones = data?.subMilestones ?? [];
+  const runs = data?.runs ?? [];
+  const sessions = data?.sessions ?? [];
+  const issues = data?.issues ?? [];
+  const activityLogs = data?.activityLogs ?? [];
+  const activityStats = data?.activityStats ?? { notes: 0, passed: 0, failed: 0, retest: 0 };
+  const contributorProfiles = data?.contributorProfiles ?? new Map();
+  const assigneeProfiles = data?.assigneeProfiles ?? new Map();
+  const runAssigneeMap = data?.runAssigneeMap ?? new Map();
+  const tcStats = data?.tcStats ?? { passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, total: 0, passRate: 0 };
+  const failedBlockedTcs = data?.failedBlockedTcs ?? [];
+  const subMilestoneProgress = data?.subMilestoneProgress ?? new Map();
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '';
@@ -603,7 +548,7 @@ export default function MilestoneDetail() {
       }).eq('id', milestone.id);
       if (error) throw error;
       setShowEditModal(false);
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ['milestone-detail', milestoneId] });
     } catch (error) {
       console.error('마일스톤 수정 오류:', error);
       alert('Failed to update milestone.');
@@ -614,7 +559,10 @@ export default function MilestoneDetail() {
     if (!milestone || milestone.status === 'completed') return;
     try {
       await supabase.from('milestones').update({ status: 'completed' }).eq('id', milestone.id);
-      setMilestone({ ...milestone, status: 'completed' });
+      queryClient.setQueryData(['milestone-detail', milestoneId], (old: MilestoneDetailData | undefined) => {
+        if (!old?.milestone) return old;
+        return { ...old, milestone: { ...old.milestone, status: 'completed' } };
+      });
     } catch (e) {
       console.error('complete error:', e);
     }
@@ -673,7 +621,7 @@ export default function MilestoneDetail() {
     return colors[hash % colors.length];
   };
 
-  if (loading) return <PageLoader fullScreen />;
+  if (isLoading) return <PageLoader fullScreen />;
 
   if (!milestone) {
     return (
