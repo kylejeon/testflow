@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Export Report — Design Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  :root {
+    --primary: #6366F1;
+    --primary-hover: #4F46E5;
+    --primary-light: #818CF8;
+    --primary-bg: #EEF2FF;
+    --violet: #8B5CF6;
+    --gray-50: #F8FAFC;
+    --gray-100: #F1F5F9;
+    --gray-200: #E2E8F0;
+    --gray-300: #CBD5E1;
+    --gray-400: #94A3B8;
+    --gray-500: #64748B;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1E293B;
+    --gray-900: #0F172A;
+    --success: #10B981;
+    --success-light: #ECFDF5;
+    --success-border: #A7F3D0;
+    --success-text: #065F46;
+    --danger: #EF4444;
+    --danger-light: #FEF2F2;
+    --danger-border: #FECACA;
+    --danger-text: #991B1B;
+    --warning: #D97706;
+    --warning-bg: #FEF3C7;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f0f2f5;
+    color: var(--gray-900);
+    padding: 32px;
+  }
+
+  /* ── Page Title ── */
+  .page-title { text-align:center; margin-bottom:32px; }
+  .page-title h1 { font-size:20px; font-weight:700; margin-bottom:6px; }
+  .page-title p { font-size:13px; color:var(--gray-500); }
+
+  /* ── Screen Nav ── */
+  .nav { display:flex; justify-content:center; gap:6px; margin-bottom:32px; flex-wrap:wrap; }
+  .nav-btn {
+    padding:8px 14px; border:1px solid var(--gray-200); background:white;
+    border-radius:8px; font-size:12px; font-weight:500; color:var(--gray-600);
+    cursor:pointer; transition:all .15s; white-space:nowrap;
+  }
+  .nav-btn:hover { border-color:var(--primary); color:var(--primary); }
+  .nav-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
+
+  /* ── Screen ── */
+  .screen { display:none; }
+  .screen.active { display:block; }
+  .screen-label { text-align:center; margin-bottom:20px; }
+  .screen-label h2 { font-size:16px; font-weight:700; color:var(--gray-800); margin-bottom:4px; }
+  .screen-label p { font-size:12px; color:var(--gray-500); }
+
+  /* ── Mockup Frame ── */
+  .mockup-frame {
+    max-width:840px; margin:0 auto 24px; background:white;
+    border-radius:12px; border:1px solid var(--gray-200);
+    overflow:visible; box-shadow:0 1px 3px rgba(0,0,0,.06);
+    position:relative;
+  }
+
+  /* ── Dashboard Header ── */
+  .dash-header { padding:20px 24px 0; }
+  .dash-project-name { font-size:18px; font-weight:700; color:var(--gray-900); margin-bottom:14px; }
+  .dash-tabs-row {
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--gray-200); padding-bottom:0;
+  }
+  .dash-tabs { display:flex; gap:0; }
+  .dash-tab {
+    padding:10px 16px; font-size:13px; font-weight:500; color:var(--gray-500);
+    border-bottom:2px solid transparent; cursor:pointer; transition:all .15s;
+    margin-bottom:-1px;
+  }
+  .dash-tab:hover { color:var(--gray-700); }
+  .dash-tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:600; }
+
+  /* Header buttons */
+  .dash-actions { display:flex; align-items:center; gap:8px; padding-bottom:10px; position:relative; }
+  .btn {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 14px; border-radius:6px; font-size:13px; font-weight:500;
+    cursor:pointer; transition:all .15s; border:none; white-space:nowrap;
+  }
+  .btn i { font-size:15px; }
+  .btn-outline {
+    background:white; color:var(--gray-700);
+    border:1px solid var(--gray-200);
+  }
+  .btn-outline:hover { background:var(--gray-50); border-color:var(--gray-300); }
+  .btn-violet { background:var(--violet); color:white; }
+  .btn-violet:hover { background:#7C3AED; }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:var(--primary-hover); }
+  .btn-primary.active-state { background:var(--primary-hover); }
+  .btn-primary.loading-state {
+    background:var(--primary-light); opacity:.8; cursor:not-allowed;
+  }
+  .btn .shortcut {
+    font-size:10px; color:rgba(255,255,255,.6);
+    background:rgba(255,255,255,.15); padding:1px 5px; border-radius:3px;
+    margin-left:2px;
+  }
+  .btn-outline .shortcut {
+    color:var(--gray-400); background:var(--gray-100);
+  }
+
+  /* Spinner */
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .animate-spin { animation:spin .8s linear infinite; }
+
+  /* ── Dropdown ── */
+  .dropdown {
+    position:absolute; top:calc(100% + 4px); right:0; width:256px;
+    background:white; border:1px solid var(--gray-200); border-radius:8px;
+    box-shadow:0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1);
+    z-index:100; padding:4px 0;
+    animation:dd-in .15s ease-out;
+  }
+  @keyframes dd-in { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+
+  .dd-item {
+    display:flex; align-items:flex-start; gap:10px;
+    padding:10px 12px; cursor:pointer; transition:all .15s;
+    border-bottom:1px solid var(--gray-100);
+  }
+  .dd-item:last-child { border-bottom:none; }
+  .dd-item-icon {
+    font-size:18px; flex-shrink:0; margin-top:1px;
+    transition:color .15s;
+  }
+  .dd-item-text { display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+  .dd-item-main {
+    font-size:13px; font-weight:500; color:var(--gray-700);
+    transition:color .15s;
+  }
+  .dd-item-sub { font-size:11px; color:var(--gray-400); }
+
+  /* Hover */
+  .dd-item.hovered { background:var(--gray-50); }
+  .dd-item.hovered .dd-item-main { color:var(--gray-800); }
+
+  /* Locked */
+  .dd-item.locked { cursor:pointer; }
+  .dd-item.locked .dd-item-main { color:var(--gray-400); }
+  .dd-item.locked .dd-item-sub { color:var(--gray-300); }
+  .dd-item.locked .dd-item-icon { opacity:.45; }
+  .dd-item-right { display:flex; align-items:center; gap:4px; flex-shrink:0; margin-top:2px; }
+  .lock-icon { font-size:12px; color:var(--gray-400); }
+  .tier-badge {
+    font-size:10px; font-weight:600; padding:2px 6px; border-radius:9999px;
+    background:var(--warning-bg); color:var(--warning);
+    white-space:nowrap;
+  }
+
+  /* ── Toast ── */
+  .toast-container {
+    position:relative; max-width:840px; margin:0 auto 24px; height:0;
+  }
+  .toast {
+    position:absolute; top:-54px; left:50%; transform:translateX(-50%);
+    display:inline-flex; align-items:center; gap:10px;
+    padding:10px 16px; border-radius:10px; font-size:13px; font-weight:500;
+    box-shadow:0 4px 12px rgba(0,0,0,.08); z-index:200;
+    white-space:nowrap;
+    animation:toast-in .3s ease-out;
+  }
+  @keyframes toast-in {
+    from { opacity:0; transform:translateX(-50%) translateY(-8px); }
+    to   { opacity:1; transform:translateX(-50%) translateY(0); }
+  }
+  .toast i { font-size:16px; flex-shrink:0; }
+  .toast-close {
+    font-size:14px; color:inherit; opacity:.5; cursor:pointer;
+    margin-left:8px; flex-shrink:0;
+  }
+  .toast-success {
+    background:var(--success-light); border:1px solid var(--success-border);
+    color:var(--success-text);
+  }
+  .toast-success i.toast-icon { color:var(--success); }
+  .toast-error {
+    background:var(--danger-light); border:1px solid var(--danger-border);
+    color:var(--danger-text);
+  }
+  .toast-error i.toast-icon { color:var(--danger); }
+
+  /* ── Annotation ── */
+  .annotation-container { max-width:840px; margin:0 auto; }
+  .annotation {
+    display:flex; align-items:flex-start; gap:10px;
+    padding:12px 16px; background:#FFFBEB; border:1px solid #FDE68A;
+    border-radius:10px; margin-bottom:10px; font-size:12px;
+    color:#92400E; line-height:1.65;
+  }
+  .annotation i { font-size:16px; color:#D97706; flex-shrink:0; margin-top:1px; }
+  .annotation code {
+    background:rgba(0,0,0,.06); padding:1px 5px; border-radius:4px;
+    font-size:11px; font-family:'SF Mono','Fira Code',monospace;
+  }
+
+  /* ── Dev Note ── */
+  .dev-note {
+    max-width:840px; margin:16px auto 0; padding:16px 20px;
+    background:var(--gray-50); border:1px solid var(--gray-200);
+    border-radius:10px; font-size:12px; color:var(--gray-600); line-height:1.7;
+  }
+  .dev-note-title {
+    font-size:12px; font-weight:700; color:var(--gray-700);
+    margin-bottom:8px; display:flex; align-items:center; gap:6px;
+  }
+  .dev-note-title i { font-size:14px; color:var(--primary); }
+  .dev-note ul { padding-left:16px; margin-top:4px; }
+  .dev-note li { margin-bottom:3px; }
+  .dev-note code {
+    background:white; border:1px solid var(--gray-200);
+    padding:1px 5px; border-radius:4px; font-size:11px;
+    font-family:'SF Mono','Fira Code',monospace; color:var(--primary);
+  }
+
+  /* ── Side-by-side ── */
+  .side-by-side { display:flex; gap:24px; max-width:840px; margin:0 auto 24px; }
+  .side-by-side > div { flex:1; }
+  .side-label {
+    display:flex; align-items:center; gap:8px; margin-bottom:10px;
+  }
+  .sl-badge {
+    padding:3px 10px; border-radius:6px; font-size:11px; font-weight:700;
+    letter-spacing:.3px;
+  }
+  .sl-default { background:var(--gray-100); color:var(--gray-600); }
+  .sl-hover   { background:var(--primary-bg); color:var(--primary); }
+  .sl-text { font-size:12px; font-weight:500; color:var(--gray-500); }
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>Dashboard Export Report Button</h1>
+  <p>Design Mockup — 5 Screens &middot; PM spec: desi-task-dashboard-export-report-mockup.md</p>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showScreen(1)">1. Default + Hover</button>
+  <button class="nav-btn" onclick="showScreen(2)">2. Loading State</button>
+  <button class="nav-btn" onclick="showScreen(3)">3. Tier Gating</button>
+  <button class="nav-btn" onclick="showScreen(4)">4. Toast Alerts</button>
+  <button class="nav-btn" onclick="showScreen(5)">5. Button Active</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 1: Default + Hover                      -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen active" id="screen-1">
+  <div class="screen-label">
+    <h2>Screen 1 — Dropdown Default + Hover State</h2>
+    <p>3개 항목 (PDF, Runs CSV, TC CSV). 2줄 구조. 256px. PDF=빨강, CSV=초록 아이콘. 첫 항목 호버.</p>
+  </div>
+
+  <!-- Side by side: Default vs Hover -->
+  <div class="side-by-side">
+    <!-- DEFAULT -->
+    <div>
+      <div class="side-label">
+        <span class="sl-badge sl-default">DEFAULT</span>
+        <span class="sl-text">클릭 직후 — 모든 항목 기본 상태</span>
+      </div>
+      <div class="mockup-frame">
+        <div class="dash-header">
+          <div class="dash-project-name">Testably Web App</div>
+          <div class="dash-tabs-row">
+            <div class="dash-tabs">
+              <div class="dash-tab active">Overview</div>
+              <div class="dash-tab">Test Cases</div>
+              <div class="dash-tab">Runs</div>
+              <div class="dash-tab">Settings</div>
+            </div>
+            <div class="dash-actions">
+              <button class="btn btn-outline"><i class="ri-add-line"></i> New TC <span class="shortcut">N</span></button>
+              <button class="btn btn-outline"><i class="ri-play-line"></i> Continue Run <span class="shortcut">R</span></button>
+              <button class="btn btn-violet"><i class="ri-sparkling-line"></i> AI Assist</button>
+              <button class="btn btn-primary active-state"><i class="ri-arrow-up-s-line"></i> Export Report</button>
+
+              <!-- Dropdown Default -->
+              <div class="dropdown">
+                <div class="dd-item">
+                  <i class="dd-item-icon ri-file-pdf-line" style="color:var(--danger)"></i>
+                  <div class="dd-item-text">
+                    <span class="dd-item-main">Export as PDF</span>
+                    <span class="dd-item-sub">Project summary report</span>
+                  </div>
+                </div>
+                <div class="dd-item">
+                  <i class="dd-item-icon ri-file-excel-2-line" style="color:var(--success)"></i>
+                  <div class="dd-item-text">
+                    <span class="dd-item-main">Export Runs (CSV)</span>
+                    <span class="dd-item-sub">All runs with results</span>
+                  </div>
+                </div>
+                <div class="dd-item">
+                  <i class="dd-item-icon ri-file-excel-2-line" style="color:var(--success)"></i>
+                  <div class="dd-item-text">
+                    <span class="dd-item-main">Export Test Cases (CSV)</span>
+                    <span class="dd-item-sub">All test cases data</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="height:120px;"></div>
+      </div>
+    </div>
+
+    <!-- HOVER -->
+    <div>
+      <div class="side-label">
+        <span class="sl-badge sl-hover">HOVER</span>
+        <span class="sl-text">"Export as PDF" 항목에 호버 적용</span>
+      </div>
+      <div class="mockup-frame">
+        <div class="dash-header">
+          <div class="dash-project-name">Testably Web App</div>
+          <div class="dash-tabs-row">
+            <div class="dash-tabs">
+              <div class="dash-tab active">Overview</div>
+              <div class="dash-tab">Test Cases</div>
+              <div class="dash-tab">Runs</div>
+              <div class="dash-tab">Settings</div>
+            </div>
+            <div class="dash-actions">
+              <button class="btn btn-outline"><i class="ri-add-line"></i> New TC <span class="shortcut">N</span></button>
+              <button class="btn btn-outline"><i class="ri-play-line"></i> Continue Run <span class="shortcut">R</span></button>
+              <button class="btn btn-violet"><i class="ri-sparkling-line"></i> AI Assist</button>
+              <button class="btn btn-primary active-state"><i class="ri-arrow-up-s-line"></i> Export Report</button>
+
+              <!-- Dropdown Hover -->
+              <div class="dropdown">
+                <div class="dd-item hovered">
+                  <i class="dd-item-icon ri-file-pdf-line" style="color:var(--danger)"></i>
+                  <div class="dd-item-text">
+                    <span class="dd-item-main">Export as PDF</span>
+                    <span class="dd-item-sub">Project summary report</span>
+                  </div>
+                </div>
+                <div class="dd-item">
+                  <i class="dd-item-icon ri-file-excel-2-line" style="color:var(--success)"></i>
+                  <div class="dd-item-text">
+                    <span class="dd-item-main">Export Runs (CSV)</span>
+                    <span class="dd-item-sub">All runs with results</span>
+                  </div>
+                </div>
+                <div class="dd-item">
+                  <i class="dd-item-icon ri-file-excel-2-line" style="color:var(--success)"></i>
+                  <div class="dd-item-text">
+                    <span class="dd-item-main">Export Test Cases (CSV)</span>
+                    <span class="dd-item-sub">All test cases data</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="height:120px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="annotation-container">
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>드롭다운:</strong> <code>w-64 (256px)</code>, 오른쪽 정렬, 버튼 하단 <code>4px</code> 간격.
+        항목 간 <code>border-b border-[#F1F5F9]</code> 구분선 (마지막 제외).
+        2줄 구조: 주 텍스트 <code>13px #334155 font-medium</code> + 보조 텍스트 <code>11px #94A3B8</code>.
+      </div>
+    </div>
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>아이콘 색상 분류:</strong> PDF → <code style="color:#EF4444">#EF4444</code> (빨강, <code>ri-file-pdf-line</code>),
+        CSV → <code style="color:#10B981">#10B981</code> (초록, <code>ri-file-excel-2-line</code>).
+        호버 시 아이콘 색상은 유지, 배경만 <code>#F8FAFC</code> + 텍스트 <code>#1E293B</code>으로 변경.
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note</div>
+    <ul>
+      <li>Run Detail "..." 메뉴와 동일 패턴: <code>useState&lt;boolean&gt;</code> + <code>useRef</code> 외부 클릭 닫기</li>
+      <li>아이콘 <code>18px</code> (<code>text-lg</code>), 아이콘–텍스트 <code>gap-2.5</code></li>
+      <li>각 항목 <code>px-3 py-3</code>, 접근성: <code>role="menu"</code> / <code>role="menuitem"</code></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 2: Loading State                        -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-2">
+  <div class="screen-label">
+    <h2>Screen 2 — PDF Export Loading State</h2>
+    <p>"Export as PDF" 클릭 후 버튼이 로딩 상태로 전환. 다른 버튼은 정상.</p>
+  </div>
+
+  <div class="mockup-frame">
+    <div class="dash-header">
+      <div class="dash-project-name">Testably Web App</div>
+      <div class="dash-tabs-row">
+        <div class="dash-tabs">
+          <div class="dash-tab active">Overview</div>
+          <div class="dash-tab">Test Cases</div>
+          <div class="dash-tab">Runs</div>
+          <div class="dash-tab">Settings</div>
+        </div>
+        <div class="dash-actions">
+          <button class="btn btn-outline"><i class="ri-add-line"></i> New TC <span class="shortcut">N</span></button>
+          <button class="btn btn-outline"><i class="ri-play-line"></i> Continue Run <span class="shortcut">R</span></button>
+          <button class="btn btn-violet"><i class="ri-sparkling-line"></i> AI Assist</button>
+          <button class="btn btn-primary loading-state">
+            <i class="ri-loader-4-line animate-spin"></i> Exporting...
+          </button>
+        </div>
+      </div>
+    </div>
+    <div style="height:20px;"></div>
+  </div>
+
+  <div class="annotation-container">
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>Loading 변화:</strong>
+        텍스트 → <code>"Exporting..."</code>,
+        아이콘 → <code>ri-loader-4-line</code> + <code>animate-spin</code>,
+        배경 → <code>#818CF8</code> (indigo-400) + <code>opacity-80</code>,
+        클릭 → <code>cursor-not-allowed</code> (비활성).
+        드롭다운은 즉시 닫힘.
+      </div>
+    </div>
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>인접 버튼:</strong> New TC, Continue Run, AI Assist는 정상 상태 유지.
+        Export 완료 시 버튼 텍스트/아이콘 원복 + Toast 표시 (Screen 4).
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note</div>
+    <ul>
+      <li><code>isExporting</code> state: 버튼 텍스트, 아이콘, 스타일, disabled 제어</li>
+      <li>PDF: Edge Function 호출 → Blob 응답 → <code>URL.createObjectURL</code> → auto download</li>
+      <li>CSV: 클라이언트 사이드 생성 (즉시) → 로딩 표시 불필요, 바로 Toast</li>
+      <li>에러 시 <code>isExporting = false</code> + 실패 Toast</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 3: Tier Gating (Free User)              -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-3">
+  <div class="screen-label">
+    <h2>Screen 3 — Tier Gating UI (Free Plan)</h2>
+    <p>Option A: 드롭다운 내 잠금 아이콘 + "Starter+" 뱃지. 항목은 보이지만 비활성.</p>
+  </div>
+
+  <div class="mockup-frame">
+    <div class="dash-header">
+      <div class="dash-project-name">Testably Web App <span style="font-size:11px; font-weight:600; color:var(--gray-400); background:var(--gray-100); padding:2px 8px; border-radius:9999px; margin-left:8px; vertical-align:middle;">Free Plan</span></div>
+      <div class="dash-tabs-row">
+        <div class="dash-tabs">
+          <div class="dash-tab active">Overview</div>
+          <div class="dash-tab">Test Cases</div>
+          <div class="dash-tab">Runs</div>
+          <div class="dash-tab">Settings</div>
+        </div>
+        <div class="dash-actions">
+          <button class="btn btn-outline"><i class="ri-add-line"></i> New TC <span class="shortcut">N</span></button>
+          <button class="btn btn-outline"><i class="ri-play-line"></i> Continue Run <span class="shortcut">R</span></button>
+          <button class="btn btn-violet"><i class="ri-sparkling-line"></i> AI Assist</button>
+          <button class="btn btn-primary active-state"><i class="ri-arrow-up-s-line"></i> Export Report</button>
+
+          <!-- Locked Dropdown -->
+          <div class="dropdown">
+            <div class="dd-item locked">
+              <i class="dd-item-icon ri-file-pdf-line" style="color:var(--danger)"></i>
+              <div class="dd-item-text">
+                <span class="dd-item-main">Export as PDF</span>
+                <span class="dd-item-sub">Project summary report</span>
+              </div>
+              <div class="dd-item-right">
+                <i class="ri-lock-line lock-icon"></i>
+                <span class="tier-badge">Starter+</span>
+              </div>
+            </div>
+            <div class="dd-item locked">
+              <i class="dd-item-icon ri-file-excel-2-line" style="color:var(--success)"></i>
+              <div class="dd-item-text">
+                <span class="dd-item-main">Export Runs (CSV)</span>
+                <span class="dd-item-sub">All runs with results</span>
+              </div>
+              <div class="dd-item-right">
+                <i class="ri-lock-line lock-icon"></i>
+                <span class="tier-badge">Starter+</span>
+              </div>
+            </div>
+            <div class="dd-item locked">
+              <i class="dd-item-icon ri-file-excel-2-line" style="color:var(--success)"></i>
+              <div class="dd-item-text">
+                <span class="dd-item-main">Export Test Cases (CSV)</span>
+                <span class="dd-item-sub">All test cases data</span>
+              </div>
+              <div class="dd-item-right">
+                <i class="ri-lock-line lock-icon"></i>
+                <span class="tier-badge">Starter+</span>
+              </div>
+            </div>
+            <!-- Upgrade Banner -->
+            <div style="padding:10px 12px; border-top:1px solid var(--gray-200); background:var(--gray-50); border-radius:0 0 8px 8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <i class="ri-vip-crown-2-fill" style="font-size:16px; color:var(--warning);"></i>
+                <span style="font-size:12px; color:var(--gray-600); font-weight:500;">Upgrade to unlock all exports</span>
+                <button style="margin-left:auto; padding:4px 12px; background:var(--primary); color:white; border:none; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">Upgrade</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="height:140px;"></div>
+  </div>
+
+  <div class="annotation-container">
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>잠금 표시:</strong> 각 항목 우측에 <code>ri-lock-line</code> (12px, gray-400) + <code>"Starter+"</code> 뱃지
+        (<code>bg-[#FEF3C7] text-[#D97706]</code>, 10px, rounded-full).
+        항목 텍스트는 <code>#94A3B8</code>으로 흐릿하게, 아이콘 <code>opacity: 0.45</code>.
+      </div>
+    </div>
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>하단 Upgrade 배너:</strong> 크라운 아이콘 + "Upgrade to unlock all exports" + Upgrade 버튼.
+        클릭 시 기존 <code>showUpgradeModal()</code> 호출.
+        PM 권장: Option A — 유저가 export 종류를 미리 볼 수 있어 업그레이드 동기 부여에 유리.
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note</div>
+    <ul>
+      <li>플랜 체크: <code>useSubscription()</code> 또는 <code>user.plan</code> — <code>'free'</code>면 locked UI</li>
+      <li>항목 클릭 → <code>showUpgradeModal('export_report')</code> (업그레이드 모달 + feature context)</li>
+      <li>호버 효과 없음: <code>hover:bg</code> 제거하여 비활성 느낌 유지</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 4: Toast Alerts                         -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-4">
+  <div class="screen-label">
+    <h2>Screen 4 — Toast Alerts (Success / Error)</h2>
+    <p>Export 완료 시 상단 중앙 Toast. 성공=초록, 실패=빨강. Jira toast와 동일 디자인.</p>
+  </div>
+
+  <!-- Success Toast -->
+  <div style="max-width:840px; margin:0 auto 40px; padding-top:60px; position:relative;">
+    <div class="side-label" style="margin-bottom:16px;">
+      <span class="sl-badge" style="background:#D1FAE5; color:#065F46;">SUCCESS</span>
+      <span class="sl-text">PDF / CSV 내보내기 성공 — 3초 후 자동 사라짐</span>
+    </div>
+    <!-- Toast -->
+    <div style="position:relative; height:52px; margin-bottom:16px;">
+      <div class="toast toast-success" style="position:absolute; top:0; left:50%; animation:none;">
+        <i class="ri-check-line toast-icon"></i>
+        <span>PDF report exported successfully</span>
+        <i class="ri-close-line toast-close"></i>
+      </div>
+    </div>
+    <div style="position:relative; height:52px;">
+      <div class="toast toast-success" style="position:absolute; top:0; left:50%; animation:none;">
+        <i class="ri-check-line toast-icon"></i>
+        <span>CSV data exported successfully</span>
+        <i class="ri-close-line toast-close"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Toast -->
+  <div style="max-width:840px; margin:0 auto 32px; position:relative;">
+    <div class="side-label" style="margin-bottom:16px;">
+      <span class="sl-badge" style="background:#FEE2E2; color:#991B1B;">ERROR</span>
+      <span class="sl-text">내보내기 실패 — 5초 후 자동 사라짐 (실패는 더 오래 표시)</span>
+    </div>
+    <div style="position:relative; height:52px;">
+      <div class="toast toast-error" style="position:absolute; top:0; left:50%; animation:none;">
+        <i class="ri-error-warning-line toast-icon"></i>
+        <span>Failed to export report. Please try again.</span>
+        <i class="ri-close-line toast-close"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="annotation-container" style="margin-top:32px;">
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>Toast 위치:</strong> <code>fixed top-4 left-1/2 -translate-x-1/2 z-50</code>.
+        성공: <code>bg-[#ECFDF5]</code> + <code>border-[#A7F3D0]</code> + <code>text-[#065F46]</code>.
+        실패: <code>bg-[#FEF2F2]</code> + <code>border-[#FECACA]</code> + <code>text-[#991B1B]</code>.
+      </div>
+    </div>
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>타이밍:</strong> 성공 3초, 실패 5초 자동 사라짐.
+        닫기 버튼 <code>ri-close-line</code> 우측.
+        Jira auto-create toast와 동일한 디자인 시스템 — slide-down 애니메이션 + fade-out.
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note</div>
+    <ul>
+      <li>기존 <code>useToast()</code> 훅 또는 전역 Toast 컨텍스트 사용</li>
+      <li>PDF: <code>toast.success("PDF report exported successfully")</code></li>
+      <li>CSV: <code>toast.success("CSV data exported successfully")</code></li>
+      <li>실패: <code>toast.error("Failed to export report. Please try again.", { duration: 5000 })</code></li>
+      <li>애니메이션: slide-down 진입, fade-out 퇴장 (Jira toast 동일)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 5: Button Active State                  -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-5">
+  <div class="screen-label">
+    <h2>Screen 5 — Export Report Button Active State</h2>
+    <p>메뉴 열림 시 버튼 배경 진해짐 + 아이콘 화살표 전환. 닫힘 시 원복.</p>
+  </div>
+
+  <!-- Comparison -->
+  <div style="max-width:600px; margin:0 auto 28px;">
+    <div style="display:flex; align-items:center; justify-content:center; gap:48px;">
+      <!-- Closed -->
+      <div style="text-align:center;">
+        <div style="font-size:10px; font-weight:700; color:var(--gray-400); margin-bottom:10px; letter-spacing:.5px;">CLOSED (기본)</div>
+        <button class="btn btn-primary" style="font-size:14px; padding:8px 18px;">
+          <i class="ri-download-line"></i> Export Report
+        </button>
+        <div style="margin-top:8px; font-size:11px; color:var(--gray-400);">
+          bg: <code style="font-size:10px; background:var(--gray-100); padding:1px 4px; border-radius:3px;">#6366F1</code>
+          &nbsp; icon: <code style="font-size:10px; background:var(--gray-100); padding:1px 4px; border-radius:3px;">ri-download-line</code>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <i class="ri-arrow-right-double-line" style="font-size:24px; color:var(--gray-300);"></i>
+
+      <!-- Open -->
+      <div style="text-align:center;">
+        <div style="font-size:10px; font-weight:700; color:var(--primary); margin-bottom:10px; letter-spacing:.5px;">OPEN (Active)</div>
+        <button class="btn btn-primary active-state" style="font-size:14px; padding:8px 18px; box-shadow:0 0 0 3px rgba(99,102,241,.2);">
+          <i class="ri-arrow-up-s-line"></i> Export Report
+        </button>
+        <div style="margin-top:8px; font-size:11px; color:var(--gray-400);">
+          bg: <code style="font-size:10px; background:var(--gray-100); padding:1px 4px; border-radius:3px;">#4F46E5</code>
+          &nbsp; icon: <code style="font-size:10px; background:var(--gray-100); padding:1px 4px; border-radius:3px;">ri-arrow-up-s-line</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full context -->
+  <div class="mockup-frame">
+    <div class="dash-header">
+      <div class="dash-project-name">Testably Web App</div>
+      <div class="dash-tabs-row">
+        <div class="dash-tabs">
+          <div class="dash-tab active">Overview</div>
+          <div class="dash-tab">Test Cases</div>
+          <div class="dash-tab">Runs</div>
+          <div class="dash-tab">Settings</div>
+        </div>
+        <div class="dash-actions">
+          <button class="btn btn-outline"><i class="ri-add-line"></i> New TC <span class="shortcut">N</span></button>
+          <button class="btn btn-outline"><i class="ri-play-line"></i> Continue Run <span class="shortcut">R</span></button>
+          <button class="btn btn-violet"><i class="ri-sparkling-line"></i> AI Assist</button>
+          <button class="btn btn-primary active-state"><i class="ri-arrow-up-s-line"></i> Export Report</button>
+
+          <div class="dropdown">
+            <div class="dd-item">
+              <i class="dd-item-icon ri-file-pdf-line" style="color:var(--danger)"></i>
+              <div class="dd-item-text">
+                <span class="dd-item-main">Export as PDF</span>
+                <span class="dd-item-sub">Project summary report</span>
+              </div>
+            </div>
+            <div class="dd-item">
+              <i class="dd-item-icon ri-file-excel-2-line" style="color:var(--success)"></i>
+              <div class="dd-item-text">
+                <span class="dd-item-main">Export Runs (CSV)</span>
+                <span class="dd-item-sub">All runs with results</span>
+              </div>
+            </div>
+            <div class="dd-item">
+              <i class="dd-item-icon ri-file-excel-2-line" style="color:var(--success)"></i>
+              <div class="dd-item-text">
+                <span class="dd-item-main">Export Test Cases (CSV)</span>
+                <span class="dd-item-sub">All test cases data</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="height:120px;"></div>
+  </div>
+
+  <div class="annotation-container">
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>Active 변화:</strong>
+        배경 <code>#6366F1</code> → <code>#4F46E5</code> (더 진하게),
+        아이콘 <code>ri-download-line</code> → <code>ri-arrow-up-s-line</code> (드롭다운 열림 표시).
+        닫힐 때 원복.
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note</div>
+    <ul>
+      <li>조건부: <code>{isOpen ? 'bg-[#4F46E5]' : 'bg-[#6366F1]'}</code></li>
+      <li>아이콘: <code>{isOpen ? 'ri-arrow-up-s-line' : 'ri-download-line'}</code></li>
+      <li>Run Detail "..." Active State와 동일 패턴 (일관성)</li>
+      <li>Focus ring: <code>ring-3 ring-indigo-500/20</code> (선택적, 접근성 강화)</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  function showScreen(n) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('screen-' + n).classList.add('active');
+    document.querySelectorAll('.nav-btn')[n - 1].classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>

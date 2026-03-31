@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Run Detail "..." More Actions — Design Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+  :root {
+    --primary: #6366F1;
+    --primary-hover: #4F46E5;
+    --gray-50: #F8FAFC;
+    --gray-100: #F1F5F9;
+    --gray-200: #E2E8F0;
+    --gray-300: #CBD5E1;
+    --gray-400: #94A3B8;
+    --gray-500: #64748B;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1E293B;
+    --gray-900: #0F172A;
+    --success: #10B981;
+    --danger: #EF4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f0f2f5;
+    color: var(--gray-900);
+    padding: 32px;
+  }
+
+  /* ── Page Title ── */
+  .page-title {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .page-title h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 6px;
+  }
+  .page-title p {
+    font-size: 13px;
+    color: var(--gray-500);
+  }
+
+  /* ── Screen Navigator ── */
+  .nav {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .nav-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--gray-200);
+    background: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .nav-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  /* ── Screen Container ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .screen-label {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .screen-label h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 4px;
+  }
+  .screen-label p {
+    font-size: 12px;
+    color: var(--gray-500);
+  }
+
+  /* ── Mockup Frame ── */
+  .mockup-frame {
+    max-width: 780px;
+    margin: 0 auto 28px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  /* ── Run Detail Header (shared) ── */
+  .run-header {
+    padding: 16px 24px 14px;
+    border-bottom: 1px solid var(--gray-200);
+    position: relative;
+  }
+  .run-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .run-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--gray-500);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .back-btn i { font-size: 16px; }
+  .run-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--gray-900);
+  }
+  .run-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* "..." button */
+  .more-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .more-btn i { font-size: 18px; color: var(--gray-500); }
+  .more-btn:hover { background: var(--gray-50); }
+  .more-btn.active-state {
+    background: var(--gray-100);
+    border-color: var(--gray-300);
+  }
+
+  /* Focus Mode button */
+  .focus-btn {
+    height: 36px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .focus-btn i { font-size: 16px; }
+
+  /* Header meta row */
+  .run-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--gray-500);
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-green {
+    background: #ECFDF5;
+    color: #059669;
+  }
+  .badge-blue {
+    background: #EFF6FF;
+    color: #2563EB;
+  }
+  .avatar-group {
+    display: flex;
+    margin-left: 4px;
+  }
+  .avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid white;
+    background: var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--gray-600);
+    margin-left: -6px;
+  }
+  .avatar:first-child { margin-left: 0; }
+
+  /* ── Dropdown Menu ── */
+  .dropdown {
+    position: absolute;
+    top: 60px;
+    right: 70px;
+    width: 224px;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+    z-index: 100;
+    padding: 4px 0;
+    animation: dropdown-in 0.15s ease-out;
+  }
+  @keyframes dropdown-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .dropdown-item i {
+    font-size: 16px;
+    color: var(--gray-500);
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .dropdown-item.hovered {
+    background: var(--gray-50);
+    color: var(--gray-800);
+  }
+  .dropdown-item.hovered i {
+    color: var(--primary);
+  }
+
+  /* ── Annotation ── */
+  .annotation-container {
+    max-width: 780px;
+    margin: 0 auto;
+  }
+  .annotation {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: #92400E;
+    line-height: 1.6;
+  }
+  .annotation i {
+    font-size: 16px;
+    color: #D97706;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .annotation code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* ── Dev Note ── */
+  .dev-note {
+    max-width: 780px;
+    margin: 20px auto 0;
+    padding: 16px 20px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--gray-600);
+    line-height: 1.7;
+  }
+  .dev-note-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray-700);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dev-note-title i { font-size: 14px; color: var(--primary); }
+  .dev-note ul { padding-left: 16px; margin-top: 4px; }
+  .dev-note li { margin-bottom: 3px; }
+  .dev-note code {
+    background: white;
+    border: 1px solid var(--gray-200);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--primary);
+  }
+
+  /* ── Editor Toolbar (Screen 4) ── */
+  .editor-section {
+    max-width: 780px;
+    margin: 0 auto 28px;
+  }
+  .before-after-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .ba-badge {
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .ba-before { background: #FEE2E2; color: #991B1B; }
+  .ba-after  { background: #D1FAE5; color: #065F46; }
+  .ba-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-600);
+  }
+
+  .editor-frame {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .editor-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--gray-200);
+    background: var(--gray-50);
+    gap: 2px;
+  }
+  .toolbar-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: var(--gray-600);
+    cursor: pointer;
+    font-size: 15px;
+    border: none;
+    background: none;
+  }
+  .toolbar-btn:hover { background: var(--gray-200); }
+  .toolbar-sep {
+    width: 1px;
+    height: 18px;
+    background: var(--gray-200);
+    margin: 0 4px;
+  }
+  .toolbar-spacer { flex: 1; }
+  .toolbar-btn.dead-code {
+    position: relative;
+  }
+  .toolbar-btn.dead-code::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border: 2px dashed var(--danger);
+    border-radius: 4px;
+    pointer-events: none;
+  }
+  .editor-body {
+    padding: 14px 16px;
+    min-height: 60px;
+    font-size: 13px;
+    color: var(--gray-400);
+  }
+
+  /* ── Arrow pointer ── */
+  .pointer-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 16px auto;
+    width: 40px;
+    height: 40px;
+    background: var(--gray-100);
+    border-radius: 50%;
+    color: var(--gray-400);
+    font-size: 20px;
+  }
+
+  /* ── Highlight ring ── */
+  .highlight-ring {
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Page Title ── -->
+<div class="page-title">
+  <h1>Run Detail "..." More Actions Menu</h1>
+  <p>Design Mockup — 4 Screens &middot; PM spec: desi-task-run-detail-more-actions-mockup.md</p>
+</div>
+
+<!-- ── Screen Navigator ── -->
+<div class="nav">
+  <button class="nav-btn active" onclick="showScreen(1)">1. Default State</button>
+  <button class="nav-btn" onclick="showScreen(2)">2. Hover State</button>
+  <button class="nav-btn" onclick="showScreen(3)">3. Button Active</button>
+  <button class="nav-btn" onclick="showScreen(4)">4. Editor Before/After</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 1: Dropdown Default State               -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen active" id="screen-1">
+  <div class="screen-label">
+    <h2>Screen 1 — Dropdown Default State</h2>
+    <p>"..." 클릭 시 나타나는 드롭다운 메뉴. 2개 항목, 224px 너비, 오른쪽 정렬.</p>
+  </div>
+
+  <div class="mockup-frame">
+    <div class="run-header">
+      <div class="run-header-top">
+        <div class="run-header-left">
+          <a class="back-btn" href="#"><i class="ri-arrow-left-s-line"></i> Runs</a>
+          <span class="run-name">Sprint 12 — Regression Suite</span>
+        </div>
+        <div class="run-header-right">
+          <div class="more-btn active-state" style="position:relative;">
+            <i class="ri-more-2-fill"></i>
+          </div>
+          <button class="focus-btn">
+            <i class="ri-focus-3-line"></i> Focus Mode
+          </button>
+        </div>
+      </div>
+      <div class="run-meta">
+        <span class="badge badge-green"><i class="ri-play-circle-fill" style="font-size:12px"></i> In Progress</span>
+        <span class="badge badge-blue"><i class="ri-flag-line" style="font-size:12px"></i> v2.4.0</span>
+        <span>Mar 28, 2026</span>
+        <div class="avatar-group">
+          <div class="avatar" style="background:#C7D2FE; color:#4338CA;">KJ</div>
+          <div class="avatar" style="background:#BBF7D0; color:#166534;">SL</div>
+        </div>
+      </div>
+
+      <!-- Dropdown -->
+      <div class="dropdown" style="top: 52px; right: 68px;">
+        <div class="dropdown-item">
+          <i class="ri-file-pdf-line"></i>
+          <span>Export Run Report (PDF)</span>
+        </div>
+        <div class="dropdown-item">
+          <i class="ri-file-excel-2-line"></i>
+          <span>Export Results (CSV)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Annotations -->
+  <div class="annotation-container">
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>드롭다운 위치:</strong> "..." 버튼 하단 오른쪽 정렬, 버튼에서 <code>4px</code> 간격.
+        너비 <code>w-56 (224px)</code>, <code>rounded-lg</code>, <code>shadow-lg</code>.
+        메뉴가 열리면 "..." 버튼은 Active 상태 (Screen 3 참고).
+      </div>
+    </div>
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>메뉴 항목:</strong> 각 항목 <code>px-3 py-2.5</code>, 아이콘 <code>16px</code> + 텍스트 <code>13px font-medium</code>,
+        아이콘 색상 <code>#64748B</code>, 텍스트 색상 <code>#334155</code>, 간격 <code>gap-2.5 (10px)</code>.
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note</div>
+    <ul>
+      <li>드롭다운 토글: <code>useState&lt;boolean&gt;</code> — 외부 클릭 시 닫기 (<code>useRef</code> + <code>mousedown</code> 이벤트)</li>
+      <li>기존 <code>project-runs/page.tsx</code>의 "..." 드롭다운과 동일 패턴 사용</li>
+      <li>아이콘: <code>ri-file-pdf-line</code>, <code>ri-file-excel-2-line</code> (Remix Icon 4.5.0)</li>
+      <li>접근성: <code>role="menu"</code>, <code>role="menuitem"</code>, <code>Escape</code> 키로 닫기</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 2: Dropdown Hover State                 -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-2">
+  <div class="screen-label">
+    <h2>Screen 2 — Dropdown Hover State</h2>
+    <p>첫 번째 항목(Export Run Report)에 호버 적용. 배경 #F8FAFC, 아이콘 Indigo 변경.</p>
+  </div>
+
+  <div class="mockup-frame">
+    <div class="run-header">
+      <div class="run-header-top">
+        <div class="run-header-left">
+          <a class="back-btn" href="#"><i class="ri-arrow-left-s-line"></i> Runs</a>
+          <span class="run-name">Sprint 12 — Regression Suite</span>
+        </div>
+        <div class="run-header-right">
+          <div class="more-btn active-state">
+            <i class="ri-more-2-fill"></i>
+          </div>
+          <button class="focus-btn">
+            <i class="ri-focus-3-line"></i> Focus Mode
+          </button>
+        </div>
+      </div>
+      <div class="run-meta">
+        <span class="badge badge-green"><i class="ri-play-circle-fill" style="font-size:12px"></i> In Progress</span>
+        <span class="badge badge-blue"><i class="ri-flag-line" style="font-size:12px"></i> v2.4.0</span>
+        <span>Mar 28, 2026</span>
+        <div class="avatar-group">
+          <div class="avatar" style="background:#C7D2FE; color:#4338CA;">KJ</div>
+          <div class="avatar" style="background:#BBF7D0; color:#166534;">SL</div>
+        </div>
+      </div>
+
+      <!-- Dropdown with hover -->
+      <div class="dropdown" style="top: 52px; right: 68px;">
+        <div class="dropdown-item hovered">
+          <i class="ri-file-pdf-line"></i>
+          <span>Export Run Report (PDF)</span>
+        </div>
+        <div class="dropdown-item">
+          <i class="ri-file-excel-2-line"></i>
+          <span>Export Results (CSV)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Annotations -->
+  <div class="annotation-container">
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>Hover 변화:</strong>
+        배경 → <code>#F8FAFC</code> (gray-50),
+        텍스트 → <code>#1E293B</code> (gray-800),
+        아이콘 → <code style="color:#6366F1">#6366F1</code> (indigo-500로 색상 전환).
+        <code>transition-colors duration-150</code>.
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note</div>
+    <ul>
+      <li>CSS: <code>hover:bg-[#F8FAFC] hover:text-[#1E293B]</code></li>
+      <li>아이콘 호버: <code>group-hover:text-[#6366F1]</code> (Tailwind <code>group</code> 패턴 활용)</li>
+      <li><code>transition-colors duration-150</code> — 부드러운 색상 전환</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 3: "..." Button Active State            -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-3">
+  <div class="screen-label">
+    <h2>Screen 3 — "..." Button Active State</h2>
+    <p>메뉴가 열린 상태에서 "..." 버튼의 시각적 변화. 눌린 느낌의 배경 + 진한 테두리.</p>
+  </div>
+
+  <div class="mockup-frame">
+    <div class="run-header">
+      <div class="run-header-top">
+        <div class="run-header-left">
+          <a class="back-btn" href="#"><i class="ri-arrow-left-s-line"></i> Runs</a>
+          <span class="run-name">Sprint 12 — Regression Suite</span>
+        </div>
+        <div class="run-header-right">
+          <!-- Side by side comparison -->
+          <div style="display:flex; align-items:center; gap: 24px;">
+            <!-- Default -->
+            <div style="text-align:center;">
+              <div style="font-size:10px; font-weight:600; color:var(--gray-400); margin-bottom:6px; letter-spacing:0.5px;">DEFAULT</div>
+              <div class="more-btn">
+                <i class="ri-more-2-fill"></i>
+              </div>
+            </div>
+            <!-- Arrow -->
+            <i class="ri-arrow-right-line" style="font-size:18px; color:var(--gray-300);"></i>
+            <!-- Active -->
+            <div style="text-align:center;">
+              <div style="font-size:10px; font-weight:600; color:var(--primary); margin-bottom:6px; letter-spacing:0.5px;">ACTIVE (열림)</div>
+              <div class="more-btn active-state highlight-ring">
+                <i class="ri-more-2-fill"></i>
+              </div>
+            </div>
+          </div>
+          <button class="focus-btn">
+            <i class="ri-focus-3-line"></i> Focus Mode
+          </button>
+        </div>
+      </div>
+      <div class="run-meta">
+        <span class="badge badge-green"><i class="ri-play-circle-fill" style="font-size:12px"></i> In Progress</span>
+        <span class="badge badge-blue"><i class="ri-flag-line" style="font-size:12px"></i> v2.4.0</span>
+        <span>Mar 28, 2026</span>
+        <div class="avatar-group">
+          <div class="avatar" style="background:#C7D2FE; color:#4338CA;">KJ</div>
+          <div class="avatar" style="background:#BBF7D0; color:#166534;">SL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Annotations -->
+  <div class="annotation-container">
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>Active State 변화:</strong><br>
+        배경: <code>white</code> → <code>#F1F5F9</code> (gray-100) — 눌린 느낌<br>
+        테두리: <code>#E2E8F0</code> → <code>#CBD5E1</code> (gray-300) — 약간 진해짐<br>
+        사용자가 어떤 버튼으로 메뉴가 열렸는지 즉시 인지 가능
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note</div>
+    <ul>
+      <li>조건부 스타일: <code>{`${isOpen ? 'bg-[#F1F5F9] border-[#CBD5E1]' : 'bg-white border-[#E2E8F0]'}`}</code></li>
+      <li><code>isOpen</code> state가 true일 때 Active 스타일 적용</li>
+      <li>Focus Mode 버튼과 높이 동일 (<code>h-9</code> = 36px)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 4: Editor Toolbar Before/After          -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-4">
+  <div class="screen-label">
+    <h2>Screen 4 — Editor Toolbar Before / After</h2>
+    <p>Note 에디터 툴바에서 dead code "..." 버튼 제거 전후 비교.</p>
+  </div>
+
+  <!-- BEFORE -->
+  <div class="editor-section">
+    <div class="before-after-label">
+      <span class="ba-badge ba-before">BEFORE</span>
+      <span class="ba-text">현재 — 우측 끝에 기능 없는 "..." 버튼 존재 (dead code)</span>
+    </div>
+    <div class="editor-frame">
+      <div class="editor-toolbar">
+        <button class="toolbar-btn"><i class="ri-bold"></i></button>
+        <button class="toolbar-btn"><i class="ri-italic"></i></button>
+        <button class="toolbar-btn"><i class="ri-underline"></i></button>
+        <button class="toolbar-btn"><i class="ri-strikethrough"></i></button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn"><i class="ri-list-unordered"></i></button>
+        <button class="toolbar-btn"><i class="ri-list-ordered"></i></button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn"><i class="ri-link"></i></button>
+        <button class="toolbar-btn"><i class="ri-code-line"></i></button>
+        <div class="toolbar-spacer"></div>
+        <!-- Dead code button -->
+        <button class="toolbar-btn dead-code" title="Dead code — no onClick handler">
+          <i class="ri-more-2-fill"></i>
+        </button>
+      </div>
+      <div class="editor-body">Add notes about this test case...</div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="pointer-arrow"><i class="ri-arrow-down-line"></i></div>
+
+  <!-- AFTER -->
+  <div class="editor-section">
+    <div class="before-after-label">
+      <span class="ba-badge ba-after">AFTER</span>
+      <span class="ba-text">변경 후 — "..." 버튼 완전 제거, 레이아웃에 영향 없음</span>
+    </div>
+    <div class="editor-frame">
+      <div class="editor-toolbar">
+        <button class="toolbar-btn"><i class="ri-bold"></i></button>
+        <button class="toolbar-btn"><i class="ri-italic"></i></button>
+        <button class="toolbar-btn"><i class="ri-underline"></i></button>
+        <button class="toolbar-btn"><i class="ri-strikethrough"></i></button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn"><i class="ri-list-unordered"></i></button>
+        <button class="toolbar-btn"><i class="ri-list-ordered"></i></button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn"><i class="ri-link"></i></button>
+        <button class="toolbar-btn"><i class="ri-code-line"></i></button>
+        <!-- "..." button removed — clean end -->
+      </div>
+      <div class="editor-body">Add notes about this test case...</div>
+    </div>
+  </div>
+
+  <!-- Annotations -->
+  <div class="annotation-container" style="margin-top:20px;">
+    <div class="annotation">
+      <i class="ri-information-line"></i>
+      <div>
+        <strong>제거 대상:</strong> Note 에디터 툴바의 <code>ri-more-2-fill</code> 버튼.
+        <code>w-7 h-7</code>, <code>ml-auto</code>로 우측 정렬되어 있었으나 <code>onClick</code> 핸들러 없음 (dead code).
+        제거해도 나머지 포맷팅 버튼 레이아웃에 영향 없음.
+      </div>
+    </div>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title"><i class="ri-code-s-slash-line"></i> Dev Note</div>
+    <ul>
+      <li>에디터 컴포넌트에서 <code>&lt;button&gt;</code> 요소 (ri-more-2-fill) 완전 삭제</li>
+      <li><code>ml-auto</code>가 이 버튼에만 적용되어 있었으므로, 삭제 후 <code>flex-grow</code> 동작에 영향 없음</li>
+      <li>Before의 빨간 점선 = dead code 표시 (실제 UI에는 보이지 않음, 목업용 시각화)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── Screen Navigation Script ── -->
+<script>
+  function showScreen(n) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('screen-' + n).classList.add('active');
+    document.querySelectorAll('.nav-btn')[n - 1].classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>
