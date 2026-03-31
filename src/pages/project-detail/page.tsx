@@ -436,6 +436,32 @@ export default function ProjectDetail() {
         pdf.setFontSize(8); pdf.setFont('NotoSansKR', 'normal'); pdf.setTextColor(100, 116, 139); pdf.text(item.label.toUpperCase(), ix, iy);
         pdf.setFontSize(9); pdf.setFont('NotoSansKR', 'bold'); pdf.setTextColor(15, 23, 42); pdf.text(item.value, ix, iy + 5);
       });
+      y += 38;
+
+      // ── Milestone 진행 현황 ──
+      const flatMilestones: any[] = [];
+      milestones.forEach((m: any) => {
+        flatMilestones.push(m);
+        (m.subMilestones || []).forEach((s: any) => flatMilestones.push(s));
+      });
+      if (flatMilestones.length > 0) {
+        pdf.setFontSize(11); pdf.setFont('NotoSansKR', 'bold'); pdf.setTextColor(15, 23, 42);
+        pdf.text('Milestone Progress', margin, y); y += 7;
+        flatMilestones.slice(0, 6).forEach((m: any) => {
+          const mRuns = allRunsRaw.filter((r: any) => r.milestone_id === m.id);
+          const mCompleted = mRuns.filter((r: any) => r.status === 'completed').length;
+          const mTotal = mRuns.length;
+          const pct = mTotal > 0 ? Math.round((mCompleted / mTotal) * 100) : 0;
+          const mName = (m.name || '').length > 30 ? (m.name || '').slice(0, 27) + '...' : (m.name || '');
+          pdf.setFontSize(8); pdf.setFont('NotoSansKR', 'normal'); pdf.setTextColor(71, 85, 105);
+          pdf.text(mName, margin, y + 5);
+          pdf.setFillColor(241, 245, 249); pdf.rect(margin + 42, y, contentW - 62, 6, 'F');
+          if (pct > 0) { pdf.setFillColor(99, 102, 241); pdf.rect(margin + 42, y, (contentW - 62) * (pct / 100), 6, 'F'); }
+          pdf.setFontSize(8); pdf.setFont('NotoSansKR', 'bold'); pdf.setTextColor(15, 23, 42);
+          pdf.text(`${pct}%`, margin + contentW - 15, y + 5);
+          y += 10;
+        });
+      }
       addFooter(1);
 
       // ── Page 2: Recent Test Runs ──
@@ -444,11 +470,18 @@ export default function ProjectDetail() {
       pdf.setFontSize(13); pdf.setFont('NotoSansKR', 'bold'); pdf.setTextColor(255, 255, 255);
       pdf.text('Recent Test Runs', margin, 13);
       y = 30;
+      // milestoneMap for Page 2
+      const msMap = new Map<string, string>();
+      milestones.forEach((m: any) => {
+        msMap.set(m.id, m.name);
+        (m.subMilestones || []).forEach((s: any) => msMap.set(s.id, s.name));
+      });
       pdf.setFillColor(241, 245, 249); pdf.rect(margin, y, contentW, 8, 'F');
       pdf.setFontSize(8); pdf.setFont('NotoSansKR', 'bold'); pdf.setTextColor(71, 85, 105);
-      pdf.text('Run Name', margin + 2, y + 5.5); pdf.text('Status', margin + 82, y + 5.5);
-      pdf.text('Pass', margin + 112, y + 5.5); pdf.text('Fail', margin + 127, y + 5.5);
-      pdf.text('Total', margin + 142, y + 5.5); pdf.text('Pass Rate', margin + 158, y + 5.5);
+      pdf.text('Run Name', margin + 2, y + 5.5); pdf.text('Milestone', margin + 62, y + 5.5);
+      pdf.text('Status', margin + 98, y + 5.5); pdf.text('Pass', margin + 122, y + 5.5);
+      pdf.text('Fail', margin + 134, y + 5.5); pdf.text('Total', margin + 146, y + 5.5);
+      pdf.text('Pass Rate', margin + 158, y + 5.5);
       y += 8;
       allRunsRaw.slice(0, 10).forEach((run: any, i: number) => {
         const rowY = y + i * 10;
@@ -458,17 +491,20 @@ export default function ProjectDetail() {
         const tested = total - runCounts.untested;
         const pr = tested > 0 ? Math.round((runCounts.passed / tested) * 100) : 0;
         pdf.setFontSize(8); pdf.setFont('NotoSansKR', 'normal'); pdf.setTextColor(30, 41, 59);
-        const runName = run.name.length > 38 ? run.name.slice(0, 35) + '...' : run.name;
+        const runName = (run.name || '').length > 22 ? run.name.slice(0, 19) + '...' : run.name;
         pdf.text(runName, margin + 2, rowY + 6.5);
+        const msName = (msMap.get(run.milestone_id) || '-');
+        const msLabel = msName.length > 14 ? msName.slice(0, 11) + '...' : msName;
+        pdf.setTextColor(100, 116, 139); pdf.text(msLabel, margin + 62, rowY + 6.5);
         const sc: Record<string, [number, number, number]> = {
           active: [99, 102, 241], in_progress: [99, 102, 241], new: [99, 102, 241], completed: [34, 197, 94],
         };
         const [sr, sg, sb] = sc[run.status || 'active'] || [148, 163, 184];
-        pdf.setTextColor(sr, sg, sb); pdf.text(formatStatus(run.status || 'active'), margin + 82, rowY + 6.5);
+        pdf.setTextColor(sr, sg, sb); pdf.text(formatStatus(run.status || 'active'), margin + 98, rowY + 6.5);
         pdf.setTextColor(30, 41, 59);
-        pdf.text(String(runCounts.passed), margin + 112, rowY + 6.5);
-        pdf.text(String(runCounts.failed), margin + 127, rowY + 6.5);
-        pdf.text(String(total), margin + 142, rowY + 6.5);
+        pdf.text(String(runCounts.passed), margin + 122, rowY + 6.5);
+        pdf.text(String(runCounts.failed), margin + 134, rowY + 6.5);
+        pdf.text(String(total), margin + 146, rowY + 6.5);
         const prc: [number, number, number] = pr >= 80 ? [34, 197, 94] : pr >= 50 ? [234, 179, 8] : [239, 68, 68];
         pdf.setTextColor(...prc); pdf.text(`${pr}%`, margin + 158, rowY + 6.5);
       });
@@ -485,7 +521,7 @@ export default function ProjectDetail() {
       pdf.setFontSize(13); pdf.setFont('NotoSansKR', 'bold'); pdf.setTextColor(255, 255, 255);
       pdf.text('Test Case Overview', margin, 13);
       y = 30;
-      const { data: tcData } = await supabase.from('test_cases').select('title, priority, lifecycle_status, created_at').eq('project_id', id).order('created_at', { ascending: false });
+      const { data: tcData } = await supabase.from('test_cases').select('title, priority, lifecycle_status, created_at, folder').eq('project_id', id).order('created_at', { ascending: false });
       const tcs = tcData || [];
       const priorityCounts = {
         critical: tcs.filter((t: any) => t.priority === 'critical').length,
@@ -514,6 +550,30 @@ export default function ProjectDetail() {
         pdf.text(String(count), margin + contentW - 20, y + i * 10 + 5);
       });
       y += 52;
+
+      // ── 폴더별 TC 분포 ──
+      const folderCounts = new Map<string, number>();
+      tcs.forEach((tc: any) => {
+        const folder = tc.folder || 'Uncategorized';
+        folderCounts.set(folder, (folderCounts.get(folder) || 0) + 1);
+      });
+      const topFolders = Array.from(folderCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      if (topFolders.length > 0) {
+        pdf.setFontSize(11); pdf.setFont('NotoSansKR', 'bold'); pdf.setTextColor(15, 23, 42);
+        pdf.text('Folder Distribution', margin, y); y += 8;
+        topFolders.forEach(([folder, count], i) => {
+          const barW = tcs.length > 0 ? (count / tcs.length) * (contentW - 50) : 0;
+          const folderLabel = folder.length > 20 ? folder.slice(0, 17) + '...' : folder;
+          pdf.setFontSize(9); pdf.setFont('NotoSansKR', 'normal'); pdf.setTextColor(71, 85, 105);
+          pdf.text(folderLabel, margin, y + i * 10 + 5);
+          pdf.setFillColor(241, 245, 249); pdf.rect(margin + 45, y + i * 10, contentW - 65, 7, 'F');
+          if (barW > 0) { pdf.setFillColor(99, 102, 241); pdf.rect(margin + 45, y + i * 10, Math.min(barW, contentW - 65), 7, 'F'); }
+          pdf.setFontSize(8); pdf.setFont('NotoSansKR', 'bold'); pdf.setTextColor(15, 23, 42);
+          pdf.text(String(count), margin + contentW - 18, y + i * 10 + 5);
+        });
+        y += topFolders.length * 10 + 6;
+      }
+
       pdf.setFontSize(11); pdf.setFont('NotoSansKR', 'bold'); pdf.setTextColor(15, 23, 42);
       pdf.text('Lifecycle Status', margin, y); y += 8;
       const lifecycleColors: Record<string, [number, number, number]> = {
