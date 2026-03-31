@@ -20,6 +20,8 @@ interface JiraSettings {
   projectKey: string;
   autoCreateOnFailure: string;
   fieldMappings: JiraFieldMapping[];
+  autoIssueSummaryTemplate: string;
+  autoIssueDescriptionTemplate: string;
 }
 
 interface JiraFieldMapping {
@@ -183,9 +185,11 @@ async function loadSettingsData(): Promise<{
 
   // Build jiraSettings
   const jiraData = jiraResult.data;
+  const DEFAULT_SUMMARY_TPL = '[Auto] Test Failed: {tc_title}';
+  const DEFAULT_DESC_TPL = '*Auto-created by Testably*\n\nTest Case: {tc_title}\nRun: {run_name}\nPriority: {priority}\n\n--- Precondition ---\n{precondition}\n\n--- Steps ---\n{steps}\n\n--- Expected Result ---\n{expected_result}';
   const jiraSettings: JiraSettings = jiraData
-    ? { domain: jiraData.domain || '', email: jiraData.email || '', apiToken: jiraData.api_token || '', issueType: jiraData.issue_type || 'Bug', projectKey: jiraData.project_key || '', autoCreateOnFailure: jiraData.auto_create_on_failure || 'disabled', fieldMappings: jiraData.field_mappings || [] }
-    : { domain: '', email: '', apiToken: '', issueType: 'Bug', projectKey: '', autoCreateOnFailure: 'disabled', fieldMappings: [] };
+    ? { domain: jiraData.domain || '', email: jiraData.email || '', apiToken: jiraData.api_token || '', issueType: jiraData.issue_type || 'Bug', projectKey: jiraData.project_key || '', autoCreateOnFailure: jiraData.auto_create_on_failure || 'disabled', fieldMappings: jiraData.field_mappings || [], autoIssueSummaryTemplate: jiraData.auto_issue_summary_template || DEFAULT_SUMMARY_TPL, autoIssueDescriptionTemplate: jiraData.auto_issue_description_template || DEFAULT_DESC_TPL }
+    : { domain: '', email: '', apiToken: '', issueType: 'Bug', projectKey: '', autoCreateOnFailure: 'disabled', fieldMappings: [], autoIssueSummaryTemplate: DEFAULT_SUMMARY_TPL, autoIssueDescriptionTemplate: DEFAULT_DESC_TPL };
 
   // Build userProjects
   const userProjects: Array<{ id: string; name: string }> = memberResult.data
@@ -273,6 +277,9 @@ export default function SettingsPage() {
   const [showMembersInviteModal, setShowMembersInviteModal] = useState(false);
   const [memberRefreshTrigger, setMemberRefreshTrigger] = useState(0);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const DEFAULT_SUMMARY_TEMPLATE = '[Auto] Test Failed: {tc_title}';
+  const DEFAULT_DESCRIPTION_TEMPLATE = '*Auto-created by Testably*\n\nTest Case: {tc_title}\nRun: {run_name}\nPriority: {priority}\n\n--- Precondition ---\n{precondition}\n\n--- Steps ---\n{steps}\n\n--- Expected Result ---\n{expected_result}';
+
   const [jiraSettings, setJiraSettings] = useState<JiraSettings>({
     domain: '',
     email: '',
@@ -281,6 +288,8 @@ export default function SettingsPage() {
     projectKey: '',
     autoCreateOnFailure: 'disabled',
     fieldMappings: [],
+    autoIssueSummaryTemplate: DEFAULT_SUMMARY_TEMPLATE,
+    autoIssueDescriptionTemplate: DEFAULT_DESCRIPTION_TEMPLATE,
   });
   const [jiraSavedDomain, setJiraSavedDomain] = useState('');
   const [availableJiraFields, setAvailableJiraFields] = useState<JiraField[]>([]);
@@ -586,6 +595,8 @@ export default function SettingsPage() {
           projectKey: data.project_key || '',
           autoCreateOnFailure: data.auto_create_on_failure || 'disabled',
           fieldMappings: data.field_mappings || [],
+          autoIssueSummaryTemplate: data.auto_issue_summary_template || DEFAULT_SUMMARY_TEMPLATE,
+          autoIssueDescriptionTemplate: data.auto_issue_description_template || DEFAULT_DESCRIPTION_TEMPLATE,
         });
         if (data.domain) setJiraSavedDomain(data.domain);
       }
@@ -703,6 +714,8 @@ export default function SettingsPage() {
             project_key: jiraSettings.projectKey || '',
             auto_create_on_failure: jiraSettings.autoCreateOnFailure,
             field_mappings: jiraSettings.fieldMappings,
+            auto_issue_summary_template: jiraSettings.autoIssueSummaryTemplate,
+            auto_issue_description_template: jiraSettings.autoIssueDescriptionTemplate,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingData.id);
@@ -720,6 +733,8 @@ export default function SettingsPage() {
             project_key: jiraSettings.projectKey || '',
             auto_create_on_failure: jiraSettings.autoCreateOnFailure,
             field_mappings: jiraSettings.fieldMappings,
+            auto_issue_summary_template: jiraSettings.autoIssueSummaryTemplate,
+            auto_issue_description_template: jiraSettings.autoIssueDescriptionTemplate,
           });
 
         if (error) throw error;
@@ -1848,6 +1863,96 @@ def pytest_sessionfinish(session, exitstatus):
                                 <option value="first_failure_only">Create for first failure only</option>
                               </select>
                             </div>
+
+                            {/* Template Editor */}
+                            {jiraSettings.autoCreateOnFailure !== 'disabled' && (
+                              <div className="mt-6 space-y-4">
+                                {/* Summary Template */}
+                                <div>
+                                  <label className="block text-[0.8125rem] font-medium text-[#334155] mb-1.5">
+                                    Auto-create Summary Template
+                                  </label>
+                                  <p className="text-[0.75rem] text-[#94A3B8] mb-2">
+                                    Click a variable to insert it at cursor position
+                                  </p>
+                                  <div className="flex flex-wrap gap-1.5 mb-2">
+                                    {['{tc_title}', '{run_name}', '{priority}'].map(v => (
+                                      <button
+                                        key={v}
+                                        type="button"
+                                        onClick={() => {
+                                          const input = document.getElementById('summary-template-input') as HTMLInputElement;
+                                          if (input) {
+                                            const pos = input.selectionStart || input.value.length;
+                                            const newVal = input.value.slice(0, pos) + v + input.value.slice(pos);
+                                            setJiraSettings((prev: any) => ({ ...prev, autoIssueSummaryTemplate: newVal }));
+                                          }
+                                        }}
+                                        className="px-2 py-0.5 bg-[#DBEAFE] text-[#1D4ED8] text-[0.75rem] font-mono rounded cursor-pointer hover:bg-[#BFDBFE] transition-colors"
+                                      >
+                                        {v}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <input
+                                    id="summary-template-input"
+                                    type="text"
+                                    value={jiraSettings.autoIssueSummaryTemplate}
+                                    onChange={(e) => setJiraSettings((prev: any) => ({ ...prev, autoIssueSummaryTemplate: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg text-[0.875rem] font-mono focus:outline-none focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1]"
+                                  />
+                                </div>
+
+                                {/* Description Template */}
+                                <div>
+                                  <label className="block text-[0.8125rem] font-medium text-[#334155] mb-1.5">
+                                    Auto-create Description Template
+                                  </label>
+                                  <p className="text-[0.75rem] text-[#94A3B8] mb-2">
+                                    Click a variable to insert it at cursor position
+                                  </p>
+                                  <div className="flex flex-wrap gap-1.5 mb-2">
+                                    {['{tc_title}', '{run_name}', '{priority}', '{steps}', '{expected_result}', '{precondition}'].map(v => (
+                                      <button
+                                        key={v}
+                                        type="button"
+                                        onClick={() => {
+                                          const textarea = document.getElementById('desc-template-textarea') as HTMLTextAreaElement;
+                                          if (textarea) {
+                                            const pos = textarea.selectionStart || textarea.value.length;
+                                            const newVal = textarea.value.slice(0, pos) + v + textarea.value.slice(pos);
+                                            setJiraSettings((prev: any) => ({ ...prev, autoIssueDescriptionTemplate: newVal }));
+                                          }
+                                        }}
+                                        className="px-2 py-0.5 bg-[#DBEAFE] text-[#1D4ED8] text-[0.75rem] font-mono rounded cursor-pointer hover:bg-[#BFDBFE] transition-colors"
+                                      >
+                                        {v}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <textarea
+                                    id="desc-template-textarea"
+                                    rows={8}
+                                    value={jiraSettings.autoIssueDescriptionTemplate}
+                                    onChange={(e) => setJiraSettings((prev: any) => ({ ...prev, autoIssueDescriptionTemplate: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg text-[0.875rem] font-mono focus:outline-none focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1] resize-vertical"
+                                  />
+                                </div>
+
+                                {/* Reset to Default */}
+                                <button
+                                  type="button"
+                                  onClick={() => setJiraSettings((prev: any) => ({
+                                    ...prev,
+                                    autoIssueSummaryTemplate: DEFAULT_SUMMARY_TEMPLATE,
+                                    autoIssueDescriptionTemplate: DEFAULT_DESCRIPTION_TEMPLATE,
+                                  }))}
+                                  className="text-[0.8125rem] text-[#6366F1] hover:text-[#4F46E5] font-medium cursor-pointer"
+                                >
+                                  ↩ Reset to Default Templates
+                                </button>
+                              </div>
+                            )}
 
                             {/* Field Mapping */}
                             {jiraSavedDomain && (

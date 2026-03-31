@@ -67,6 +67,8 @@ interface JiraSettings {
   project_key: string;
   issue_type: string;
   auto_create_on_failure: string;
+  auto_issue_summary_template?: string;
+  auto_issue_description_template?: string;
 }
 
 interface Folder {
@@ -249,7 +251,7 @@ export default function RunDetail() {
       if (!user) return;
       const { data, error } = await supabase
         .from('jira_settings')
-        .select('domain, email, api_token, issue_type, auto_create_on_failure')
+        .select('domain, email, api_token, issue_type, auto_create_on_failure, auto_issue_summary_template, auto_issue_description_template')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -267,6 +269,8 @@ export default function RunDetail() {
           project_key: prev?.project_key || '',
           issue_type: data.issue_type || 'Bug',
           auto_create_on_failure: data.auto_create_on_failure || 'disabled',
+          auto_issue_summary_template: data.auto_issue_summary_template || undefined,
+          auto_issue_description_template: data.auto_issue_description_template || undefined,
         }));
       }
     } catch (error) {
@@ -582,6 +586,16 @@ export default function RunDetail() {
       `--- Expected Result ---\n${expectedResult}`;
   };
 
+  const applyTemplate = (template: string, tc: TestCase): string => {
+    return template
+      .replace(/\{tc_title\}/g, tc.title || '')
+      .replace(/\{run_name\}/g, run?.name || 'Unknown')
+      .replace(/\{priority\}/g, tc.priority || 'Medium')
+      .replace(/\{steps\}/g, tc.steps || 'No steps defined')
+      .replace(/\{expected_result\}/g, tc.expected_result || 'Not specified')
+      .replace(/\{precondition\}/g, tc.precondition || 'None');
+  };
+
   const showToast = (type: 'success' | 'error', message: string) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), type === 'success' ? 3000 : 5000);
@@ -634,8 +648,12 @@ export default function RunDetail() {
                   email: jiraSettings.email,
                   apiToken: jiraSettings.api_token,
                   projectKey: jiraSettings.project_key,
-                  summary: `[Auto] Test Failed: ${(tc as any).custom_id ? `${(tc as any).custom_id} - ${tc.title}` : tc.title}`,
-                  description: buildAutoJiraDescription(tc),
+                  summary: jiraSettings.auto_issue_summary_template
+                    ? applyTemplate(jiraSettings.auto_issue_summary_template, tc)
+                    : `[Auto] Test Failed: ${(tc as any).custom_id ? `${(tc as any).custom_id} - ${tc.title}` : tc.title}`,
+                  description: jiraSettings.auto_issue_description_template
+                    ? applyTemplate(jiraSettings.auto_issue_description_template, tc)
+                    : buildAutoJiraDescription(tc),
                   issueType: jiraSettings.issue_type || 'Bug',
                   priority: mapTestPriorityToJira(tc.priority),
                 },
@@ -975,8 +993,12 @@ export default function RunDetail() {
                   email: jiraSettings.email,
                   apiToken: jiraSettings.api_token,
                   projectKey: jiraSettings.project_key,
-                  summary: `[Auto] Test Failed: ${(tc as any).custom_id ? `${(tc as any).custom_id} - ${tc.title}` : tc.title}`,
-                  description: buildAutoJiraDescription(tc),
+                  summary: jiraSettings.auto_issue_summary_template
+                    ? applyTemplate(jiraSettings.auto_issue_summary_template, tc)
+                    : `[Auto] Test Failed: ${(tc as any).custom_id ? `${(tc as any).custom_id} - ${tc.title}` : tc.title}`,
+                  description: jiraSettings.auto_issue_description_template
+                    ? applyTemplate(jiraSettings.auto_issue_description_template, tc)
+                    : buildAutoJiraDescription(tc),
                   issueType: jiraSettings.issue_type || 'Bug',
                   priority: mapTestPriorityToJira(tc.priority),
                 },
