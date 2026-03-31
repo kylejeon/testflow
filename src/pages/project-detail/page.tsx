@@ -329,6 +329,10 @@ export default function ProjectDetail() {
   };
 
   const handleExportPDF = async () => {
+    if (!project || isLoading) {
+      showExportToast('error', 'Project data is still loading. Please try again.');
+      return;
+    }
     try {
       setIsExporting(true);
       const { default: jsPDF } = await import('jspdf');
@@ -452,7 +456,8 @@ export default function ProjectDetail() {
           const mCompleted = mRuns.filter((r: any) => r.status === 'completed').length;
           const mTotal = mRuns.length;
           const pct = mTotal > 0 ? Math.round((mCompleted / mTotal) * 100) : 0;
-          const mName = (m.name || '').length > 30 ? (m.name || '').slice(0, 27) + '...' : (m.name || '');
+          const safeMName = String(m.name || '');
+          const mName = safeMName.length > 30 ? safeMName.slice(0, 27) + '...' : (safeMName || '-');
           pdf.setFontSize(8); pdf.setFont('NotoSansKR', 'normal'); pdf.setTextColor(71, 85, 105);
           pdf.text(mName, margin, y + 5);
           pdf.setFillColor(241, 245, 249); pdf.rect(margin + 42, y, contentW - 62, 6, 'F');
@@ -491,9 +496,10 @@ export default function ProjectDetail() {
         const tested = total - runCounts.untested;
         const pr = tested > 0 ? Math.round((runCounts.passed / tested) * 100) : 0;
         pdf.setFontSize(8); pdf.setFont('NotoSansKR', 'normal'); pdf.setTextColor(30, 41, 59);
-        const runName = (run.name || '').length > 22 ? run.name.slice(0, 19) + '...' : run.name;
+        const safeRunName = String(run.name || '');
+        const runName = safeRunName.length > 22 ? safeRunName.slice(0, 19) + '...' : (safeRunName || '-');
         pdf.text(runName, margin + 2, rowY + 6.5);
-        const msName = (msMap.get(run.milestone_id) || '-');
+        const msName = String(msMap.get(run.milestone_id) || '-');
         const msLabel = msName.length > 14 ? msName.slice(0, 11) + '...' : msName;
         pdf.setTextColor(100, 116, 139); pdf.text(msLabel, margin + 62, rowY + 6.5);
         const sc: Record<string, [number, number, number]> = {
@@ -602,14 +608,17 @@ export default function ProjectDetail() {
         const rowY = y + i * 10;
         if (i % 2 === 1) { pdf.setFillColor(248, 250, 252); pdf.rect(margin, rowY, contentW, 10, 'F'); }
         pdf.setFontSize(8); pdf.setFont('NotoSansKR', 'normal'); pdf.setTextColor(30, 41, 59);
-        const titleLines = pdf.splitTextToSize(tc.title || '', 100);
-        pdf.text(titleLines[0] + (titleLines.length > 1 ? '...' : ''), margin + 2, rowY + 6.5);
+        const safeTitle = String(tc.title || '');
+        const titleLines = safeTitle ? pdf.splitTextToSize(safeTitle, 100) : ['-'];
+        const titleText = String(titleLines[0] || '-') + (titleLines.length > 1 ? '...' : '');
+        pdf.text(titleText, margin + 2, rowY + 6.5);
         const ptc: Record<string, [number, number, number]> = { critical: [239, 68, 68], high: [249, 115, 22], medium: [234, 179, 8], low: [34, 197, 94] };
         const [pr2, pg2, pb2] = ptc[tc.priority || 'medium'] || [100, 116, 139];
-        pdf.setTextColor(pr2, pg2, pb2); pdf.text(tc.priority || 'medium', margin + 110, rowY + 6.5);
+        pdf.setTextColor(pr2, pg2, pb2); pdf.text(String(tc.priority || 'medium'), margin + 110, rowY + 6.5);
         pdf.setTextColor(30, 41, 59);
-        pdf.text(formatStatus(tc.lifecycle_status || 'active'), margin + 138, rowY + 6.5);
-        pdf.text(new Date(tc.created_at).toLocaleDateString(), margin + 163, rowY + 6.5);
+        pdf.text(formatStatus(String(tc.lifecycle_status || 'active')), margin + 138, rowY + 6.5);
+        const createdStr = tc.created_at ? new Date(tc.created_at).toLocaleDateString() : '-';
+        pdf.text(createdStr, margin + 163, rowY + 6.5);
       });
       addFooter(3);
 
