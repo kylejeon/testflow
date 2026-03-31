@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
@@ -162,6 +162,8 @@ export default function RunDetail() {
   const [bulkAssignee, setBulkAssignee] = useState('');
   const [runAssignees, setRunAssignees] = useState<Map<string, string>>(new Map());
   const [openAssigneeDropdown, setOpenAssigneeDropdown] = useState<string | null>(null);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
 
   const selectTestCase = (tc: TestCaseWithRunStatus | null) => {
     setSelectedTestCase(tc);
@@ -194,6 +196,53 @@ export default function RunDetail() {
       fetchComments();
     }
   }, [selectedTestCase]);
+
+  // Close more menu on outside click
+  useEffect(() => {
+    if (!showMoreMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMoreMenu]);
+
+  const handleExportCSV = () => {
+    setShowMoreMenu(false);
+    const headers = ['TC ID', 'Title', 'Priority', 'Folder', 'Status', 'Author', 'Note', 'Elapsed', 'Date'];
+    const rows = testCases.map(tc => {
+      const result = testResults.find(r => r.run?.id === runId);
+      const latestResult = [...(testResults || [])]
+        .filter(r => (r as any).test_case_id === tc.id || r.run?.id === runId)
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+      return [
+        (tc as any).custom_id || tc.id,
+        `"${(tc.title || '').replace(/"/g, '""')}"`,
+        tc.priority || '',
+        tc.folder || '',
+        tc.runStatus || 'untested',
+        latestResult?.author || '',
+        `"${(latestResult?.note || '').replace(/"/g, '""')}"`,
+        latestResult?.elapsed || '',
+        latestResult?.timestamp ? latestResult.timestamp.toLocaleDateString() : '',
+      ].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${run?.name || 'run'}-results.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportPDF = () => {
+    setShowMoreMenu(false);
+    window.print();
+  };
 
   const fetchCurrentUser = async () => {
     try {
@@ -1820,9 +1869,56 @@ export default function RunDetail() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-1 px-[0.875rem] py-[0.4375rem] rounded-lg text-[0.8125rem] font-semibold cursor-pointer border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] transition-colors">
-                      <i className="ri-more-2-fill" />
-                    </button>
+                    <div ref={moreMenuRef} style={{ position: 'relative' }}>
+                      <button
+                        onClick={() => setShowMoreMenu(v => !v)}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer border transition-colors"
+                        style={{
+                          background: showMoreMenu ? '#F1F5F9' : 'white',
+                          borderColor: showMoreMenu ? '#CBD5E1' : '#E2E8F0',
+                        }}
+                        aria-haspopup="menu"
+                        aria-expanded={showMoreMenu}
+                      >
+                        <i className="ri-more-2-fill text-lg" style={{ color: '#64748B' }} />
+                      </button>
+                      {showMoreMenu && (
+                        <div
+                          role="menu"
+                          style={{
+                            position: 'absolute',
+                            top: 'calc(100% + 4px)',
+                            right: 0,
+                            width: '224px',
+                            background: 'white',
+                            border: '1px solid #E2E8F0',
+                            borderRadius: '8px',
+                            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)',
+                            zIndex: 100,
+                            padding: '4px 0',
+                          }}
+                        >
+                          {[
+                            { icon: 'ri-file-pdf-line', label: 'Export Run Report (PDF)', onClick: handleExportPDF },
+                            { icon: 'ri-file-excel-2-line', label: 'Export Results (CSV)', onClick: handleExportCSV },
+                          ].map(item => (
+                            <button
+                              key={item.label}
+                              role="menuitem"
+                              onClick={item.onClick}
+                              className="group w-full flex items-center gap-2.5 px-3 py-2.5 text-[0.8125rem] font-medium transition-colors cursor-pointer hover:bg-[#F8FAFC]"
+                              style={{ color: '#334155', background: 'none', border: 'none', textAlign: 'left' }}
+                            >
+                              <i
+                                className={`${item.icon} text-base flex-shrink-0 group-hover:text-[#6366F1] transition-colors`}
+                                style={{ color: '#64748B' }}
+                              />
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     {testCases.length > 0 && (
                       <button
                         onClick={() => setFocusModeOpen(true)}
@@ -2391,9 +2487,6 @@ export default function RunDetail() {
                           </button>
                           <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer">
                             <i className="ri-list-ordered text-sm"></i>
-                          </button>
-                          <button className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded cursor-pointer ml-auto">
-                            <i className="ri-more-2-fill text-sm"></i>
                           </button>
                         </div>
                         <textarea
