@@ -104,7 +104,7 @@ const content = {
       {
         icon: 'ri-link',
         title: 'Jira Integration',
-        description: 'Automatically create Jira issues when tests fail. Map custom fields, sync status bidirectionally, and keep dev and QA in perfect sync.',
+        description: 'Create Jira issues directly from failed tests with full context — steps, screenshots, and environment info.',
         color: 'bg-cyan-50',
         iconColor: 'text-cyan-600',
         tag: 'Integration',
@@ -167,7 +167,7 @@ const content = {
       description: 'Connect Testably to the tools your team already uses — no disruption to your workflow.',
       jiraTitle: 'Seamless Jira Integration',
       jiraDescription: 'When a test fails, Testably automatically creates a Jira issue with all the context — steps, screenshots, and environment info. No more copy-paste between tools.',
-      jiraTags: ['Auto issue creation', 'Bidirectional sync', 'Custom field mapping', 'Project linking'],
+      jiraTags: ['Auto issue creation', 'Project linking'],
       ciTitle: 'CI/CD Pipeline Ready',
       ciDescription: 'Push automated test results from any CI/CD system via our REST API. Use project-specific tokens to keep your pipelines secure.',
       ciTags: ['GitHub Actions', 'Jenkins', 'GitLab CI', 'REST API'],
@@ -318,7 +318,7 @@ const content = {
       },
       {
         question: 'Does Testably support webhooks?',
-        answer: 'Yes. You can configure webhooks to send real-time event notifications to any HTTP endpoint — including Slack, Discord, Microsoft Teams, or your custom automation system. Events include test run completions, test failures, member joins, and more.',
+        answer: 'Yes. You can configure webhooks to send real-time event notifications to any HTTP endpoint — including Slack and Microsoft Teams, or your custom automation system. Events include test run completions, test failures, member joins, and more.',
       },
     ],
     testimonialsSection: {
@@ -537,7 +537,7 @@ const content = {
       description: '팀이 이미 사용 중인 도구에 Testably를 연결하세요 — 기존 워크플로우에 방해 없이.',
       jiraTitle: 'Jira와 완벽하게 연동됩니다',
       jiraDescription: '테스트가 실패하면 Testably가 자동으로 단계, 스크린샷, 환경 정보를 포함한 Jira 이슈를 생성합니다. 더 이상 도구 간 복사-붙여넣기가 필요 없습니다.',
-      jiraTags: ['자동 이슈 생성', '양방향 동기화', '커스텀 필드 매핑', '프로젝트 연결'],
+      jiraTags: ['자동 이슈 생성', '프로젝트 연결'],
       ciTitle: 'CI/CD 파이프라인 지원',
       ciDescription: 'REST API를 통해 모든 CI/CD 시스템에서 자동 테스트 결과를 업로드하세요. 프로젝트별 토큰으로 파이프라인을 안전하게 유지하세요.',
       ciTags: ['GitHub Actions', 'Jenkins', 'GitLab CI', 'REST API'],
@@ -688,7 +688,7 @@ const content = {
       },
       {
         question: 'Testably는 웹훅을 지원하나요?',
-        answer: '네. 웹훅을 구성하여 Slack, Discord, Microsoft Teams 또는 사용자 정의 자동화 시스템을 포함한 모든 HTTP 엔드포인트로 실시간 이벤트 알림을 보낼 수 있습니다. 테스트 실행 완료, 테스트 실패, 멤버 참여 등의 이벤트가 포함됩니다.',
+        answer: '네. 웹훅을 구성하여 Slack과 Microsoft Teams 또는 사용자 정의 자동화 시스템을 포함한 모든 HTTP 엔드포인트로 실시간 이벤트 알림을 보낼 수 있습니다. 테스트 실행 완료, 테스트 실패, 멤버 참여 등의 이벤트가 포함됩니다.',
       },
     ],
     testimonialsSection: {
@@ -1030,7 +1030,7 @@ export default function HomePage() {
                     </span>
                   </button>
                   <button
-                    onClick={() => navigate('/auth')}
+                    onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
                     className="flex items-center gap-2 px-8 py-4 bg-white/[0.06] text-white/80 border border-white/[0.1] rounded-full font-semibold text-base hover:bg-white/[0.1] hover:text-white hover:border-white/20 active:scale-[0.98] backdrop-blur-sm cursor-pointer"
                     style={{ transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
                   >
