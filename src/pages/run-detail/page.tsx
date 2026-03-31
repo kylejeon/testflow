@@ -779,7 +779,19 @@ export default function RunDetail() {
     }
   };
 
+  const resetResultForm = useCallback(() => {
+    setResultFormData({
+      status: 'passed', note: '', assignTo: '', elapsed: '00:00',
+      issues: '', issuesList: [], attachments: [],
+    });
+    setStepStatuses({});
+    setIsTimerRunning(false);
+    setTimerStartTime(null);
+    setElapsedSeconds(0);
+  }, []);
+
   const handleAddResult = () => {
+    resetResultForm();
     setShowAddResultModal(true);
   };
 
@@ -946,19 +958,7 @@ export default function RunDetail() {
         untested: untestedCount
       });
       
-      // Reset form and timer
-      setResultFormData({
-        status: 'passed',
-        note: '',
-        assignTo: '',
-        elapsed: '00:00',
-        issues: '',
-        issuesList: [],
-        attachments: [],
-      });
-      setStepStatuses({});
-      setTimerStartTime(null);
-      setElapsedSeconds(0);
+      resetResultForm();
       setShowAddResultModal(false);
       
       // Switch to Results tab
@@ -2169,12 +2169,7 @@ export default function RunDetail() {
                 <div className="flex items-center justify-between p-4 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900">Add result</h2>
                   <button
-                    onClick={() => {
-                      setShowAddResultModal(false);
-                      setIsTimerRunning(false);
-                      setTimerStartTime(null);
-                      setElapsedSeconds(0);
-                    }}
+                    onClick={() => { resetResultForm(); setShowAddResultModal(false); }}
                     className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
                   >
                     <i className="ri-close-line text-xl"></i>
@@ -2278,27 +2273,21 @@ export default function RunDetail() {
                                   <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <span className="text-indigo-700 text-xs font-bold">{index + 1}</span>
                                   </div>
-                                  {isHtml ? (
-                                    <div
-                                      className="text-sm text-gray-700 mb-2 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                                      dangerouslySetInnerHTML={{ __html: stepContent }}
-                                    />
-                                  ) : (
-                                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{stepContent}</p>
-                                  )}
-                                  {expectedContent && (
-                                    <div className="bg-gray-50 rounded p-2 mb-2">
-                                      <p className="text-xs text-gray-600 mb-1 font-semibold">Expected Result:</p>
-                                      {expectedIsHtml ? (
-                                        <div
-                                          className="text-xs text-gray-700 prose prose-sm max-w-none [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 [&_img]:cursor-pointer [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-                                          dangerouslySetInnerHTML={{ __html: expectedContent }}
-                                        />
-                                      ) : (
-                                        <p className="text-xs text-gray-700 whitespace-pre-wrap">{expectedContent}</p>
-                                      )}
-                                    </div>
-                                  )}
+                                  <div className="flex-1">
+                                    {isHtml ? (
+                                      <div className="text-sm text-gray-700 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: stepContent }} />
+                                    ) : (
+                                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{stepContent}</p>
+                                    )}
+                                    {expectedContent && (
+                                      <div className="mt-1 flex items-start gap-1">
+                                        <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                        <p className="text-sm text-green-600 leading-relaxed">
+                                          {expectedIsHtml ? expectedContent.replace(/<[^>]*>/g, '').trim() : expectedContent}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                                 <select
                                   value={stepStatuses[index] || 'untested'}
@@ -2494,12 +2483,7 @@ export default function RunDetail() {
 
                 <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50">
                   <button
-                    onClick={() => {
-                      setShowAddResultModal(false);
-                      setIsTimerRunning(false);
-                      setTimerStartTime(null);
-                      setElapsedSeconds(0);
-                    }}
+                    onClick={() => { resetResultForm(); setShowAddResultModal(false); }}
                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
                   >
                     Cancel
