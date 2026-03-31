@@ -442,12 +442,11 @@ export default function RunDetail() {
 
         const { data: testResultsData, error: testResultsError } = await supabase
           .from('test_results')
-          .select('test_case_id, status')
+          .select('test_case_id, status, run_id')
           .eq('run_id', runId)
           .order('created_at', { ascending: false });
 
         if (testResultsError) throw testResultsError;
-        console.log('[fetchData] test_results:', testResultsData?.length, '건');
 
         const statusMap = new Map<string, string>();
         testResultsData?.forEach((result: any) => {
@@ -455,6 +454,31 @@ export default function RunDetail() {
             statusMap.set(result.test_case_id, result.status);
           }
         });
+
+        console.log('[fetchData] statusMap 결과 | runId:', runId, '| 결과:', testResultsData?.length, '건 | statusMap 크기:', statusMap.size);
+        if (testResultsData && testResultsData.length > 0) {
+          console.log('[fetchData] 첫 번째 결과 run_id 샘플:', (testResultsData[0] as any).run_id);
+        }
+
+        if (statusMap.size === 0 && runData.test_case_ids && runData.test_case_ids.length > 0) {
+          console.warn('[fetchData] ⚠️ statusMap 비어있음! run_id 없이 fallback 조회 시작');
+          const { data: fallbackData } = await supabase
+            .from('test_results')
+            .select('test_case_id, status, run_id')
+            .in('test_case_id', runData.test_case_ids)
+            .order('created_at', { ascending: false });
+
+          if (fallbackData && fallbackData.length > 0) {
+            console.error('[fetchData] 🔴 test_results 존재하지만 run_id 불일치!',
+              'DB run_id:', (fallbackData[0] as any).run_id,
+              'URL runId:', runId);
+            fallbackData.forEach((result: any) => {
+              if (!statusMap.has(result.test_case_id)) {
+                statusMap.set(result.test_case_id, result.status);
+              }
+            });
+          }
+        }
 
         const testCasesWithStatus: TestCaseWithRunStatus[] = (testCasesData || []).map((tc: any) => ({
           ...tc,
@@ -660,6 +684,9 @@ export default function RunDetail() {
       if (!currentUser) {
         throw new Error('사용자 정보를 불러올 수 없습니다. 페이지를 새로고침해주세요.');
       }
+      if (!runId) {
+        throw new Error('Run ID가 없습니다. URL을 확인해주세요.');
+      }
 
       // Persist the status change as a test_result row so it survives page refresh
       const { data: newResultData, error: insertError } = await supabase
@@ -678,7 +705,7 @@ export default function RunDetail() {
         .single();
 
       if (insertError) throw insertError;
-      console.log('[handleStatusChange] ✅ INSERT 성공');
+      console.log('[handleStatusChange] ✅ INSERT 성공 | DB run_id:', newResultData.run_id, '| URL runId:', runId, '| match:', newResultData.run_id === runId);
 
       // Auto-create Jira issue on failure
       if (newStatus === 'failed' && jiraSettings?.auto_create_on_failure && jiraSettings.auto_create_on_failure !== 'disabled' && jiraSettings.project_key) {
@@ -975,7 +1002,11 @@ export default function RunDetail() {
 
   const handleSubmitResult = async () => {
     try {
-      if (!selectedTestCase || !runId || !currentUser) return;
+      if (!selectedTestCase || !currentUser) return;
+      if (!runId) {
+        alert('Run ID가 없습니다. 페이지를 새로고침해주세요.');
+        return;
+      }
 
       // 타이머 정지
       setIsTimerRunning(false);
