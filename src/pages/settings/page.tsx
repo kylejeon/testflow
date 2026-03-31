@@ -16,6 +16,7 @@ interface JiraSettings {
   email: string;
   apiToken: string;
   issueType: string;
+  autoCreateOnFailure: string;
 }
 
 interface UserProfile {
@@ -260,6 +261,7 @@ export default function SettingsPage() {
     email: '',
     apiToken: '',
     issueType: 'Bug',
+    autoCreateOnFailure: 'disabled',
   });
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -557,6 +559,7 @@ export default function SettingsPage() {
           email: data.email || '',
           apiToken: data.api_token || '',
           issueType: data.issue_type || 'Bug',
+          autoCreateOnFailure: data.auto_create_on_failure || 'disabled',
         });
       }
     } catch (error) {
@@ -619,6 +622,7 @@ export default function SettingsPage() {
             email: jiraSettings.email,
             api_token: jiraSettings.apiToken,
             issue_type: jiraSettings.issueType,
+            auto_create_on_failure: jiraSettings.autoCreateOnFailure,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingData.id);
@@ -633,6 +637,7 @@ export default function SettingsPage() {
             email: jiraSettings.email,
             api_token: jiraSettings.apiToken,
             issue_type: jiraSettings.issueType,
+            auto_create_on_failure: jiraSettings.autoCreateOnFailure,
           });
 
         if (error) throw error;
@@ -1739,6 +1744,22 @@ def pytest_sessionfinish(session, exitstatus):
                                 </button>
                               </div>
                               <p className="text-[0.6875rem] text-[#94A3B8] mt-1">Default issue type when creating new issues</p>
+                            </div>
+
+                            {/* Auto-create Issue on Failure */}
+                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                              <h4 className="text-sm font-semibold text-gray-900 mb-1">Auto-create Jira Issue</h4>
+                              <p className="text-xs text-gray-500 mb-3">Automatically create a Jira issue when a test case is marked as Failed.</p>
+                              <select
+                                value={jiraSettings.autoCreateOnFailure}
+                                onChange={(e) => setJiraSettings({ ...jiraSettings, autoCreateOnFailure: e.target.value })}
+                                disabled={!isStarterOrHigher}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <option value="disabled">Disabled (manual only)</option>
+                                <option value="all_failures">Create for all failures</option>
+                                <option value="first_failure_only">Create for first failure only</option>
+                              </select>
                             </div>
 
                             {/* Test Result Message */}

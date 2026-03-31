@@ -66,6 +66,7 @@ interface JiraSettings {
   api_token: string;
   project_key: string;
   issue_type: string;
+  auto_create_on_failure: string;
 }
 
 interface Folder {
@@ -246,7 +247,7 @@ export default function RunDetail() {
       if (!user) return;
       const { data, error } = await supabase
         .from('jira_settings')
-        .select('domain, email, api_token, issue_type')
+        .select('domain, email, api_token, issue_type, auto_create_on_failure')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -263,6 +264,7 @@ export default function RunDetail() {
           api_token: data.api_token || '',
           project_key: prev?.project_key || '',
           issue_type: data.issue_type || 'Bug',
+          auto_create_on_failure: data.auto_create_on_failure || 'disabled',
         }));
       }
     } catch (error) {
@@ -566,6 +568,21 @@ export default function RunDetail() {
     }
   };
 
+  const buildAutoJiraDescription = (tc: TestCase): string => {
+    const steps = tc.steps || 'No steps defined';
+    return `*Auto-created by Testably*\n\n` +
+      `Test Case: ${tc.title}\n` +
+      `Run: ${run?.name || 'Unknown'}\n` +
+      `Priority: ${tc.priority || 'Medium'}\n\n` +
+      `--- Steps ---\n${steps}\n\n` +
+      (tc.precondition ? `--- Precondition ---\n${tc.precondition}` : '');
+  };
+
+  const mapTestPriorityToJira = (priority?: string): string => {
+    const map: Record<string, string> = { critical: 'Highest', high: 'High', medium: 'Medium', low: 'Low' };
+    return map[priority?.toLowerCase() || 'medium'] || 'Medium';
+  };
+
   const handleStatusChange = async (testCaseId: string, newStatus: string) => {
     try {
       if (!currentUser) {
@@ -590,6 +607,41 @@ export default function RunDetail() {
         .single();
 
       if (insertError) throw insertError;
+
+      // Auto-create Jira issue on failure
+      if (newStatus === 'failed' && jiraSettings?.auto_create_on_failure && jiraSettings.auto_create_on_failure !== 'disabled' && jiraSettings.project_key) {
+        const tc = testCases.find(t => t.id === testCaseId);
+        if (tc) {
+          const existingIssues = newResultData?.issues || [];
+          const shouldCreate =
+            jiraSettings.auto_create_on_failure === 'all_failures' ||
+            (jiraSettings.auto_create_on_failure === 'first_failure_only' && existingIssues.length === 0);
+
+          if (shouldCreate) {
+            try {
+              const { data: jiraData } = await supabase.functions.invoke('create-jira-issue', {
+                body: {
+                  domain: jiraSettings.domain,
+                  email: jiraSettings.email,
+                  apiToken: jiraSettings.api_token,
+                  projectKey: jiraSettings.project_key,
+                  summary: `[Auto] Test Failed: ${tc.title}`,
+                  description: buildAutoJiraDescription(tc),
+                  issueType: jiraSettings.issue_type || 'Bug',
+                  priority: mapTestPriorityToJira(tc.priority),
+                },
+              });
+              if (jiraData?.success && jiraData?.issue?.key && newResultData?.id) {
+                await supabase.from('test_results')
+                  .update({ issues: [...existingIssues, jiraData.issue.key] })
+                  .eq('id', newResultData.id);
+              }
+            } catch (err) {
+              console.warn('Auto Jira issue creation failed:', err);
+            }
+          }
+        }
+      }
 
       // Refresh results list if this is the currently selected test case
       if (selectedTestCase?.id === testCaseId && newResultData) {
