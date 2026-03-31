@@ -116,6 +116,7 @@ export default function SessionDetail() {
   const [showEditLogTypeDropdown, setShowEditLogTypeDropdown] = useState(false);
   const [savingLog, setSavingLog] = useState(false);
   const [showCloseConfirmModal, setShowCloseConfirmModal] = useState(false);
+  const [showReopenConfirmModal, setShowReopenConfirmModal] = useState(false);
 
   // Entry form redesign state
   const [activeForm, setActiveForm] = useState<'note' | 'passed' | 'failed' | 'blocked' | null>(null);
@@ -348,6 +349,9 @@ export default function SessionDetail() {
   };
 
   const handleAddLog = async () => {
+    // Guard: block input when session is completed
+    if (session.status === 'closed') return;
+
     let content = '';
     let type: 'note' | 'passed' | 'failed' | 'blocked';
 
@@ -757,6 +761,36 @@ export default function SessionDetail() {
     }
   };
 
+  const handleReopenSession = async () => {
+    try {
+      const now = new Date().toISOString();
+
+      const { error } = await supabase
+        .from('sessions')
+        .update({
+          status: 'active',
+          ended_at: null,
+          paused_at: null,
+          updated_at: now,
+        })
+        .eq('id', sessionId);
+
+      if (error) throw error;
+
+      setSession((prev: any) => ({
+        ...prev,
+        status: 'active',
+        ended_at: null,
+        paused_at: null,
+        updated_at: now,
+      }));
+      setShowReopenConfirmModal(false);
+    } catch (error) {
+      console.error('세션 재개 오류:', error);
+      alert('Failed to reopen session.');
+    }
+  };
+
   const getLogTypeColor = (type: string) => {
     switch (type) {
       case 'passed': return 'bg-emerald-500';
@@ -1063,6 +1097,7 @@ export default function SessionDetail() {
             </div>
 
             {/* Entry Bottom Bar */}
+            {session.status !== 'closed' ? (
             <div className="flex-shrink-0">
               <input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} className="hidden" />
 
@@ -1225,6 +1260,14 @@ export default function SessionDetail() {
                 </button>
               </div>
             </div>
+) : (
+            <div className="flex-shrink-0 border-t border-[#E2E8F0] px-5 py-4">
+              <div className="flex items-center justify-center gap-2 text-[#94A3B8] text-[0.8125rem]">
+                <i className="ri-lock-line" />
+                <span>This session is completed. Reopen to add entries.</span>
+              </div>
+            </div>
+)}
           </div>
 
           {/* Detail Sidebar */}
@@ -1384,8 +1427,11 @@ export default function SessionDetail() {
                     <i className="ri-play-fill" />Start
                   </button>
                 ) : session.status === 'closed' ? (
-                  <button disabled className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#D1D5DB] text-[#6B7280] text-[0.75rem] font-semibold rounded-[6px] cursor-not-allowed">
-                    <i className="ri-check-line" />Completed
+                  <button
+                    onClick={() => setShowReopenConfirmModal(true)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#6366F1] text-white text-[0.75rem] font-semibold rounded-[6px] hover:bg-[#4F46E5] cursor-pointer transition-colors"
+                  >
+                    <i className="ri-refresh-line" />Reopen Session
                   </button>
                 ) : session.paused_at ? (
                   <>
@@ -1787,6 +1833,40 @@ export default function SessionDetail() {
             onCrop={cropState.onCrop}
             onCancel={() => setCropState(null)}
           />
+        )}
+
+        {/* Reopen Confirm Modal */}
+        {showReopenConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white rounded-xl shadow-xl p-6 w-[400px] max-w-[90vw]">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-[#EEF2FF] flex items-center justify-center">
+                  <i className="ri-refresh-line text-[#6366F1] text-lg" />
+                </div>
+                <div>
+                  <h3 className="text-[0.9375rem] font-semibold text-[#0F172A]">Reopen Session</h3>
+                  <p className="text-[0.8125rem] text-[#64748B]">This will change the status back to In Progress.</p>
+                </div>
+              </div>
+              <p className="text-[0.8125rem] text-[#475569] mb-5">
+                The session timer will resume from where it left off. You can add new entries and close the session again when finished.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowReopenConfirmModal(false)}
+                  className="px-4 py-2 text-[0.8125rem] font-medium text-[#64748B] bg-[#F1F5F9] rounded-lg hover:bg-[#E2E8F0] cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReopenSession}
+                  className="px-4 py-2 text-[0.8125rem] font-semibold text-white bg-[#6366F1] rounded-lg hover:bg-[#4F46E5] cursor-pointer transition-colors"
+                >
+                  Reopen
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Close Session Confirm Modal */}
