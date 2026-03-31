@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
 
 const columns = [
@@ -29,7 +30,7 @@ const columns = [
       {
         title: 'Jira Integration',
         date: 'Q4 2025',
-        desc: 'Connect to Jira Cloud and Data Center. Auto-create issues on test failure.',
+        desc: 'Connect to Jira Cloud. Auto-create issues on test failure with full context.',
         icon: 'ri-links-line',
         iconBg: 'bg-indigo-50',
         iconColor: 'text-indigo-600',
@@ -136,6 +137,7 @@ const columns = [
 ];
 
 export default function RoadmapPage() {
+  const navigate = useNavigate();
   return (
     <MarketingLayout
       title="Roadmap | Testably"

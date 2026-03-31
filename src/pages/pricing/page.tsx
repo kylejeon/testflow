@@ -172,7 +172,7 @@ const faqs = [
   },
   {
     q: 'Do you offer annual billing?',
-    a: 'Annual billing with a 20% discount is coming soon. Subscribe to our newsletter for updates.',
+    a: 'Yes! Annual billing is available with a 20% discount on all paid plans. You can switch to annual billing from your account settings at any time.',
   },
   {
     q: 'What payment methods do you accept?',

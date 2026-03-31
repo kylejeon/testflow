@@ -50,7 +50,7 @@ const features = [
       'Mission-driven sessions with goals',
       'Rich-text editor with inline images',
       'Real-time activity log with timestamps',
-      'Passed / Failed / Note entry types',
+      'Note / Bug / Observation / Step entry types',
       'Activity heatmap analytics',
       'Session history for retrospectives',
     ],
@@ -119,7 +119,7 @@ const features = [
     tagColor: 'bg-rose-50 text-rose-700',
     title: 'Jira Integration',
     headline: 'Seamless bug tracking, zero context switching',
-    description: 'Connect to Jira Cloud or Data Center. Auto-create issues on test failure with full context.',
+    description: 'Connect to Jira Cloud. Auto-create issues on test failure with full context.',
     bullets: [
       'Jira Cloud support',
       'Auto issue creation on failure',

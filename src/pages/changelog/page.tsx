@@ -60,7 +60,7 @@ const entries = [
     description: 'Connect to Jira Cloud and Data Center. Auto-create issues on test failure.',
     bullets: [
       'Auto issue creation with full context',
-      'Bidirectional status sync',
+      'One-click Jira issue creation from test results',
       'Custom field mapping',
     ],
   },
@@ -72,7 +72,7 @@ const entries = [
     description: 'Mission-driven discovery testing with rich-text notes, screenshots, and structured entries.',
     bullets: [
       'Rich-text editor with inline images',
-      'Passed / Failed / Note entries',
+      'Note / Bug / Observation / Step entries',
       'Activity heatmap',
     ],
   },
