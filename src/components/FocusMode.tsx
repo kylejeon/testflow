@@ -232,7 +232,11 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
       setPending(status);
       try {
         await onStatusChange(test.id, status, note.trim() || undefined);
-      } catch {}
+      } catch (err) {
+        console.error('[FocusMode] Status change failed:', err);
+        setPending(null);
+        return; // 실패 시 다음 TC로 이동하지 않음
+      }
       setPending(null);
       resetForNavigation();
       setTimeout(() => {
@@ -338,6 +342,14 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
         case 'arrowleft': e.preventDefault(); goPrev(); break;
         case 'escape':
           e.preventDefault();
+          if (pending) {
+            const save = window.confirm(
+              '입력 중인 결과가 있습니다.\n확인: 저장 후 종료\n취소: 저장하지 않고 종료'
+            );
+            if (save) {
+              await markAndNext(pending);
+            }
+          }
           onExit();
           break;
       }
