@@ -688,6 +688,8 @@ export default function SettingsPage() {
             email: jiraSettings.email,
             api_token: jiraSettings.apiToken,
             issue_type: jiraSettings.issueType,
+            auto_create_on_failure: jiraSettings.autoCreateOnFailure,
+            field_mappings: jiraSettings.fieldMappings,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingData.id);
@@ -702,6 +704,8 @@ export default function SettingsPage() {
             email: jiraSettings.email,
             api_token: jiraSettings.apiToken,
             issue_type: jiraSettings.issueType,
+            auto_create_on_failure: jiraSettings.autoCreateOnFailure,
+            field_mappings: jiraSettings.fieldMappings,
           });
 
         if (error) throw error;
