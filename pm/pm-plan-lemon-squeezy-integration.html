@@ -113,3 +113,908 @@
 │    check-subscriptions  ← 만료 체크 + 자동 다운그레이드           │
 │    (paddle-webhook ❌)  ← 미구현! 핵심 GAP                      │
 └─────────────────────────────────────────────────────────────────┘</div>
+    <h3>1.2 핵심 파일 목록</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>파일</th><th>역할</th><th>LS 연동 시 변경</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="file-ref">src/lib/paddle.ts</span></td>
+          <td>Paddle SDK 초기화, <code>PADDLE_PRICE_IDS</code> 매핑, <code>openPaddleCheckout()</code></td>
+          <td><span class="badge badge-warning">유지</span> + LS 병렬 모듈 생성</td>
+        </tr>
+        <tr>
+          <td><span class="file-ref">src/pages/home/page.tsx</span></td>
+          <td><code>handlePlanClick()</code> → <code>openPaddleCheckout(planName, 'monthly')</code></td>
+          <td><span class="badge badge-danger">수정</span> provider 분기 로직 추가</td>
+        </tr>
+        <tr>
+          <td><span class="file-ref">src/pages/pricing/page.tsx</span></td>
+          <td>6개 플랜 목록, CTA 버튼, 연간/월간 토글</td>
+          <td><span class="badge badge-danger">수정</span> provider 분기 로직 추가</td>
+        </tr>
+        <tr>
+          <td><span class="file-ref">src/pages/settings/page.tsx</span></td>
+          <td>구독 상태 표시, TIER_INFO, 트라이얼 카운트다운</td>
+          <td><span class="badge badge-warning">소규모 수정</span> provider 표시 추가</td>
+        </tr>
+        <tr>
+          <td><span class="file-ref">supabase/functions/check-subscriptions/</span></td>
+          <td>만료 체험/구독 자동 다운그레이드</td>
+          <td><span class="badge badge-success">변경 없음</span> provider 무관</td>
+        </tr>
+      </tbody>
+    </table>
+    <h3>1.3 현재 결제 플로우</h3>
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">사용자가 Home 또는 Pricing 페이지에서 플랜 CTA 클릭</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content"><code>handlePlanClick(planName)</code> → <code>openPaddleCheckout(planName, 'monthly')</code> 호출</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">Paddle JS SDK가 체크아웃 모달(오버레이) 열기 — <code>paddle.Checkout.open({ items: [{ priceId, quantity: 1 }] })</code></div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content">Paddle이 결제 처리 (카드, PayPal 등)</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-content"><span class="badge badge-danger">GAP</span> 웹훅 핸들러 미구현 → <code>profiles.subscription_tier</code> 자동 업데이트 안 됨</div>
+    </div>
+
+    <div class="problem-box">
+      <strong>⚠️ 발견된 핵심 문제: Paddle 웹훅 핸들러 부재</strong><br>
+      <code>supabase/functions/</code>에 Paddle 웹훅을 처리하는 Edge Function이 없습니다. 결제 완료 후 <code>profiles.subscription_tier</code>가 자동으로 업데이트되지 않아, 현재는 수동으로 DB를 변경하고 있을 가능성이 높습니다. Lemon Squeezy 연동 시에는 웹훅 핸들러를 반드시 구현해야 합니다.
+    </div>
+    <h3>1.4 현재 Paddle Price ID 매핑</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>플랜</th><th>월간 Price ID</th><th>연간 Price ID</th><th>가격</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Free</td><td colspan="2" style="color:var(--gray-500);">N/A (결제 없음)</td><td>$0</td></tr>
+        <tr><td>Starter</td><td><code>pri_01kmfhvvyvrq...</code></td><td><code>pri_01kmfhx9p3qb...</code></td><td>$49/mo · $470/yr</td></tr>
+        <tr><td>Professional</td><td><code>pri_01kmfhrfcww9...</code></td><td><code>pri_01kmfht5fwdm...</code></td><td>$99/mo · $950/yr</td></tr>
+        <tr><td>Enterprise S</td><td><code>pri_01kmfhpz212s...</code></td><td><code>pri_01kmfhnynq27...</code></td><td>$249/mo · $2,390/yr</td></tr>
+        <tr><td>Enterprise M</td><td><code>pri_01kmfgx4n2vv...</code></td><td><code>pri_01kmfhmgzsje...</code></td><td>$499/mo · $4,790/yr</td></tr>
+        <tr><td>Enterprise L</td><td colspan="2" style="color:var(--gray-500);">Custom (영업팀 문의)</td><td>Custom</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 2: Lemon Squeezy 연동 전략 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: #B8860B;">2</div>
+    <div class="section-title">Lemon Squeezy 연동 전략: Dual Provider</div>
+  </div>
+  <div class="section-body">
+
+    <h3>2.1 병행 전략 옵션 비교</h3>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>옵션 A: 지역별 분리 ❌</h4>
+        <p>한국/아시아 → Lemon Squeezy<br>북미/유럽 → Paddle</p>
+        <ul>
+          <li>GeoIP 기반 분기 필요</li>
+          <li>복잡도 높음, 유지보수 부담</li>
+          <li>Paddle 승인 전에는 의미 없음</li>
+        </ul>
+        <p><strong>판정: 비추천</strong> — 현 상황에 불필요한 복잡성</p>
+      </div>
+      <div class="compare-card" style="border-color: var(--success);">
+        <h4>옵션 B: 전면 LS 우선 + Paddle 대기 ✅</h4>
+        <p>모든 결제를 Lemon Squeezy로 처리<br>Paddle 승인 시 선택적 전환/병행</p>
+        <ul>
+          <li>단일 결제 플로우 → 단순한 구현</li>
+          <li>LS 웹훅 1개만 구현하면 됨</li>
+          <li>Paddle 승인 후 복귀도 용이</li>
+        </ul>
+        <p><strong>판정: 추천</strong> — 최소 공수로 결제 활성화</p>
+      </div>
+    </div>
+
+    <div class="solution-box">
+      <strong>✅ 추천 전략: 옵션 B — Lemon Squeezy 전면 우선</strong><br>
+      Paddle 코드를 삭제하지 않고 <code>PAYMENT_PROVIDER</code> 환경변수로 분기합니다. 현재는 <code>'lemonsqueezy'</code>로 설정하고, Paddle 승인 후 <code>'paddle'</code>로 전환하거나 병행할 수 있습니다.
+    </div>
+    <h3>2.2 Provider 추상화 아키텍처</h3>
+    <div class="arch-diagram">┌─────────────────────────────────────────────────────────────────┐
+│  src/lib/payment.ts  (NEW — Provider 추상화 레이어)              │
+│                                                                 │
+│  const PROVIDER = import.meta.env.VITE_PAYMENT_PROVIDER         │
+│                    || 'lemonsqueezy'                             │
+│                                                                 │
+│  export async function openCheckout(planName, billingPeriod) {   │
+│    if (PROVIDER === 'paddle')       → openPaddleCheckout(...)    │
+│    if (PROVIDER === 'lemonsqueezy') → openLSCheckout(...)        │
+│  }                                                               │
+│                                                                 │
+│  export function getProviderName() → 'Paddle' | 'Lemon Squeezy' │
+│  export function getManageUrl()    → Portal URL                  │
+└─────────────────────────────────────────────────────────────────┘
+                         │
+            ┌────────────┴────────────┐
+            ▼                         ▼
+┌─────────────────────┐   ┌──────────────────────────┐
+│  src/lib/paddle.ts  │   │  src/lib/lemonsqueezy.ts │
+│  (기존 — 변경 없음)  │   │  (NEW)                   │
+│  getPaddle()        │   │  initLS()                │
+│  openPaddleCheckout │   │  openLSCheckout()        │
+│  PADDLE_PRICE_IDS   │   │  LS_VARIANT_IDS          │
+└─────────────────────┘   └──────────────────────────┘</div>
+    <h3>2.3 Lemon Squeezy 개념 매핑</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>Paddle 개념</th><th>Lemon Squeezy 개념</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Client Token</td><td>—</td><td>LS는 프론트엔드 토큰 불필요 (Lemon.js CDN 스크립트)</td></tr>
+        <tr><td>Price ID (<code>pri_...</code>)</td><td>Variant ID</td><td>각 플랜+빌링주기 조합 = 1 Variant</td></tr>
+        <tr><td><code>paddle.Checkout.open()</code></td><td><code>LemonSqueezy.Url.Open()</code></td><td>체크아웃 오버레이 열기</td></tr>
+        <tr><td>Paddle Webhook</td><td>LS Webhook</td><td><code>X-Signature</code> HMAC 검증</td></tr>
+        <tr><td>Subscription ID</td><td>Subscription ID</td><td>구독 관리 API로 취소/변경</td></tr>
+        <tr><td>Customer Portal</td><td>Customer Portal URL</td><td>사용자 구독 관리 페이지</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.4 Lemon Squeezy에서 생성해야 할 항목</h3>
+    <div class="lemon-box">
+      <strong>🍋 Lemon Squeezy Dashboard에서 사전 설정 필요:</strong>
+      <ol>
+        <li><strong>Store</strong> — 1개 (Testably)</li>
+        <li><strong>Products</strong> — 5개 (Starter, Professional, Enterprise S/M/L)</li>
+        <li><strong>Variants</strong> — 각 Product당 2개 (Monthly, Annual) = 최대 10개<br>
+          <em>Enterprise L은 Custom이므로 제외 가능</em></li>
+        <li><strong>Webhook</strong> — 1개 (Supabase Edge Function URL)</li>
+        <li><strong>API Key</strong> — 1개 (Live mode + Test mode 각각)</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SECTION 3: CEO에게 필요한 정보 목록 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--danger);">3</div>
+    <div class="section-title">CEO에게 확인 필요한 정보</div>
+  </div>
+  <div class="section-body">
+
+    <div class="warning-box">
+      <strong>⚠️ 개발 착수 전 CEO가 제공해야 할 정보</strong><br>
+      아래 정보 없이는 구현 불가합니다. Lemon Squeezy Dashboard에서 확인 가능합니다.
+    </div>
+
+    <table class="change-table">
+      <thead>
+        <tr><th>#</th><th>항목</th><th>위치</th><th>예시</th><th>용도</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Store ID</strong></td>
+          <td>Settings → General</td>
+          <td><code>12345</code></td>
+          <td>API 체크아웃 생성 시 필수</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>API Key</strong></td>
+          <td>Settings → API</td>
+          <td><code>eyJ0eX...</code></td>
+          <td>서버사이드 API 호출 (웹훅 생성, 구독 관리)</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Webhook Signing Secret</strong></td>
+          <td>Settings → Webhooks → 생성 시</td>
+          <td><code>whsec_...</code></td>
+          <td>웹훅 서명 검증 (HMAC)</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>Variant ID 매핑</strong></td>
+          <td>Products → 각 Product → Variants</td>
+          <td><code>123456</code></td>
+          <td>체크아웃 링크 생성 시 필수 (플랜별 × 월간/연간)</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>가격 동일 여부 확인</strong></td>
+          <td>CEO 확인</td>
+          <td>—</td>
+          <td>Paddle과 동일 가격($49/$99/$249/$499)? 또는 조정?</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>연간 할인율 확인</strong></td>
+          <td>CEO 확인</td>
+          <td>—</td>
+          <td>Paddle과 동일 20% 할인? LS에서 별도 Variant로 설정</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Test Mode API Key</strong></td>
+          <td>Settings → API (Test mode 토글)</td>
+          <td><code>eyJ0eX...</code></td>
+          <td>개발/스테이징 환경용</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>선택적 확인 사항</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>#</th><th>항목</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>Paddle 완전 비활성화 시점</td><td>LS 안정화 후 Paddle 제거? 아니면 Paddle 승인 시 재활성화?</td></tr>
+        <tr><td>B</td><td>기존 유료 사용자 마이그레이션</td><td>현재 Paddle로 결제한 유료 구독자가 있는지? 있다면 전환 계획 필요</td></tr>
+        <tr><td>C</td><td>무료 체험 플로우 변경</td><td>현재 CTA가 "Start Free Trial"인데 LS에서도 동일? 또는 즉시 결제?</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SECTION 4: 연동 범위 — 프론트엔드 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--primary);">4</div>
+    <div class="section-title">연동 범위: 프론트엔드</div>
+  </div>
+  <div class="section-body">
+
+    <h3>4.1 새 파일: <code>src/lib/lemonsqueezy.ts</code></h3>
+    <p>Paddle의 <code>paddle.ts</code>와 동일한 패턴으로 Lemon Squeezy 체크아웃 모듈을 생성합니다.</p>
+
+    <div class="code-block">// src/lib/lemonsqueezy.ts
+
+// Lemon.js는 CDN 스크립트로 로드 (index.html에 추가)
+// &lt;script src="https://app.lemonsqueezy.com/js/lemon.js" defer&gt;&lt;/script&gt;
+
+declare global {
+  interface Window {
+    createLemonSqueezy: () =&gt; void;
+    LemonSqueezy: {
+      Url: { Open: (url: string) =&gt; void };
+      Setup: (config: { eventHandler: (event: any) =&gt; void }) =&gt; void;
+    };
+  }
+}
+
+let _onError: ((message: string) =&gt; void) | null = null;
+let _onSuccess: ((event: any) =&gt; void) | null = null;
+
+export function registerLSErrorHandler(cb: (msg: string) =&gt; void) {
+  _onError = cb;
+}
+export function registerLSSuccessHandler(cb: (event: any) =&gt; void) {
+  _onSuccess = cb;
+}
+
+// Variant ID 매핑 — CEO가 LS Dashboard에서 제공
+export const LS_VARIANT_IDS: Record&lt;string, Record&lt;'monthly' | 'annual', string&gt;&gt; = {
+  Starter:        { monthly: 'TODO_VARIANT_ID', annual: 'TODO_VARIANT_ID' },
+  Professional:   { monthly: 'TODO_VARIANT_ID', annual: 'TODO_VARIANT_ID' },
+  'Enterprise S': { monthly: 'TODO_VARIANT_ID', annual: 'TODO_VARIANT_ID' },
+  'Enterprise M': { monthly: 'TODO_VARIANT_ID', annual: 'TODO_VARIANT_ID' },
+};
+
+export function initLemonSqueezy() {
+  if (window.createLemonSqueezy) {
+    window.createLemonSqueezy();
+  }
+  // 이벤트 핸들러 등록
+  window.LemonSqueezy?.Setup({
+    eventHandler: (event: any) =&gt; {
+      if (event.event === 'Checkout.Success') {
+        _onSuccess?.(event);
+      }
+    },
+  });
+}
+
+export function openLSCheckout(
+  planName: string,
+  billingPeriod: 'monthly' | 'annual',
+  userEmail?: string,
+  userId?: string,
+): boolean {
+  const variantId = LS_VARIANT_IDS[planName]?.[billingPeriod];
+  if (!variantId || variantId === 'TODO_VARIANT_ID') {
+    _onError?.('This plan is not yet available. Please contact support.');
+    return false;
+  }
+
+  // 체크아웃 URL 구성 (checkout_data.custom으로 user_id 전달)
+  let url = `https://testably.lemonsqueezy.com/checkout/buy/${variantId}`;
+  const params = new URLSearchParams();
+  if (userEmail) params.set('checkout[email]', userEmail);
+  if (userId) params.set('checkout[custom][user_id]', userId);
+  if (params.toString()) url += '?' + params.toString();
+
+  try {
+    window.LemonSqueezy.Url.Open(url);
+    return true;
+  } catch {
+    _onError?.('Payment system is currently unavailable.');
+    return false;
+  }
+}</div>
+    <h3>4.2 새 파일: <code>src/lib/payment.ts</code> (Provider 추상화)</h3>
+    <div class="code-block">// src/lib/payment.ts — Provider 추상화 레이어
+
+import { openPaddleCheckout, registerPaddleErrorHandler } from './paddle';
+import { openLSCheckout, registerLSErrorHandler, initLemonSqueezy } from './lemonsqueezy';
+
+type PaymentProvider = 'paddle' | 'lemonsqueezy';
+
+const PROVIDER: PaymentProvider =
+  (import.meta.env.VITE_PAYMENT_PROVIDER as PaymentProvider) || 'lemonsqueezy';
+
+export function getProvider(): PaymentProvider {
+  return PROVIDER;
+}
+
+export function getProviderDisplayName(): string {
+  return PROVIDER === 'paddle' ? 'Paddle' : 'Lemon Squeezy';
+}
+
+export function initPayment() {
+  if (PROVIDER === 'lemonsqueezy') initLemonSqueezy();
+  // Paddle은 lazy-init이므로 별도 초기화 불필요
+}
+
+export function registerPaymentErrorHandler(cb: (msg: string) =&gt; void) {
+  if (PROVIDER === 'paddle') registerPaddleErrorHandler(cb);
+  else registerLSErrorHandler(cb);
+}
+
+export async function openCheckout(
+  planName: string,
+  billingPeriod: 'monthly' | 'annual',
+  opts?: { email?: string; userId?: string },
+): Promise&lt;boolean&gt; {
+  if (PROVIDER === 'paddle') {
+    return openPaddleCheckout(planName, billingPeriod);
+  }
+  return openLSCheckout(planName, billingPeriod, opts?.email, opts?.userId);
+}</div>
+    <h3>4.3 기존 파일 변경: <code>home/page.tsx</code></h3>
+    <div class="info-box">
+      <strong>변경 사항:</strong> <code>openPaddleCheckout</code> 직접 호출 → <code>openCheckout</code> (추상화 레이어) 호출로 교체
+    </div>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>Before</h4>
+        <div class="code-block" style="font-size:0.75rem;">import { openPaddleCheckout, registerPaddleErrorHandler }
+  from '../../lib/paddle';
+
+const handlePlanClick = async (planName: string) =&gt; {
+  const opened = await openPaddleCheckout(planName, 'monthly');
+};</div>
+      </div>
+      <div class="compare-card" style="border-color: var(--success);">
+        <h4>After</h4>
+        <div class="code-block" style="font-size:0.75rem;">import { openCheckout, registerPaymentErrorHandler,
+  initPayment } from '../../lib/payment';
+
+// useEffect에서 initPayment() 호출
+useEffect(() =&gt; { initPayment(); }, []);
+
+const handlePlanClick = async (planName: string) =&gt; {
+  const opened = await openCheckout(planName, 'monthly',
+    { email: user?.email, userId: user?.id });
+};</div>
+      </div>
+    </div>
+
+    <h3>4.4 <code>index.html</code> 변경</h3>
+    <div class="code-block">&lt;!-- index.html &lt;head&gt; 에 추가 --&gt;
+&lt;script src="https://app.lemonsqueezy.com/js/lemon.js" defer&gt;&lt;/script&gt;</div>
+    <p>Lemon.js (2.3KB)는 CDN에서 로드됩니다. Paddle JS SDK (<code>@paddle/paddle-js</code>)와 충돌 없이 공존 가능합니다.</p>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 5: 연동 범위 — 백엔드 (웹훅) -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--success);">5</div>
+    <div class="section-title">연동 범위: 백엔드 (Webhook Edge Function)</div>
+  </div>
+  <div class="section-body">
+
+    <h3>5.1 새 Edge Function: <code>supabase/functions/ls-webhook-handler/index.ts</code></h3>
+    <p>Lemon Squeezy 웹훅을 수신하여 <code>profiles</code> 테이블의 구독 상태를 자동 업데이트합니다. Paddle에는 없던 핵심 기능입니다.</p>
+
+    <h4>처리할 웹훅 이벤트</h4>
+    <table class="change-table">
+      <thead>
+        <tr><th>이벤트</th><th>처리 내용</th><th>우선순위</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>subscription_created</code></td>
+          <td><code>subscription_tier</code> 업데이트, <code>is_trial=false</code>, <code>subscription_ends_at</code> 설정, <code>payment_provider='lemonsqueezy'</code> 저장</td>
+          <td><span class="badge badge-danger">P0</span></td>
+        </tr>
+        <tr>
+          <td><code>subscription_updated</code></td>
+          <td>플랜 변경(업/다운그레이드) 시 tier 업데이트, 갱신일 업데이트</td>
+          <td><span class="badge badge-danger">P0</span></td>
+        </tr>
+        <tr>
+          <td><code>subscription_cancelled</code></td>
+          <td><code>subscription_ends_at</code>을 현재 빌링 주기 종료일로 설정 (즉시 다운그레이드 아님)</td>
+          <td><span class="badge badge-danger">P0</span></td>
+        </tr>
+        <tr>
+          <td><code>subscription_payment_success</code></td>
+          <td><code>subscription_ends_at</code> 갱신 (다음 빌링일로 연장)</td>
+          <td><span class="badge badge-warning">P1</span></td>
+        </tr>
+        <tr>
+          <td><code>subscription_payment_failed</code></td>
+          <td>결제 실패 로그 기록, 선택적으로 사용자에게 알림</td>
+          <td><span class="badge badge-primary">P2</span></td>
+        </tr>
+        <tr>
+          <td><code>order_created</code></td>
+          <td>일회성 결제 처리 (현재 미사용, 향후 확장용)</td>
+          <td><span class="badge badge-primary">P2</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <h3>5.2 웹훅 핸들러 핵심 로직</h3>
+    <div class="code-block">// supabase/functions/ls-webhook-handler/index.ts (핵심 구조)
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createHmac } from 'node:crypto';
+
+Deno.serve(async (req: Request) =&gt; {
+  // 1. HMAC 서명 검증
+  const signature = req.headers.get('X-Signature');
+  const body = await req.text();
+  const secret = Deno.env.get('LS_WEBHOOK_SECRET')!;
+  const hmac = createHmac('sha256', secret).update(body).digest('hex');
+  if (hmac !== signature) return new Response('Invalid signature', { status: 401 });
+
+  const payload = JSON.parse(body);
+  const eventName = payload.meta.event_name;
+  const customData = payload.meta.custom_data; // { user_id: '...' }
+  const userId = customData?.user_id;
+
+  if (!userId) return new Response('Missing user_id', { status: 400 });
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+
+  // 2. Variant ID → Tier 매핑
+  const variantTierMap: Record&lt;string, number&gt; = {
+    'STARTER_MONTHLY_VARIANT':   2,
+    'STARTER_ANNUAL_VARIANT':    2,
+    'PRO_MONTHLY_VARIANT':       3,
+    'PRO_ANNUAL_VARIANT':        3,
+    'ENT_S_MONTHLY_VARIANT':     4,
+    'ENT_S_ANNUAL_VARIANT':      4,
+    'ENT_M_MONTHLY_VARIANT':     5,
+    'ENT_M_ANNUAL_VARIANT':      5,
+  };
+
+  // 3. 이벤트별 처리
+  switch (eventName) {
+    case 'subscription_created':
+    case 'subscription_updated': {
+      const variantId = String(payload.data.attributes.variant_id);
+      const tier = variantTierMap[variantId] || 2;
+      const renewsAt = payload.data.attributes.renews_at;
+      await supabase.from('profiles').update({
+        subscription_tier: tier,
+        is_trial: false,
+        subscription_ends_at: renewsAt,
+        payment_provider: 'lemonsqueezy',
+        ls_subscription_id: String(payload.data.id),
+      }).eq('id', userId);
+      break;
+    }
+    case 'subscription_cancelled': {
+      const endsAt = payload.data.attributes.ends_at;
+      await supabase.from('profiles').update({
+        subscription_ends_at: endsAt,
+      }).eq('id', userId);
+      break;
+    }
+    case 'subscription_payment_success': {
+      const renewsAt = payload.data.attributes.renews_at;
+      await supabase.from('profiles').update({
+        subscription_ends_at: renewsAt,
+      }).eq('id', userId);
+      break;
+    }
+  }
+
+  return new Response(JSON.stringify({ received: true }), { status: 200 });
+});</div>
+    <h3>5.3 DB 스키마 변경 (Migration)</h3>
+    <p><code>profiles</code> 테이블에 2개 컬럼 추가가 필요합니다:</p>
+    <div class="code-block">-- supabase/migrations/YYYYMMDD_add_payment_provider.sql
+
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS payment_provider TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS ls_subscription_id TEXT DEFAULT NULL;
+
+COMMENT ON COLUMN profiles.payment_provider IS 'paddle | lemonsqueezy | null(manual)';
+COMMENT ON COLUMN profiles.ls_subscription_id IS 'Lemon Squeezy subscription ID for API calls';</div>
+
+    <div class="info-box">
+      <strong>왜 <code>payment_provider</code> 컬럼이 필요한가?</strong><br>
+      Paddle과 LS가 병행될 때, 어떤 provider로 결제했는지 알아야 구독 관리(취소, 변경) API를 올바른 provider로 호출할 수 있습니다. 또한 향후 Paddle 승인 후 마이그레이션 시 어떤 사용자를 전환해야 하는지 식별 가능합니다.
+    </div>
+
+    <h3>5.4 환경변수 추가</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>변수명</th><th>위치</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>VITE_PAYMENT_PROVIDER</code></td><td>.env (프론트엔드)</td><td><code>'lemonsqueezy'</code> 또는 <code>'paddle'</code></td></tr>
+        <tr><td><code>LS_API_KEY</code></td><td>Supabase Secrets</td><td>Lemon Squeezy API Key (서버사이드)</td></tr>
+        <tr><td><code>LS_WEBHOOK_SECRET</code></td><td>Supabase Secrets</td><td>웹훅 서명 검증용 Secret</td></tr>
+        <tr><td><code>LS_STORE_ID</code></td><td>Supabase Secrets</td><td>Store ID (API 체크아웃 생성 시)</td></tr>
+      </tbody>
+    </table>
+    <p>기존 Paddle 환경변수(<code>VITE_PADDLE_CLIENT_TOKEN</code>)는 삭제하지 않고 유지합니다.</p>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 6: 결제 플로우 (End-to-End) -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: #B8860B;">6</div>
+    <div class="section-title">Lemon Squeezy 결제 플로우 (End-to-End)</div>
+  </div>
+  <div class="section-body">
+
+    <div class="arch-diagram">┌──────────────────────────────────────────────────────────────────────┐
+│  STEP 1: 사용자 → 플랜 선택                                          │
+│                                                                      │
+│  Home/Pricing 페이지에서 CTA 버튼 클릭                                │
+│  handlePlanClick('Professional')                                     │
+│       ↓                                                              │
+│  payment.ts → openCheckout('Professional', 'monthly',                │
+│                             { email, userId })                       │
+└───────────────┬──────────────────────────────────────────────────────┘
+                ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  STEP 2: 체크아웃 오버레이                                            │
+│                                                                      │
+│  LemonSqueezy.Url.Open(                                              │
+│    'https://testably.lemonsqueezy.com/checkout/buy/VARIANT_ID        │
+│     ?checkout[email]=user@email.com                                  │
+│     &amp;checkout[custom][user_id]=USER_UUID'                            │
+│  )                                                                   │
+│                                                                      │
+│  → Lemon Squeezy 오버레이 모달 표시 (카드/PayPal 결제)               │
+│  → checkout[custom][user_id]로 Supabase user ID 전달                 │
+└───────────────┬──────────────────────────────────────────────────────┘
+                ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  STEP 3: 결제 완료 → 웹훅 발송                                       │
+│                                                                      │
+│  Lemon Squeezy → POST /functions/v1/ls-webhook-handler               │
+│  Header: X-Signature (HMAC SHA256)                                   │
+│  Body: { meta: { event_name, custom_data: { user_id } },            │
+│          data: { attributes: { variant_id, renews_at, ... } } }     │
+└───────────────┬──────────────────────────────────────────────────────┘
+                ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  STEP 4: 웹훅 → DB 업데이트                                          │
+│                                                                      │
+│  ls-webhook-handler:                                                 │
+│    1. X-Signature HMAC 검증                                          │
+│    2. custom_data.user_id 추출                                       │
+│    3. variant_id → subscription_tier 매핑                            │
+│    4. profiles UPDATE:                                               │
+│       subscription_tier = 3 (Professional)                           │
+│       is_trial = false                                               │
+│       subscription_ends_at = renews_at                               │
+│       payment_provider = 'lemonsqueezy'                              │
+│       ls_subscription_id = subscription.id                           │
+└───────────────┬──────────────────────────────────────────────────────┘
+                ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  STEP 5: 프론트엔드 반영                                              │
+│                                                                      │
+│  Lemon.js Checkout.Success 이벤트 → 페이지 새로고침 또는 refetch     │
+│  Settings 페이지에서 새 구독 tier + 만료일 확인 가능                   │
+└──────────────────────────────────────────────────────────────────────┘</div>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 7: 구현 단계별 계획 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--danger);">7</div>
+    <div class="section-title">구현 단계별 계획</div>
+  </div>
+  <div class="section-body">
+
+    <h3>Phase 1: 기반 구축 (Day 1)</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>#</th><th>작업</th><th>파일</th><th>담당</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1-1</td><td>DB 마이그레이션: <code>payment_provider</code>, <code>ls_subscription_id</code> 컬럼 추가</td><td><code>supabase/migrations/</code></td><td>Dev</td></tr>
+        <tr><td>1-2</td><td><code>src/lib/lemonsqueezy.ts</code> 생성 (LS 체크아웃 모듈)</td><td>새 파일</td><td>Dev</td></tr>
+        <tr><td>1-3</td><td><code>src/lib/payment.ts</code> 생성 (Provider 추상화 레이어)</td><td>새 파일</td><td>Dev</td></tr>
+        <tr><td>1-4</td><td><code>index.html</code>에 Lemon.js CDN 스크립트 추가</td><td><code>index.html</code></td><td>Dev</td></tr>
+        <tr><td>1-5</td><td>환경변수 설정: <code>.env</code>, Supabase Secrets</td><td>설정</td><td>Dev + CEO</td></tr>
+      </tbody>
+    </table>
+    <h3>Phase 2: 프론트엔드 전환 (Day 2)</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>#</th><th>작업</th><th>파일</th><th>담당</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>2-1</td><td><code>home/page.tsx</code>: Paddle 직접 호출 → <code>payment.ts</code> 추상화 호출로 교체</td><td><code>src/pages/home/page.tsx</code></td><td>Dev</td></tr>
+        <tr><td>2-2</td><td><code>pricing/page.tsx</code>: 동일한 추상화 교체 + 연간 토글 연동</td><td><code>src/pages/pricing/page.tsx</code></td><td>Dev</td></tr>
+        <tr><td>2-3</td><td>Checkout.Success 이벤트 시 프로필 refetch 로직 추가</td><td><code>src/pages/home/page.tsx</code></td><td>Dev</td></tr>
+        <tr><td>2-4</td><td>Settings 페이지에 payment_provider 표시 (선택)</td><td><code>src/pages/settings/page.tsx</code></td><td>Dev</td></tr>
+        <tr><td>2-5</td><td>FAQ "Stripe" 멘션 → 실제 결제사 반영 수정</td><td><code>src/pages/pricing/page.tsx</code></td><td>Dev</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Phase 3: 웹훅 핸들러 (Day 2~3)</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>#</th><th>작업</th><th>파일</th><th>담당</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>3-1</td><td><code>ls-webhook-handler</code> Edge Function 생성</td><td><code>supabase/functions/ls-webhook-handler/</code></td><td>Dev</td></tr>
+        <tr><td>3-2</td><td>HMAC 서명 검증 구현</td><td>위 파일</td><td>Dev</td></tr>
+        <tr><td>3-3</td><td><code>subscription_created/updated/cancelled</code> 이벤트 처리</td><td>위 파일</td><td>Dev</td></tr>
+        <tr><td>3-4</td><td><code>subscription_payment_success/failed</code> 이벤트 처리</td><td>위 파일</td><td>Dev</td></tr>
+        <tr><td>3-5</td><td>Lemon Squeezy Dashboard에서 웹훅 URL 등록 + 이벤트 구독 설정</td><td>LS Dashboard</td><td>CEO/Dev</td></tr>
+      </tbody>
+    </table>
+    <h3>Phase 4: 테스트 + 배포 (Day 3~4)</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>#</th><th>작업</th><th>파일</th><th>담당</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>4-1</td><td>LS Test Mode로 전체 플로우 E2E 테스트 (체크아웃 → 웹훅 → DB 업데이트)</td><td>—</td><td>Dev + PM</td></tr>
+        <tr><td>4-2</td><td>LS Dashboard에서 웹훅 시뮬레이션 테스트 (각 이벤트)</td><td>—</td><td>Dev</td></tr>
+        <tr><td>4-3</td><td>구독 취소/변경 플로우 테스트</td><td>—</td><td>Dev + PM</td></tr>
+        <tr><td>4-4</td><td><code>check-subscriptions</code> 함수가 LS 구독에서도 정상 작동 확인</td><td>—</td><td>Dev</td></tr>
+        <tr><td>4-5</td><td>Live Mode 전환: API Key + Webhook Secret 교체, <code>VITE_PAYMENT_PROVIDER=lemonsqueezy</code> 배포</td><td>—</td><td>Dev + CEO</td></tr>
+      </tbody>
+    </table>
+
+    <div class="warning-box">
+      <strong>⚠️ 배포 체크리스트</strong>
+      <ol>
+        <li>LS Live API Key를 Supabase Secrets에 등록</li>
+        <li>LS Live Webhook Secret을 Supabase Secrets에 등록</li>
+        <li>LS Dashboard에서 Production 웹훅 URL 등록: <code>https://[PROJECT_REF].supabase.co/functions/v1/ls-webhook-handler</code></li>
+        <li>프론트엔드 <code>.env</code>에 <code>VITE_PAYMENT_PROVIDER=lemonsqueezy</code> 설정</li>
+        <li>LS Variant ID를 <code>lemonsqueezy.ts</code>에 반영</li>
+        <li>Vercel/호스팅 환경변수 업데이트 + 재배포</li>
+      </ol>
+    </div>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 8: Paddle vs Lemon Squeezy 비교 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--gray-500);">8</div>
+    <div class="section-title">Paddle vs Lemon Squeezy 비교 참고</div>
+  </div>
+  <div class="section-body">
+
+    <table class="change-table">
+      <thead>
+        <tr><th>항목</th><th>Paddle</th><th>Lemon Squeezy</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>역할</td><td>MoR (Merchant of Record)</td><td>MoR (Merchant of Record)</td></tr>
+        <tr><td>수수료</td><td>5% + $0.50</td><td>5% + $0.50</td></tr>
+        <tr><td>세금 처리</td><td>자동 (글로벌)</td><td>자동 (글로벌)</td></tr>
+        <tr><td>프론트엔드 SDK</td><td><code>@paddle/paddle-js</code> (npm)</td><td>Lemon.js (CDN, 2.3KB)</td></tr>
+        <tr><td>체크아웃</td><td>모달 오버레이</td><td>모달 오버레이</td></tr>
+        <tr><td>웹훅 검증</td><td>Paddle Signature</td><td>HMAC SHA256 (X-Signature)</td></tr>
+        <tr><td>구독 관리 API</td><td>있음</td><td>있음</td></tr>
+        <tr><td>고객 포털</td><td>있음</td><td>있음 (Customer Portal)</td></tr>
+        <tr><td>승인 프로세스</td><td><span class="badge badge-danger">지연 중</span></td><td><span class="badge badge-success">즉시 가능</span></td></tr>
+        <tr><td>Custom Data</td><td>Passthrough</td><td><code>checkout[custom]</code> 파라미터</td></tr>
+      </tbody>
+    </table>
+
+    <div class="info-box">
+      <strong>핵심 차이점:</strong> 두 서비스 모두 MoR이므로 세금/인보이스를 자동 처리합니다. 프론트엔드 통합 패턴이 매우 유사(모달 오버레이)하여 전환 비용이 낮습니다. 가장 큰 차이는 Paddle이 승인 대기 중인 반면 LS는 즉시 사용 가능하다는 점입니다.
+    </div>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 9: 리스크 및 주의사항 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--warning);">9</div>
+    <div class="section-title">리스크 및 주의사항</div>
+  </div>
+  <div class="section-body">
+
+    <table class="change-table">
+      <thead>
+        <tr><th>리스크</th><th>영향</th><th>대응</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>웹훅 유실</strong><br>결제는 됐지만 DB 미반영</td>
+          <td><span class="badge badge-danger">High</span></td>
+          <td>LS는 3회 자동 재시도 (exponential backoff). Edge Function에 에러 로깅 + 알림 추가. 관리자 수동 확인용 Admin 페이지 추가 고려.</td>
+        </tr>
+        <tr>
+          <td><strong>Custom Data 누락</strong><br><code>user_id</code>가 웹훅에 없음</td>
+          <td><span class="badge badge-danger">High</span></td>
+          <td>체크아웃 URL에 <code>checkout[custom][user_id]</code> 반드시 포함. 추가로 <code>checkout[email]</code>도 전달하여 fallback으로 email 매칭 가능하게 구현.</td>
+        </tr>
+        <tr>
+          <td><strong>Paddle 승인 후 이중 결제</strong><br>같은 사용자가 양쪽에서 결제</td>
+          <td><span class="badge badge-warning">Medium</span></td>
+          <td><code>payment_provider</code> 컬럼으로 추적. Provider 전환 시 기존 구독 취소 확인 로직 필요.</td>
+        </tr>
+        <tr>
+          <td><strong>Pricing 페이지 FAQ 불일치</strong><br>"Stripe"로 표시됨</td>
+          <td><span class="badge badge-primary">Low</span></td>
+          <td>Phase 2에서 FAQ 텍스트를 실제 결제사에 맞게 수정.</td>
+        </tr>
+        <tr>
+          <td><strong>LS 서비스 장애</strong></td>
+          <td><span class="badge badge-warning">Medium</span></td>
+          <td>Paddle 코드 유지로 즉시 전환 가능. <code>VITE_PAYMENT_PROVIDER='paddle'</code>로 변경 후 재배포.</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 10: 파일 변경 요약 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--primary);">10</div>
+    <div class="section-title">전체 파일 변경 요약</div>
+  </div>
+  <div class="section-body">
+
+    <h3>새로 생성하는 파일 (4개)</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>파일</th><th>역할</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="file-ref">src/lib/lemonsqueezy.ts</span></td><td>Lemon Squeezy 체크아웃 모듈 (LS_VARIANT_IDS, openLSCheckout)</td></tr>
+        <tr><td><span class="file-ref">src/lib/payment.ts</span></td><td>Provider 추상화 레이어 (openCheckout, getProvider)</td></tr>
+        <tr><td><span class="file-ref">supabase/functions/ls-webhook-handler/index.ts</span></td><td>LS 웹훅 수신 → profiles 업데이트</td></tr>
+        <tr><td><span class="file-ref">supabase/migrations/YYYYMMDD_add_payment_provider.sql</span></td><td>payment_provider, ls_subscription_id 컬럼 추가</td></tr>
+      </tbody>
+    </table>
+
+    <h3>수정하는 파일 (4개)</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>파일</th><th>변경 내용</th><th>규모</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="file-ref">index.html</span></td><td>Lemon.js CDN 스크립트 추가</td><td><span class="badge badge-success">1줄</span></td></tr>
+        <tr><td><span class="file-ref">src/pages/home/page.tsx</span></td><td>import 교체 + handlePlanClick → openCheckout + initPayment</td><td><span class="badge badge-warning">~10줄</span></td></tr>
+        <tr><td><span class="file-ref">src/pages/pricing/page.tsx</span></td><td>동일 교체 + FAQ "Stripe" 텍스트 수정</td><td><span class="badge badge-warning">~10줄</span></td></tr>
+        <tr><td><span class="file-ref">src/pages/settings/page.tsx</span></td><td>payment_provider 표시 (선택적)</td><td><span class="badge badge-success">~5줄</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>변경 없는 파일</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>파일</th><th>이유</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="file-ref">src/lib/paddle.ts</span></td><td>기존 코드 유지 — Provider 전환 시 재사용</td></tr>
+        <tr><td><span class="file-ref">supabase/functions/check-subscriptions/</span></td><td>provider 무관하게 profiles 컬럼만 체크하므로 변경 불필요</td></tr>
+        <tr><td><span class="file-ref">src/pages/admin/</span></td><td>MRR 계산은 subscription_tier 기반이므로 변경 불필요</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 11: 다음 단계 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--success);">11</div>
+    <div class="section-title">다음 단계 (Action Items)</div>
+  </div>
+  <div class="section-body">
+
+    <table class="change-table">
+      <thead>
+        <tr><th>#</th><th>액션</th><th>담당</th><th>선행 조건</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-danger">1</span></td>
+          <td><strong>CEO:</strong> Lemon Squeezy Dashboard에서 Store, Products, Variants 생성 후 ID 공유</td>
+          <td>CEO</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-danger">2</span></td>
+          <td><strong>CEO:</strong> API Key (Live + Test), Webhook Secret 공유</td>
+          <td>CEO</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-danger">3</span></td>
+          <td><strong>CEO:</strong> 가격/할인율 동일 여부 확인, 기존 유료 사용자 유무 확인</td>
+          <td>CEO</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-warning">4</span></td>
+          <td><strong>PM:</strong> CEO 확인 후 Dev 태스크 지시서 작성</td>
+          <td>PM</td>
+          <td>#1~3 완료</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-primary">5</span></td>
+          <td><strong>Dev:</strong> Phase 1~4 구현 (3~4일)</td>
+          <td>Dev</td>
+          <td>#4 완료</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-primary">6</span></td>
+          <td><strong>PM + Dev:</strong> E2E 테스트 + Live 배포</td>
+          <td>PM + Dev</td>
+          <td>#5 완료</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+</div><!-- /.container -->
+</body>
+</html>
