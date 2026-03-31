@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Plan: Dashboard Export Report</title>
+<style>
+  :root { --primary: #6366F1; --primary-light: #EEF2FF; --success: #10B981; --success-light: #ECFDF5; --warning: #F59E0B; --warning-light: #FFFBEB; --danger: #EF4444; --danger-light: #FEF2F2; --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0; --gray-300: #CBD5E1; --gray-500: #64748B; --gray-700: #334155; --gray-900: #0F172A; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--gray-900); background: var(--gray-50); line-height: 1.6; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 8px; }
+  .subtitle { color: var(--gray-500); font-size: 0.9375rem; margin-bottom: 32px; }
+  .meta { display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap; }
+  .meta-item { background: white; border: 1px solid var(--gray-200); border-radius: 10px; padding: 16px 20px; flex: 1; min-width: 180px; }
+  .meta-label { font-size: 0.75rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .meta-value { font-size: 0.9375rem; font-weight: 600; }
+  .section { background: white; border: 1px solid var(--gray-200); border-radius: 12px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 20px 24px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; gap: 12px; }
+  .section-number { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: white; }
+  .section-title { font-size: 1.125rem; font-weight: 600; }
+  .section-body { padding: 24px; }
+  .problem-box { background: var(--danger-light); border-left: 3px solid var(--danger); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .solution-box { background: var(--success-light); border-left: 3px solid var(--success); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .info-box { background: var(--primary-light); border-left: 3px solid var(--primary); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .code-block { background: #1E293B; color: #E2E8F0; border-radius: 8px; padding: 16px; font-family: 'SF Mono', monospace; font-size: 0.8125rem; line-height: 1.7; overflow-x: auto; margin: 12px 0; white-space: pre; }
+  .code-inline { background: var(--gray-100); color: var(--danger); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; }
+  .change-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  .change-table th, .change-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--gray-200); font-size: 0.875rem; }
+  .change-table th { background: var(--gray-50); font-weight: 600; color: var(--gray-700); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+  .badge-danger { background: var(--danger-light); color: var(--danger); }
+  .badge-warning { background: var(--warning-light); color: var(--warning); }
+  .badge-primary { background: var(--primary-light); color: var(--primary); }
+  .badge-success { background: var(--success-light); color: var(--success); }
+  p { margin-bottom: 12px; font-size: 0.9375rem; }
+  ul, ol { margin: 8px 0 12px 20px; font-size: 0.9375rem; }
+  li { margin-bottom: 6px; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 20px 0 8px; }
+  h4 { font-size: 0.9375rem; font-weight: 600; margin: 16px 0 8px; color: var(--gray-700); }
+  .file-ref { display: inline-flex; align-items: center; gap: 4px; background: var(--gray-100); padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 0.8125rem; color: var(--gray-700); }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .compare-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; }
+  .compare-card h4 { margin-top: 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>📊 Dashboard Export Report 기능 기획</h1>
+<p class="subtitle">project-detail의 Export Report 버튼 — 현재 onClick 없는 스텁 상태</p>
+<div class="meta">
+  <div class="meta-item">
+    <div class="meta-label">작성일</div>
+    <div class="meta-value">2026-03-31</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">작성자</div>
+    <div class="meta-value">PM (Claude)</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">상태</div>
+    <div class="meta-value">CEO 검토 대기</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">영향 파일</div>
+    <div class="meta-value">project-detail/page.tsx</div>
+  </div>
+</div>
+
+<!-- ===================== SECTION 1: 현재 상태 분석 ===================== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--danger);">1</div>
+    <div>
+      <div class="section-title">현재 상태 분석</div>
+      <span class="badge badge-danger">Stub</span>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="problem-box">
+      <strong>문제:</strong> <span class="file-ref">project-detail/page.tsx</span> line 516~519에 "Export Report" 버튼이 존재하지만, <strong>onClick 핸들러가 없어</strong> 클릭해도 아무 동작을 하지 않습니다.
+    </div>
+
+    <h4>현재 코드 (line 516~519)</h4>
+    <div class="code-block">&lt;button className="flex items-center gap-1.5 px-[0.875rem] py-[0.375rem]
+  bg-[#6366F1] text-white rounded-[0.375rem] text-[0.8125rem]
+  font-medium hover:bg-[#4F46E5] transition-colors
+  cursor-pointer whitespace-nowrap"&gt;
+  &lt;i className="ri-download-line text-sm" /&gt;
+  Export Report
+&lt;/button&gt;</div>
+    <p>이 버튼은 Project Detail 페이지 헤더에 있으며, 보라색(indigo) 배경의 primary 액션 버튼입니다.</p>
+
+    <h3>기존 Export 기능 현황</h3>
+    <table class="change-table">
+      <tr>
+        <th>기능</th>
+        <th>위치</th>
+        <th>포맷</th>
+        <th>상태</th>
+        <th>범위</th>
+      </tr>
+      <tr>
+        <td>Pass Rate Report PDF</td>
+        <td>stats/PassRateReportPage.tsx</td>
+        <td>PDF</td>
+        <td><span class="badge badge-success">구현 완료</span></td>
+        <td>전체 Pass Rate 통계</td>
+      </tr>
+      <tr>
+        <td>Test Cases CSV</td>
+        <td>stats/TestCasesOverviewPage.tsx</td>
+        <td>CSV</td>
+        <td><span class="badge badge-success">구현 완료</span></td>
+        <td>전체 TC 목록</td>
+      </tr>
+      <tr>
+        <td>Milestone PDF</td>
+        <td>project-runs/page.tsx</td>
+        <td>PDF</td>
+        <td><span class="badge badge-success">구현 완료</span></td>
+        <td>Milestone별 Run 결과</td>
+      </tr>
+      <tr>
+        <td>TestRail CSV</td>
+        <td>ExportImportModal.tsx</td>
+        <td>CSV</td>
+        <td><span class="badge badge-success">구현 완료</span></td>
+        <td>TC 데이터 (TestRail 호환)</td>
+      </tr>
+      <tr>
+        <td>Settings JSON/CSV</td>
+        <td>settings/page.tsx</td>
+        <td>JSON/CSV</td>
+        <td><span class="badge badge-success">구현 완료</span></td>
+        <td>전체 TC + Run 데이터</td>
+      </tr>
+      <tr>
+        <td><strong>Dashboard Export Report</strong></td>
+        <td>project-detail/page.tsx</td>
+        <td>???</td>
+        <td><span class="badge badge-danger">미구현</span></td>
+        <td>프로젝트 요약?</td>
+      </tr>
+    </table>
+  </div>
+</div>
+<!-- ===================== SECTION 2: 차별화 분석 ===================== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--primary);">2</div>
+    <div>
+      <div class="section-title">기존 Export와의 차별화</div>
+      <span class="badge badge-primary">Analysis</span>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <p>Dashboard Export Report는 기존 export 기능들과 <strong>범위와 목적</strong>이 다릅니다:</p>
+
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>기존: Milestone PDF / Pass Rate PDF</h4>
+        <ul>
+          <li><strong>범위:</strong> 특정 Milestone 또는 전체 통계</li>
+          <li><strong>대상:</strong> Run 결과 상세 또는 차트</li>
+          <li><strong>용도:</strong> 특정 테스트 사이클 결과 보고</li>
+          <li><strong>위치:</strong> project-runs, stats 페이지</li>
+        </ul>
+      </div>
+      <div class="compare-card">
+        <h4>신규: Dashboard Export Report</h4>
+        <ul>
+          <li><strong>범위:</strong> 단일 프로젝트 전체 현황</li>
+          <li><strong>대상:</strong> 프로젝트 요약 + 최근 Run + TC 현황</li>
+          <li><strong>용도:</strong> 프로젝트 상태 보고 (매니저/이해관계자용)</li>
+          <li><strong>위치:</strong> project-detail 페이지</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong>핵심 차별점:</strong> Dashboard Export는 "프로젝트 전체 상태 요약 보고서"입니다. 개별 Run이나 Milestone이 아닌, 프로젝트 레벨에서 현재까지의 테스트 진행 상황을 한 눈에 보여주는 executive summary 성격의 문서입니다.
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SECTION 3: Export 포맷 제안 ===================== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--success);">3</div>
+    <div>
+      <div class="section-title">Export 포맷 및 동작 설계</div>
+      <span class="badge badge-success">Feature Design</span>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>A. 클릭 시 동작: 포맷 선택 드롭다운</h3>
+    <p>Export Report 버튼 클릭 시 바로 다운로드하지 않고, 작은 드롭다운으로 포맷을 선택합니다:</p>
+
+    <table class="change-table">
+      <tr><th>포맷</th><th>아이콘</th><th>설명</th><th>우선순위</th></tr>
+      <tr>
+        <td><strong>PDF Report</strong></td>
+        <td><code class="code-inline">ri-file-pdf-line</code></td>
+        <td>시각적 보고서 (차트 포함), 매니저/이해관계자용</td>
+        <td><span class="badge badge-danger">P0</span></td>
+      </tr>
+      <tr>
+        <td><strong>CSV Data</strong></td>
+        <td><code class="code-inline">ri-file-excel-2-line</code></td>
+        <td>Raw 데이터 테이블, 추가 분석용</td>
+        <td><span class="badge badge-warning">P1</span></td>
+      </tr>
+    </table>
+
+    <h3>B. PDF Report 포함 내용</h3>
+    <p>프로젝트의 현재 상태를 executive summary로 정리합니다:</p>
+
+    <h4>페이지 1: 프로젝트 요약 (Executive Summary)</h4>
+    <ul>
+      <li>프로젝트명, 생성일, 마지막 활동일</li>
+      <li>총 Test Cases 수, 총 Runs 수, 총 Results 수</li>
+      <li><strong>Overall Pass Rate</strong> (도넛 차트): Passed / Failed / Blocked / Skipped / Not Tested</li>
+      <li>Priority별 TC 분포 (bar chart): Critical / High / Medium / Low</li>
+    </ul>
+
+    <h4>페이지 2: 최근 Test Runs 현황</h4>
+    <ul>
+      <li>최근 10개 Run 테이블: Run명, Milestone, 시작일, 진행률, Pass Rate</li>
+      <li>각 Run의 결과 분포 미니 바</li>
+      <li>활성 Run vs 완료 Run 비율</li>
+    </ul>
+
+    <h4>페이지 3: Test Case 현황</h4>
+    <ul>
+      <li>TC Lifecycle 분포: Draft / Active / Deprecated</li>
+      <li>Priority별 현황 요약</li>
+      <li>최근 추가/수정된 TC Top 10</li>
+    </ul>
+
+    <h4>PDF Footer</h4>
+    <p>각 페이지 하단: "Generated by Testably — {날짜} {시간}" + 페이지 번호</p>
+
+    <h3>C. CSV Data 포함 내용</h3>
+    <p>2개 시트(또는 2개 CSV 파일)로 구성:</p>
+
+    <h4>파일 1: {project-name}-runs-{date}.csv</h4>
+    <table class="change-table">
+      <tr><th>컬럼</th><th>설명</th></tr>
+      <tr><td>Run Name</td><td>런 이름</td></tr>
+      <tr><td>Milestone</td><td>소속 마일스톤</td></tr>
+      <tr><td>Status</td><td>active/completed</td></tr>
+      <tr><td>Total TCs</td><td>포함된 TC 수</td></tr>
+      <tr><td>Passed</td><td>통과 수</td></tr>
+      <tr><td>Failed</td><td>실패 수</td></tr>
+      <tr><td>Blocked</td><td>차단 수</td></tr>
+      <tr><td>Skipped</td><td>스킵 수</td></tr>
+      <tr><td>Not Tested</td><td>미테스트 수</td></tr>
+      <tr><td>Pass Rate</td><td>통과율 %</td></tr>
+      <tr><td>Created At</td><td>생성일</td></tr>
+    </table>
+
+    <h4>파일 2: {project-name}-testcases-{date}.csv</h4>
+    <table class="change-table">
+      <tr><th>컬럼</th><th>설명</th></tr>
+      <tr><td>TC ID</td><td>테스트 케이스 ID</td></tr>
+      <tr><td>Title</td><td>제목</td></tr>
+      <tr><td>Priority</td><td>우선순위</td></tr>
+      <tr><td>Lifecycle Status</td><td>Draft/Active/Deprecated</td></tr>
+      <tr><td>Latest Result</td><td>가장 최근 결과</td></tr>
+      <tr><td>Assignee</td><td>담당자</td></tr>
+      <tr><td>Created At</td><td>생성일</td></tr>
+    </table>
+  </div>
+</div>
+<!-- ===================== SECTION 4: 구현 전략 ===================== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--warning);">4</div>
+    <div>
+      <div class="section-title">구현 전략</div>
+      <span class="badge badge-warning">Technical</span>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>기존 코드 재활용</h3>
+    <table class="change-table">
+      <tr><th>기능</th><th>참조 소스</th><th>재활용 내용</th></tr>
+      <tr>
+        <td>PDF 생성</td>
+        <td><code class="code-inline">stats/PassRateReportPage.tsx</code> (line 61~110)</td>
+        <td>html2canvas + jsPDF 멀티페이지 패턴</td>
+      </tr>
+      <tr>
+        <td>CSV 생성</td>
+        <td><code class="code-inline">hooks/useTestCasesOverview.ts</code> (line 178~205)</td>
+        <td>Blob URL 다운로드 패턴, CSV 포맷팅</td>
+      </tr>
+      <tr>
+        <td>데이터 조회</td>
+        <td><code class="code-inline">project-detail/page.tsx</code> 기존 fetch</td>
+        <td>이미 TC/Run 데이터를 조회하고 있으므로 추가 fetch 최소화</td>
+      </tr>
+    </table>
+
+    <h3>수정 대상 파일</h3>
+    <table class="change-table">
+      <tr><th>파일</th><th>변경 내용</th></tr>
+      <tr>
+        <td><span class="file-ref">project-detail/page.tsx</span></td>
+        <td>Export 드롭다운 상태 추가, PDF/CSV 생성 함수 추가, 버튼 onClick 연결</td>
+      </tr>
+    </table>
+
+    <h3>티어 게이팅 제안</h3>
+    <div class="info-box">
+      <strong>PM 의견:</strong> Milestone PDF export가 Starter 티어 이상으로 제한되어 있으므로, Dashboard Export Report도 동일하게 <strong>Starter (tier 2) 이상</strong>으로 제한하는 것이 일관성 있습니다. Free 사용자가 클릭 시 Upgrade 모달을 표시합니다.
+    </div>
+
+    <h3>예상 작업량</h3>
+    <table class="change-table">
+      <tr><th>작업</th><th>예상 시간</th></tr>
+      <tr><td>Export 드롭다운 UI + 상태 관리</td><td>15분</td></tr>
+      <tr><td>PDF Report 생성 (3페이지)</td><td>60분</td></tr>
+      <tr><td>CSV Export (2파일)</td><td>25분</td></tr>
+      <tr><td>Tier 게이팅 + Upgrade 모달 연동</td><td>10분</td></tr>
+      <tr><td><strong>합계</strong></td><td><strong>~110분</strong></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===================== SECTION 5: Phase 제안 ===================== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--gray-700);">5</div>
+    <div class="section-title">Phase 구분 제안</div>
+  </div>
+  <div class="section-body">
+    <table class="change-table">
+      <tr><th>Phase</th><th>내용</th><th>우선순위</th></tr>
+      <tr>
+        <td><strong>Phase 1</strong></td>
+        <td>CSV Export (2개 파일) — 구현 난이도 낮고 즉시 유용</td>
+        <td><span class="badge badge-danger">P0</span></td>
+      </tr>
+      <tr>
+        <td><strong>Phase 2</strong></td>
+        <td>PDF Report (Executive Summary) — 차트 포함, 시각적 보고서</td>
+        <td><span class="badge badge-warning">P1</span></td>
+      </tr>
+      <tr>
+        <td><strong>Phase 3</strong></td>
+        <td>PDF 커스터마이즈 — 로고, 날짜 범위 필터, 포함 섹션 선택</td>
+        <td><span class="badge badge-primary">P2</span></td>
+      </tr>
+    </table>
+
+    <div class="solution-box">
+      <strong>PM 권장:</strong> Phase 1 (CSV) + Phase 2 (PDF)를 한 스프린트에 함께 구현합니다. CSV는 데이터 조회 로직을 만들고, PDF는 그 데이터를 시각화하는 것이므로 순차적으로 진행하면 효율적입니다.
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

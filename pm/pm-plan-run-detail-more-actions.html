@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Plan: Run Detail More Actions Button</title>
+<style>
+  :root { --primary: #6366F1; --primary-light: #EEF2FF; --success: #10B981; --success-light: #ECFDF5; --warning: #F59E0B; --warning-light: #FFFBEB; --danger: #EF4444; --danger-light: #FEF2F2; --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0; --gray-300: #CBD5E1; --gray-500: #64748B; --gray-700: #334155; --gray-900: #0F172A; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--gray-900); background: var(--gray-50); line-height: 1.6; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 8px; }
+  .subtitle { color: var(--gray-500); font-size: 0.9375rem; margin-bottom: 32px; }
+  .meta { display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap; }
+  .meta-item { background: white; border: 1px solid var(--gray-200); border-radius: 10px; padding: 16px 20px; flex: 1; min-width: 180px; }
+  .meta-label { font-size: 0.75rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .meta-value { font-size: 0.9375rem; font-weight: 600; }
+  .section { background: white; border: 1px solid var(--gray-200); border-radius: 12px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 20px 24px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; gap: 12px; }
+  .section-number { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: white; }
+  .section-title { font-size: 1.125rem; font-weight: 600; }
+  .section-body { padding: 24px; }
+  .problem-box { background: var(--danger-light); border-left: 3px solid var(--danger); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .solution-box { background: var(--success-light); border-left: 3px solid var(--success); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .info-box { background: var(--primary-light); border-left: 3px solid var(--primary); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .code-block { background: #1E293B; color: #E2E8F0; border-radius: 8px; padding: 16px; font-family: 'SF Mono', monospace; font-size: 0.8125rem; line-height: 1.7; overflow-x: auto; margin: 12px 0; white-space: pre; }
+  .code-inline { background: var(--gray-100); color: var(--danger); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; }
+  .change-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  .change-table th, .change-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--gray-200); font-size: 0.875rem; }
+  .change-table th { background: var(--gray-50); font-weight: 600; color: var(--gray-700); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+  .badge-danger { background: var(--danger-light); color: var(--danger); }
+  .badge-warning { background: var(--warning-light); color: var(--warning); }
+  .badge-primary { background: var(--primary-light); color: var(--primary); }
+  .badge-success { background: var(--success-light); color: var(--success); }
+  p { margin-bottom: 12px; font-size: 0.9375rem; }
+  ul, ol { margin: 8px 0 12px 20px; font-size: 0.9375rem; }
+  li { margin-bottom: 6px; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 20px 0 8px; }
+  h4 { font-size: 0.9375rem; font-weight: 600; margin: 16px 0 8px; color: var(--gray-700); }
+  .file-ref { display: inline-flex; align-items: center; gap: 4px; background: var(--gray-100); padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 0.8125rem; color: var(--gray-700); }
+  .option-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .option-card h4 { margin-top: 0; }
+  .rec { background: #DBEAFE; border: 2px solid #3B82F6; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🔍 Run Detail "..." 버튼 분석 및 기획</h1>
+<p class="subtitle">Focus Mode 좌측 More Actions 아이콘 — 현재 비활성 상태</p>
+<div class="meta">
+  <div class="meta-item">
+    <div class="meta-label">작성일</div>
+    <div class="meta-value">2026-03-31</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">작성자</div>
+    <div class="meta-value">PM (Claude)</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">상태</div>
+    <div class="meta-value">CEO 검토 대기</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">영향 파일</div>
+    <div class="meta-value">run-detail/page.tsx</div>
+  </div>
+</div>
+
+<!-- ===================== SECTION 1: 현재 상태 분석 ===================== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--danger);">1</div>
+    <div>
+      <div class="section-title">현재 상태 분석</div>
+      <span class="badge badge-danger">Dead Code</span>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="problem-box">
+      <strong>문제:</strong> "..." 버튼이 2곳에 존재하며, 모두 <strong>onClick 핸들러 없이</strong> 렌더링만 되고 있습니다. 사용자가 클릭해도 아무 반응이 없어 UX 혼란을 초래합니다.
+    </div>
+
+    <h3>발견된 "..." 버튼 (2곳)</h3>
+
+    <h4>버튼 A: 헤더 영역 (line 1791~1794)</h4>
+    <p>Focus Mode 버튼 바로 왼쪽에 위치합니다.</p>
+    <div class="code-block">&lt;button className="flex items-center gap-1 px-[0.875rem] py-[0.4375rem]
+  rounded-lg text-[0.8125rem] font-semibold cursor-pointer
+  border border-[#E2E8F0] bg-white text-[#475569]
+  hover:bg-[#F8FAFC] transition-colors"&gt;
+  &lt;i className="ri-more-2-fill" /&gt;
+&lt;/button&gt;</div>
+    <p>onClick 핸들러: <strong>없음</strong> / 상태 변수: <strong>없음</strong> / 드롭다운: <strong>없음</strong></p>
+
+    <h4>버튼 B: Rich Text Editor 툴바 (line 2363~2366)</h4>
+    <p>Note 입력 에디터의 포맷팅 버튼 우측에 위치합니다.</p>
+    <div class="code-block">&lt;button className="w-7 h-7 flex items-center justify-center
+  text-gray-600 hover:bg-gray-200 rounded cursor-pointer ml-auto"&gt;
+  &lt;i className="ri-more-2-fill text-sm"&gt;&lt;/i&gt;
+&lt;/button&gt;</div>
+    <p>onClick 핸들러: <strong>없음</strong> / 상태 변수: <strong>없음</strong></p>
+
+    <h3>기존 참고 패턴</h3>
+    <p><span class="file-ref">project-runs/page.tsx</span>에는 작동하는 "..." 패턴이 있습니다:</p>
+    <ul>
+      <li><code class="code-inline">openMenuId</code> state (line 119)</li>
+      <li><code class="code-inline">menuRef</code> useRef (line 120)</li>
+      <li>드롭다운 메뉴 렌더링 (line 1413~1426)</li>
+    </ul>
+    <p>run-detail에는 이러한 구조가 전혀 없습니다.</p>
+  </div>
+</div>
+<!-- ===================== SECTION 2: 옵션 분석 ===================== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--primary);">2</div>
+    <div>
+      <div class="section-title">CEO 결정 필요: 삭제 vs 기능 구현</div>
+      <span class="badge badge-primary">Decision Required</span>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="option-card">
+      <h4>Option A: 버튼 삭제 (권장)</h4>
+      <p><strong>이유:</strong> 현재 run-detail 페이지에는 이미 충분한 액션 버튼들이 존재합니다 (Focus Mode, Quick Status, Add Result, Create Jira Issue, Detail Panel). "..." 버튼이 없어도 핵심 워크플로우에 지장이 없으며, dead code를 유지하는 것은 UX 품질을 떨어뜨립니다.</p>
+      <p><strong>작업량:</strong> 5분 (버튼 JSX 2곳 삭제)</p>
+    </div>
+
+    <div class="option-card rec">
+      <h4>Option B: 기능 구현 (PM 권장)</h4>
+      <p><strong>이유:</strong> Run Detail에서 자주 사용하지만 현재 접근이 불편한 기능들을 모아놓으면 사용성이 크게 향상됩니다. 경쟁 QA 도구(TestRail, Zephyr, qTest)에서도 Run Detail에 More Actions 메뉴를 제공합니다.</p>
+      <p><strong>작업량:</strong> 1~2시간</p>
+    </div>
+
+    <p><strong>PM 의견:</strong> 버튼이 이미 UI에 존재하고, 사용자가 클릭하고 있을 것이므로 Option B (기능 구현)을 권장합니다. 아래에 구현할 메뉴 항목을 기획합니다.</p>
+  </div>
+</div>
+
+<!-- ===================== SECTION 3: 메뉴 항목 기획 ===================== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--success);">3</div>
+    <div>
+      <div class="section-title">More Actions 메뉴 항목 기획</div>
+      <span class="badge badge-success">Feature Design</span>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>헤더 "..." 버튼 (버튼 A) — Run Level Actions</h3>
+    <p>Run 전체에 대한 액션을 제공하는 드롭다운 메뉴입니다.</p>
+
+    <table class="change-table">
+      <tr>
+        <th>메뉴 항목</th>
+        <th>아이콘</th>
+        <th>동작</th>
+        <th>우선순위</th>
+        <th>비고</th>
+      </tr>
+      <tr>
+        <td><strong>Export Run Report (PDF)</strong></td>
+        <td><code class="code-inline">ri-file-pdf-line</code></td>
+        <td>현재 Run의 전체 결과를 PDF로 내보내기</td>
+        <td><span class="badge badge-danger">P0</span></td>
+        <td>Milestone PDF export 로직 재활용 가능</td>
+      </tr>
+      <tr>
+        <td><strong>Export Results (CSV)</strong></td>
+        <td><code class="code-inline">ri-file-excel-2-line</code></td>
+        <td>TC별 결과(status, note, issues)를 CSV로 내보내기</td>
+        <td><span class="badge badge-danger">P0</span></td>
+        <td>TestCasesOverview CSV 패턴 참고</td>
+      </tr>
+      <tr>
+        <td><strong>Duplicate Run</strong></td>
+        <td><code class="code-inline">ri-file-copy-line</code></td>
+        <td>동일 TC 구성으로 새 Run 생성 (결과는 초기화)</td>
+        <td><span class="badge badge-warning">P1</span></td>
+        <td>Re-test 시나리오에 유용</td>
+      </tr>
+      <tr>
+        <td><strong>Reset All Results</strong></td>
+        <td><code class="code-inline">ri-refresh-line</code></td>
+        <td>모든 TC의 결과를 Not Tested로 초기화</td>
+        <td><span class="badge badge-warning">P1</span></td>
+        <td>확인 모달 필수 (비가역적)</td>
+      </tr>
+      <tr>
+        <td><strong>Copy Run Link</strong></td>
+        <td><code class="code-inline">ri-link</code></td>
+        <td>현재 URL을 클립보드에 복사</td>
+        <td><span class="badge badge-primary">P2</span></td>
+        <td>navigator.clipboard.writeText</td>
+      </tr>
+      <tr>
+        <td><strong>Print</strong></td>
+        <td><code class="code-inline">ri-printer-line</code></td>
+        <td>브라우저 인쇄 다이얼로그 열기</td>
+        <td><span class="badge badge-primary">P2</span></td>
+        <td>window.print()</td>
+      </tr>
+      <tr>
+        <td>─── 구분선 ───</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><strong>Archive Run</strong></td>
+        <td><code class="code-inline">ri-archive-line</code></td>
+        <td>Run을 아카이브 처리 (목록에서 숨김)</td>
+        <td><span class="badge badge-primary">P2</span></td>
+        <td>DB에 archived 컬럼 필요</td>
+      </tr>
+      <tr>
+        <td style="color: var(--danger);"><strong>Delete Run</strong></td>
+        <td><code class="code-inline">ri-delete-bin-line</code></td>
+        <td>Run 및 모든 결과 삭제</td>
+        <td><span class="badge badge-primary">P2</span></td>
+        <td>확인 모달 필수, 빨간색 텍스트</td>
+      </tr>
+    </table>
+
+    <h3>에디터 "..." 버튼 (버튼 B) — Note Editor Actions</h3>
+    <p>Note 에디터 툴바의 확장 메뉴입니다.</p>
+
+    <table class="change-table">
+      <tr>
+        <th>메뉴 항목</th>
+        <th>아이콘</th>
+        <th>동작</th>
+      </tr>
+      <tr>
+        <td>Clear Formatting</td>
+        <td><code class="code-inline">ri-format-clear</code></td>
+        <td>선택 영역의 서식 제거</td>
+      </tr>
+      <tr>
+        <td>Insert Horizontal Rule</td>
+        <td><code class="code-inline">ri-separator</code></td>
+        <td>&lt;hr&gt; 삽입</td>
+      </tr>
+      <tr>
+        <td>Insert Code Block</td>
+        <td><code class="code-inline">ri-code-box-line</code></td>
+        <td>코드 블록 삽입</td>
+      </tr>
+    </table>
+
+    <div class="info-box">
+      <strong>PM 의견:</strong> 에디터 "..." 버튼(B)은 우선순위가 낮습니다. Phase 1에서는 <strong>헤더 "..." 버튼(A)만 구현</strong>하고, 에디터 버튼은 Phase 2로 연기하거나 삭제를 권장합니다.
+    </div>
+  </div>
+</div>
+<!-- ===================== SECTION 4: UI 스펙 ===================== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--gray-700);">4</div>
+    <div class="section-title">UI 구현 스펙</div>
+  </div>
+  <div class="section-body">
+
+    <h3>드롭다운 메뉴 디자인</h3>
+    <ul>
+      <li>위치: 버튼 아래 오른쪽 정렬 (absolute positioning)</li>
+      <li>배경: white, <code class="code-inline">border: 1px solid #E2E8F0</code>, <code class="code-inline">shadow-lg</code></li>
+      <li>너비: <code class="code-inline">w-56</code> (14rem)</li>
+      <li>각 항목: <code class="code-inline">px-3 py-2 text-[0.8125rem]</code>, hover 시 <code class="code-inline">bg-[#F8FAFC]</code></li>
+      <li>구분선: <code class="code-inline">border-t border-[#E2E8F0] my-1</code></li>
+      <li>Delete 항목: <code class="code-inline">text-[#EF4444]</code></li>
+      <li>바깥 클릭 시 닫힘: useRef + useEffect 패턴</li>
+      <li>Escape 키로 닫힘</li>
+    </ul>
+
+    <h3>필요한 State 추가</h3>
+    <div class="code-block">const [showRunMenu, setShowRunMenu] = useState(false);
+const runMenuRef = useRef&lt;HTMLDivElement&gt;(null);
+
+// 바깥 클릭 감지
+useEffect(() =&gt; {
+  const handler = (e: MouseEvent) =&gt; {
+    if (runMenuRef.current &amp;&amp; !runMenuRef.current.contains(e.target as Node)) {
+      setShowRunMenu(false);
+    }
+  };
+  document.addEventListener('mousedown', handler);
+  return () =&gt; document.removeEventListener('mousedown', handler);
+}, []);</div>
+
+    <h3>참고: project-runs/page.tsx 기존 패턴</h3>
+    <p>project-runs 페이지에 이미 동일한 "..." 드롭다운 패턴이 구현되어 있습니다 (<code class="code-inline">openMenuId</code>, <code class="code-inline">menuRef</code>, line 119~120, 1413~1426). 이 패턴을 그대로 차용하면 됩니다.</p>
+  </div>
+</div>
+
+<!-- ===================== SECTION 5: Phase 1 구현 범위 ===================== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--warning);">5</div>
+    <div>
+      <div class="section-title">Phase 1 권장 구현 범위 (P0만)</div>
+      <span class="badge badge-warning">MVP</span>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <p>모든 항목을 한번에 구현하지 않고, P0 항목만 우선 구현합니다:</p>
+
+    <table class="change-table">
+      <tr><th>항목</th><th>구현 내용</th></tr>
+      <tr>
+        <td><strong>Export Run Report (PDF)</strong></td>
+        <td>Milestone PDF export (<code class="code-inline">project-runs/page.tsx</code>의 <code class="code-inline">generateMilestonePdf</code>) 로직을 참고하여, 현재 Run의 TC 목록 + 결과 + 통계를 PDF로 생성합니다. html2canvas + jsPDF 사용.</td>
+      </tr>
+      <tr>
+        <td><strong>Export Results (CSV)</strong></td>
+        <td>TC별로 id, title, status, priority, result_status, notes, issues를 CSV로 내보냅니다. <code class="code-inline">useTestCasesOverview</code>의 CSV 유틸 패턴 참고.</td>
+      </tr>
+    </table>
+
+    <p><strong>에디터 "..." 버튼 (B) 처리:</strong> Phase 1에서는 onClick 없는 버튼을 제거합니다.</p>
+
+    <h3>CSV Export 컬럼 설계</h3>
+    <table class="change-table">
+      <tr><th>컬럼</th><th>소스</th></tr>
+      <tr><td>TC ID</td><td>testCase.id (shortened)</td></tr>
+      <tr><td>Title</td><td>testCase.title</td></tr>
+      <tr><td>Priority</td><td>testCase.priority</td></tr>
+      <tr><td>Status</td><td>result status (passed/failed/blocked/skipped/not_tested)</td></tr>
+      <tr><td>Assignee</td><td>testCase.assignee</td></tr>
+      <tr><td>Issues</td><td>linked Jira issue keys (comma-separated)</td></tr>
+      <tr><td>Notes</td><td>result notes (HTML stripped)</td></tr>
+      <tr><td>Tested At</td><td>result created_at timestamp</td></tr>
+    </table>
+
+    <h3>예상 작업량</h3>
+    <table class="change-table">
+      <tr><th>작업</th><th>예상 시간</th></tr>
+      <tr><td>드롭다운 메뉴 구조 + 바깥 클릭 닫기</td><td>15분</td></tr>
+      <tr><td>Export Run Report (PDF)</td><td>30분</td></tr>
+      <tr><td>Export Results (CSV)</td><td>20분</td></tr>
+      <tr><td>에디터 "..." 버튼 제거</td><td>2분</td></tr>
+      <tr><td><strong>합계</strong></td><td><strong>~67분</strong></td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
