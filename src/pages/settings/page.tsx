@@ -185,7 +185,7 @@ async function loadSettingsData(): Promise<{
 
   // Build jiraSettings
   const jiraData = jiraResult.data;
-  const DEFAULT_SUMMARY_TPL = '[Auto] Test Failed: {tc_title}';
+  const DEFAULT_SUMMARY_TPL = '[Auto] Test Failed: {tc_id} - {tc_title}';
   const DEFAULT_DESC_TPL = '*Auto-created by Testably*\n\nTest Case: {tc_title}\nRun: {run_name}\nPriority: {priority}\n\n--- Precondition ---\n{precondition}\n\n--- Steps ---\n{steps}\n\n--- Expected Result ---\n{expected_result}';
   const jiraSettings: JiraSettings = jiraData
     ? { domain: jiraData.domain || '', email: jiraData.email || '', apiToken: jiraData.api_token || '', issueType: jiraData.issue_type || 'Bug', projectKey: jiraData.project_key || '', autoCreateOnFailure: jiraData.auto_create_on_failure || 'disabled', fieldMappings: jiraData.field_mappings || [], autoIssueSummaryTemplate: jiraData.auto_issue_summary_template || DEFAULT_SUMMARY_TPL, autoIssueDescriptionTemplate: jiraData.auto_issue_description_template || DEFAULT_DESC_TPL }
@@ -277,7 +277,7 @@ export default function SettingsPage() {
   const [showMembersInviteModal, setShowMembersInviteModal] = useState(false);
   const [memberRefreshTrigger, setMemberRefreshTrigger] = useState(0);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-  const DEFAULT_SUMMARY_TEMPLATE = '[Auto] Test Failed: {tc_title}';
+  const DEFAULT_SUMMARY_TEMPLATE = '[Auto] Test Failed: {tc_id} - {tc_title}';
   const DEFAULT_DESCRIPTION_TEMPLATE = '*Auto-created by Testably*\n\nTest Case: {tc_title}\nRun: {run_name}\nPriority: {priority}\n\n--- Precondition ---\n{precondition}\n\n--- Steps ---\n{steps}\n\n--- Expected Result ---\n{expected_result}';
 
   const [jiraSettings, setJiraSettings] = useState<JiraSettings>({
@@ -294,7 +294,15 @@ export default function SettingsPage() {
   const [jiraSavedDomain, setJiraSavedDomain] = useState('');
   const [jiraEditMode, setJiraEditMode] = useState(false);
   const isJiraLocked = !!jiraSavedDomain && !jiraEditMode;
-  const [availableJiraFields, setAvailableJiraFields] = useState<JiraField[]>([]);
+  const [availableJiraFields, setAvailableJiraFields] = useState<JiraField[]>([
+    { id: 'priority', name: 'Priority', required: false, type: 'priority', custom: false },
+    { id: 'labels', name: 'Labels', required: false, type: 'array', custom: false },
+    { id: 'components', name: 'Components', required: false, type: 'array', custom: false },
+    { id: 'fixVersions', name: 'Fix Version/s', required: false, type: 'array', custom: false },
+    { id: 'environment', name: 'Environment', required: false, type: 'string', custom: false },
+    { id: 'assignee', name: 'Assignee', required: false, type: 'user', custom: false },
+    { id: 'reporter', name: 'Reporter', required: false, type: 'user', custom: false },
+  ]);
   const [fetchingFields, setFetchingFields] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -659,7 +667,18 @@ export default function SettingsPage() {
       });
       if (error) throw error;
       if (data?.fields) {
-        setAvailableJiraFields(data.fields);
+        const builtInFields: JiraField[] = [
+          { id: 'priority', name: 'Priority', required: false, type: 'priority', custom: false },
+          { id: 'labels', name: 'Labels', required: false, type: 'array', custom: false },
+          { id: 'components', name: 'Components', required: false, type: 'array', custom: false },
+          { id: 'fixVersions', name: 'Fix Version/s', required: false, type: 'array', custom: false },
+          { id: 'environment', name: 'Environment', required: false, type: 'string', custom: false },
+          { id: 'assignee', name: 'Assignee', required: false, type: 'user', custom: false },
+          { id: 'reporter', name: 'Reporter', required: false, type: 'user', custom: false },
+        ];
+        const fetchedIds = new Set(data.fields.map((f: JiraField) => f.id));
+        const merged = [...builtInFields.filter(f => !fetchedIds.has(f.id)), ...data.fields];
+        setAvailableJiraFields(merged);
       }
     } catch (err) {
       console.error('Failed to fetch Jira fields:', err);
@@ -1903,7 +1922,7 @@ def pytest_sessionfinish(session, exitstatus):
                                     Click a variable to insert it at cursor position
                                   </p>
                                   <div className="flex flex-wrap gap-1.5 mb-2">
-                                    {['{tc_title}', '{run_name}', '{priority}'].map(v => (
+                                    {['{tc_id}', '{tc_title}', '{run_name}', '{priority}'].map(v => (
                                       <button
                                         key={v}
                                         type="button"
@@ -1939,7 +1958,7 @@ def pytest_sessionfinish(session, exitstatus):
                                     Click a variable to insert it at cursor position
                                   </p>
                                   <div className="flex flex-wrap gap-1.5 mb-2">
-                                    {['{tc_title}', '{run_name}', '{priority}', '{steps}', '{expected_result}', '{precondition}'].map(v => (
+                                    {['{tc_id}', '{tc_title}', '{run_name}', '{priority}', '{steps}', '{expected_result}', '{precondition}'].map(v => (
                                       <button
                                         key={v}
                                         type="button"

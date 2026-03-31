@@ -101,7 +101,7 @@ const TIER_INFO = {
 export default function RunDetail() {
   const { projectId, runId } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation(['common']);
   const [project, setProject] = useState<any>(null);
   const [run, setRun] = useState<any>(null);
@@ -162,6 +162,23 @@ export default function RunDetail() {
   const [bulkAssignee, setBulkAssignee] = useState('');
   const [runAssignees, setRunAssignees] = useState<Map<string, string>>(new Map());
   const [openAssigneeDropdown, setOpenAssigneeDropdown] = useState<string | null>(null);
+
+  const selectTestCase = (tc: TestCaseWithRunStatus | null) => {
+    setSelectedTestCase(tc);
+    if (tc) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('tc', tc.id);
+        return next;
+      }, { replace: true });
+    } else {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.delete('tc');
+        return next;
+      }, { replace: true });
+    }
+  };
 
   useEffect(() => {
     if (projectId && runId) {
@@ -481,6 +498,15 @@ export default function RunDetail() {
           }
         });
         setRunAssignees(assigneesMap);
+
+        // URL에서 이전 선택 TC 복원
+        const tcIdFromUrl = searchParams.get('tc');
+        if (tcIdFromUrl) {
+          const restoredTc = testCasesWithStatus.find(tc => tc.id === tcIdFromUrl);
+          if (restoredTc) {
+            setSelectedTestCase(restoredTc);
+          }
+        }
       }
     } catch (error) {
       console.error('데이터 로딩 오류:', error);
@@ -588,6 +614,7 @@ export default function RunDetail() {
 
   const applyTemplate = (template: string, tc: TestCase): string => {
     return template
+      .replace(/\{tc_id\}/g, (tc as any).custom_id || '')
       .replace(/\{tc_title\}/g, tc.title || '')
       .replace(/\{run_name\}/g, run?.name || 'Unknown')
       .replace(/\{priority\}/g, tc.priority || 'Medium')
@@ -718,7 +745,7 @@ export default function RunDetail() {
     if (!selectedTestCase) return;
     const currentIndex = filteredTestCases.findIndex(tc => tc.id === selectedTestCase.id);
     if (currentIndex > 0) {
-      setSelectedTestCase(filteredTestCases[currentIndex - 1]);
+      selectTestCase(filteredTestCases[currentIndex - 1]);
     }
   };
 
@@ -726,7 +753,7 @@ export default function RunDetail() {
     if (!selectedTestCase) return;
     const currentIndex = filteredTestCases.findIndex(tc => tc.id === selectedTestCase.id);
     if (currentIndex < filteredTestCases.length - 1) {
-      setSelectedTestCase(filteredTestCases[currentIndex + 1]);
+      selectTestCase(filteredTestCases[currentIndex + 1]);
     }
   };
 
@@ -798,7 +825,7 @@ export default function RunDetail() {
       setTimeout(() => {
         const currentIndex = filteredTestCases.findIndex(tc => tc.id === selectedTestCase.id);
         if (currentIndex < filteredTestCases.length - 1) {
-          setSelectedTestCase(filteredTestCases[currentIndex + 1]);
+          selectTestCase(filteredTestCases[currentIndex + 1]);
         }
       }, 500);
     } catch (error) {
@@ -1629,7 +1656,7 @@ export default function RunDetail() {
             <div className="flex-1 py-1">
               {/* All */}
               <button
-                onClick={() => { setSelectedFolder(null); setSelectedTestCase(null); }}
+                onClick={() => { setSelectedFolder(null); selectTestCase(null); }}
                 className={`w-full flex items-center gap-2 py-[0.4375rem] text-[0.8125rem] font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-[0.875rem]' : 'px-0 justify-center'} ${
                   selectedFolder === null
                     ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
@@ -1657,7 +1684,7 @@ export default function RunDetail() {
                     return (
                       <button
                         key={folder.id}
-                        onClick={() => { setSelectedFolder(folder.name); setSelectedTestCase(null); }}
+                        onClick={() => { setSelectedFolder(folder.name); selectTestCase(null); }}
                         className={`w-full flex items-center gap-2 py-[0.4375rem] text-[0.8125rem] font-medium transition-all cursor-pointer text-left ${isFolderSidebarOpen ? 'px-[0.875rem]' : 'px-0 justify-center'} ${
                           isSelected
                             ? 'bg-[#EEF2FF] text-[#4338CA] font-semibold'
