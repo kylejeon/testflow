@@ -292,6 +292,8 @@ export default function SettingsPage() {
     autoIssueDescriptionTemplate: DEFAULT_DESCRIPTION_TEMPLATE,
   });
   const [jiraSavedDomain, setJiraSavedDomain] = useState('');
+  const [jiraEditMode, setJiraEditMode] = useState(false);
+  const isJiraLocked = !!jiraSavedDomain && !jiraEditMode;
   const [availableJiraFields, setAvailableJiraFields] = useState<JiraField[]>([]);
   const [fetchingFields, setFetchingFields] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -742,6 +744,7 @@ export default function SettingsPage() {
 
       setJiraSettings(prev => ({ ...prev, domain: cleanDomain }));
       setJiraSavedDomain(cleanDomain);
+      setJiraEditMode(false);
       setJiraSaveResult({ success: true, message: 'Jira settings saved successfully!' });
       void markOnboardingStep('connectJira');
       setTimeout(() => setJiraSaveResult(null), 4000);
@@ -752,6 +755,16 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDisconnectJira = async () => {
+    if (!confirm('Disconnect Jira? This will remove your Jira credentials.')) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('jira_settings').delete().eq('user_id', user.id);
+    setJiraSettings({ domain: '', email: '', apiToken: '', issueType: 'Bug', projectKey: '', autoCreateOnFailure: 'disabled', fieldMappings: [], autoIssueSummaryTemplate: DEFAULT_SUMMARY_TEMPLATE, autoIssueDescriptionTemplate: DEFAULT_DESCRIPTION_TEMPLATE });
+    setJiraSavedDomain('');
+    setJiraEditMode(false);
   };
 
   // ── Webhook helpers ───────────────────────────────────────────────────────
@@ -1735,9 +1748,23 @@ def pytest_sessionfinish(session, exitstatus):
                                   <div className="text-[0.8125rem] font-semibold text-[#0F172A] truncate">{jiraSavedDomain}</div>
                                   <div className="text-[0.6875rem] text-[#64748B]">Issue type: {jiraSettings.issueType} · Linked issue creation enabled</div>
                                 </div>
-                                <span className="px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded-full text-[0.625rem] font-semibold flex items-center gap-1 flex-shrink-0">
-                                  <i className="ri-checkbox-circle-fill"></i> Connected
-                                </span>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <button
+                                    onClick={() => setJiraEditMode(prev => !prev)}
+                                    className="px-2.5 py-1 text-[0.6875rem] font-semibold border border-[#6366F1] text-[#6366F1] rounded-full hover:bg-indigo-50 cursor-pointer transition-colors"
+                                  >
+                                    {jiraEditMode ? 'Cancel Edit' : 'Edit'}
+                                  </button>
+                                  <button
+                                    onClick={handleDisconnectJira}
+                                    className="px-2.5 py-1 text-[0.6875rem] font-semibold border border-[#FECACA] text-[#DC2626] rounded-full hover:bg-red-50 cursor-pointer transition-colors"
+                                  >
+                                    Disconnect
+                                  </button>
+                                  <span className="px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded-full text-[0.625rem] font-semibold flex items-center gap-1">
+                                    <i className="ri-checkbox-circle-fill"></i> Connected
+                                  </span>
+                                </div>
                               </div>
                             )}
 
@@ -1757,7 +1784,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   }}
                                   placeholder="your-domain.atlassian.net"
                                   className="flex-1 px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
-                                  disabled={!isStarterOrHigher}
+                                  disabled={!isStarterOrHigher || isJiraLocked}
                                 />
                               </div>
                               <p className="text-[0.6875rem] text-[#94A3B8] mt-1">e.g. your-domain.atlassian.net</p>
@@ -1775,7 +1802,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   onChange={(e) => setJiraSettings({ ...jiraSettings, email: e.target.value })}
                                   placeholder="your-email@example.com"
                                   className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
-                                  disabled={!isStarterOrHigher}
+                                  disabled={!isStarterOrHigher || isJiraLocked}
                                 />
                                 <p className="text-[0.6875rem] text-[#94A3B8] mt-1">Your Jira account email address</p>
                               </div>
@@ -1790,13 +1817,13 @@ def pytest_sessionfinish(session, exitstatus):
                                     onChange={(e) => setJiraSettings({ ...jiraSettings, apiToken: e.target.value })}
                                     placeholder="Enter your Jira API token"
                                     className="w-full px-3 py-2 pr-9 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
-                                    disabled={!isStarterOrHigher}
+                                    disabled={!isStarterOrHigher || isJiraLocked}
                                   />
                                   <button
                                     type="button"
                                     onClick={() => setShowApiToken(!showApiToken)}
                                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] cursor-pointer"
-                                    disabled={!isStarterOrHigher}
+                                    disabled={!isStarterOrHigher || isJiraLocked}
                                   >
                                     <i className={`${showApiToken ? 'ri-eye-off-line' : 'ri-eye-line'} text-base`}></i>
                                   </button>
@@ -1822,7 +1849,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   value={jiraSettings.issueType}
                                   onChange={(e) => setJiraSettings({ ...jiraSettings, issueType: e.target.value })}
                                   className="w-[200px] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem] cursor-pointer"
-                                  disabled={!isStarterOrHigher}
+                                  disabled={!isStarterOrHigher || isJiraLocked}
                                 >
                                   <option value="Bug">Bug</option>
                                   <option value="Task">Task</option>
@@ -1831,14 +1858,14 @@ def pytest_sessionfinish(session, exitstatus):
                                 </select>
                                 <button
                                   onClick={handleTestConnection}
-                                  disabled={testing || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher}
+                                  disabled={testing || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher || isJiraLocked}
                                   className="inline-flex items-center gap-[0.3125rem] px-4 py-[0.4375rem] border border-[#E2E8F0] bg-white text-[#475569] rounded-md hover:bg-[#F8FAFC] transition-colors text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   {testing ? <><i className="ri-loader-4-line animate-spin"></i>Testing...</> : <><i className="ri-link"></i>Test Connection</>}
                                 </button>
                                 <button
                                   onClick={handleSaveJiraSettings}
-                                  disabled={saving || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher}
+                                  disabled={saving || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher || isJiraLocked}
                                   className="inline-flex items-center gap-[0.3125rem] px-4 py-[0.4375rem] bg-[#6366F1] text-white rounded-md hover:bg-[#4F46E5] transition-colors text-[0.8125rem] font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                                   style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
                                 >
