@@ -20,7 +20,10 @@ serve(async (req) => {
       });
     }
 
-    const cleanDomain = domain.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+    const cleanDomain = domain
+      .replace(/^https?:?\/?\/?\/?/i, '')
+      .replace(/\/+$/, '')
+      .replace(/\/+/g, '/');
     const auth = btoa(`${email}:${apiToken}`);
     const resp = await fetch(
       `https://${cleanDomain}/rest/api/3/issue/createmeta/${projectKey}/issuetypes`,

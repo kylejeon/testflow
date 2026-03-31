@@ -37,7 +37,10 @@ serve(async (req) => {
       );
     }
 
-    const cleanDomain = domain.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+    const cleanDomain = domain
+      .replace(/^https?:?\/?\/?\/?/i, '')
+      .replace(/\/+$/, '')
+      .replace(/\/+/g, '/');
     const auth = btoa(`${email}:${apiToken}`);
 
     // Prepare issue data

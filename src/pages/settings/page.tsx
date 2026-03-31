@@ -17,6 +17,7 @@ interface JiraSettings {
   email: string;
   apiToken: string;
   issueType: string;
+  projectKey: string;
   autoCreateOnFailure: string;
   fieldMappings: JiraFieldMapping[];
 }
@@ -183,8 +184,8 @@ async function loadSettingsData(): Promise<{
   // Build jiraSettings
   const jiraData = jiraResult.data;
   const jiraSettings: JiraSettings = jiraData
-    ? { domain: jiraData.domain || '', email: jiraData.email || '', apiToken: jiraData.api_token || '', issueType: jiraData.issue_type || 'Bug', autoCreateOnFailure: jiraData.auto_create_on_failure || 'disabled', fieldMappings: jiraData.field_mappings || [] }
-    : { domain: '', email: '', apiToken: '', issueType: 'Bug', autoCreateOnFailure: 'disabled', fieldMappings: [] };
+    ? { domain: jiraData.domain || '', email: jiraData.email || '', apiToken: jiraData.api_token || '', issueType: jiraData.issue_type || 'Bug', projectKey: jiraData.project_key || '', autoCreateOnFailure: jiraData.auto_create_on_failure || 'disabled', fieldMappings: jiraData.field_mappings || [] }
+    : { domain: '', email: '', apiToken: '', issueType: 'Bug', projectKey: '', autoCreateOnFailure: 'disabled', fieldMappings: [] };
 
   // Build userProjects
   const userProjects: Array<{ id: string; name: string }> = memberResult.data
@@ -277,6 +278,7 @@ export default function SettingsPage() {
     email: '',
     apiToken: '',
     issueType: 'Bug',
+    projectKey: '',
     autoCreateOnFailure: 'disabled',
     fieldMappings: [],
   });
@@ -581,6 +583,7 @@ export default function SettingsPage() {
           email: data.email || '',
           apiToken: data.api_token || '',
           issueType: data.issue_type || 'Bug',
+          projectKey: data.project_key || '',
           autoCreateOnFailure: data.auto_create_on_failure || 'disabled',
           fieldMappings: data.field_mappings || [],
         });
@@ -603,9 +606,13 @@ export default function SettingsPage() {
       setTesting(true);
       setTestResult(null);
 
+      const cleanDomain = jiraSettings.domain
+        .replace(/^https?:?\/?\/?\/?/i, '')
+        .replace(/\/+$/, '')
+        .trim();
       const { data, error } = await supabase.functions.invoke('test-jira-connection', {
         body: {
-          domain: jiraSettings.domain,
+          domain: cleanDomain,
           email: jiraSettings.email,
           apiToken: jiraSettings.apiToken,
         },
@@ -674,6 +681,11 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const cleanDomain = jiraSettings.domain
+        .replace(/^https?:?\/?\/?\/?/i, '')
+        .replace(/\/+$/, '')
+        .trim();
+
       const { data: existingData } = await supabase
         .from('jira_settings')
         .select('id')
@@ -684,10 +696,11 @@ export default function SettingsPage() {
         const { error } = await supabase
           .from('jira_settings')
           .update({
-            domain: jiraSettings.domain,
+            domain: cleanDomain,
             email: jiraSettings.email,
             api_token: jiraSettings.apiToken,
             issue_type: jiraSettings.issueType,
+            project_key: jiraSettings.projectKey || '',
             auto_create_on_failure: jiraSettings.autoCreateOnFailure,
             field_mappings: jiraSettings.fieldMappings,
             updated_at: new Date().toISOString(),
@@ -700,10 +713,11 @@ export default function SettingsPage() {
           .from('jira_settings')
           .insert({
             user_id: user.id,
-            domain: jiraSettings.domain,
+            domain: cleanDomain,
             email: jiraSettings.email,
             api_token: jiraSettings.apiToken,
             issue_type: jiraSettings.issueType,
+            project_key: jiraSettings.projectKey || '',
             auto_create_on_failure: jiraSettings.autoCreateOnFailure,
             field_mappings: jiraSettings.fieldMappings,
           });
@@ -711,7 +725,8 @@ export default function SettingsPage() {
         if (error) throw error;
       }
 
-      setJiraSavedDomain(jiraSettings.domain);
+      setJiraSettings(prev => ({ ...prev, domain: cleanDomain }));
+      setJiraSavedDomain(cleanDomain);
       setJiraSaveResult({ success: true, message: 'Jira settings saved successfully!' });
       void markOnboardingStep('connectJira');
       setTimeout(() => setJiraSaveResult(null), 4000);
@@ -1721,7 +1736,10 @@ def pytest_sessionfinish(session, exitstatus):
                                 <input
                                   type="text"
                                   value={jiraSettings.domain}
-                                  onChange={(e) => setJiraSettings({ ...jiraSettings, domain: e.target.value })}
+                                  onChange={(e) => {
+                                    const cleaned = e.target.value.replace(/^https?:?\/?\/?\/?/i, '');
+                                    setJiraSettings({ ...jiraSettings, domain: cleaned });
+                                  }}
                                   placeholder="your-domain.atlassian.net"
                                   className="flex-1 px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
                                   disabled={!isStarterOrHigher}

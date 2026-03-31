@@ -103,10 +103,14 @@ async function fetchJiraIssue(
   apiToken: string,
   issueKey: string,
 ): Promise<JiraIssueData> {
+  const cleanDomain = domain
+    .replace(/^https?:?\/?\/?\/?/i, '')
+    .replace(/\/+$/, '')
+    .replace(/\/+/g, '/');
   const basicAuth = btoa(`${email}:${apiToken}`);
   // Request summary, description, priority, labels, and common AC custom field IDs
   const fields = 'summary,description,priority,labels,customfield_10014,customfield_10016,customfield_acceptance';
-  const url = `https://${domain}/rest/api/3/issue/${issueKey}?fields=${fields}`;
+  const url = `https://${cleanDomain}/rest/api/3/issue/${issueKey}?fields=${fields}`;
 
   const response = await fetch(url, {
     headers: {
