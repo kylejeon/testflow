@@ -74,3 +74,42 @@
     <div class="meta-value">Dev 3~4일</div>
   </div>
 </div>
+<!-- ============================================ -->
+<!-- SECTION 1: 현재 Paddle 연동 구조 분석 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--primary);">1</div>
+    <div class="section-title">현재 Paddle 연동 구조 분석</div>
+  </div>
+  <div class="section-body">
+
+    <h3>1.1 아키텍처 개요</h3>
+    <div class="arch-diagram">┌─────────────────────────────────────────────────────────────────┐
+│  FRONTEND (React + Vite)                                        │
+│                                                                 │
+│  src/lib/paddle.ts          ← Paddle JS SDK 초기화 + 체크아웃    │
+│  src/pages/home/page.tsx    ← handlePlanClick() → 체크아웃 모달  │
+│  src/pages/pricing/page.tsx ← 플랜 목록 + CTA 버튼              │
+│  src/pages/settings/page.tsx← 구독 상태 표시 + 티어 정보         │
+└───────────────┬─────────────────────────────────────────────────┘
+                │ Paddle Checkout Modal (Hosted)
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  PADDLE (External)                                              │
+│  - 결제 처리, 인보이스, 세금 계산                                 │
+│  - ⚠️ 웹훅 핸들러 미구현 — 결제 확인 자동화 없음                  │
+└───────────────┬─────────────────────────────────────────────────┘
+                │ (수동 또는 미구현)
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  BACKEND (Supabase)                                             │
+│                                                                 │
+│  profiles 테이블:                                                │
+│    subscription_tier (1-6), is_trial, trial_ends_at,            │
+│    trial_started_at, subscription_ends_at                       │
+│                                                                 │
+│  Edge Functions:                                                │
+│    check-subscriptions  ← 만료 체크 + 자동 다운그레이드           │
+│    (paddle-webhook ❌)  ← 미구현! 핵심 GAP                      │
+└─────────────────────────────────────────────────────────────────┘</div>
