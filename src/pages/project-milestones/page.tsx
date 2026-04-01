@@ -657,7 +657,7 @@ export default function ProjectMilestones() {
                 )}
                 {(milestone.dateWarnings?.length ?? 0) > 0 && (
                   <span className="text-[0.5625rem] text-amber-500 ml-1" title={milestone.dateWarnings!.join('\n')}>
-                    ⚠️ {milestone.dateWarnings!.length}건
+                    ⚠️ {milestone.dateWarnings!.length} warning{milestone.dateWarnings!.length !== 1 ? 's' : ''}
                   </span>
                 )}
               </div>
@@ -909,7 +909,7 @@ export default function ProjectMilestones() {
             {editingMilestone.isAggregated && (
               <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 mb-4">
                 <i className="ri-loop-left-line text-indigo-500 text-sm" />
-                <span className="text-xs text-indigo-700 font-medium">Roll-up 모드 — 상태 및 진행률은 자동 집계됩니다</span>
+                <span className="text-xs text-indigo-700 font-medium">Roll-up mode — status and progress are auto-aggregated</span>
               </div>
             )}
             <form onSubmit={(e) => {
@@ -947,12 +947,12 @@ export default function ProjectMilestones() {
                     <option value="completed">Completed</option>
                   </select>
                   {editingMilestone.isAggregated && (
-                    <p className="text-xs text-slate-400 mt-1">상태는 sub milestone에 의해 자동 결정됩니다.</p>
+                    <p className="text-xs text-slate-400 mt-1">Status is automatically determined by sub milestones.</p>
                   )}
                 </div>
                 {editingMilestone.isAggregated && (
                   <div>
-                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">기간 모드</label>
+                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Date Mode</label>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
@@ -963,7 +963,7 @@ export default function ProjectMilestones() {
                         }}
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${editingMilestone.date_mode === 'auto' || !editingMilestone.date_mode ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}
                       >
-                        {editingMilestone.date_mode === 'auto' || !editingMilestone.date_mode ? '🔄 Auto (sub 기간 자동)' : '✏️ Manual (수동 입력)'}
+                        {editingMilestone.date_mode === 'auto' || !editingMilestone.date_mode ? '🔄 Auto (derived from subs)' : '✏️ Manual (custom)'}
                       </button>
                     </div>
                   </div>

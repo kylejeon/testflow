@@ -795,8 +795,8 @@ export default function MilestoneDetail() {
           <div style={{ marginTop: '0.75rem', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: '0.5rem', padding: '0.75rem 1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.625rem' }}>
               <i className="ri-loop-left-line" style={{ color: '#6366F1', fontSize: '0.875rem' }} />
-              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#3730A3' }}>Roll-up 집계 모드</span>
-              <span style={{ fontSize: '0.6875rem', color: '#6366F1', marginLeft: 'auto' }}>sub milestone {subMilestones.length}개 + 직속 runs 합산</span>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#3730A3' }}>Roll-up Mode</span>
+              <span style={{ fontSize: '0.6875rem', color: '#6366F1', marginLeft: 'auto' }}>{subMilestones.length} sub milestone{subMilestones.length !== 1 ? 's' : ''} + direct runs aggregated</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', textAlign: 'center' }}>
               {[
