@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Analytics & Activity Feed — Design Mockup (15 Screens)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+:root{
+  --primary:#6366F1;--primary-hover:#4F46E5;--primary-bg:#EEF2FF;
+  --violet:#8B5CF6;--violet-bg:#F5F3FF;--violet-border:#DDD6FE;
+  --success:#10B981;--success-bg:#ECFDF5;
+  --warning:#F59E0B;--warning-bg:#FFFBEB;
+  --danger:#EF4444;--danger-bg:#FEF2F2;
+  --g50:#F8FAFC;--g100:#F1F5F9;--g200:#E2E8F0;--g300:#CBD5E1;
+  --g400:#94A3B8;--g500:#64748B;--g600:#475569;--g700:#334155;--g800:#1E293B;--g900:#0F172A;
+  --pass:#16A34A;--fail:#DC2626;--blocked:#D97706;--retest:#7C3AED;--untested:#64748B;
+  --jira:#0052CC;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:#f0f2f5;color:var(--g900);padding:24px}
+
+/* ── Page Title ── */
+.pg-title{text-align:center;margin-bottom:24px}
+.pg-title h1{font-size:20px;font-weight:700;margin-bottom:4px}
+.pg-title p{font-size:12px;color:var(--g500)}
+
+/* ── Nav ── */
+.nav{display:flex;justify-content:center;gap:4px;margin-bottom:24px;flex-wrap:wrap}
+.nav-btn{padding:7px 11px;border:1px solid var(--g200);background:#fff;border-radius:7px;font-size:11px;font-weight:500;color:var(--g600);cursor:pointer;transition:all .15s;white-space:nowrap}
+.nav-btn:hover{border-color:var(--primary);color:var(--primary)}
+.nav-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.nav-grp{display:flex;align-items:center;gap:4px}
+.nav-grp-label{font-size:10px;font-weight:700;color:var(--g400);letter-spacing:.5px;margin-right:4px;text-transform:uppercase}
+.nav-sep{width:1px;height:20px;background:var(--g200);margin:0 8px}
+
+/* ── Screen ── */
+.scr{display:none}.scr.active{display:block}
+.scr-label{text-align:center;margin-bottom:16px}
+.scr-label h2{font-size:15px;font-weight:700;color:var(--g800);margin-bottom:3px}
+.scr-label p{font-size:11px;color:var(--g500);max-width:700px;margin:0 auto}
+
+/* ── Frame ── */
+.frame{max-width:960px;margin:0 auto 20px;background:#fff;border-radius:12px;border:1px solid var(--g200);overflow:visible;position:relative}
+
+/* ── Tabs ── */
+.tab-bar{display:flex;gap:0;border-bottom:1px solid var(--g200);padding:0 20px}
+.tab{padding:12px 16px;font-size:13px;font-weight:500;color:var(--g500);border-bottom:2px solid transparent;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:-1px}
+.tab i{font-size:14px}
+.tab.active{color:var(--g900);border-bottom-color:var(--primary);font-weight:600}
+.tab .tab-icon-violet{color:var(--violet)}
+.tab .tab-icon-amber{color:var(--warning)}
+
+/* ── Filter Bar ── */
+.filter-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;flex-wrap:wrap;gap:8px}
+.filter-group{display:flex;align-items:center;gap:4px}
+.fbtn{padding:6px 12px;border:1px solid var(--g200);background:#fff;border-radius:8px;font-size:12px;font-weight:500;color:var(--g500);cursor:pointer}
+.fbtn.sel{background:var(--primary);color:#fff;border-color:var(--primary)}
+.fselect{padding:6px 12px;border:1px solid var(--g200);background:#fff;border-radius:8px;font-size:13px;color:var(--g700);cursor:pointer;display:flex;align-items:center;gap:6px}
+.fselect i{font-size:14px;color:var(--g400)}
+.fsearch{padding:6px 12px;border:1px solid var(--g200);background:#fff;border-radius:8px;font-size:13px;color:var(--g400);width:180px;display:flex;align-items:center;gap:6px}
+.fsearch i{font-size:14px}
+
+/* ── Widget Card ── */
+.wg{background:#fff;border:1px solid var(--g200);border-radius:12px;overflow:hidden}
+.wg-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--g100)}
+.wg-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--g900)}
+.wg-title i{font-size:16px}
+.wg-body{padding:16px 20px}
+.wg-grid{display:grid;gap:16px;padding:16px 20px}
+
+/* ── Pro Badge ── */
+.pro-badge{font-size:11px;font-weight:600;color:var(--violet);background:var(--violet-bg);border:1px solid var(--violet-border);padding:2px 8px;border-radius:9999px}
+
+/* ── KPI Cards ── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--g50);border-radius:8px;padding:14px 16px}
+.kpi-label{font-size:11px;font-weight:500;color:var(--g500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi-val{font-size:24px;font-weight:700;color:var(--g900);margin-bottom:4px}
+.kpi-delta{font-size:11px;font-weight:600;padding:2px 8px;border-radius:9999px;display:inline-flex;align-items:center;gap:3px}
+.kpi-up{color:var(--success);background:var(--success-bg)}
+.kpi-down{color:var(--danger);background:var(--danger-bg)}
+
+/* ── Chart placeholder ── */
+.chart-area{height:220px;background:var(--g50);border-radius:8px;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:0 16px 28px}
+.chart-line{position:absolute;inset:20px 16px 28px;display:flex;align-items:flex-end}
+.chart-bar{flex:1;margin:0 2px;background:var(--g200);opacity:.4;border-radius:3px 3px 0 0;transition:height .3s}
+.chart-dot{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--primary);border:2px solid #fff;box-shadow:0 0 0 1px var(--primary)}
+.chart-svg{position:absolute;inset:20px 16px 28px;pointer-events:none}
+.chart-grid-line{position:absolute;left:16px;right:16px;border-top:1px dashed var(--g100)}
+.chart-x{position:absolute;bottom:6px;left:16px;right:16px;display:flex;justify-content:space-between;font-size:10px;color:var(--g400)}
+.chart-y{position:absolute;top:20px;bottom:28px;left:0;width:16px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;font-size:9px;color:var(--g400);padding-right:4px}
+
+/* ── Stacked bar ── */
+.sbar{height:8px;border-radius:9999px;display:flex;overflow:hidden;width:100%}
+.sbar>div{height:100%}
+.sbar-legend{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+.sbar-legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--g500)}
+.sbar-legend-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* ── Run mini card ── */
+.run-card{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--g100)}
+.run-card:last-child{border-bottom:none}
+.mini-donut{width:28px;height:28px;border-radius:50%;background:conic-gradient(var(--pass) 0% 58%,var(--fail) 58% 70%,var(--g200) 70% 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mini-donut-inner{width:18px;height:18px;border-radius:50%;background:#fff}
+.run-info{flex:1;min-width:0}
+.run-name{font-size:13px;font-weight:500;color:var(--g900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.run-sub{font-size:11px;color:var(--g400)}
+.run-count{font-size:11px;color:var(--g500);white-space:nowrap}
+.mini-sbar{height:3px;border-radius:9999px;display:flex;overflow:hidden;margin-top:6px}
+
+/* ── Table ── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl thead th{background:var(--g50);text-align:left;padding:10px 14px;font-size:12px;font-weight:600;color:var(--g500);text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--g200)}
+.tbl tbody td{padding:10px 14px;font-size:13px;color:var(--g700);border-bottom:1px solid var(--g100)}
+.tbl tbody tr:hover{background:var(--g50)}
+
+/* ── Sparkline ── */
+.spark{display:flex;align-items:flex-end;gap:2px;height:20px}
+.spark-bar{width:5px;border-radius:2px;background:var(--primary)}
+
+/* ── Hbar ── */
+.hbar-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.hbar-label{font-size:12px;font-weight:500;color:var(--g700);width:70px;flex-shrink:0}
+.hbar-track{flex:1;height:24px;background:var(--g100);border-radius:6px;display:flex;overflow:hidden}
+.hbar-track>div{height:100%}
+.hbar-count{font-size:12px;font-weight:600;color:var(--g700);width:40px;text-align:right;flex-shrink:0}
+
+/* ── Treemap ── */
+.treemap{display:grid;gap:2px;height:210px}
+.treemap-row{display:flex;gap:2px}
+.tm-cell{border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;overflow:hidden;padding:4px}
+.tm-cell-name{font-size:12px;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.2)}
+.tm-cell-count{font-size:10px;opacity:.8}
+
+/* ── Donut ── */
+.donut{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.donut-inner{width:50px;height:50px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--g900)}
+
+/* ── Gauge ── */
+.gauge{width:100px;height:54px;overflow:hidden;position:relative}
+.gauge-arc{width:100px;height:100px;border-radius:50%;border:10px solid var(--g200);border-bottom-color:transparent;border-right-color:transparent;transform:rotate(-45deg);position:absolute;top:0}
+.gauge-fill{border-color:var(--violet);border-bottom-color:transparent;border-right-color:transparent}
+.gauge-val{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:700;color:var(--g900)}
+.gauge-label{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--g500)}
+
+/* ── Insight cards ── */
+.insight{border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.insight-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.insight-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:9999px}
+.insight-time{font-size:11px;color:var(--g400)}
+.insight-body{font-size:13px;color:var(--g700);line-height:1.6}
+.insight-link{font-size:12px;font-weight:600;color:var(--primary);margin-top:6px;display:inline-block}
+
+/* ── Blur overlay ── */
+.blur-overlay{position:relative}
+.blur-content{filter:blur(5px);pointer-events:none;opacity:.6}
+.blur-lock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;gap:8px}
+.blur-lock i{font-size:32px;color:var(--violet)}
+.blur-lock p{font-size:14px;font-weight:500;color:var(--g700);text-align:center}
+.blur-lock a{font-size:13px;font-weight:600;color:var(--primary)}
+
+/* ── Milestone card ── */
+.ms-cards{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px}
+.ms-card{min-width:200px;border:1px solid var(--g200);border-radius:8px;padding:14px 16px;flex-shrink:0}
+.ms-status{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:9999px;width:fit-content;margin-bottom:8px}
+.ms-name{font-size:14px;font-weight:600;color:var(--g900);margin-bottom:10px}
+.ms-bar{height:4px;border-radius:9999px;background:var(--g200);overflow:hidden;margin-bottom:8px}
+.ms-bar-fill{height:100%;border-radius:9999px}
+.ms-meta{font-size:12px;font-weight:500;color:var(--g500)}
+.ms-meta-danger{color:var(--danger)}
+
+/* ── Burndown ── */
+.burndown{height:180px;background:var(--g50);border-radius:8px;position:relative;overflow:hidden;margin-bottom:16px}
+
+/* ── Feed ── */
+.feed-item{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--g100);transition:background .15s;cursor:pointer}
+.feed-item:hover{background:var(--g50)}
+.feed-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.feed-icon i{font-size:16px}
+.feed-content{flex:1;min-width:0}
+.feed-main{font-size:13px;color:var(--g700);line-height:1.5}
+.feed-main strong{color:var(--g900)}
+.feed-sub{font-size:12px;color:var(--g400);margin-top:2px}
+.feed-time{font-size:11px;color:var(--g400);flex-shrink:0;white-space:nowrap}
+.feed-hl{border-left:3px solid;padding-left:13px}
+.feed-hl-red{border-color:var(--danger);background:var(--danger-bg)}
+.feed-hl-amber{border-color:var(--warning);background:var(--warning-bg)}
+.feed-badge-crit{font-size:10px;font-weight:700;color:#fff;background:var(--danger);padding:1px 6px;border-radius:9999px;margin-left:6px}
+.feed-note{font-size:12px;color:var(--g600);margin-top:4px;padding:6px 10px;background:var(--g50);border-radius:6px;border-left:2px solid var(--g300)}
+.feed-group-bar{font-size:12px;font-weight:600;color:var(--g600);display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--g50);cursor:pointer}
+.feed-group-bar i{font-size:14px}
+
+/* ── Live indicator ── */
+.live-bar{display:flex;align-items:center;gap:8px;padding:8px 20px;font-size:12px;color:var(--g500)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.live-label{font-weight:600;color:var(--success)}
+.live-sep{color:var(--g300)}
+
+/* ── Date divider ── */
+.date-div{display:flex;align-items:center;gap:12px;padding:10px 20px}
+.date-div span{font-size:12px;font-weight:600;color:var(--g500);white-space:nowrap}
+.date-div-line{flex:1;border-top:1px solid var(--g200)}
+
+/* ── AI Summary card ── */
+.ai-summary{margin:12px 20px;border-radius:12px;padding:18px 22px;background:linear-gradient(135deg,var(--violet-bg),var(--primary-bg));border:1px solid var(--violet-border)}
+.ai-summary-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ai-summary-head .ai-icon{font-size:20px}
+.ai-summary-head .ai-title{font-size:15px;font-weight:600;color:var(--g900);flex:1}
+.ai-summary-body{font-size:14px;color:var(--g700);line-height:1.65;margin-bottom:10px}
+.ai-summary-points{margin:10px 0;padding-left:18px}
+.ai-summary-points li{font-size:13px;color:var(--g700);margin-bottom:4px;line-height:1.5}
+.ai-summary-time{font-size:11px;color:var(--g400);text-align:right}
+
+/* ── Filter chips ── */
+.filter-chips{display:flex;gap:6px;padding:0 20px 10px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:var(--primary);background:var(--primary-bg);padding:4px 10px;border-radius:9999px}
+.chip i{font-size:12px;cursor:pointer}
+.chip-clear{font-size:12px;font-weight:600;color:var(--danger);cursor:pointer}
+
+/* ── Event type table ── */
+.evt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;padding:16px 20px}
+.evt-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--g100);border-radius:8px}
+.evt-label{font-size:12px;font-weight:500;color:var(--g700)}
+
+/* ── New event banner ── */
+.new-event-bar{text-align:center;padding:8px 16px;background:var(--primary);color:#fff;font-size:13px;font-weight:500;border-radius:8px;margin:0 20px 8px;cursor:pointer;box-shadow:0 4px 12px rgba(99,102,241,.3)}
+
+/* ── Flaky dots ── */
+.seq-dots{display:flex;gap:3px;align-items:center}
+.seq-dot{width:8px;height:8px;border-radius:50%}
+.seq-pass{background:var(--pass)}
+.seq-fail{background:transparent;border:1.5px solid var(--fail)}
+
+/* ── Annotation ── */
+.ann{max-width:960px;margin:0 auto}
+.ann-item{display:flex;gap:10px;padding:10px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;margin-bottom:8px;font-size:11px;color:#92400E;line-height:1.6}
+.ann-item i{font-size:14px;color:#D97706;flex-shrink:0;margin-top:1px}
+.ann-item code{background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px;font-size:10px;font-family:'SF Mono',monospace}
+
+/* ── Dev Note ── */
+.dn{max-width:960px;margin:12px auto 0;padding:14px 18px;background:var(--g50);border:1px solid var(--g200);border-radius:10px;font-size:11px;color:var(--g600);line-height:1.7}
+.dn-title{font-size:11px;font-weight:700;color:var(--g700);display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.dn-title i{font-size:13px;color:var(--primary)}
+.dn ul{padding-left:14px;margin-top:2px}
+.dn li{margin-bottom:2px}
+.dn code{background:#fff;border:1px solid var(--g200);padding:0 4px;border-radius:3px;font-size:10px;font-family:'SF Mono',monospace;color:var(--primary)}
+
+.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}.mb20{margin-bottom:20px}
+</style>
+</head>
+<body>
+
+<div class="pg-title">
+  <h1>Dashboard Analytics & Activity Feed</h1>
+  <p>Design Mockup — 15 Screens (Analytics 9 + Activity Feed 6)</p>
+</div>
+
+<!-- ── Navigator ── -->
+<div class="nav">
+  <span class="nav-grp-label">Analytics</span>
+  <button class="nav-btn active" onclick="go(1)">A-1 Layout</button>
+  <button class="nav-btn" onclick="go(2)">A-2 Pass Rate</button>
+  <button class="nav-btn" onclick="go(3)">A-3 Milestone</button>
+  <button class="nav-btn" onclick="go(4)">A-4 Run Status</button>
+  <button class="nav-btn" onclick="go(5)">A-5 Team</button>
+  <button class="nav-btn" onclick="go(6)">A-6 Flaky</button>
+  <button class="nav-btn" onclick="go(7)">A-7 Coverage</button>
+  <button class="nav-btn" onclick="go(8)">A-8 TC Quality</button>
+  <button class="nav-btn" onclick="go(9)">A-9 AI Insights</button>
+  <div class="nav-sep"></div>
+  <span class="nav-grp-label">Feed</span>
+  <button class="nav-btn" onclick="go(10)">B-1 Layout</button>
+  <button class="nav-btn" onclick="go(11)">B-2 Event Icons</button>
+  <button class="nav-btn" onclick="go(12)">B-3 Filters</button>
+  <button class="nav-btn" onclick="go(13)">B-4 AI Summary</button>
+  <button class="nav-btn" onclick="go(14)">B-5 Highlights</button>
+  <button class="nav-btn" onclick="go(15)">B-6 Live</button>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- A-1: Analytics Full Layout                 -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr active" id="s1">
+<div class="scr-label"><h2>A-1 — Analytics Tab Full Layout</h2><p>8개 위젯 그리드 배치. 필터 바 + 2열 기반 레이아웃.</p></div>
+<div class="frame" style="padding-bottom:20px">
+  <div class="tab-bar">
+    <div class="tab">Overview</div>
+    <div class="tab active"><i class="ri-bar-chart-2-fill tab-icon-violet"></i> Analytics</div>
+    <div class="tab"><i class="ri-time-fill tab-icon-amber"></i> Activity Feed</div>
+  </div>
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <button class="fbtn">7일</button><button class="fbtn">14일</button><button class="fbtn sel">30일</button><button class="fbtn">전체</button>
+    </div>
+    <div class="fselect"><i class="ri-flag-line"></i> All Milestones <i class="ri-arrow-down-s-line"></i></div>
+  </div>
+  <!-- Grid preview -->
+  <div style="padding:0 20px;display:flex;flex-direction:column;gap:16px">
+    <!-- Row 1: Pass Rate full -->
+    <div style="border:2px dashed var(--primary);border-radius:12px;padding:16px 20px;background:var(--primary-bg)">
+      <div style="font-size:12px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:6px"><i class="ri-line-chart-line"></i> A. Pass Rate Trend — full width</div>
+      <div style="font-size:11px;color:var(--g500);margin-top:4px">KPI 4개 + 라인차트 + 바 차트 오버레이</div>
+    </div>
+    <!-- Row 2: 55/45 split -->
+    <div style="display:grid;grid-template-columns:55fr 45fr;gap:16px">
+      <div style="border:2px dashed var(--warning);border-radius:12px;padding:16px 20px;background:var(--warning-bg)">
+        <div style="font-size:12px;font-weight:700;color:var(--warning);display:flex;align-items:center;gap:6px"><i class="ri-flag-2-fill"></i> E. Milestone Tracker — 55%</div>
+        <div style="font-size:11px;color:var(--g500);margin-top:4px">번다운 차트 + 마일스톤 카드 스크롤</div>
+      </div>
+      <div style="border:2px dashed var(--success);border-radius:12px;padding:16px 20px;background:var(--success-bg)">
+        <div style="font-size:12px;font-weight:700;color:var(--success);display:flex;align-items:center;gap:6px"><i class="ri-play-circle-fill"></i> H. Run Status — 45%</div>
+        <div style="font-size:11px;color:var(--g500);margin-top:4px">요약 바 + 스택 바 + Run 카드 리스트</div>
+      </div>
+    </div>
+    <!-- Row 3: Team full -->
+    <div style="border:2px dashed var(--violet);border-radius:12px;padding:16px 20px;background:var(--violet-bg)">
+      <div style="font-size:12px;font-weight:700;color:var(--violet);display:flex;align-items:center;gap:6px"><i class="ri-team-fill"></i> B. Team Performance — full width <span class="pro-badge" style="font-size:10px">Pro+</span></div>
+      <div style="font-size:11px;color:var(--g500);margin-top:4px">리더보드 테이블 + 스택 바 차트</div>
+    </div>
+    <!-- Row 4: 50/50 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div style="border:2px dashed var(--primary);border-radius:12px;padding:16px 20px;background:var(--primary-bg)">
+        <div style="font-size:12px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:6px"><i class="ri-layout-grid-fill"></i> D. Coverage Heatmap — 50%</div>
+        <div style="font-size:11px;color:var(--g500);margin-top:4px">트리맵 히트맵</div>
+      </div>
+      <div style="border:2px dashed var(--success);border-radius:12px;padding:16px 20px;background:var(--success-bg)">
+        <div style="font-size:12px;font-weight:700;color:var(--success);display:flex;align-items:center;gap:6px"><i class="ri-test-tube-fill"></i> F. TC Quality — 50%</div>
+        <div style="font-size:11px;color:var(--g500);margin-top:4px">성장 에어리어 + 도넛 + 게이지</div>
+      </div>
+    </div>
+    <!-- Row 5: 50/50 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div style="border:2px dashed var(--danger);border-radius:12px;padding:16px 20px;background:var(--danger-bg)">
+        <div style="font-size:12px;font-weight:700;color:var(--danger);display:flex;align-items:center;gap:6px"><i class="ri-bug-fill"></i> C. Flaky TC — 50% <span class="pro-badge" style="font-size:10px">Pro+</span></div>
+        <div style="font-size:11px;color:var(--g500);margin-top:4px">Flaky Score 테이블 + 시퀀스 도트</div>
+      </div>
+      <div style="border:2px dashed var(--violet);border-radius:12px;padding:16px 20px;background:var(--violet-bg)">
+        <div style="font-size:12px;font-weight:700;color:var(--violet);display:flex;align-items:center;gap:6px"><i class="ri-sparkling-2-fill"></i> G. AI Insights — 50% <span class="pro-badge" style="font-size:10px">Pro+</span></div>
+        <div style="font-size:11px;color:var(--g500);margin-top:4px">인사이트 카드 3~4개</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="ann"><div class="ann-item"><i class="ri-information-line"></i><div><strong>그리드:</strong> <code>gap-5 (20px)</code>. 위젯 카드: <code>rounded-xl (12px)</code>, <code>border 1px #E2E8F0</code>, flat (no shadow). 위젯 헤더: 아이콘 16px + 제목 15px semibold, 하단 <code>border #F1F5F9</code>.</div></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- A-2: Pass Rate Trend                       -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s2">
+<div class="scr-label"><h2>A-2 — Pass Rate Trend Widget (A)</h2><p>KPI 카드 4개 + 라인/바 혼합 차트. 풀 너비.</p></div>
+<div class="frame">
+  <div class="wg-head">
+    <div class="wg-title"><i class="ri-line-chart-line" style="color:var(--primary)"></i> Pass Rate Trend</div>
+    <span style="font-size:11px;color:var(--g400)">Last 30 days</span>
+  </div>
+  <div class="wg-body">
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-label">Overall Pass Rate</div><div class="kpi-val">87.3%</div><span class="kpi-delta kpi-up">▲ +2.1%</span></div>
+      <div class="kpi"><div class="kpi-label">Total Executed</div><div class="kpi-val">1,247</div><span class="kpi-delta kpi-up">▲ +156</span></div>
+      <div class="kpi"><div class="kpi-label">Failed</div><div class="kpi-val">89</div><span class="kpi-delta kpi-down">▼ -12</span></div>
+      <div class="kpi"><div class="kpi-label">Blocked</div><div class="kpi-val">42</div><span class="kpi-delta kpi-down">▼ -5</span></div>
+    </div>
+    <div class="chart-area">
+      <div class="chart-grid-line" style="top:20%"></div>
+      <div class="chart-grid-line" style="top:40%"></div>
+      <div class="chart-grid-line" style="top:60%"></div>
+      <div class="chart-grid-line" style="top:80%"></div>
+      <!-- Bars -->
+      <div class="chart-line">
+        <div class="chart-bar" style="height:40%"></div><div class="chart-bar" style="height:55%"></div><div class="chart-bar" style="height:35%"></div><div class="chart-bar" style="height:60%"></div><div class="chart-bar" style="height:50%"></div><div class="chart-bar" style="height:65%"></div><div class="chart-bar" style="height:45%"></div><div class="chart-bar" style="height:70%"></div><div class="chart-bar" style="height:55%"></div><div class="chart-bar" style="height:80%"></div><div class="chart-bar" style="height:60%"></div><div class="chart-bar" style="height:75%"></div><div class="chart-bar" style="height:50%"></div><div class="chart-bar" style="height:85%"></div><div class="chart-bar" style="height:70%"></div>
+      </div>
+      <!-- SVG line -->
+      <svg class="chart-svg" viewBox="0 0 900 180" preserveAspectRatio="none">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#6366F1"/><stop offset="100%" stop-color="#8B5CF6"/></linearGradient></defs>
+        <polyline fill="none" stroke="url(#lg)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+          points="30,120 90,100 150,130 210,90 270,105 330,80 390,95 450,70 510,85 570,50 630,75 690,55 750,80 810,40 870,60"/>
+        <g fill="#6366F1">
+          <circle cx="30" cy="120" r="3.5"/><circle cx="210" cy="90" r="3.5"/><circle cx="450" cy="70" r="3.5"/><circle cx="570" cy="50" r="3.5"/><circle cx="810" cy="40" r="3.5"/><circle cx="870" cy="60" r="3.5"/>
+        </g>
+      </svg>
+      <div class="chart-x"><span>Mar 2</span><span>Mar 7</span><span>Mar 12</span><span>Mar 17</span><span>Mar 22</span><span>Mar 27</span><span>Mar 31</span></div>
+    </div>
+  </div>
+</div>
+<div class="ann"><div class="ann-item"><i class="ri-information-line"></i><div><strong>차트:</strong> 라인 <code>#6366F1</code> 2px + 도트 4px. 바 <code>#E2E8F0</code> opacity 0.5. Y축 좌 0~100% / 우 실행건수. 호버 툴팁 dark (<code>#1E293B</code>).</div></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- A-3: Milestone Tracker                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s3">
+<div class="scr-label"><h2>A-3 — Milestone Tracker & Burndown (E)</h2><p>번다운 차트 + 마일스톤 카드 가로 스크롤. 좌측 55%.</p></div>
+<div class="frame" style="max-width:560px">
+  <div class="wg-head">
+    <div class="wg-title"><i class="ri-flag-2-fill" style="color:var(--warning)"></i> Milestone Tracker</div>
+    <span style="font-size:11px;color:var(--g400)">2 active milestones</span>
+  </div>
+  <div class="wg-body">
+    <!-- Burndown -->
+    <div class="burndown">
+      <svg width="100%" height="100%" viewBox="0 0 520 170" preserveAspectRatio="none" style="position:absolute;inset:0">
+        <!-- Grid -->
+        <line x1="40" y1="30" x2="500" y2="30" stroke="var(--g100)" stroke-dasharray="4"/>
+        <line x1="40" y1="70" x2="500" y2="70" stroke="var(--g100)" stroke-dasharray="4"/>
+        <line x1="40" y1="110" x2="500" y2="110" stroke="var(--g100)" stroke-dasharray="4"/>
+        <!-- Ideal -->
+        <line x1="50" y1="20" x2="490" y2="150" stroke="var(--g300)" stroke-width="1.5" stroke-dasharray="6"/>
+        <!-- Actual + fill -->
+        <path d="M50,20 L120,35 L190,50 L260,60 L330,55 L400,80 L470,95" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M50,20 L120,35 L190,50 L260,60 L330,55 L400,80 L470,95 L470,150 L50,150 Z" fill="var(--primary-bg)" opacity=".4"/>
+        <circle cx="470" cy="95" r="4" fill="var(--primary)"/>
+        <!-- Y labels -->
+        <text x="30" y="34" fill="var(--g400)" font-size="9" text-anchor="end">100</text>
+        <text x="30" y="74" fill="var(--g400)" font-size="9" text-anchor="end">70</text>
+        <text x="30" y="114" fill="var(--g400)" font-size="9" text-anchor="end">40</text>
+        <text x="30" y="154" fill="var(--g400)" font-size="9" text-anchor="end">0</text>
+        <!-- X labels -->
+        <text x="50" y="166" fill="var(--g400)" font-size="9" text-anchor="middle">Mar 25</text>
+        <text x="190" y="166" fill="var(--g400)" font-size="9" text-anchor="middle">Mar 29</text>
+        <text x="330" y="166" fill="var(--g400)" font-size="9" text-anchor="middle">Apr 2</text>
+        <text x="470" y="166" fill="var(--g400)" font-size="9" text-anchor="middle">Apr 6</text>
+      </svg>
+      <div style="position:absolute;top:10px;right:12px;display:flex;gap:12px;font-size:10px;color:var(--g400)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:16px;border-top:1.5px dashed var(--g300);display:inline-block"></span> Ideal</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:16px;border-top:2px solid var(--primary);display:inline-block"></span> Actual</span>
+      </div>
+    </div>
+    <!-- Milestone cards -->
+    <div class="ms-cards">
+      <div class="ms-card">
+        <div class="ms-status" style="background:var(--success-bg);color:var(--success)"><span style="width:6px;height:6px;border-radius:50%;background:var(--success)"></span> On Track</div>
+        <div class="ms-name">Sprint 12</div>
+        <div class="ms-bar"><div class="ms-bar-fill" style="width:82%;background:var(--success)"></div></div>
+        <div class="ms-meta">82% &middot; D-5 (Apr 6) &middot; 18 remaining</div>
+      </div>
+      <div class="ms-card">
+        <div class="ms-status" style="background:var(--warning-bg);color:var(--warning)"><span style="width:6px;height:6px;border-radius:50%;background:var(--warning)"></span> At Risk</div>
+        <div class="ms-name">v2.5 Release</div>
+        <div class="ms-bar"><div class="ms-bar-fill" style="width:45%;background:var(--warning)"></div></div>
+        <div class="ms-meta">45% &middot; D-12 (Apr 13) &middot; 54 remaining</div>
+      </div>
+      <div class="ms-card">
+        <div class="ms-status" style="background:var(--danger-bg);color:var(--danger)"><span style="width:6px;height:6px;border-radius:50%;background:var(--danger)"></span> Overdue</div>
+        <div class="ms-name">Hotfix 2.4.1</div>
+        <div class="ms-bar"><div class="ms-bar-fill" style="width:68%;background:var(--danger)"></div></div>
+        <div class="ms-meta ms-meta-danger">68% &middot; D+2 (Mar 29) &middot; 8 remaining</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- A-4: Run Status Summary                    -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s4">
+<div class="scr-label"><h2>A-4 — Run Status Summary (H)</h2><p>요약 바 + 스택 진행률 바 + Run 카드 리스트. 우측 45%.</p></div>
+<div class="frame" style="max-width:440px">
+  <div class="wg-head">
+    <div class="wg-title"><i class="ri-play-circle-fill" style="color:var(--success)"></i> Run Status</div>
+    <span style="font-size:11px;color:var(--g400)">12 runs total</span>
+  </div>
+  <div class="wg-body">
+    <!-- Summary -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;text-align:center">
+      <div style="padding:10px;background:var(--g50);border-radius:8px"><div style="font-size:16px;font-weight:700;color:var(--success)">4</div><div style="font-size:11px;color:var(--g500)">Active</div></div>
+      <div style="padding:10px;background:var(--g50);border-radius:8px"><div style="font-size:16px;font-weight:700;color:var(--primary)">6</div><div style="font-size:11px;color:var(--g500)">Completed</div></div>
+      <div style="padding:10px;background:var(--g50);border-radius:8px"><div style="font-size:16px;font-weight:700;color:var(--warning)">2</div><div style="font-size:11px;color:var(--g500)">Paused / Review</div></div>
+    </div>
+    <!-- Stacked bar -->
+    <div class="sbar mb12">
+      <div style="width:58%;background:var(--pass)"></div>
+      <div style="width:12%;background:var(--fail)"></div>
+      <div style="width:8%;background:var(--blocked)"></div>
+      <div style="width:22%;background:var(--g200)"></div>
+    </div>
+    <div class="sbar-legend mb16">
+      <span class="sbar-legend-item"><span class="sbar-legend-dot" style="background:var(--pass)"></span> Passed 723</span>
+      <span class="sbar-legend-item"><span class="sbar-legend-dot" style="background:var(--fail)"></span> Failed 89</span>
+      <span class="sbar-legend-item"><span class="sbar-legend-dot" style="background:var(--blocked)"></span> Blocked 42</span>
+      <span class="sbar-legend-item"><span class="sbar-legend-dot" style="background:var(--g300)"></span> Untested 393</span>
+    </div>
+    <!-- Run cards -->
+    <div class="run-card"><div class="mini-donut"><div class="mini-donut-inner"></div></div><div class="run-info"><div class="run-name">Sprint 12 — Regression</div><div class="run-sub">v2.4.0</div></div><div class="run-count">23/40 TC</div></div>
+    <div class="run-card"><div class="mini-donut" style="background:conic-gradient(var(--pass) 0% 80%,var(--fail) 80% 90%,var(--g200) 90% 100%)"><div class="mini-donut-inner"></div></div><div class="run-info"><div class="run-name">Payment Flow Smoke</div><div class="run-sub">Sprint 12</div></div><div class="run-count">16/20 TC</div></div>
+    <div class="run-card"><div class="mini-donut" style="background:conic-gradient(var(--pass) 0% 100%)"><div class="mini-donut-inner"></div></div><div class="run-info"><div class="run-name">Auth Module Full</div><div class="run-sub">v2.4.0</div></div><div class="run-count">35/35 TC</div></div>
+    <div style="text-align:center;padding:8px"><a style="font-size:12px;font-weight:600;color:var(--primary);text-decoration:none">View all runs &rarr;</a></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- A-5: Team Performance (Pro+)               -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s5">
+<div class="scr-label"><h2>A-5 — Team Performance (B) — Pro+</h2><p>리더보드 테이블 + 스택 바 차트. Free/Starter는 블러 처리.</p></div>
+<div class="frame">
+  <div class="wg-head">
+    <div class="wg-title"><i class="ri-team-fill" style="color:var(--violet)"></i> Team Performance</div>
+    <span class="pro-badge">Pro+</span>
+  </div>
+  <div class="wg-body" style="padding:0">
+    <table class="tbl">
+      <thead><tr><th style="width:36px">#</th><th>Member</th><th>Executed</th><th>Found Failures</th><th>Avg Response</th><th>7-Day Activity</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:700;color:var(--warning)">1</td><td><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:50%;background:#C7D2FE;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#4338CA">MS</span><span style="font-weight:500">김민수</span></span></td><td style="font-weight:600">142</td><td style="font-weight:600">18</td><td style="font-weight:600;color:var(--warning)">1.2h</td><td><div class="spark"><div class="spark-bar" style="height:30%"></div><div class="spark-bar" style="height:60%"></div><div class="spark-bar" style="height:90%"></div><div class="spark-bar" style="height:80%"></div><div class="spark-bar" style="height:40%"></div><div class="spark-bar" style="height:90%"></div><div class="spark-bar" style="height:100%"></div></div></td></tr>
+        <tr><td style="font-weight:700;color:var(--g400)">2</td><td><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:50%;background:#BBF7D0;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#166534">JH</span><span style="font-weight:500">이정현</span></span></td><td style="font-weight:600">118</td><td style="font-weight:600">23</td><td style="font-weight:600;color:var(--success)">0.8h</td><td><div class="spark"><div class="spark-bar" style="height:40%"></div><div class="spark-bar" style="height:75%"></div><div class="spark-bar" style="height:65%"></div><div class="spark-bar" style="height:90%"></div><div class="spark-bar" style="height:25%"></div><div class="spark-bar" style="height:65%"></div><div class="spark-bar" style="height:80%"></div></div></td></tr>
+        <tr><td style="font-weight:700;color:var(--g400)">3</td><td><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:50%;background:#FDE68A;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#92400E">JE</span><span style="font-weight:500">박지은</span></span></td><td style="font-weight:600">96</td><td style="font-weight:600">11</td><td style="font-weight:600;color:var(--warning)">2.1h</td><td><div class="spark"><div class="spark-bar" style="height:60%"></div><div class="spark-bar" style="height:40%"></div><div class="spark-bar" style="height:25%"></div><div class="spark-bar" style="height:15%"></div><div class="spark-bar" style="height:75%"></div><div class="spark-bar" style="height:90%"></div><div class="spark-bar" style="height:60%"></div></div></td></tr>
+        <tr><td style="font-weight:700;color:var(--g400)">4</td><td><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:50%;background:#FECACA;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#991B1B">SY</span><span style="font-weight:500">최서연</span></span></td><td style="font-weight:600">64</td><td style="font-weight:600">8</td><td style="font-weight:600;color:var(--danger)">3.5h</td><td><div class="spark"><div class="spark-bar" style="height:15%"></div><div class="spark-bar" style="height:25%"></div><div class="spark-bar" style="height:35%"></div><div class="spark-bar" style="height:15%"></div><div class="spark-bar" style="height:10%"></div><div class="spark-bar" style="height:60%"></div><div class="spark-bar" style="height:35%"></div></div></td></tr>
+      </tbody>
+    </table>
+    <!-- Stacked bar chart -->
+    <div style="padding:16px 20px">
+      <div class="hbar-row"><div class="hbar-label">김민수</div><div class="hbar-track"><div style="width:72%;background:var(--pass)"></div><div style="width:13%;background:var(--fail)"></div><div style="width:15%;background:var(--blocked)"></div></div><div class="hbar-count">142</div></div>
+      <div class="hbar-row"><div class="hbar-label">이정현</div><div class="hbar-track"><div style="width:65%;background:var(--pass)"></div><div style="width:20%;background:var(--fail)"></div><div style="width:15%;background:var(--blocked)"></div></div><div class="hbar-count">118</div></div>
+      <div class="hbar-row"><div class="hbar-label">박지은</div><div class="hbar-track"><div style="width:80%;background:var(--pass)"></div><div style="width:12%;background:var(--fail)"></div><div style="width:8%;background:var(--blocked)"></div></div><div class="hbar-count">96</div></div>
+      <div class="hbar-row"><div class="hbar-label">최서연</div><div class="hbar-track"><div style="width:75%;background:var(--pass)"></div><div style="width:13%;background:var(--fail)"></div><div style="width:12%;background:var(--blocked)"></div></div><div class="hbar-count">64</div></div>
+    </div>
+  </div>
+</div>
+<!-- Blur overlay preview -->
+<div class="frame" style="margin-top:16px">
+  <div class="wg-head"><div class="wg-title"><i class="ri-team-fill" style="color:var(--violet)"></i> Team Performance</div><span class="pro-badge">Pro+</span></div>
+  <div class="blur-overlay" style="min-height:200px">
+    <div class="blur-content" style="padding:20px"><table class="tbl"><thead><tr><th>#</th><th>Member</th><th>Executed</th><th>Failures</th></tr></thead><tbody><tr><td>1</td><td>김민수</td><td>142</td><td>18</td></tr><tr><td>2</td><td>이정현</td><td>118</td><td>23</td></tr></tbody></table></div>
+    <div class="blur-lock"><i class="ri-lock-fill"></i><p>팀 성과 분석은 Professional 플랜에서<br>사용할 수 있습니다</p><a href="#">업그레이드 &rarr;</a></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- A-6: Flaky TC Detection (Pro+)             -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s6">
+<div class="scr-label"><h2>A-6 — Flaky TC Detection (C) — Pro+</h2><p>Flaky Score 테이블 + 시퀀스 도트. 좌측 50%.</p></div>
+<div class="frame" style="max-width:520px">
+  <div class="wg-head">
+    <div class="wg-title"><i class="ri-bug-fill" style="color:var(--danger)"></i> Flaky TC Detection</div>
+    <div style="display:flex;align-items:center;gap:8px"><span class="pro-badge">Pro+</span><span style="font-size:11px;font-weight:600;color:var(--danger);background:var(--danger-bg);padding:2px 8px;border-radius:9999px">3 Flaky</span></div>
+  </div>
+  <div class="wg-body" style="padding:0">
+    <table class="tbl">
+      <thead><tr><th>Test Case</th><th>Sequence (last 10)</th><th>Score</th><th>Last Run</th></tr></thead>
+      <tbody>
+        <tr style="border-left:2px solid var(--danger)"><td style="font-weight:500"><span style="color:var(--warning)">⚠️</span> TC-042 로그인 세션 만료</td><td><div class="seq-dots"><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div></div></td><td style="font-weight:700;color:var(--danger)">67%</td><td style="font-size:12px;color:var(--g400)">2시간 전</td></tr>
+        <tr style="border-left:2px solid var(--danger)"><td style="font-weight:500"><span style="color:var(--warning)">⚠️</span> TC-015 결제 취소 플로우</td><td><div class="seq-dots"><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div><div class="seq-dot seq-pass"></div></div></td><td style="font-weight:700;color:var(--danger)">56%</td><td style="font-size:12px;color:var(--g400)">5시간 전</td></tr>
+        <tr style="border-left:2px solid var(--danger)"><td style="font-weight:500"><span style="color:var(--warning)">⚠️</span> TC-089 파일 업로드 검증</td><td><div class="seq-dots"><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div><div class="seq-dot seq-pass"></div></div></td><td style="font-weight:700;color:var(--danger)">50%</td><td style="font-size:12px;color:var(--g400)">1일 전</td></tr>
+        <tr><td style="font-weight:500">TC-023 회원가입 이메일</td><td><div class="seq-dots"><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-pass"></div><div class="seq-dot seq-fail"></div></div></td><td style="font-weight:500;color:var(--g500)">22%</td><td style="font-size:12px;color:var(--g400)">3시간 전</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- A-7: Coverage Heatmap                      -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s7">
+<div class="scr-label"><h2>A-7 — Coverage Heatmap (D)</h2><p>트리맵 히트맵. 크기=TC수, 색상=Pass Rate. 좌측 50%.</p></div>
+<div class="frame" style="max-width:520px">
+  <div class="wg-head">
+    <div class="wg-title"><i class="ri-layout-grid-fill" style="color:var(--primary)"></i> Coverage Heatmap</div>
+  </div>
+  <div class="wg-body">
+    <div class="treemap" style="grid-template-rows:1fr 1fr">
+      <div class="treemap-row" style="flex:1.2">
+        <div class="tm-cell" style="flex:2.4;background:#16A34A"><span class="tm-cell-name">Auth Module</span><span class="tm-cell-count">24 TC &middot; 92%</span></div>
+        <div class="tm-cell" style="flex:1.8;background:#FCD34D;color:var(--g800)"><span class="tm-cell-name">Payment</span><span class="tm-cell-count">18 TC &middot; 67%</span></div>
+        <div class="tm-cell" style="flex:.8;background:#FB923C"><span class="tm-cell-name">Cart</span><span class="tm-cell-count">8 TC</span></div>
+      </div>
+      <div class="treemap-row" style="flex:1">
+        <div class="tm-cell" style="flex:1.2;background:#4ADE80"><span class="tm-cell-name">Profile</span><span class="tm-cell-count">12 TC &middot; 100%</span></div>
+        <div class="tm-cell" style="flex:.6;background:#4ADE80"><span class="tm-cell-name">Search</span><span class="tm-cell-count">6 TC</span></div>
+        <div class="tm-cell" style="flex:1.5;background:#FCD34D;color:var(--g800)"><span class="tm-cell-name">Settings</span><span class="tm-cell-count">15 TC &middot; 78%</span></div>
+        <div class="tm-cell" style="flex:.4;background:#EF4444"><span class="tm-cell-name" style="font-size:10px">Upload</span><span class="tm-cell-count" style="font-size:9px">4 TC</span></div>
+      </div>
+    </div>
+    <!-- Legend -->
+    <div style="display:flex;justify-content:center;gap:12px;margin-top:12px">
+      <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--g500)"><span style="width:12px;height:12px;border-radius:2px;background:#16A34A"></span> 90-100%</span>
+      <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--g500)"><span style="width:12px;height:12px;border-radius:2px;background:#4ADE80"></span> 80-89%</span>
+      <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--g500)"><span style="width:12px;height:12px;border-radius:2px;background:#FCD34D"></span> 60-79%</span>
+      <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--g500)"><span style="width:12px;height:12px;border-radius:2px;background:#FB923C"></span> 40-59%</span>
+      <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--g500)"><span style="width:12px;height:12px;border-radius:2px;background:#EF4444"></span> 0-39%</span>
+      <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--g500)"><span style="width:12px;height:12px;border-radius:2px;background:var(--g300)"></span> Untested</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- A-8: TC Quality & Growth                   -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s8">
+<div class="scr-label"><h2>A-8 — TC Quality & Growth (F)</h2><p>에어리어 차트 + Priority 도넛 + Lifecycle 바 + 자동화율 게이지. 우측 50%.</p></div>
+<div class="frame" style="max-width:520px">
+  <div class="wg-head">
+    <div class="wg-title"><i class="ri-test-tube-fill" style="color:var(--success)"></i> TC Quality & Growth</div>
+    <span style="font-size:12px;font-weight:700;color:var(--success);background:var(--success-bg);padding:2px 10px;border-radius:9999px">248 Total</span>
+  </div>
+  <div class="wg-body">
+    <!-- Area chart -->
+    <div style="height:110px;background:var(--g50);border-radius:8px;position:relative;overflow:hidden;margin-bottom:16px">
+      <svg width="100%" height="100%" viewBox="0 0 460 100" preserveAspectRatio="none" style="position:absolute;inset:0">
+        <path d="M0,90 L46,85 L92,78 L138,72 L184,60 L230,52 L276,44 L322,38 L368,28 L414,22 L460,15" fill="none" stroke="var(--success)" stroke-width="2"/>
+        <path d="M0,90 L46,85 L92,78 L138,72 L184,60 L230,52 L276,44 L322,38 L368,28 L414,22 L460,15 L460,100 L0,100 Z" fill="var(--success-bg)" opacity=".5"/>
+      </svg>
+      <div style="position:absolute;bottom:4px;left:8px;right:8px;display:flex;justify-content:space-between;font-size:9px;color:var(--g400)"><span>W1</span><span>W3</span><span>W5</span><span>W7</span><span>W10</span></div>
+    </div>
+    <!-- 3-col grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+      <!-- Priority donut -->
+      <div style="text-align:center">
+        <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:8px">PRIORITY</div>
+        <div class="donut" style="background:conic-gradient(var(--danger) 0% 5%,var(--warning) 5% 23%,var(--primary) 23% 80%,var(--g400) 80% 100%);margin:0 auto">
+          <div class="donut-inner">248</div>
+        </div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:3px;font-size:10px;text-align:left;padding-left:8px">
+          <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--danger);margin-right:4px"></span>Critical 12</span>
+          <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warning);margin-right:4px"></span>High 45</span>
+          <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--primary);margin-right:4px"></span>Medium 142</span>
+          <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--g400);margin-right:4px"></span>Low 49</span>
+        </div>
+      </div>
+      <!-- Lifecycle bars -->
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:8px;text-align:center">LIFECYCLE</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div><div style="font-size:11px;color:var(--g600);margin-bottom:3px">Active <strong>180</strong></div><div style="height:6px;border-radius:9999px;background:var(--g200)"><div style="height:100%;width:73%;background:var(--success);border-radius:9999px"></div></div></div>
+          <div><div style="font-size:11px;color:var(--g600);margin-bottom:3px">Draft <strong>48</strong></div><div style="height:6px;border-radius:9999px;background:var(--g200)"><div style="height:100%;width:19%;background:var(--warning);border-radius:9999px"></div></div></div>
+          <div><div style="font-size:11px;color:var(--g600);margin-bottom:3px">Deprecated <strong>20</strong></div><div style="height:6px;border-radius:9999px;background:var(--g200)"><div style="height:100%;width:8%;background:var(--g400);border-radius:9999px"></div></div></div>
+        </div>
+      </div>
+      <!-- Automation gauge -->
+      <div style="text-align:center">
+        <div style="font-size:11px;font-weight:600;color:var(--g500);margin-bottom:8px">AUTOMATED</div>
+        <div class="gauge" style="margin:0 auto">
+          <div class="gauge-arc"></div>
+          <div class="gauge-arc gauge-fill" style="clip-path:polygon(0 0,62% 0,62% 100%,0 100%)"></div>
+          <div class="gauge-val">62%</div>
+        </div>
+        <div style="font-size:10px;color:var(--g500);margin-top:16px">154 / 248 TCs</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- A-9: AI Insights (Pro+)                    -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s9">
+<div class="scr-label"><h2>A-9 — AI Insights Panel (G) — Pro+</h2><p>인사이트 카드 3~4개. 카테고리별 색상. 우측 50%.</p></div>
+<div class="frame" style="max-width:520px">
+  <div class="wg-head">
+    <div class="wg-title"><i class="ri-sparkling-2-fill" style="color:var(--violet)"></i> AI Insights</div>
+    <div style="display:flex;align-items:center;gap:8px"><span class="pro-badge">Pro+</span><span style="font-size:11px;color:var(--g400)">Updated 5 min ago</span></div>
+  </div>
+  <div class="wg-body">
+    <div class="insight" style="background:var(--violet-bg);border-left:3px solid var(--violet)">
+      <div class="insight-header"><span class="insight-tag" style="background:var(--violet-bg);color:var(--violet);border:1px solid var(--violet-border)">📊 Daily Summary</span><span class="insight-time">5분 전</span></div>
+      <div class="insight-body">오늘 팀이 142건의 TC를 실행했고, Pass Rate가 어제 대비 3.2% 상승(91.2%)했습니다. 특히 '결제 모듈' 폴더의 Pass Rate가 95%로 안정화되었습니다.</div>
+    </div>
+    <div class="insight" style="background:var(--danger-bg);border-left:3px solid var(--danger)">
+      <div class="insight-header"><span class="insight-tag" style="background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border)">⚠️ Risk Alert</span><span class="insight-time">1시간 전</span></div>
+      <div class="insight-body">'사용자 인증' 폴더의 Pass Rate가 3일간 78% → 65% → 52%로 급락 중입니다. 최근 코드 변경의 영향일 수 있으니 확인이 필요합니다.</div>
+      <a class="insight-link" href="#">인증 폴더 확인하기 &rarr;</a>
+    </div>
+    <div class="insight" style="background:var(--primary-bg);border-left:3px solid var(--primary)">
+      <div class="insight-header"><span class="insight-tag" style="background:var(--primary-bg);color:var(--primary);border:1px solid #C7D2FE">⏱️ Completion Forecast</span><span class="insight-time">3시간 전</span></div>
+      <div class="insight-body">현재 속도(일 평균 45건)로 진행하면, Sprint 12 마일스톤은 4/8 완료 예상입니다. 기한(4/10)보다 2일 여유가 있습니다.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- B-1: Activity Feed Full Layout             -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s10">
+<div class="scr-label"><h2>B-1 — Activity Feed Full Layout</h2><p>필터 바 + AI 요약 + 실시간 인디케이터 + 날짜별 이벤트 리스트.</p></div>
+<div class="frame">
+  <div class="tab-bar">
+    <div class="tab">Overview</div>
+    <div class="tab"><i class="ri-bar-chart-2-fill tab-icon-violet"></i> Analytics</div>
+    <div class="tab active"><i class="ri-time-fill tab-icon-amber"></i> Activity Feed</div>
+  </div>
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="fselect"><i class="ri-group-line"></i> All Members <i class="ri-arrow-down-s-line"></i></div>
+      <div class="fselect"><i class="ri-list-check-2"></i> All Types <i class="ri-arrow-down-s-line"></i></div>
+      <div class="fselect"><i class="ri-calendar-line"></i> Last 7 days <i class="ri-arrow-down-s-line"></i></div>
+    </div>
+    <div class="fsearch"><i class="ri-search-line"></i> Search activity...</div>
+  </div>
+  <!-- AI summary -->
+  <div class="ai-summary">
+    <div class="ai-summary-head"><span class="ai-icon">🤖</span><span class="ai-title">AI Daily Summary</span><span class="pro-badge">Pro+</span><i class="ri-arrow-up-s-line" style="font-size:18px;color:var(--g400);cursor:pointer"></i></div>
+    <div class="ai-summary-body">오늘 팀이 87건의 TC를 실행했고, Pass Rate가 91.2%로 전일 대비 +2.3% 상승했습니다. 김민수 님이 가장 활발(32건)했습니다.</div>
+    <ul class="ai-summary-points">
+      <li>📌 Sprint 12 마일스톤 진행률 72% (D-5)</li>
+      <li>📌 신규 Flaky TC 1건 감지 (TC-089)</li>
+      <li>📌 이정현 님 TC 배정 38건 대기 중</li>
+    </ul>
+    <div class="ai-summary-time">Updated 5 min ago</div>
+  </div>
+  <!-- Live indicator -->
+  <div class="live-bar"><span class="live-dot"></span><span class="live-label">Live</span><span class="live-sep">&middot;</span><span>12 events today</span><span class="live-sep">&middot;</span><span style="color:var(--g400)">Last: 2 min ago</span></div>
+  <!-- Date divider -->
+  <div class="date-div"><span>오늘</span><div class="date-div-line"></div></div>
+  <!-- Feed items -->
+  <div class="feed-item">
+    <div class="feed-icon" style="background:var(--success-bg)"><i class="ri-checkbox-circle-fill" style="color:var(--pass)"></i></div>
+    <div class="feed-content"><div class="feed-main"><strong>김민수</strong> &middot; TC-042 로그인 세션 만료 &rarr; <span style="color:var(--pass);font-weight:600">Passed</span></div><div class="feed-sub">Run: Sprint 12 리그레션</div></div>
+    <div class="feed-time">2분 전</div>
+  </div>
+  <div class="feed-item feed-hl feed-hl-red">
+    <div class="feed-icon" style="background:#FEE2E2"><i class="ri-close-circle-fill" style="color:var(--fail)"></i></div>
+    <div class="feed-content"><div class="feed-main"><strong>이정현</strong> &middot; TC-015 결제 취소 플로우 &rarr; <span style="color:var(--fail);font-weight:600">Failed</span><span class="feed-badge-crit">Critical</span></div><div class="feed-note">💬 "타임아웃 에러 — 서버 응답 지연 확인 필요"</div></div>
+    <div class="feed-time">15분 전</div>
+  </div>
+  <div class="feed-group-bar"><i class="ri-arrow-right-s-line"></i> 📊 박지은 &middot; Run "회원가입 플로우" 에서 12건 실행 — 11 Passed, 1 Failed</div>
+  <div class="feed-item">
+    <div class="feed-icon" style="background:var(--primary-bg)"><i class="ri-file-add-fill" style="color:var(--primary)"></i></div>
+    <div class="feed-content"><div class="feed-main"><strong>최서연</strong> &middot; TC-091 "비밀번호 변경 검증" 생성</div><div class="feed-sub">Priority: High &middot; Auth Module</div></div>
+    <div class="feed-time">32분 전</div>
+  </div>
+  <!-- Date divider -->
+  <div class="date-div"><span>어제</span><div class="date-div-line"></div></div>
+  <div class="feed-item">
+    <div class="feed-icon" style="background:var(--success-bg)"><i class="ri-flag-fill" style="color:var(--success)"></i></div>
+    <div class="feed-content"><div class="feed-main"><strong>김민수</strong> &middot; Run "Auth Module Full" 완료 — <span style="color:var(--pass);font-weight:600">100% Pass</span></div></div>
+    <div class="feed-time">어제 오후 4:32</div>
+  </div>
+  <div style="text-align:center;padding:16px"><a style="font-size:13px;font-weight:600;color:var(--primary);cursor:pointer">더 보기 ▼</a></div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- B-2: Event Type Icons                      -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s11">
+<div class="scr-label"><h2>B-2 — Event Type Icon/Color System (14종)</h2><p>각 활동 유형별 아이콘 + 배경색 원형 체계.</p></div>
+<div class="frame">
+  <div class="wg-head"><div class="wg-title"><i class="ri-palette-fill" style="color:var(--primary)"></i> Event Type Reference</div></div>
+  <div class="evt-grid">
+    <div class="evt-item"><div class="feed-icon" style="background:#ECFDF5"><i class="ri-checkbox-circle-fill" style="color:#16A34A"></i></div><div class="evt-label">TC Passed</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#FEF2F2"><i class="ri-close-circle-fill" style="color:#DC2626"></i></div><div class="evt-label">TC Failed</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#FFFBEB"><i class="ri-forbid-fill" style="color:#D97706"></i></div><div class="evt-label">TC Blocked</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#F5F3FF"><i class="ri-refresh-fill" style="color:#7C3AED"></i></div><div class="evt-label">TC Retest</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#EEF2FF"><i class="ri-play-circle-fill" style="color:#6366F1"></i></div><div class="evt-label">Run Started</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#ECFDF5"><i class="ri-flag-fill" style="color:#10B981"></i></div><div class="evt-label">Run Completed</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#EEF2FF"><i class="ri-file-add-fill" style="color:#6366F1"></i></div><div class="evt-label">TC Created</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#FFFBEB"><i class="ri-edit-fill" style="color:#F59E0B"></i></div><div class="evt-label">TC Modified</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#F1F5F9"><i class="ri-chat-3-fill" style="color:#64748B"></i></div><div class="evt-label">Comment Added</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#FFFBEB"><i class="ri-flag-2-fill" style="color:#F59E0B"></i></div><div class="evt-label">Milestone Created</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#ECFDF5"><i class="ri-trophy-fill" style="color:#10B981"></i></div><div class="evt-label">Milestone Completed</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#EEF2FF"><i class="ri-user-add-fill" style="color:#6366F1"></i></div><div class="evt-label">Member Joined</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#F5F3FF"><i class="ri-shield-user-fill" style="color:#8B5CF6"></i></div><div class="evt-label">Role Changed</div></div>
+    <div class="evt-item"><div class="feed-icon" style="background:#E9F2FF"><i class="ri-bug-fill" style="color:#0052CC"></i></div><div class="evt-label">Jira Issue Created</div></div>
+  </div>
+</div>
+<div class="ann"><div class="ann-item"><i class="ri-information-line"></i><div><strong>아이콘 원형:</strong> <code>32×32px</code>, <code>rounded-full</code>, 배경=위 표 색상, 아이콘 <code>16px</code>. 14종 이벤트 유형 커버.</div></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- B-3: Filters Detail                        -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s12">
+<div class="scr-label"><h2>B-3 — Filter Bar Detail</h2><p>팀원(멀티셀렉트), 유형(싱글셀렉트), 날짜, 검색. 활성 필터 칩.</p></div>
+<div class="frame">
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="fselect" style="border-color:var(--primary);background:var(--primary-bg)"><i class="ri-group-line" style="color:var(--primary)"></i> <span style="color:var(--primary);font-weight:600">김민수 외 2명</span> <span style="font-size:10px;background:var(--primary);color:#fff;padding:1px 6px;border-radius:9999px;margin-left:4px">3</span> <i class="ri-arrow-down-s-line" style="color:var(--primary)"></i></div>
+      <div class="fselect" style="border-color:var(--primary);background:var(--primary-bg)"><i class="ri-list-check-2" style="color:var(--primary)"></i> <span style="color:var(--primary);font-weight:600">Test Execution</span> <i class="ri-arrow-down-s-line" style="color:var(--primary)"></i></div>
+      <div class="fselect"><i class="ri-calendar-line"></i> Last 7 days <i class="ri-arrow-down-s-line"></i></div>
+    </div>
+    <div class="fsearch" style="border-color:var(--primary);width:240px"><i class="ri-search-line" style="color:var(--primary)"></i> <span style="color:var(--g900)">login</span></div>
+  </div>
+  <!-- Active filter chips -->
+  <div class="filter-chips">
+    <div class="chip">👤 김민수 <i class="ri-close-line"></i></div>
+    <div class="chip">👤 이정현 <i class="ri-close-line"></i></div>
+    <div class="chip">👤 박지은 <i class="ri-close-line"></i></div>
+    <div class="chip">📋 Test Execution <i class="ri-close-line"></i></div>
+    <div class="chip">🔍 "login" <i class="ri-close-line"></i></div>
+    <span class="chip-clear">Clear all</span>
+  </div>
+  <div style="height:20px"></div>
+</div>
+<div class="ann"><div class="ann-item"><i class="ri-information-line"></i><div><strong>활성 필터 칩:</strong> <code>bg-#EEF2FF text-#6366F1 rounded-full px-2.5 py-1</code>. X버튼 <code>ri-close-line</code> hover시 빨강. 검색 인풋 focus시 <code>200px→280px</code> transition.</div></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- B-4: AI Daily Summary Card                 -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s13">
+<div class="scr-label"><h2>B-4 — AI Daily Summary Card (Pro+)</h2><p>펼침/접힘 토글. 그라데이션 배경. 주요 포인트 리스트.</p></div>
+<!-- Expanded -->
+<div class="frame" style="padding:0">
+  <div style="padding:4px 20px 0;font-size:11px;font-weight:600;color:var(--g400);letter-spacing:.5px;margin-top:12px">EXPANDED</div>
+  <div class="ai-summary">
+    <div class="ai-summary-head"><span class="ai-icon">🤖</span><span class="ai-title">AI Daily Summary</span><span class="pro-badge">Pro+</span><i class="ri-arrow-up-s-line" style="font-size:18px;color:var(--g400);cursor:pointer"></i></div>
+    <div class="ai-summary-body">오늘 팀이 87건의 TC를 실행했고, Pass Rate가 91.2%로 전일 대비 +2.3% 상승했습니다. 김민수 님이 가장 활발(32건)했습니다. '결제 모듈'에서 3건의 새 실패가 발견되었으며, 모두 Critical priority입니다.</div>
+    <ul class="ai-summary-points">
+      <li>📌 Sprint 12 마일스톤 진행률 72% (D-5)</li>
+      <li>📌 신규 Flaky TC 1건 감지 (TC-089)</li>
+      <li>📌 이정현 님 TC 배정 38건 대기 중</li>
+    </ul>
+    <div class="ai-summary-time">Updated 5 min ago</div>
+  </div>
+</div>
+<!-- Collapsed -->
+<div class="frame" style="padding:0;margin-top:16px">
+  <div style="padding:4px 20px 0;font-size:11px;font-weight:600;color:var(--g400);letter-spacing:.5px;margin-top:12px">COLLAPSED</div>
+  <div style="margin:12px 20px;border-radius:12px;padding:14px 22px;background:linear-gradient(135deg,var(--violet-bg),var(--primary-bg));border:1px solid var(--violet-border);display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">🤖</span>
+    <span style="font-size:14px;font-weight:600;color:var(--g900)">AI Daily Summary</span>
+    <span style="font-size:13px;color:var(--g500);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">"오늘 87건 실행, 91.2% Pass Rate..."</span>
+    <span class="pro-badge">Pro+</span>
+    <i class="ri-arrow-down-s-line" style="font-size:18px;color:var(--g400);cursor:pointer"></i>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- B-5: Highlight Styles (5 types)            -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s14">
+<div class="scr-label"><h2>B-5 — Important Event Highlight Styles (5종)</h2><p>일반 vs 하이라이트 시각적 차별화. 5가지 유형.</p></div>
+<div class="frame" style="padding:0">
+  <!-- Normal -->
+  <div style="padding:4px 20px;font-size:10px;font-weight:700;color:var(--g400);letter-spacing:.5px;margin-top:12px">NORMAL</div>
+  <div class="feed-item">
+    <div class="feed-icon" style="background:#ECFDF5"><i class="ri-checkbox-circle-fill" style="color:#16A34A"></i></div>
+    <div class="feed-content"><div class="feed-main"><strong>김민수</strong> &middot; TC-042 로그인 세션 만료 &rarr; <span style="color:var(--pass);font-weight:600">Passed</span></div><div class="feed-sub">Run: Sprint 12 리그레션</div></div>
+    <div class="feed-time">2분 전</div>
+  </div>
+
+  <!-- 1. Critical failure -->
+  <div style="padding:4px 20px;font-size:10px;font-weight:700;color:var(--danger);letter-spacing:.5px;margin-top:8px">① CRITICAL TC FAILURE</div>
+  <div class="feed-item feed-hl feed-hl-red">
+    <div class="feed-icon" style="background:#FEE2E2"><i class="ri-close-circle-fill" style="color:var(--fail)"></i></div>
+    <div class="feed-content"><div class="feed-main"><strong>이정현</strong> &middot; TC-015 결제 취소 &rarr; <span style="color:var(--fail);font-weight:600">Failed</span><span class="feed-badge-crit">Critical Failure</span></div><div class="feed-note">💬 "타임아웃 에러 — 서버 응답 3초 초과"</div></div>
+    <div class="feed-time">15분 전</div>
+  </div>
+
+  <!-- 2. Low pass rate run -->
+  <div style="padding:4px 20px;font-size:10px;font-weight:700;color:var(--warning);letter-spacing:.5px;margin-top:8px">② RUN COMPLETE (LOW PASS RATE)</div>
+  <div class="feed-item feed-hl feed-hl-amber">
+    <div class="feed-icon" style="background:#FFFBEB"><i class="ri-flag-fill" style="color:var(--warning)"></i></div>
+    <div class="feed-content">
+      <div class="feed-main"><strong>박지은</strong> &middot; Run "결제 플로우" 완료</div>
+      <div style="margin-top:6px"><div class="sbar" style="height:6px"><div style="width:62%;background:var(--pass)"></div><div style="width:28%;background:var(--fail)"></div><div style="width:10%;background:var(--blocked)"></div></div></div>
+      <div style="font-size:12px;font-weight:500;color:var(--blocked);margin-top:4px">⚠️ Pass Rate 62% — below 70% threshold</div>
+    </div>
+    <div class="feed-time">1시간 전</div>
+  </div>
+
+  <!-- 3. Milestone deadline -->
+  <div style="padding:4px 20px;font-size:10px;font-weight:700;color:var(--warning);letter-spacing:.5px;margin-top:8px">③ MILESTONE DEADLINE</div>
+  <div class="feed-item feed-hl feed-hl-amber">
+    <div class="feed-icon" style="background:#FFFBEB"><i class="ri-alarm-warning-fill" style="color:var(--warning)"></i></div>
+    <div class="feed-content"><div class="feed-main"><strong>Hotfix 2.4.1</strong> 마일스톤 기한 임박</div><div style="font-size:12px;font-weight:500;color:var(--blocked);margin-top:4px">⏰ D-2, 진행률 68% — 기한 내 완료 위험</div></div>
+    <div class="feed-time">3시간 전</div>
+  </div>
+
+  <!-- 4. Consecutive failures -->
+  <div style="padding:4px 20px;font-size:10px;font-weight:700;color:var(--danger);letter-spacing:.5px;margin-top:8px">④ CONSECUTIVE FAILURES (GROUP)</div>
+  <div class="feed-item feed-hl feed-hl-red">
+    <div class="feed-icon" style="background:#FEE2E2"><i class="ri-error-warning-fill" style="color:var(--fail)"></i></div>
+    <div class="feed-content"><div class="feed-main"><span style="font-weight:700;color:var(--fail)">🔴 3건 연속 실패</span> in Run "Sprint 12"</div><div class="feed-sub" style="margin-top:4px">TC-015, TC-016, TC-019 — Click to expand</div></div>
+    <div class="feed-time">30분 전</div>
+  </div>
+
+  <!-- 5. New item animation -->
+  <div style="padding:4px 20px;font-size:10px;font-weight:700;color:var(--primary);letter-spacing:.5px;margin-top:8px">⑤ NEW ITEM (ANIMATION)</div>
+  <div class="feed-item" style="animation:slideIn .3s ease-out;position:relative">
+    <div style="position:absolute;left:4px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:var(--primary)"></div>
+    <div class="feed-icon" style="background:#ECFDF5"><i class="ri-checkbox-circle-fill" style="color:#16A34A"></i></div>
+    <div class="feed-content"><div class="feed-main"><strong>김민수</strong> &middot; TC-055 검색 필터 &rarr; <span style="color:var(--pass);font-weight:600">Passed</span></div></div>
+    <div class="feed-time">Just now</div>
+  </div>
+  <style>@keyframes slideIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}</style>
+  <div style="height:8px"></div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- B-6: Live Update Indicator                 -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="scr" id="s15">
+<div class="scr-label"><h2>B-6 — Real-time Update Indicator</h2><p>Live 인디케이터 3가지 상태: 연결됨 / 새 이벤트 배너 / 연결 끊김.</p></div>
+<div class="frame" style="padding:0">
+  <!-- Live connected -->
+  <div style="padding:4px 20px;font-size:10px;font-weight:700;color:var(--success);letter-spacing:.5px;margin-top:12px">CONNECTED</div>
+  <div class="live-bar"><span class="live-dot"></span><span class="live-label">Live</span><span class="live-sep">&middot;</span><span>12 events today</span><span class="live-sep">&middot;</span><span style="color:var(--g400)">Last: 2 min ago</span></div>
+
+  <!-- New events banner -->
+  <div style="padding:4px 20px;font-size:10px;font-weight:700;color:var(--primary);letter-spacing:.5px;margin-top:12px">NEW EVENTS (SCROLLED DOWN)</div>
+  <div class="new-event-bar">↑ 3 new events — Click to refresh</div>
+
+  <!-- Disconnected -->
+  <div style="padding:4px 20px;font-size:10px;font-weight:700;color:var(--danger);letter-spacing:.5px;margin-top:12px">DISCONNECTED</div>
+  <div class="live-bar">
+    <span class="live-dot" style="background:var(--danger);animation-duration:.8s"></span>
+    <span style="font-size:12px;font-weight:600;color:var(--danger)">Reconnecting...</span>
+  </div>
+  <div style="height:16px"></div>
+</div>
+<div class="ann"><div class="ann-item"><i class="ri-information-line"></i><div><strong>Live 도트:</strong> <code>8px</code> 원형, <code>#10B981</code>, <code>pulse</code> 2s infinite. 끊김 시 빨강 <code>#EF4444</code>, 빠른 깜빡임 0.8s. 새 이벤트 배너: <code>sticky top-0</code>, indigo bg, <code>shadow rgba(99,102,241,0.3)</code>.</div></div></div>
+</div>
+
+<script>
+function go(n){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  document.querySelectorAll('.nav-btn')[n-1].classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

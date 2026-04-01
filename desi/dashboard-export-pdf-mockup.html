@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Export PDF — 8-Page Executive Report Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:#0F172A; color:#E2E8F0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px; }
+
+/* Screen Navigator */
+.nav-bar { display:flex; gap:6px; margin-bottom:20px; flex-wrap:wrap; justify-content:center; max-width:900px; }
+.nav-btn { padding:6px 14px; border-radius:6px; border:1px solid #334155; background:#1E293B; color:#94A3B8; font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.nav-btn:hover { border-color:#6366F1; color:#C7D2FE; }
+.nav-btn.active { background:#6366F1; color:#fff; border-color:#6366F1; }
+
+/* Title */
+h1 { font-size:18px; font-weight:700; color:#F8FAFC; margin-bottom:4px; text-align:center; }
+.subtitle { font-size:13px; color:#94A3B8; margin-bottom:16px; text-align:center; }
+
+/* Screen Container */
+.screen { display:none; width:100%; max-width:900px; }
+.screen.active { display:block; }
+
+/* A4 Page Preview */
+.a4-page { width:630px; /* ~210mm scaled to 3px/mm */ min-height:891px; /* ~297mm */ background:#fff; margin:0 auto 20px; border-radius:4px; position:relative; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.4); }
+
+/* Annotation Card */
+.anno { background:#FEF3C7; border:1px solid #F59E0B; border-radius:8px; padding:14px 16px; margin:16px auto; max-width:630px; }
+.anno-title { font-size:12px; font-weight:700; color:#92400E; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.anno-title::before { content:'📐'; }
+.anno p, .anno li { font-size:11px; color:#78350F; line-height:1.6; }
+.anno ul { padding-left:16px; margin-top:4px; }
+.anno code { background:#FDE68A; padding:1px 4px; border-radius:3px; font-size:10px; font-family:'SF Mono','Fira Code',monospace; }
+
+/* Dev Note */
+.dev-note { background:#1E293B; border:1px solid #334155; border-radius:8px; padding:14px 16px; margin:12px auto; max-width:630px; }
+.dev-note-title { font-size:12px; font-weight:700; color:#94A3B8; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.dev-note-title::before { content:'💻'; }
+.dev-note p, .dev-note li { font-size:11px; color:#CBD5E1; line-height:1.6; }
+.dev-note ul { padding-left:16px; margin-top:4px; }
+.dev-note code { background:#334155; padding:1px 4px; border-radius:3px; font-size:10px; color:#A5B4FC; font-family:'SF Mono','Fira Code',monospace; }
+
+/* Common PDF elements */
+.pdf-header { height:42px; background:rgb(99,102,241); display:flex; align-items:center; justify-content:space-between; padding:0 60px; }
+.pdf-header-tall { height:120px; background:linear-gradient(135deg, rgb(99,102,241) 0%, rgb(79,70,229) 50%, rgb(99,102,241) 100%); padding:0 60px; display:flex; flex-direction:column; justify-content:center; }
+.pdf-header .logo { font-size:10px; font-weight:700; color:#fff; letter-spacing:.3px; }
+.pdf-header .page-title { font-size:9px; color:rgba(255,255,255,.85); }
+.pdf-footer { position:absolute; bottom:0; left:0; right:0; height:36px; border-top:1px solid rgb(226,232,240); display:flex; align-items:center; justify-content:space-between; padding:0 60px; }
+.pdf-footer span { font-size:8px; color:rgb(100,116,139); }
+.pdf-content { padding:18px 60px 48px; }
+
+/* Section Title */
+.sec-title { font-size:11px; font-weight:700; color:rgb(15,23,42); margin-bottom:10px; }
+
+/* KPI Card */
+.kpi-card { background:rgb(248,250,252); border:1px solid rgb(226,232,240); border-radius:6px; padding:10px 12px; }
+.kpi-label { font-size:7px; color:rgb(100,116,139); margin-bottom:2px; }
+.kpi-val { font-size:16px; font-weight:700; color:rgb(15,23,42); }
+.kpi-delta { font-size:8px; margin-top:2px; }
+.kpi-target { font-size:7px; color:rgb(100,116,139); margin-top:2px; }
+.delta-up { color:rgb(16,163,127); }
+.delta-down { color:rgb(239,68,68); }
+
+/* Tables */
+.pdf-table { width:100%; border-collapse:collapse; font-size:9px; }
+.pdf-table th { background:rgb(248,250,252); font-size:8px; font-weight:700; color:rgb(15,23,42); text-align:left; padding:6px 8px; border-bottom:1px solid rgb(226,232,240); }
+.pdf-table td { padding:5px 8px; border-bottom:1px solid rgb(226,232,240); color:rgb(15,23,42); vertical-align:middle; }
+.pdf-table tr:nth-child(even) td { background:rgb(248,250,252); }
+
+/* Status colors */
+.c-pass { color:rgb(16,163,127); } .bg-pass { background:rgb(16,163,127); }
+.c-fail { color:rgb(239,68,68); } .bg-fail { background:rgb(239,68,68); }
+.c-block { color:rgb(249,115,22); } .bg-block { background:rgb(249,115,22); }
+.c-retest { color:rgb(234,179,8); } .bg-retest { background:rgb(234,179,8); }
+.c-untested { color:rgb(203,213,225); } .bg-untested { background:rgb(203,213,225); }
+.c-indigo { color:rgb(99,102,241); } .bg-indigo { background:rgb(99,102,241); }
+.c-light { color:rgb(100,116,139); }
+.c-dark { color:rgb(15,23,42); }
+
+/* Progress bar */
+.prog-bar { height:9px; background:rgb(226,232,240); border-radius:3px; overflow:hidden; }
+.prog-fill { height:100%; border-radius:3px; }
+
+/* Inline bar */
+.inline-bar { display:inline-block; height:12px; border-radius:2px; vertical-align:middle; }
+
+/* Stacked bar */
+.stack-bar { display:flex; height:18px; border-radius:5px; overflow:hidden; }
+.stack-seg { height:100%; }
+
+/* Mini badge */
+.badge { display:inline-block; padding:2px 6px; border-radius:4px; font-size:7px; font-weight:700; }
+.badge-green { background:rgb(236,253,245); color:rgb(16,163,127); }
+.badge-red { background:rgb(254,242,242); color:rgb(239,68,68); }
+.badge-amber { background:rgb(255,251,235); color:rgb(245,158,11); }
+.badge-indigo { background:rgb(238,242,255); color:rgb(99,102,241); }
+.badge-gray { background:rgb(241,245,249); color:rgb(100,116,139); }
+
+/* Dot sequence */
+.dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:3px; }
+.dot-pass { background:rgb(16,163,127); }
+.dot-fail { background:transparent; border:2px solid rgb(239,68,68); }
+
+/* Priority dots */
+.pri-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; vertical-align:middle; }
+
+/* Chart placeholder styles */
+.chart-area { border:1px solid rgb(226,232,240); border-radius:4px; overflow:hidden; position:relative; }
+
+/* Responsive */
+@media(max-width:720px) { .a4-page { width:100%; min-height:auto; } .pdf-header,.pdf-content,.pdf-footer { padding-left:20px; padding-right:20px; } }
+</style>
+</head>
+<body>
+
+<h1>Dashboard Export PDF — 8-Page Executive Report</h1>
+<p class="subtitle">Testably Quality Executive Report | 디자인 목업 8건</p>
+
+<div class="nav-bar">
+  <button class="nav-btn active" onclick="show(0)">P1: Cover + Summary</button>
+  <button class="nav-btn" onclick="show(1)">P2: Quality Scorecard</button>
+  <button class="nav-btn" onclick="show(2)">P3: Quality Trends</button>
+  <button class="nav-btn" onclick="show(3)">P4: Execution Detail</button>
+  <button class="nav-btn" onclick="show(4)">P5: Milestone</button>
+  <button class="nav-btn" onclick="show(5)">P6: Risk Assessment</button>
+  <button class="nav-btn" onclick="show(6)">P7: Team Performance</button>
+  <button class="nav-btn" onclick="show(7)">P8: TC Appendix</button>
+</div>
+
+<!-- ====== PAGE 1: Cover + Executive Summary ====== -->
+<div class="screen active" id="s0">
+  <div class="a4-page">
+    <!-- Tall Cover Header -->
+    <div class="pdf-header-tall">
+      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:16px;">
+        <span style="font-size:12px;font-weight:700;color:#fff;letter-spacing:.3px;">Testably</span>
+        <span style="font-size:8px;color:rgba(255,255,255,.8);">Report Generated: April 1, 2026</span>
+      </div>
+      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;">Connevo Suite</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.85);">Quality Executive Report</div>
+    </div>
+
+    <div class="pdf-content" style="padding-top:14px;">
+      <!-- Release Readiness -->
+      <div class="sec-title">Release Readiness</div>
+      <div style="background:rgb(236,253,245);border:2px solid rgb(16,163,127);border-radius:9px;padding:16px 20px;display:flex;align-items:center;gap:20px;margin-bottom:12px;">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgb(16,163,127);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🟢</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:rgb(16,163,127);">RELEASE READY</div>
+          <div style="font-size:11px;font-weight:700;color:rgb(15,23,42);margin-top:2px;">Score: 84 / 100</div>
+          <div style="font-size:9px;color:rgb(100,116,139);margin-top:2px;">Project meets quality gates for release</div>
+        </div>
+      </div>
+
+      <!-- Score Breakdown 4 cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;">
+        <div class="kpi-card" style="text-align:center;padding:6px 8px;">
+          <div class="kpi-label">Pass Rate (40%)</div>
+          <div style="font-size:11px;font-weight:700;color:rgb(15,23,42);">91.2%</div>
+        </div>
+        <div class="kpi-card" style="text-align:center;padding:6px 8px;">
+          <div class="kpi-label">Critical Pass (25%)</div>
+          <div style="font-size:11px;font-weight:700;color:rgb(15,23,42);">100%</div>
+        </div>
+        <div class="kpi-card" style="text-align:center;padding:6px 8px;">
+          <div class="kpi-label">Coverage (20%)</div>
+          <div style="font-size:11px;font-weight:700;color:rgb(15,23,42);">78%</div>
+        </div>
+        <div class="kpi-card" style="text-align:center;padding:6px 8px;">
+          <div class="kpi-label">Milestone (15%)</div>
+          <div style="font-size:11px;font-weight:700;color:rgb(15,23,42);">82%</div>
+        </div>
+      </div>
+
+      <!-- KPI Summary 2x3 -->
+      <div class="sec-title">Key Performance Indicators</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;">
+        <div class="kpi-card"><div class="kpi-label">Pass Rate</div><div class="kpi-val">91.2%</div><div class="kpi-delta delta-up">▲ +2.1% vs prev</div></div>
+        <div class="kpi-card"><div class="kpi-label">Total Executed</div><div class="kpi-val">1,247</div><div class="kpi-delta delta-up">▲ +156</div></div>
+        <div class="kpi-card"><div class="kpi-label">Active Runs</div><div class="kpi-val">4 <span style="font-size:9px;font-weight:400;color:rgb(100,116,139);">of 12</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Failed TCs</div><div class="kpi-val" style="color:rgb(239,68,68);">89</div><div class="kpi-delta delta-up">▼ -12</div></div>
+        <div class="kpi-card"><div class="kpi-label">Blocked</div><div class="kpi-val" style="color:rgb(249,115,22);">42</div><div class="kpi-delta delta-up">▼ -5</div></div>
+        <div class="kpi-card"><div class="kpi-label">Test Cases</div><div class="kpi-val">248 <span style="font-size:9px;font-weight:400;color:rgb(100,116,139);">total</span></div></div>
+      </div>
+
+      <!-- Risk Highlights -->
+      <div class="sec-title">Risk Highlights</div>
+      <div style="margin-bottom:18px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:5px 0;border-bottom:1px solid rgb(241,245,249);">
+          <span style="width:10px;height:10px;border-radius:50%;background:rgb(239,68,68);flex-shrink:0;margin-top:3px;"></span>
+          <span style="font-size:9px;color:rgb(15,23,42);">3 Critical TC failures in "Payment Processing" module — immediate attention required</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:5px 0;border-bottom:1px solid rgb(241,245,249);">
+          <span style="width:10px;height:10px;border-radius:50%;background:rgb(249,115,22);flex-shrink:0;margin-top:3px;"></span>
+          <span style="font-size:9px;color:rgb(15,23,42);">Sprint 12 milestone at risk — 82% complete, 5 days remaining</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:5px 0;">
+          <span style="width:10px;height:10px;border-radius:50%;background:rgb(234,179,8);flex-shrink:0;margin-top:3px;"></span>
+          <span style="font-size:9px;color:rgb(15,23,42);">"File Upload" module has 12 untested TCs (60% coverage gap)</span>
+        </div>
+      </div>
+
+      <!-- Table of Contents -->
+      <div class="sec-title">Contents</div>
+      <div style="font-size:9px;color:rgb(15,23,42);">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted rgb(226,232,240);">
+          <span>1. Executive Summary</span><span style="color:rgb(100,116,139);">1</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted rgb(226,232,240);">
+          <span>2. Quality Scorecard</span><span style="color:rgb(100,116,139);">2</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted rgb(226,232,240);">
+          <span>3. Quality Trends</span><span style="color:rgb(100,116,139);">3</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted rgb(226,232,240);">
+          <span>4. Test Execution Detail</span><span style="color:rgb(100,116,139);">4</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted rgb(226,232,240);">
+          <span>5. Milestone &amp; Release Readiness</span><span style="color:rgb(100,116,139);">5</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted rgb(226,232,240);">
+          <span>6. Risk Assessment</span><span style="color:rgb(100,116,139);">6</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted rgb(226,232,240);">
+          <span>7. Team Performance</span><span style="color:rgb(100,116,139);">7</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;">
+          <span>8. Test Case Appendix</span><span style="color:rgb(100,116,139);">8</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pdf-footer">
+      <span>Connevo Suite</span>
+      <span>Generated by Testably — April 1, 2026</span>
+      <span>Page 1 of 8</span>
+    </div>
+  </div>
+
+  <div class="anno">
+    <div class="anno-title">P1: Cover + Executive Summary</div>
+    <ul>
+      <li>커버 헤더 <code>40mm</code> (다른 페이지 14mm보다 큼), Indigo gradient 배경</li>
+      <li>Release Readiness: Score ≥80 → <code>🟢 RELEASE READY</code> (연녹색 bg), 60~79 → <code>🟡 CONDITIONAL</code>, &lt;60 → <code>🔴 NOT READY</code></li>
+      <li>Score Breakdown 4칸: Pass Rate(40%), Critical Pass(25%), Coverage(20%), Milestone(15%)</li>
+      <li>KPI 6개 카드: 2행×3열, <code>53mm×22mm</code>, 간격 <code>5.5mm</code></li>
+      <li>Risk Highlights: 최대 5건, 심각도 순 (🔴→🟠→🟡), 리스크 없을 시 <code>"✅ No significant risks..."</code></li>
+      <li>TOC: 8개 항목, <code>9pt</code>, 점선 연결, 페이지 번호 우정렬</li>
+    </ul>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title">Dev Notes — P1</div>
+    <ul>
+      <li>커버 헤더: <code>pdf.setFillColor(99,102,241)</code> → <code>pdf.rect(0,0,210,40,'F')</code></li>
+      <li>Readiness 색상: <code>score>=80 ? green : score>=60 ? amber : red</code></li>
+      <li>Go/No-Go 메시지: <code>const msgs = {go:'Project meets quality gates...', conditional:'Release possible with known risks...', notReady:'Significant quality gaps...'}</code></li>
+      <li>TOC 점선: <code>pdf.setLineDashPattern([0.5,0.5],0)</code></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ====== PAGE 2: Quality Scorecard ====== -->
+<div class="screen" id="s1">
+  <div class="a4-page">
+    <div class="pdf-header">
+      <span class="logo">Testably</span>
+      <span class="page-title">Quality Scorecard</span>
+    </div>
+    <div class="pdf-content">
+      <!-- Status Distribution -->
+      <div class="sec-title">Status Distribution</div>
+      <div class="stack-bar" style="margin-bottom:8px;">
+        <div class="stack-seg bg-pass" style="width:71.4%"></div>
+        <div class="stack-seg bg-fail" style="width:7.1%"></div>
+        <div class="stack-seg bg-block" style="width:3.4%"></div>
+        <div class="stack-seg bg-retest" style="width:2.4%"></div>
+        <div class="stack-seg bg-untested" style="width:15.7%"></div>
+      </div>
+      <div style="display:flex;gap:16px;font-size:7px;color:rgb(100,116,139);margin-bottom:20px;">
+        <span><span style="display:inline-block;width:8px;height:8px;background:rgb(16,163,127);border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Passed (891)</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:rgb(239,68,68);border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Failed (89)</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:rgb(249,115,22);border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Blocked (42)</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:rgb(234,179,8);border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Retest (30)</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:rgb(203,213,225);border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Untested (195)</span>
+      </div>
+
+      <!-- KPI Cards 2x3 -->
+      <div class="sec-title">Key Performance Indicators</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
+        <div class="kpi-card">
+          <div class="kpi-label">Overall Pass Rate</div>
+          <div class="kpi-val">91.2%</div>
+          <div class="kpi-delta delta-up">▲ +2.1% vs prev</div>
+          <div class="kpi-target">Target: 90% ✅</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Execution Completion</div>
+          <div class="kpi-val">83.1%</div>
+          <div style="font-size:8px;color:rgb(100,116,139);margin-top:2px;">1037/1247 done</div>
+          <div class="kpi-target">Target: 95% ⚠️</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Defect Discovery Rate</div>
+          <div class="kpi-val">7.1%</div>
+          <div style="font-size:8px;color:rgb(100,116,139);margin-top:2px;">89 found / 1247</div>
+          <div class="kpi-target">Industry: ~5-10%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Automation Rate</div>
+          <div class="kpi-val">62%</div>
+          <div style="font-size:8px;color:rgb(100,116,139);margin-top:2px;">154 / 248 TCs</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Avg Run Pass Rate</div>
+          <div class="kpi-val">88.7%</div>
+          <div style="font-size:8px;color:rgb(100,116,139);margin-top:2px;">across 12 runs</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Open Blockers</div>
+          <div class="kpi-val" style="color:rgb(239,68,68);">2</div>
+          <div style="font-size:8px;color:rgb(239,68,68);margin-top:2px;">🔴 Needs attention</div>
+        </div>
+      </div>
+
+      <!-- Priority Distribution -->
+      <div class="sec-title">Priority Distribution</div>
+      <div style="margin-bottom:20px;">
+        <!-- Critical -->
+        <div style="margin-bottom:10px;">
+          <div style="font-size:9px;font-weight:700;color:rgb(239,68,68);margin-bottom:3px;">Critical</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;height:15px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
+              <div style="width:4.8%;height:100%;background:rgb(239,68,68);border-radius:3px;"></div>
+            </div>
+            <span style="font-size:9px;color:rgb(100,116,139);width:70px;text-align:right;">12 (4.8%)</span>
+          </div>
+        </div>
+        <!-- High -->
+        <div style="margin-bottom:10px;">
+          <div style="font-size:9px;font-weight:700;color:rgb(245,158,11);margin-bottom:3px;">High</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;height:15px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
+              <div style="width:18.1%;height:100%;background:rgb(245,158,11);border-radius:3px;"></div>
+            </div>
+            <span style="font-size:9px;color:rgb(100,116,139);width:70px;text-align:right;">45 (18.1%)</span>
+          </div>
+        </div>
+        <!-- Medium -->
+        <div style="margin-bottom:10px;">
+          <div style="font-size:9px;font-weight:700;color:rgb(99,102,241);margin-bottom:3px;">Medium</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;height:15px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
+              <div style="width:57.3%;height:100%;background:rgb(99,102,241);border-radius:3px;"></div>
+            </div>
+            <span style="font-size:9px;color:rgb(100,116,139);width:70px;text-align:right;">142 (57.3%)</span>
+          </div>
+        </div>
+        <!-- Low -->
+        <div style="margin-bottom:10px;">
+          <div style="font-size:9px;font-weight:700;color:rgb(148,163,184);margin-bottom:3px;">Low</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;height:15px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
+              <div style="width:19.8%;height:100%;background:rgb(148,163,184);border-radius:3px;"></div>
+            </div>
+            <span style="font-size:9px;color:rgb(100,116,139);width:70px;text-align:right;">49 (19.8%)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project Information -->
+      <div class="sec-title">Project Information</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;font-size:9px;">
+        <div style="display:flex;padding:5px 0;border-bottom:1px solid rgb(241,245,249);">
+          <span style="color:rgb(100,116,139);width:80px;font-size:8px;">Project:</span>
+          <span style="color:rgb(15,23,42);">Connevo Suite</span>
+        </div>
+        <div style="display:flex;padding:5px 0;border-bottom:1px solid rgb(241,245,249);">
+          <span style="color:rgb(100,116,139);width:80px;font-size:8px;">Status:</span>
+          <span style="color:rgb(15,23,42);">Active</span>
+        </div>
+        <div style="display:flex;padding:5px 0;border-bottom:1px solid rgb(241,245,249);">
+          <span style="color:rgb(100,116,139);width:80px;font-size:8px;">Created:</span>
+          <span style="color:rgb(15,23,42);">Jan 15, 2026</span>
+        </div>
+        <div style="display:flex;padding:5px 0;border-bottom:1px solid rgb(241,245,249);">
+          <span style="color:rgb(100,116,139);width:80px;font-size:8px;">Total Runs:</span>
+          <span style="color:rgb(15,23,42);">12</span>
+        </div>
+        <div style="display:flex;padding:5px 0;">
+          <span style="color:rgb(100,116,139);width:80px;font-size:8px;">Team Size:</span>
+          <span style="color:rgb(15,23,42);">8 members</span>
+        </div>
+        <div style="display:flex;padding:5px 0;">
+          <span style="color:rgb(100,116,139);width:80px;font-size:8px;">Active Milestones:</span>
+          <span style="color:rgb(15,23,42);">3</span>
+        </div>
+      </div>
+    </div>
+    <div class="pdf-footer">
+      <span>Connevo Suite</span>
+      <span>Generated by Testably — April 1, 2026</span>
+      <span>Page 2 of 8</span>
+    </div>
+  </div>
+
+  <div class="anno">
+    <div class="anno-title">P2: Quality Scorecard</div>
+    <ul>
+      <li>Status Distribution: 스택 바 <code>170mm×6mm</code>, 5개 세그먼트 (Pass/Fail/Block/Retest/Untested)</li>
+      <li>범례: 바 아래 한 줄, <code>■ 2×2mm</code> + <code>"Passed(891)"</code> 7pt, 간격 10mm</li>
+      <li>KPI 6개: 2×3, <code>53mm×22mm</code>, Target 달성 시 ✅, 미달 시 ⚠️</li>
+      <li>Priority 가로 바: Critical(Red) / High(Amber) / Medium(Indigo) / Low(Gray), 높이 <code>5mm</code></li>
+      <li>Project Info: 2열 테이블, 라벨 <code>8pt</code> 연색 + 값 <code>9pt</code></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ====== PAGE 3: Quality Trends ====== -->
+<div class="screen" id="s2">
+  <div class="a4-page">
+    <div class="pdf-header">
+      <span class="logo">Testably</span>
+      <span class="page-title">Quality Trends</span>
+    </div>
+    <div class="pdf-content">
+      <!-- Pass Rate Trend Chart -->
+      <div class="sec-title">Pass Rate Trend (30 Days)</div>
+      <div class="chart-area" style="height:180px;margin-bottom:8px;position:relative;background:#fff;padding:8px;">
+        <!-- Y axis labels -->
+        <div style="position:absolute;left:4px;top:8px;font-size:7px;color:rgb(100,116,139);">100%</div>
+        <div style="position:absolute;left:8px;top:48px;font-size:7px;color:rgb(100,116,139);">80%</div>
+        <div style="position:absolute;left:8px;top:88px;font-size:7px;color:rgb(100,116,139);">60%</div>
+        <div style="position:absolute;left:8px;top:128px;font-size:7px;color:rgb(100,116,139);">40%</div>
+        <!-- Grid lines -->
+        <svg style="position:absolute;left:32px;top:8px;width:calc(100% - 72px);height:148px;">
+          <line x1="0" y1="0" x2="100%" y2="0" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="37" x2="100%" y2="37" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="74" x2="100%" y2="74" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="111" x2="100%" y2="111" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="148" x2="100%" y2="148" stroke="rgb(226,232,240)" stroke-width="0.5"/>
+          <!-- Pass Rate line (trending up ~85% to 91%) -->
+          <polyline fill="none" stroke="rgb(99,102,241)" stroke-width="2"
+            points="0,26 40,30 80,28 120,33 160,27 200,25 240,22 280,20 320,18 360,16 400,14 440,13"/>
+          <!-- Data points -->
+          <circle cx="0" cy="26" r="3" fill="rgb(99,102,241)"/>
+          <circle cx="80" cy="28" r="3" fill="rgb(99,102,241)"/>
+          <circle cx="160" cy="27" r="3" fill="rgb(99,102,241)"/>
+          <circle cx="240" cy="22" r="3" fill="rgb(99,102,241)"/>
+          <circle cx="320" cy="18" r="3" fill="rgb(99,102,241)"/>
+          <circle cx="440" cy="13" r="3" fill="rgb(99,102,241)"/>
+          <!-- Execution Count dashed line (secondary) -->
+          <polyline fill="none" stroke="rgb(100,116,139)" stroke-width="1" stroke-dasharray="4,2"
+            points="0,100 40,95 80,88 120,92 160,82 200,78 240,75 280,70 320,68 360,65 400,62 440,58"/>
+        </svg>
+        <!-- Right Y axis -->
+        <div style="position:absolute;right:4px;top:8px;font-size:7px;color:rgb(100,116,139);">60</div>
+        <div style="position:absolute;right:4px;top:88px;font-size:7px;color:rgb(100,116,139);">30</div>
+        <div style="position:absolute;right:4px;top:148px;font-size:7px;color:rgb(100,116,139);">0</div>
+        <!-- X axis labels -->
+        <div style="position:absolute;bottom:4px;left:32px;right:40px;display:flex;justify-content:space-between;font-size:7px;color:rgb(100,116,139);">
+          <span>Mar 2</span><span>Mar 9</span><span>Mar 16</span><span>Mar 23</span><span>Mar 30</span>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:8px;color:rgb(100,116,139);margin-bottom:18px;">
+        <span style="margin-right:16px;">── Pass Rate</span>
+        <span>···· Execution Count</span>
+      </div>
+
+      <!-- Week-over-Week Table -->
+      <div class="sec-title">Week-over-Week Comparison</div>
+      <table class="pdf-table" style="margin-bottom:18px;">
+        <thead><tr><th>Metric</th><th>This Week</th><th>Last Week</th><th>Change</th><th style="width:80px;">Bar</th></tr></thead>
+        <tbody>
+          <tr><td>Pass Rate</td><td>91.2%</td><td>89.1%</td><td class="delta-up" style="font-weight:600;">▲ +2.1%</td><td><div style="width:80px;height:10px;background:rgb(226,232,240);border-radius:2px;overflow:hidden;"><div style="width:91%;height:100%;background:rgb(99,102,241);border-radius:2px;"></div></div></td></tr>
+          <tr><td>Executed</td><td>312</td><td>289</td><td class="delta-up" style="font-weight:600;">▲ +23</td><td><div style="width:80px;height:10px;background:rgb(226,232,240);border-radius:2px;overflow:hidden;"><div style="width:78%;height:100%;background:rgb(99,102,241);border-radius:2px;"></div></div></td></tr>
+          <tr><td>New Failures</td><td>18</td><td>24</td><td class="delta-up" style="font-weight:600;">▼ -6</td><td><div style="width:80px;height:10px;background:rgb(226,232,240);border-radius:2px;overflow:hidden;"><div style="width:45%;height:100%;background:rgb(99,102,241);border-radius:2px;"></div></div></td></tr>
+          <tr><td>Blocked</td><td>8</td><td>12</td><td class="delta-up" style="font-weight:600;">▼ -4</td><td><div style="width:80px;height:10px;background:rgb(226,232,240);border-radius:2px;overflow:hidden;"><div style="width:20%;height:100%;background:rgb(99,102,241);border-radius:2px;"></div></div></td></tr>
+          <tr><td>TCs Created</td><td>14</td><td>8</td><td class="delta-up" style="font-weight:600;">▲ +6</td><td><div style="width:80px;height:10px;background:rgb(226,232,240);border-radius:2px;overflow:hidden;"><div style="width:35%;height:100%;background:rgb(99,102,241);border-radius:2px;"></div></div></td></tr>
+        </tbody>
+      </table>
+
+      <!-- Execution Velocity -->
+      <div class="sec-title">Execution Velocity (Daily)</div>
+      <div class="chart-area" style="height:195px;position:relative;background:#fff;padding:8px;">
+        <!-- Y axis -->
+        <div style="position:absolute;left:4px;top:12px;font-size:7px;color:rgb(100,116,139);">60</div>
+        <div style="position:absolute;left:4px;top:52px;font-size:7px;color:rgb(100,116,139);">45</div>
+        <div style="position:absolute;left:4px;top:92px;font-size:7px;color:rgb(100,116,139);">30</div>
+        <div style="position:absolute;left:4px;top:132px;font-size:7px;color:rgb(100,116,139);">15</div>
+        <div style="position:absolute;left:8px;top:168px;font-size:7px;color:rgb(100,116,139);">0</div>
+        <!-- Bars -->
+        <svg style="position:absolute;left:28px;top:8px;width:calc(100% - 36px);height:168px;">
+          <!-- Grid -->
+          <line x1="0" y1="0" x2="100%" y2="0" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="42" x2="100%" y2="42" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="84" x2="100%" y2="84" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="126" x2="100%" y2="126" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="168" x2="100%" y2="168" stroke="rgb(226,232,240)" stroke-width="0.5"/>
+          <!-- Daily bars (30 days, sample) -->
+          <rect x="4" y="84" width="12" height="84" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="20" y="95" width="12" height="73" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="36" y="70" width="12" height="98" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="52" y="105" width="12" height="63" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="68" y="56" width="12" height="112" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="84" y="42" width="12" height="126" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="100" y="126" width="12" height="42" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="116" y="78" width="12" height="90" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="132" y="50" width="12" height="118" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="148" y="63" width="12" height="105" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="164" y="84" width="12" height="84" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="180" y="70" width="12" height="98" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="196" y="56" width="12" height="112" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="212" y="42" width="12" height="126" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="228" y="35" width="12" height="133" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="244" y="50" width="12" height="118" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="260" y="63" width="12" height="105" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="276" y="105" width="12" height="63" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="292" y="56" width="12" height="112" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="308" y="42" width="12" height="126" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="324" y="50" width="12" height="118" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="340" y="35" width="12" height="133" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="356" y="28" width="12" height="140" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="372" y="42" width="12" height="126" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="388" y="56" width="12" height="112" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="404" y="35" width="12" height="133" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="420" y="42" width="12" height="126" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="436" y="28" width="12" height="140" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="452" y="35" width="12" height="133" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <rect x="468" y="21" width="12" height="147" rx="1" fill="rgb(99,102,241)" opacity="0.6"/>
+          <!-- 7-day Moving Avg line -->
+          <polyline fill="none" stroke="rgb(239,68,68)" stroke-width="1.5"
+            points="4,88 52,82 100,80 148,72 196,65 244,58 292,62 340,52 388,48 436,42 468,38"/>
+        </svg>
+        <!-- X axis labels -->
+        <div style="position:absolute;bottom:4px;left:28px;right:8px;display:flex;justify-content:space-between;font-size:7px;color:rgb(100,116,139);">
+          <span>Mar 2</span><span>Mar 9</span><span>Mar 16</span><span>Mar 23</span><span>Mar 30</span>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:8px;color:rgb(100,116,139);margin-top:6px;">
+        <span style="margin-right:16px;">█ Daily Executions</span>
+        <span style="color:rgb(239,68,68);">── 7-Day Moving Avg</span>
+      </div>
+    </div>
+    <div class="pdf-footer">
+      <span>Connevo Suite</span>
+      <span>Generated by Testably — April 1, 2026</span>
+      <span>Page 3 of 8</span>
+    </div>
+  </div>
+
+  <div class="anno">
+    <div class="anno-title">P3: Quality Trends</div>
+    <ul>
+      <li>Pass Rate Trend: <code>170mm×60mm</code> 라인 차트, 좌Y축(0~100%), X축(30일/주단위 라벨)</li>
+      <li>보조 라인: Execution Count 점선(<code>dash 2mm, gap 1mm</code>), 우측 Y축</li>
+      <li>WoW 테이블: 5열(Metric/This/Last/Change/Bar), Change 색상 = 긍정 Green / 부정 Red</li>
+      <li>Execution Velocity: 바 차트 <code>170mm×65mm</code>, 각 바 <code>4mm</code>, Indigo opacity 0.6</li>
+      <li>7일 이동평균: Red <code>0.5pt</code> 실선 오버레이</li>
+    </ul>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title">Dev Notes — P3</div>
+    <ul>
+      <li>차트 좌표: <code>chartX + (dayIdx / (days-1)) * chartW</code>, <code>chartY + chartH - (val/max) * chartH</code></li>
+      <li>Grid: <code>pdf.setLineDashPattern([1,1],0)</code></li>
+      <li>WoW Change: New Failures / Blocked 감소 = 긍정(Green), 증가 = 부정(Red)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ====== PAGE 4: Test Execution Detail ====== -->
+<div class="screen" id="s3">
+  <div class="a4-page">
+    <div class="pdf-header">
+      <span class="logo">Testably</span>
+      <span class="page-title">Test Execution Detail</span>
+    </div>
+    <div class="pdf-content">
+      <!-- Run Summary Bar -->
+      <div style="background:rgb(248,250,252);border:1px solid rgb(226,232,240);border-radius:6px;padding:8px 16px;display:flex;justify-content:space-around;margin-bottom:16px;">
+        <span style="font-size:8px;color:rgb(100,116,139);">Total: <strong style="color:rgb(15,23,42);font-size:9px;">12 runs</strong></span>
+        <span style="border-left:1px solid rgb(226,232,240);"></span>
+        <span style="font-size:8px;color:rgb(100,116,139);">Active: <strong style="color:rgb(16,163,127);font-size:9px;">4</strong></span>
+        <span style="border-left:1px solid rgb(226,232,240);"></span>
+        <span style="font-size:8px;color:rgb(100,116,139);">Completed: <strong style="color:rgb(99,102,241);font-size:9px;">6</strong></span>
+        <span style="border-left:1px solid rgb(226,232,240);"></span>
+        <span style="font-size:8px;color:rgb(100,116,139);">Paused: <strong style="color:rgb(249,115,22);font-size:9px;">1</strong></span>
+        <span style="border-left:1px solid rgb(226,232,240);"></span>
+        <span style="font-size:8px;color:rgb(100,116,139);">Review: <strong style="color:rgb(15,23,42);font-size:9px;">1</strong></span>
+      </div>
+
+      <!-- Run Results Table -->
+      <div class="sec-title">Run Results</div>
+      <table class="pdf-table" style="margin-bottom:16px;">
+        <thead><tr><th>#</th><th>Run Name</th><th>Milestone</th><th>Status</th><th>Pass</th><th>Fail</th><th>Blk</th><th>Total</th><th>Rate%</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Sprint 12 Regression</td><td>Sprint 12</td><td><span style="color:rgb(16,163,127);">● Active</span></td><td>82</td><td>6</td><td>3</td><td>91</td><td style="color:rgb(16,163,127);font-weight:600;">90.1%</td></tr>
+          <tr><td>2</td><td>Payment Module v3</td><td>Sprint 12</td><td><span style="color:rgb(16,163,127);">● Active</span></td><td>45</td><td>8</td><td>2</td><td>55</td><td style="color:rgb(249,115,22);font-weight:600;">81.8%</td></tr>
+          <tr><td>3</td><td>API Integration</td><td>Sprint 11</td><td><span style="color:rgb(99,102,241);">Completed</span></td><td>120</td><td>5</td><td>0</td><td>125</td><td style="color:rgb(16,163,127);font-weight:600;">96.0%</td></tr>
+          <tr><td>4</td><td>Auth Flow Smoke</td><td>Sprint 12</td><td><span style="color:rgb(16,163,127);">● Active</span></td><td>28</td><td>3</td><td>1</td><td>32</td><td style="color:rgb(249,115,22);font-weight:600;">87.5%</td></tr>
+          <tr><td>5</td><td>Mobile Responsive</td><td>Sprint 11</td><td><span style="color:rgb(99,102,241);">Completed</span></td><td>95</td><td>10</td><td>3</td><td>108</td><td style="color:rgb(249,115,22);font-weight:600;">88.0%</td></tr>
+          <tr><td>6</td><td>Performance Bench</td><td>Sprint 10</td><td><span style="color:rgb(99,102,241);">Completed</span></td><td>68</td><td>2</td><td>0</td><td>70</td><td style="color:rgb(16,163,127);font-weight:600;">97.1%</td></tr>
+          <tr><td>7</td><td>E2E Checkout</td><td>Sprint 12</td><td><span style="color:rgb(16,163,127);">● Active</span></td><td>34</td><td>12</td><td>5</td><td>51</td><td style="color:rgb(239,68,68);font-weight:600;">66.7%</td></tr>
+          <tr><td>8</td><td>DB Migration Test</td><td>Sprint 11</td><td><span style="color:rgb(99,102,241);">Completed</span></td><td>110</td><td>8</td><td>4</td><td>122</td><td style="color:rgb(16,163,127);font-weight:600;">90.2%</td></tr>
+        </tbody>
+      </table>
+
+      <!-- Module Coverage Table -->
+      <div class="sec-title">Module Coverage</div>
+      <table class="pdf-table">
+        <thead><tr><th>Module</th><th>TCs</th><th>Tested</th><th>Untested</th><th>Pass%</th><th style="width:140px;">Coverage Bar</th></tr></thead>
+        <tbody>
+          <tr><td>Authentication</td><td>42</td><td>40</td><td>2</td><td style="color:rgb(16,163,127);font-weight:600;">95.2%</td><td><div style="width:140px;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:95.2%;height:100%;background:rgb(16,163,127);border-radius:3px;"></div></div></td></tr>
+          <tr><td>Payment</td><td>38</td><td>32</td><td>6</td><td style="color:rgb(249,115,22);font-weight:600;">84.2%</td><td><div style="width:140px;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:84.2%;height:100%;background:rgb(249,115,22);border-radius:3px;"></div></div></td></tr>
+          <tr><td>User Profile</td><td>28</td><td>26</td><td>2</td><td style="color:rgb(16,163,127);font-weight:600;">92.9%</td><td><div style="width:140px;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:92.9%;height:100%;background:rgb(16,163,127);border-radius:3px;"></div></div></td></tr>
+          <tr><td>File Upload</td><td>30</td><td>18</td><td>12</td><td style="color:rgb(239,68,68);font-weight:600;">60.0%</td><td><div style="width:140px;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:60%;height:100%;background:rgb(239,68,68);border-radius:3px;"></div></div></td></tr>
+          <tr><td>Dashboard</td><td>35</td><td>30</td><td>5</td><td style="color:rgb(249,115,22);font-weight:600;">85.7%</td><td><div style="width:140px;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:85.7%;height:100%;background:rgb(249,115,22);border-radius:3px;"></div></div></td></tr>
+          <tr><td>API Gateway</td><td>45</td><td>44</td><td>1</td><td style="color:rgb(16,163,127);font-weight:600;">97.8%</td><td><div style="width:140px;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:97.8%;height:100%;background:rgb(16,163,127);border-radius:3px;"></div></div></td></tr>
+          <tr><td>Notification</td><td>30</td><td>22</td><td>8</td><td style="color:rgb(249,115,22);font-weight:600;">73.3%</td><td><div style="width:140px;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:73.3%;height:100%;background:rgb(249,115,22);border-radius:3px;"></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pdf-footer">
+      <span>Connevo Suite</span>
+      <span>Generated by Testably — April 1, 2026</span>
+      <span>Page 4 of 8</span>
+    </div>
+  </div>
+
+  <div class="anno">
+    <div class="anno-title">P4: Test Execution Detail</div>
+    <ul>
+      <li>Run Summary Bar: <code>170mm×10mm</code>, Light Gray bg, 5개 항목 구분선 분리</li>
+      <li>Run Results 9열 테이블: max 15행, Status 색상(Active=Green●, Completed=Indigo, Paused=Orange)</li>
+      <li>Rate% 색상: ≥90% Green / ≥70% Orange / &lt;70% Red</li>
+      <li>Module Coverage 6열: 인라인 progress bar <code>55mm×4mm</code>, Green 채움 + Light Gray 잔여</li>
+      <li>초과 시 <code>"... and N more runs"</code> / <code>"... and N more"</code> 표시</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ====== PAGE 5: Milestone & Release Readiness ====== -->
+<div class="screen" id="s4">
+  <div class="a4-page">
+    <div class="pdf-header">
+      <span class="logo">Testably</span>
+      <span class="page-title">Milestone &amp; Release Readiness</span>
+    </div>
+    <div class="pdf-content">
+      <!-- Milestone Cards 2x2 -->
+      <div class="sec-title">Milestone Overview</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+        <!-- Card 1: On Track -->
+        <div style="background:#fff;border:1px solid rgb(226,232,240);border-radius:6px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:10px;font-weight:700;color:rgb(15,23,42);">Sprint 12</span>
+            <span class="badge badge-green">On Track</span>
+          </div>
+          <div style="font-size:9px;font-weight:700;color:rgb(15,23,42);margin-bottom:4px;">Progress: 82%</div>
+          <div class="prog-bar" style="margin-bottom:8px;"><div class="prog-fill bg-indigo" style="width:82%;"></div></div>
+          <div style="font-size:8px;color:rgb(100,116,139);line-height:1.7;">
+            Due: Apr 6 (D-5)<br>
+            Remaining: 18 TCs<br>
+            Velocity: 8.2 TC/day<br>
+            Est. Completion: Apr 4
+          </div>
+        </div>
+        <!-- Card 2: At Risk -->
+        <div style="background:#fff;border:1px solid rgb(226,232,240);border-radius:6px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:10px;font-weight:700;color:rgb(15,23,42);">Sprint 11 Hotfix</span>
+            <span class="badge badge-amber">At Risk</span>
+          </div>
+          <div style="font-size:9px;font-weight:700;color:rgb(15,23,42);margin-bottom:4px;">Progress: 68%</div>
+          <div class="prog-bar" style="margin-bottom:8px;"><div class="prog-fill" style="width:68%;background:rgb(245,158,11);"></div></div>
+          <div style="font-size:8px;color:rgb(100,116,139);line-height:1.7;">
+            Due: Apr 3 (D-2)<br>
+            Remaining: 24 TCs<br>
+            Velocity: 5.1 TC/day<br>
+            Est. Completion: Apr 7
+          </div>
+        </div>
+        <!-- Card 3: Overdue -->
+        <div style="background:#fff;border:1px solid rgb(226,232,240);border-radius:6px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:10px;font-weight:700;color:rgb(15,23,42);">Release v2.4</span>
+            <span class="badge badge-red">Overdue</span>
+          </div>
+          <div style="font-size:9px;font-weight:700;color:rgb(15,23,42);margin-bottom:4px;">Progress: 55%</div>
+          <div class="prog-bar" style="margin-bottom:8px;"><div class="prog-fill" style="width:55%;background:rgb(239,68,68);"></div></div>
+          <div style="font-size:8px;color:rgb(100,116,139);line-height:1.7;">
+            Due: Mar 28 (D+4 overdue)<br>
+            Remaining: 36 TCs<br>
+            Velocity: 3.8 TC/day<br>
+            Est. Completion: Apr 10
+          </div>
+        </div>
+        <!-- Card 4: Completed -->
+        <div style="background:#fff;border:1px solid rgb(226,232,240);border-radius:6px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:10px;font-weight:700;color:rgb(15,23,42);">Sprint 10</span>
+            <span class="badge badge-indigo">Completed</span>
+          </div>
+          <div style="font-size:9px;font-weight:700;color:rgb(15,23,42);margin-bottom:4px;">Progress: 100%</div>
+          <div class="prog-bar" style="margin-bottom:8px;"><div class="prog-fill bg-indigo" style="width:100%;"></div></div>
+          <div style="font-size:8px;color:rgb(100,116,139);line-height:1.7;">
+            Due: Mar 20 (Completed)<br>
+            Remaining: 0 TCs<br>
+            Final Pass Rate: 95.4%
+          </div>
+        </div>
+      </div>
+
+      <!-- Burndown Chart -->
+      <div class="sec-title">Burndown — Sprint 12</div>
+      <div class="chart-area" style="height:200px;position:relative;background:#fff;padding:8px;">
+        <!-- Y axis -->
+        <div style="position:absolute;left:4px;top:12px;font-size:7px;color:rgb(100,116,139);">100</div>
+        <div style="position:absolute;left:8px;top:52px;font-size:7px;color:rgb(100,116,139);">75</div>
+        <div style="position:absolute;left:8px;top:92px;font-size:7px;color:rgb(100,116,139);">50</div>
+        <div style="position:absolute;left:8px;top:132px;font-size:7px;color:rgb(100,116,139);">25</div>
+        <div style="position:absolute;left:12px;top:172px;font-size:7px;color:rgb(100,116,139);">0</div>
+        <svg style="position:absolute;left:28px;top:8px;width:calc(100% - 36px);height:172px;">
+          <!-- Grid -->
+          <line x1="0" y1="0" x2="100%" y2="0" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="43" x2="100%" y2="43" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="86" x2="100%" y2="86" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="129" x2="100%" y2="129" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>
+          <line x1="0" y1="172" x2="100%" y2="172" stroke="rgb(226,232,240)" stroke-width="0.5"/>
+          <!-- Ideal line (dashed) -->
+          <line x1="0" y1="0" x2="480" y2="172" stroke="rgb(100,116,139)" stroke-width="1" stroke-dasharray="6,4"/>
+          <!-- Actual line -->
+          <polyline fill="none" stroke="rgb(99,102,241)" stroke-width="2"
+            points="0,0 48,10 96,18 144,35 192,52 240,68 288,82 336,100 384,120 432,138"/>
+          <!-- Data points on actual -->
+          <circle cx="0" cy="0" r="3" fill="rgb(99,102,241)"/>
+          <circle cx="96" cy="18" r="3" fill="rgb(99,102,241)"/>
+          <circle cx="192" cy="52" r="3" fill="rgb(99,102,241)"/>
+          <circle cx="288" cy="82" r="3" fill="rgb(99,102,241)"/>
+          <circle cx="384" cy="120" r="3" fill="rgb(99,102,241)"/>
+          <circle cx="432" cy="138" r="3" fill="rgb(99,102,241)"/>
+          <!-- "Today" vertical line -->
+          <line x1="432" y1="0" x2="432" y2="172" stroke="rgb(239,68,68)" stroke-width="0.5" stroke-dasharray="2,2"/>
+          <text x="432" y="-2" font-size="7" fill="rgb(239,68,68)" text-anchor="middle">Today</text>
+        </svg>
+        <div style="position:absolute;bottom:4px;left:28px;right:8px;display:flex;justify-content:space-between;font-size:7px;color:rgb(100,116,139);">
+          <span>Mar 21</span><span>Mar 24</span><span>Mar 27</span><span>Mar 30</span><span>Apr 2</span><span>Apr 6</span>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:8px;color:rgb(100,116,139);margin:6px 0 16px;">
+        <span style="margin-right:16px;">─ ─ ─ Ideal</span>
+        <span style="color:rgb(99,102,241);">── Actual</span>
+      </div>
+
+      <!-- Quality Gates Table -->
+      <div class="sec-title">Release Quality Gates</div>
+      <table class="pdf-table">
+        <thead><tr><th>Gate</th><th>Status</th><th>Threshold</th><th>Actual</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Pass Rate ≥ 90%</td><td style="text-align:center;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:rgb(16,163,127);color:#fff;font-size:9px;text-align:center;line-height:14px;">✓</span></td><td>90%</td><td>91.2%</td><td style="color:rgb(16,163,127);font-weight:700;">PASS</td></tr>
+          <tr><td>No Critical Failures</td><td style="text-align:center;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:rgb(239,68,68);color:#fff;font-size:9px;text-align:center;line-height:14px;">✕</span></td><td>0</td><td>3</td><td style="color:rgb(239,68,68);font-weight:700;">FAIL</td></tr>
+          <tr><td>Coverage ≥ 80%</td><td style="text-align:center;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:rgb(249,115,22);color:#fff;font-size:9px;text-align:center;line-height:14px;">!</span></td><td>80%</td><td>78%</td><td style="color:rgb(249,115,22);font-weight:700;">WARN</td></tr>
+          <tr><td>Blocked ≤ 5%</td><td style="text-align:center;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:rgb(16,163,127);color:#fff;font-size:9px;text-align:center;line-height:14px;">✓</span></td><td>5%</td><td>3.4%</td><td style="color:rgb(16,163,127);font-weight:700;">PASS</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pdf-footer">
+      <span>Connevo Suite</span>
+      <span>Generated by Testably — April 1, 2026</span>
+      <span>Page 5 of 8</span>
+    </div>
+  </div>
+
+  <div class="anno">
+    <div class="anno-title">P5: Milestone &amp; Release Readiness</div>
+    <ul>
+      <li>Milestone 카드: 2×2, <code>82mm×50mm</code>, 간격 6mm, 상태 뱃지(On Track/At Risk/Overdue)</li>
+      <li>Progress bar: <code>70mm×3mm</code>, Indigo 채움, On Track=Indigo / At Risk=Amber / Overdue=Red</li>
+      <li>Burndown: <code>170mm×70mm</code>, Ideal(dashed gray) + Actual(solid Indigo), "Today" 세로선(Red dashed)</li>
+      <li>Quality Gates 5열: Status 아이콘(✓Green/✕Red/!Orange 원), Verdict 색상 Bold</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ====== PAGE 6: Risk Assessment ====== -->
+<div class="screen" id="s5">
+  <div class="a4-page">
+    <div class="pdf-header">
+      <span class="logo">Testably</span>
+      <span class="page-title">Risk Assessment</span>
+    </div>
+    <div class="pdf-content">
+      <!-- Top Failed TCs -->
+      <div class="sec-title">Top Failed Test Cases</div>
+      <table class="pdf-table" style="margin-bottom:16px;">
+        <thead><tr><th>#</th><th>TC ID</th><th>Title</th><th>Priority</th><th>Fails</th><th>Last</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>TC-0147</td><td>Payment gateway timeout handling</td><td><span class="pri-dot" style="background:rgb(239,68,68);"></span>Crit</td><td style="color:rgb(239,68,68);font-weight:700;">8</td><td style="color:rgb(100,116,139);">2h ago</td></tr>
+          <tr><td>2</td><td>TC-0089</td><td>Checkout with expired coupon code</td><td><span class="pri-dot" style="background:rgb(239,68,68);"></span>Crit</td><td style="color:rgb(239,68,68);font-weight:700;">7</td><td style="color:rgb(100,116,139);">4h ago</td></tr>
+          <tr><td>3</td><td>TC-0203</td><td>File upload size limit validation</td><td><span class="pri-dot" style="background:rgb(245,158,11);"></span>High</td><td style="color:rgb(239,68,68);font-weight:700;">6</td><td style="color:rgb(100,116,139);">1d ago</td></tr>
+          <tr><td>4</td><td>TC-0055</td><td>Multi-currency conversion rounding</td><td><span class="pri-dot" style="background:rgb(239,68,68);"></span>Crit</td><td style="color:rgb(239,68,68);font-weight:700;">5</td><td style="color:rgb(100,116,139);">6h ago</td></tr>
+          <tr><td>5</td><td>TC-0312</td><td>Session timeout redirect to login</td><td><span class="pri-dot" style="background:rgb(245,158,11);"></span>High</td><td style="color:rgb(249,115,22);font-weight:700;">4</td><td style="color:rgb(100,116,139);">12h ago</td></tr>
+          <tr><td>6</td><td>TC-0178</td><td>Password reset email delivery</td><td><span class="pri-dot" style="background:rgb(99,102,241);"></span>Med</td><td style="color:rgb(249,115,22);font-weight:700;">3</td><td style="color:rgb(100,116,139);">1d ago</td></tr>
+          <tr><td>7</td><td>TC-0094</td><td>Search results pagination</td><td><span class="pri-dot" style="background:rgb(99,102,241);"></span>Med</td><td style="color:rgb(249,115,22);font-weight:700;">3</td><td style="color:rgb(100,116,139);">2d ago</td></tr>
+          <tr><td>8</td><td>TC-0221</td><td>Dashboard chart date range filter</td><td><span class="pri-dot" style="background:rgb(148,163,184);"></span>Low</td><td style="font-weight:700;">2</td><td style="color:rgb(100,116,139);">3d ago</td></tr>
+          <tr><td>9</td><td>TC-0156</td><td>Export CSV with special characters</td><td><span class="pri-dot" style="background:rgb(99,102,241);"></span>Med</td><td style="font-weight:700;">2</td><td style="color:rgb(100,116,139);">3d ago</td></tr>
+          <tr><td>10</td><td>TC-0287</td><td>Notification preference save</td><td><span class="pri-dot" style="background:rgb(148,163,184);"></span>Low</td><td style="font-weight:700;">2</td><td style="color:rgb(100,116,139);">5d ago</td></tr>
+        </tbody>
+      </table>
+
+      <!-- Flaky Test Cases -->
+      <div class="sec-title">Flaky Test Cases (Score ≥ 50%)</div>
+      <table class="pdf-table" style="margin-bottom:16px;">
+        <thead><tr><th>TC ID</th><th>Title</th><th>Sequence (last 10)</th><th>Score</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>TC-0312</td><td>Session timeout redirect</td>
+            <td>
+              <span class="dot dot-pass"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span>
+            </td>
+            <td style="color:rgb(239,68,68);font-weight:700;">78% ⚠️</td>
+          </tr>
+          <tr>
+            <td>TC-0203</td><td>File upload size limit</td>
+            <td>
+              <span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span>
+            </td>
+            <td style="color:rgb(239,68,68);font-weight:700;">67% ⚠️</td>
+          </tr>
+          <tr>
+            <td>TC-0094</td><td>Search results pagination</td>
+            <td>
+              <span class="dot dot-pass"></span><span class="dot dot-pass"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span>
+            </td>
+            <td style="color:rgb(249,115,22);font-weight:700;">56% ⚠️</td>
+          </tr>
+          <tr>
+            <td>TC-0156</td><td>Export CSV special chars</td>
+            <td>
+              <span class="dot dot-pass"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span><span class="dot dot-pass"></span><span class="dot dot-pass"></span><span class="dot dot-pass"></span><span class="dot dot-fail"></span>
+            </td>
+            <td style="color:rgb(249,115,22);font-weight:700;">50% ⚠️</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Coverage Gaps -->
+      <div class="sec-title">Coverage Gaps (Untested by Module)</div>
+      <table class="pdf-table">
+        <thead><tr><th>Module</th><th>Untested TCs</th><th>% of Module</th><th>Risk</th></tr></thead>
+        <tbody>
+          <tr><td>File Upload</td><td style="font-weight:600;">12</td><td>40.0%</td><td><span class="badge badge-red">🔴 High</span></td></tr>
+          <tr><td>Notification</td><td style="font-weight:600;">8</td><td>26.7%</td><td><span class="badge badge-amber">🟠 Medium</span></td></tr>
+          <tr><td>Payment</td><td style="font-weight:600;">6</td><td>15.8%</td><td><span class="badge" style="background:rgb(255,251,235);color:rgb(245,158,11);">🟡 Low</span></td></tr>
+          <tr><td>Dashboard</td><td style="font-weight:600;">5</td><td>14.3%</td><td><span class="badge" style="background:rgb(255,251,235);color:rgb(245,158,11);">🟡 Low</span></td></tr>
+          <tr><td>Authentication</td><td style="font-weight:600;">2</td><td>4.8%</td><td><span class="badge" style="background:rgb(255,251,235);color:rgb(245,158,11);">🟡 Low</span></td></tr>
+          <tr><td>User Profile</td><td style="font-weight:600;">2</td><td>7.1%</td><td><span class="badge" style="background:rgb(255,251,235);color:rgb(245,158,11);">🟡 Low</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pdf-footer">
+      <span>Connevo Suite</span>
+      <span>Generated by Testably — April 1, 2026</span>
+      <span>Page 6 of 8</span>
+    </div>
+  </div>
+
+  <div class="anno">
+    <div class="anno-title">P6: Risk Assessment</div>
+    <ul>
+      <li>Top 10 Failed TCs: Priority 색상 원(<code>2mm</code>) + 약어, Fails ≥5 Red / ≥3 Orange / &lt;3 기본</li>
+      <li>Flaky: Sequence 원형 시각화 — <code>●</code> Pass(Green 채움) / <code>○</code> Fail(Red 테두리), 간격 <code>4mm</code></li>
+      <li>Flaky Score: <code>(상태 전환 횟수) / 9 × 100</code>, ≥70% Red⚠️ / ≥50% Orange⚠️</li>
+      <li>Coverage Gaps: Risk 뱃지 — ≥50% <code>🔴 High</code> / ≥20% <code>🟠 Medium</code> / &lt;20% <code>🟡 Low</code></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ====== PAGE 7: Team Performance ====== -->
+<div class="screen" id="s6">
+  <div class="a4-page">
+    <div class="pdf-header">
+      <span class="logo">Testably</span>
+      <span class="page-title">Team Performance</span>
+    </div>
+    <div class="pdf-content">
+      <!-- Team Summary Bar -->
+      <div style="background:rgb(248,250,252);border:1px solid rgb(226,232,240);border-radius:6px;padding:8px 16px;display:flex;justify-content:space-around;margin-bottom:16px;">
+        <span style="font-size:8px;color:rgb(100,116,139);">Total Members: <strong style="color:rgb(15,23,42);font-size:9px;">8</strong></span>
+        <span style="border-left:1px solid rgb(226,232,240);"></span>
+        <span style="font-size:8px;color:rgb(100,116,139);">Active Today: <strong style="color:rgb(16,163,127);font-size:9px;">5</strong></span>
+        <span style="border-left:1px solid rgb(226,232,240);"></span>
+        <span style="font-size:8px;color:rgb(100,116,139);">Avg Execution/Member: <strong style="color:rgb(15,23,42);font-size:9px;">156</strong></span>
+      </div>
+
+      <!-- Member Performance Table -->
+      <div class="sec-title">Member Performance</div>
+      <table class="pdf-table" style="margin-bottom:16px;">
+        <thead><tr><th>#</th><th>Member</th><th>Executed</th><th>Passed</th><th>Failed</th><th>Pass%</th><th>Contrib%</th><th style="width:90px;">Bar</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>이정현</td><td style="font-weight:600;">245</td><td>228</td><td>17</td><td style="color:rgb(16,163,127);font-weight:600;">93.1%</td><td>19.6%</td><td><div style="width:90px;height:10px;background:rgb(241,245,249);border-radius:2px;overflow:hidden;"><div style="width:100%;height:100%;background:rgb(99,102,241);border-radius:2px;"></div></div></td></tr>
+          <tr><td>2</td><td>김수진</td><td style="font-weight:600;">210</td><td>195</td><td>15</td><td style="color:rgb(16,163,127);font-weight:600;">92.9%</td><td>16.8%</td><td><div style="width:90px;height:10px;background:rgb(241,245,249);border-radius:2px;overflow:hidden;"><div style="width:86%;height:100%;background:rgb(99,102,241);border-radius:2px;opacity:.8;"></div></div></td></tr>
+          <tr><td>3</td><td>박민우</td><td style="font-weight:600;">198</td><td>180</td><td>18</td><td style="color:rgb(16,163,127);font-weight:600;">90.9%</td><td>15.9%</td><td><div style="width:90px;height:10px;background:rgb(241,245,249);border-radius:2px;overflow:hidden;"><div style="width:81%;height:100%;background:rgb(99,102,241);border-radius:2px;opacity:.6;"></div></div></td></tr>
+          <tr><td>4</td><td>최서연</td><td style="font-weight:600;">175</td><td>160</td><td>15</td><td style="color:rgb(16,163,127);font-weight:600;">91.4%</td><td>14.0%</td><td><div style="width:90px;height:10px;background:rgb(241,245,249);border-radius:2px;overflow:hidden;"><div style="width:71%;height:100%;background:rgb(99,102,241);border-radius:2px;opacity:.4;"></div></div></td></tr>
+          <tr><td>5</td><td>정우성</td><td style="font-weight:600;">148</td><td>132</td><td>16</td><td style="color:rgb(249,115,22);font-weight:600;">89.2%</td><td>11.9%</td><td><div style="width:90px;height:10px;background:rgb(241,245,249);border-radius:2px;overflow:hidden;"><div style="width:60%;height:100%;background:rgb(99,102,241);border-radius:2px;opacity:.25;"></div></div></td></tr>
+          <tr><td>6</td><td>한지윤</td><td style="font-weight:600;">112</td><td>100</td><td>12</td><td style="color:rgb(249,115,22);font-weight:600;">89.3%</td><td>9.0%</td><td><div style="width:90px;height:10px;background:rgb(241,245,249);border-radius:2px;overflow:hidden;"><div style="width:46%;height:100%;background:rgb(203,213,225);border-radius:2px;"></div></div></td></tr>
+          <tr><td>7</td><td>윤도현</td><td style="font-weight:600;">95</td><td>84</td><td>11</td><td style="color:rgb(249,115,22);font-weight:600;">88.4%</td><td>7.6%</td><td><div style="width:90px;height:10px;background:rgb(241,245,249);border-radius:2px;overflow:hidden;"><div style="width:39%;height:100%;background:rgb(203,213,225);border-radius:2px;"></div></div></td></tr>
+          <tr><td>8</td><td>송예린</td><td style="font-weight:600;">64</td><td>52</td><td>12</td><td style="color:rgb(249,115,22);font-weight:600;">81.3%</td><td>5.1%</td><td><div style="width:90px;height:10px;background:rgb(241,245,249);border-radius:2px;overflow:hidden;"><div style="width:26%;height:100%;background:rgb(203,213,225);border-radius:2px;"></div></div></td></tr>
+        </tbody>
+      </table>
+
+      <!-- Contribution Distribution -->
+      <div class="sec-title">Contribution Distribution</div>
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="width:60px;font-size:9px;color:rgb(15,23,42);text-align:right;">이정현</span>
+          <div style="flex:1;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:19.6%;height:100%;background:rgb(99,102,241);border-radius:3px;"></div></div>
+          <span style="width:40px;font-size:9px;font-weight:700;color:rgb(15,23,42);text-align:right;">19.6%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="width:60px;font-size:9px;color:rgb(15,23,42);text-align:right;">김수진</span>
+          <div style="flex:1;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:16.8%;height:100%;background:rgb(99,102,241);border-radius:3px;opacity:.8;"></div></div>
+          <span style="width:40px;font-size:9px;font-weight:700;color:rgb(15,23,42);text-align:right;">16.8%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="width:60px;font-size:9px;color:rgb(15,23,42);text-align:right;">박민우</span>
+          <div style="flex:1;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:15.9%;height:100%;background:rgb(99,102,241);border-radius:3px;opacity:.6;"></div></div>
+          <span style="width:40px;font-size:9px;font-weight:700;color:rgb(15,23,42);text-align:right;">15.9%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="width:60px;font-size:9px;color:rgb(15,23,42);text-align:right;">최서연</span>
+          <div style="flex:1;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:14%;height:100%;background:rgb(99,102,241);border-radius:3px;opacity:.4;"></div></div>
+          <span style="width:40px;font-size:9px;font-weight:700;color:rgb(15,23,42);text-align:right;">14.0%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="width:60px;font-size:9px;color:rgb(15,23,42);text-align:right;">정우성</span>
+          <div style="flex:1;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:11.9%;height:100%;background:rgb(99,102,241);border-radius:3px;opacity:.25;"></div></div>
+          <span style="width:40px;font-size:9px;font-weight:700;color:rgb(15,23,42);text-align:right;">11.9%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="width:60px;font-size:9px;color:rgb(100,116,139);text-align:right;">Others</span>
+          <div style="flex:1;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;"><div style="width:21.7%;height:100%;background:rgb(203,213,225);border-radius:3px;"></div></div>
+          <span style="width:40px;font-size:9px;font-weight:700;color:rgb(100,116,139);text-align:right;">21.7%</span>
+        </div>
+      </div>
+
+      <!-- Defect Discovery -->
+      <div class="sec-title">Defect Discovery Contribution</div>
+      <div style="background:rgb(238,242,255);border-radius:5px;padding:8px 12px;margin-bottom:12px;">
+        <span style="font-size:9px;color:rgb(99,102,241);">이정현 님이 전체 결함의 19.1%를 발견 — 팀 내 최고 버그 발견율</span>
+      </div>
+      <table class="pdf-table">
+        <thead><tr><th>Member</th><th>Failures Found</th><th>% of Total</th><th>Discovery Rate</th></tr></thead>
+        <tbody>
+          <tr><td>이정현</td><td style="font-weight:600;">17</td><td>19.1%</td><td>6.9%</td></tr>
+          <tr><td>박민우</td><td style="font-weight:600;">18</td><td>20.2%</td><td>9.1%</td></tr>
+          <tr><td>정우성</td><td style="font-weight:600;">16</td><td>18.0%</td><td>10.8%</td></tr>
+          <tr><td>김수진</td><td style="font-weight:600;">15</td><td>16.9%</td><td>7.1%</td></tr>
+          <tr><td>최서연</td><td style="font-weight:600;">15</td><td>16.9%</td><td>8.6%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pdf-footer">
+      <span>Connevo Suite</span>
+      <span>Generated by Testably — April 1, 2026</span>
+      <span>Page 7 of 8</span>
+    </div>
+  </div>
+
+  <div class="anno">
+    <div class="anno-title">P7: Team Performance</div>
+    <ul>
+      <li>Summary Bar: P4와 동일 스타일, <code>"Total Members: 8 | Active Today: 5 | Avg Execution/Member: 156"</code></li>
+      <li>Member 테이블 8열: Pass% 색상(≥90% Green / ≥70% Orange / &lt;70% Red), Contribution bar Indigo 농도 차이</li>
+      <li>Contribution 분포: 상위 5명 + "Others", Indigo 100%→80%→60%→40%→25%→Gray</li>
+      <li>Defect Discovery: 하이라이트 문장(Indigo연 bg) + 미니 4열 테이블</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ====== PAGE 8: Test Case Appendix ====== -->
+<div class="screen" id="s7">
+  <div class="a4-page">
+    <div class="pdf-header">
+      <span class="logo">Testably</span>
+      <span class="page-title">Test Case Appendix</span>
+    </div>
+    <div class="pdf-content">
+      <!-- Lifecycle Distribution -->
+      <div class="sec-title">Lifecycle Distribution</div>
+      <div style="background:rgb(248,250,252);border:1px solid rgb(226,232,240);border-radius:6px;padding:8px 16px;display:flex;justify-content:space-around;margin-bottom:16px;">
+        <span style="font-size:8px;color:rgb(100,116,139);display:flex;align-items:center;gap:4px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:rgb(16,163,127);"></span>
+          Active: <strong style="color:rgb(15,23,42);font-size:9px;">180 (72.6%)</strong>
+        </span>
+        <span style="border-left:1px solid rgb(226,232,240);"></span>
+        <span style="font-size:8px;color:rgb(100,116,139);display:flex;align-items:center;gap:4px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:rgb(139,92,246);"></span>
+          Draft: <strong style="color:rgb(15,23,42);font-size:9px;">48 (19.4%)</strong>
+        </span>
+        <span style="border-left:1px solid rgb(226,232,240);"></span>
+        <span style="font-size:8px;color:rgb(100,116,139);display:flex;align-items:center;gap:4px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:rgb(203,213,225);"></span>
+          Deprecated: <strong style="color:rgb(15,23,42);font-size:9px;">20 (8.0%)</strong>
+        </span>
+      </div>
+
+      <!-- TC Table -->
+      <div class="sec-title">All Test Cases</div>
+      <table class="pdf-table">
+        <thead><tr><th>#</th><th>ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Folder</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>TC-0001</td><td>User login with valid credentials</td><td><span class="pri-dot" style="background:rgb(239,68,68);"></span>Crit</td><td class="c-pass" style="font-weight:600;">Passed</td><td>Authentication</td></tr>
+          <tr><td>2</td><td>TC-0002</td><td>User login with invalid password</td><td><span class="pri-dot" style="background:rgb(239,68,68);"></span>Crit</td><td class="c-pass" style="font-weight:600;">Passed</td><td>Authentication</td></tr>
+          <tr><td>3</td><td>TC-0003</td><td>Password reset email request</td><td><span class="pri-dot" style="background:rgb(245,158,11);"></span>High</td><td class="c-pass" style="font-weight:600;">Passed</td><td>Authentication</td></tr>
+          <tr><td>4</td><td>TC-0004</td><td>OAuth2 Google sign-in flow</td><td><span class="pri-dot" style="background:rgb(245,158,11);"></span>High</td><td class="c-pass" style="font-weight:600;">Passed</td><td>Authentication</td></tr>
+          <tr><td>5</td><td>TC-0005</td><td>Session token refresh mechanism</td><td><span class="pri-dot" style="background:rgb(99,102,241);"></span>Med</td><td class="c-fail" style="font-weight:600;">Failed</td><td>Authentication</td></tr>
+          <tr><td>6</td><td>TC-0006</td><td>Two-factor authentication setup</td><td><span class="pri-dot" style="background:rgb(245,158,11);"></span>High</td><td class="c-pass" style="font-weight:600;">Passed</td><td>Authentication</td></tr>
+          <tr><td>7</td><td>TC-0010</td><td>Credit card payment processing</td><td><span class="pri-dot" style="background:rgb(239,68,68);"></span>Crit</td><td class="c-pass" style="font-weight:600;">Passed</td><td>Payment</td></tr>
+          <tr><td>8</td><td>TC-0011</td><td>Refund request submission</td><td><span class="pri-dot" style="background:rgb(239,68,68);"></span>Crit</td><td class="c-block" style="font-weight:600;">Blocked</td><td>Payment</td></tr>
+          <tr><td>9</td><td>TC-0012</td><td>Invoice PDF generation</td><td><span class="pri-dot" style="background:rgb(99,102,241);"></span>Med</td><td class="c-pass" style="font-weight:600;">Passed</td><td>Payment</td></tr>
+          <tr><td>10</td><td>TC-0013</td><td>Subscription plan upgrade</td><td><span class="pri-dot" style="background:rgb(245,158,11);"></span>High</td><td class="c-pass" style="font-weight:600;">Passed</td><td>Payment</td></tr>
+          <tr><td>11</td><td>TC-0020</td><td>Profile avatar upload</td><td><span class="pri-dot" style="background:rgb(148,163,184);"></span>Low</td><td class="c-pass" style="font-weight:600;">Passed</td><td>User Profile</td></tr>
+          <tr><td>12</td><td>TC-0021</td><td>Email notification preferences</td><td><span class="pri-dot" style="background:rgb(99,102,241);"></span>Med</td><td class="c-pass" style="font-weight:600;">Passed</td><td>User Profile</td></tr>
+          <tr><td>13</td><td>TC-0030</td><td>Single file upload (< 10MB)</td><td><span class="pri-dot" style="background:rgb(245,158,11);"></span>High</td><td class="c-pass" style="font-weight:600;">Passed</td><td>File Upload</td></tr>
+          <tr><td>14</td><td>TC-0031</td><td>Bulk file upload (5 files)</td><td><span class="pri-dot" style="background:rgb(99,102,241);"></span>Med</td><td class="c-fail" style="font-weight:600;">Failed</td><td>File Upload</td></tr>
+          <tr><td>15</td><td>TC-0032</td><td>File type validation (.exe block)</td><td><span class="pri-dot" style="background:rgb(239,68,68);"></span>Crit</td><td style="color:rgb(100,116,139);font-style:italic;">Untested</td><td>File Upload</td></tr>
+          <tr><td>16</td><td>TC-0040</td><td>Dashboard KPI widget loading</td><td><span class="pri-dot" style="background:rgb(99,102,241);"></span>Med</td><td class="c-pass" style="font-weight:600;">Passed</td><td>Dashboard</td></tr>
+          <tr><td>17</td><td>TC-0041</td><td>Chart date range filter</td><td><span class="pri-dot" style="background:rgb(148,163,184);"></span>Low</td><td class="c-fail" style="font-weight:600;">Failed</td><td>Dashboard</td></tr>
+          <tr><td>18</td><td>TC-0050</td><td>REST API health check endpoint</td><td><span class="pri-dot" style="background:rgb(239,68,68);"></span>Crit</td><td class="c-pass" style="font-weight:600;">Passed</td><td>API Gateway</td></tr>
+          <tr><td>19</td><td>TC-0051</td><td>Rate limiting (100 req/min)</td><td><span class="pri-dot" style="background:rgb(245,158,11);"></span>High</td><td class="c-pass" style="font-weight:600;">Passed</td><td>API Gateway</td></tr>
+          <tr><td>20</td><td>TC-0060</td><td>Push notification delivery</td><td><span class="pri-dot" style="background:rgb(99,102,241);"></span>Med</td><td class="c-block" style="font-weight:600;">Blocked</td><td>Notification</td></tr>
+        </tbody>
+      </table>
+      <div style="text-align:center;font-size:8px;color:rgb(100,116,139);padding:8px 0;border-top:1px dashed rgb(226,232,240);margin-top:4px;">
+        ... showing 20 of 248 test cases (continues on next pages)
+      </div>
+      <div style="text-align:right;font-size:9px;font-weight:700;color:rgb(15,23,42);margin-top:8px;">
+        Total: 248 Test Cases
+      </div>
+    </div>
+    <div class="pdf-footer">
+      <span>Connevo Suite</span>
+      <span>Generated by Testably — April 1, 2026</span>
+      <span>Page 8 of 8+</span>
+    </div>
+  </div>
+
+  <div class="anno">
+    <div class="anno-title">P8: Test Case Appendix</div>
+    <ul>
+      <li>Lifecycle Distribution: <code>10mm</code> 요약 바 — Active(Green) / Draft(Violet) / Deprecated(Gray), 첫 페이지에만 표시</li>
+      <li>TC 테이블 6열: Priority 색상원+약어, Status 색상(Passed=Green/Failed=Red/Blocked=Orange/Untested=Gray italic)</li>
+      <li>페이지당 <code>30행</code> 최대, 초과 시 <code>pdf.addPage()</code> 자동 호출</li>
+      <li>새 페이지: 공통 헤더/푸터 + 테이블 헤더 반복, 페이지 번호 동적 증가</li>
+      <li>마지막 페이지 하단: <code>"Total: 248 Test Cases"</code> 9pt Bold 우정렬</li>
+    </ul>
+  </div>
+
+  <div class="dev-note">
+    <div class="dev-note-title">Dev Notes — P8 Dynamic Pagination</div>
+    <ul>
+      <li>로직: <code>TC_PER_PAGE = 30</code>, <code>totalPages = Math.ceil(tcs.length / 30)</code></li>
+      <li>루프: <code>for(p=0; p&lt;tcPages; p++) { if(p>0) pdf.addPage(); ... }</code></li>
+      <li>첫 페이지: Lifecycle Distribution + "All Test Cases" 제목 표시</li>
+      <li>이후 페이지: 테이블 헤더만 반복, 제목/Lifecycle 생략</li>
+      <li>총 페이지: <code>basePagesCount(7) + tcPages</code> → "Page X of Y" 동적 계산</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+function show(idx) {
+  document.querySelectorAll('.screen').forEach((s,i) => {
+    s.classList.toggle('active', i===idx);
+  });
+  document.querySelectorAll('.nav-btn').forEach((b,i) => {
+    b.classList.toggle('active', i===idx);
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>
