@@ -113,11 +113,11 @@ export default function AIInsightsPanel({ projectId }: { projectId: string }) {
         type: 'daily_summary',
         tag: 'Daily Summary',
         body: totalToday > 0
-          ? `오늘 ${totalToday}건 실행 — Pass ${passCount}건 (${passRate}%), Fail ${failCount}건. ${passRate >= 80 ? '전반적으로 안정적입니다.' : '실패율이 높습니다. 확인이 필요합니다.'}`
-          : '오늘 아직 실행된 테스트가 없습니다. 테스트 런을 시작해보세요.',
-        actionLabel: '실행 상세 보기',
+          ? `${totalToday} test(s) executed today — ${passCount} passed (${passRate}%), ${failCount} failed. ${passRate >= 80 ? 'Overall looking stable.' : 'Failure rate is high. Review recommended.'}`
+          : 'No tests have been executed today yet. Start a test run to get started.',
+        actionLabel: 'View run details',
         actionHref: '#runs',
-        timestamp: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+        timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       });
 
       // Risk Alert
@@ -125,19 +125,19 @@ export default function AIInsightsPanel({ projectId }: { projectId: string }) {
         derived.push({
           type: 'risk_alert',
           tag: 'Risk Alert',
-          body: `오늘 ${failCount}건의 실패가 감지되었습니다. 실패한 TC를 검토하고 재실행해주세요.`,
-          actionLabel: '실패 TC 보기',
+          body: `${failCount} failure(s) detected today. Please review the failed TCs and re-run them.`,
+          actionLabel: 'View failed TCs',
           actionHref: '#failed',
-          timestamp: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         });
       } else {
         derived.push({
           type: 'risk_alert',
           tag: 'Risk Alert',
-          body: '현재 감지된 위험 신호가 없습니다. 모든 테스트가 안정적으로 통과 중입니다.',
-          actionLabel: '상세 분석 보기',
+          body: 'No risk signals detected. All tests are passing stably.',
+          actionLabel: 'View detailed analysis',
           actionHref: '#analytics',
-          timestamp: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         });
       }
 
@@ -148,19 +148,19 @@ export default function AIInsightsPanel({ projectId }: { projectId: string }) {
         derived.push({
           type: 'completion_forecast',
           tag: 'Completion Forecast',
-          body: `마일스톤 "${milestone.name}" — ${daysLeft > 0 ? `${daysLeft}일 남음` : '기한 초과'}. ${onTrack ? '현재 속도로 일정 내 완료 가능합니다.' : '일정이 촉박합니다. 우선순위를 재조정하세요.'}`,
-          actionLabel: '마일스톤 보기',
+          body: `Milestone "${milestone.name}" — ${daysLeft > 0 ? `${daysLeft} day(s) remaining` : 'past due'}. ${onTrack ? 'On track to complete within schedule at current pace.' : 'Schedule is tight. Consider reprioritizing.'}`,
+          actionLabel: 'View milestones',
           actionHref: '#milestones',
-          timestamp: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         });
       } else {
         derived.push({
           type: 'completion_forecast',
           tag: 'Completion Forecast',
-          body: '활성 마일스톤이 없습니다. 마일스톤을 설정하면 완료 예측을 확인할 수 있습니다.',
-          actionLabel: '마일스톤 추가',
+          body: 'No active milestones. Set up a milestone to see completion forecasts.',
+          actionLabel: 'Add milestone',
           actionHref: '#milestones',
-          timestamp: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         });
       }
 

@@ -149,7 +149,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
         </div>
         <div className="flex items-center gap-2">
           {subscriptionTier < 3 && (
-            <span className="text-[11px] text-gray-400">상위 {limit}개</span>
+            <span className="text-[11px] text-gray-400">Top {limit}</span>
           )}
           <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">Pro+</span>
         </div>
@@ -165,15 +165,16 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
         ) : flaky.length === 0 ? (
           <div className="py-8 flex flex-col items-center text-center gap-2">
             <i className="ri-shield-check-line text-3xl text-emerald-400" />
-            <p className="text-[13px] font-medium text-gray-700">Flaky TC 없음</p>
-            <p className="text-[12px] text-gray-400">모든 TC가 안정적으로 실행되고 있습니다</p>
+            <p className="text-[13px] font-medium text-gray-700">No Flaky TCs</p>
+            <p className="text-[12px] text-gray-400">All TCs are running stably</p>
           </div>
         ) : (
           <>
             <table className="w-full text-[12px]">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 px-4 py-2">Test Case</th>
+                  <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 px-4 py-2 w-[80px]">ID</th>
+                  <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2">Test Case</th>
                   <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2">Sequence (Last 10)</th>
                   <th className="text-center text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2 pr-2">Score</th>
                   <th className="text-right text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2 pr-4">Last Run</th>
@@ -186,10 +187,10 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                     className={`border-b border-gray-100 hover:bg-gray-50/70 transition-colors ${tc.flakyScore >= 50 ? 'border-l-2 border-l-red-500' : ''}`}
                   >
                     <td className="pl-3.5 py-2.5 pr-2">
+                      <span className="text-[11px] font-mono text-gray-500">{tc.customId || '—'}</span>
+                    </td>
+                    <td className="py-2.5 pr-2">
                       <div className="font-medium text-gray-800 truncate max-w-[120px]">{tc.title}</div>
-                      {tc.customId && (
-                        <div className="text-[10px] font-mono text-gray-400">{tc.customId}</div>
-                      )}
                     </td>
                     <td className="py-2.5 pr-2">
                       <SequenceDots statuses={tc.recentStatuses} />
