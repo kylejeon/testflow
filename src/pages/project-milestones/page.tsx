@@ -7,7 +7,7 @@ import NotificationBell from '../../components/feature/NotificationBell';
 import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
 import ProjectHeader from '../../components/ProjectHeader';
-import { Avatar } from '../../components/Avatar';
+import { Avatar, AvatarStack } from '../../components/Avatar';
 
 interface Milestone {
   id: string;
@@ -561,6 +561,22 @@ export default function ProjectMilestones() {
             <span className={`text-[0.625rem] font-semibold px-[0.4375rem] py-[0.125rem] rounded-full flex-shrink-0 ${info.badgeCls}`}>
               {info.label}
             </span>
+            {/* Sub assignee avatar */}
+            {(() => {
+              const subIds = milestoneRunAssignees.get(sub.id) || [];
+              if (subIds.length === 0) return null;
+              const p = milestoneAssigneeProfiles.get(subIds[0]);
+              return (
+                <Avatar
+                  size="xs"
+                  userId={subIds[0]}
+                  name={p?.name ?? undefined}
+                  email={p?.email ?? undefined}
+                  photoUrl={p?.url ?? undefined}
+                  className="flex-shrink-0"
+                />
+              );
+            })()}
           </div>
           {/* sub progress */}
           <div className="flex items-center gap-2">
@@ -725,23 +741,45 @@ export default function ProjectMilestones() {
             </div>
           </div>
 
-          {/* Bottom: counts */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 text-[0.75rem]">
-              <span className="flex items-center gap-[0.1875rem]">
-                <span className="w-[6px] h-[6px] rounded-full bg-[#10B981] flex-shrink-0" />
-                <span className="text-[#64748B]">{milestone.passedTests} passed</span>
-              </span>
-              <span className="flex items-center gap-[0.1875rem]">
-                <span className="w-[6px] h-[6px] rounded-full bg-[#EF4444] flex-shrink-0" />
-                <span className="text-[#64748B]">{milestone.failedTests} failed</span>
-              </span>
-              <span className="flex items-center gap-[0.1875rem]">
-                <span className="w-[6px] h-[6px] rounded-full bg-[#94A3B8] flex-shrink-0" />
-                <span className="text-[#64748B]">{remaining} remaining</span>
-              </span>
-            </div>
-          </div>
+          {/* Bottom: counts + assignee avatars */}
+          {(() => {
+            // Collect unique assignee UUIDs: parent + all subs
+            const allIds = new Set<string>();
+            (milestoneRunAssignees.get(milestone.id) || []).forEach(id => allIds.add(id));
+            (milestone.subMilestones || []).forEach((sub: any) => {
+              (milestoneRunAssignees.get(sub.id) || []).forEach(id => allIds.add(id));
+            });
+            const members = Array.from(allIds).map(uid => {
+              const p = milestoneAssigneeProfiles.get(uid);
+              return { userId: uid, name: p?.name ?? undefined, email: p?.email ?? undefined, photoUrl: p?.url ?? undefined };
+            });
+            return (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 text-[0.75rem]">
+                  <span className="flex items-center gap-[0.1875rem]">
+                    <span className="w-[6px] h-[6px] rounded-full bg-[#10B981] flex-shrink-0" />
+                    <span className="text-[#64748B]">{milestone.passedTests} passed</span>
+                  </span>
+                  <span className="flex items-center gap-[0.1875rem]">
+                    <span className="w-[6px] h-[6px] rounded-full bg-[#EF4444] flex-shrink-0" />
+                    <span className="text-[#64748B]">{milestone.failedTests} failed</span>
+                  </span>
+                  <span className="flex items-center gap-[0.1875rem]">
+                    <span className="w-[6px] h-[6px] rounded-full bg-[#94A3B8] flex-shrink-0" />
+                    <span className="text-[#64748B]">{remaining} remaining</span>
+                  </span>
+                  {milestone.isAggregated && milestone.rollupPassRate !== undefined && milestone.rollupPassRate > 0 && (
+                    <span className="flex items-center gap-[0.1875rem] ml-2 pl-2 border-l border-[#E2E8F0]">
+                      <span className="text-[#6366F1] font-semibold">{milestone.rollupPassRate}% pass rate</span>
+                    </span>
+                  )}
+                </div>
+                {members.length > 0 && (
+                  <AvatarStack size="xs" max={4} members={members} style={{ gap: 0 }} />
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Sub-milestones */}
