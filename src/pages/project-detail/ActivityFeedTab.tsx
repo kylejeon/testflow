@@ -124,6 +124,149 @@ function FeedItem({ item }: { item: ActivityFeedItem }) {
   );
 }
 
+// ── AI Daily Summary card (Pro+) ──────────────────────────────────────────────
+function AIDailySummary({ projectId }: { projectId: string }) {
+  const [expanded, setExpanded] = useState(true);
+  const [summary, setSummary] = useState<{ text: string; points: string[] } | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const { data: runs } = await supabase
+          .from('test_runs').select('id').eq('project_id', projectId);
+        const runIds = (runs ?? []).map((r: any) => r.id);
+        if (!runIds.length) { setSummary({ text: '오늘 실행된 테스트가 없습니다.', points: [] }); return; }
+
+        const since = new Date(Date.now() - 86400000).toISOString();
+        const { data: results } = await supabase
+          .from('test_results').select('status').in('run_id', runIds).gte('created_at', since);
+
+        const total = (results ?? []).length;
+        const passed = (results ?? []).filter((r: any) => r.status === 'passed').length;
+        const failed = (results ?? []).filter((r: any) => r.status === 'failed').length;
+        const blocked = (results ?? []).filter((r: any) => r.status === 'blocked').length;
+        const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+
+        setSummary({
+          text: total > 0
+            ? `오늘 총 ${total}건의 테스트가 실행되었으며, 전체 Pass율은 ${passRate}%입니다.`
+            : '오늘 아직 실행된 테스트가 없습니다.',
+          points: [
+            total > 0 ? `✅ Passed ${passed}건 (${passRate}%)` : '',
+            failed > 0 ? `❌ Failed ${failed}건 — 검토 필요` : '',
+            blocked > 0 ? `⚠️ Blocked ${blocked}건` : '',
+          ].filter(Boolean),
+        });
+      } catch (e) {
+        console.error('AIDailySummary:', e);
+      }
+    }
+    load();
+  }, [projectId]);
+
+  return (
+    <div className="mx-5 mt-3 mb-1 rounded-xl overflow-hidden border border-violet-200"
+      style={{ background: 'linear-gradient(135deg, #f5f3ff 0%, #eef2ff 100%)' }}>
+      <button
+        className="w-full flex items-center justify-between px-4 py-3 cursor-pointer"
+        onClick={() => setExpanded(e => !e)}
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center flex-shrink-0">
+            <i className="ri-sparkling-2-fill text-white text-[11px]" />
+          </div>
+          <span className="text-[13px] font-semibold text-violet-800">AI Daily Summary</span>
+          <span className="text-[11px] font-semibold text-violet-600 bg-violet-100 border border-violet-200 px-1.5 py-0.5 rounded-full">Pro+</span>
+        </div>
+        <i className={`text-violet-500 transition-transform ${expanded ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'}`} />
+      </button>
+      {expanded && (
+        <div className="px-4 pb-3">
+          {summary ? (
+            <>
+              <p className="text-[13px] text-violet-900 leading-relaxed">{summary.text}</p>
+              {summary.points.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {summary.points.map((p, i) => (
+                    <li key={i} className="text-[12px] text-violet-800">{p}</li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ) : (
+            <div className="h-8 bg-violet-100 rounded animate-pulse" />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Filter Chips ──────────────────────────────────────────────────────────────
+const CATEGORY_LABELS: Record<string, string> = {
+  test_execution: '테스트 실행',
+  tc_management: 'TC 관리',
+  milestone: '마일스톤',
+  team: '팀',
+};
+const DATE_LABELS: Record<string, string> = { '1d': '오늘', '7d': '최근 7일', '30d': '최근 30일' };
+
+function FilterChips({
+  filters,
+  onChange,
+}: {
+  filters: FeedFilters;
+  onChange: (f: FeedFilters) => void;
+}) {
+  const chips: { label: string; onRemove: () => void }[] = [];
+
+  if (filters.category) {
+    chips.push({
+      label: CATEGORY_LABELS[filters.category] ?? filters.category,
+      onRemove: () => onChange({ ...filters, category: null }),
+    });
+  }
+  if (filters.actorId) {
+    chips.push({
+      label: '팀원 필터 적용',
+      onRemove: () => onChange({ ...filters, actorId: null }),
+    });
+  }
+  if (filters.dateRange !== '7d') {
+    chips.push({
+      label: DATE_LABELS[filters.dateRange],
+      onRemove: () => onChange({ ...filters, dateRange: '7d' }),
+    });
+  }
+  if (filters.searchQuery) {
+    chips.push({
+      label: `"${filters.searchQuery}"`,
+      onRemove: () => onChange({ ...filters, searchQuery: '' }),
+    });
+  }
+
+  if (chips.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-2 px-5 py-2 flex-wrap border-b border-gray-100">
+      {chips.map((chip, i) => (
+        <span key={i} className="flex items-center gap-1 bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full text-xs font-medium border border-indigo-100">
+          {chip.label}
+          <button onClick={chip.onRemove} className="ml-0.5 hover:text-indigo-900 cursor-pointer leading-none">
+            <i className="ri-close-line text-[12px]" />
+          </button>
+        </span>
+      ))}
+      <button
+        onClick={() => onChange({ category: null, actorId: null, dateRange: '7d', searchQuery: '' })}
+        className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
+      >
+        초기화
+      </button>
+    </div>
+  );
+}
+
 // ── Filter bar ────────────────────────────────────────────────────────────────
 interface Member { user_id: string; full_name: string; }
 
@@ -261,6 +404,9 @@ export default function ActivityFeedTab({ projectId, subscriptionTier }: Activit
         </div>
       )}
 
+      {/* AI Daily Summary (Pro+) */}
+      {subscriptionTier >= 3 && <AIDailySummary projectId={projectId} />}
+
       {/* Filter bar */}
       <FilterBar
         filters={filters}
@@ -268,6 +414,9 @@ export default function ActivityFeedTab({ projectId, subscriptionTier }: Activit
         projectId={projectId}
         subscriptionTier={subscriptionTier}
       />
+
+      {/* Filter Chips */}
+      <FilterChips filters={filters} onChange={setFilters} />
 
       {/* Feed content */}
       {isLoading ? (

@@ -86,11 +86,10 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       // Filter: at least 3 results, score >= 40
       const candidates = Object.entries(byTC)
         .filter(([, statuses]) => statuses.length >= 3)
-        .map(([tcId, statuses]) => ({
-          tcId,
-          statuses: statuses.reverse(), // oldest → newest
-          score: calculateFlakyScore(statuses.reverse()),
-        }))
+        .map(([tcId, statuses]) => {
+          const reversed = [...statuses].reverse(); // oldest → newest (non-mutating)
+          return { tcId, statuses: reversed, score: calculateFlakyScore(reversed) };
+        })
         .filter(c => c.score >= 40)
         .sort((a, b) => b.score - a.score)
         .slice(0, limit);
@@ -137,7 +136,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
           {subscriptionTier < 3 && (
             <span className="text-[11px] text-gray-400">상위 {limit}개</span>
           )}
-          <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">Starter+</span>
+          <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">Pro+</span>
         </div>
       </div>
 

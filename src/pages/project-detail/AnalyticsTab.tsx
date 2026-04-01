@@ -6,6 +6,7 @@ import TeamPerformance from './widgets/TeamPerformance';
 import FlakyDetector from './widgets/FlakyDetector';
 import CoverageHeatmap from './widgets/CoverageHeatmap';
 import TCQualityAnalysis from './widgets/TCQualityAnalysis';
+import AIInsightsPanel from './widgets/AIInsightsPanel';
 import TierGate from './widgets/TierGate';
 
 type PeriodFilter = '7d' | '14d' | '30d' | 'all';
@@ -86,10 +87,15 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
           <TCQualityAnalysis projectId={projectId} />
         </div>
 
-        {/* Row 5: Flaky TC Detector (Starter+) */}
-        <TierGate requiredTier={2} currentTier={subscriptionTier} featureName="Flaky TC 감지">
-          <FlakyDetector projectId={projectId} subscriptionTier={subscriptionTier} />
-        </TierGate>
+        {/* Row 5: Flaky TC Detector (50%) + AI Insights (50%), both Pro+ */}
+        <div className="grid grid-cols-2 gap-5">
+          <TierGate requiredTier={3} currentTier={subscriptionTier} featureName="Flaky TC 감지">
+            <FlakyDetector projectId={projectId} subscriptionTier={subscriptionTier} />
+          </TierGate>
+          <TierGate requiredTier={3} currentTier={subscriptionTier} featureName="AI Insights">
+            <AIInsightsPanel projectId={projectId} />
+          </TierGate>
+        </div>
       </div>
     </div>
   );
