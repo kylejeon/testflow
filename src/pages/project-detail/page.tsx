@@ -15,6 +15,8 @@ import QuickCreateTCModal from './components/QuickCreateTCModal';
 import ContinueRunPanel from './components/ContinueRunPanel';
 import AIAssistModal from './components/AIAssistModal';
 import AIGenerateModal from '../project-testcases/components/AIGenerateModal';
+import AnalyticsTab from './AnalyticsTab';
+import ActivityFeedTab from './ActivityFeedTab';
 
 interface UserProfile {
   email: string;
@@ -1582,14 +1584,21 @@ export default function ProjectDetail() {
               </div>
             )}
 
-            {/* Analytics & Activity tabs (unchanged placeholder) */}
-            {dashboardTab !== 'overview' && (
-              <div className="flex-1 flex items-center justify-center text-sm text-gray-400 py-20">
-                <div className="text-center">
-                  <i className={`${dashboardTab === 'analytics' ? 'ri-bar-chart-2-fill' : 'ri-time-fill'} text-4xl text-gray-300 block mb-3`} />
-                  <p>{dashboardTab === 'analytics' ? 'Analytics' : 'Activity Feed'} coming soon</p>
-                </div>
-              </div>
+            {/* Analytics tab */}
+            {dashboardTab === 'analytics' && (
+              <AnalyticsTab
+                projectId={project!.id}
+                milestones={milestones}
+                subscriptionTier={userProfile?.subscription_tier ?? 1}
+              />
+            )}
+
+            {/* Activity Feed tab */}
+            {dashboardTab === 'activity' && (
+              <ActivityFeedTab
+                projectId={project!.id}
+                subscriptionTier={userProfile?.subscription_tier ?? 1}
+              />
             )}
           </main>
 
