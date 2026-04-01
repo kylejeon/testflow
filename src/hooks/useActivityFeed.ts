@@ -28,7 +28,34 @@ function getDateFrom(dateRange: FeedFilters['dateRange']): Date {
   return new Date(now.getTime() - 30 * 86400000);
 }
 
+async function enrichWithActorNames(rows: any[]): Promise<ActivityFeedItem[]> {
+  const actorIds = [...new Set(rows.map(r => r.actor_id).filter(Boolean))];
+  let profileMap = new Map<string, string>();
+
+  if (actorIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', actorIds);
+    profileMap = new Map((profiles ?? []).map(p => [p.id, p.full_name]));
+  }
+
+  return rows.map((row: any) => ({
+    id: row.id,
+    event_type: row.event_type,
+    event_category: row.event_category,
+    actor_id: row.actor_id,
+    actor_name: profileMap.get(row.actor_id) ?? '시스템',
+    target_type: row.target_type,
+    target_id: row.target_id,
+    metadata: row.metadata ?? {},
+    is_highlighted: row.is_highlighted ?? false,
+    created_at: row.created_at,
+  }));
+}
+
 const PAGE_SIZE = 30;
+const SELECT_FIELDS = 'id, event_type, event_category, actor_id, target_type, target_id, metadata, is_highlighted, created_at';
 
 export function useActivityFeed(
   projectId: string,
@@ -49,7 +76,7 @@ export function useActivityFeed(
     try {
       let q = supabase
         .from('activity_logs')
-        .select('id, event_type, event_category, actor_id, target_type, target_id, metadata, is_highlighted, created_at, actor:profiles!actor_id(full_name)')
+        .select(SELECT_FIELDS)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false })
         .gte('created_at', getDateFrom(filters.dateRange).toISOString());
@@ -58,7 +85,7 @@ export function useActivityFeed(
       if (filters.actorId) q = q.eq('actor_id', filters.actorId);
 
       const limit = Math.min(maxItems, PAGE_SIZE);
-      q = q.limit(limit + 1); // fetch one extra to determine hasMore
+      q = q.limit(limit + 1);
 
       const { data, error } = await q;
       if (error) throw error;
@@ -66,25 +93,13 @@ export function useActivityFeed(
       const items = (data ?? []).slice(0, limit);
       const hasMoreItems = (data ?? []).length > limit;
 
-      const mapped: ActivityFeedItem[] = items.map((row: any) => ({
-        id: row.id,
-        event_type: row.event_type,
-        event_category: row.event_category,
-        actor_id: row.actor_id,
-        actor_name: row.actor?.full_name ?? '시스템',
-        target_type: row.target_type,
-        target_id: row.target_id,
-        metadata: row.metadata ?? {},
-        is_highlighted: row.is_highlighted ?? false,
-        created_at: row.created_at,
-      }));
+      const mapped = await enrichWithActorNames(items);
 
-      // Client-side search filter
       const filtered = filters.searchQuery
         ? mapped.filter(item => {
             const meta = JSON.stringify(item.metadata).toLowerCase();
-            const q = filters.searchQuery.toLowerCase();
-            return meta.includes(q) || item.actor_name.toLowerCase().includes(q);
+            const sq = filters.searchQuery.toLowerCase();
+            return meta.includes(sq) || item.actor_name.toLowerCase().includes(sq);
           })
         : mapped;
 
@@ -115,7 +130,7 @@ export function useActivityFeed(
     try {
       let q = supabase
         .from('activity_logs')
-        .select('id, event_type, event_category, actor_id, target_type, target_id, metadata, is_highlighted, created_at, actor:profiles!actor_id(full_name)')
+        .select(SELECT_FIELDS)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false })
         .lt('created_at', cursor)
@@ -128,18 +143,7 @@ export function useActivityFeed(
       const moreItems = (data ?? []).slice(0, PAGE_SIZE);
       const hasMoreNow = (data ?? []).length > PAGE_SIZE;
 
-      const mapped: ActivityFeedItem[] = moreItems.map((row: any) => ({
-        id: row.id,
-        event_type: row.event_type,
-        event_category: row.event_category,
-        actor_id: row.actor_id,
-        actor_name: row.actor?.full_name ?? '시스템',
-        target_type: row.target_type,
-        target_id: row.target_id,
-        metadata: row.metadata ?? {},
-        is_highlighted: row.is_highlighted ?? false,
-        created_at: row.created_at,
-      }));
+      const mapped = await enrichWithActorNames(moreItems);
 
       setFeedItems(prev => [...prev, ...mapped]);
       setHasMore(hasMoreNow);
