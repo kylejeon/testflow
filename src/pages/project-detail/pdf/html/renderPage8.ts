@@ -1,5 +1,5 @@
 import { PdfData } from '../pdfTypes';
-import { e, priColor, priAbbr, statusClass } from './htmlUtils';
+import { e, priColor, priAbbr, fmtDate } from './htmlUtils';
 
 export function renderPage8(
   data: PdfData,
@@ -9,7 +9,7 @@ export function renderPage8(
   tcPerPage: number,
   isFirstPage: boolean,
 ): string {
-  const today = new Date().toISOString().split('T')[0];
+  const today = fmtDate();
   const tcsSlice = data.testCases.slice(tcPageIndex * tcPerPage, (tcPageIndex + 1) * tcPerPage);
   const startRow = tcPageIndex * tcPerPage + 1;
   const isLastPage = (tcPageIndex + 1) * tcPerPage >= data.testCases.length;
@@ -40,11 +40,23 @@ export function renderPage8(
   </div>
   <div class="sec-title">All Test Cases</div>` : `<div class="sec-title" style="margin-top:0;">All Test Cases (continued)</div>`;
 
-  const lifecycleColor = (status: string): string => {
-    const s = (status || 'active').toLowerCase();
-    if (s === 'active') return 'rgb(16,163,127)';
-    if (s === 'draft') return 'rgb(139,92,246)';
-    return 'rgb(203,213,225)';
+  // Fix 5: Status column shows latest test result, not lifecycle status
+  const resultStatusStyle = (status: string): string => {
+    const s = (status || 'untested').toLowerCase();
+    if (s === 'passed') return 'color:rgb(16,163,127);font-weight:600;';
+    if (s === 'failed') return 'color:rgb(239,68,68);font-weight:600;';
+    if (s === 'blocked') return 'color:rgb(249,115,22);font-weight:600;';
+    if (s === 'retest') return 'color:rgb(234,179,8);font-weight:600;';
+    return 'color:rgb(100,116,139);font-style:italic;'; // untested / not run
+  };
+
+  const resultStatusLabel = (status: string): string => {
+    const s = (status || 'untested').toLowerCase();
+    if (s === 'passed') return 'Passed';
+    if (s === 'failed') return 'Failed';
+    if (s === 'blocked') return 'Blocked';
+    if (s === 'retest') return 'Retest';
+    return 'Not Run';
   };
 
   return `
@@ -69,25 +81,24 @@ export function renderPage8(
     <tbody>
       ${tcsSlice.map((tc, i) => {
         const rowNum = startRow + i;
-        const lifecycle = (tc.lifecycle_status || 'active').toLowerCase();
+        // Fix 1: Use seqId (TC-001 format) instead of raw UUID
+        const displayId = tc.seqId || `TC-${String(rowNum).padStart(3, '0')}`;
         const title = (tc.title || `TC-${String(tc.id).slice(0, 8)}`);
         const displayTitle = title.length > 34 ? title.slice(0, 31) + '...' : title;
         const folder = (tc.folder_name || tc.folder || '-');
         const displayFolder = folder.length > 20 ? folder.slice(0, 17) + '...' : folder;
-        const statusLabel = (tc.lifecycle_status || 'active');
-        const statusCls = lifecycle === 'active' ? 'c-pass' : lifecycle === 'draft' ? 'c-indigo' : 'c-untested';
+        // Fix 5: show latestResult (test execution result), not lifecycle_status
+        const latestResult = tc.latestResult || 'untested';
         return `
       <tr>
         <td class="c-light">${rowNum}</td>
-        <td style="font-size:9px;">${e((tc.id || '').slice(0, 12))}</td>
+        <td style="font-size:9px;font-family:monospace;">${e(displayId)}</td>
         <td>${e(displayTitle)}</td>
         <td>
           <span class="pri-dot" style="background:${priColor(tc.priority)};"></span>
           <span style="color:${priColor(tc.priority)};">${e(priAbbr(tc.priority))}</span>
         </td>
-        <td>
-          <span style="color:${lifecycleColor(lifecycle)};font-weight:600;font-size:9px;">${e(statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1))}</span>
-        </td>
+        <td style="${resultStatusStyle(latestResult)}">${resultStatusLabel(latestResult)}</td>
         <td class="c-light" style="font-size:9px;">${e(displayFolder)}</td>
       </tr>`;
       }).join('')}

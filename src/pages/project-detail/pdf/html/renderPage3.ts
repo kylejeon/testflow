@@ -1,9 +1,9 @@
 import { PdfData } from '../pdfTypes';
-import { e } from './htmlUtils';
+import { e, fmtDate } from './htmlUtils';
 import { buildLineChartSvg, buildBarChartSvg } from './htmlUtils';
 
 export function renderPage3(data: PdfData, pageNum: number, totalPages: number): string {
-  const today = new Date().toISOString().split('T')[0];
+  const today = fmtDate();
   const CW = 634; // content width px
 
   // Chart data
@@ -55,13 +55,16 @@ export function renderPage3(data: PdfData, pageNum: number, totalPages: number):
     <thead><tr><th>Metric</th><th>This Week</th><th>Last Week</th><th>Change</th></tr></thead>
     <tbody>
       ${data.weekComparison.map(w => {
-        const changeColor = w.change >= 0 ? 'rgb(16,163,127)' : 'rgb(239,68,68)';
-        const sign = w.change >= 0 ? '+' : '';
+        const isRate = w.metric.includes('%') || w.metric.includes('Rate');
+        const decimals = isRate ? 1 : 0;
+        const suffix = isRate ? '%' : '';
+        const changeColor = w.change === 0 ? 'rgb(100,116,139)' : w.change > 0 ? 'rgb(16,163,127)' : 'rgb(239,68,68)';
+        const changeSym = w.change === 0 ? '—' : w.change > 0 ? `▲ ${Math.abs(w.change).toFixed(1)}` : `▼ ${Math.abs(w.change).toFixed(1)}`;
         return `<tr>
           <td>${e(w.metric)}</td>
-          <td style="font-weight:600;">${w.thisWeek.toFixed(w.metric.includes('%') || w.metric.includes('Rate') ? 1 : 0)}${w.metric.includes('%') || w.metric.includes('Rate') ? '%' : ''}</td>
-          <td>${w.lastWeek.toFixed(w.metric.includes('%') || w.metric.includes('Rate') ? 1 : 0)}${w.metric.includes('%') || w.metric.includes('Rate') ? '%' : ''}</td>
-          <td style="color:${changeColor};font-weight:600;">${sign}${w.change.toFixed(1)}</td>
+          <td style="font-weight:600;">${w.thisWeek.toFixed(decimals)}${suffix}</td>
+          <td>${w.lastWeek.toFixed(decimals)}${suffix}</td>
+          <td style="color:${changeColor};font-weight:600;">${changeSym}</td>
         </tr>`;
       }).join('')}
     </tbody>

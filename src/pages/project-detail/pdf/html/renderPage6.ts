@@ -1,8 +1,8 @@
 import { PdfData } from '../pdfTypes';
-import { e, priColor, priAbbr } from './htmlUtils';
+import { e, priColor, priAbbr, fmtDate } from './htmlUtils';
 
 export function renderPage6(data: PdfData, pageNum: number, totalPages: number): string {
-  const today = new Date().toISOString().split('T')[0];
+  const today = fmtDate();
 
   const riskBadge = (risk: string) => {
     if (risk === 'high') return `<span class="badge badge-red">&#9632; High</span>`;

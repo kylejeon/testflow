@@ -1,8 +1,8 @@
 import { PdfData } from '../pdfTypes';
-import { e, pctColor } from './htmlUtils';
+import { e, pctColor, fmtDate } from './htmlUtils';
 
 export function renderPage7(data: PdfData, pageNum: number, totalPages: number): string {
-  const today = new Date().toISOString().split('T')[0];
+  const today = fmtDate();
   const members = data.teamMembers;
   const totalExec = members.reduce((s, m) => s + m.executed, 0) || 1;
   const avgExec = members.length > 0 ? Math.round(totalExec / members.length) : 0;

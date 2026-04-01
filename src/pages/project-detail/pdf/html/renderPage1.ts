@@ -1,8 +1,8 @@
 import { PdfData } from '../pdfTypes';
-import { e, pctColor } from './htmlUtils';
+import { e, pctColor, fmtDate, deltaHtml } from './htmlUtils';
 
 export function renderPage1(data: PdfData, pageNum: number, totalPages: number, tierLevel: number): string {
-  const today = new Date().toISOString().split('T')[0];
+  const today = fmtDate();
 
   const releaseColor =
     data.releaseStatus === 'RELEASE_READY' ? 'rgb(16,163,127)' :
@@ -16,6 +16,9 @@ export function renderPage1(data: PdfData, pageNum: number, totalPages: number, 
   const releaseLabel =
     data.releaseStatus === 'RELEASE_READY' ? 'RELEASE READY' :
     data.releaseStatus === 'CONDITIONAL' ? 'CONDITIONAL' : 'NOT READY';
+  const releaseIcon =
+    data.releaseStatus === 'RELEASE_READY' ? '✓' :
+    data.releaseStatus === 'CONDITIONAL' ? '!' : '✕';
 
   const scoreBreak = data.releaseReadiness.scoreBreakdown;
 
@@ -23,8 +26,8 @@ export function renderPage1(data: PdfData, pageNum: number, totalPages: number, 
     { label: 'Pass Rate', val: `${data.passRate.toFixed(1)}%`, delta: data.passRateDelta, positive: data.passRateDelta >= 0 },
     { label: 'Total Executed', val: data.totalExecuted.toLocaleString(), delta: data.executedDelta, positive: data.executedDelta >= 0 },
     { label: 'Active Runs', val: `${data.activeRuns}`, sub: `of ${data.totalRuns}` },
-    { label: 'Failed TCs', val: `${data.failedCount}`, delta: data.failedDelta, positive: data.failedDelta <= 0 },
-    { label: 'Blocked', val: `${data.blockedCount}`, delta: data.blockedDelta, positive: data.blockedDelta <= 0 },
+    { label: 'Failed TCs', val: `${data.failedCount}`, delta: data.failedDelta, positive: data.failedDelta >= 0 },
+    { label: 'Blocked', val: `${data.blockedCount}`, delta: data.blockedDelta, positive: data.blockedDelta >= 0 },
     { label: 'Test Cases', val: `${data.totalTCs}`, sub: 'total' },
   ];
 
@@ -47,20 +50,22 @@ export function renderPage1(data: PdfData, pageNum: number, totalPages: number, 
   ];
 
   return `
-<div class="pdf-header-tall">
-  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:16px;">
-    <span class="logo">Testably</span>
+<!-- Fix 4: Tall cover header with dark navy gradient, inline styles to guarantee rendering -->
+<div style="height:160px;background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 60%,#1e3a5f 100%);padding:0 80px;display:flex;flex-direction:column;justify-content:center;flex-shrink:0;">
+  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:18px;">
+    <span style="font-size:14px;font-weight:700;color:#fff;letter-spacing:.3px;">Testably</span>
     <span style="font-size:10px;color:rgba(255,255,255,.8);">Report Generated: ${today}</span>
   </div>
-  <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:4px;">${e(data.projectName)}</div>
+  <div style="font-size:24px;font-weight:700;color:#fff;margin-bottom:5px;">${e(data.projectName)}</div>
   <div style="font-size:13px;color:rgba(255,255,255,.85);">Quality Executive Report</div>
 </div>
 
 <div class="pdf-content" style="padding-top:16px;">
   <div class="sec-title" style="margin-top:0;">Release Readiness</div>
   <div style="background:${releaseBg};border:2px solid ${releaseBorder};border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:18px;margin-bottom:12px;">
-    <div style="width:44px;height:44px;border-radius:50%;background:${releaseColor};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
-      ${data.releaseStatus === 'RELEASE_READY' ? '✓' : data.releaseStatus === 'CONDITIONAL' ? '!' : '✕'}
+    <!-- Fix 2: Flex centering for icon circle -->
+    <div style="width:44px;height:44px;border-radius:50%;background:${releaseColor};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;font-weight:700;color:#fff;line-height:1;">
+      ${releaseIcon}
     </div>
     <div>
       <div style="font-size:15px;font-weight:700;color:${releaseColor};">${releaseLabel}</div>
@@ -96,7 +101,7 @@ export function renderPage1(data: PdfData, pageNum: number, totalPages: number, 
     <div class="kpi-card">
       <div class="kpi-label">${e(k.label)}</div>
       <div class="kpi-val">${e(k.val)}${k.sub ? `<span style="font-size:11px;font-weight:400;color:rgb(100,116,139);"> ${e(k.sub)}</span>` : ''}</div>
-      ${k.delta !== undefined ? `<div class="kpi-delta ${(k.positive ?? true) ? 'delta-up' : 'delta-down'}">${k.delta >= 0 ? '+' : ''}${k.delta}</div>` : ''}
+      ${deltaHtml(k.delta, k.positive)}
     </div>`).join('')}
   </div>
 

@@ -1,5 +1,5 @@
 import { PdfData } from '../pdfTypes';
-import { e, pctColor } from './htmlUtils';
+import { e, pctColor, fmtDate } from './htmlUtils';
 
 function buildBurndownSvg(data: PdfData, w: number, h: number): string {
   const pts = data.burndownData;
@@ -8,7 +8,7 @@ function buildBurndownSvg(data: PdfData, w: number, h: number): string {
   }
   const totalTCs = data.burndownTotalTCs || 1;
   const n = pts.length - 1;
-  const today = new Date().toISOString().split('T')[0];
+  const today = fmtDate();
 
   const toX = (i: number) => ((i / n) * w).toFixed(1);
   const toY = (v: number) => (h - (v / totalTCs) * h).toFixed(1);
@@ -71,7 +71,7 @@ function buildBurndownSvg(data: PdfData, w: number, h: number): string {
 }
 
 export function renderPage5(data: PdfData, pageNum: number, totalPages: number, tierLevel: number): string {
-  const today = new Date().toISOString().split('T')[0];
+  const today = fmtDate();
 
   const badgeColors: Record<string, { bg: string; text: string }> = {
     'On Track':  { bg: 'rgb(236,253,245)', text: 'rgb(16,163,127)' },
@@ -153,7 +153,8 @@ export function renderPage5(data: PdfData, pageNum: number, totalPages: number, 
       <tr>
         <td>${e(g.name)}</td>
         <td style="text-align:center;">
-          <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${statusIconColors[g.status] || statusIconColors.pass};color:#fff;font-size:11px;text-align:center;line-height:18px;font-weight:700;">
+          <!-- Fix 2: flex centering for status icon circle -->
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:${statusIconColors[g.status] || statusIconColors.pass};color:#fff;font-size:11px;font-weight:700;line-height:1;">
             ${statusIcons[g.status] || '?'}
           </span>
         </td>

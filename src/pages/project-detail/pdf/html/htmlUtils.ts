@@ -1,3 +1,16 @@
+export function fmtDate(d?: Date): string {
+  return (d || new Date()).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+export function deltaHtml(delta: number | undefined, positive?: boolean): string {
+  if (delta === undefined) return '';
+  if (delta === 0) return `<div class="kpi-delta" style="color:rgb(100,116,139);">—</div>`;
+  const sym = delta > 0 ? '▲' : '▼';
+  const isGood = positive ?? (delta > 0);
+  const color = isGood ? 'rgb(16,163,127)' : 'rgb(239,68,68)';
+  return `<div class="kpi-delta" style="color:${color};">${sym} ${Math.abs(delta)}</div>`;
+}
+
 export function e(val: any): string {
   return String(val ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

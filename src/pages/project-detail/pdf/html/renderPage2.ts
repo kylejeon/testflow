@@ -1,8 +1,8 @@
 import { PdfData } from '../pdfTypes';
-import { e, pctColor } from './htmlUtils';
+import { e, pctColor, fmtDate } from './htmlUtils';
 
 export function renderPage2(data: PdfData, pageNum: number, totalPages: number): string {
-  const today = new Date().toISOString().split('T')[0];
+  const today = fmtDate();
   const total = data.statusCounts.passed + data.statusCounts.failed + data.statusCounts.blocked
     + data.statusCounts.retest + data.statusCounts.untested || 1;
 

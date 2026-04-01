@@ -42,6 +42,13 @@ export async function preparePdfData(
     .forEach((r: any) => { if (!latestByTC.has(r.test_case_id)) latestByTC.set(r.test_case_id, r.status); });
   testCases.forEach((tc: any) => { tc.latestResult = latestByTC.get(tc.id) || 'untested'; });
 
+  // ── Build display IDs: sort by created_at ASC → TC-001, TC-002, … ──
+  const testCasesForSeq = [...testCases].sort((a: any, b: any) =>
+    new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  testCasesForSeq.forEach((tc: any, i: number) => {
+    tc.seqId = `TC-${String(i + 1).padStart(3, '0')}`;
+  });
+
   // ── Core status counts ──
   const statusCounts = getStatusDistribution(rawTestResults);
   const passRate = calculatePassRate(statusCounts);
@@ -226,7 +233,7 @@ export async function preparePdfData(
   const lastWeekBlocked = lastWeekResults.filter((r: any) => r.status === 'blocked').length;
   const blockedDelta = lastWeekBlocked - thisWeekBlocked;
 
-  const dateStr = new Date().toISOString().split('T')[0];
+  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return {
     projectName: String(project?.name || 'Project'),
@@ -485,7 +492,7 @@ function prepareTopFailedTCs(results: any[], testCasesMap: Map<string, any>): Fa
     .map(([tcId, data]) => {
       const tc = testCasesMap.get(tcId);
       return {
-        id: tc?.id || tcId,
+        id: tc?.seqId || tc?.id?.slice(0, 10) || tcId,
         title: String(tc?.title || 'Unknown TC'),
         priority: tc?.priority || 'medium',
         failCount: data.count,
@@ -518,7 +525,7 @@ function prepareFlakyTCs(results: any[], testCasesMap: Map<string, any>): FlakyT
       const flakyScore = Math.round((transitions / Math.max(arr.length - 1, 1)) * 100);
       const frequency = flakyScore >= 70 ? 'High' : flakyScore >= 50 ? 'Medium' : 'Low';
       const tc = testCasesMap.get(tcId);
-      return { id: tc?.id || tcId, title: String(tc?.title || 'Unknown TC'), lastTenResults: arr, flakyScore, frequency };
+      return { id: tc?.seqId || tc?.id?.slice(0, 10) || tcId, title: String(tc?.title || 'Unknown TC'), lastTenResults: arr, flakyScore, frequency };
     })
     .filter(tc => tc.flakyScore >= 40)
     .sort((a, b) => b.flakyScore - a.flakyScore)
