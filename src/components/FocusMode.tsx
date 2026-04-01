@@ -164,7 +164,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
 
   // ── Sidebar auto-scroll to active TC ─────────────────────────────────────
   useEffect(() => {
-    tcRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    tcRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     noteRef.current?.blur();
   }, [index]);
 
@@ -242,6 +242,15 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   const markAndNext = useCallback(
     async (status: TestStatus) => {
       if (!test) return;
+      // Skip: if TC already has a result, just move to next without overwriting
+      if (status === 'untested' && test.runStatus && test.runStatus !== 'untested') {
+        setPending(null);
+        resetForNavigation();
+        setTimeout(() => {
+          setIndex((i) => Math.min(i + 1, tests.length - 1));
+        }, 300);
+        return;
+      }
       setPending(status);
       try {
         await onStatusChange(test.id, status, note.trim() || undefined);
