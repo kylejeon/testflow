@@ -90,9 +90,8 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
 
   // Parent 마일스톤만 표시 (sub milestone 제외)
   const parentMilestones = milestones.filter(m => !m.parent_milestone_id);
-  const activeMilestones = parentMilestones.filter(m =>
-    ['started', 'in_progress', 'upcoming', 'active', 'open'].includes(m.status)
-  );
+  // "Active" = not completed (includes past_due / overdue milestones still in progress)
+  const activeMilestones = parentMilestones.filter(m => m.status !== 'completed');
   const milestoneList: MilestoneWithRisk[] = (activeMilestones.length > 0 ? activeMilestones : parentMilestones)
     .map(computeRisk);
 
@@ -133,28 +132,39 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
       if (!runs?.length) { setBurndownData([]); return; }
 
       const runIds = runs.map(r => r.id);
-      const totalTCs = [...new Set(runs.flatMap(r => (r.test_case_ids as string[]) ?? []))].length;
 
-      // Burndown counts executed TCs (any non-untested status) — remaining = not yet run
+      // Total slots = non-deduplicated sum (matches how milestone progress % is calculated)
+      const totalSlots = runs.reduce((sum, r) => sum + ((r.test_case_ids as string[])?.length ?? 0), 0);
+      if (totalSlots === 0) { setBurndownData([]); return; }
+
+      // Build per-run TC sets for validation
+      const runTcSets = new Map<string, Set<string>>();
+      runs.forEach(r => runTcSets.set(r.id, new Set<string>((r.test_case_ids as string[]) ?? [])));
+
+      // Burndown counts executed TCs per (run, tc) pair — remaining = not yet run in that specific run
       const { data: results } = await supabase
         .from('test_results')
-        .select('test_case_id, created_at')
+        .select('run_id, test_case_id, created_at')
         .in('run_id', runIds)
         .gte('created_at', startDate.toISOString())
         .neq('status', 'untested')
         .order('created_at', { ascending: true });
 
-      // Build daily executed map (first execution per TC only)
-      const seenTC = new Set<string>();
+      // First execution per (run_id, test_case_id) pair — consistent with per-run progress calculation
+      const seenRunTc = new Set<string>();
       const dailyExecuted: Record<string, number> = {};
       (results ?? []).forEach(r => {
-        if (!r.test_case_id || seenTC.has(r.test_case_id)) return;
-        seenTC.add(r.test_case_id);
+        if (!r.run_id || !r.test_case_id) return;
+        // Only count if this TC actually belongs to this run
+        if (!runTcSets.get(r.run_id)?.has(r.test_case_id)) return;
+        const key = `${r.run_id}::${r.test_case_id}`;
+        if (seenRunTc.has(key)) return;
+        seenRunTc.add(key);
         const day = r.created_at.slice(0, 10);
         dailyExecuted[day] = (dailyExecuted[day] ?? 0) + 1;
       });
 
-      setBurndownData(buildBurndown(totalTCs, startDate, endDate, dailyExecuted));
+      setBurndownData(buildBurndown(totalSlots, startDate, endDate, dailyExecuted));
     } finally {
       setBurndownLoading(false);
     }
