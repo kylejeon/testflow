@@ -49,9 +49,12 @@ export async function generateExecutiveReport(input: ExportPDFInput): Promise<vo
     input.projectPassRateData,
   );
 
-  // Determine total pages (P6, P7 require Professional+)
-  let totalPages = 8;
-  if (tierLevel < 3) totalPages = 6;
+  // Determine total pages (P6, P7 require Professional+; P8 Appendix spans multiple pages)
+  const TC_PER_PAGE = 30;
+  const maxTCs = tierLevel <= 1 ? 20 : data.testCases.length;
+  const appendixPages = Math.max(1, Math.ceil(Math.min(maxTCs, data.testCases.length) / TC_PER_PAGE));
+  const basePages = tierLevel < 3 ? 6 : 8;
+  const totalPages = basePages - 1 + appendixPages; // last page replaced by N appendix pages
   data.totalPages = totalPages;
 
   const pageDrawers = [

@@ -23,10 +23,16 @@ export async function preparePdfData(
   const testCases = testCasesRaw || [];
   const testCasesMap = new Map(testCases.map((tc: any) => [tc.id, tc]));
 
+  // ── Attach latest test result status to each test case ──
+  const latestByTC = new Map<string, string>();
+  [...(rawTestResults || [])].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .forEach((r: any) => { if (!latestByTC.has(r.test_case_id)) latestByTC.set(r.test_case_id, r.status); });
+  testCases.forEach((tc: any) => { tc.latestResult = latestByTC.get(tc.id) || 'untested'; });
+
   // ── Core status counts ──
   const statusCounts = getStatusDistribution(rawTestResults);
   const passRate = calculatePassRate(statusCounts);
-  const executionComplete = calculateExecutionCompletion(statusCounts, testCaseCount);
+  const executionComplete = calculateExecutionCompletion(rawTestResults, testCaseCount);
 
   // ── Priority distribution (from test_cases) ──
   const priorityCounts = {
@@ -37,8 +43,9 @@ export async function preparePdfData(
   };
 
   // ── Automation rate ──
-  const automatedCount = testCases.filter((tc: any) => tc.is_automated).length;
-  const automationRate = testCaseCount > 0 ? (automatedCount / testCaseCount) * 100 : 0;
+  const hasAutomationField = testCases.some((tc: any) => tc.is_automated !== undefined && tc.is_automated !== null);
+  const automatedCount = testCases.filter((tc: any) => tc.is_automated === true).length;
+  const automationRate = !hasAutomationField ? -1 : (testCaseCount > 0 ? (automatedCount / testCaseCount) * 100 : 0);
 
   // ── Run results (per-run aggregation, no cross-run double counting) ──
   const runResults: RunResult[] = allRunsRaw.map((run: any) => {
@@ -265,9 +272,13 @@ function calculatePassRate(dist: ReturnType<typeof getStatusDistribution>): numb
   return tested > 0 ? (dist.passed / tested) * 100 : 0;
 }
 
-function calculateExecutionCompletion(dist: ReturnType<typeof getStatusDistribution>, totalTCs: number): number {
-  const tested = dist.passed + dist.failed + dist.blocked + dist.retest;
-  return totalTCs > 0 ? (tested / totalTCs) * 100 : 0;
+function calculateExecutionCompletion(results: any[], totalTCs: number): number {
+  const uniqueTestedTCs = new Set(
+    results
+      .filter((r: any) => r.status && r.status !== 'untested')
+      .map((r: any) => r.test_case_id)
+  ).size;
+  return totalTCs > 0 ? Math.min((uniqueTestedTCs / totalTCs) * 100, 100) : 0;
 }
 
 function prepareDailyTrends(results: any[], days: number): DailyTrend[] {

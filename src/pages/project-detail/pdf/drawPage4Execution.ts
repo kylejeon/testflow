@@ -165,7 +165,7 @@ export async function drawPage4Execution(context: PageDrawContext): Promise<void
       pdf.line(margin, rowY + 7, margin + covTotalW, rowY + 7);
 
       const folderName = folder.folder.length > 18 ? folder.folder.slice(0, 15) + '...' : folder.folder;
-      const coveragePct = folder.totalTCs > 0 ? (folder.tested / folder.totalTCs) * 100 : 0;
+      const coveragePct = folder.passRate;
       const passRateColor = getPercentageColor(folder.passRate, config);
 
       let fcx = margin;

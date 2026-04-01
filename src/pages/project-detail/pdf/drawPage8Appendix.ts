@@ -122,13 +122,15 @@ function drawTCRow(pdf: jsPDF, tc: any, rowY: number, index: number, config: Pdf
   const priAbbr = getPriorityAbbr(tc.priority || 'medium');
 
   const statusColors: Record<string, [number,number,number]> = {
-    active: [16, 163, 127],
-    draft: [139, 92, 246],
-    deprecated: [148, 163, 184],
+    passed: [16, 163, 127],
+    failed: [239, 68, 68],
+    blocked: [249, 115, 22],
+    retest: [234, 179, 8],
+    untested: [148, 163, 184],
   };
-  const lcStatus = tc.lifecycle_status || 'active';
-  const statusColor: [number,number,number] = statusColors[lcStatus] || config.textLight;
-  const statusLabel = lcStatus.charAt(0).toUpperCase() + lcStatus.slice(1);
+  const latestResult = (tc.latestResult || 'untested').toLowerCase();
+  const statusColor: [number,number,number] = statusColors[latestResult] || config.textLight;
+  const statusLabel = latestResult.charAt(0).toUpperCase() + latestResult.slice(1);
 
   let cx = margin;
   pdf.setFont(font, 'normal');

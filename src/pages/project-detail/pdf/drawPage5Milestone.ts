@@ -103,7 +103,8 @@ export async function drawPage5Milestone(context: PageDrawContext): Promise<void
   }
 
   // ── Quality Gates Table ──
-  if (y < 265) {
+  if (data.qualityGates.length > 0) {
+    if (y > 235) y = 235;
     drawSectionTitle(pdf, 'Quality Gates', margin, y, config);
     y += 5;
 

@@ -96,6 +96,15 @@ export async function drawPage3Trends(context: PageDrawContext): Promise<void> {
   // Metrics where decrease is positive (New Failures, Blocked)
   const negativeMetrics = new Set(['New Failures', 'Blocked']);
 
+  const hasLastWeekData = data.weekComparison.some(row => row.lastWeek !== 0);
+  if (!hasLastWeekData) {
+    pdf.setFont(font, 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(...config.textLight);
+    pdf.text('No previous week data available for comparison.', margin + 2, y + 5);
+    y += 12;
+  }
+
   data.weekComparison.forEach((row, rowIndex) => {
     if (rowIndex % 2 === 0) {
       pdf.setFillColor(...config.bgLight);

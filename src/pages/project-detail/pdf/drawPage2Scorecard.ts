@@ -50,7 +50,7 @@ export async function drawPage2Scorecard(context: PageDrawContext): Promise<void
   y += 10;
 
   // ── KPI 6개 2×3 grid ──
-  drawSectionTitle(pdf, 'Key Metrics', margin, y, config);
+  drawSectionTitle(pdf, 'Key Performance Indicators', margin, y, config);
   y += 5;
 
   const defectRate = data.totalExecuted > 0
@@ -60,7 +60,7 @@ export async function drawPage2Scorecard(context: PageDrawContext): Promise<void
     { label: 'Overall Pass Rate', value: `${data.passRate.toFixed(1)}%`, sub: 'Target: 90%', valueColor: getPercentageColor(data.passRate, config) },
     { label: 'Execution Completion', value: `${data.executionComplete.toFixed(1)}%`, sub: 'Target: 95%', valueColor: getPercentageColor(data.executionComplete, config) },
     { label: 'Defect Discovery Rate', value: defectRate, sub: 'Industry: 5-10%' },
-    { label: 'Automation Rate', value: `${data.automationRate.toFixed(1)}%`, sub: 'Automated TCs' },
+    { label: 'Automation Rate', value: data.automationRate < 0 ? 'N/A' : `${data.automationRate.toFixed(1)}%`, sub: data.automationRate < 0 ? 'No data' : 'Automated TCs' },
     { label: 'Avg Run Pass Rate', value: `${data.avgRunPassRate.toFixed(1)}%`, sub: 'Across all runs', valueColor: getPercentageColor(data.avgRunPassRate, config) },
     { label: 'Open Blockers', value: String(data.openBlockers), sub: data.openBlockers > 0 ? 'Needs attention' : 'All clear', valueColor: data.openBlockers > 0 ? config.failureColor : config.successColor },
   ];
