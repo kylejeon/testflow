@@ -426,28 +426,42 @@ function prepareMilestoneCard(m: any, allRunsRaw: any[], rawTestResults: any[], 
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const dueDate = m.end_date ? new Date(m.end_date) : null;
+
+  // Roll-up: use derivedEndDate if isAggregated, else end_date
+  const endDateStr = m.isAggregated && m.derivedEndDate ? m.derivedEndDate : m.end_date;
+  const startDateStr = m.isAggregated && m.derivedStartDate ? m.derivedStartDate : m.start_date;
+  const dueDate = endDateStr ? new Date(endDateStr) : null;
   const daysRemaining = dueDate
     ? Math.round((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : 999;
 
-  // Roll-up: include sub-milestone runs
-  const subIds = allMilestones.filter((s: any) => s.parent_milestone_id === m.id).map((s: any) => s.id);
-  const allMsIds = new Set([m.id, ...subIds]);
-  const mRuns = allRunsRaw.filter(r => allMsIds.has(r.milestone_id));
+  // Roll-up: use pre-computed rollup fields if available, else compute from runs
+  let totalTCs: number;
+  let remainingTCs: number;
+  let runIdSet: Set<string>;
 
-  // Total unique TCs across all runs (deduplicated)
-  const allTCIds = new Set<string>();
-  mRuns.forEach((r: any) => (r.test_case_ids || []).forEach((id: string) => allTCIds.add(id)));
-  const totalTCs = allTCIds.size;
-
-  // Tested unique TCs (deduplicated by test_case_id — matches burndown logic)
-  const runIdSet = new Set(mRuns.map((r: any) => r.id));
-  const testedTCIds = new Set<string>(
-    rawTestResults
-      .filter((r: any) => runIdSet.has(r.run_id) && r.status && r.status !== 'untested')
-      .map((r: any) => r.test_case_id)
-  );
-  const remainingTCs = Math.max(totalTCs - testedTCIds.size, 0);
+  if (m.isAggregated && m.rollupTotal > 0) {
+    totalTCs = m.rollupTotal;
+    remainingTCs = Math.max(totalTCs - (m.rollupCompleted ?? 0), 0);
+    // Still need runIdSet for velocity
+    const subIds = allMilestones.filter((s: any) => s.parent_milestone_id === m.id).map((s: any) => s.id);
+    const allMsIds = new Set([m.id, ...subIds]);
+    const mRuns = allRunsRaw.filter((r: any) => allMsIds.has(r.milestone_id));
+    runIdSet = new Set(mRuns.map((r: any) => r.id));
+  } else {
+    const subIds = allMilestones.filter((s: any) => s.parent_milestone_id === m.id).map((s: any) => s.id);
+    const allMsIds = new Set([m.id, ...subIds]);
+    const mRuns = allRunsRaw.filter((r: any) => allMsIds.has(r.milestone_id));
+    runIdSet = new Set(mRuns.map((r: any) => r.id));
+    const allTCIds = new Set<string>();
+    mRuns.forEach((r: any) => (r.test_case_ids || []).forEach((id: string) => allTCIds.add(id)));
+    totalTCs = allTCIds.size;
+    const testedTCIds = new Set<string>(
+      rawTestResults
+        .filter((r: any) => runIdSet.has(r.run_id) && r.status && r.status !== 'untested')
+        .map((r: any) => r.test_case_id)
+    );
+    remainingTCs = Math.max(totalTCs - testedTCIds.size, 0);
+  }
 
   // Velocity: unique TCs tested per day over last 7 days
   const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -457,6 +471,9 @@ function prepareMilestoneCard(m: any, allRunsRaw: any[], rawTestResults: any[], 
       .map((r: any) => r.test_case_id)
   );
   const velocity = recentUniqueTCs.size / 7;
+
+  // startDateStr already declared above
+  void startDateStr;
 
   const estimatedDaysToComplete = velocity > 0 ? remainingTCs / velocity : 999;
   const estCompletionDate = new Date(today.getTime() + estimatedDaysToComplete * 24 * 60 * 60 * 1000);
@@ -619,16 +636,26 @@ function prepareBurndownData(
   const allMsIds = new Set([milestone.id, ...subIds]);
   const mRuns = allRunsRaw.filter((r: any) => allMsIds.has(r.milestone_id));
 
-  // Total unique TCs across all runs
-  const allTCIds = new Set<string>();
-  mRuns.forEach((r: any) => (r.test_case_ids || []).forEach((id: string) => allTCIds.add(id)));
-  const totalTCs = allTCIds.size;
+  // Total unique TCs — prefer pre-computed rollupTotal
+  let totalTCs: number;
+  if (milestone.isAggregated && milestone.rollupTotal > 0) {
+    totalTCs = milestone.rollupTotal;
+  } else {
+    const allTCIds = new Set<string>();
+    mRuns.forEach((r: any) => (r.test_case_ids || []).forEach((id: string) => allTCIds.add(id)));
+    totalTCs = allTCIds.size;
+  }
   if (totalTCs === 0) return { points: [], totalTCs: 0 };
 
-  const startDate = milestone.start_date ? new Date(milestone.start_date)
-    : milestone.created_at ? new Date(milestone.created_at)
+  // Use derivedStartDate/derivedEndDate for aggregated milestones
+  const startDateStr = milestone.isAggregated && milestone.derivedStartDate
+    ? milestone.derivedStartDate : (milestone.start_date || milestone.created_at);
+  const endDateStr = milestone.isAggregated && milestone.derivedEndDate
+    ? milestone.derivedEndDate : milestone.end_date;
+
+  const startDate = startDateStr ? new Date(startDateStr)
     : new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-  const endDate = milestone.end_date ? new Date(milestone.end_date)
+  const endDate = endDateStr ? new Date(endDateStr)
     : new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
 
   const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
