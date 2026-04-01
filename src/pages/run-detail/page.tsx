@@ -793,9 +793,9 @@ export default function RunDetail() {
 
       setComments([newComment, ...comments]);
       setCommentText('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('코멘트 저장 오류:', error);
-      alert('Failed to save comment.');
+      showToast('error', error?.message || 'Failed to save comment.');
     }
   };
 
@@ -809,9 +809,9 @@ export default function RunDetail() {
       if (error) throw error;
 
       setComments(comments.filter(c => c.id !== commentId));
-    } catch (error) {
+    } catch (error: any) {
       console.error('코멘트 삭제 오류:', error);
-      alert('Failed to delete comment.');
+      showToast('error', error?.message || 'Failed to delete comment.');
     }
   };
 
@@ -904,9 +904,10 @@ export default function RunDetail() {
       }
 
       // Persist the status change as a test_result row so it survives page refresh
+      // Use upsert to avoid 409 Conflict on unique constraint (run_id, test_case_id)
       const { data: newResultData, error: insertError } = await supabase
         .from('test_results')
-        .insert({
+        .upsert({
           test_case_id: testCaseId,
           run_id: runId,
           status: newStatus,
@@ -915,7 +916,7 @@ export default function RunDetail() {
           elapsed: '00:00',
           attachments: [],
           step_statuses: {},
-        })
+        }, { onConflict: 'run_id,test_case_id' })
         .select()
         .single();
 
@@ -999,9 +1000,9 @@ export default function RunDetail() {
 
       // Switch to Results tab
       setActiveTab('results');
-    } catch (error) {
+    } catch (error: any) {
       console.error('상태 업데이트 오류:', error);
-      alert('Failed to update status.');
+      showToast('error', error?.message || 'Failed to update status.');
     }
   };
 
@@ -1092,9 +1093,9 @@ export default function RunDetail() {
           selectTestCase(filteredTestCases[currentIndex + 1]);
         }
       }, 500);
-    } catch (error) {
+    } catch (error: any) {
       console.error('상태 업데이트 오류:', error);
-      alert('Failed to update status.');
+      showToast('error', error?.message || 'Failed to update status.');
     }
   };
 
@@ -1132,7 +1133,7 @@ export default function RunDetail() {
       ));
     } else {
       // No existing result — show guidance instead of creating a failed result
-      alert('먼저 Add Result로 테스트 결과를 기록한 후 이슈를 연결해주세요.');
+      showToast('error', '먼저 Add Result로 테스트 결과를 기록한 후 이슈를 연결해주세요.');
     }
   };
 
@@ -1219,7 +1220,7 @@ export default function RunDetail() {
     try {
       if (!selectedTestCase || !currentUser) return;
       if (!runId) {
-        alert('Run ID가 없습니다. 페이지를 새로고침해주세요.');
+        showToast('error', 'Run ID가 없습니다. 페이지를 새로고침해주세요.');
         return;
       }
 
@@ -1349,9 +1350,9 @@ export default function RunDetail() {
       
       // Switch to Results tab
       setActiveTab('results');
-    } catch (error) {
+    } catch (error: any) {
       console.error('결과 저장 오류:', error);
-      alert('Failed to save result.');
+      showToast('error', error?.message || 'Failed to save result.');
     }
   };
 
@@ -1483,7 +1484,7 @@ export default function RunDetail() {
       });
     } catch (error: any) {
       console.error('파일 업로드 오류:', error);
-      alert(`Failed to upload file: ${error.message || 'Unknown error'}`);
+      showToast('error', `Failed to upload file: ${error.message || 'Unknown error'}`);
     } finally {
       setUploadingFile(false);
       e.target.value = '';
@@ -1524,7 +1525,7 @@ export default function RunDetail() {
   const handleScreenshot = async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        alert('이 브라우저는 스크린샷 기능을 지원하지 않습니다.');
+        showToast('error', '이 브라우저는 스크린샷 기능을 지원하지 않습니다.');
         return;
       }
 
@@ -1579,14 +1580,14 @@ export default function RunDetail() {
           });
         } catch (error: any) {
           console.error('스크린샷 업로드 오류:', error);
-          alert(`Failed to upload screenshot: ${error.message || 'Unknown error'}`);
+          showToast('error', `Failed to upload screenshot: ${error.message || 'Unknown error'}`);
         } finally {
           setUploadingFile(false);
         }
       }, 'image/png');
-    } catch (error) {
+    } catch (error: any) {
       console.error('스크린샷 캡처 오류:', error);
-      alert('Failed to capture screenshot.');
+      showToast('error', error?.message || 'Failed to capture screenshot.');
     }
   };
 
@@ -1647,7 +1648,7 @@ export default function RunDetail() {
 
   const handleCreateJiraIssue = async (fromIssuesTab = false) => {
     if (!issueFormData.summary.trim()) {
-      alert('Summary는 필수 항목입니다.');
+      showToast('error', 'Summary는 필수 항목입니다.');
       return;
     }
 
@@ -1710,13 +1711,13 @@ export default function RunDetail() {
         } else {
           // result가 없는 경우: 이슈 키만 메모리에 임시 보관 (자동 failed result 생성 없음)
           // 사용자에게 결과 기록을 안내하고 모달을 닫음
-          alert(`Jira issue created: ${newIssueKey}\n\n이슈가 생성되었습니다. Add Result로 테스트 결과를 기록하면 이슈가 자동으로 연결됩니다.`);
+          showToast('success', `Jira issue ${newIssueKey} created. Add Result로 테스트 결과를 기록하면 이슈가 자동으로 연결됩니다.`);
           setShowAddIssueModal(false);
           setIssueFormData({ summary: '', description: '', issueType: 'Bug', priority: 'Medium', labels: '', assignee: '', components: '' });
           return;
         }
 
-        alert(`Jira issue created: ${newIssueKey}`);
+        showToast('success', `Jira issue ${newIssueKey} created`);
         setShowAddIssueModal(false);
         setIssueFormData({
           summary: '',
@@ -1738,7 +1739,7 @@ export default function RunDetail() {
       }
     } catch (error: any) {
       console.error('Jira 이슈 생성 오류:', error);
-      alert(`Failed to create Jira issue: ${error.message || 'Unknown error'}`);
+      showToast('error', `Failed to create Jira issue: ${error.message || 'Unknown error'}`);
     } finally {
       setCreatingIssue(false);
     }

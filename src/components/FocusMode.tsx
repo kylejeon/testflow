@@ -165,6 +165,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   // ── Sidebar auto-scroll to active TC ─────────────────────────────────────
   useEffect(() => {
     tcRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    noteRef.current?.blur();
   }, [index]);
 
   // ── Navigation reset ──────────────────────────────────────────────────────
