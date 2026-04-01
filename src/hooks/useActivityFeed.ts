@@ -45,7 +45,7 @@ async function enrichWithActorNames(rows: any[]): Promise<ActivityFeedItem[]> {
     event_type: row.event_type,
     event_category: row.event_category,
     actor_id: row.actor_id,
-    actor_name: profileMap.get(row.actor_id) ?? '시스템',
+    actor_name: profileMap.get(row.actor_id) ?? 'System',
     target_type: row.target_type,
     target_id: row.target_id,
     metadata: row.metadata ?? {},

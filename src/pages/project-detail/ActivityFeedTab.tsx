@@ -32,20 +32,20 @@ function formatEventMessage(item: ActivityFeedItem): string {
   const m = item.metadata;
   const tcPrefix = m.tc_custom_id ? `${m.tc_custom_id} ` : '';
   switch (item.event_type) {
-    case 'test_result_passed':   return `${tcPrefix}"${m.tc_title}"를 Passed로 변경`;
-    case 'test_result_failed':   return `${tcPrefix}"${m.tc_title}"가 Failed`;
-    case 'test_result_blocked':  return `${tcPrefix}"${m.tc_title}"를 Blocked으로 변경`;
-    case 'test_result_retest':   return `${tcPrefix}"${m.tc_title}"를 Retest로 변경`;
-    case 'test_result_untested': return `${tcPrefix}"${m.tc_title}"를 Untested로 변경`;
-    case 'run_started':          return `Run "${m.run_name}"을 시작함`;
-    case 'run_completed':        return `Run "${m.run_name}"이 완료됨`;
-    case 'tc_created':           return `TC "${m.tc_title}" 생성 (${m.priority || ''}, ${m.folder || 'root'})`;
-    case 'tc_updated':           return `TC "${m.tc_title}" 수정됨`;
-    case 'tc_comment_added':     return `TC "${m.tc_title}"에 댓글 추가`;
-    case 'milestone_created':    return `마일스톤 "${m.milestone_name}" 생성`;
-    case 'milestone_status_changed': return `마일스톤 "${m.milestone_name}" 상태 변경: ${m.old_status} → ${m.status}`;
-    case 'member_joined':        return '프로젝트에 참여함';
-    case 'member_role_changed':  return '역할이 변경됨';
+    case 'test_result_passed':   return `marked ${tcPrefix}"${m.tc_title}" as Passed`;
+    case 'test_result_failed':   return `marked ${tcPrefix}"${m.tc_title}" as Failed`;
+    case 'test_result_blocked':  return `marked ${tcPrefix}"${m.tc_title}" as Blocked`;
+    case 'test_result_retest':   return `marked ${tcPrefix}"${m.tc_title}" as Retest`;
+    case 'test_result_untested': return `marked ${tcPrefix}"${m.tc_title}" as Untested`;
+    case 'run_started':          return `started run "${m.run_name}"`;
+    case 'run_completed':        return `completed run "${m.run_name}"`;
+    case 'tc_created':           return `created TC "${m.tc_title}" (${m.priority || ''}, ${m.folder || 'root'})`;
+    case 'tc_updated':           return `updated TC "${m.tc_title}"`;
+    case 'tc_comment_added':     return `added a comment on TC "${m.tc_title}"`;
+    case 'milestone_created':    return `created milestone "${m.milestone_name}"`;
+    case 'milestone_status_changed': return `changed milestone "${m.milestone_name}" status: ${m.old_status} → ${m.status}`;
+    case 'member_joined':        return 'joined the project';
+    case 'member_role_changed':  return 'role was updated';
     default:                     return item.event_type;
   }
 }
@@ -54,11 +54,11 @@ function formatEventMessage(item: ActivityFeedItem): string {
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return '방금 전';
-  if (mins < 60) return `${mins}분 전`;
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}시간 전`;
-  return `${Math.floor(hrs / 24)}일 전`;
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 // ── Date grouping ─────────────────────────────────────────────────────────────
@@ -71,9 +71,9 @@ function groupByDate(items: ActivityFeedItem[]): [string, ActivityFeedItem[]][] 
     const d = new Date(item.created_at);
     d.setHours(0, 0, 0, 0);
     let label: string;
-    if (d.getTime() === today.getTime()) label = '오늘';
-    else if (d.getTime() === yesterday.getTime()) label = '어제';
-    else label = new Date(item.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
+    if (d.getTime() === today.getTime()) label = 'Today';
+    else if (d.getTime() === yesterday.getTime()) label = 'Yesterday';
+    else label = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
     if (!groups[label]) groups[label] = [];
     groups[label].push(item);
   });
@@ -118,7 +118,7 @@ function FeedItem({ item }: { item: ActivityFeedItem }) {
       </div>
 
       <span className="text-[11px] text-gray-400 flex-shrink-0 whitespace-nowrap pt-0.5">
-        {new Date(item.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+        {new Date(item.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
       </span>
     </div>
   );
@@ -149,12 +149,12 @@ function AIDailySummary({ projectId }: { projectId: string }) {
 
         setSummary({
           text: total > 0
-            ? `오늘 총 ${total}건의 테스트가 실행되었으며, 전체 Pass율은 ${passRate}%입니다.`
-            : '오늘 아직 실행된 테스트가 없습니다.',
+            ? `${total} tests were executed today with an overall pass rate of ${passRate}%.`
+            : 'No tests have been executed today yet.',
           points: [
-            total > 0 ? `✅ Passed ${passed}건 (${passRate}%)` : '',
-            failed > 0 ? `❌ Failed ${failed}건 — 검토 필요` : '',
-            blocked > 0 ? `⚠️ Blocked ${blocked}건` : '',
+            total > 0 ? `✅ Passed ${passed} (${passRate}%)` : '',
+            failed > 0 ? `❌ Failed ${failed} — review needed` : '',
+            blocked > 0 ? `⚠️ Blocked ${blocked}` : '',
           ].filter(Boolean),
         });
       } catch (e) {
@@ -202,12 +202,12 @@ function AIDailySummary({ projectId }: { projectId: string }) {
 
 // ── Filter Chips ──────────────────────────────────────────────────────────────
 const CATEGORY_LABELS: Record<string, string> = {
-  test_execution: '테스트 실행',
-  tc_management: 'TC 관리',
-  milestone: '마일스톤',
-  team: '팀',
+  test_execution: 'Test Execution',
+  tc_management: 'TC Management',
+  milestone: 'Milestone',
+  team: 'Team',
 };
-const DATE_LABELS: Record<string, string> = { '1d': '오늘', '7d': '최근 7일', '30d': '최근 30일' };
+const DATE_LABELS: Record<string, string> = { '1d': 'Today', '7d': 'Last 7 days', '30d': 'Last 30 days' };
 
 function FilterChips({
   filters,
@@ -226,7 +226,7 @@ function FilterChips({
   }
   if (filters.actorId) {
     chips.push({
-      label: '팀원 필터 적용',
+      label: 'Member filter applied',
       onRemove: () => onChange({ ...filters, actorId: null }),
     });
   }
@@ -259,7 +259,7 @@ function FilterChips({
         onClick={() => onChange({ category: null, actorId: null, dateRange: '7d', searchQuery: '' })}
         className="text-[12px] font-semibold text-red-500 hover:text-red-700 cursor-pointer"
       >
-        초기화
+        Clear all
       </button>
     </div>
   );
@@ -292,11 +292,11 @@ function FilterBar({
   }, [projectId]);
 
   const categories = [
-    { value: null, label: '전체' },
-    { value: 'test_execution', label: '테스트 실행' },
-    { value: 'tc_management', label: 'TC 관리' },
-    { value: 'milestone', label: '마일스톤' },
-    { value: 'team', label: '팀' },
+    { value: null, label: 'All' },
+    { value: 'test_execution', label: 'Test Execution' },
+    { value: 'tc_management', label: 'TC Management' },
+    { value: 'milestone', label: 'Milestone' },
+    { value: 'team', label: 'Team' },
   ];
 
   return (
@@ -325,7 +325,7 @@ function FilterBar({
           onChange={e => onChange({ ...filters, actorId: e.target.value || null })}
           className="text-[12px] border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 bg-white focus:outline-none cursor-pointer"
         >
-          <option value="">팀원: 전체</option>
+          <option value="">Member: All</option>
           {members.map(m => (
             <option key={m.user_id} value={m.user_id}>{m.full_name}</option>
           ))}
@@ -337,9 +337,9 @@ function FilterBar({
           onChange={e => onChange({ ...filters, dateRange: e.target.value as FeedFilters['dateRange'] })}
           className="text-[12px] border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 bg-white focus:outline-none cursor-pointer"
         >
-          <option value="1d">오늘</option>
-          <option value="7d">최근 7일</option>
-          <option value="30d">최근 30일</option>
+          <option value="1d">Today</option>
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
         </select>
 
         {/* Search (Starter+) */}
@@ -348,7 +348,7 @@ function FilterBar({
             <i className="ri-search-line text-sm text-gray-400" />
             <input
               type="text"
-              placeholder="검색..."
+              placeholder="Search..."
               value={filters.searchQuery}
               onChange={e => onChange({ ...filters, searchQuery: e.target.value })}
               className="text-[12px] text-gray-700 bg-transparent outline-none flex-1 min-w-0"
@@ -385,7 +385,7 @@ export default function ActivityFeedTab({ projectId, subscriptionTier }: Activit
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="font-semibold text-emerald-600">Live</span>
           <span className="text-gray-300">|</span>
-          <span>실시간 업데이트 활성</span>
+          <span>Real-time updates active</span>
         </div>
       )}
 
@@ -398,7 +398,7 @@ export default function ActivityFeedTab({ projectId, subscriptionTier }: Activit
             refreshFeed();
           }}
         >
-          {newEventCount}개의 새 활동이 있습니다 — 클릭하여 새로고침
+          {newEventCount} new {newEventCount === 1 ? 'event' : 'events'} — click to refresh
         </div>
       )}
 
@@ -434,12 +434,12 @@ export default function ActivityFeedTab({ projectId, subscriptionTier }: Activit
           <i className="ri-time-line text-4xl text-gray-300 block mb-3" />
           <p className="text-[13px] text-gray-400">
             {filters.category || filters.actorId || filters.searchQuery
-              ? '필터 조건에 맞는 활동이 없습니다'
-              : '아직 활동 기록이 없습니다'}
+              ? 'No activity matches the current filters'
+              : 'No activity yet'}
           </p>
           {!filters.category && !filters.actorId && (
             <p className="text-[12px] text-gray-400 mt-1">
-              테스트를 실행하거나 TC를 추가하면 여기에 표시됩니다
+              Run tests or add TCs to see activity here
             </p>
           )}
         </div>
@@ -451,7 +451,7 @@ export default function ActivityFeedTab({ projectId, subscriptionTier }: Activit
               <div className="flex items-center gap-3 px-5 py-2.5">
                 <span className="text-[11px] font-semibold text-gray-500 whitespace-nowrap">{dateLabel}</span>
                 <div className="flex-1 border-t border-gray-200" />
-                <span className="text-[11px] text-gray-400">{items.length}건</span>
+                <span className="text-[11px] text-gray-400">{items.length}</span>
               </div>
               {/* Items */}
               {items.map(item => <FeedItem key={item.id} item={item} />)}
@@ -465,7 +465,7 @@ export default function ActivityFeedTab({ projectId, subscriptionTier }: Activit
                 onClick={loadMore}
                 className="text-[13px] font-semibold text-indigo-500 hover:text-indigo-700 cursor-pointer"
               >
-                더 보기 <i className="ri-arrow-down-s-line" />
+                Load more <i className="ri-arrow-down-s-line" />
               </button>
             </div>
           )}
@@ -474,8 +474,8 @@ export default function ActivityFeedTab({ projectId, subscriptionTier }: Activit
           {subscriptionTier < 2 && feedItems.length >= 20 && (
             <div className="mx-5 my-4 p-3 bg-violet-50 border border-violet-200 rounded-lg text-center">
               <p className="text-[12px] text-violet-700">
-                Free 플랜은 최근 20건만 표시됩니다.
-                <a href="/pricing" className="font-semibold ml-1 hover:underline">Starter로 업그레이드 →</a>
+                Free plan shows the most recent 20 events only.
+                <a href="/pricing" className="font-semibold ml-1 hover:underline">Upgrade to Starter →</a>
               </p>
             </div>
           )}
