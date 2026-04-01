@@ -252,12 +252,13 @@ export default function ProjectDetail() {
     setTimeout(() => setExportToast(null), type === 'success' ? 3000 : 5000);
   };
 
-  const formatStatus = (s: string): string => {
+  const formatStatus = (s: string | undefined | null): string => {
+    if (!s) return '-';
     const map: Record<string, string> = {
       in_progress: 'In Progress', new: 'New', completed: 'Completed',
       active: 'Active', closed: 'Closed', draft: 'Draft', deprecated: 'Deprecated',
     };
-    return map[s] || s.charAt(0).toUpperCase() + s.slice(1);
+    return map[s] || (s.charAt(0).toUpperCase() + s.slice(1)) || '-';
   };
 
   const handleExportRunsCSV = () => {
@@ -338,13 +339,23 @@ export default function ProjectDetail() {
       const { default: jsPDF } = await import('jspdf');
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-      // ── 한글 폰트 임베드 ──
-      const { NotoSansKRRegular } = await import('../../assets/fonts/NotoSansKR-Regular');
-      const { NotoSansKRBold } = await import('../../assets/fonts/NotoSansKR-Bold');
-      pdf.addFileToVFS('NotoSansKR-Regular.ttf', NotoSansKRRegular);
-      pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
-      pdf.addFileToVFS('NotoSansKR-Bold.ttf', NotoSansKRBold);
-      pdf.addFont('NotoSansKR-Bold.ttf', 'NotoSansKR', 'bold');
+      // ── 한글 폰트 임베드 (실패 시 helvetica fallback) ──
+      let pdfFont = 'helvetica';
+      try {
+        const { NotoSansKRRegular } = await import('../../assets/fonts/NotoSansKR-Regular');
+        const { NotoSansKRBold } = await import('../../assets/fonts/NotoSansKR-Bold');
+        if (NotoSansKRRegular && NotoSansKRBold &&
+            typeof NotoSansKRRegular === 'string' && NotoSansKRRegular.length > 10000 &&
+            typeof NotoSansKRBold === 'string' && NotoSansKRBold.length > 10000) {
+          pdf.addFileToVFS('NotoSansKR-Regular.ttf', NotoSansKRRegular);
+          pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
+          pdf.addFileToVFS('NotoSansKR-Bold.ttf', NotoSansKRBold);
+          pdf.addFont('NotoSansKR-Bold.ttf', 'NotoSansKR', 'bold');
+          pdfFont = 'NotoSansKR';
+        }
+      } catch (fontErr) {
+        console.warn('PDF font load failed, falling back to helvetica:', fontErr);
+      }
 
       const safeAllRuns = allRunsRaw || [];
       const safeResults = rawTestResults || [];
