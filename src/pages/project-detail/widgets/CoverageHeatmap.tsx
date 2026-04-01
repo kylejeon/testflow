@@ -14,10 +14,10 @@ interface FolderData {
 function getHeatmapColor(passRate: number, hasData: boolean): string {
   if (!hasData) return '#F1F5F9';
   if (passRate >= 90) return '#16A34A';
-  if (passRate >= 70) return '#65A30D';
-  if (passRate >= 50) return '#F59E0B';
-  if (passRate >= 30) return '#F97316';
-  return '#DC2626';
+  if (passRate >= 80) return '#4ADE80';
+  if (passRate >= 60) return '#FCD34D';
+  if (passRate >= 40) return '#FB923C';
+  return '#EF4444';
 }
 
 function CustomContent(props: any) {
@@ -38,10 +38,15 @@ function CustomContent(props: any) {
             fill="#fff" fontSize={11} fontWeight={600} style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
             {name.length > 14 ? name.slice(0, 12) + '…' : name}
           </text>
-          {hasData && (
+          {hasData ? (
             <text x={x + width / 2} y={y + height / 2 + 10} textAnchor="middle"
-              fill="rgba(255,255,255,0.9)" fontSize={10}>
-              {passRate}%
+              fill="rgba(255,255,255,0.9)" fontSize={width > 100 ? 10 : 9}>
+              {width > 100 ? `${item?.size ?? 0} TC · ${passRate}%` : `${passRate}%`}
+            </text>
+          ) : (
+            <text x={x + width / 2} y={y + height / 2 + 10} textAnchor="middle"
+              fill="rgba(255,255,255,0.7)" fontSize={9}>
+              {item?.size ?? 0} TC
             </text>
           )}
         </>
@@ -74,7 +79,7 @@ export default function CoverageHeatmap({ projectId }: { projectId: string }) {
 
       const tcIds = tcs.map(t => t.id);
       const tcFolderMap: Record<string, string> = {};
-      tcs.forEach(t => { tcFolderMap[t.id] = t.folder || '(root)'; });
+      tcs.forEach(t => { tcFolderMap[t.id] = t.folder || 'General'; });
 
       // Get latest result per TC
       const { data: results } = await supabase
@@ -92,7 +97,7 @@ export default function CoverageHeatmap({ projectId }: { projectId: string }) {
       // Aggregate by folder
       const byFolder: Record<string, { total: number; passed: number; failed: number; untested: number }> = {};
       tcs.forEach(tc => {
-        const folder = tc.folder || '(root)';
+        const folder = tc.folder || 'General';
         if (!byFolder[folder]) byFolder[folder] = { total: 0, passed: 0, failed: 0, untested: 0 };
         byFolder[folder].total++;
         const status = latestByTC[tc.id];
@@ -104,8 +109,12 @@ export default function CoverageHeatmap({ projectId }: { projectId: string }) {
       const items: FolderData[] = Object.entries(byFolder)
         .map(([name, s]) => {
           const executed = s.passed + s.failed;
+          const rawName = name === '(root)' ? 'General' : name;
+          const displayName = rawName.length > 20
+            ? rawName.slice(rawName.lastIndexOf('/') + 1) || rawName
+            : rawName;
           return {
-            name: name.length > 20 ? name.slice(name.lastIndexOf('/') + 1) || name : name,
+            name: displayName,
             size: s.total,
             passRate: executed > 0 ? Math.round((s.passed / executed) * 100) : 0,
             passed: s.passed,
@@ -163,10 +172,10 @@ export default function CoverageHeatmap({ projectId }: { projectId: string }) {
             {/* Color legend */}
             <div className="flex items-center gap-2 mt-3 flex-wrap justify-center">
               {[
-                { color: '#DC2626', label: '0–30%' },
-                { color: '#F97316', label: '30–50%' },
-                { color: '#F59E0B', label: '50–70%' },
-                { color: '#65A30D', label: '70–90%' },
+                { color: '#EF4444', label: '0–40%' },
+                { color: '#FB923C', label: '40–60%' },
+                { color: '#FCD34D', label: '60–80%' },
+                { color: '#4ADE80', label: '80–90%' },
                 { color: '#16A34A', label: '90–100%' },
                 { color: '#F1F5F9', label: '미실행' },
               ].map(l => (

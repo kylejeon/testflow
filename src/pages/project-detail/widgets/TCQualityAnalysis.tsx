@@ -10,6 +10,7 @@ interface QualityData {
   lifecycleCounts: { name: string; value: number; color: string }[];
   growthData: { date: string; total: number }[];
   automationRate: number;
+  automatedCount: number;
   totalTCs: number;
   topFailedTCs: { title: string; customId: string; failCount: number }[];
 }
@@ -22,9 +23,9 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 const LIFECYCLE_COLORS: Record<string, string> = {
-  active: '#10B981',
-  draft: '#6366F1',
-  deprecated: '#94A3B8',
+  active: '#16A34A',
+  draft: '#F59E0B',
+  deprecated: '#9CA3AF',
 };
 
 function CustomPieTooltip({ active, payload }: any) {
@@ -37,10 +38,78 @@ function CustomPieTooltip({ active, payload }: any) {
   );
 }
 
+function LifecycleBars({ data, total }: {
+  data: Array<{ name: string; value: number; color: string }>;
+  total: number;
+}) {
+  return (
+    <div className="space-y-2.5">
+      {data.map(lc => (
+        <div key={lc.name}>
+          <div className="flex justify-between text-[11px] text-gray-600 mb-1">
+            <span className="capitalize">{lc.name}</span>
+            <span className="font-semibold">{lc.value}</span>
+          </div>
+          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${total > 0 ? Math.max((lc.value / total) * 100, 2) : 0}%`,
+                backgroundColor: LIFECYCLE_COLORS[lc.name.toLowerCase()] || lc.color,
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AutomationGauge({ rate, automated, total }: {
+  rate: number; automated: number; total: number;
+}) {
+  const clampedRate = Math.min(Math.max(rate, 0), 100);
+  // Semi-circle: radius 40, half-circumference ≈ π * 40 ≈ 125.66
+  const arcLength = 125.66;
+  const filledLength = (clampedRate / 100) * arcLength;
+
+  return (
+    <div className="text-center">
+      <div className="text-[11px] font-semibold text-gray-500 mb-2">AUTOMATED</div>
+      <div className="relative w-[100px] h-[54px] mx-auto overflow-hidden">
+        <svg viewBox="0 0 100 54" className="w-full h-full">
+          {/* Track */}
+          <path
+            d="M 10 50 A 40 40 0 0 1 90 50"
+            fill="none"
+            stroke="#E2E8F0"
+            strokeWidth="8"
+            strokeLinecap="round"
+          />
+          {/* Fill */}
+          <path
+            d="M 10 50 A 40 40 0 0 1 90 50"
+            fill="none"
+            stroke="#8B5CF6"
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={`${filledLength} ${arcLength}`}
+          />
+        </svg>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[17px] font-bold text-gray-900 leading-none">
+          {clampedRate.toFixed(0)}%
+        </div>
+      </div>
+      <div className="text-[10px] text-gray-500 mt-1.5">
+        {automated} / {total} TCs
+      </div>
+    </div>
+  );
+}
+
 export default function TCQualityAnalysis({ projectId }: { projectId: string }) {
   const [data, setData] = useState<QualityData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'priority' | 'lifecycle'>('priority');
 
   useEffect(() => {
     load();
@@ -50,7 +119,6 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
   async function load() {
     setLoading(true);
     try {
-      // All TCs for this project
       const { data: tcs } = await supabase
         .from('test_cases')
         .select('id, priority, lifecycle_status, is_automated, custom_id, title, created_at')
@@ -97,7 +165,7 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
         growthData.push({ date: label, total });
       }
 
-      // Automation rate
+      // Automation
       const automated = tcs.filter(tc => tc.is_automated).length;
       const automationRate = Math.round((automated / tcs.length) * 100);
 
@@ -135,7 +203,8 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
 
       setData({
         priorityCounts, lifecycleCounts, growthData,
-        automationRate, totalTCs: tcs.length, topFailedTCs,
+        automationRate, automatedCount: automated,
+        totalTCs: tcs.length, topFailedTCs,
       });
     } catch (e) {
       console.error('TCQualityAnalysis:', e);
@@ -148,8 +217,8 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
     return (
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gray-100 text-[15px] font-semibold text-gray-900">
-          <i className="ri-file-chart-line text-indigo-500" />
-          TC Quality Analysis
+          <i className="ri-test-tube-line text-emerald-500" />
+          TC Quality & Growth
         </div>
         <div className="p-4 h-[300px] animate-pulse bg-gray-50 rounded-lg m-4" />
       </div>
@@ -158,16 +227,18 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
 
   if (!data) return null;
 
-  const pieData = activeView === 'priority' ? data.priorityCounts : data.lifecycleCounts;
+  const priorityPieData = data.priorityCounts;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
-          <i className="ri-file-chart-line text-indigo-500" />
-          TC Quality Analysis
+          <i className="ri-test-tube-line text-emerald-500" />
+          TC Quality & Growth
         </div>
-        <span className="text-[11px] text-gray-400">{data.totalTCs} TCs</span>
+        <span className="text-[12px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+          {data.totalTCs} Total
+        </span>
       </div>
 
       <div className="p-4 space-y-4">
@@ -180,64 +251,56 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
               <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94A3B8' }} interval={2} />
               <YAxis tick={{ fontSize: 9, fill: '#94A3B8' }} width={24} />
               <Tooltip contentStyle={{ background: '#1E293B', border: 'none', borderRadius: 8, color: '#fff', fontSize: 11 }} />
-              <Area dataKey="total" stroke="#6366F1" fill="#EEF2FF" fillOpacity={0.5} strokeWidth={2} name="누적 TC" />
+              <Area dataKey="total" stroke="#10B981" fill="#ECFDF5" fillOpacity={0.5} strokeWidth={2} name="누적 TC" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Priority / Lifecycle donut */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* 3-col: Priority Donut | Lifecycle Bars | Automation Gauge */}
+        <div className="grid grid-cols-3 gap-3">
+          {/* Col 1: Priority Donut */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="text-[12px] font-semibold text-gray-600">분포</div>
-              <div className="flex border border-gray-200 rounded-md overflow-hidden text-[11px]">
-                {(['priority', 'lifecycle'] as const).map(v => (
-                  <button key={v} onClick={() => setActiveView(v)}
-                    className={`px-2 py-0.5 cursor-pointer transition-colors ${activeView === v ? 'bg-indigo-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
-                    {v === 'priority' ? '우선순위' : '상태'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <ResponsiveContainer width={90} height={90}>
+            <div className="text-[11px] font-semibold text-gray-500 mb-2 text-center tracking-wide">PRIORITY</div>
+            <div className="flex flex-col items-center gap-1.5">
+              <ResponsiveContainer width={80} height={80}>
                 <PieChart>
-                  <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={22} outerRadius={42} strokeWidth={0}>
-                    {pieData.map((entry, i) => (
+                  <Pie data={priorityPieData} dataKey="value" cx="50%" cy="50%" innerRadius={20} outerRadius={38} strokeWidth={0}>
+                    {priorityPieData.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip content={<CustomPieTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="space-y-1">
-                {pieData.map(d => (
-                  <div key={d.name} className="flex items-center gap-1.5 text-[11px]">
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
-                    <span className="text-gray-600">{d.name}</span>
-                    <span className="font-semibold text-gray-900 ml-auto pl-2">{d.value}</span>
+              <div className="space-y-0.5 w-full">
+                {priorityPieData.map(d => (
+                  <div key={d.name} className="flex items-center gap-1 text-[10px]">
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+                    <span className="text-gray-500 flex-1 truncate">{d.name}</span>
+                    <span className="font-semibold text-gray-800">{d.value}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Automation rate */}
+          {/* Col 2: Lifecycle Bars */}
           <div>
-            <div className="text-[12px] font-semibold text-gray-600 mb-2">자동화율</div>
-            <div className="flex flex-col items-center justify-center h-[90px]">
-              <div className="text-3xl font-bold text-gray-900">{data.automationRate}%</div>
-              <div className="w-full h-2 bg-gray-100 rounded-full mt-2 overflow-hidden">
-                <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${data.automationRate}%` }} />
-              </div>
-              <div className="text-[11px] text-gray-400 mt-1">{Math.round(data.totalTCs * data.automationRate / 100)} / {data.totalTCs} 자동화됨</div>
-            </div>
+            <div className="text-[11px] font-semibold text-gray-500 mb-2 text-center tracking-wide">LIFECYCLE</div>
+            <LifecycleBars data={data.lifecycleCounts} total={data.totalTCs} />
           </div>
+
+          {/* Col 3: Automation Gauge */}
+          <AutomationGauge
+            rate={data.automationRate}
+            automated={data.automatedCount}
+            total={data.totalTCs}
+          />
         </div>
 
         {/* Top failed TCs */}
         {data.topFailedTCs.length > 0 && (
-          <div>
+          <div className="pt-3 border-t border-gray-100">
             <div className="text-[12px] font-semibold text-gray-600 mb-2">Top 실패 TC (최근 90일)</div>
             <div className="space-y-1.5">
               {data.topFailedTCs.map((tc, i) => (

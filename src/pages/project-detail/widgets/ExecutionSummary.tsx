@@ -6,12 +6,12 @@ interface RunItem {
   id: string;
   name: string;
   status: string;
+  statusLabel: string;
   passed: number;
   failed: number;
   blocked: number;
   untested: number;
   total: number;
-  progressPct: number;
 }
 
 interface SummaryData {
@@ -23,6 +23,7 @@ interface SummaryData {
   totalBlocked: number;
   totalUntested: number;
   runs: RunItem[];
+  totalRuns: number;
 }
 
 function StatusDot({ color }: { color: string }) {
@@ -50,17 +51,27 @@ function StackedBar({ passed, failed, blocked, untested }: { passed: number; fai
   );
 }
 
-function MiniProgressBar({ progressPct, passed, failed }: { progressPct: number; passed: number; failed: number }) {
-  const hasFailure = failed > 0;
+function MiniDonut({ passed, failed, blocked, untested }: {
+  passed: number; failed: number; blocked: number; untested: number;
+}) {
+  const total = passed + failed + blocked + untested;
+  if (total === 0) return <div className="w-7 h-7 rounded-full bg-gray-100 flex-shrink-0" />;
+  const pPct = (passed / total) * 100;
+  const fPct = (failed / total) * 100;
+  const bPct = (blocked / total) * 100;
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full ${hasFailure ? 'bg-red-500' : 'bg-indigo-500'}`}
-          style={{ width: `${progressPct}%` }}
-        />
-      </div>
-      <span className="text-[11px] text-gray-400 w-8 text-right">{progressPct}%</span>
+    <div
+      className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+      style={{
+        background: `conic-gradient(
+          #16A34A 0% ${pPct}%,
+          #DC2626 ${pPct}% ${pPct + fPct}%,
+          #D97706 ${pPct + fPct}% ${pPct + fPct + bPct}%,
+          #E2E8F0 ${pPct + fPct + bPct}% 100%
+        )`,
+      }}
+    >
+      <div className="w-[18px] h-[18px] rounded-full bg-white" />
     </div>
   );
 }
@@ -93,7 +104,7 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
         .limit(20);
 
       if (!runs?.length) {
-        setData({ active: 0, completed: 0, paused: 0, totalPassed: 0, totalFailed: 0, totalBlocked: 0, totalUntested: 0, runs: [] });
+        setData({ active: 0, completed: 0, paused: 0, totalPassed: 0, totalFailed: 0, totalBlocked: 0, totalUntested: 0, runs: [], totalRuns: 0 });
         setLoading(false);
         return;
       }
@@ -105,10 +116,9 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
         .in('run_id', runIds)
         .order('created_at', { ascending: false });
 
-      // Group results, keep latest per TC per run
-      const byRun: Record<string, { passed: number; failed: number; blocked: number; untested: number; seenTCs: Set<string> }> = {};
+      const byRun: Record<string, { passed: number; failed: number; blocked: number; seenTCs: Set<string> }> = {};
       (results ?? []).forEach(r => {
-        if (!byRun[r.run_id]) byRun[r.run_id] = { passed: 0, failed: 0, blocked: 0, untested: 0, seenTCs: new Set() };
+        if (!byRun[r.run_id]) byRun[r.run_id] = { passed: 0, failed: 0, blocked: 0, seenTCs: new Set() };
         if (byRun[r.run_id].seenTCs.has(r.test_case_id)) return;
         byRun[r.run_id].seenTCs.add(r.test_case_id);
         if (r.status === 'passed') byRun[r.run_id].passed++;
@@ -125,11 +135,15 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
         const tested = counts?.seenTCs.size ?? 0;
         const total = tcIds.length || tested;
         const untested = Math.max(0, total - tested);
-        const progressPct = total > 0 ? Math.round((tested / total) * 100) : 0;
-        return { id: r.id, name: r.name, status: r.status, passed, failed, blocked, untested, total, progressPct };
+        return {
+          id: r.id,
+          name: r.name,
+          status: r.status,
+          statusLabel: STATUS_LABEL[r.status] ?? r.status,
+          passed, failed, blocked, untested, total,
+        };
       });
 
-      // Summary counts
       const activeStatuses = ['new', 'in_progress'];
       const pausedStatuses = ['paused', 'under_review'];
 
@@ -142,6 +156,7 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
         totalBlocked: runItems.reduce((s, r) => s + r.blocked, 0),
         totalUntested: runItems.reduce((s, r) => s + r.untested, 0),
         runs: runItems.slice(0, 5),
+        totalRuns: runs.length,
       });
     } catch (e) {
       console.error('ExecutionSummary:', e);
@@ -154,8 +169,8 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full">
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gray-100 text-[15px] font-semibold text-gray-900">
-          <i className="ri-play-circle-line text-indigo-500" />
-          Execution Summary
+          <i className="ri-play-circle-line text-emerald-500" />
+          Run Status
         </div>
         <div className="p-4 space-y-3 animate-pulse">
           <div className="h-10 bg-gray-50 rounded-lg" />
@@ -172,20 +187,21 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full flex flex-col">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
-          <i className="ri-play-circle-line text-indigo-500" />
-          Execution Summary
+          <i className="ri-play-circle-line text-emerald-500" />
+          Run Status
         </div>
+        <span className="text-[11px] text-gray-400">{data.totalRuns} runs</span>
       </div>
 
       <div className="p-4 flex flex-col gap-4 flex-1">
         {/* Run counts */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: 'Active', value: data.active, color: 'text-indigo-600' },
-            { label: 'Completed', value: data.completed, color: 'text-emerald-600' },
-            { label: 'Paused', value: data.paused, color: 'text-gray-500' },
+            { label: 'Active',    value: data.active,    color: 'text-emerald-600', bg: 'bg-emerald-50' },
+            { label: 'Completed', value: data.completed, color: 'text-indigo-600',  bg: 'bg-indigo-50'  },
+            { label: 'Paused',    value: data.paused,    color: 'text-amber-500',   bg: 'bg-amber-50'   },
           ].map(s => (
-            <div key={s.label} className="bg-gray-50 rounded-lg p-3 text-center">
+            <div key={s.label} className={`${s.bg} rounded-lg p-3 text-center`}>
               <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
               <div className="text-[11px] text-gray-500 mt-0.5">{s.label}</div>
             </div>
@@ -198,20 +214,26 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
           blocked={data.totalBlocked} untested={data.totalUntested}
         />
 
-        {/* Run list */}
-        <div className="space-y-2.5 flex-1">
+        {/* Run list with MiniDonut */}
+        <div className="space-y-2 flex-1">
           {data.runs.length === 0 ? (
             <div className="text-center text-sm text-gray-400 py-4">No runs yet</div>
           ) : (
             data.runs.map(run => (
-              <div key={run.id} className="flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-medium text-gray-800 truncate max-w-[160px]">{run.name}</span>
-                  <span className="text-[11px] text-gray-400 flex-shrink-0 ml-1">
-                    {STATUS_LABEL[run.status] ?? run.status}
-                  </span>
+              <div key={run.id} className="flex items-center gap-2.5 py-1">
+                <MiniDonut
+                  passed={run.passed}
+                  failed={run.failed}
+                  blocked={run.blocked}
+                  untested={run.untested}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-medium text-gray-800 truncate">{run.name}</div>
+                  <div className="text-[11px] text-gray-400">{run.statusLabel}</div>
                 </div>
-                <MiniProgressBar progressPct={run.progressPct} passed={run.passed} failed={run.failed} />
+                <span className="text-[11px] text-gray-500 flex-shrink-0">
+                  {run.passed + run.failed + run.blocked}/{run.total} TC
+                </span>
               </div>
             ))
           )}

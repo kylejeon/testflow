@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { supabase } from '../../../lib/supabase';
 
 interface MilestoneTrackerProps {
@@ -85,7 +85,7 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
   const [burndownLoading, setBurndownLoading] = useState(false);
 
   const activeMilestones = milestones.filter(m =>
-    ['started', 'in_progress', 'upcoming'].includes(m.status)
+    ['started', 'in_progress', 'upcoming', 'active', 'open'].includes(m.status)
   );
   const milestoneList: MilestoneWithRisk[] = (activeMilestones.length > 0 ? activeMilestones : milestones)
     .map(computeRisk);
@@ -97,9 +97,15 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
 
     if (!primary || !primary.endDate) return;
     const ms = milestones.find(m => m.id === primary.id);
-    if (!ms?.start_date) return;
 
-    loadBurndown(primary.id, new Date(ms.start_date), primary.endDate);
+    const endDate = primary.endDate;
+    const startDate = ms?.start_date
+      ? new Date(ms.start_date)
+      : ms?.due_date
+        ? new Date(new Date(ms.due_date).getTime() - 30 * 86400000)
+        : new Date(endDate.getTime() - 30 * 86400000);
+
+    loadBurndown(primary.id, startDate, endDate);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, milestones.length]);
 
@@ -166,7 +172,7 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
           <i className="ri-flag-2-line text-indigo-500" />
           Milestone Tracker
         </div>
-        <span className="text-[11px] text-gray-400">{milestoneList.length} milestone{milestoneList.length !== 1 ? 's' : ''}</span>
+        <span className="text-[11px] text-gray-400">{activeMilestones.length} active milestone{activeMilestones.length !== 1 ? 's' : ''}</span>
       </div>
 
       <div className="p-4">
@@ -224,10 +230,16 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
                   <Tooltip
                     contentStyle={{ background: '#1E293B', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12 }}
                   />
-                  <Area dataKey="ideal" stroke="#CBD5E1" strokeDasharray="6 3"
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    iconType="line"
+                    wrapperStyle={{ fontSize: '11px', color: '#6B7280' }}
+                  />
+                  <Area dataKey="ideal" stroke="#94A3B8" strokeDasharray="6 3"
                     fill="none" strokeWidth={1.5} name="Ideal" />
                   <Area dataKey="actual" stroke="#6366F1" fill="#EEF2FF"
-                    fillOpacity={0.4} strokeWidth={2.5} name="Actual"
+                    fillOpacity={0.4} strokeWidth={2.5} name="Remaining TCs"
                     dot={{ r: 3, fill: '#6366F1' }} />
                 </AreaChart>
               </ResponsiveContainer>
