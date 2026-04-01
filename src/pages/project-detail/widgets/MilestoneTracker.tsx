@@ -112,8 +112,8 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
         ? new Date(new Date(ms.due_date).getTime() - 30 * 86400000)
         : new Date(endDate.getTime() - 30 * 86400000);
 
-    // Sub milestone IDs 수집 (roll-up을 위해 sub runs도 포함)
-    const subIds = milestones.filter(m => m.parent_milestone_id === primary.id).map((m: any) => m.id);
+    // Sub milestone IDs 수집: sub milestones are nested inside ms.subMilestones (not in top-level array)
+    const subIds = (ms?.subMilestones ?? []).map((sub: any) => sub.id);
     loadBurndown(primary.id, startDate, endDate, subIds);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, milestones.length]);
