@@ -162,6 +162,18 @@ export async function preparePdfData(
     .sort((a, b) => b.untestedCount - a.untestedCount)
     .slice(0, 8);
 
+  // ── Burndown data (largest active milestone, Pro+) ──
+  const burndownMilestone = flatMilestones.find((m: any) => m.status !== 'completed' && m.end_date) || flatMilestones[0];
+  let burndownData: import('./pdfTypes').BurndownPoint[] = [];
+  let burndownTotalTCs = 0;
+  let burndownMilestoneName = '';
+  if (burndownMilestone) {
+    const bd = prepareBurndownData(burndownMilestone, allRunsRaw, rawTestResults);
+    burndownData = bd.points;
+    burndownTotalTCs = bd.totalTCs;
+    burndownMilestoneName = String(burndownMilestone.name || '');
+  }
+
   // ── Team members (from test_results author field, mapped via profiles) ──
   const { data: profilesRaw } = await supabase.from('profiles').select('id, full_name');
   const profileMap = new Map<string, string>((profilesRaw || []).map((p: any) => [p.id, p.full_name]));
@@ -248,7 +260,9 @@ export async function preparePdfData(
     risks,
     releaseReadiness,
     qualityGates,
-    burndownData: [],
+    burndownData,
+    burndownTotalTCs,
+    burndownMilestoneName,
 
     testCases,
   };
@@ -557,6 +571,49 @@ function prepareRiskHighlights(
   }
 
   return risks.slice(0, 5);
+}
+
+function prepareBurndownData(
+  milestone: any,
+  allRunsRaw: any[],
+  rawTestResults: any[],
+): { points: import('./pdfTypes').BurndownPoint[]; totalTCs: number } {
+  const mRuns = allRunsRaw.filter((r: any) => r.milestone_id === milestone.id);
+  const totalTCs = mRuns.reduce((sum: number, r: any) => sum + (r.test_case_ids?.length || 0), 0);
+  if (totalTCs === 0) return { points: [], totalTCs: 0 };
+
+  const startDate = milestone.start_date ? new Date(milestone.start_date)
+    : milestone.created_at ? new Date(milestone.created_at)
+    : new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const endDate = milestone.end_date ? new Date(milestone.end_date)
+    : new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
+  if (totalDays <= 0) return { points: [], totalTCs };
+
+  // Build daily completed unique TC set
+  const dailyDone = new Map<string, Set<string>>();
+  rawTestResults
+    .filter((r: any) => mRuns.some((run: any) => run.id === r.run_id) && r.status && r.status !== 'untested')
+    .forEach((r: any) => {
+      const dateKey = new Date(r.created_at).toISOString().split('T')[0];
+      if (!dailyDone.has(dateKey)) dailyDone.set(dateKey, new Set());
+      dailyDone.get(dateKey)!.add(r.test_case_id);
+    });
+
+  let cumDone = 0;
+  const points: import('./pdfTypes').BurndownPoint[] = [];
+  for (let i = 0; i <= totalDays; i++) {
+    const d = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+    const key = d.toISOString().split('T')[0];
+    cumDone += dailyDone.get(key)?.size || 0;
+    points.push({
+      date: key,
+      remaining: Math.max(totalTCs - cumDone, 0),
+      ideal: totalTCs * (1 - i / totalDays),
+    });
+  }
+  return { points, totalTCs };
 }
 
 function calculateReleaseScore(

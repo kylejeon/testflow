@@ -146,8 +146,7 @@ export interface QualityGate {
 export interface BurndownPoint {
   date: string;
   remaining: number;
-  isActual: boolean;
-  isIdeal: boolean;
+  ideal: number;
 }
 
 export interface TeamMember {
@@ -207,6 +206,8 @@ export interface PdfData {
   releaseReadiness: ReleaseReadiness;
   qualityGates: QualityGate[];
   burndownData: BurndownPoint[];
+  burndownTotalTCs: number;
+  burndownMilestoneName: string;
 
   testCases: any[];
 }

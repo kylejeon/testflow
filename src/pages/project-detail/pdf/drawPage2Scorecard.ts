@@ -90,24 +90,28 @@ export async function drawPage2Scorecard(context: PageDrawContext): Promise<void
   ];
   const maxCount = Math.max(...priorities.map(p => p.count), 1);
 
+  const BAR_MAX_W = 130; // bar x=20~150, text at x=155
   priorities.forEach((pri, i) => {
     const py = y + i * 14;
+    // Label (spec: y=rowStart+4)
     pdf.setFontSize(9);
     pdf.setFont(font, 'bold');
     pdf.setTextColor(...pri.color);
-    pdf.text(pri.label, margin, py + 5);
-    const barW = (pri.count / maxCount) * 100;
+    pdf.text(pri.label, margin, py + 4);
+    // Bar (spec: y=rowStart+6, h=5)
+    const barW = (pri.count / maxCount) * BAR_MAX_W;
     pdf.setFillColor(241, 245, 249);
-    pdf.roundedRect(margin + 25, py, 100, 5, 1, 1, 'F');
+    pdf.roundedRect(margin, py + 6, BAR_MAX_W, 5, 1, 1, 'F');
     if (barW > 0) {
       pdf.setFillColor(...pri.color);
-      pdf.roundedRect(margin + 25, py, barW, 5, 1, 1, 'F');
+      pdf.roundedRect(margin, py + 6, barW, 5, 1, 1, 'F');
     }
+    // Count text (spec: x=155, y=rowStart+9.5)
     const pct = data.totalTCs > 0 ? ((pri.count / data.totalTCs) * 100).toFixed(1) : '0.0';
     pdf.setFontSize(9);
     pdf.setFont(font, 'normal');
     pdf.setTextColor(...config.textLight);
-    pdf.text(`${pri.count} (${pct}%)`, margin + 130, py + 4, { align: 'right' });
+    pdf.text(`${pri.count} (${pct}%)`, 155, py + 9.5);
   });
   y += 4 * 14 + 8;
 

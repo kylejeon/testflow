@@ -104,13 +104,13 @@ export function drawKpiCard(pdf: jsPDF, x: number, y: number, width: number,
     pdf.setFontSize(8);
     const deltaColor = opts.deltaPositive !== false ? config.successColor : config.failureColor;
     pdf.setTextColor(...deltaColor);
-    pdf.text(opts.delta, x + width - 3, y + 5, { align: 'right' });
+    pdf.text(opts.delta, x + 4, y + 17);
   }
   if (opts?.sub) {
     pdf.setFont(config.font, 'normal');
     pdf.setFontSize(7);
     pdf.setTextColor(...config.textLight);
-    pdf.text(opts.sub, x + 3, y + height - 2);
+    pdf.text(opts.sub, x + 4, y + 20);
   }
 }
 

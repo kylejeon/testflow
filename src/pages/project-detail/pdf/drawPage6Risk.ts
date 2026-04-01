@@ -169,10 +169,16 @@ export async function drawPage6Risk(context: PageDrawContext): Promise<void> {
     });
     y += 7;
 
-    const riskColors: Record<string, [number,number,number]> = {
-      high: config.failureColor,
-      medium: config.warningColor,
-      low: config.restColor,
+    // Risk badge config per spec (bg+circle+text)
+    const riskBadgeConfig: Record<string, {
+      bg: [number,number,number];
+      circleFill: [number,number,number];
+      textColor: [number,number,number];
+      label: string;
+    }> = {
+      high:   { bg: [254, 242, 242], circleFill: config.failureColor, textColor: config.failureColor, label: 'High' },
+      medium: { bg: [255, 251, 235], circleFill: config.warningColor, textColor: config.warningColor, label: 'Medium' },
+      low:    { bg: [255, 251, 235], circleFill: config.restColor,    textColor: [245, 158, 11],       label: 'Low' },
     };
 
     data.coverageGaps.forEach((gap, i) => {
@@ -186,8 +192,7 @@ export async function drawPage6Risk(context: PageDrawContext): Promise<void> {
       pdf.line(margin, rowY + 7, margin + gapTotalW, rowY + 7);
 
       const modName = gap.module.length > 20 ? gap.module.slice(0, 17) + '...' : gap.module;
-      const riskColor = riskColors[gap.risk] || riskColors.low;
-      const riskLabel = gap.risk.charAt(0).toUpperCase() + gap.risk.slice(1);
+      const rc = riskBadgeConfig[gap.risk] || riskBadgeConfig.low;
 
       let gcx2 = margin;
       pdf.setFont(font, 'normal');
@@ -198,13 +203,20 @@ export async function drawPage6Risk(context: PageDrawContext): Promise<void> {
       pdf.text(String(gap.untestedCount), gcx2 + 1.5, rowY + 5); gcx2 += gapColWidths[1];
       pdf.text(`${gap.percentOfModule.toFixed(1)}%`, gcx2 + 1.5, rowY + 5); gcx2 += gapColWidths[2];
 
-      // Risk badge
-      pdf.setFillColor(...riskColor);
-      pdf.roundedRect(gcx2 + 1, rowY + 1, 18, 5, 1, 1, 'F');
-      pdf.setFont(font, 'bold');
+      // Risk badge: spec — bg roundedRect + colored circle + text
+      const badgeX = gcx2 + 1.5; // x = colX+4 per spec (gap=1.5 padding)
+      const badgeY = rowY + 1.5;
+      const badgeCY = badgeY + 2.25; // center of h=4.5
       pdf.setFontSize(7);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text(riskLabel, gcx2 + 10, rowY + 4.5, { align: 'center' });
+      const labelW = pdf.getTextWidth(rc.label);
+      const badgeW = labelW + 10; // circle(2.5) + gap(2.5) + text + right pad(5)
+      pdf.setFillColor(...rc.bg);
+      pdf.roundedRect(badgeX, badgeY, badgeW, 4.5, 1, 1, 'F');
+      pdf.setFillColor(...rc.circleFill);
+      pdf.circle(badgeX + 2.5, badgeCY, 1, 'F');
+      pdf.setFont(font, 'bold');
+      pdf.setTextColor(...rc.textColor);
+      pdf.text(rc.label, badgeX + 5, badgeCY + 1);
     });
   }
 
