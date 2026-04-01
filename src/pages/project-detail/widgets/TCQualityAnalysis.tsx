@@ -96,11 +96,11 @@ function AutomationGauge({ rate, automated, total }: {
             strokeDasharray={`${filledLength} ${arcLength}`}
           />
         </svg>
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[17px] font-bold text-gray-900 leading-none">
+        <div className="absolute left-1/2 -translate-x-1/2 text-[18px] font-bold text-gray-900 leading-none" style={{ bottom: '2px' }}>
           {clampedRate.toFixed(0)}%
         </div>
       </div>
-      <div className="text-[10px] text-gray-500 mt-1.5">
+      <div className="text-[10px] text-gray-500 mt-4">
         {automated} / {total} TCs
       </div>
     </div>
@@ -236,16 +236,17 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
           <i className="ri-test-tube-line text-emerald-500" />
           TC Quality & Growth
         </div>
-        <span className="text-[12px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+        <span className="text-[12px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
           {data.totalTCs} Total
         </span>
+
       </div>
 
       <div className="p-4 space-y-4">
         {/* TC Growth chart */}
         <div>
           <div className="text-[12px] font-semibold text-gray-600 mb-2">TC 성장 추이 (최근 12주)</div>
-          <ResponsiveContainer width="100%" height={100}>
+          <ResponsiveContainer width="100%" height={110}>
             <AreaChart data={data.growthData} margin={{ top: 2, right: 2, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
               <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94A3B8' }} interval={2} />
@@ -264,7 +265,7 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
             <div className="flex flex-col items-center gap-1.5">
               <ResponsiveContainer width={80} height={80}>
                 <PieChart>
-                  <Pie data={priorityPieData} dataKey="value" cx="50%" cy="50%" innerRadius={20} outerRadius={38} strokeWidth={0}>
+                  <Pie data={priorityPieData} dataKey="value" cx="50%" cy="50%" innerRadius={25} outerRadius={40} strokeWidth={0}>
                     {priorityPieData.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
                     ))}

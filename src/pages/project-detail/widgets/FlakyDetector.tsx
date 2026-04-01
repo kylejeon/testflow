@@ -28,7 +28,7 @@ function SequenceDots({ statuses }: { statuses: string[] }) {
     untested: 'bg-gray-300',
   };
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-[3px]">
       {statuses.slice(-10).map((s, i) => (
         <span key={i} className={`w-2 h-2 rounded-full flex-shrink-0 ${colorMap[s] ?? 'bg-gray-300'}`} />
       ))}
@@ -129,8 +129,8 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
-          <i className="ri-bug-line text-amber-500" />
-          Flaky TC Detector
+          <i className="ri-bug-fill text-red-500" />
+          Flaky TC Detection
         </div>
         <div className="flex items-center gap-2">
           {subscriptionTier < 3 && (
@@ -140,7 +140,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="px-4 py-3">
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
@@ -162,7 +162,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
               <span className="w-12 text-center">불안정도</span>
             </div>
             {flaky.map(tc => (
-              <div key={tc.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-gray-100 hover:border-amber-200 hover:bg-amber-50/30 transition-colors">
+              <div key={tc.id} className="flex items-center gap-3 px-3.5 py-2.5 border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     {tc.customId && (

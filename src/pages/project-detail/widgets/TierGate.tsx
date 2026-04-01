@@ -16,14 +16,12 @@ export default function TierGate({ requiredTier, currentTier, featureName, child
 
   return (
     <div className="relative rounded-xl overflow-hidden">
-      <div className="filter blur-[4px] pointer-events-none select-none opacity-50">
+      <div className="filter blur-[5px] pointer-events-none select-none opacity-60">
         {children}
       </div>
-      <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-2.5 bg-white/60 backdrop-blur-sm">
-        <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
-          <i className="ri-lock-2-line text-xl text-violet-600" />
-        </div>
-        <p className="text-[13px] font-semibold text-gray-800 text-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-2">
+        <i className="ri-lock-fill text-[32px] text-violet-500" />
+        <p className="text-[14px] font-medium text-gray-700 text-center">
           {featureName}
         </p>
         <p className="text-[12px] text-gray-500 text-center">
@@ -31,7 +29,7 @@ export default function TierGate({ requiredTier, currentTier, featureName, child
         </p>
         <a
           href="/settings"
-          className="mt-1 px-4 py-1.5 text-[12px] font-semibold text-white bg-indigo-500 rounded-lg hover:bg-indigo-600 transition-colors"
+          className="text-[13px] font-semibold text-indigo-500 hover:text-indigo-700 mt-1"
         >
           업그레이드 →
         </a>

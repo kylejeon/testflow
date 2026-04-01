@@ -132,7 +132,7 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
             <ResponsiveContainer width="100%" height={Math.max(160, members.length * 36)}>
               <BarChart data={members} layout="vertical" margin={{ top: 0, right: 4, bottom: 0, left: 0 }}>
                 <XAxis type="number" tick={{ fontSize: 11, fill: '#94A3B8' }} />
-                <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12, fill: '#374151' }} />
+                <YAxis type="category" dataKey="name" width={70} tick={{ fontSize: 12, fill: '#334155' }} />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="passed" stackId="a" fill="#16A34A" name="Passed" />
                 <Bar dataKey="failed" stackId="a" fill="#DC2626" name="Failed" />
@@ -155,7 +155,7 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
             </div>
 
             {/* Top performers table */}
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 space-y-1.5">
               {members.slice(0, 5).map((m, i) => (
                 <div key={m.name} className="flex items-center gap-3 text-[12px]">
                   <span className="text-gray-400 w-4 text-right flex-shrink-0">{i + 1}</span>

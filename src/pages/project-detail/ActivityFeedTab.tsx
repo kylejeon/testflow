@@ -96,20 +96,20 @@ function FeedItem({ item }: { item: ActivityFeedItem }) {
         className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
         style={{ backgroundColor: config.bgColor }}
       >
-        <i className={`${config.icon} text-[14px]`} style={{ color: config.color }} />
+        <i className={`${config.icon} text-[16px]`} style={{ color: config.color }} />
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] text-gray-700 leading-relaxed">
+        <p className="text-[13px] text-gray-700 leading-[1.5]">
           <strong className="text-gray-900 font-semibold">{item.actor_name}</strong>
           {' '}{formatEventMessage(item)}
         </p>
         {item.metadata.comment && (
-          <div className="mt-1 text-xs text-gray-600 px-2 py-1 bg-gray-50 rounded border-l-2 border-gray-300">
+          <div className="mt-1 text-xs text-gray-600 px-2.5 py-1.5 bg-gray-50 rounded-md border-l-2 border-gray-200">
             "{item.metadata.comment}"
           </div>
         )}
-        <p className="text-[11px] text-gray-400 mt-0.5">
+        <p className="text-[12px] text-gray-400 mt-0.5">
           {item.metadata.run_name && !['run_started', 'run_completed'].includes(item.event_type) && (
             <span className="mr-1">Run: {item.metadata.run_name} ·</span>
           )}
@@ -165,30 +165,28 @@ function AIDailySummary({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   return (
-    <div className="mx-5 mt-3 mb-1 rounded-xl overflow-hidden border border-violet-200"
+    <div className="mx-5 mt-3 mb-2 rounded-xl overflow-hidden border border-violet-200"
       style={{ background: 'linear-gradient(135deg, #f5f3ff 0%, #eef2ff 100%)' }}>
       <button
-        className="w-full flex items-center justify-between px-4 py-3 cursor-pointer"
+        className="w-full flex items-center justify-between px-[22px] pt-[18px] pb-3 cursor-pointer"
         onClick={() => setExpanded(e => !e)}
       >
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center flex-shrink-0">
-            <i className="ri-sparkling-2-fill text-white text-[11px]" />
-          </div>
-          <span className="text-[13px] font-semibold text-violet-800">AI Daily Summary</span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-[20px] leading-none">🤖</span>
+          <span className="text-[15px] font-semibold text-gray-900">AI Daily Summary</span>
           <span className="text-[11px] font-semibold text-violet-600 bg-violet-100 border border-violet-200 px-1.5 py-0.5 rounded-full">Pro+</span>
         </div>
         <i className={`text-violet-500 transition-transform ${expanded ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'}`} />
       </button>
       {expanded && (
-        <div className="px-4 pb-3">
+        <div className="px-[22px] pb-[18px]">
           {summary ? (
             <>
-              <p className="text-[13px] text-violet-900 leading-relaxed">{summary.text}</p>
+              <p className="text-[14px] text-gray-700 leading-[1.65]">{summary.text}</p>
               {summary.points.length > 0 && (
                 <ul className="mt-2 space-y-1">
                   {summary.points.map((p, i) => (
-                    <li key={i} className="text-[12px] text-violet-800">{p}</li>
+                    <li key={i} className="text-[13px] text-gray-700 leading-[1.5]">{p}</li>
                   ))}
                 </ul>
               )}
@@ -248,9 +246,9 @@ function FilterChips({
   if (chips.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2 px-5 py-2 flex-wrap border-b border-gray-100">
+    <div className="flex items-center gap-1.5 px-5 pb-2.5 pt-0 flex-wrap">
       {chips.map((chip, i) => (
-        <span key={i} className="flex items-center gap-1 bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full text-xs font-medium border border-indigo-100">
+        <span key={i} className="flex items-center gap-1 bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full text-xs font-medium">
           {chip.label}
           <button onClick={chip.onRemove} className="ml-0.5 hover:text-indigo-900 cursor-pointer leading-none">
             <i className="ri-close-line text-[12px]" />
@@ -259,7 +257,7 @@ function FilterChips({
       ))}
       <button
         onClick={() => onChange({ category: null, actorId: null, dateRange: '7d', searchQuery: '' })}
-        className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
+        className="text-[12px] font-semibold text-red-500 hover:text-red-700 cursor-pointer"
       >
         초기화
       </button>

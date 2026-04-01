@@ -35,12 +35,12 @@ function CustomContent(props: any) {
       {width > 60 && height > 30 && (
         <>
           <text x={x + width / 2} y={y + height / 2 - 6} textAnchor="middle"
-            fill="#fff" fontSize={11} fontWeight={600} style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
+            fill="#fff" fontSize={12} fontWeight={600} style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
             {name.length > 14 ? name.slice(0, 12) + '…' : name}
           </text>
           {hasData ? (
             <text x={x + width / 2} y={y + height / 2 + 10} textAnchor="middle"
-              fill="rgba(255,255,255,0.9)" fontSize={width > 100 ? 10 : 9}>
+              fill="rgba(255,255,255,0.8)" fontSize={width > 100 ? 10 : 9}>
               {width > 100 ? `${item?.size ?? 0} TC · ${passRate}%` : `${passRate}%`}
             </text>
           ) : (
@@ -170,7 +170,7 @@ export default function CoverageHeatmap({ projectId }: { projectId: string }) {
             </ResponsiveContainer>
 
             {/* Color legend */}
-            <div className="flex items-center gap-2 mt-3 flex-wrap justify-center">
+            <div className="flex items-center gap-3 mt-3 flex-wrap justify-center">
               {[
                 { color: '#EF4444', label: '0–40%' },
                 { color: '#FB923C', label: '40–60%' },
@@ -180,7 +180,7 @@ export default function CoverageHeatmap({ projectId }: { projectId: string }) {
                 { color: '#F1F5F9', label: '미실행' },
               ].map(l => (
                 <span key={l.label} className="flex items-center gap-1 text-[11px] text-gray-500">
-                  <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: l.color }} />
+                  <span className="w-3 h-3 rounded-[2px] flex-shrink-0" style={{ backgroundColor: l.color }} />
                   {l.label}
                 </span>
               ))}
