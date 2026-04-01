@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dev2 PDF 시각적 비교 가이드</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px;
+            background: linear-gradient(135deg, #4c1d95 0%, #312e81 100%);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #f1f5f9;
+        }
+
+        .header p {
+            font-size: 16px;
+            color: #cbd5e1;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            margin-top: 10px;
+            color: #94a3b8;
+        }
+
+        .global-issues {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #1e293b;
+            border-left: 4px solid #ef4444;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .global-issues h2 {
+            color: #ef4444;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .global-issues .issue {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .global-issues .issue:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .global-issues .issue strong {
+            color: #f1f5f9;
+        }
+
+        .global-issues .issue code {
+            background: #0f172a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #fbbf24;
+            font-size: 12px;
+        }
+
+        .page-section {
+            margin-bottom: 50px;
+            background: #1e293b;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border-top: 4px solid #4c1d95;
+        }
+
+        .page-header {
+            background: linear-gradient(90deg, #312e81 0%, #3b2667 100%);
+            padding: 20px 30px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .severity-badges {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge.critical {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+
+        .badge.high {
+            background: #7c2d12;
+            color: #fdba74;
+        }
+
+        .badge.medium {
+            background: #78350f;
+            color: #fcd34d;
+        }
+
+        .badge.low {
+            background: #374151;
+            color: #d1d5db;
+        }
+
+        .section-content {
+            padding: 30px;
+        }
+
+        .subsection {
+            margin-bottom: 30px;
+        }
+
+        .subsection:last-child {
+            margin-bottom: 0;
+        }
+
+        .subsection-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #7dd3fc;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #334155;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mockup-description {
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #06b6d4;
+        }
+
+        .mockup-description strong {
+            color: #06b6d4;
+        }
+
+        .issue-list {
+            list-style: none;
+            margin-bottom: 15px;
+        }
+
+        .issue-list li {
+            margin-bottom: 12px;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .issue-list li:before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #fbbf24;
+        }
+
+        .issue-list li.critical:before {
+            background: #ef4444;
+        }
+
+        .issue-list li.fixed:before {
+            background: #10a75b;
+        }
+
+        .issue-list li.warning:before {
+            background: #fbbf24;
+        }
+
+        .code-block {
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: 15px;
+            border: 1px solid #334155;
+        }
+
+        .code-block pre {
+            color: #d1d5db;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .code-block .keyword {
+            color: #f472b6;
+        }
+
+        .code-block .string {
+            color: #86efac;
+        }
+
+        .code-block .comment {
+            color: #64748b;
+        }
+
+        .code-block .function {
+            color: #7dd3fc;
+        }
+
+        .coordinate-spec {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 3px solid #6366f1;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .coordinate-spec strong {
+            color: #6366f1;
+        }
+
+        .fix-priority {
+            display: inline-block;
+            background: #312e81;
+            color: #e0e7ff;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        .summary-table {
+            margin-top: 40px;
+            padding: 30px;
+            background: #1e293b;
+            border-radius: 12px;
+            border-top: 4px solid #06b6d4;
+        }
+
+        .summary-table h2 {
+            color: #06b6d4;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table thead {
+            background: #0f172a;
+        }
+
+        table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 700;
+            color: #7dd3fc;
+            border-bottom: 2px solid #334155;
+            font-size: 13px;
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #334155;
+            font-size: 13px;
+        }
+
+        table tr:hover {
+            background: #0f172a;
+        }
+
+        table td:nth-child(1) {
+            color: #fbbf24;
+            font-weight: 600;
+            width: 50px;
+        }
+
+        table td:nth-child(2) {
+            color: #7dd3fc;
+            font-weight: 500;
+        }
+
+        table td:nth-child(3) {
+            color: #cbd5e1;
+        }
+
+        table td:nth-child(4) {
+            text-align: center;
+        }
+
+        table td:nth-child(5) {
+            color: #6366f1;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .severity-critical {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .severity-high {
+            color: #f97316;
+            font-weight: 600;
+        }
+
+        .severity-medium {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        .severity-low {
+            color: #94a3b8;
+        }
+
+        .fix-reference {
+            display: inline-block;
+            background: #312e81;
+            color: #c7d2fe;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .color-swatch {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            vertical-align: middle;
+            margin-left: 5px;
+            border: 1px solid #334155;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #64748b;
+            margin-top: 50px;
+            border-top: 1px solid #334155;
+        }
+
+        .footer p {
+            margin: 5px 0;
+            font-size: 12px;
+        }
+
+        .highlight {
+            background: rgba(251, 191, 36, 0.1);
+            padding: 2px 4px;
+            border-radius: 2px;
+            color: #fbbf24;
+        }
+
+        .note {
+            background: #1e293b;
+            padding: 15px;
+            border-left: 3px solid #6366f1;
+            margin: 15px 0;
+            border-radius: 6px;
+        }
+
+        .note strong {
+            color: #6366f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Dev2 PDF 시각적 비교 가이드</h1>
+            <p>3차 PDF 내보내기 vs 디자인 목업 비교</p>
+            <p class="subtitle">목표: 디자인 목업과 정확히 일치하도록 PDF 출력 수정</p>
+        </div>
+
+        <!-- Global Issues -->
+        <div class="global-issues">
+            <h2>전체 페이지 공통 문제</h2>
+            <div class="issue">
+                <strong>1. 페이지 개수 불일치</strong>
+                <p>현재 상태: 페이지 푸터에 "페이지 1/9"로 표시되지만 목차(TOC)에는 8개 페이지만 나열됨. TC 부록이 2페이지(P8-P9)를 차지하므로 동적 합계는 9페이지가 맞음.</p>
+                <p>해결책: TOC 마지막 항목을 "8-9" 또는 "8+"로 수정하거나 푸터의 전체 페이지 수를 동적으로 계산.</p>
+            </div>
+            <div class="issue">
+                <strong>2. 푸터 날짜 형식</strong>
+                <p>현재: <code>2026-04-01</code></p>
+                <p>목표: <code>April 1, 2026</code> (목업과 동일한 영어 형식)</p>
+            </div>
+        </div>
+
+        <!-- PAGE 1 -->
+        <div class="page-section">
+            <div class="page-header">
+                <div class="page-title">페이지 1: 커버 + 실행 요약</div>
+                <div class="severity-badges">
+                    <span class="badge high">High</span>
+                    <span class="badge medium">Medium</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <!-- Mockup -->
+                <div class="subsection">
+                    <div class="subsection-title">목업 디자인 스펙</div>
+                    <div class="mockup-description">
+                        <strong>커버 헤더:</strong> 40mm 높이, 인디고 그래디언트 배경<br>
+                        • "Testably" 12pt Bold 흰색 좌상단<br>
+                        • "Report Generated: April 1, 2026" 8pt 흰색 우상단<br>
+                        • 프로젝트명 18pt Bold 흰색 중앙<br>
+                        • "Quality Executive Report" 11pt 흰색<br><br>
+
+                        <strong>Release Readiness:</strong> 조건부(점수 74)<br>
+                        • 배경 RGB(255,251,235) 주황색 카드<br>
+                        • 테두리 RGB(245,158,11)<br>
+                        • "CONDITIONAL" 14pt Bold 주황색<br>
+                        • "Score: 74 / 100" 11pt Bold 검정색<br><br>
+
+                        <strong>점수 분석:</strong> 4개 미니 카드 (Pass Rate 66.7% | Critical Pass 0% | Coverage 100% | Milestone 66%)<br>
+                        <strong>KPI 6개 카드:</strong> 2×3 그리드 형식<br>
+                        <strong>위험 하이라이트:</strong> 색상 코딩 원형 마크(빨강/주황)<br>
+                        <strong>목차(TOC):</strong> 8개 항목 + 점선 리더
+                    </div>
+                </div>
+
+                <!-- Current Issues -->
+                <div class="subsection">
+                    <div class="subsection-title">현재 PDF (3차) 문제점</div>
+                    <ul class="issue-list">
+                        <li class="fixed">✅ 커버 헤더 정상 (40mm, 인디고, 프로젝트명)</li>
+                        <li class="fixed">✅ Release Readiness 정상 (CONDITIONAL, 주황색)</li>
+                        <li class="critical">❌ <strong>KPI 델타 값에 ▲/▼ 화살표 없음</strong> → "+ 66.2%" 형식으로만 표시됨</li>
+                        <li class="warning">⚠️ Critical Pass 0% → 이는 critical 오류가 있다는 의미. 계산식이 맞는지 재확인 필요</li>
+                        <li class="warning">⚠️ Coverage 100% → Untested=0이므로 (99-0)/99=100%. 계산상 정확하지만 검증 필요</li>
+                        <li class="critical">❌ <strong>페이지 수 불일치</strong> → 푸터 "1/9", TOC는 8페이지만 표시</li>
+                        <li class="warning">⚠️ Risk Highlights 색상: 현재 RGB(239,68,68)/RGB(249,115,22) 확인. 목업과 일치하는지 검증</li>
+                    </ul>
+                </div>
+
+                <!-- Fix Instructions -->
+                <div class="subsection">
+                    <div class="subsection-title">수정 지시사항</div>
+
+                    <div class="note">
+                        <strong>FIX 1: KPI 델타에 ▲/▼ 화살표 추가</strong>
+                        <div class="fix-priority">우선순위: FIX 1</div>
+                    </div>
+
+                    <p>파일: <code>drawPage1Cover.ts</code> → KPI 카드 델타 렌더링 부분</p>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// BEFORE: 델타 텍스트만 표시</span>
+const deltaText = <span class="string">`+ ${value}`</span>;
+
+<span class="comment">// AFTER: 화살표 포함</span>
+<span class="keyword">const</span> arrow = deltaValue >= <span class="string">0</span> ? <span class="string">'▲'</span> : <span class="string">'▼'</span>;
+<span class="keyword">const</span> deltaText = <span class="string">`${arrow} ${deltaValue >= 0 ? '+' : ''}${deltaValue}`</span>;
+
+<span class="comment">// "Failed TCs"와 "Blocked"의 경우 역로직 적용</span>
+<span class="comment">// 감소 = 좋음 (녹색), 증가 = 나쁨 (빨강)</span>
+<span class="keyword">const</span> invertedMetrics = [<span class="string">'Failed TCs'</span>, <span class="string">'Blocked'</span>];
+<span class="keyword">const</span> isPositiveChange = invertedMetrics.includes(metric)
+  ? change < <span class="string">0</span>  <span class="comment">// 감소는 좋음</span>
+  : change > <span class="string">0</span>; <span class="comment">// 증가는 좋음</span></pre>
+                    </div>
+
+                    <div class="coordinate-spec">
+                        <strong>jsPDF 좌표:</strong> KPI 카드 델타 텍스트<br>
+                        • 카드 위치: x=margin+35 (80mm 포지션 기준)<br>
+                        • 델타 텍스트: y=card_y + 15, 폰트 9pt, 색상 RGB(34,197,94) [증가] 또는 RGB(239,68,68) [감소]<br>
+                        • "▲" 기호: 추가 2mm 너비 확보
+                    </div>
+
+                    <div class="note">
+                        <strong>FIX 2: 동적 목차 페이지 번호</strong>
+                        <div class="fix-priority">우선순위: FIX 2</div>
+                    </div>
+
+                    <p>파일: <code>drawPage1Cover.ts</code> → 목차(TOC) 생성 로직</p>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// TOC 그리기 전에 전체 페이지 계산</span>
+<span class="keyword">const</span> tcPages = Math.ceil(tcs.length / <span class="string">30</span>);
+<span class="keyword">const</span> totalPages = <span class="string">7</span> + tcPages; <span class="comment">// P1-P7 + N개의 TC 페이지</span>
+
+<span class="keyword">const</span> tocItems = [
+  { title: <span class="string">'1. Cover & Executive Summary'</span>, page: <span class="string">1</span> },
+  { title: <span class="string">'2. Quality Scorecard'</span>, page: <span class="string">2</span> },
+  <span class="comment">// ...</span>
+  { title: <span class="string">'8. Test Case Appendix'</span>,
+    page: tcPages === <span class="string">1</span> ? <span class="string">'8'</span> : <span class="string">'8-9'</span> },
+];
+
+<span class="comment">// Footer도 동일한 totalPages 사용</span>
+pdf.text(<span class="string">`Page ${currentPage} of ${totalPages}`</span>, ...);</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 2 -->
+        <div class="page-section">
+            <div class="page-header">
+                <div class="page-title">페이지 2: 품질 점수판</div>
+                <div class="severity-badges">
+                    <span class="badge high">High</span>
+                    <span class="badge low">Low</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="subsection">
+                    <div class="subsection-title">목업 디자인 스펙</div>
+                    <div class="mockup-description">
+                        <strong>상단 헤더:</strong> 14mm 높이, "Testably" 좌측, "Quality Scorecard" 우측<br><br>
+
+                        <strong>Status Distribution 막대:</strong> 170mm × 6mm<br>
+                        • 5개 세그먼트: Passed | Failed | Blocked | Retest | Untested<br>
+                        • 아래 범례 표시<br><br>
+
+                        <strong>KPI 6개 카드 (2×3 그리드, 53mm×22mm):</strong><br>
+                        • Overall Pass Rate (목표 90%)<br>
+                        • Execution Completion (목표 95%)<br>
+                        • Defect Discovery Rate<br>
+                        • Automation Rate<br>
+                        • Avg Run Pass Rate<br>
+                        • Open Blockers<br><br>
+
+                        <strong>Priority Distribution:</strong> 4개 수평 막대<br>
+                        <strong>Project Information:</strong> 2열 테이블
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">현재 PDF (3차) 문제점</div>
+                    <ul class="issue-list">
+                        <li class="fixed">✅ Status Distribution 정상 (Passed 66, Failed 28, Blocked 3, Retest 2, Untested 0)</li>
+                        <li class="critical">❌ <strong>Automation Rate 0.0% 표시</strong> → test_cases 테이블에서 is_automated 필드가 쿼리되지 않음</li>
+                        <li class="critical">❌ <strong>KPI 카드 델타 표시 없음</strong> → P1과 동일한 문제 (▲/▼ 화살표 필요)</li>
+                        <li class="critical">❌ <strong>Priority 막대 텍스트 겹침</strong> → Medium 막대가 너무 길어서 "29 (72.5%)" 텍스트와 충돌</li>
+                    </ul>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">수정 지시사항</div>
+
+                    <div class="note">
+                        <strong>FIX 3: Automation Rate 데이터 쿼리</strong>
+                        <div class="fix-priority">우선순위: FIX 3</div>
+                    </div>
+
+                    <p>파일: <code>drawPage2Scorecard.ts</code> → KPI 데이터 계산 로직</p>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// 자동화된 테스트 케이스 개수 쿼리</span>
+<span class="keyword">const</span> { data: automatedTCs } = await supabase
+  .from(<span class="string">'test_cases'</span>)
+  .select(<span class="string">'id'</span>)
+  .eq(<span class="string">'is_automated'</span>, <span class="string">true</span>)
+  .in(<span class="string">'id'</span>, allTCIds);
+
+<span class="keyword">const</span> automationRate = totalTCs > <span class="string">0</span>
+  ? (automatedTCs.length / totalTCs) * <span class="string">100</span>
+  : <span class="string">0</span>;
+
+<span class="comment">// 만약 0%라면 부제목 추가</span>
+<span class="keyword">if</span> (automationRate === <span class="string">0</span>) {
+  subtitle = <span class="string">`${automatedTCs.length} Automated TCs`</span>;
+}</pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>FIX 4: Priority 막대 텍스트 겹침 해결</strong>
+                        <div class="fix-priority">우선순위: FIX 4</div>
+                    </div>
+
+                    <p>파일: <code>drawPage2Scorecard.ts</code> → Priority Distribution 렌더링</p>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// BEFORE: 고정 X 위치로 인해 막대와 겹침</span>
+
+<span class="comment">// AFTER: 막대 너비에 상관없이 텍스트 위치 조정</span>
+<span class="keyword">const</span> labelW = <span class="string">25</span>;    <span class="comment">// "Critical" 라벨 영역</span>
+<span class="keyword">const</span> barW = <span class="string">100</span>;     <span class="comment">// 막대 최대 너비 축소 (120 → 100mm)</span>
+<span class="keyword">const</span> gapW = <span class="string">5</span>;       <span class="comment">// 막대와 텍스트 간격</span>
+
+<span class="comment">// 레이아웃:</span>
+<span class="comment">// [라벨(25mm)] [막대(100mm)] [텍스트(55mm)]</span>
+<span class="keyword">const</span> labelX = margin;
+<span class="keyword">const</span> barX = margin + labelW;
+<span class="keyword">const</span> textX = barX + barW + gapW;  <span class="comment">// 150mm</span>
+
+<span class="comment">// 막대 채우기</span>
+<span class="keyword">const</span> barFill = (count / maxCount) * barW;
+pdf.rect(barX, py, barFill, <span class="string">5</span>, <span class="string">'F'</span>);
+
+<span class="comment">// 텍스트 (절대 겹치지 않음)</span>
+pdf.text(<span class="string">`${count} (${pct}%)`</span>, textX, py + <span class="string">4</span>);</pre>
+                    </div>
+
+                    <div class="coordinate-spec">
+                        <strong>jsPDF 좌표 최종 레이아웃:</strong><br>
+                        • 라벨: x=20mm, 너비=25mm<br>
+                        • 막대: x=45mm, 최대 너비=100mm, 높이=5mm<br>
+                        • 텍스트: x=150mm, 우측 정렬 또는 좌측 정렬<br>
+                        • 페이지 오른쪽까지 40mm 여유 확보
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 3 -->
+        <div class="page-section">
+            <div class="page-header">
+                <div class="page-title">페이지 3: 품질 트렌드</div>
+                <div class="severity-badges">
+                    <span class="badge critical">Critical</span>
+                    <span class="badge high">High</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="subsection">
+                    <div class="subsection-title">목업 디자인 스펙</div>
+                    <div class="mockup-description">
+                        <strong>Pass Rate Trend (30일):</strong> 170mm × 60mm 라인 차트<br>
+                        • 인디고 선(점 포함), 실행 개수 보조 선(점선)<br><br>
+
+                        <strong>주간 비교(WoW) 테이블:</strong> 5행<br>
+                        • Pass Rate | Executed | New Failures | Blocked | TCs Created<br>
+                        • 이번주 / 지난주 / 변화 / 트렌드 막대<br><br>
+
+                        <strong>Execution Velocity:</strong> 일일 막대 차트 + 7일 이동평균 빨간선
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">현재 PDF (3차) 문제점</div>
+                    <ul class="issue-list">
+                        <li class="critical">❌ <strong>Pass Rate Trend 불규칙 지그재그 패턴</strong> → 대부분의 날에 0개 테스트 결과, 일부 날에만 변동</li>
+                        <li class="critical">❌ <strong>지난주(Last Week) 모두 0으로 표시</strong> → 데이터 쿼리가 최근 7일만 포함</li>
+                        <li class="critical">❌ <strong>변화(Change) 색상 반대</strong> → "New Failures +20.0", "Blocked +2.0"이 녹색인데 빨강이어야 함</li>
+                        <li class="warning">⚠️ Execution Velocity 막대 sparse → 대부분 날에 실행 없음. 데이터 문제이지만 Y축 스케일 자동 조정 필요</li>
+                    </ul>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">수정 지시사항</div>
+
+                    <div class="note">
+                        <strong>FIX 5: Pass Rate Trend 누적 방식</strong>
+                        <div class="fix-priority">우선순위: FIX 5</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// 방안 A: 데이터 있는 날만 플롯 (권장)</span>
+<span class="keyword">const</span> daysWithData = dailyData.filter(d => d.total > <span class="string">0</span>);
+
+<span class="comment">// 각 날의 누적 통과율 계산</span>
+<span class="keyword">let</span> cumPassed = <span class="string">0</span>, cumTotal = <span class="string">0</span>;
+daysWithData.forEach(d => {
+  cumPassed += d.passed;
+  cumTotal += d.total;
+  d.passRate = cumTotal > <span class="string">0</span> ? (cumPassed / cumTotal) * <span class="string">100</span> : <span class="string">null</span>;
+});
+
+<span class="comment">// 차트에 표시할 포인트만 필터링</span>
+<span class="keyword">const</span> chartPoints = daysWithData.filter(d => d.passRate !== <span class="string">null</span>);</pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>FIX 6: 지난주 데이터 쿼리</strong>
+                        <div class="fix-priority">우선순위: FIX 6</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="keyword">const</span> now = <span class="keyword">new</span> Date();
+<span class="keyword">const</span> thisWeekStart = <span class="keyword">new</span> Date(now);
+thisWeekStart.setDate(now.getDate() - <span class="string">7</span>);
+
+<span class="keyword">const</span> lastWeekStart = <span class="keyword">new</span> Date(now);
+lastWeekStart.setDate(now.getDate() - <span class="string">14</span>);
+<span class="keyword">const</span> lastWeekEnd = thisWeekStart;
+
+<span class="keyword">const</span> thisWeekResults = results.filter(r =>
+  <span class="keyword">new</span> Date(r.created_at) >= thisWeekStart
+);
+<span class="keyword">const</span> lastWeekResults = results.filter(r => {
+  <span class="keyword">const</span> d = <span class="keyword">new</span> Date(r.created_at);
+  <span class="keyword">return</span> d >= lastWeekStart && d < lastWeekEnd;
+});</pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>FIX 7: WoW 변화 색상 로직</strong>
+                        <div class="fix-priority">우선순위: FIX 7</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// "New Failures", "Blocked"는 역로직 적용</span>
+<span class="comment">// 감소 = 좋음 (녹색), 증가 = 나쁨 (빨강)</span>
+<span class="keyword">const</span> invertedMetrics = [<span class="string">'New Failures'</span>, <span class="string">'Blocked'</span>];
+<span class="keyword">const</span> isPositiveChange = invertedMetrics.includes(metric)
+  ? change < <span class="string">0</span>  <span class="comment">// 감소는 좋음</span>
+  : change > <span class="string">0</span>; <span class="comment">// 증가는 좋음</span>
+
+<span class="keyword">const</span> changeColor = isPositiveChange
+  ? [<span class="string">16</span>, <span class="string">163</span>, <span class="string">127</span>] <span class="comment">// 녹색 RGB(16,163,127)</span>
+  : [<span class="string">239</span>, <span class="string">68</span>, <span class="string">68</span>]; <span class="comment">// 빨강 RGB(239,68,68)</span>
+
+pdf.setTextColor(...changeColor);
+pdf.text(<span class="string">`${change > 0 ? '+' : ''}${change.toFixed(1)}`</span>, ...);</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 4 -->
+        <div class="page-section">
+            <div class="page-header">
+                <div class="page-title">페이지 4: 테스트 실행 상세</div>
+                <div class="severity-badges">
+                    <span class="badge high">High</span>
+                    <span class="badge medium">Medium</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="subsection">
+                    <div class="subsection-title">목업 디자인 스펙</div>
+                    <div class="mockup-description">
+                        <strong>Run Summary 막대:</strong> Total | Active | Completed | Paused | Review 개수<br><br>
+
+                        <strong>Run Results 테이블:</strong> 9개 컬럼<br>
+                        • 상태 색상, 통과율 색상 적용<br><br>
+
+                        <strong>Module Coverage 테이블:</strong> 인라인 진행률 막대 포함
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">현재 PDF (3차) 문제점</div>
+                    <ul class="issue-list">
+                        <li class="critical">❌ <strong>6번 행 Run Name 빈칸</strong> → null/empty 처리 필요</li>
+                        <li class="warning">⚠️ 모든 milestone "Unassigned" → runs가 milestone과 연결되지 않음 (데이터 문제)</li>
+                        <li class="critical">❌ <strong>Viewer 모듈 Pass% 0% 하지만 Coverage 막대 비어있음</strong> → Coverage bar와 Pass% 혼동</li>
+                        <li class="warning">⚠️ 결과 없는 runs (0/0/0) → "0%"이 아니라 "—"로 표시 필요</li>
+                    </ul>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">수정 지시사항</div>
+
+                    <div class="note">
+                        <strong>FIX 8: 빈 Run Name 처리</strong>
+                        <div class="fix-priority">우선순위: FIX 8</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="keyword">const</span> runName = run.name?.trim() || <span class="string">`Run ${run.id.slice(0, 8)}`</span>;</pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>FIX 9: Coverage 막대 vs Pass% 구분</strong>
+                        <div class="fix-priority">우선순위: FIX 9</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// 두 가지 서로 다른 지표 구분</span>
+<span class="comment">// Pass% = passed / tested × 100 (품질)</span>
+<span class="comment">// Coverage = tested / total × 100 (완성도)</span>
+
+<span class="keyword">const</span> passRate = tested > <span class="string">0</span> ? (passed / tested) * <span class="string">100</span> : <span class="string">0</span>;
+<span class="keyword">const</span> coverageRate = totalTCs > <span class="string">0</span> ? (tested / totalTCs) * <span class="string">100</span> : <span class="string">0</span>;
+
+<span class="comment">// Coverage 막대는 coverageRate 기반</span>
+<span class="keyword">const</span> barWidth = (coverageRate / <span class="string">100</span>) * <span class="string">50</span>; <span class="comment">// 50mm 최대</span>
+pdf.rect(barX, py, barWidth, <span class="string">3</span>, <span class="string">'F'</span>);</pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>FIX 10: 결과 없는 Run 표시</strong>
+                        <div class="fix-priority">우선순위: FIX 10</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="keyword">const</span> rateText = total === <span class="string">0</span> ? <span class="string">'—'</span> : <span class="string">`${passRate}%`</span>;</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 5 -->
+        <div class="page-section">
+            <div class="page-header">
+                <div class="page-title">페이지 5: 마일스톤 & 릴리스 준비도</div>
+                <div class="severity-badges">
+                    <span class="badge critical">Critical</span>
+                    <span class="badge critical">Critical</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="subsection">
+                    <div class="subsection-title">목업 디자인 스펙</div>
+                    <div class="mockup-description">
+                        <strong>마일스톤 카드 (2×2 그리드, 82mm×50mm):</strong><br>
+                        • 이름, 상태 배지, 진행률 막대<br>
+                        • Due date (D-N 형식)<br>
+                        • Remaining TCs<br>
+                        • Velocity TC/day<br>
+                        • Est. Completion<br><br>
+
+                        <strong>Burndown 차트:</strong> 170mm × 70mm<br>
+                        • Ideal 대시 선 (회색)<br>
+                        • Actual 실선 (인디고)<br>
+                        • "Today" 빨간 세로선<br><br>
+
+                        <strong>Quality Gates 테이블:</strong> 4행<br>
+                        • Pass Rate ≥90%, No Critical Failures, Coverage ≥80%, Blocked ≤5%
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">현재 PDF (3차) 문제점</div>
+                    <ul class="issue-list">
+                        <li class="critical">❌ <strong>1개 마일스톤만 표시 ("1.0.0 Overdue")</strong> → 하위 마일스톤 누락</li>
+                        <li class="critical">❌ <strong>마일스톤 카드 거의 비어있음</strong> → Due date, Remaining TCs, Velocity, Est. Completion 누락</li>
+                        <li class="critical">❌ <strong>Burndown 차트 완전 누락</strong> → 전체 섹션이 렌더링되지 않음</li>
+                        <li class="critical">❌ <strong>Quality Gates 테이블 완전 누락</strong> → 전체 섹션이 렌더링되지 않음</li>
+                        <li class="critical">❌ <strong>페이지 80% 비어있음</strong> → 좌상단에만 작은 카드 1개</li>
+                    </ul>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">수정 지시사항 (최우선)</div>
+
+                    <div class="note">
+                        <strong>FIX 11: 마일스톤 배열 플래튼(Flatten)</strong>
+                        <div class="fix-priority">우선순위: FIX 11 (최우선)</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="keyword">const</span> allMilestones = [];
+milestones.forEach(m => {
+  allMilestones.push(m);
+  (m.subMilestones || []).forEach(sub => allMilestones.push(sub));
+});
+
+<span class="comment">// 활성화된 마일스톤만 필터링, 최대 4개 카드</span>
+<span class="keyword">const</span> activeMilestones = allMilestones
+  .filter(m => m.status === <span class="string">'active'</span> || m.status === <span class="string">'started'</span>)
+  .slice(<span class="string">0</span>, <span class="string">4</span>);</pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>FIX 12: 마일스톤 카드 상세 정보</strong>
+                        <div class="fix-priority">우선순위: FIX 12 (최우선)</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// 각 마일스톤별 계산</span>
+<span class="keyword">const</span> daysRemaining = Math.ceil(
+  (new Date(m.end_date).getTime() - Date.now()) / <span class="string">86400000</span>
+);
+<span class="keyword">const</span> totalTCs = <span class="comment">/* 이 마일스톤의 runs에 연결된 TCs */</span>;
+<span class="keyword">const</span> completedTCs = <span class="comment">/* passed+failed+blocked results 개수 */</span>;
+<span class="keyword">const</span> remainingTCs = totalTCs - completedTCs;
+<span class="keyword">const</span> daysSinceStart = Math.ceil(
+  (Date.now() - new Date(m.start_date).getTime()) / <span class="string">86400000</span>
+);
+<span class="keyword">const</span> velocity = daysSinceStart > <span class="string">0</span>
+  ? completedTCs / daysSinceStart
+  : <span class="string">0</span>;
+<span class="keyword">const</span> estDaysToComplete = velocity > <span class="string">0</span>
+  ? Math.ceil(remainingTCs / velocity)
+  : Infinity;
+<span class="keyword">const</span> estCompletion = new Date(
+  Date.now() + estDaysToComplete * <span class="string">86400000</span>
+);
+
+<span class="comment">// 카드 레이아웃 (82mm × 50mm):</span>
+<span class="comment">// y+4: 이름(10pt Bold) + 상태 배지(우측)</span>
+<span class="comment">// y+14: "Progress: 82%" (9pt Bold)</span>
+<span class="comment">// y+18: 진행률 막대(70mm × 3mm)</span>
+<span class="comment">// y+24: "Due: Apr 6 (D-5)" (8pt 회색)</span>
+<span class="comment">// y+30: "Remaining: 18 TCs" (8pt 회색)</span>
+<span class="comment">// y+36: "Velocity: 8.2 TC/day" (8pt 회색)</span>
+<span class="comment">// y+42: "Est. Completion: Apr 4" (8pt 회색)</span></pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>FIX 13: Burndown 차트 추가</strong>
+                        <div class="fix-priority">우선순위: FIX 13 (최우선)</div>
+                    </div>
+
+                    <div class="coordinate-spec">
+                        <strong>Burndown 차트 좌표:</strong><br>
+                        • 위치: y=102mm<br>
+                        • 크기: 170mm × 70mm<br>
+                        • Ideal 선: 회색 점선(RGB 100,116,139)<br>
+                        • Actual 선: 인디고 실선(RGB 99,102,241)<br>
+                        • Today 선: 빨강 점선(RGB 239,68,68)
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// Ideal 선 (대시)</span>
+pdf.setDrawColor(<span class="string">100</span>, <span class="string">116</span>, <span class="string">139</span>);
+pdf.setLineWidth(<span class="string">0.5</span>);
+pdf.setLineDashPattern([<span class="string">3</span>, <span class="string">2</span>], <span class="string">0</span>);
+pdf.line(chartX, chartY, chartX + chartW, chartY + chartH);
+
+<span class="comment">// Actual 선 (실선, 인디고)</span>
+pdf.setDrawColor(<span class="string">99</span>, <span class="string">102</span>, <span class="string">241</span>);
+pdf.setLineWidth(<span class="string">0.7</span>);
+pdf.setLineDashPattern([], <span class="string">0</span>);
+
+<span class="comment">// 일일 남은 TCs 플롯</span>
+<span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="string">0</span>; i < daysCount; i++) {
+  <span class="keyword">const</span> remaining = totalTCs - resultsUpToDay[i].length;
+  <span class="keyword">const</span> x = chartX + (i / totalDays) * chartW;
+  <span class="keyword">const</span> y = chartY + (remaining / totalTCs) * chartH;
+  <span class="keyword">if</span> (i === <span class="string">0</span>) pdf.moveTo(x, y);
+  <span class="keyword">else</span> pdf.lineTo(x, y);
+}
+pdf.stroke();
+
+<span class="comment">// "Today" 빨간 세로선</span>
+<span class="keyword">const</span> todayX = chartX + (daysSinceStart / totalDays) * chartW;
+pdf.setDrawColor(<span class="string">239</span>, <span class="string">68</span>, <span class="string">68</span>);
+pdf.setLineDashPattern([<span class="string">2</span>, <span class="string">2</span>], <span class="string">0</span>);
+pdf.line(todayX, chartY, todayX, chartY + chartH);</pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>FIX 14: Quality Gates 테이블 추가</strong>
+                        <div class="fix-priority">우선순위: FIX 14 (최우선)</div>
+                    </div>
+
+                    <div class="coordinate-spec">
+                        <strong>Quality Gates 테이블 좌표:</strong><br>
+                        • 위치: y=185mm (Burndown 아래)<br>
+                        • 5 컬럼: Gate | Status | Threshold | Actual | Verdict<br>
+                        • 4 행 데이터
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="keyword">const</span> gates = [
+  { gate: <span class="string">'Pass Rate ≥ 90%'</span>, threshold: <span class="string">90</span>, actual: passRate,
+    verdict: passRate >= <span class="string">90</span> ? <span class="string">'PASS'</span> : <span class="string">'FAIL'</span> },
+  { gate: <span class="string">'No Critical Failures'</span>, threshold: <span class="string">0</span>, actual: criticalFailCount,
+    verdict: criticalFailCount === <span class="string">0</span> ? <span class="string">'PASS'</span> : <span class="string">'FAIL'</span> },
+  { gate: <span class="string">'Coverage ≥ 80%'</span>, threshold: <span class="string">80</span>, actual: coverageRate,
+    verdict: coverageRate >= <span class="string">80</span> ? <span class="string">'PASS'</span> :
+            coverageRate >= <span class="string">70</span> ? <span class="string">'WARN'</span> : <span class="string">'FAIL'</span> },
+  { gate: <span class="string">'Blocked ≤ 5%'</span>, threshold: <span class="string">5</span>, actual: blockedRate,
+    verdict: blockedRate <= <span class="string">5</span> ? <span class="string">'PASS'</span> : <span class="string">'FAIL'</span> },
+];
+
+<span class="comment">// Verdict 색상 매핑</span>
+<span class="keyword">const</span> verdictColors = {
+  <span class="string">'PASS'</span>: [<span class="string">16</span>, <span class="string">163</span>, <span class="string">127</span>],  <span class="comment">// 녹색</span>
+  <span class="string">'FAIL'</span>: [<span class="string">239</span>, <span class="string">68</span>, <span class="string">68</span>],   <span class="comment">// 빨강</span>
+  <span class="string">'WARN'</span>: [<span class="string">249</span>, <span class="string">115</span>, <span class="string">22</span>],  <span class="comment">// 주황</span>
+};</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 6 -->
+        <div class="page-section">
+            <div class="page-header">
+                <div class="page-title">페이지 6: 위험 평가</div>
+                <div class="severity-badges">
+                    <span class="badge high">High</span>
+                    <span class="badge low">Low</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="subsection">
+                    <div class="subsection-title">목업 디자인 스펙</div>
+                    <div class="mockup-description">
+                        <strong>Top 10 Failed TCs 테이블:</strong> # | TC ID | Title | Priority | Fails | Last Failed<br><br>
+
+                        <strong>Flaky Test Cases 테이블:</strong> TC ID | Title | Sequence (●/○ dots) | Score<br><br>
+
+                        <strong>Coverage Gaps 테이블:</strong> Module | Untested TCs | % of Module | Risk badge
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">현재 PDF (3차) 문제점</div>
+                    <ul class="issue-list">
+                        <li class="warning">⚠️ Top Failed TCs 모두 "Med" 우선순위 → priority 매핑 재확인 필요</li>
+                        <li class="warning">⚠️ Flaky TCs 5행 표시, 점 렌더링 정상</li>
+                        <li class="critical">❌ <strong>Coverage Gaps "모든 모듈이 테스트됨, 커버리지 갭 없음"만 표시</strong> → 정의가 너무 좁음</li>
+                    </ul>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">수정 지시사항</div>
+
+                    <div class="note">
+                        <strong>FIX 15: Coverage Gaps 정의 확대</strong>
+                        <div class="fix-priority">우선순위: FIX 15</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// Coverage Gaps 기준 확대</span>
+<span class="keyword">const</span> coverageGaps = folderStats
+  .filter(f => {
+    <span class="comment">// 포함 기준: 미테스트 있음 OR 통과율 낮음</span>
+    <span class="keyword">return</span> f.untested > <span class="string">0</span> ||
+           (f.tested > <span class="string">0</span> && f.passRate < <span class="string">80</span>);
+  })
+  .sort((a, b) => {
+    <span class="comment">// 위험도 정렬</span>
+    <span class="keyword">const</span> aRisk = (a.untested / a.total) * <span class="string">100</span>;
+    <span class="keyword">const</span> bRisk = (b.untested / b.total) * <span class="string">100</span>;
+    <span class="keyword">return</span> bRisk - aRisk || a.passRate - b.passRate;
+  })
+  .slice(<span class="string">0</span>, <span class="string">8</span>);
+
+<span class="comment">// 위험 레벨 매핑</span>
+<span class="keyword">const</span> getRiskBadge = (f) => {
+  <span class="keyword">const</span> untestedPct = (f.untested / f.total) * <span class="string">100</span>;
+  <span class="keyword">if</span> (untestedPct >= <span class="string">50</span>) <span class="keyword">return</span> <span class="string">'🔴 High'</span>;
+  <span class="keyword">if</span> (untestedPct >= <span class="string">20</span> || f.passRate < <span class="string">70</span>) <span class="keyword">return</span> <span class="string">'🟠 Medium'</span>;
+  <span class="keyword">return</span> <span class="string">'✅ Good'</span>;
+};</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 7 -->
+        <div class="page-section">
+            <div class="page-header">
+                <div class="page-title">페이지 7: 팀 성과</div>
+                <div class="severity-badges">
+                    <span class="badge critical">Critical</span>
+                    <span class="badge medium">Medium</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="subsection">
+                    <div class="subsection-title">목업 디자인 스펙</div>
+                    <div class="mockup-description">
+                        <strong>Team Summary 막대:</strong> Total Members | Active Today | Avg Execution/Member<br><br>
+
+                        <strong>Member Performance 테이블:</strong> 8 컬럼<br>
+                        • # | Member | Executed | Passed | Failed | Pass% | Contrib% | Bar<br><br>
+
+                        <strong>Contribution Distribution:</strong> 멤버별 수평 막대<br><br>
+
+                        <strong>Defect Discovery Contribution:</strong> 하이라이트 문장 + 미니 테이블
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">현재 PDF (3차) 문제점</div>
+                    <ul class="issue-list">
+                        <li class="critical">❌ <strong>1명 멤버만 "Unknown" (99 executions)</strong> → author 필드가 null</li>
+                        <li class="critical">❌ <strong>"Total Members: 1"</strong> → 모든 결과가 같은 (null) author</li>
+                        <li class="critical">❌ <strong>"Defect Discovery Contribution" 섹션 누락</strong> → 하이라이트 + 테이블 미렌더링</li>
+                    </ul>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">수정 지시사항</div>
+
+                    <div class="note">
+                        <strong>FIX 16: "Unknown" 멤버명 해결</strong>
+                        <div class="fix-priority">우선순위: FIX 16</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// test_results의 author 필드 확인</span>
+<span class="comment">// Option A: author가 user_id인 경우 profiles 테이블 join</span>
+<span class="keyword">const</span> { data: profiles } = await supabase
+  .from(<span class="string">'profiles'</span>)
+  .select(<span class="string">'id, full_name'</span>)
+  .in(<span class="string">'id'</span>, authorIds);
+
+<span class="keyword">const</span> profileMap = new Map(profiles.map(p => [p.id, p]));
+
+<span class="comment">// Option B: author가 이미 이름인 경우</span>
+<span class="keyword">const</span> authorName = result.author?.trim() ||
+  profileMap.get(result.user_id)?.full_name ||
+  <span class="string">'Unknown'</span>;
+
+<span class="comment">// 데이터가 모두 null인 경우 경고</span>
+<span class="keyword">if</span> (teamStats.length === <span class="string">1</span> && teamStats[<span class="string">0</span>].name === <span class="string">'Unknown'</span>) {
+  pdf.setTextColor(<span class="string">239</span>, <span class="string">68</span>, <span class="string">68</span>);
+  pdf.text(<span class="string">'⚠️ Author information not populated in test results'</span>, ...);</pre>
+                    </div>
+
+                    <div class="note">
+                        <strong>FIX 17: Defect Discovery Contribution 섹션 추가</strong>
+                        <div class="fix-priority">우선순위: FIX 17</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// Contribution Distribution 이후 (y ≈ 215mm)</span>
+<span class="keyword">const</span> topDiscoverer = teamStats
+  .sort((a, b) => b.failed - a.failed)[<span class="string">0</span>];
+
+<span class="comment">// 하이라이트 박스</span>
+pdf.setFillColor(<span class="string">238</span>, <span class="string">242</span>, <span class="string">255</span>);
+pdf.roundedRect(margin, y, contentW, <span class="string">8</span>, <span class="string">1.5</span>, <span class="string">1.5</span>, <span class="string">'F'</span>);
+pdf.setFontSize(<span class="string">9</span>);
+pdf.setTextColor(<span class="string">99</span>, <span class="string">102</span>, <span class="string">241</span>);
+pdf.text(
+  <span class="string">`${topDiscoverer.name} discovered ${topDiscoverer.failedPct}% of all defects`</span>,
+  margin + <span class="string">4</span>, y + <span class="string">5</span>
+);
+
+<span class="comment">// 미니 테이블: Member | Failures Found | % of Total | Discovery Rate</span>
+<span class="keyword">const</span> topDiscoverers = teamStats
+  .sort((a, b) => b.failed - a.failed)
+  .slice(<span class="string">0</span>, <span class="string">3</span>);</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 8-9 -->
+        <div class="page-section">
+            <div class="page-header">
+                <div class="page-title">페이지 8-9: 테스트 케이스 부록</div>
+                <div class="severity-badges">
+                    <span class="badge medium">Medium</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="subsection">
+                    <div class="subsection-title">목업 디자인 스펙</div>
+                    <div class="mockup-description">
+                        <strong>Lifecycle Distribution 막대:</strong> Active | Draft | Deprecated 개수와 비율<br><br>
+
+                        <strong>Full TC 테이블 (6 컬럼):</strong> # | ID | Title | Priority | Status | Folder<br><br>
+
+                        <strong>페이지네이션:</strong> 페이지당 30행, 자동 페이지 나눔<br><br>
+
+                        <strong>마지막 페이지:</strong> "Total: 40 Test Cases" 표시
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">현재 PDF (3차) 문제점</div>
+                    <ul class="issue-list">
+                        <li class="fixed">✅ Lifecycle 막대 정상 (Active 39 (97.5%), Draft 1 (2.5%), Deprecated 0)</li>
+                        <li class="fixed">✅ TC 테이블 페이지네이션 정상 (P8: 30행, P9: 10행)</li>
+                        <li class="fixed">✅ "Total: 40 Test Cases" P9 하단 표시</li>
+                        <li class="critical">❌ <strong>푸터 "Page 8 of 10", "Page 9 of 10"</strong> → "Page 8 of 9", "Page 9 of 9"이어야 함</li>
+                        <li class="warning">⚠️ Status 컬럼에 "Active" 표시 → lifecycle_status로 목업과 일치 (데이터 정확)</li>
+                    </ul>
+                </div>
+
+                <div class="subsection">
+                    <div class="subsection-title">수정 지시사항</div>
+
+                    <div class="note">
+                        <strong>FIX 18: 전체 페이지 수 계산 수정</strong>
+                        <div class="fix-priority">우선순위: FIX 18</div>
+                    </div>
+
+                    <div class="code-block">
+                        <pre><span class="comment">// BEFORE: totalPages 계산이 1 많음</span>
+
+<span class="comment">// AFTER: 올바른 계산</span>
+<span class="keyword">const</span> fixedPages = <span class="string">7</span>; <span class="comment">// P1-P7</span>
+<span class="keyword">const</span> tcPages = Math.ceil(tcs.length / <span class="string">30</span>); <span class="comment">// P8+</span>
+<span class="keyword">const</span> totalPages = fixedPages + tcPages;
+
+<span class="comment">// 40 TC인 경우: tcPages = 2, totalPages = 9</span>
+<span class="comment">// 푸터: "Page 8 of 9", "Page 9 of 9"</span>
+
+<span class="comment">// TOC 마지막 항목</span>
+<span class="keyword">const</span> appendixPage = tcPages === <span class="string">1</span> ? <span class="string">'8'</span> : <span class="string">'8-9'</span>;</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Table -->
+        <div class="summary-table">
+            <h2>수정 사항 요약 테이블</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>페이지</th>
+                        <th>문제점</th>
+                        <th>심각도</th>
+                        <th>FIX ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>P1</td>
+                        <td>KPI 델타에 ▲/▼ 화살표 없음</td>
+                        <td><span class="severity-medium">Medium</span></td>
+                        <td>FIX 1</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>P1, P8</td>
+                        <td>페이지 수 불일치 (TOC vs 푸터)</td>
+                        <td><span class="severity-medium">Medium</span></td>
+                        <td>FIX 2, 18</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>P2</td>
+                        <td>Automation Rate 0% (쿼리 문제)</td>
+                        <td><span class="severity-low">Low</span></td>
+                        <td>FIX 3</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>P2</td>
+                        <td>Priority 막대 텍스트 겹침</td>
+                        <td><span class="severity-high">High</span></td>
+                        <td>FIX 4</td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>P3</td>
+                        <td>Pass Rate Trend 불규칙 지그재그</td>
+                        <td><span class="severity-high">High</span></td>
+                        <td>FIX 5</td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td>P3</td>
+                        <td>WoW 지난주 모두 0으로 표시</td>
+                        <td><span class="severity-critical">Critical</span></td>
+                        <td>FIX 6</td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td>P3</td>
+                        <td>WoW 변화 색상 반대</td>
+                        <td><span class="severity-high">High</span></td>
+                        <td>FIX 7</td>
+                    </tr>
+                    <tr>
+                        <td>8</td>
+                        <td>P4</td>
+                        <td>빈 Run Name</td>
+                        <td><span class="severity-low">Low</span></td>
+                        <td>FIX 8</td>
+                    </tr>
+                    <tr>
+                        <td>9</td>
+                        <td>P4</td>
+                        <td>Coverage 막대 vs Pass% 혼동</td>
+                        <td><span class="severity-medium">Medium</span></td>
+                        <td>FIX 9</td>
+                    </tr>
+                    <tr>
+                        <td>10</td>
+                        <td>P4</td>
+                        <td>결과 없는 Run "0%"로 표시</td>
+                        <td><span class="severity-low">Low</span></td>
+                        <td>FIX 10</td>
+                    </tr>
+                    <tr>
+                        <td>11</td>
+                        <td>P5</td>
+                        <td>1개 마일스톤만 (하위 누락)</td>
+                        <td><span class="severity-critical">Critical</span></td>
+                        <td>FIX 11</td>
+                    </tr>
+                    <tr>
+                        <td>12</td>
+                        <td>P5</td>
+                        <td>마일스톤 카드 세부정보 누락</td>
+                        <td><span class="severity-critical">Critical</span></td>
+                        <td>FIX 12</td>
+                    </tr>
+                    <tr>
+                        <td>13</td>
+                        <td>P5</td>
+                        <td>Burndown 차트 완전 누락</td>
+                        <td><span class="severity-critical">Critical</span></td>
+                        <td>FIX 13</td>
+                    </tr>
+                    <tr>
+                        <td>14</td>
+                        <td>P5</td>
+                        <td>Quality Gates 테이블 누락</td>
+                        <td><span class="severity-critical">Critical</span></td>
+                        <td>FIX 14</td>
+                    </tr>
+                    <tr>
+                        <td>15</td>
+                        <td>P6</td>
+                        <td>Coverage Gaps 정의 너무 좁음</td>
+                        <td><span class="severity-high">High</span></td>
+                        <td>FIX 15</td>
+                    </tr>
+                    <tr>
+                        <td>16</td>
+                        <td>P7</td>
+                        <td>모든 멤버 "Unknown"</td>
+                        <td><span class="severity-critical">Critical</span></td>
+                        <td>FIX 16</td>
+                    </tr>
+                    <tr>
+                        <td>17</td>
+                        <td>P7</td>
+                        <td>Defect Discovery 섹션 누락</td>
+                        <td><span class="severity-medium">Medium</span></td>
+                        <td>FIX 17</td>
+                    </tr>
+                    <tr>
+                        <td>18</td>
+                        <td>P8-9</td>
+                        <td>푸터 전체 페이지 수 틀림</td>
+                        <td><span class="severity-medium">Medium</span></td>
+                        <td>FIX 18</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Dev2 PDF 시각적 비교 가이드</strong></p>
+            <p>생성 일시: 2026-04-01</p>
+            <p>목표: 3차 PDF를 디자인 목업과 정확히 일치하도록 수정</p>
+            <p>총 18개 FIX 항목 | Critical 5개 | High 5개 | Medium 6개 | Low 2개</p>
+        </div>
+    </div>
+</body>
+</html>
