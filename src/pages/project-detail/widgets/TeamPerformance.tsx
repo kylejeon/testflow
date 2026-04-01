@@ -8,6 +8,8 @@ interface TeamMember {
   blocked: number;
   total: number;
   passRate: number;
+  avgResponse: string;
+  avgResponseMs: number;
   dailyActivity: number[]; // last 7 days, index 0 = oldest
 }
 
@@ -35,19 +37,31 @@ const AVATAR_COLORS = [
   'bg-cyan-100 text-cyan-700',
 ];
 
+const RANK_COLORS = ['text-amber-500', 'text-gray-400', 'text-orange-400'];
+
 function Sparkline({ data }: { data: number[] }) {
   const max = Math.max(...data, 1);
   return (
-    <div className="flex items-end gap-[2px] h-[18px]">
+    <div className="flex items-end gap-[2px] h-[20px]">
       {data.map((v, i) => (
         <div
           key={i}
-          className="w-[6px] rounded-sm bg-indigo-400 flex-shrink-0"
-          style={{ height: `${Math.max((v / max) * 18, v > 0 ? 3 : 0)}px`, opacity: v === 0 ? 0.2 : 1 }}
+          className="w-[7px] rounded-sm flex-shrink-0"
+          style={{
+            height: `${Math.max((v / max) * 20, v > 0 ? 3 : 0)}px`,
+            backgroundColor: v === 0 ? '#E2E8F0' : '#818CF8',
+          }}
         />
       ))}
     </div>
   );
+}
+
+function AvgResponseColor(ms: number): string {
+  const h = ms / 3600000;
+  if (h < 1) return 'text-emerald-600';
+  if (h < 2) return 'text-amber-500';
+  return 'text-red-500';
 }
 
 export default function TeamPerformance({ projectId, period }: { projectId: string; period: PeriodFilter }) {
@@ -83,7 +97,7 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
       const { data: results } = await q;
       if (!results?.length) { setMembers([]); setLoading(false); return; }
 
-      // Build 7-day date keys (last 7 days)
+      // Build 7-day date keys
       const dayKeys: string[] = [];
       for (let i = 6; i >= 0; i--) {
         const d = new Date(Date.now() - i * 86400000);
@@ -93,14 +107,15 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
       // Aggregate by author
       const byAuthor: Record<string, {
         passed: number; failed: number; blocked: number; total: number;
-        daily: Record<string, number>;
+        daily: Record<string, number>; timestamps: number[];
       }> = {};
 
       results.forEach(r => {
         const name = r.author || 'No assigned member';
-        if (!byAuthor[name]) byAuthor[name] = { passed: 0, failed: 0, blocked: 0, total: 0, daily: {} };
+        if (!byAuthor[name]) byAuthor[name] = { passed: 0, failed: 0, blocked: 0, total: 0, daily: {}, timestamps: [] };
         if (r.status !== 'untested') {
           byAuthor[name].total++;
+          byAuthor[name].timestamps.push(new Date(r.created_at).getTime());
           if (r.status === 'passed') byAuthor[name].passed++;
           else if (r.status === 'failed') byAuthor[name].failed++;
           else if (r.status === 'blocked') byAuthor[name].blocked++;
@@ -114,15 +129,30 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
 
       const list: TeamMember[] = Object.entries(byAuthor)
         .filter(([, s]) => s.total > 0)
-        .map(([name, s]) => ({
-          name,
-          passed: s.passed,
-          failed: s.failed,
-          blocked: s.blocked,
-          total: s.total,
-          passRate: Math.round((s.passed / s.total) * 100),
-          dailyActivity: dayKeys.map(k => s.daily[k] ?? 0),
-        }))
+        .map(([name, s]) => {
+          // Avg response = avg gap between consecutive executions
+          let avgResponseMs = 0;
+          let avgResponseLabel = '—';
+          if (s.timestamps.length >= 2) {
+            const sorted = s.timestamps.slice().sort((a, b) => a - b);
+            let totalGap = 0;
+            for (let i = 1; i < sorted.length; i++) totalGap += sorted[i] - sorted[i - 1];
+            avgResponseMs = totalGap / (sorted.length - 1);
+            const h = avgResponseMs / 3600000;
+            avgResponseLabel = h < 1 ? `${Math.round(h * 60)}m` : `${h.toFixed(1)}h`;
+          }
+          return {
+            name,
+            passed: s.passed,
+            failed: s.failed,
+            blocked: s.blocked,
+            total: s.total,
+            passRate: Math.round((s.passed / s.total) * 100),
+            avgResponse: avgResponseLabel,
+            avgResponseMs,
+            dailyActivity: dayKeys.map(k => s.daily[k] ?? 0),
+          };
+        })
         .sort((a, b) => b.total - a.total)
         .slice(0, 10);
 
@@ -134,6 +164,8 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
     }
   }
 
+  const maxTotal = Math.max(...members.map(m => m.total), 1);
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
@@ -143,7 +175,7 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">Pro+</span>
-          <span className="text-[11px] text-gray-400">{period === 'all' ? '전체' : `Last ${period}`}</span>
+          <span className="text-[11px] text-gray-400">{period === 'all' ? 'All Time' : `Last ${period}`}</span>
         </div>
       </div>
 
@@ -157,46 +189,86 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
         ) : members.length === 0 ? (
           <div className="h-[140px] flex flex-col items-center justify-center text-gray-400 text-sm gap-2">
             <i className="ri-team-line text-3xl text-gray-300" />
-            선택한 기간에 테스트 결과가 없습니다
+            No test results in this period
           </div>
         ) : (
-          <table className="w-full text-[12px]">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="text-left text-[11px] font-semibold text-gray-400 px-4 py-2 w-6">#</th>
-                <th className="text-left text-[11px] font-semibold text-gray-400 py-2">Member</th>
-                <th className="text-center text-[11px] font-semibold text-gray-400 py-2">Exec</th>
-                <th className="text-center text-[11px] font-semibold text-gray-400 py-2">Fails</th>
-                <th className="text-center text-[11px] font-semibold text-gray-400 py-2">Pass%</th>
-                <th className="text-center text-[11px] font-semibold text-gray-400 py-2 pr-4">7d Trend</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((m, i) => {
-                const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
-                const passColor = m.passRate >= 80 ? 'text-emerald-600' : m.passRate >= 60 ? 'text-amber-600' : 'text-red-600';
+          <>
+            {/* Leaderboard table */}
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 px-4 py-2 w-6">#</th>
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2">Member</th>
+                  <th className="text-center text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2">Executed</th>
+                  <th className="text-center text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2">Found Failures</th>
+                  <th className="text-center text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2">Avg Response</th>
+                  <th className="text-center text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2 pr-4">7-Day Activity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((m, i) => {
+                  const avatarColor = AVATAR_COLORS[i % AVATAR_COLORS.length];
+                  const rankColor = RANK_COLORS[i] ?? 'text-gray-400';
+                  return (
+                    <tr key={m.name} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
+                      <td className={`pl-4 py-2.5 font-bold text-[13px] ${rankColor}`}>{i + 1}</td>
+                      <td className="py-2.5 pr-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${avatarColor}`}>
+                            {getInitials(m.name)}
+                          </span>
+                          <span className="font-medium text-gray-800 truncate max-w-[90px]">{m.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 text-center font-semibold text-gray-700">{m.total}</td>
+                      <td className="py-2.5 text-center font-semibold text-red-500">{m.failed}</td>
+                      <td className={`py-2.5 text-center font-semibold ${AvgResponseColor(m.avgResponseMs)}`}>{m.avgResponse}</td>
+                      <td className="py-2.5 pr-4">
+                        <div className="flex justify-center">
+                          <Sparkline data={m.dailyActivity} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Stacked contribution bars */}
+            <div className="px-4 pt-3 pb-2 space-y-2 border-t border-gray-100 mt-2">
+              {members.slice(0, 6).map(m => {
+                const barW = (m.total / maxTotal) * 100;
+                const passW = m.total > 0 ? (m.passed / m.total) * 100 : 0;
+                const failW = m.total > 0 ? (m.failed / m.total) * 100 : 0;
+                const blockW = m.total > 0 ? (m.blocked / m.total) * 100 : 0;
                 return (
-                  <tr key={m.name} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
-                    <td className="pl-4 py-2.5 text-gray-400 font-medium">{i + 1}</td>
-                    <td className="py-2.5 pr-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${avatarColor}`}>
-                          {getInitials(m.name)}
-                        </span>
-                        <span className="font-medium text-gray-800 truncate max-w-[90px]">{m.name}</span>
+                  <div key={m.name} className="flex items-center gap-2">
+                    <span className="w-[72px] text-[11px] text-gray-600 font-medium text-right truncate flex-shrink-0">{m.name}</span>
+                    <div className="flex-1 h-[10px] bg-gray-100 rounded-sm overflow-hidden">
+                      <div className="h-full flex" style={{ width: `${barW}%` }}>
+                        <div style={{ width: `${passW}%`, backgroundColor: '#16A34A' }} />
+                        <div style={{ width: `${failW}%`, backgroundColor: '#DC2626' }} />
+                        <div style={{ width: `${blockW}%`, backgroundColor: '#D97706' }} />
                       </div>
-                    </td>
-                    <td className="py-2.5 text-center font-semibold text-gray-700">{m.total}</td>
-                    <td className="py-2.5 text-center font-semibold text-red-500">{m.failed}</td>
-                    <td className={`py-2.5 text-center font-bold ${passColor}`}>{m.passRate}%</td>
-                    <td className="py-2.5 pr-4 flex justify-center items-center">
-                      <Sparkline data={m.dailyActivity} />
-                    </td>
-                  </tr>
+                    </div>
+                    <span className="w-8 text-[11px] font-semibold text-gray-600 text-right flex-shrink-0">{m.total}</span>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+              <div className="flex items-center gap-3 pt-1">
+                {[
+                  { color: '#16A34A', label: 'Passed' },
+                  { color: '#DC2626', label: 'Failed' },
+                  { color: '#D97706', label: 'Blocked' },
+                ].map(l => (
+                  <span key={l.label} className="flex items-center gap-1 text-[10px] text-gray-400">
+                    <span className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: l.color }} />
+                    {l.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
