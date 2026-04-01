@@ -1098,7 +1098,11 @@ export default function ProjectRunsPage() {
         : activeTab === 'completed' ? run.status === 'completed'
         : true;
       const searchMatch = !searchQuery.trim() || run.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const msMatch = !milestoneFilter || run.milestone_id === milestoneFilter;
+      // Parent milestone 선택 시 sub runs도 포함
+      const subMilestoneIds = milestoneFilter
+        ? milestones.filter((m: any) => m.parent_milestone_id === milestoneFilter).map((m: any) => m.id)
+        : [];
+      const msMatch = !milestoneFilter || run.milestone_id === milestoneFilter || subMilestoneIds.includes(run.milestone_id);
       const resultMatch =
         resultFilter === 'all' ? true
         : resultFilter === 'has_failures' ? run.failed > 0

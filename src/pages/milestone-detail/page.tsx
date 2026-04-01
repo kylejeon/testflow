@@ -88,6 +88,16 @@ interface TcStats {
 
 // ── Standalone queryFn (outside component for stable reference) ──────────────
 
+type RollupStats = {
+  total: number;
+  completed: number;
+  passed: number;
+  failed: number;
+  blocked: number;
+  passRate: number;
+  coverage: number;
+};
+
 type MilestoneDetailData = {
   project: any | null;
   milestone: Milestone | null;
@@ -103,6 +113,7 @@ type MilestoneDetailData = {
   tcStats: TcStats;
   failedBlockedTcs: FailedBlockedTcItem[];
   subMilestoneProgress: Map<string, number>;
+  rollupStats: RollupStats | null;
 };
 
 async function loadMilestoneDetailData(projectId: string, milestoneId: string): Promise<MilestoneDetailData> {
@@ -232,6 +243,8 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
   const parentProgressPct = parentTotal > 0 ? Math.round((parentTested / parentTotal) * 100) : 0;
 
   const subMilestoneProgress = new Map<string, number>();
+  let rollupStats: RollupStats | null = null;
+
   if (subMilestoneIds.length > 0) {
     const { data: subRunsData } = await supabase
       .from('test_runs').select('id, milestone_id, test_case_ids').in('milestone_id', subMilestoneIds);
@@ -249,6 +262,8 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
       });
 
       const subProgressAccum = new Map<string, { tested: number; total: number }>();
+      let subTotal = 0, subCompleted = 0, subPassed = 0, subFailed = 0, subBlocked = 0;
+
       subRunsData.forEach((run: any) => {
         const statusMap = runStatusMaps.get(run.id) || new Map();
         const total = (run.test_case_ids || []).length;
@@ -257,6 +272,11 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
         (run.test_case_ids || []).forEach((tcId: string) => {
           const s = statusMap.get(tcId);
           if (s && s !== 'untested') tested++;
+          subTotal++;
+          if (s === 'passed')       { subCompleted++; subPassed++; }
+          else if (s === 'failed')  { subCompleted++; subFailed++; }
+          else if (s === 'blocked') { subCompleted++; subBlocked++; }
+          else if (s === 'retest')  { subCompleted++; }
         });
         const mid = run.milestone_id;
         const existing = subProgressAccum.get(mid) || { tested: 0, total: 0 };
@@ -266,6 +286,25 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
       subProgressAccum.forEach((v, k) => {
         subMilestoneProgress.set(k, v.total > 0 ? Math.round((v.tested / v.total) * 100) : parentProgressPct);
       });
+
+      // Roll-up: parent 직속 + sub 합산
+      const rollupTotal = parentTotal + subTotal;
+      const rollupCompleted = parentTested + subCompleted;
+      const rollupPassed = aggPassed + subPassed;
+      const rollupFailed = aggFailed + subFailed;
+      const rollupBlocked = aggBlocked + subBlocked;
+      const rollupPassRate = rollupCompleted > 0 ? Math.round((rollupPassed / rollupCompleted) * 100) : 0;
+      const rollupCoverage = rollupTotal > 0 ? Math.round((rollupCompleted / rollupTotal) * 100) : 0;
+
+      rollupStats = {
+        total: rollupTotal,
+        completed: rollupCompleted,
+        passed: rollupPassed,
+        failed: rollupFailed,
+        blocked: rollupBlocked,
+        passRate: rollupPassRate,
+        coverage: rollupCoverage,
+      };
     }
 
     subMilestoneIds.forEach(id => {
@@ -427,6 +466,7 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
     tcStats: { passed: aggPassed, failed: aggFailed, blocked: aggBlocked, retest: aggRetest, untested: Math.max(0, aggUntested), total: aggTotal, passRate: aggPassRate },
     failedBlockedTcs: failedBlockedTcList,
     subMilestoneProgress,
+    rollupStats,
   };
 }
 
@@ -465,6 +505,8 @@ export default function MilestoneDetail() {
   const tcStats = data?.tcStats ?? { passed: 0, failed: 0, blocked: 0, retest: 0, untested: 0, total: 0, passRate: 0 };
   const failedBlockedTcs = data?.failedBlockedTcs ?? [];
   const subMilestoneProgress = data?.subMilestoneProgress ?? new Map();
+  const rollupStats = data?.rollupStats ?? null;
+  const isAggregated = subMilestones.length > 0 && rollupStats !== null;
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '';
@@ -747,6 +789,30 @@ export default function MilestoneDetail() {
           <span style={{ width: 1, height: '1rem', background: '#E2E8F0', margin: '0 0.75rem', flexShrink: 0, display: 'inline-block' }} />
           <span style={{ color: '#64748B' }}>Total TCs</span>&nbsp;<span style={{ fontWeight: 700, color: '#0F172A' }}>{tcStats.total}</span>
         </div>
+
+        {/* Roll-up 배너 (sub milestone이 있는 parent일 때만 표시) */}
+        {isAggregated && rollupStats && (
+          <div style={{ marginTop: '0.75rem', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: '0.5rem', padding: '0.75rem 1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.625rem' }}>
+              <i className="ri-loop-left-line" style={{ color: '#6366F1', fontSize: '0.875rem' }} />
+              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#3730A3' }}>Roll-up 집계 모드</span>
+              <span style={{ fontSize: '0.6875rem', color: '#6366F1', marginLeft: 'auto' }}>sub milestone {subMilestones.length}개 + 직속 runs 합산</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', textAlign: 'center' }}>
+              {[
+                { label: 'Total TCs', value: rollupStats.total, color: '#0F172A' },
+                { label: 'Passed', value: rollupStats.passed, color: '#16A34A' },
+                { label: 'Failed', value: rollupStats.failed, color: '#DC2626' },
+                { label: 'Coverage', value: `${rollupStats.coverage}%`, color: '#6366F1' },
+              ].map((kpi, i) => (
+                <div key={i} style={{ background: '#fff', borderRadius: '0.375rem', padding: '0.5rem' }}>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
+                  <div style={{ fontSize: '0.6875rem', color: '#64748B', marginTop: '0.125rem' }}>{kpi.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Row 3: Content Tab Row (42px) ── */}

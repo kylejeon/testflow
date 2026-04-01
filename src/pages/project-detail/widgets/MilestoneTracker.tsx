@@ -84,10 +84,12 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
   const [primaryMilestone, setPrimaryMilestone] = useState<MilestoneWithRisk | null>(null);
   const [burndownLoading, setBurndownLoading] = useState(false);
 
-  const activeMilestones = milestones.filter(m =>
+  // Parent 마일스톤만 표시 (sub milestone 제외)
+  const parentMilestones = milestones.filter(m => !m.parent_milestone_id);
+  const activeMilestones = parentMilestones.filter(m =>
     ['started', 'in_progress', 'upcoming', 'active', 'open'].includes(m.status)
   );
-  const milestoneList: MilestoneWithRisk[] = (activeMilestones.length > 0 ? activeMilestones : milestones)
+  const milestoneList: MilestoneWithRisk[] = (activeMilestones.length > 0 ? activeMilestones : parentMilestones)
     .map(computeRisk);
 
   // Load burndown for most advanced active milestone
@@ -105,19 +107,22 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
         ? new Date(new Date(ms.due_date).getTime() - 30 * 86400000)
         : new Date(endDate.getTime() - 30 * 86400000);
 
-    loadBurndown(primary.id, startDate, endDate);
+    // Sub milestone IDs 수집 (roll-up을 위해 sub runs도 포함)
+    const subIds = milestones.filter(m => m.parent_milestone_id === primary.id).map((m: any) => m.id);
+    loadBurndown(primary.id, startDate, endDate, subIds);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, milestones.length]);
 
-  async function loadBurndown(milestoneId: string, startDate: Date, endDate: Date) {
+  async function loadBurndown(milestoneId: string, startDate: Date, endDate: Date, subMilestoneIds: string[] = []) {
     setBurndownLoading(true);
     try {
-      // Get runs for this milestone
+      // Get runs for this milestone + sub milestones (roll-up)
+      const allMilestoneIds = [milestoneId, ...subMilestoneIds];
       const { data: runs } = await supabase
         .from('test_runs')
         .select('id, test_case_ids')
         .eq('project_id', projectId)
-        .eq('milestone_id', milestoneId);
+        .in('milestone_id', allMilestoneIds);
 
       if (!runs?.length) { setBurndownData([]); return; }
 
@@ -172,7 +177,7 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
           <i className="ri-flag-2-fill text-amber-500" />
           Milestone Tracker
         </div>
-        <span className="text-[11px] text-gray-400">{activeMilestones.length} active milestone{activeMilestones.length !== 1 ? 's' : ''}</span>
+        <span className="text-[11px] text-gray-400">{activeMilestones.length} active milestone{activeMilestones.length !== 1 ? 's' : ''} · {milestones.filter((m: any) => !m.parent_milestone_id).length} total</span>
       </div>
 
       <div className="px-5 py-4">

@@ -58,6 +58,12 @@ function buildEventMeta(
         body:  `Milestone *${data.milestone_name ?? 'Unnamed'}* is past due in *${projectName}* (was due ${data.end_date ?? 'unknown'}).`,
         link:  `${APP_URL}/projects/${projectId}/milestones/${data.milestone_id ?? ''}`,
       };
+    case 'milestone_rollup_updated':
+      return {
+        title: 'Milestone roll-up updated',
+        body:  `Sub milestone *${data.sub_milestone_name ?? 'Unnamed'}* updated — parent milestone *${data.milestone_name ?? ''}* roll-up recalculated in *${projectName}*.`,
+        link:  `${APP_URL}/projects/${projectId}/milestones/${data.milestone_id ?? ''}`,
+      };
     default:
       return {
         title: 'Testably notification',
@@ -169,14 +175,16 @@ export type WebhookEventType =
   | 'run_completed'
   | 'milestone_started'
   | 'milestone_completed'
-  | 'milestone_past_due';
+  | 'milestone_past_due'
+  | 'milestone_rollup_updated';
 
 export const WEBHOOK_EVENTS: { type: WebhookEventType; label: string; description: string }[] = [
   { type: 'invitation_received',  label: 'Invitation Received',  description: 'When a user is invited to the project' },
   { type: 'member_joined',        label: 'New Member Joined',     description: 'When a new member joins the project' },
   { type: 'run_created',          label: 'New Run Created',       description: 'When a new test run is created' },
   { type: 'run_completed',        label: 'Run Completed',         description: 'When a test run is marked as completed (includes pass/fail counts)' },
-  { type: 'milestone_started',    label: 'Milestone In Progress', description: 'When a milestone begins' },
-  { type: 'milestone_completed',  label: 'Milestone Completed',   description: 'When a milestone is marked as completed' },
-  { type: 'milestone_past_due',   label: 'Milestone Overdue',     description: 'When a milestone passes its due date' },
+  { type: 'milestone_started',         label: 'Milestone In Progress',    description: 'When a milestone begins' },
+  { type: 'milestone_completed',       label: 'Milestone Completed',      description: 'When a milestone is marked as completed' },
+  { type: 'milestone_past_due',        label: 'Milestone Overdue',        description: 'When a milestone passes its due date' },
+  { type: 'milestone_rollup_updated',  label: 'Milestone Roll-up Updated', description: 'When a sub milestone changes and parent roll-up is recalculated' },
 ];

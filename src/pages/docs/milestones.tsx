@@ -211,8 +211,32 @@ export default function DocsMilestonesPage() {
             </div>
           </div>
 
-          <p className="text-gray-500 text-sm leading-relaxed">
+          <p className="text-gray-500 text-sm leading-relaxed mb-4">
             The parent milestone's progress reflects the <strong>aggregate progress</strong> across all sub-milestones. Sub-milestones can be expanded or collapsed in the list view.
+          </p>
+
+          <h3 className="text-base font-semibold text-gray-900 mb-2">Roll-up 자동 집계</h3>
+          <p className="text-gray-500 text-sm leading-relaxed mb-3">
+            Sub milestone이 1개 이상인 parent는 <strong>Roll-up 모드</strong>로 자동 전환됩니다:
+          </p>
+          <ul className="space-y-1.5 mb-4">
+            {[
+              '진행률 = (모든 sub TC + parent 직속 TC) 합산으로 자동 계산',
+              '상태 = sub들의 상태 조합으로 자동 결정 (수동 변경 불가)',
+              '기간 = date_mode="auto"이면 sub의 min(start)~max(end)로 자동 계산',
+              '🔄 Roll-up 배지가 parent 카드에 표시됨',
+            ].map((item, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-gray-500">
+                <span className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          <h3 className="text-base font-semibold text-gray-900 mb-2">기간 모드 (Date Mode)</h3>
+          <p className="text-gray-500 text-sm leading-relaxed">
+            Edit 모달에서 <strong>🔄 Auto</strong> / <strong>✏️ Manual</strong> 토글로 전환할 수 있습니다.
+            Manual 모드에서 sub의 기간이 parent 범위를 벗어나면 경고 배지가 표시됩니다.
           </p>
         </section>
 

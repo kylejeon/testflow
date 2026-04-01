@@ -89,9 +89,10 @@ export default function MilestonesApiPage() {
             { name: 'description', type: 'string', desc: 'Optional description' },
             { name: 'start_date', type: 'string (ISO 8601)', desc: 'Start date of the milestone' },
             { name: 'due_date', type: 'string (ISO 8601)', desc: 'Target due date' },
-            { name: 'status', type: 'string', desc: 'One of: active, completed, archived' },
-            { name: 'parent_id', type: 'string', desc: 'Parent milestone ID for sub-milestones' },
-            { name: 'progress', type: 'number', desc: 'Completion percentage (0-100), read-only' },
+            { name: 'status', type: 'string', desc: 'One of: upcoming, started, past_due, completed. Read-only if sub milestones exist (auto-derived).' },
+            { name: 'parent_milestone_id', type: 'string', desc: 'Parent milestone ID for sub-milestones (max 1 level nesting)' },
+            { name: 'date_mode', type: 'string', desc: '"auto" = dates derived from sub milestones; "manual" = manually set. Default: "auto".' },
+            { name: 'progress', type: 'number', desc: 'Completion percentage (0-100). Auto-aggregated from sub milestones if they exist.' },
             { name: 'created_at', type: 'string (ISO 8601)', desc: 'Creation timestamp' },
             { name: 'updated_at', type: 'string (ISO 8601)', desc: 'Last update timestamp' },
           ]}

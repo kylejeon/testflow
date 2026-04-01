@@ -102,14 +102,18 @@ export async function preparePdfData(
   // ── Folder coverage ──
   const folderCoverage = prepareFolderCoverage(testCases, rawTestResults, allRunsRaw);
 
-  // ── Milestone cards ──
-  const flatMilestones: any[] = [];
-  milestones.forEach((m: any) => {
-    flatMilestones.push(m);
-    (m.subMilestones || []).forEach((s: any) => flatMilestones.push(s));
-  });
+  // ── Milestone cards (parent only, roll-up 집계 기준) ──
+  // Sub milestone이 있는 parent는 roll-up 데이터 사용, sub가 없으면 자체 데이터 사용
+  const parentMilestones = milestones.filter((m: any) => !m.parent_milestone_id);
 
-  const milestoneCards: MilestoneCard[] = flatMilestones.map((m: any) => prepareMilestoneCard(m, allRunsRaw, rawTestResults));
+  const milestoneCards: MilestoneCard[] = parentMilestones.map((m: any) => {
+    const card = prepareMilestoneCard(m, allRunsRaw, rawTestResults);
+    // Roll-up 집계 milestone의 경우 집계 데이터로 덮어쓰기
+    if (m.isAggregated && m.rollupTotal > 0) {
+      card.progress = m.progress; // rollupProgress로 이미 업데이트됨
+    }
+    return card;
+  });
   const activeMilestones = milestoneCards.filter(m => m.status !== 'Completed').length;
   const avgMilestoneProgress = milestoneCards.length > 0
     ? milestoneCards.reduce((sum, m) => sum + m.progress, 0) / milestoneCards.length : 100;

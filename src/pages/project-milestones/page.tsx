@@ -21,6 +21,7 @@ interface Milestone {
   updated_at: string;
   parent_milestone_id: string | null;
   assigned_to?: string | null;
+  date_mode?: 'auto' | 'manual';
 }
 
 interface MilestoneWithProgress extends Milestone {
@@ -30,6 +31,17 @@ interface MilestoneWithProgress extends Milestone {
   failedTests: number;
   actualProgress: number;
   subMilestones?: MilestoneWithProgress[];
+  isAggregated?: boolean;
+  rollupTotal?: number;
+  rollupCompleted?: number;
+  rollupPassed?: number;
+  rollupFailed?: number;
+  rollupPassRate?: number;
+  rollupCoverage?: number;
+  derivedStatus?: Milestone['status'];
+  derivedStartDate?: string | null;
+  derivedEndDate?: string | null;
+  dateWarnings?: string[];
 }
 
 const TIER_INFO = {
@@ -218,23 +230,103 @@ export default function ProjectMilestones() {
         return { ...milestone, status: currentStatus, totalTests: totalTestsSum, completedTests: completedTestsSum, passedTests: passedTestsSum, failedTests: failedTestsSum, actualProgress: averageProgress };
       });
 
-      // Sub milestones with no dedicated runs → inherit parent milestone's progress
-      const milestoneProgressMap = new Map(milestonesWithProgress.map(m => [m.id, m]));
-      const milestonesWithFallback = milestonesWithProgress.map(m => {
-        if (m.parent_milestone_id && m.totalTests === 0) {
-          const parent = milestoneProgressMap.get(m.parent_milestone_id);
-          if (parent && parent.totalTests > 0) {
-            return { ...m, totalTests: parent.totalTests, completedTests: parent.completedTests, passedTests: parent.passedTests, failedTests: parent.failedTests, actualProgress: parent.actualProgress };
-          }
-        }
-        return m;
+      const allResultsByRun = new Map<string, any[]>();
+      (allTestResultsData || []).forEach((r: any) => {
+        if (!allResultsByRun.has(r.run_id)) allResultsByRun.set(r.run_id, []);
+        allResultsByRun.get(r.run_id)!.push(r);
       });
 
-      const parentMilestones = milestonesWithFallback.filter(m => !m.parent_milestone_id);
-      const organizedMilestones = parentMilestones.map(parent => ({
-        ...parent,
-        subMilestones: milestonesWithFallback.filter(m => m.parent_milestone_id === parent.id)
-      }));
+      const parentMilestones = milestonesWithProgress.filter(m => !m.parent_milestone_id);
+      const organizedMilestones = parentMilestones.map(parent => {
+        const subs = milestonesWithProgress.filter(m => m.parent_milestone_id === parent.id);
+
+        if (subs.length === 0) {
+          return { ...parent, isAggregated: false, subMilestones: [] };
+        }
+
+        // Roll-up: sub + parent 직속 runs 합산
+        const allSources = [parent, ...subs];
+        let rollupTotal = 0, rollupCompleted = 0, rollupPassed = 0, rollupFailed = 0, rollupBlocked = 0;
+
+        allSources.forEach(source => {
+          const sourceRuns = (allRunsData || []).filter(r => r.milestone_id === source.id);
+          sourceRuns.forEach(run => {
+            const results = allResultsByRun.get(run.id) || [];
+            const statusMap = new Map<string, string>();
+            results.forEach((r: any) => {
+              if (!statusMap.has(r.test_case_id)) statusMap.set(r.test_case_id, r.status);
+            });
+            const tcIds: string[] = run.test_case_ids || [];
+            rollupTotal += tcIds.length;
+            tcIds.forEach(tcId => {
+              const s = statusMap.get(tcId);
+              if (s === 'passed')       { rollupCompleted++; rollupPassed++; }
+              else if (s === 'failed')  { rollupCompleted++; rollupFailed++; }
+              else if (s === 'blocked') { rollupCompleted++; rollupBlocked++; }
+              else if (s === 'retest')  { rollupCompleted++; }
+            });
+          });
+        });
+
+        const rollupProgress = rollupTotal > 0 ? Math.round((rollupCompleted / rollupTotal) * 100) : 0;
+        const rollupPassRate = rollupCompleted > 0 ? Math.round((rollupPassed / rollupCompleted) * 1000) / 10 : 0;
+        const rollupCoverage = rollupTotal > 0 ? Math.round((rollupCompleted / rollupTotal) * 1000) / 10 : 0;
+
+        // Status 자동 결정
+        const subStatuses = subs.map(s => s.status);
+        let derivedStatus: Milestone['status'];
+        if (subStatuses.every(s => s === 'completed')) derivedStatus = 'completed';
+        else if (subStatuses.some(s => s === 'past_due')) derivedStatus = 'past_due';
+        else if (subStatuses.some(s => s === 'started')) derivedStatus = 'started';
+        else derivedStatus = 'upcoming';
+
+        // 기간 자동 계산
+        const subStarts = subs.map(s => s.start_date).filter(Boolean).map(d => new Date(d!).getTime());
+        const subEnds = subs.map(s => s.end_date).filter(Boolean).map(d => new Date(d!).getTime());
+        const derivedStartDate = subStarts.length > 0 ? new Date(Math.min(...subStarts)).toISOString() : parent.start_date;
+        const derivedEndDate = subEnds.length > 0 ? new Date(Math.max(...subEnds)).toISOString() : parent.end_date;
+
+        // 기간 벗어남 경고 (manual 모드일 때만)
+        const dateWarnings: string[] = [];
+        if (parent.date_mode === 'manual' && parent.start_date && parent.end_date) {
+          const pStart = new Date(parent.start_date).getTime();
+          const pEnd = new Date(parent.end_date).getTime();
+          subs.forEach(sub => {
+            if (sub.start_date && new Date(sub.start_date).getTime() < pStart)
+              dateWarnings.push(`"${sub.name}" 시작일이 parent 범위 이전`);
+            if (sub.end_date && new Date(sub.end_date).getTime() > pEnd)
+              dateWarnings.push(`"${sub.name}" 종료일이 parent 범위 이후`);
+          });
+        }
+
+        const displayStart = parent.date_mode === 'manual' ? parent.start_date : derivedStartDate;
+        const displayEnd = parent.date_mode === 'manual' ? parent.end_date : derivedEndDate;
+
+        return {
+          ...parent,
+          status: derivedStatus,
+          start_date: displayStart,
+          end_date: displayEnd,
+          actualProgress: rollupProgress,
+          totalTests: rollupTotal,
+          completedTests: rollupCompleted,
+          passedTests: rollupPassed,
+          failedTests: rollupFailed,
+          isAggregated: true,
+          rollupTotal,
+          rollupCompleted,
+          rollupPassed,
+          rollupFailed,
+          rollupBlocked,
+          rollupPassRate,
+          rollupCoverage,
+          derivedStatus,
+          derivedStartDate,
+          derivedEndDate,
+          dateWarnings,
+          subMilestones: subs,
+        };
+      });
 
       const initialExpanded = new Set<string>();
       organizedMilestones.forEach(milestone => {
@@ -274,6 +366,15 @@ export default function ProjectMilestones() {
 
   const handleCreateMilestone = async (data: any) => {
     try {
+      // 3레벨 중첩 방지: 선택된 parent가 이미 sub인 경우 차단
+      if (parentMilestoneId) {
+        const selectedParent = milestones.find(m => m.id === parentMilestoneId) ||
+          milestones.flatMap(m => m.subMilestones || []).find(m => m.id === parentMilestoneId);
+        if (selectedParent && selectedParent.parent_milestone_id !== null) {
+          alert('Sub milestone 아래에는 추가 하위 milestone을 생성할 수 없습니다.');
+          return;
+        }
+      }
       const { error } = await supabase.from('milestones').insert([{ project_id: id, status: 'upcoming', progress: 0, parent_milestone_id: parentMilestoneId, ...data }]);
       if (error) throw error;
       setShowCreateModal(false);
@@ -289,7 +390,6 @@ export default function ProjectMilestones() {
     try {
       const { error } = await supabase.from('milestones').update(data).eq('id', milestoneId);
       if (error) throw error;
-      setEditingMilestone(null);
       fetchData();
     } catch (error) {
       console.error('마일스톤 수정 오류:', error);
@@ -534,6 +634,16 @@ export default function ProjectMilestones() {
               <div className="text-[0.75rem] text-[#94A3B8] mt-[0.0625rem] flex items-center gap-1">
                 <i className="ri-calendar-line" style={{ fontSize: '0.625rem', verticalAlign: '-1px' }} />
                 {formatDateRange(milestone.start_date, milestone.end_date)}
+                {milestone.isAggregated && (
+                  <span className="text-[0.5625rem] font-medium text-indigo-400 ml-1">
+                    ({milestone.date_mode === 'manual' ? '✏️ manual' : '🔄 auto'})
+                  </span>
+                )}
+                {(milestone.dateWarnings?.length ?? 0) > 0 && (
+                  <span className="text-[0.5625rem] text-amber-500 ml-1" title={milestone.dateWarnings!.join('\n')}>
+                    ⚠️ {milestone.dateWarnings!.length}건
+                  </span>
+                )}
               </div>
             </div>
 
@@ -542,6 +652,17 @@ export default function ProjectMilestones() {
               <span className="text-[0.6875rem] font-semibold text-[#6366F1] flex items-center gap-[0.1875rem] flex-shrink-0">
                 <i className="ri-git-branch-line text-[0.8125rem]" />
                 {milestone.subMilestones!.length} subs
+              </span>
+            )}
+
+            {/* Roll-up badge */}
+            {milestone.isAggregated && (
+              <span
+                className="inline-flex items-center gap-1 text-[0.625rem] font-semibold text-indigo-500 bg-indigo-50 px-[0.4375rem] py-[0.125rem] rounded-full flex-shrink-0"
+                title="Sub milestone 데이터 자동 집계"
+              >
+                <i className="ri-loop-left-line text-[0.6875rem]" />
+                Roll-up
               </span>
             )}
 
@@ -564,7 +685,7 @@ export default function ProjectMilestones() {
               >
                 <i className="ri-edit-line text-[0.8125rem]" />Edit
               </button>
-              {milestone.status === 'upcoming' && (
+              {!milestone.isAggregated && milestone.status === 'upcoming' && (
                 <button
                   onClick={() => handleStartMilestone(milestone.id)}
                   className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F1F5F9] transition-all whitespace-nowrap cursor-pointer"
@@ -572,7 +693,7 @@ export default function ProjectMilestones() {
                   Start
                 </button>
               )}
-              {(milestone.status === 'started' || milestone.status === 'past_due') && (
+              {!milestone.isAggregated && (milestone.status === 'started' || milestone.status === 'past_due') && (
                 <button
                   onClick={() => handleMarkAsComplete(milestone.id)}
                   className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-medium px-[0.4375rem] py-1 rounded border border-[#86EFAC] bg-white text-[#16A34A] hover:bg-[#F0FDF4] transition-all whitespace-nowrap cursor-pointer"
@@ -747,7 +868,28 @@ export default function ProjectMilestones() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Edit Milestone</h2>
-            <form onSubmit={(e) => { e.preventDefault(); const formData = new FormData(e.currentTarget); handleUpdateMilestone(editingMilestone.id, { name: formData.get('name'), start_date: formData.get('start_date'), end_date: formData.get('end_date'), status: formData.get('status') }); }}>
+            {editingMilestone.isAggregated && (
+              <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 mb-4">
+                <i className="ri-loop-left-line text-indigo-500 text-sm" />
+                <span className="text-xs text-indigo-700 font-medium">Roll-up 모드 — 상태 및 진행률은 자동 집계됩니다</span>
+              </div>
+            )}
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const updateData: any = {
+                name: formData.get('name'),
+              };
+              if (!editingMilestone.isAggregated) {
+                updateData.status = formData.get('status');
+              }
+              const dateMode = editingMilestone.date_mode || 'auto';
+              if (!editingMilestone.isAggregated || dateMode === 'manual') {
+                updateData.start_date = formData.get('start_date');
+                updateData.end_date = formData.get('end_date');
+              }
+              handleUpdateMilestone(editingMilestone.id, updateData);
+            }}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Name</label>
@@ -755,20 +897,60 @@ export default function ProjectMilestones() {
                 </div>
                 <div>
                   <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Status</label>
-                  <select name="status" defaultValue={editFormData.status} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm">
+                  <select
+                    name="status"
+                    defaultValue={editFormData.status}
+                    disabled={editingMilestone.isAggregated}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm ${editingMilestone.isAggregated ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
                     <option value="upcoming">Upcoming</option>
                     <option value="started">In Progress</option>
                     <option value="past_due">Overdue</option>
                     <option value="completed">Completed</option>
                   </select>
+                  {editingMilestone.isAggregated && (
+                    <p className="text-xs text-slate-400 mt-1">상태는 sub milestone에 의해 자동 결정됩니다.</p>
+                  )}
                 </div>
+                {editingMilestone.isAggregated && (
+                  <div>
+                    <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">기간 모드</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const newMode = editingMilestone.date_mode === 'manual' ? 'auto' : 'manual';
+                          await handleUpdateMilestone(editingMilestone.id, { date_mode: newMode });
+                          setEditingMilestone({ ...editingMilestone, date_mode: newMode });
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${editingMilestone.date_mode === 'auto' || !editingMilestone.date_mode ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}
+                      >
+                        {editingMilestone.date_mode === 'auto' || !editingMilestone.date_mode ? '🔄 Auto (sub 기간 자동)' : '✏️ Manual (수동 입력)'}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">Start Date</label>
-                  <input type="date" name="start_date" defaultValue={editFormData.start_date} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input
+                    type="date"
+                    name="start_date"
+                    defaultValue={editFormData.start_date}
+                    required
+                    disabled={editingMilestone.isAggregated && (editingMilestone.date_mode === 'auto' || !editingMilestone.date_mode)}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${editingMilestone.isAggregated && (editingMilestone.date_mode === 'auto' || !editingMilestone.date_mode) ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}
+                  />
                 </div>
                 <div>
                   <label className="block text-[0.8125rem] font-medium text-gray-700 mb-1">End Date</label>
-                  <input type="date" name="end_date" defaultValue={editFormData.end_date} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input
+                    type="date"
+                    name="end_date"
+                    defaultValue={editFormData.end_date}
+                    required
+                    disabled={editingMilestone.isAggregated && (editingMilestone.date_mode === 'auto' || !editingMilestone.date_mode)}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${editingMilestone.isAggregated && (editingMilestone.date_mode === 'auto' || !editingMilestone.date_mode) ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}`}
+                  />
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-6">

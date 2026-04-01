@@ -517,7 +517,11 @@ export default function ProjectSessions() {
       (session.charter && session.charter.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus = statusFilters.length === 0 || statusFilters.includes(session.actualStatus || 'new');
     const matchesTags = selectedTags.length === 0 || (session.tags && selectedTags.some(tag => session.tags.includes(tag)));
-    const matchesSidebarMilestone = !sidebarMilestoneFilter || session.milestone_id === sidebarMilestoneFilter;
+    // Parent milestone 선택 시 sub sessions도 포함
+    const subSessionMilestoneIds = sidebarMilestoneFilter
+      ? (milestones || []).filter((m: any) => m.parent_milestone_id === sidebarMilestoneFilter).map((m: any) => m.id)
+      : [];
+    const matchesSidebarMilestone = !sidebarMilestoneFilter || session.milestone_id === sidebarMilestoneFilter || subSessionMilestoneIds.includes(session.milestone_id);
     const matchesSidebarTag = !sidebarTagFilter || (session.tags && session.tags.includes(sidebarTagFilter));
     return matchesTab && matchesSearch && matchesStatus && matchesTags && matchesSidebarMilestone && matchesSidebarTag;
   });
