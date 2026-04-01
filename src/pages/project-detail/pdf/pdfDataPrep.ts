@@ -162,8 +162,10 @@ export async function preparePdfData(
     .sort((a, b) => b.untestedCount - a.untestedCount)
     .slice(0, 8);
 
-  // ── Team members (from test_results author field) ──
-  const teamMembers = prepareTeamMembers(rawTestResults);
+  // ── Team members (from test_results author field, mapped via profiles) ──
+  const { data: profilesRaw } = await supabase.from('profiles').select('id, full_name');
+  const profileMap = new Map<string, string>((profilesRaw || []).map((p: any) => [p.id, p.full_name]));
+  const teamMembers = prepareTeamMembers(rawTestResults, profileMap);
 
   // ── Risk highlights ──
   const risks = prepareRiskHighlights(criticalFailures, milestoneCards, coverageGaps, passRate, weekComparison);
@@ -496,10 +498,13 @@ function prepareFlakyTCs(results: any[], testCasesMap: Map<string, any>): FlakyT
     .slice(0, 5);
 }
 
-function prepareTeamMembers(results: any[]): TeamMember[] {
+function prepareTeamMembers(results: any[], profileMap: Map<string, string> = new Map()): TeamMember[] {
   const memberMap = new Map<string, { executed: number; passed: number; failed: number; blocked: number }>();
   results.forEach(r => {
-    const author = String(r.author || 'Unknown');
+    const rawAuthor = r.author;
+    const author = (rawAuthor && profileMap.has(rawAuthor))
+      ? profileMap.get(rawAuthor)!
+      : (rawAuthor ? String(rawAuthor) : 'Unknown');
     if (!memberMap.has(author)) memberMap.set(author, { executed: 0, passed: 0, failed: 0, blocked: 0 });
     const m = memberMap.get(author)!;
     m.executed++;

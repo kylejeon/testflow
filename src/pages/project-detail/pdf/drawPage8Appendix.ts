@@ -121,16 +121,14 @@ function drawTCRow(pdf: jsPDF, tc: any, rowY: number, index: number, config: Pdf
   const priColor = getPriorityColor(tc.priority || 'medium', config);
   const priAbbr = getPriorityAbbr(tc.priority || 'medium');
 
-  const statusColors: Record<string, [number,number,number]> = {
-    passed: [16, 163, 127],
-    failed: [239, 68, 68],
-    blocked: [249, 115, 22],
-    retest: [234, 179, 8],
-    untested: [148, 163, 184],
+  const lifecycleColors: Record<string, [number,number,number]> = {
+    active: [16, 163, 127],
+    draft: [99, 102, 241],
+    deprecated: [148, 163, 184],
   };
-  const latestResult = (tc.latestResult || 'untested').toLowerCase();
-  const statusColor: [number,number,number] = statusColors[latestResult] || config.textLight;
-  const statusLabel = latestResult.charAt(0).toUpperCase() + latestResult.slice(1);
+  const lifecycle = (tc.lifecycle_status || 'active').toLowerCase();
+  const statusColor: [number,number,number] = lifecycleColors[lifecycle] || config.textLight;
+  const statusLabel = lifecycle.charAt(0).toUpperCase() + lifecycle.slice(1);
 
   let cx = margin;
   pdf.setFont(font, 'normal');

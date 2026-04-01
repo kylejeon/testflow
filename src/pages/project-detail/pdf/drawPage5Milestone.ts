@@ -16,7 +16,7 @@ export async function drawPage5Milestone(context: PageDrawContext): Promise<void
   const maxCards = tierLevel <= 1 ? 1 : 4;
   const milestoneCards = data.milestoneCards.slice(0, maxCards);
 
-  const cardW = 82, cardH = 50, cardGap = 6;
+  const cardW = 82, cardH = 42, cardGap = 6;
 
   const badgeColors: Record<string, { bg: [number,number,number]; text: [number,number,number] }> = {
     'On Track':  { bg: [236, 253, 245], text: [16, 163, 127] },
@@ -53,18 +53,18 @@ export async function drawPage5Milestone(context: PageDrawContext): Promise<void
     pdf.text(m.status, x + 66, cy + 7, { align: 'center' });
 
     // Progress bar
-    drawProgressBar(pdf, x + 4, cy + 13, 70, 4, m.progress, m.progressColor, config);
+    drawProgressBar(pdf, x + 4, cy + 13, 70, 3, m.progress, m.progressColor, config);
 
-    // Details
-    pdf.setFontSize(8);
+    // Details (compressed to fit cardH=42)
+    pdf.setFontSize(7.5);
     pdf.setFont(font, 'normal');
     pdf.setTextColor(...config.textLight);
-    pdf.text(`Due: ${m.dueDate}`, x + 4, cy + 25);
+    pdf.text(`Due: ${m.dueDate}`, x + 4, cy + 21);
     const dSign = m.daysRemaining >= 0 ? '-' : '+';
-    pdf.text(`(D${dSign}${Math.abs(m.daysRemaining)})`, x + 35, cy + 25);
-    pdf.text(`Remaining: ${m.remainingTCs} TCs`, x + 4, cy + 32);
-    pdf.text(`Velocity: ${m.velocity.toFixed(1)} TC/day`, x + 4, cy + 39);
-    pdf.text(`Est. Completion: ${m.estCompletion}`, x + 4, cy + 46);
+    pdf.text(`(D${dSign}${Math.abs(m.daysRemaining)})`, x + 35, cy + 21);
+    pdf.text(`Remaining: ${m.remainingTCs} TCs`, x + 4, cy + 27);
+    pdf.text(`Velocity: ${m.velocity > 0 ? m.velocity.toFixed(1) : '0.0'} TC/day`, x + 4, cy + 33);
+    pdf.text(`Est: ${m.velocity > 0 ? m.estCompletion : 'N/A'}`, x + 4, cy + 39);
   });
 
   const cardRows = Math.ceil(milestoneCards.length / 2);

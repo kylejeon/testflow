@@ -41,7 +41,8 @@ export async function drawPage6Risk(context: PageDrawContext): Promise<void> {
 
     const priColor = getPriorityColor(tc.priority, config);
     const failCountColor: [number,number,number] = tc.failCount >= 5 ? config.failureColor : tc.failCount >= 3 ? config.warningColor : config.textDark;
-    const titleText = tc.title.length > 32 ? tc.title.slice(0, 29) + '...' : tc.title;
+    const rawTitle = tc.title || `TC-${String(tc.id).slice(0, 8)}`;
+    const titleText = rawTitle.length > 32 ? rawTitle.slice(0, 29) + '...' : rawTitle;
     const idText = (tc.id || '').slice(0, 10);
 
     let fcx = margin;
@@ -136,9 +137,21 @@ export async function drawPage6Risk(context: PageDrawContext): Promise<void> {
   }
 
   // ── Coverage Gaps ──
-  if (y < 250 && data.coverageGaps.length > 0) {
+  if (y > 240) y = 240;
+  {
     drawSectionTitle(pdf, 'Coverage Gaps', margin, y, config);
     y += 5;
+
+    if (data.coverageGaps.length === 0) {
+      pdf.setFillColor(...config.successColor);
+      pdf.circle(margin + 2, y + 2, 1.5, 'F');
+      pdf.setFont(font, 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(...config.textDark);
+      pdf.text('All modules tested — no coverage gaps detected.', margin + 6, y + 3.5);
+      drawFooter(pdf, pageNum, totalPages, data.projectName, config);
+      return;
+    }
 
     const gapColWidths = [45, 30, 30, 65];
     const gapHeaders = ['Module', 'Untested TCs', '% of Module', 'Risk'];

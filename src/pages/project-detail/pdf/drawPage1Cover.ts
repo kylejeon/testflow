@@ -75,11 +75,11 @@ export async function drawPage1Cover(context: PageDrawContext): Promise<void> {
   y += 5;
 
   const kpiCards = [
-    { label: 'Pass Rate', value: `${data.passRate.toFixed(1)}%`, delta: `${data.passRateDelta >= 0 ? '▲' : '▼'} ${Math.abs(data.passRateDelta)}%`, deltaPositive: data.passRateDelta >= 0 },
-    { label: 'Total Executed', value: data.totalExecuted.toLocaleString(), delta: `▲ +${data.executedDelta}`, deltaPositive: true },
+    { label: 'Pass Rate', value: `${data.passRate.toFixed(1)}%`, delta: `${data.passRateDelta >= 0 ? '+' : '-'} ${Math.abs(data.passRateDelta).toFixed(1)}%`, deltaPositive: data.passRateDelta >= 0 },
+    { label: 'Total Executed', value: data.totalExecuted.toLocaleString(), delta: `+ ${data.executedDelta}`, deltaPositive: true },
     { label: 'Active Runs', value: String(data.activeRuns), sub: `of ${data.totalRuns}` },
-    { label: 'Failed TCs', value: String(data.failedCount), delta: data.failedDelta >= 0 ? `▼ -${data.failedDelta}` : `▲ +${Math.abs(data.failedDelta)}`, deltaPositive: data.failedDelta >= 0, valueColor: data.failedCount > 0 ? [239, 68, 68] as [number,number,number] : undefined },
-    { label: 'Blocked', value: String(data.blockedCount), delta: data.blockedDelta >= 0 ? `▼ -${data.blockedDelta}` : `▲ +${Math.abs(data.blockedDelta)}`, deltaPositive: data.blockedDelta >= 0, valueColor: data.blockedCount > 0 ? [249, 115, 22] as [number,number,number] : undefined },
+    { label: 'Failed TCs', value: String(data.failedCount), delta: data.failedDelta >= 0 ? `- ${data.failedDelta}` : `+ ${Math.abs(data.failedDelta)}`, deltaPositive: data.failedDelta >= 0, valueColor: data.failedCount > 0 ? [239, 68, 68] as [number,number,number] : undefined },
+    { label: 'Blocked', value: String(data.blockedCount), delta: data.blockedDelta >= 0 ? `- ${data.blockedDelta}` : `+ ${Math.abs(data.blockedDelta)}`, deltaPositive: data.blockedDelta >= 0, valueColor: data.blockedCount > 0 ? [249, 115, 22] as [number,number,number] : undefined },
     { label: 'Test Cases', value: String(data.totalTCs), sub: 'total' },
   ];
 
@@ -141,22 +141,31 @@ export async function drawPage1Cover(context: PageDrawContext): Promise<void> {
     drawSectionTitle(pdf, 'Contents', margin, y, config);
     y += 6;
 
-    const tocItems = [
-      'Executive Summary', 'Quality Scorecard', 'Quality Trends', 'Test Execution Detail',
-      'Milestone & Release Readiness', 'Risk Assessment', 'Team Performance', 'Test Case Appendix',
+    const allTocItems = [
+      { label: 'Executive Summary', minTier: 1 },
+      { label: 'Quality Scorecard', minTier: 1 },
+      { label: 'Quality Trends', minTier: 1 },
+      { label: 'Test Execution Detail', minTier: 1 },
+      { label: 'Milestone & Release Readiness', minTier: 1 },
+      { label: 'Risk Assessment', minTier: 3 },
+      { label: 'Team Performance', minTier: 3 },
+      { label: 'Test Case Appendix', minTier: 1 },
     ];
-    tocItems.forEach((item, i) => {
+    const tocItems = allTocItems.filter(item => tierLevel >= item.minTier);
+    let tocPageNum = 1;
+    tocItems.forEach((item) => {
       pdf.setFontSize(9);
       pdf.setFont(font, 'normal');
       pdf.setTextColor(...config.textDark);
-      pdf.text(`${i + 1}. ${item}`, margin, y);
+      pdf.text(`${tocPageNum}. ${item.label}`, margin, y);
       pdf.setDrawColor(...config.borderColor);
       pdf.setLineWidth(0.2);
       pdf.setLineDashPattern([0.5, 0.5], 0);
-      pdf.line(margin + 62, y - 1, pageW - margin - 10, y - 1);
+      pdf.line(margin + 72, y - 1, pageW - margin - 10, y - 1);
       pdf.setLineDashPattern([], 0);
       pdf.setTextColor(...config.textLight);
-      pdf.text(String(i + 1), pageW - margin, y, { align: 'right' });
+      pdf.text(String(tocPageNum), pageW - margin, y, { align: 'right' });
+      tocPageNum++;
       y += 7;
     });
   }

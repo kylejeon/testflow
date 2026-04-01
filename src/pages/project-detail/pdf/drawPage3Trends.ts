@@ -103,52 +103,52 @@ export async function drawPage3Trends(context: PageDrawContext): Promise<void> {
     pdf.setTextColor(...config.textLight);
     pdf.text('No previous week data available for comparison.', margin + 2, y + 5);
     y += 12;
+  } else {
+    data.weekComparison.forEach((row, rowIndex) => {
+      if (rowIndex % 2 === 0) {
+        pdf.setFillColor(...config.bgLight);
+        pdf.rect(margin, y, totalW, 7, 'F');
+      }
+      pdf.setDrawColor(...config.borderColor);
+      pdf.setLineWidth(0.2);
+      pdf.line(margin, y + 7, margin + totalW, y + 7);
+
+      const changePositive = negativeMetrics.has(row.metric) ? row.change <= 0 : row.change >= 0;
+      const changeColor: [number, number, number] = changePositive ? config.successColor : config.failureColor;
+      const changeSymbol = row.change > 0 ? '+' : row.change < 0 ? '-' : '—';
+      const changeText = row.change === 0 ? '—' : `${changeSymbol} ${Math.abs(row.change).toFixed(1)}`;
+
+      pdf.setFont(font, 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(...config.textDark);
+      pdf.text(row.metric, margin + 2, y + 5);
+      pdf.text(String(row.thisWeek), margin + colWidths[0] + 2, y + 5);
+      pdf.text(String(row.lastWeek), margin + colWidths[0] + colWidths[1] + 2, y + 5);
+      pdf.setTextColor(...changeColor);
+      pdf.setFont(font, 'bold');
+      pdf.text(changeText, margin + colWidths[0] + colWidths[1] + colWidths[2] + 2, y + 5);
+
+      // Mini bar
+      const barStartX = margin + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + 2;
+      const maxVal = Math.max(row.thisWeek, row.lastWeek, 1);
+      const barW = (row.thisWeek / maxVal) * 20;
+      pdf.setFillColor(241, 245, 249);
+      pdf.rect(barStartX, y + 2, 22, 3, 'F');
+      if (barW > 0) {
+        pdf.setFillColor(...config.primaryColor);
+        pdf.rect(barStartX, y + 2, barW, 3, 'F');
+      }
+
+      y += 7;
+    });
+    y += 8;
   }
-
-  data.weekComparison.forEach((row, rowIndex) => {
-    if (rowIndex % 2 === 0) {
-      pdf.setFillColor(...config.bgLight);
-      pdf.rect(margin, y, totalW, 7, 'F');
-    }
-    pdf.setDrawColor(...config.borderColor);
-    pdf.setLineWidth(0.2);
-    pdf.line(margin, y + 7, margin + totalW, y + 7);
-
-    const changePositive = negativeMetrics.has(row.metric) ? row.change <= 0 : row.change >= 0;
-    const changeColor: [number, number, number] = changePositive ? config.successColor : config.failureColor;
-    const changeSymbol = row.change > 0 ? '▲' : row.change < 0 ? '▼' : '—';
-    const changeText = row.change === 0 ? '—' : `${changeSymbol} ${Math.abs(row.change).toFixed(1)}`;
-
-    pdf.setFont(font, 'normal');
-    pdf.setFontSize(8);
-    pdf.setTextColor(...config.textDark);
-    pdf.text(row.metric, margin + 2, y + 5);
-    pdf.text(String(row.thisWeek), margin + colWidths[0] + 2, y + 5);
-    pdf.text(String(row.lastWeek), margin + colWidths[0] + colWidths[1] + 2, y + 5);
-    pdf.setTextColor(...changeColor);
-    pdf.setFont(font, 'bold');
-    pdf.text(changeText, margin + colWidths[0] + colWidths[1] + colWidths[2] + 2, y + 5);
-
-    // Mini bar
-    const barStartX = margin + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + 2;
-    const maxVal = Math.max(row.thisWeek, row.lastWeek, 1);
-    const barW = (row.thisWeek / maxVal) * 20;
-    pdf.setFillColor(241, 245, 249);
-    pdf.rect(barStartX, y + 2, 22, 3, 'F');
-    if (barW > 0) {
-      pdf.setFillColor(...config.primaryColor);
-      pdf.rect(barStartX, y + 2, barW, 3, 'F');
-    }
-
-    y += 7;
-  });
-  y += 8;
 
   // ── Execution Velocity Bar Chart ──
   drawSectionTitle(pdf, 'Execution Velocity (Daily)', margin, y, config);
   y += 6;
 
-  const velChartH = Math.min(50, 280 - y - 15);
+  const velChartH = Math.min(45, 275 - y - 20);
   const velChartW = contentW;
   const velData = data.dailyTrends;
   const maxExec = Math.max(...velData.map(d => d.execCount), 1);

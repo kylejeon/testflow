@@ -96,9 +96,9 @@ export async function drawPage2Scorecard(context: PageDrawContext): Promise<void
     pdf.setFont(font, 'bold');
     pdf.setTextColor(...pri.color);
     pdf.text(pri.label, margin, py + 5);
-    const barW = (pri.count / maxCount) * 120;
+    const barW = (pri.count / maxCount) * 100;
     pdf.setFillColor(241, 245, 249);
-    pdf.roundedRect(margin + 25, py, 120, 5, 1, 1, 'F');
+    pdf.roundedRect(margin + 25, py, 100, 5, 1, 1, 'F');
     if (barW > 0) {
       pdf.setFillColor(...pri.color);
       pdf.roundedRect(margin + 25, py, barW, 5, 1, 1, 'F');
@@ -107,7 +107,7 @@ export async function drawPage2Scorecard(context: PageDrawContext): Promise<void
     pdf.setFontSize(9);
     pdf.setFont(font, 'normal');
     pdf.setTextColor(...config.textLight);
-    pdf.text(`${pri.count} (${pct}%)`, margin + 150, py + 4, { align: 'right' });
+    pdf.text(`${pri.count} (${pct}%)`, margin + 130, py + 4, { align: 'right' });
   });
   y += 4 * 14 + 8;
 
