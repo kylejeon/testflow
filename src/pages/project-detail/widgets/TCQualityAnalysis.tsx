@@ -245,14 +245,14 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
       <div className="px-5 py-4 space-y-4">
         {/* TC Growth chart */}
         <div>
-          <div className="text-[12px] font-semibold text-gray-600 mb-2">TC 성장 추이 (최근 12주)</div>
+          <div className="text-[12px] font-semibold text-gray-600 mb-2">TC Growth Trend (Last 12 Weeks)</div>
           <ResponsiveContainer width="100%" height={110}>
             <AreaChart data={data.growthData} margin={{ top: 2, right: 2, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
               <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94A3B8' }} interval={2} />
               <YAxis tick={{ fontSize: 9, fill: '#94A3B8' }} width={24} />
               <Tooltip contentStyle={{ background: '#1E293B', border: 'none', borderRadius: 8, color: '#fff', fontSize: 11 }} />
-              <Area dataKey="total" stroke="#10B981" fill="#ECFDF5" fillOpacity={0.5} strokeWidth={2} name="누적 TC" />
+              <Area dataKey="total" stroke="#10B981" fill="#ECFDF5" fillOpacity={0.5} strokeWidth={2} name="Total TCs" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -275,7 +275,7 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <span className="text-[11px] font-bold text-gray-800">{data.totalTCs}</span>
+                  <span className="text-[15px] font-bold text-gray-800">{data.totalTCs}</span>
                 </div>
               </div>
               <div className="space-y-0.5 w-full">
@@ -307,14 +307,14 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
         {/* Top failed TCs */}
         {data.topFailedTCs.length > 0 && (
           <div className="pt-3 border-t border-gray-100">
-            <div className="text-[12px] font-semibold text-gray-600 mb-2">Top 실패 TC (최근 90일)</div>
+            <div className="text-[12px] font-semibold text-gray-600 mb-2">Top Failed TCs (Last 90 Days)</div>
             <div className="space-y-1.5">
               {data.topFailedTCs.map((tc, i) => (
                 <div key={i} className="flex items-center gap-2 text-[12px]">
                   <span className="text-red-500 font-bold w-4">{i + 1}</span>
                   {tc.customId && <span className="text-gray-400 font-mono text-[11px]">{tc.customId}</span>}
                   <span className="flex-1 text-gray-700 truncate">{tc.title}</span>
-                  <span className="text-red-600 font-semibold flex-shrink-0">{tc.failCount}회</span>
+                  <span className="text-red-600 font-semibold flex-shrink-0">{tc.failCount}x</span>
                 </div>
               ))}
             </div>

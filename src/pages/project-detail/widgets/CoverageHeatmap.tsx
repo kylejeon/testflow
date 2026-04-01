@@ -165,6 +165,7 @@ export default function CoverageHeatmap({ projectId }: { projectId: string }) {
                 data={folderData.map(f => ({ ...f, children: [] }))}
                 dataKey="size"
                 stroke="#fff"
+                isAnimationActive={false}
                 content={<CustomContent />}
               />
             </ResponsiveContainer>
@@ -177,7 +178,7 @@ export default function CoverageHeatmap({ projectId }: { projectId: string }) {
                 { color: '#FCD34D', label: '60–80%' },
                 { color: '#4ADE80', label: '80–90%' },
                 { color: '#16A34A', label: '90–100%' },
-                { color: '#F1F5F9', label: '미실행' },
+                { color: '#F1F5F9', label: 'No Data' },
               ].map(l => (
                 <span key={l.label} className="flex items-center gap-1 text-[11px] text-gray-500">
                   <span className="w-3 h-3 rounded-[2px] flex-shrink-0" style={{ backgroundColor: l.color }} />
