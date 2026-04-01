@@ -30,7 +30,7 @@ export async function preparePdfData(
   // ── Fetch test cases ──
   const { data: testCasesRaw } = await supabase
     .from('test_cases')
-    .select('id, title, priority, lifecycle_status, folder, is_automated, created_at')
+    .select('id, title, priority, lifecycle_status, folder, is_automated, created_at, custom_id')
     .eq('project_id', project.id)
     .order('created_at', { ascending: false });
   const testCases = testCasesRaw || [];
@@ -443,38 +443,41 @@ function prepareMilestoneCard(m: any, allRunsRaw: any[], rawTestResults: any[], 
   const subMilestones: any[] = m.subMilestones || allMilestones.filter((s: any) => s.parent_milestone_id === m.id);
   const subIds = subMilestones.map((s: any) => s.id);
 
-  if (m.isAggregated && m.rollupTotal > 0) {
-    totalTCs = m.rollupTotal;
-    remainingTCs = Math.max(totalTCs - (m.rollupCompleted ?? 0), 0);
-    // Still need runIdSet for velocity
-    const allMsIds = new Set([m.id, ...subIds]);
-    const mRuns = allRunsRaw.filter((r: any) => allMsIds.has(r.milestone_id));
-    runIdSet = new Set(mRuns.map((r: any) => r.id));
-  } else {
-    const allMsIds = new Set([m.id, ...subIds]);
-    const mRuns = allRunsRaw.filter((r: any) => allMsIds.has(r.milestone_id));
-    runIdSet = new Set(mRuns.map((r: any) => r.id));
-    const allTCIds = new Set<string>();
-    mRuns.forEach((r: any) => (r.test_case_ids || []).forEach((id: string) => allTCIds.add(id)));
-    totalTCs = allTCIds.size;
-    const testedTCIds = new Set<string>(
-      rawTestResults
-        .filter((r: any) => runIdSet.has(r.run_id) && r.status && r.status !== 'untested')
-        .map((r: any) => r.test_case_id)
-    );
-    remainingTCs = Math.max(totalTCs - testedTCIds.size, 0);
-  }
+  const allMsIds = new Set([m.id, ...subIds]);
+  const mRuns = allRunsRaw.filter((r: any) => allMsIds.has(r.milestone_id));
+  runIdSet = new Set(mRuns.map((r: any) => r.id));
 
-  // Velocity: unique TCs tested per day over last 7 days
+  // totalSlots = non-deduplicated sum (same as burndown & queryFns rollupTotal)
+  const totalSlots = mRuns.reduce((sum: number, r: any) => sum + ((r.test_case_ids || []).length), 0);
+  totalTCs = totalSlots;
+
+  // Per-run TC sets for membership validation
+  const runTcSetsCard = new Map<string, Set<string>>();
+  mRuns.forEach((r: any) => runTcSetsCard.set(r.id, new Set<string>(r.test_case_ids || [])));
+
+  // Executed = first result per (run_id, test_case_id) pair
+  const seenRunTcCard = new Set<string>();
+  rawTestResults
+    .filter((r: any) => runIdSet.has(r.run_id) && r.status && r.status !== 'untested')
+    .forEach((r: any) => {
+      if (!r.run_id || !r.test_case_id) return;
+      if (!runTcSetsCard.get(r.run_id)?.has(r.test_case_id)) return;
+      seenRunTcCard.add(`${r.run_id}::${r.test_case_id}`);
+    });
+  remainingTCs = Math.max(totalSlots - seenRunTcCard.size, 0);
+
+  // Velocity: slots executed per day over last 7 days
   const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const recentUniqueTCs = new Set<string>(
-    rawTestResults
-      .filter((r: any) => runIdSet.has(r.run_id) && new Date(r.created_at) >= sevenDaysAgo && r.status && r.status !== 'untested')
-      .map((r: any) => r.test_case_id)
-  );
-  const velocity = recentUniqueTCs.size / 7;
+  const seenRunTcRecent = new Set<string>();
+  rawTestResults
+    .filter((r: any) => runIdSet.has(r.run_id) && new Date(r.created_at) >= sevenDaysAgo && r.status && r.status !== 'untested')
+    .forEach((r: any) => {
+      if (!r.run_id || !r.test_case_id) return;
+      if (!runTcSetsCard.get(r.run_id)?.has(r.test_case_id)) return;
+      seenRunTcRecent.add(`${r.run_id}::${r.test_case_id}`);
+    });
+  const velocity = seenRunTcRecent.size / 7;
 
-  // startDateStr already declared above
   void startDateStr;
 
   const estimatedDaysToComplete = velocity > 0 ? remainingTCs / velocity : 999;
@@ -526,7 +529,7 @@ function prepareTopFailedTCs(results: any[], testCasesMap: Map<string, any>): Fa
     .map(([tcId, data]) => {
       const tc = testCasesMap.get(tcId);
       return {
-        id: tc?.seqId || tc?.id?.slice(0, 10) || tcId,
+        id: tc?.custom_id || tc?.seqId || tc?.id?.slice(0, 10) || tcId,
         title: String(tc?.title || 'Unknown TC'),
         priority: tc?.priority || 'medium',
         failCount: data.count,
@@ -559,7 +562,7 @@ function prepareFlakyTCs(results: any[], testCasesMap: Map<string, any>): FlakyT
       const flakyScore = Math.round((transitions / Math.max(arr.length - 1, 1)) * 100);
       const frequency = flakyScore >= 70 ? 'High' : flakyScore >= 50 ? 'Medium' : 'Low';
       const tc = testCasesMap.get(tcId);
-      return { id: tc?.seqId || tc?.id?.slice(0, 10) || tcId, title: String(tc?.title || 'Unknown TC'), lastTenResults: arr, flakyScore, frequency };
+      return { id: tc?.custom_id || tc?.seqId || tc?.id?.slice(0, 10) || tcId, title: String(tc?.title || 'Unknown TC'), lastTenResults: arr, flakyScore, frequency };
     })
     .filter(tc => tc.flakyScore >= 40)
     .sort((a, b) => b.flakyScore - a.flakyScore)
@@ -639,21 +642,24 @@ function prepareBurndownData(
   const allMsIds = new Set([milestone.id, ...subIds]);
   const mRuns = allRunsRaw.filter((r: any) => allMsIds.has(r.milestone_id));
 
-  // Total unique TCs — prefer pre-computed rollupTotal
-  let totalTCs: number;
-  if (milestone.isAggregated && milestone.rollupTotal > 0) {
-    totalTCs = milestone.rollupTotal;
-  } else {
-    const allTCIds = new Set<string>();
-    mRuns.forEach((r: any) => (r.test_case_ids || []).forEach((id: string) => allTCIds.add(id)));
-    totalTCs = allTCIds.size;
-  }
-  if (totalTCs === 0) return { points: [], totalTCs: 0 };
+  if (mRuns.length === 0) return { points: [], totalTCs: 0 };
+
+  // ── Exact same logic as MilestoneTracker.loadBurndown ──
+  // totalSlots = non-deduplicated sum of run.test_case_ids lengths
+  // (matches how milestone progress % is calculated in queryFns)
+  const totalSlots = mRuns.reduce((sum: number, r: any) => sum + ((r.test_case_ids || []).length), 0);
+  if (totalSlots === 0) return { points: [], totalTCs: 0 };
+
+  // Per-run TC sets for membership validation
+  const runTcSets = new Map<string, Set<string>>();
+  mRuns.forEach((r: any) => runTcSets.set(r.id, new Set<string>(r.test_case_ids || [])));
+  const runIdSet = new Set(mRuns.map((r: any) => r.id));
 
   // Use derivedStartDate/derivedEndDate for aggregated milestones
-  const startDateStr = milestone.isAggregated && milestone.derivedStartDate
+  const isAutoAggregated = milestone.isAggregated && milestone.date_mode !== 'manual';
+  const startDateStr = isAutoAggregated && milestone.derivedStartDate
     ? milestone.derivedStartDate : (milestone.start_date || milestone.created_at);
-  const endDateStr = milestone.isAggregated && milestone.derivedEndDate
+  const endDateStr = isAutoAggregated && milestone.derivedEndDate
     ? milestone.derivedEndDate : milestone.end_date;
 
   const startDate = startDateStr ? new Date(startDateStr)
@@ -661,32 +667,40 @@ function prepareBurndownData(
   const endDate = endDateStr ? new Date(endDateStr)
     : new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
 
-  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
-  if (totalDays <= 0) return { points: [], totalTCs };
-
-  // Build daily completed unique TC set
-  const dailyDone = new Map<string, Set<string>>();
-  rawTestResults
-    .filter((r: any) => mRuns.some((run: any) => run.id === r.run_id) && r.status && r.status !== 'untested')
+  // First execution per (run_id, test_case_id) pair — consistent with per-run progress
+  const seenRunTc = new Set<string>();
+  const dailyExecuted: Record<string, number> = {};
+  [...rawTestResults]
+    .filter((r: any) => runIdSet.has(r.run_id) && r.status && r.status !== 'untested')
+    .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
     .forEach((r: any) => {
-      const dateKey = new Date(r.created_at).toISOString().split('T')[0];
-      if (!dailyDone.has(dateKey)) dailyDone.set(dateKey, new Set());
-      dailyDone.get(dateKey)!.add(r.test_case_id);
+      if (!r.run_id || !r.test_case_id) return;
+      if (!runTcSets.get(r.run_id)?.has(r.test_case_id)) return;
+      const key = `${r.run_id}::${r.test_case_id}`;
+      if (seenRunTc.has(key)) return;
+      seenRunTc.add(key);
+      const day = (r.created_at as string).slice(0, 10);
+      dailyExecuted[day] = (dailyExecuted[day] ?? 0) + 1;
     });
 
-  let cumDone = 0;
+  // buildBurndown: iterate from startDate to min(today, endDate)
+  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000);
+  if (totalDays <= 0) return { points: [], totalTCs: totalSlots };
+
+  const now = new Date();
+  const maxDay = Math.min(totalDays, Math.ceil((now.getTime() - startDate.getTime()) / 86400000));
+  let remaining = totalSlots;
   const points: import('./pdfTypes').BurndownPoint[] = [];
-  for (let i = 0; i <= totalDays; i++) {
-    const d = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
-    const key = d.toISOString().split('T')[0];
-    cumDone += dailyDone.get(key)?.size || 0;
-    points.push({
-      date: key,
-      remaining: Math.max(totalTCs - cumDone, 0),
-      ideal: totalTCs * (1 - i / totalDays),
-    });
+
+  for (let d = 0; d <= maxDay; d++) {
+    const day = new Date(startDate.getTime() + d * 86400000);
+    const dayKey = day.toISOString().slice(0, 10);
+    const ideal = Math.round(totalSlots * (1 - d / totalDays));
+    remaining -= (dailyExecuted[dayKey] ?? 0);
+    points.push({ date: dayKey, remaining: Math.max(0, remaining), ideal });
   }
-  return { points, totalTCs };
+
+  return { points, totalTCs: totalSlots };
 }
 
 function calculateReleaseScore(
