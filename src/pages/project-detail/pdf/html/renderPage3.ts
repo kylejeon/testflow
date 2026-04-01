@@ -1,6 +1,37 @@
 import { PdfData } from '../pdfTypes';
 import { e, fmtDate } from './htmlUtils';
-import { buildLineChartSvg, buildBarChartSvg } from './htmlUtils';
+import { buildBarChartSvg } from './htmlUtils';
+
+function buildCombinedPassExecSvg(passRates: number[], execCounts: number[], w: number, h: number): string {
+  if (passRates.length < 2) return `<svg width="${w}" height="${h}"></svg>`;
+  const n = passRates.length - 1;
+  const execMax = Math.max(...execCounts, 1);
+  const gridLines = [0, 25, 50, 75, 100].map(pct => {
+    const gy = (h - (pct / 100) * h).toFixed(1);
+    return `<line x1="0" y1="${gy}" x2="${w}" y2="${gy}" stroke="rgb(226,232,240)" stroke-width="0.5" stroke-dasharray="3,2"/>`;
+  }).join('');
+  const passPts = passRates.map((v, i) => {
+    const x = ((i / n) * w).toFixed(1);
+    const y = (h - (Math.min(100, Math.max(0, v)) / 100) * h).toFixed(1);
+    return `${x},${y}`;
+  }).join(' ');
+  const execPts = execCounts.map((v, i) => {
+    const x = ((i / n) * w).toFixed(1);
+    const y = (h - (v / execMax) * h).toFixed(1);
+    return `${x},${y}`;
+  }).join(' ');
+  const circles = passRates.map((v, i) => {
+    const cx = ((i / n) * w).toFixed(1);
+    const cy = (h - (Math.min(100, Math.max(0, v)) / 100) * h).toFixed(1);
+    return `<circle cx="${cx}" cy="${cy}" r="3" fill="rgb(99,102,241)"/>`;
+  }).join('');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" overflow="visible">
+  ${gridLines}
+  <polyline fill="none" stroke="rgb(245,158,11)" stroke-width="1.5" stroke-dasharray="4,2" points="${execPts}"/>
+  <polyline fill="none" stroke="rgb(99,102,241)" stroke-width="2" points="${passPts}"/>
+  ${circles}
+</svg>`;
+}
 
 export function renderPage3(data: PdfData, pageNum: number, totalPages: number): string {
   const today = fmtDate();
@@ -15,10 +46,9 @@ export function renderPage3(data: PdfData, pageNum: number, totalPages: number):
     return `${dt.getMonth() + 1}/${dt.getDate()}`;
   });
 
-  // Build pass rate chart
+  // Build combined pass rate + exec count chart
   const lineH = 140;
-  const lineSvg = buildLineChartSvg(passRateValues, CW, lineH, 'rgb(99,102,241)', 0, 100);
-  const xLabels = dateLabels.filter((_, i) => i % Math.max(1, Math.floor(dateLabels.length / 6)) === 0 || i === dateLabels.length - 1);
+  const lineSvg = buildCombinedPassExecSvg(passRateValues, execValues, CW, lineH);
 
   // Build velocity chart
   const barH = 110;
@@ -26,6 +56,7 @@ export function renderPage3(data: PdfData, pageNum: number, totalPages: number):
 
   // WoW table
   const hasLastWeekData = data.weekComparison.some(w => w.lastWeek > 0);
+  const maxWoW = Math.max(...data.weekComparison.map(w => w.thisWeek), 1);
 
   return `
 <div class="pdf-header">
@@ -35,7 +66,7 @@ export function renderPage3(data: PdfData, pageNum: number, totalPages: number):
 
 <div class="pdf-content">
   <div class="sec-title" style="margin-top:0;">Pass Rate Trend (Last ${trends.length} Days)</div>
-  <div style="position:relative;margin-bottom:6px;">
+  <div style="position:relative;margin-bottom:4px;">
     <div style="display:flex;justify-content:space-between;font-size:9px;color:rgb(100,116,139);margin-bottom:2px;">
       <span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span>
     </div>
@@ -48,11 +79,21 @@ export function renderPage3(data: PdfData, pageNum: number, totalPages: number):
         .map(l => `<span>${l}</span>`).join('')}
     </div>` : ''}
   </div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:16px;font-size:9px;color:rgb(100,116,139);margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="width:14px;height:2px;background:rgb(99,102,241);display:inline-block;"></span>
+      Pass Rate (%)
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="width:7px;height:2px;background:rgb(245,158,11);display:inline-block;margin-right:2px;"></span><span style="width:4px;height:2px;background:rgb(245,158,11);display:inline-block;"></span>
+      Execution Count
+    </div>
+  </div>
 
   <div class="sec-title">Week-over-Week Comparison</div>
   ${hasLastWeekData ? `
   <table class="pdf-table" style="margin-bottom:14px;">
-    <thead><tr><th>Metric</th><th>This Week</th><th>Last Week</th><th>Change</th></tr></thead>
+    <thead><tr><th>Metric</th><th>This Week</th><th>Last Week</th><th>Change</th><th style="width:90px;">Bar</th></tr></thead>
     <tbody>
       ${data.weekComparison.map(w => {
         const isRate = w.metric.includes('%') || w.metric.includes('Rate');
@@ -60,11 +101,13 @@ export function renderPage3(data: PdfData, pageNum: number, totalPages: number):
         const suffix = isRate ? '%' : '';
         const changeColor = w.change === 0 ? 'rgb(100,116,139)' : w.change > 0 ? 'rgb(16,163,127)' : 'rgb(239,68,68)';
         const changeSym = w.change === 0 ? '—' : w.change > 0 ? `▲ ${Math.abs(w.change).toFixed(1)}` : `▼ ${Math.abs(w.change).toFixed(1)}`;
+        const barPct = (Math.max(w.thisWeek, 0) / maxWoW * 100).toFixed(0);
         return `<tr>
           <td>${e(w.metric)}</td>
           <td style="font-weight:600;">${w.thisWeek.toFixed(decimals)}${suffix}</td>
           <td>${w.lastWeek.toFixed(decimals)}${suffix}</td>
           <td style="color:${changeColor};font-weight:600;">${changeSym}</td>
+          <td><div style="width:80px;height:10px;background:rgb(226,232,240);border-radius:2px;overflow:hidden;"><div style="width:${barPct}%;height:100%;background:rgb(99,102,241);border-radius:2px;"></div></div></td>
         </tr>`;
       }).join('')}
     </tbody>
@@ -74,17 +117,23 @@ export function renderPage3(data: PdfData, pageNum: number, totalPages: number):
   </div>`}
 
   <div class="sec-title">Execution Velocity (TC/Day)</div>
-  <div class="chart-area" style="height:${barH}px;background:#fff;padding:0;margin-bottom:8px;">
+  <div class="chart-area" style="height:${barH}px;background:#fff;padding:0;margin-bottom:6px;">
     ${barSvg}
   </div>
   ${trends.length > 1 ? `
-  <div style="display:flex;justify-content:space-between;font-size:8px;color:rgb(100,116,139);">
+  <div style="display:flex;justify-content:space-between;font-size:8px;color:rgb(100,116,139);margin-bottom:4px;">
     ${dateLabels.filter((_, i) => i % Math.max(1, Math.floor(dateLabels.length / 6)) === 0 || i === dateLabels.length - 1)
       .map(l => `<span>${l}</span>`).join('')}
   </div>
-  <div style="font-size:9px;color:rgb(100,116,139);margin-top:4px;text-align:center;">
-    <span style="border-bottom:2px dashed rgb(245,158,11);padding-bottom:1px;margin-right:8px;">── 7-day moving avg</span>
-    <span style="color:rgb(99,102,241);">■ Daily executions</span>
+  <div style="display:flex;align-items:center;justify-content:center;gap:16px;font-size:9px;color:rgb(100,116,139);">
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="width:7px;height:2px;background:rgb(245,158,11);display:inline-block;margin-right:2px;"></span><span style="width:4px;height:2px;background:rgb(245,158,11);display:inline-block;"></span>
+      7-day moving avg
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="width:10px;height:10px;background:rgb(99,102,241);border-radius:2px;display:inline-block;"></span>
+      Daily executions
+    </div>
   </div>` : ''}
 </div>
 

@@ -22,7 +22,7 @@ export function renderPage8(
 
   const lifecycleDistribution = isFirstPage ? `
   <div class="sec-title" style="margin-top:0;">Lifecycle Distribution</div>
-  <div style="background:rgb(248,250,252);border:1px solid rgb(226,232,240);border-radius:8px;padding:10px 18px;display:flex;justify-content:space-around;align-items:center;margin-bottom:14px;">
+  <div style="background:rgb(248,250,252);border:1px solid rgb(226,232,240);border-radius:8px;padding:8px 14px;display:flex;justify-content:space-around;align-items:center;margin-bottom:14px;">
     <span style="font-size:10px;color:rgb(100,116,139);display:flex;align-items:center;gap:6px;">
       <span style="width:10px;height:10px;border-radius:50%;background:rgb(16,163,127);display:inline-block;"></span>
       Active: <strong style="color:rgb(15,23,42);">${lifecycleCounts.active} (${data.testCases.length > 0 ? (lifecycleCounts.active / data.testCases.length * 100).toFixed(1) : 0}%)</strong>

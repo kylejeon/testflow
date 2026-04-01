@@ -26,7 +26,7 @@ export function renderPage7(data: PdfData, pageNum: number, totalPages: number):
 </div>
 
 <div class="pdf-content">
-  <div style="background:rgb(248,250,252);border:1px solid rgb(226,232,240);border-radius:8px;padding:10px 18px;display:flex;justify-content:space-around;align-items:center;margin-bottom:14px;">
+  <div style="background:rgb(248,250,252);border:1px solid rgb(226,232,240);border-radius:8px;padding:8px 16px;display:flex;justify-content:space-around;align-items:center;margin-bottom:14px;">
     <span style="font-size:10px;color:rgb(100,116,139);">Total Members: <strong style="color:rgb(15,23,42);font-size:12px;">${members.length}</strong></span>
     <span style="border-left:1px solid rgb(226,232,240);height:28px;"></span>
     <span style="font-size:10px;color:rgb(100,116,139);">Active Today: <strong style="color:rgb(16,163,127);font-size:12px;">${activeToday}</strong></span>
@@ -54,7 +54,7 @@ export function renderPage7(data: PdfData, pageNum: number, totalPages: number):
         return `
       <tr>
         <td class="c-light">${i + 1}</td>
-        <td style="font-weight:600;">${e(m.name)}</td>
+        <td style="font-weight:600;">${e(m.name || 'No assigned member')}</td>
         <td style="font-weight:600;">${m.executed}</td>
         <td class="c-pass">${m.passed}</td>
         <td class="c-fail">${m.failed}</td>
@@ -74,7 +74,7 @@ export function renderPage7(data: PdfData, pageNum: number, totalPages: number):
   <div style="margin-bottom:14px;">
     ${members.slice(0, 5).map((m, i) => `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-      <span style="width:70px;font-size:10px;color:rgb(15,23,42);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e(m.name)}</span>
+      <span style="width:70px;font-size:10px;color:rgb(15,23,42);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e(m.name || 'No assigned member')}</span>
       <div style="flex:1;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
         <div style="width:${m.contribution.toFixed(1)}%;height:100%;background:rgb(99,102,241);border-radius:3px;opacity:${barOpacities[i]};"></div>
       </div>
@@ -103,7 +103,7 @@ export function renderPage7(data: PdfData, pageNum: number, totalPages: number):
         const pctOfTotal = ((m.failed / totalFailed) * 100).toFixed(1);
         const discRate = m.executed > 0 ? ((m.failed / m.executed) * 100).toFixed(1) : '0.0';
         return `<tr>
-          <td style="font-weight:600;">${e(m.name)}</td>
+          <td style="font-weight:600;">${e(m.name || 'No assigned member')}</td>
           <td style="font-weight:600;">${m.failed}</td>
           <td>${pctOfTotal}%</td>
           <td>${discRate}%</td>

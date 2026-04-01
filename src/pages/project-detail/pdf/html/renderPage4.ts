@@ -45,29 +45,29 @@ export function renderPage4(data: PdfData, pageNum: number, totalPages: number):
   <table class="pdf-table" style="margin-bottom:14px;font-size:10px;">
     <thead>
       <tr>
-        <th style="width:25%;">Run Name</th>
-        <th style="width:18%;">Milestone</th>
+        <th style="width:4%;">#</th>
+        <th style="width:22%;">Run Name</th>
+        <th style="width:16%;">Milestone</th>
         <th style="width:10%;">Status</th>
         <th style="width:7%;">Pass</th>
         <th style="width:7%;">Fail</th>
-        <th style="width:7%;">Block</th>
-        <th style="width:7%;">Skip</th>
-        <th style="width:10%;">Pass%</th>
+        <th style="width:7%;">Blk</th>
         <th style="width:9%;">Total</th>
+        <th style="width:9%;">Rate%</th>
       </tr>
     </thead>
     <tbody>
-      ${data.runResults.slice(0, 10).map(r => `
+      ${data.runResults.slice(0, 10).map((r, i) => `
       <tr>
-        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e(r.runName.length > 22 ? r.runName.slice(0, 19) + '...' : r.runName)}</td>
+        <td class="c-light">${i + 1}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e(r.runName.length > 20 ? r.runName.slice(0, 17) + '...' : r.runName)}</td>
         <td style="font-size:9px;color:rgb(100,116,139);">${e(r.milestone.length > 14 ? r.milestone.slice(0, 11) + '...' : r.milestone)}</td>
         <td><span class="${statusClass(r.status)}" style="font-weight:600;font-size:9px;">${e(r.status)}</span></td>
         <td class="c-pass" style="font-weight:600;">${r.passed}</td>
         <td class="c-fail">${r.failed}</td>
         <td class="c-block">${r.blocked}</td>
-        <td class="c-light">${r.untested}</td>
-        <td style="font-weight:700;color:${pctColor(r.passRate)};">${r.passRate.toFixed(1)}%</td>
         <td style="font-weight:600;">${r.total}</td>
+        <td style="font-weight:700;color:${pctColor(r.passRate)};">${r.passRate.toFixed(1)}%</td>
       </tr>`).join('')}
     </tbody>
   </table>
@@ -76,31 +76,29 @@ export function renderPage4(data: PdfData, pageNum: number, totalPages: number):
   <table class="pdf-table" style="font-size:10px;">
     <thead>
       <tr>
-        <th style="width:25%;">Module</th>
-        <th style="width:8%;">Total</th>
+        <th style="width:26%;">Module</th>
+        <th style="width:8%;">TCs</th>
         <th style="width:8%;">Tested</th>
         <th style="width:8%;">Untested</th>
-        <th style="width:35%;">Pass Rate</th>
         <th style="width:10%;">Pass%</th>
-        <th style="width:6%;">Fail</th>
+        <th style="width:40%;">Coverage Bar</th>
       </tr>
     </thead>
     <tbody>
       ${data.folderCoverage.slice(0, 10).map(f => {
-        const pct = f.passRate;
+        const covPct = f.totalTCs > 0 ? (f.tested / f.totalTCs) * 100 : 0;
         return `
       <tr>
-        <td style="font-weight:600;">${e(f.folder.length > 18 ? f.folder.slice(0, 15) + '...' : f.folder)}</td>
+        <td style="font-weight:600;">${e(f.folder.length > 20 ? f.folder.slice(0, 17) + '...' : f.folder)}</td>
         <td>${f.totalTCs}</td>
         <td>${f.tested}</td>
         <td class="c-light">${f.untested}</td>
+        <td style="font-weight:700;color:${pctColor(f.passRate)};">${f.passRate.toFixed(1)}%</td>
         <td>
-          <div class="prog-bar">
-            <div class="prog-fill" style="width:${pct.toFixed(1)}%;background:${pctColor(pct)};"></div>
+          <div class="prog-bar" style="width:140px;">
+            <div class="prog-fill" style="width:${covPct.toFixed(1)}%;background:${pctColor(f.passRate)};"></div>
           </div>
         </td>
-        <td style="font-weight:700;color:${pctColor(pct)};">${pct.toFixed(1)}%</td>
-        <td class="c-fail">${f.failCount}</td>
       </tr>`;
       }).join('')}
     </tbody>

@@ -542,7 +542,7 @@ function prepareTeamMembers(results: any[], profileMap: Map<string, string> = ne
     const rawAuthor = r.author;
     const author = (rawAuthor && profileMap.has(rawAuthor))
       ? profileMap.get(rawAuthor)!
-      : (rawAuthor ? String(rawAuthor) : 'Unknown');
+      : 'No assigned member';
     if (!memberMap.has(author)) memberMap.set(author, { executed: 0, passed: 0, failed: 0, blocked: 0 });
     const m = memberMap.get(author)!;
     m.executed++;

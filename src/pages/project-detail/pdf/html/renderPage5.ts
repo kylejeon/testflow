@@ -153,10 +153,7 @@ export function renderPage5(data: PdfData, pageNum: number, totalPages: number, 
       <tr>
         <td>${e(g.name)}</td>
         <td style="text-align:center;">
-          <!-- Fix 2: flex centering for status icon circle -->
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:${statusIconColors[g.status] || statusIconColors.pass};color:#fff;font-size:11px;font-weight:700;line-height:1;">
-            ${statusIcons[g.status] || '?'}
-          </span>
+          <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${statusIconColors[g.status] || statusIconColors.pass};color:#fff;font-size:9px;font-weight:700;text-align:center;line-height:14px;">${statusIcons[g.status] || '?'}</span>
         </td>
         <td class="c-light">${e(g.threshold)}</td>
         <td class="c-light">${e(g.actual)}</td>

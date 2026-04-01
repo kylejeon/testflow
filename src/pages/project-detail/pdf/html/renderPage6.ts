@@ -23,12 +23,12 @@ export function renderPage6(data: PdfData, pageNum: number, totalPages: number):
   <div class="sec-title" style="margin-top:0;">Top Failed Test Cases</div>
   <table class="pdf-table" style="margin-bottom:14px;font-size:10px;">
     <thead>
-      <tr><th style="width:5%;">#</th><th style="width:12%;">TC ID</th><th style="width:40%;">Title</th><th style="width:16%;">Priority</th><th style="width:10%;">Fails</th><th style="width:17%;">Last Failed</th></tr>
+      <tr><th style="width:5%;">#</th><th style="width:12%;">TC ID</th><th style="width:44%;">Title</th><th style="width:14%;">Priority</th><th style="width:9%;">Fails</th><th style="width:16%;">Last</th></tr>
     </thead>
     <tbody>
       ${data.failedTCs.slice(0, 10).map((tc, i) => {
         const rawTitle = tc.title || `TC-${String(tc.id).slice(0, 8)}`;
-        const title = rawTitle.length > 36 ? rawTitle.slice(0, 33) + '...' : rawTitle;
+        const title = rawTitle.length > 45 ? rawTitle.slice(0, 42) + '...' : rawTitle;
         return `
       <tr>
         <td class="c-light">${i + 1}</td>
