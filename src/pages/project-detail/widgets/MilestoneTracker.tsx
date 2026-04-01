@@ -29,8 +29,12 @@ function differenceInDays(a: Date, b: Date): number {
 
 function computeRisk(milestone: any): MilestoneWithRisk {
   const now = new Date();
-  const endDate = milestone.end_date ? new Date(milestone.end_date) : null;
-  const startDate = milestone.start_date ? new Date(milestone.start_date) : null;
+  // For aggregated (roll-up) milestones in auto mode, use derived dates
+  const isAutoAggregated = milestone.isAggregated && milestone.date_mode !== 'manual';
+  const resolvedEnd   = isAutoAggregated && milestone.derivedEndDate   ? milestone.derivedEndDate   : milestone.end_date;
+  const resolvedStart = isAutoAggregated && milestone.derivedStartDate ? milestone.derivedStartDate : milestone.start_date;
+  const endDate   = resolvedEnd   ? new Date(resolvedEnd)   : null;
+  const startDate = resolvedStart ? new Date(resolvedStart) : null;
 
   const daysRemaining = endDate ? differenceInDays(endDate, now) : 999;
   const progress = milestone.progress ?? 0;
@@ -100,9 +104,11 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
     if (!primary || !primary.endDate) return;
     const ms = milestones.find(m => m.id === primary.id);
 
-    const endDate = primary.endDate;
-    const startDate = ms?.start_date
-      ? new Date(ms.start_date)
+    const endDate = primary.endDate; // already resolved via computeRisk (derived for auto-aggregated)
+    const isAutoAggregated = ms?.isAggregated && ms?.date_mode !== 'manual';
+    const rawStart = isAutoAggregated && ms?.derivedStartDate ? ms.derivedStartDate : ms?.start_date;
+    const startDate = rawStart
+      ? new Date(rawStart)
       : ms?.due_date
         ? new Date(new Date(ms.due_date).getTime() - 30 * 86400000)
         : new Date(endDate.getTime() - 30 * 86400000);
