@@ -62,14 +62,14 @@ function InsightCard({ insight }: { insight: Insight }) {
   );
 }
 
-export default function AIInsightsPanel({ projectId }: { projectId: string }) {
+export default function AIInsightsPanel({ projectId, milestones = [] }: { projectId: string; milestones?: any[] }) {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     generate();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [projectId, milestones]);
 
   async function generate() {
     setLoading(true);
@@ -94,16 +94,20 @@ export default function AIInsightsPanel({ projectId }: { projectId: string }) {
         failCount = (results ?? []).filter(r => r.status === 'failed').length;
       }
 
-      // Fetch active milestone for forecast
-      const { data: milestones } = await supabase
-        .from('milestones')
-        .select('name, end_date, status')
-        .eq('project_id', projectId)
-        .in('status', ['upcoming', 'started', 'past_due'])
-        .order('end_date', { ascending: true })
-        .limit(1);
+      // Use roll-up milestones passed from parent (already computed with derivedEndDate)
+      const activeMilestone = milestones
+        .filter(m => !m.parent_milestone_id && m.status !== 'completed')
+        .map(m => {
+          const isAutoAggregated = m.isAggregated && m.date_mode !== 'manual';
+          const endDateStr = isAutoAggregated && m.derivedEndDate ? m.derivedEndDate : m.end_date;
+          return { ...m, resolvedEndDate: endDateStr };
+        })
+        .filter(m => m.resolvedEndDate)
+        .sort((a, b) => new Date(a.resolvedEndDate).getTime() - new Date(b.resolvedEndDate).getTime())[0] ?? null;
 
-      const milestone = milestones?.[0];
+      const milestone = activeMilestone
+        ? { name: activeMilestone.name, end_date: activeMilestone.resolvedEndDate, status: activeMilestone.status }
+        : null;
 
       const derived: Insight[] = [];
 

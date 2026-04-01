@@ -93,7 +93,7 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
             <FlakyDetector projectId={projectId} subscriptionTier={subscriptionTier} />
           </TierGate>
           <TierGate requiredTier={3} currentTier={subscriptionTier} featureName="AI Insights">
-            <AIInsightsPanel projectId={projectId} />
+            <AIInsightsPanel projectId={projectId} milestones={milestones} />
           </TierGate>
         </div>
       </div>
