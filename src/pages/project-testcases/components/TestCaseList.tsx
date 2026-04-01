@@ -174,6 +174,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [activeTab, setActiveTab] = useState<'comments' | 'results' | 'issues' | 'history'>('comments');
   const [stepsCollapsed, setStepsCollapsed] = useState(false);
   const [stepsHeightPx, setStepsHeightPx] = useState<number | null>(null);
+  const stepsAreaRef = useRef<HTMLDivElement>(null);
+  const stepsHeightRef = useRef<number | null>(null);
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -280,6 +282,12 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     document.addEventListener('scroll', close, true);
     return () => { document.removeEventListener('mousedown', close); document.removeEventListener('scroll', close, true); };
   }, [contextMenu]);
+
+  // TC 전환 시 Steps 높이 리셋
+  useEffect(() => {
+    setStepsHeightPx(null);
+    stepsHeightRef.current = null;
+  }, [selectedTestCase?.id]);
 
   // projectName 상태 제거 (propProjectName을 직접 사용)
 
@@ -2436,6 +2444,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           {/* Steps Area (collapsible, smart max-height) */}
           {!stepsCollapsed && (
             <div
+              ref={stepsAreaRef}
               className="overflow-y-auto px-5 py-[0.875rem] border-b border-[#E2E8F0] flex-shrink-0 space-y-3"
               style={{ height: stepsHeightPx !== null ? `${stepsHeightPx}px` : undefined, maxHeight: stepsHeightPx !== null ? undefined : '40vh' }}
             >
@@ -2532,16 +2541,22 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               onMouseDown={(e) => {
                 e.preventDefault();
                 const startY = e.clientY;
-                const startHeight = stepsHeightPx !== null
-                  ? stepsHeightPx
-                  : (detailPanelRef.current ? Math.round(detailPanelRef.current.clientHeight * 0.4) : 200);
+                const actualHeight = stepsAreaRef.current?.getBoundingClientRect().height ?? 200;
+                setStepsHeightPx(actualHeight);
                 const onMove = (ev: MouseEvent) => {
-                  const newH = Math.max(60, startHeight + (ev.clientY - startY));
-                  setStepsHeightPx(newH);
+                  ev.preventDefault();
+                  const newH = Math.max(60, actualHeight + (ev.clientY - startY));
+                  stepsHeightRef.current = newH;
+                  if (stepsAreaRef.current) {
+                    stepsAreaRef.current.style.height = `${newH}px`;
+                  }
                 };
                 const onUp = () => {
                   document.removeEventListener('mousemove', onMove);
                   document.removeEventListener('mouseup', onUp);
+                  if (stepsHeightRef.current !== null) {
+                    setStepsHeightPx(stepsHeightRef.current);
+                  }
                 };
                 document.addEventListener('mousemove', onMove);
                 document.addEventListener('mouseup', onUp);

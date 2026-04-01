@@ -122,6 +122,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   const [tcHistory, setTcHistory] = useState<Record<string, { id: string; status: string; runName: string; author: string; timestamp: Date; note?: string }[]>>({});
   const [loadingComments, setLoadingComments] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [focusToast, setFocusToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -131,6 +132,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const sidebarSearchRef = useRef<HTMLInputElement>(null);
+  const tcRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const test = tests[index];
   const progress = (index / tests.length) * 100;
@@ -154,6 +156,16 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
     }
     return true;
   });
+
+  const showFocusToast = useCallback((type: 'success' | 'error', message: string) => {
+    setFocusToast({ type, message });
+    setTimeout(() => setFocusToast(null), type === 'success' ? 3000 : 5000);
+  }, []);
+
+  // ── Sidebar auto-scroll to active TC ─────────────────────────────────────
+  useEffect(() => {
+    tcRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [index]);
 
   // ── Navigation reset ──────────────────────────────────────────────────────
   const resetForNavigation = useCallback(() => {
@@ -234,6 +246,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
         await onStatusChange(test.id, status, note.trim() || undefined);
       } catch (err) {
         console.error('[FocusMode] Status change failed:', err);
+        showFocusToast('error', err instanceof Error ? err.message : 'Failed to save result. Please try again.');
         setPending(null);
         return; // 실패 시 다음 TC로 이동하지 않음
       }
@@ -243,7 +256,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
         setIndex((i) => Math.min(i + 1, tests.length - 1));
       }, 300);
     },
-    [test, note, onStatusChange, tests.length, resetForNavigation]
+    [test, note, onStatusChange, tests.length, resetForNavigation, showFocusToast]
   );
 
   const goNext = useCallback(() => {
@@ -343,13 +356,9 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
         case 'escape':
           e.preventDefault();
           if (pending) {
-            const save = window.confirm(
-              '입력 중인 결과가 있습니다.\n확인: 저장 후 종료\n취소: 저장하지 않고 종료'
-            );
-            if (save) {
-              markAndNext(pending).then(() => onExit());
-              break;
-            }
+            // 저장 후 종료 (confirm 대신 자동 저장 + 토스트)
+            markAndNext(pending).then(() => onExit());
+            break;
           }
           onExit();
           break;
@@ -377,6 +386,22 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 bg-white flex flex-col">
+
+      {/* FocusMode Toast */}
+      {focusToast && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg border text-sm font-medium"
+          style={{
+            background: focusToast.type === 'success' ? '#F0FDF4' : '#FEF2F2',
+            borderColor: focusToast.type === 'success' ? '#BBF7D0' : '#FECACA',
+            color: focusToast.type === 'success' ? '#15803D' : '#DC2626',
+          }}
+        >
+          <i className={focusToast.type === 'success' ? 'ri-check-line' : 'ri-error-warning-line'} />
+          {focusToast.message}
+          <button onClick={() => setFocusToast(null)} className="ml-1 opacity-50 hover:opacity-100 cursor-pointer">×</button>
+        </div>
+      )}
 
       {/* ① Progress bar — 4px, indigo fill */}
       <div className="h-1 bg-gray-100 shrink-0">
@@ -591,6 +616,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                 return (
                   <div
                     key={t.id}
+                    ref={el => { tcRefs.current[tcIndex] = el; }}
                     onClick={() => { resetForNavigation(); setIndex(tcIndex); }}
                     style={{
                       display: 'flex', alignItems: 'flex-start', gap: '0.5rem',
