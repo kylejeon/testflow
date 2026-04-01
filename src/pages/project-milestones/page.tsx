@@ -589,6 +589,24 @@ export default function ProjectMilestones() {
                 />
               );
             })()}
+            {/* Sub action buttons */}
+            <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => {
+                  setEditFormData({ name: sub.name, start_date: sub.start_date ? sub.start_date.split('T')[0] : '', end_date: sub.end_date ? sub.end_date.split('T')[0] : '', status: sub.status });
+                  setEditingMilestone(sub);
+                }}
+                className="flex items-center gap-[0.1875rem] text-[0.625rem] font-medium px-[0.375rem] py-[0.1875rem] rounded border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F1F5F9] transition-all whitespace-nowrap cursor-pointer"
+              >
+                <i className="ri-edit-line text-[0.75rem]" />Edit
+              </button>
+              <button
+                onClick={() => handleDeleteMilestone(sub.id)}
+                className="flex items-center gap-[0.1875rem] text-[0.625rem] font-medium px-[0.375rem] py-[0.1875rem] rounded border border-[#FCA5A5] bg-white text-[#EF4444] hover:bg-[#FFF1F2] transition-all whitespace-nowrap cursor-pointer"
+              >
+                <i className="ri-delete-bin-line text-[0.75rem]" />Delete
+              </button>
+            </div>
           </div>
           {/* sub progress */}
           <div className="flex items-center gap-2">
