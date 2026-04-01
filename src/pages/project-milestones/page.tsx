@@ -1044,6 +1044,8 @@ export default function ProjectMilestones() {
           </div>
         </div>
       )}
+
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </div>
   );
 }

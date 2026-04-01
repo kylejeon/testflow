@@ -100,12 +100,13 @@ BEGIN
   IF NEW.parent_milestone_id IS NOT NULL THEN
     v_parent_id := NEW.parent_milestone_id;
     INSERT INTO activity_logs (
-      project_id, actor_id, action, target_type, target_id,
+      project_id, actor_id, event_type, event_category, target_type, target_id,
       metadata, created_at
     ) VALUES (
       NEW.project_id,
       auth.uid(),
       'milestone_rollup_updated',
+      'milestone',
       'milestone',
       v_parent_id,
       jsonb_build_object(
