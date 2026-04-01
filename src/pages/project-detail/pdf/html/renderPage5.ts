@@ -9,6 +9,8 @@ function buildBurndownSvg(data: PdfData, w: number, h: number): string {
   const totalTCs = data.burndownTotalTCs || 1;
   const n = pts.length - 1;
   const today = fmtDate();
+  // ISO date string for comparison with pts[i].date (format: "YYYY-MM-DD")
+  const todayISO = new Date().toISOString().split('T')[0];
 
   const toX = (i: number) => ((i / n) * w).toFixed(1);
   const toY = (v: number) => (h - (v / totalTCs) * h).toFixed(1);
@@ -37,13 +39,13 @@ function buildBurndownSvg(data: PdfData, w: number, h: number): string {
       `<circle cx="${toX(i2)}" cy="${toY(pt.remaining)}" r="3" fill="rgb(99,102,241)"/>`
     ).join('');
 
-  // Today marker
+  // Today marker — compare with ISO date strings
   let todayLine = '';
-  let todayIdx = pts.length - 1;
+  let todayIdx = -1;
   for (let i = 0; i < pts.length; i++) {
-    if (pts[i].date <= today) todayIdx = i;
+    if (pts[i].date <= todayISO) todayIdx = i;
   }
-  const todayX = parseFloat(toX(todayIdx));
+  const todayX = todayIdx >= 0 ? parseFloat(toX(todayIdx)) : -1;
   if (todayX > 0 && todayX < w - 1) {
     todayLine = `
       <line x1="${todayX.toFixed(1)}" y1="0" x2="${todayX.toFixed(1)}" y2="${h}" stroke="rgb(239,68,68)" stroke-width="1" stroke-dasharray="3,2"/>

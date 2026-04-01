@@ -439,16 +439,18 @@ function prepareMilestoneCard(m: any, allRunsRaw: any[], rawTestResults: any[], 
   let remainingTCs: number;
   let runIdSet: Set<string>;
 
+  // sub-milestones are nested in m.subMilestones (queryFns organizes them this way)
+  const subMilestones: any[] = m.subMilestones || allMilestones.filter((s: any) => s.parent_milestone_id === m.id);
+  const subIds = subMilestones.map((s: any) => s.id);
+
   if (m.isAggregated && m.rollupTotal > 0) {
     totalTCs = m.rollupTotal;
     remainingTCs = Math.max(totalTCs - (m.rollupCompleted ?? 0), 0);
     // Still need runIdSet for velocity
-    const subIds = allMilestones.filter((s: any) => s.parent_milestone_id === m.id).map((s: any) => s.id);
     const allMsIds = new Set([m.id, ...subIds]);
     const mRuns = allRunsRaw.filter((r: any) => allMsIds.has(r.milestone_id));
     runIdSet = new Set(mRuns.map((r: any) => r.id));
   } else {
-    const subIds = allMilestones.filter((s: any) => s.parent_milestone_id === m.id).map((s: any) => s.id);
     const allMsIds = new Set([m.id, ...subIds]);
     const mRuns = allRunsRaw.filter((r: any) => allMsIds.has(r.milestone_id));
     runIdSet = new Set(mRuns.map((r: any) => r.id));
@@ -631,8 +633,9 @@ function prepareBurndownData(
   rawTestResults: any[],
   allMilestones: any[] = [],
 ): { points: import('./pdfTypes').BurndownPoint[]; totalTCs: number } {
-  // Roll-up: include sub-milestone runs
-  const subIds = allMilestones.filter((s: any) => s.parent_milestone_id === milestone.id).map((s: any) => s.id);
+  // sub-milestones are nested in milestone.subMilestones (queryFns organizes them this way)
+  const subMilestonesArr: any[] = milestone.subMilestones || allMilestones.filter((s: any) => s.parent_milestone_id === milestone.id);
+  const subIds = subMilestonesArr.map((s: any) => s.id);
   const allMsIds = new Set([milestone.id, ...subIds]);
   const mRuns = allRunsRaw.filter((r: any) => allMsIds.has(r.milestone_id));
 
