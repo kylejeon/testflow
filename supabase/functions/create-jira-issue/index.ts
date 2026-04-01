@@ -49,7 +49,7 @@ serve(async (req) => {
         project: {
           key: projectKey
         },
-        summary: summary,
+        summary: stripHtml(summary),
         issuetype: {
           name: issueType || 'Bug'
         }
@@ -67,7 +67,7 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: description
+                text: stripHtml(description)
               }
             ]
           }
@@ -175,6 +175,24 @@ serve(async (req) => {
     );
   }
 });
+
+function stripHtml(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '- ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 function resolveTestablyFieldValue(field: string, ctx: any): any {
   switch (field) {

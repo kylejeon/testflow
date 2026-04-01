@@ -841,14 +841,33 @@ export default function RunDetail() {
     }
   };
 
+  const stripHtml = (html: string): string => {
+    if (!html) return '';
+    return html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '- ')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  };
+
   const buildAutoJiraDescription = (tc: TestCase): string => {
-    const steps = tc.steps || 'No steps defined';
-    const expectedResult = tc.expected_result || 'Not specified';
+    const steps = stripHtml(tc.steps || '') || 'No steps defined';
+    const expectedResult = stripHtml(tc.expected_result || '') || 'Not specified';
+    const precondition = tc.precondition ? stripHtml(tc.precondition) : '';
     return `*Auto-created by Testably*\n\n` +
       `Test Case: ${tc.title}\n` +
       `Run: ${run?.name || 'Unknown'}\n` +
       `Priority: ${tc.priority || 'Medium'}\n\n` +
-      (tc.precondition ? `--- Precondition ---\n${tc.precondition}\n\n` : '') +
+      (precondition ? `--- Precondition ---\n${precondition}\n\n` : '') +
       `--- Steps ---\n${steps}\n\n` +
       `--- Expected Result ---\n${expectedResult}`;
   };
@@ -859,9 +878,9 @@ export default function RunDetail() {
       .replace(/\{tc_title\}/g, tc.title || '')
       .replace(/\{run_name\}/g, run?.name || 'Unknown')
       .replace(/\{priority\}/g, tc.priority || 'Medium')
-      .replace(/\{steps\}/g, tc.steps || 'No steps defined')
-      .replace(/\{expected_result\}/g, tc.expected_result || 'Not specified')
-      .replace(/\{precondition\}/g, tc.precondition || 'None');
+      .replace(/\{steps\}/g, stripHtml(tc.steps || '') || 'No steps defined')
+      .replace(/\{expected_result\}/g, stripHtml(tc.expected_result || '') || 'Not specified')
+      .replace(/\{precondition\}/g, stripHtml(tc.precondition || '') || 'None');
   };
 
   const showToast = (type: 'success' | 'error', message: string) => {
