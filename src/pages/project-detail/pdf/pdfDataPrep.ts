@@ -187,7 +187,7 @@ export async function preparePdfData(
     .slice(0, 8);
 
   // ── Burndown data (largest active milestone, Pro+) ──
-  const burndownMilestone = flatMilestones.find((m: any) => m.status !== 'completed' && m.end_date) || flatMilestones[0];
+  const burndownMilestone = milestones.find((m: any) => m.status !== 'completed' && m.end_date) || milestones[0];
   let burndownData: import('./pdfTypes').BurndownPoint[] = [];
   let burndownTotalTCs = 0;
   let burndownMilestoneName = '';
