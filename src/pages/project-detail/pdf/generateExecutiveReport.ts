@@ -16,28 +16,38 @@ const TC_PER_PAGE = 30;
 async function capturePageHtml(innerHtml: string): Promise<string> {
   const { toJpeg } = await import('html-to-image');
 
-  const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;z-index:-9999;overflow:hidden;background:#fff;';
-  container.innerHTML = `<style>${PDF_PAGE_STYLES}
-  @font-face { font-family: 'Inter'; src: local('Inter'), local('Arial'); }
-  </style><div class="a4-page">${innerHtml}</div>`;
-  document.body.appendChild(container);
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;visibility:hidden;';
+    // srcdoc isolates the iframe from the parent page's external stylesheets,
+    // preventing html-to-image from trying to fetch CORS-blocked CDN CSS files.
+    iframe.srcdoc = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+${PDF_PAGE_STYLES}
+body { margin:0; padding:0; }
+</style></head><body><div class="a4-page">${innerHtml}</div></body></html>`;
 
-  // Wait for layout and fonts
-  await new Promise(r => setTimeout(r, 120));
+    iframe.onload = async () => {
+      try {
+        await new Promise(r => setTimeout(r, 150));
+        const pageEl = iframe.contentDocument!.querySelector('.a4-page') as HTMLElement;
+        const dataUrl = await toJpeg(pageEl, {
+          quality: 0.92,
+          width: 794,
+          height: 1123,
+          pixelRatio: 2,
+          backgroundColor: '#ffffff',
+          skipFonts: true,
+        });
+        document.body.removeChild(iframe);
+        resolve(dataUrl);
+      } catch (err) {
+        document.body.removeChild(iframe);
+        reject(err);
+      }
+    };
 
-  const pageEl = container.querySelector('.a4-page') as HTMLElement;
-  const dataUrl = await toJpeg(pageEl, {
-    quality: 0.92,
-    width: 794,
-    height: 1123,
-    pixelRatio: 2,
-    backgroundColor: '#ffffff',
-    skipFonts: false,
+    document.body.appendChild(iframe);
   });
-
-  document.body.removeChild(container);
-  return dataUrl;
 }
 
 export async function generateExecutiveReport(input: ExportPDFInput): Promise<void> {
