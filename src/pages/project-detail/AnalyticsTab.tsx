@@ -2,6 +2,11 @@ import { useState } from 'react';
 import PassRateTrend from './widgets/PassRateTrend';
 import MilestoneTracker from './widgets/MilestoneTracker';
 import ExecutionSummary from './widgets/ExecutionSummary';
+import TeamPerformance from './widgets/TeamPerformance';
+import FlakyDetector from './widgets/FlakyDetector';
+import CoverageHeatmap from './widgets/CoverageHeatmap';
+import TCQualityAnalysis from './widgets/TCQualityAnalysis';
+import TierGate from './widgets/TierGate';
 
 type PeriodFilter = '7d' | '14d' | '30d' | 'all';
 
@@ -70,51 +75,21 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
           </div>
         </div>
 
-        {/* Phase 2 위젯 예고 */}
-        <div className="grid grid-cols-2 gap-5">
-          <ComingSoonWidget
-            icon="ri-team-line"
-            title="Team Performance"
-            description="팀원별 실행 현황 및 버그 발견율"
-            tier={3}
-            currentTier={subscriptionTier}
-          />
-          <ComingSoonWidget
-            icon="ri-bug-line"
-            title="Flaky TC Detector"
-            description="불안정한 테스트 케이스 자동 감지"
-            tier={2}
-            currentTier={subscriptionTier}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
+        {/* Row 3: Team Performance (full width, Pro+) */}
+        <TierGate requiredTier={3} currentTier={subscriptionTier} featureName="팀원별 성과 분석">
+          <TeamPerformance projectId={projectId} period={period} />
+        </TierGate>
 
-function ComingSoonWidget({
-  icon, title, description, tier, currentTier,
-}: {
-  icon: string; title: string; description: string; tier: number; currentTier: number;
-}) {
-  const tierLabel = tier >= 3 ? 'Professional' : 'Starter';
-  return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden opacity-60">
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-        <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
-          <i className={`${icon} text-gray-400`} />
-          {title}
+        {/* Row 4: Coverage Heatmap (50%) + TC Quality (50%) */}
+        <div className="grid grid-cols-2 gap-5">
+          <CoverageHeatmap projectId={projectId} />
+          <TCQualityAnalysis projectId={projectId} />
         </div>
-        <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">
-          Phase 2
-        </span>
-      </div>
-      <div className="p-8 flex flex-col items-center justify-center text-center gap-2">
-        <i className="ri-lock-line text-2xl text-gray-300" />
-        <p className="text-[13px] text-gray-500">{description}</p>
-        {currentTier < tier && (
-          <span className="text-[11px] text-gray-400">{tierLabel}+ 플랜에서 사용 가능</span>
-        )}
+
+        {/* Row 5: Flaky TC Detector (Starter+) */}
+        <TierGate requiredTier={2} currentTier={subscriptionTier} featureName="Flaky TC 감지">
+          <FlakyDetector projectId={projectId} subscriptionTier={subscriptionTier} />
+        </TierGate>
       </div>
     </div>
   );
