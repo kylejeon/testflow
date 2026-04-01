@@ -112,12 +112,99 @@ export async function loadProjectDetailData(id: string): Promise<ProjectDetailDa
     return { ...milestone, status, progress: avg };
   });
 
-  // organize parent/child milestones
+  // organize parent/child milestones with roll-up aggregation
   const parentMilestones = milestonesWithProgress.filter((m: any) => !m.parent_milestone_id);
-  const organizedMilestones = parentMilestones.map((parent: any) => ({
-    ...parent,
-    subMilestones: milestonesWithProgress.filter((m: any) => m.parent_milestone_id === parent.id),
-  }));
+  const organizedMilestones = parentMilestones.map((parent: any) => {
+    const subs = milestonesWithProgress.filter((m: any) => m.parent_milestone_id === parent.id);
+
+    if (subs.length === 0) {
+      return { ...parent, isAggregated: false, subMilestones: [] };
+    }
+
+    // Roll-up: sub + parent 직속 runs 합산
+    const allSources = [parent, ...subs];
+    let rollupTotal = 0;
+    let rollupCompleted = 0;
+    let rollupPassed = 0;
+    let rollupFailed = 0;
+    let rollupBlocked = 0;
+
+    allSources.forEach((source: any) => {
+      const sourceRuns = (allRunsData || []).filter((r: any) => r.milestone_id === source.id);
+      sourceRuns.forEach((run: any) => {
+        const runResults = allResultsByRun.get(run.id) || [];
+        const statusMap = new Map<string, string>();
+        runResults.forEach((r: any) => {
+          if (!statusMap.has(r.test_case_id)) statusMap.set(r.test_case_id, r.status);
+        });
+        const tcIds: string[] = run.test_case_ids || [];
+        rollupTotal += tcIds.length;
+        tcIds.forEach(tcId => {
+          const s = statusMap.get(tcId);
+          if (s === 'passed')       { rollupCompleted++; rollupPassed++; }
+          else if (s === 'failed')  { rollupCompleted++; rollupFailed++; }
+          else if (s === 'blocked') { rollupCompleted++; rollupBlocked++; }
+          else if (s === 'retest')  { rollupCompleted++; }
+        });
+      });
+    });
+
+    const rollupProgress = rollupTotal > 0
+      ? Math.round((rollupCompleted / rollupTotal) * 100)
+      : 0;
+    const rollupPassRate = rollupCompleted > 0
+      ? Math.round((rollupPassed / rollupCompleted) * 1000) / 10
+      : 0;
+    const rollupCoverage = rollupTotal > 0
+      ? Math.round((rollupCompleted / rollupTotal) * 1000) / 10
+      : 0;
+
+    // Status 자동 결정
+    const subStatuses = subs.map((s: any) => s.status);
+    let derivedStatus: string;
+    if (subStatuses.every((s: string) => s === 'completed')) derivedStatus = 'completed';
+    else if (subStatuses.some((s: string) => s === 'past_due')) derivedStatus = 'past_due';
+    else if (subStatuses.some((s: string) => s === 'started')) derivedStatus = 'started';
+    else derivedStatus = 'upcoming';
+
+    // 기간 자동 계산
+    const subStarts = subs.map((s: any) => s.start_date).filter(Boolean).map((d: string) => new Date(d).getTime());
+    const subEnds = subs.map((s: any) => s.end_date).filter(Boolean).map((d: string) => new Date(d).getTime());
+    const derivedStartDate = subStarts.length > 0 ? new Date(Math.min(...subStarts)).toISOString() : parent.start_date;
+    const derivedEndDate = subEnds.length > 0 ? new Date(Math.max(...subEnds)).toISOString() : parent.end_date;
+
+    // 기간 벗어남 경고
+    const dateWarnings: string[] = [];
+    if (parent.date_mode !== 'auto' && parent.start_date && parent.end_date) {
+      const pStart = new Date(parent.start_date).getTime();
+      const pEnd = new Date(parent.end_date).getTime();
+      subs.forEach((sub: any) => {
+        if (sub.start_date && new Date(sub.start_date).getTime() < pStart)
+          dateWarnings.push(`"${sub.name}" 시작일이 parent 범위 이전`);
+        if (sub.end_date && new Date(sub.end_date).getTime() > pEnd)
+          dateWarnings.push(`"${sub.name}" 종료일이 parent 범위 이후`);
+      });
+    }
+
+    return {
+      ...parent,
+      progress: rollupProgress,
+      status: derivedStatus,
+      isAggregated: true,
+      rollupTotal,
+      rollupCompleted,
+      rollupPassed,
+      rollupFailed,
+      rollupBlocked,
+      rollupPassRate,
+      rollupCoverage,
+      derivedStatus,
+      derivedStartDate,
+      derivedEndDate,
+      dateWarnings,
+      subMilestones: subs,
+    };
+  });
 
   // milestone id → name 맵 생성
   const milestoneMap = new Map<string, string>();

@@ -92,8 +92,27 @@ export interface Milestone {
   start_date: string | null;
   end_date: string | null;
   progress: number;
+  parent_milestone_id: string | null;
+  date_mode: 'auto' | 'manual';
+  assigned_to: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface MilestoneWithRollup extends Milestone {
+  isAggregated: boolean;
+  rollupTotal: number;
+  rollupCompleted: number;
+  rollupPassed: number;
+  rollupFailed: number;
+  rollupBlocked: number;
+  rollupPassRate: number;
+  rollupCoverage: number;
+  derivedStatus: Milestone['status'];
+  derivedStartDate: string | null;
+  derivedEndDate: string | null;
+  dateWarnings: string[];
+  subMilestones: MilestoneWithRollup[];
 }
 
 export interface TestRun {
