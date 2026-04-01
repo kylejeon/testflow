@@ -2,11 +2,11 @@ export const PDF_PAGE_STYLES = `
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Inter', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif; }
 .a4-page { width: 794px; height: 1123px; background: #fff; position: relative; overflow: hidden; }
-.pdf-header { height: 56px; background: rgb(99,102,241); display: table; width: 100%; }
-.pdf-header-tall { height: 160px; background: linear-gradient(135deg, rgb(99,102,241) 0%, rgb(79,70,229) 50%, rgb(99,102,241) 100%); padding: 30px 80px 0; display: block; }
-.logo { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: .3px; display: table-cell; vertical-align: middle; padding-left: 80px; }
-.page-title { font-size: 11px; color: rgba(255,255,255,.85); display: table-cell; vertical-align: middle; text-align: right; padding-right: 80px; }
-.pdf-footer { position: absolute; bottom: 0; left: 0; right: 0; height: 48px; border-top: 1px solid rgb(226,232,240); }
+.pdf-header { height: 56px; background: rgb(99,102,241); display: flex; align-items: center; justify-content: space-between; padding: 0 80px; flex-shrink: 0; }
+.pdf-header-tall { height: 160px; background: linear-gradient(135deg, rgb(99,102,241) 0%, rgb(79,70,229) 50%, rgb(99,102,241) 100%); padding: 0 80px; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0; }
+.logo { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: .3px; }
+.page-title { font-size: 11px; color: rgba(255,255,255,.85); }
+.pdf-footer { position: absolute; bottom: 0; left: 0; right: 0; height: 48px; border-top: 1px solid rgb(226,232,240); display: flex; align-items: center; justify-content: space-between; padding: 0 80px; }
 .pdf-footer span { font-size: 10px; color: rgb(100,116,139); }
 .pdf-content { padding: 20px 80px 60px; overflow: hidden; }
 .sec-title { font-size: 14px; font-weight: 700; color: rgb(15,23,42); margin-bottom: 10px; margin-top: 16px; }
@@ -41,7 +41,7 @@ body { font-family: 'Inter', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Goth
 .pri-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
 .prog-bar { height: 10px; background: rgb(226,232,240); border-radius: 3px; overflow: hidden; }
 .prog-fill { height: 100%; border-radius: 3px; }
-.stack-bar { display: block; font-size: 0; height: 22px; border-radius: 6px; overflow: hidden; white-space: nowrap; }
-.stack-seg { display: inline-block; vertical-align: top; height: 100%; }
+.stack-bar { display: flex; height: 22px; border-radius: 6px; overflow: hidden; }
+.stack-seg { height: 100%; }
 .chart-area { border: 1px solid rgb(226,232,240); border-radius: 4px; overflow: hidden; position: relative; }
 `;

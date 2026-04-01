@@ -4,7 +4,7 @@ import { e, pctColor, fmtDate } from './htmlUtils';
 function buildBurndownSvg(data: PdfData, w: number, h: number): string {
   const pts = data.burndownData;
   if (pts.length < 2) {
-    return `<div style="height:${h}px;line-height:${h}px;text-align:center;font-size:11px;color:rgb(100,116,139);">No burndown data available.</div>`;
+    return `<div style="display:flex;align-items:center;justify-content:center;height:${h}px;font-size:11px;color:rgb(100,116,139);">No burndown data available.</div>`;
   }
   const totalTCs = data.burndownTotalTCs || 1;
   const n = pts.length - 1;
@@ -99,13 +99,6 @@ export function renderPage5(data: PdfData, pageNum: number, totalPages: number, 
 
   const CW = 634;
 
-  // Build milestone cards as table cells (1 or 2 columns)
-  const cols = cards.length > 1 ? 2 : 1;
-  const cardRows: typeof cards[] = [];
-  for (let i = 0; i < cards.length; i += cols) {
-    cardRows.push(cards.slice(i, i + cols));
-  }
-
   return `
 <div class="pdf-header">
   <span class="logo">Testably</span>
@@ -114,35 +107,29 @@ export function renderPage5(data: PdfData, pageNum: number, totalPages: number, 
 
 <div class="pdf-content">
   <div class="sec-title" style="margin-top:0;">Milestone Overview</div>
-  <table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-bottom:14px;">
-    ${cardRows.map(row => `
-    <tr>
-      ${row.map((m, ci) => {
-        const bc = badgeColors[m.status] || badgeColors['On Track'];
-        const barFillPct = Math.min(m.progress, 100);
-        const dSign = m.daysRemaining >= 0 ? '-' : '+';
-        const dueColor = m.status === 'Overdue' ? 'rgb(239,68,68)' : 'rgb(100,116,139)';
-        return `
-      <td style="vertical-align:top;${ci === 0 && cols > 1 ? 'padding-right:5px;' : ''}${ci > 0 ? 'padding-left:5px;' : ''}padding-bottom:10px;">
-        <div style="background:#fff;border:1px solid rgb(226,232,240);border-radius:8px;padding:14px;position:relative;">
-          <div style="display:table;width:100%;margin-bottom:8px;">
-            <div style="display:table-cell;vertical-align:top;font-size:12px;font-weight:700;color:rgb(15,23,42);padding-right:8px;">${e(m.name.length > 28 ? m.name.slice(0, 25) + '...' : m.name)}</div>
-            <div style="display:table-cell;vertical-align:top;white-space:nowrap;text-align:right;"><span style="background:${bc.bg};color:${bc.text};font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;">${e(m.status)}</span></div>
-          </div>
-          <div style="font-size:11px;font-weight:700;color:rgb(15,23,42);margin-bottom:4px;">Progress: ${m.progress}%</div>
-          <div style="height:6px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;margin-bottom:10px;">
-            <div style="width:${barFillPct}%;height:100%;background:rgb(${m.progressColor.join(',')});border-radius:3px;"></div>
-          </div>
-          <div style="font-size:10px;color:${dueColor};margin-bottom:3px;">Due: ${e(m.dueDate)} (D${dSign}${Math.abs(m.daysRemaining)})</div>
-          <div style="font-size:10px;color:rgb(100,116,139);margin-bottom:3px;">Remaining: ${m.remainingTCs} TCs</div>
-          <div style="font-size:10px;color:rgb(100,116,139);margin-bottom:3px;">Velocity: ${m.velocity > 0 ? m.velocity.toFixed(1) : '0.0'} TC/day</div>
-          <div style="font-size:10px;color:rgb(100,116,139);">Est. Completion: ${m.velocity > 0 ? e(m.estCompletion) : 'N/A'}</div>
-        </div>
-      </td>`;
-      }).join('')}
-      ${row.length < cols ? `<td style="vertical-align:top;padding-left:5px;"></td>` : ''}
-    </tr>`).join('')}
-  </table>
+  <div style="display:grid;grid-template-columns:repeat(${cards.length > 1 ? 2 : 1},1fr);gap:10px;margin-bottom:14px;">
+    ${cards.map(m => {
+      const bc = badgeColors[m.status] || badgeColors['On Track'];
+      const barFillPct = Math.min(m.progress, 100);
+      const dSign = m.daysRemaining >= 0 ? '-' : '+';
+      const dueColor = m.status === 'Overdue' ? 'rgb(239,68,68)' : 'rgb(100,116,139)';
+      return `
+    <div style="background:#fff;border:1px solid rgb(226,232,240);border-radius:8px;padding:14px;position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:700;color:rgb(15,23,42);flex:1;padding-right:8px;">${e(m.name.length > 28 ? m.name.slice(0, 25) + '...' : m.name)}</div>
+        <span style="background:${bc.bg};color:${bc.text};font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;">${e(m.status)}</span>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:rgb(15,23,42);margin-bottom:4px;">Progress: ${m.progress}%</div>
+      <div style="height:6px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;margin-bottom:10px;">
+        <div style="width:${barFillPct}%;height:100%;background:rgb(${m.progressColor.join(',')});border-radius:3px;"></div>
+      </div>
+      <div style="font-size:10px;color:${dueColor};margin-bottom:3px;">Due: ${e(m.dueDate)} (D${dSign}${Math.abs(m.daysRemaining)})</div>
+      <div style="font-size:10px;color:rgb(100,116,139);margin-bottom:3px;">Remaining: ${m.remainingTCs} TCs</div>
+      <div style="font-size:10px;color:rgb(100,116,139);margin-bottom:3px;">Velocity: ${m.velocity > 0 ? m.velocity.toFixed(1) : '0.0'} TC/day</div>
+      <div style="font-size:10px;color:rgb(100,116,139);">Est. Completion: ${m.velocity > 0 ? e(m.estCompletion) : 'N/A'}</div>
+    </div>`;
+    }).join('')}
+  </div>
 
   ${tierLevel >= 3 ? `
   <div class="sec-title">Burndown — ${e(milestoneName)}</div>
@@ -177,8 +164,8 @@ export function renderPage5(data: PdfData, pageNum: number, totalPages: number, 
 </div>
 
 <div class="pdf-footer">
-  <span style="position:absolute;left:80px;top:0;height:48px;line-height:48px;">${e(data.projectName)}</span>
-  <span style="position:absolute;left:0;right:0;top:0;height:48px;line-height:48px;text-align:center;">Generated by Testably — ${today}</span>
-  <span style="position:absolute;right:80px;top:0;height:48px;line-height:48px;">Page ${pageNum} of ${totalPages}</span>
+  <span>${e(data.projectName)}</span>
+  <span>Generated by Testably — ${today}</span>
+  <span>Page ${pageNum} of ${totalPages}</span>
 </div>`;
 }

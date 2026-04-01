@@ -58,9 +58,6 @@ export function renderPage3(data: PdfData, pageNum: number, totalPages: number):
   const hasLastWeekData = data.weekComparison.some(w => w.lastWeek > 0);
   const maxWoW = Math.max(...data.weekComparison.map(w => w.thisWeek), 1);
 
-  // Filtered date labels for display
-  const filteredDateLabels = dateLabels.filter((_, i) => i % Math.max(1, Math.floor(dateLabels.length / 6)) === 0 || i === dateLabels.length - 1);
-
   return `
 <div class="pdf-header">
   <span class="logo">Testably</span>
@@ -70,35 +67,27 @@ export function renderPage3(data: PdfData, pageNum: number, totalPages: number):
 <div class="pdf-content">
   <div class="sec-title" style="margin-top:0;">Pass Rate Trend (Last ${trends.length} Days)</div>
   <div style="position:relative;margin-bottom:4px;">
-    <table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-bottom:2px;">
-      <tr>
-        <td style="font-size:9px;color:rgb(100,116,139);text-align:left;">100%</td>
-        <td style="font-size:9px;color:rgb(100,116,139);text-align:center;">75%</td>
-        <td style="font-size:9px;color:rgb(100,116,139);text-align:center;">50%</td>
-        <td style="font-size:9px;color:rgb(100,116,139);text-align:center;">25%</td>
-        <td style="font-size:9px;color:rgb(100,116,139);text-align:right;">0%</td>
-      </tr>
-    </table>
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:rgb(100,116,139);margin-bottom:2px;">
+      <span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span>
+    </div>
     <div class="chart-area" style="height:${lineH}px;background:#fff;padding:0;">
       ${lineSvg}
     </div>
     ${trends.length > 1 ? `
-    <table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:2px;">
-      <tr>
-        ${filteredDateLabels.map((l, i) => `<td style="font-size:8px;color:rgb(100,116,139);${i === 0 ? 'text-align:left;' : i === filteredDateLabels.length - 1 ? 'text-align:right;' : 'text-align:center;'}">${l}</td>`).join('')}
-      </tr>
-    </table>` : ''}
+    <div style="display:flex;justify-content:space-between;font-size:8px;color:rgb(100,116,139);margin-top:2px;">
+      ${dateLabels.filter((_, i) => i % Math.max(1, Math.floor(dateLabels.length / 6)) === 0 || i === dateLabels.length - 1)
+        .map(l => `<span>${l}</span>`).join('')}
+    </div>` : ''}
   </div>
-  <div style="text-align:center;margin-bottom:10px;">
-    <span style="display:inline-block;vertical-align:middle;margin-right:16px;">
-      <span style="width:14px;height:2px;background:rgb(99,102,241);display:inline-block;vertical-align:middle;margin-right:4px;"></span>
-      <span style="font-size:9px;color:rgb(100,116,139);vertical-align:middle;">Pass Rate (%)</span>
-    </span>
-    <span style="display:inline-block;vertical-align:middle;">
-      <span style="width:7px;height:2px;background:rgb(245,158,11);display:inline-block;vertical-align:middle;margin-right:2px;"></span>
-      <span style="width:4px;height:2px;background:rgb(245,158,11);display:inline-block;vertical-align:middle;margin-right:4px;"></span>
-      <span style="font-size:9px;color:rgb(100,116,139);vertical-align:middle;">Execution Count</span>
-    </span>
+  <div style="display:flex;align-items:center;justify-content:center;gap:16px;font-size:9px;color:rgb(100,116,139);margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="width:14px;height:2px;background:rgb(99,102,241);display:inline-block;"></span>
+      Pass Rate (%)
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="width:7px;height:2px;background:rgb(245,158,11);display:inline-block;margin-right:2px;"></span><span style="width:4px;height:2px;background:rgb(245,158,11);display:inline-block;"></span>
+      Execution Count
+    </div>
   </div>
 
   <div class="sec-title">Week-over-Week Comparison</div>
@@ -132,27 +121,25 @@ export function renderPage3(data: PdfData, pageNum: number, totalPages: number):
     ${barSvg}
   </div>
   ${trends.length > 1 ? `
-  <table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-bottom:4px;">
-    <tr>
-      ${filteredDateLabels.map((l, i) => `<td style="font-size:8px;color:rgb(100,116,139);${i === 0 ? 'text-align:left;' : i === filteredDateLabels.length - 1 ? 'text-align:right;' : 'text-align:center;'}">${l}</td>`).join('')}
-    </tr>
-  </table>
-  <div style="text-align:center;">
-    <span style="display:inline-block;vertical-align:middle;margin-right:16px;">
-      <span style="width:7px;height:2px;background:rgb(245,158,11);display:inline-block;vertical-align:middle;margin-right:2px;"></span>
-      <span style="width:4px;height:2px;background:rgb(245,158,11);display:inline-block;vertical-align:middle;margin-right:4px;"></span>
-      <span style="font-size:9px;color:rgb(100,116,139);vertical-align:middle;">7-day moving avg</span>
-    </span>
-    <span style="display:inline-block;vertical-align:middle;">
-      <span style="width:10px;height:10px;background:rgb(99,102,241);border-radius:2px;display:inline-block;vertical-align:middle;margin-right:4px;"></span>
-      <span style="font-size:9px;color:rgb(100,116,139);vertical-align:middle;">Daily executions</span>
-    </span>
+  <div style="display:flex;justify-content:space-between;font-size:8px;color:rgb(100,116,139);margin-bottom:4px;">
+    ${dateLabels.filter((_, i) => i % Math.max(1, Math.floor(dateLabels.length / 6)) === 0 || i === dateLabels.length - 1)
+      .map(l => `<span>${l}</span>`).join('')}
+  </div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:16px;font-size:9px;color:rgb(100,116,139);">
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="width:7px;height:2px;background:rgb(245,158,11);display:inline-block;margin-right:2px;"></span><span style="width:4px;height:2px;background:rgb(245,158,11);display:inline-block;"></span>
+      7-day moving avg
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="width:10px;height:10px;background:rgb(99,102,241);border-radius:2px;display:inline-block;"></span>
+      Daily executions
+    </div>
   </div>` : ''}
 </div>
 
 <div class="pdf-footer">
-  <span style="position:absolute;left:80px;top:0;height:48px;line-height:48px;">${e(data.projectName)}</span>
-  <span style="position:absolute;left:0;right:0;top:0;height:48px;line-height:48px;text-align:center;">Generated by Testably — ${today}</span>
-  <span style="position:absolute;right:80px;top:0;height:48px;line-height:48px;">Page ${pageNum} of ${totalPages}</span>
+  <span>${e(data.projectName)}</span>
+  <span>Generated by Testably — ${today}</span>
+  <span>Page ${pageNum} of ${totalPages}</span>
 </div>`;
 }

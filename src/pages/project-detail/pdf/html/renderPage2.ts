@@ -41,12 +41,6 @@ export function renderPage2(data: PdfData, pageNum: number, totalPages: number):
     { label: 'REPORT DATE', val: data.dateStr },
   ];
 
-  // Pair infoItems into rows of 2
-  const infoRows: typeof infoItems[] = [];
-  for (let i = 0; i < infoItems.length; i += 2) {
-    infoRows.push(infoItems.slice(i, i + 2));
-  }
-
   return `
 <div class="pdf-header">
   <span class="logo">Testably</span>
@@ -60,37 +54,23 @@ export function renderPage2(data: PdfData, pageNum: number, totalPages: number):
       `<div class="stack-seg" style="width:${(s.count/total*100).toFixed(2)}%;background:${s.color};"></div>`
     ).join('')}
   </div>
-  <div style="margin-bottom:14px;">
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
     ${segments.map(s => `
-    <span style="display:inline-block;vertical-align:middle;margin-right:12px;margin-bottom:4px;">
-      <span style="width:10px;height:10px;border-radius:2px;background:${s.color};display:inline-block;vertical-align:middle;margin-right:5px;"></span>
-      <span style="font-size:9px;color:rgb(100,116,139);vertical-align:middle;">${s.label} (${s.count})</span>
-    </span>`).join('')}
+    <div style="display:flex;align-items:center;gap:5px;">
+      <span style="width:10px;height:10px;border-radius:2px;background:${s.color};display:inline-block;"></span>
+      <span style="font-size:9px;color:rgb(100,116,139);">${s.label} (${s.count})</span>
+    </div>`).join('')}
   </div>
 
   <div class="sec-title">Key Performance Indicators</div>
-  <table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-bottom:14px;">
-    <tr>
-      ${kpis.slice(0, 3).map((k, i) => `
-      <td style="width:33.33%;vertical-align:top;${i < 2 ? 'padding-right:5px;' : ''}${i > 0 ? 'padding-left:5px;' : ''}">
-        <div class="kpi-card">
-          <div class="kpi-label">${e(k.label)}</div>
-          <div class="kpi-val" style="${k.color ? `color:${k.color};` : ''}">${e(k.val)}</div>
-          <div class="kpi-target">${e(k.sub)}</div>
-        </div>
-      </td>`).join('')}
-    </tr>
-    <tr>
-      ${kpis.slice(3, 6).map((k, i) => `
-      <td style="width:33.33%;vertical-align:top;padding-top:5px;${i < 2 ? 'padding-right:5px;' : ''}${i > 0 ? 'padding-left:5px;' : ''}">
-        <div class="kpi-card">
-          <div class="kpi-label">${e(k.label)}</div>
-          <div class="kpi-val" style="${k.color ? `color:${k.color};` : ''}">${e(k.val)}</div>
-          <div class="kpi-target">${e(k.sub)}</div>
-        </div>
-      </td>`).join('')}
-    </tr>
-  </table>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+    ${kpis.map(k => `
+    <div class="kpi-card">
+      <div class="kpi-label">${e(k.label)}</div>
+      <div class="kpi-val" style="${k.color ? `color:${k.color};` : ''}">${e(k.val)}</div>
+      <div class="kpi-target">${e(k.sub)}</div>
+    </div>`).join('')}
+  </div>
 
   <div class="sec-title">Priority Distribution</div>
   <div style="margin-bottom:14px;">
@@ -99,34 +79,29 @@ export function renderPage2(data: PdfData, pageNum: number, totalPages: number):
       return `
     <div style="margin-bottom:10px;">
       <div style="font-size:9px;font-weight:700;color:${p.color};margin-bottom:3px;">${p.label}</div>
-      <div style="display:table;width:100%;">
-        <div style="display:table-cell;vertical-align:middle;">
-          <div style="height:15px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
-            <div style="width:${pct}%;height:100%;background:${p.color};border-radius:3px;"></div>
-          </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="flex:1;height:15px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:${p.color};border-radius:3px;"></div>
         </div>
-        <div style="display:table-cell;vertical-align:middle;white-space:nowrap;width:80px;font-size:9px;color:rgb(100,116,139);text-align:right;padding-left:8px;">${p.count} (${pct}%)</div>
+        <span style="font-size:9px;color:rgb(100,116,139);width:70px;text-align:right;">${p.count} (${pct}%)</span>
       </div>
     </div>`;
     }).join('')}
   </div>
 
   <div class="sec-title">Project Information</div>
-  <table style="width:100%;border-collapse:collapse;font-size:9px;">
-    ${infoRows.map((row, ri) => `
-    <tr>
-      ${row.map((item, ci) => `
-      <td style="width:50%;padding:5px 0;${ri < infoRows.length - 1 ? 'border-bottom:1px solid rgb(241,245,249);' : ''}${ci === 0 ? 'padding-right:10px;' : 'padding-left:10px;'}">
-        <span style="color:rgb(100,116,139);font-size:8px;display:inline-block;width:90px;vertical-align:top;">${item.label}:</span>
-        <span style="color:rgb(15,23,42);font-size:9px;font-weight:500;">${e(String(item.val || '-'))}</span>
-      </td>`).join('')}
-    </tr>`).join('')}
-  </table>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;font-size:9px;">
+    ${infoItems.map((item, i) => `
+    <div style="display:flex;padding:5px 0;${i < infoItems.length - 2 ? 'border-bottom:1px solid rgb(241,245,249);' : ''}">
+      <span style="color:rgb(100,116,139);width:90px;font-size:8px;flex-shrink:0;">${item.label}:</span>
+      <span style="color:rgb(15,23,42);font-size:9px;font-weight:500;">${e(String(item.val || '-'))}</span>
+    </div>`).join('')}
+  </div>
 </div>
 
 <div class="pdf-footer">
-  <span style="position:absolute;left:80px;top:0;height:48px;line-height:48px;">${e(data.projectName)}</span>
-  <span style="position:absolute;left:0;right:0;top:0;height:48px;line-height:48px;text-align:center;">Generated by Testably — ${today}</span>
-  <span style="position:absolute;right:80px;top:0;height:48px;line-height:48px;">Page ${pageNum} of ${totalPages}</span>
+  <span>${e(data.projectName)}</span>
+  <span>Generated by Testably — ${today}</span>
+  <span>Page ${pageNum} of ${totalPages}</span>
 </div>`;
 }

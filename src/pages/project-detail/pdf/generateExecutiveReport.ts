@@ -14,34 +14,30 @@ import { renderPage8 } from './html/renderPage8';
 const TC_PER_PAGE = 30;
 
 async function capturePageHtml(innerHtml: string): Promise<string> {
-  const html2canvas = (await import('html2canvas')).default;
+  const { toJpeg } = await import('html-to-image');
 
   const container = document.createElement('div');
   container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;z-index:-9999;overflow:hidden;background:#fff;';
   container.innerHTML = `<style>${PDF_PAGE_STYLES}
-  /* Ensure no external font requests block rendering */
   @font-face { font-family: 'Inter'; src: local('Inter'), local('Arial'); }
   </style><div class="a4-page">${innerHtml}</div>`;
   document.body.appendChild(container);
 
-  // Wait for layout
-  await new Promise(r => setTimeout(r, 80));
+  // Wait for layout and fonts
+  await new Promise(r => setTimeout(r, 120));
 
   const pageEl = container.querySelector('.a4-page') as HTMLElement;
-  const canvas = await html2canvas(pageEl, {
-    scale: 2,
-    useCORS: true,
-    allowTaint: true,
+  const dataUrl = await toJpeg(pageEl, {
+    quality: 0.92,
     width: 794,
     height: 1123,
-    windowWidth: 794,
-    windowHeight: 1123,
+    pixelRatio: 2,
     backgroundColor: '#ffffff',
-    logging: false,
+    skipFonts: false,
   });
 
   document.body.removeChild(container);
-  return canvas.toDataURL('image/jpeg', 0.92);
+  return dataUrl;
 }
 
 export async function generateExecutiveReport(input: ExportPDFInput): Promise<void> {
