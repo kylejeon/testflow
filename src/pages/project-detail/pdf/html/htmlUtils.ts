@@ -109,7 +109,7 @@ export function buildBarChartSvg(
       const y = h - (v / maxV) * h;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
-    avgLine = `<polyline fill="none" stroke="${avgLineColor}" stroke-width="1.5" stroke-dasharray="4,2" points="${mpts}"/>`;
+    avgLine = `<polyline fill="none" stroke="${avgLineColor}" stroke-width="2" points="${mpts}"/>`;
   }
   const gridLines = [0.25, 0.5, 0.75, 1.0].map(f => {
     const gy = h - f * h;

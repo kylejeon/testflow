@@ -86,7 +86,6 @@ export function renderPage4(data: PdfData, pageNum: number, totalPages: number):
     </thead>
     <tbody>
       ${data.folderCoverage.slice(0, 10).map(f => {
-        const covPct = f.totalTCs > 0 ? (f.tested / f.totalTCs) * 100 : 0;
         return `
       <tr>
         <td style="font-weight:600;">${e(f.folder.length > 20 ? f.folder.slice(0, 17) + '...' : f.folder)}</td>
@@ -96,7 +95,7 @@ export function renderPage4(data: PdfData, pageNum: number, totalPages: number):
         <td style="font-weight:700;color:${pctColor(f.passRate)};">${f.passRate.toFixed(1)}%</td>
         <td>
           <div class="prog-bar" style="width:140px;">
-            <div class="prog-fill" style="width:${covPct.toFixed(1)}%;background:${pctColor(f.passRate)};"></div>
+            <div class="prog-fill" style="width:${f.passRate.toFixed(1)}%;background:${pctColor(f.passRate)};"></div>
           </div>
         </td>
       </tr>`;

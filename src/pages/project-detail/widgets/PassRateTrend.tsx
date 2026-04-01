@@ -243,9 +243,9 @@ export default function PassRateTrend({ projectId, period }: { projectId: string
           <ComposedChart data={data.dailyPoints} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
             <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94A3B8' }} />
-            <YAxis yAxisId="left" domain={[0, 100]}
+            <YAxis yAxisId="left" domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]}
               tick={{ fontSize: 11, fill: '#94A3B8' }}
-              tickFormatter={v => `${v}%`} width={36} />
+              tickFormatter={v => `${v}%`} width={40} />
             <YAxis yAxisId="right" orientation="right"
               tick={{ fontSize: 11, fill: '#94A3B8' }} width={36} />
             <Tooltip content={<CustomTooltip />} />
