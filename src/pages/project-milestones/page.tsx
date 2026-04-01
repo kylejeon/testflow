@@ -382,10 +382,11 @@ export default function ProjectMilestones() {
       if (error) throw error;
       setShowCreateModal(false);
       setParentMilestoneId(null);
+      showToast('Milestone created successfully.', 'success');
       fetchData();
     } catch (error) {
       console.error('마일스톤 생성 오류:', error);
-      alert('Failed to create milestone.');
+      showToast('Failed to create milestone. Please try again.', 'error');
     }
   };
 
@@ -396,19 +397,27 @@ export default function ProjectMilestones() {
       fetchData();
     } catch (error) {
       console.error('마일스톤 수정 오류:', error);
-      alert('Failed to update milestone.');
+      showToast('Failed to update milestone. Please try again.', 'error');
     }
   };
 
   const handleDeleteMilestone = async (milestoneId: string) => {
-    if (!confirm('Are you sure you want to delete this milestone?')) return;
+    setConfirmDeleteId(milestoneId);
+  };
+
+  const confirmDelete = async () => {
+    if (!confirmDeleteId) return;
     try {
-      const { error } = await supabase.from('milestones').delete().eq('id', milestoneId);
+      const { error } = await supabase.from('milestones').delete().eq('id', confirmDeleteId);
       if (error) throw error;
+      setConfirmDeleteId(null);
+      setEditingMilestone(null);
+      showToast('Milestone deleted.', 'success');
       fetchData();
     } catch (error) {
       console.error('마일스톤 삭제 오류:', error);
-      alert('Failed to delete milestone.');
+      setConfirmDeleteId(null);
+      showToast('Failed to delete milestone. Please try again.', 'error');
     }
   };
 
@@ -905,8 +914,39 @@ export default function ProjectMilestones() {
         </div>
       )}
 
+      {/* Delete confirmation modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <i className="ri-delete-bin-line text-red-600 text-lg" />
+              </div>
+              <div>
+                <p className="text-[0.9375rem] font-semibold text-gray-900">Delete milestone?</p>
+                <p className="text-[0.8125rem] text-gray-500">This action cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 px-4 py-2 text-[0.8125rem] font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2 text-[0.8125rem] font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {editingMilestone && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[55]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Edit Milestone</h2>
             {editingMilestone.isAggregated && (
