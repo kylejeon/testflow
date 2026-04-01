@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM Plan: Dashboard Analytics &amp; Activity Feed</title>
+<style>
+  :root { --primary: #6366F1; --primary-light: #EEF2FF; --success: #10B981; --success-light: #ECFDF5; --warning: #F59E0B; --warning-light: #FFFBEB; --danger: #EF4444; --danger-light: #FEF2F2; --gray-50: #F8FAFC; --gray-100: #F1F5F9; --gray-200: #E2E8F0; --gray-300: #CBD5E1; --gray-500: #64748B; --gray-700: #334155; --gray-900: #0F172A; --ai: #8B5CF6; --ai-light: #F5F3FF; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--gray-900); background: var(--gray-50); line-height: 1.6; }
+  .container { max-width: 1020px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 8px; }
+  .subtitle { color: var(--gray-500); font-size: 0.9375rem; margin-bottom: 32px; }
+  .meta { display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap; }
+  .meta-item { background: white; border: 1px solid var(--gray-200); border-radius: 10px; padding: 16px 20px; flex: 1; min-width: 180px; }
+  .meta-label { font-size: 0.75rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .meta-value { font-size: 0.9375rem; font-weight: 600; }
+  .section { background: white; border: 1px solid var(--gray-200); border-radius: 12px; margin-bottom: 24px; overflow: hidden; }
+  .section-header { padding: 20px 24px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; gap: 12px; }
+  .section-number { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: white; }
+  .section-title { font-size: 1.125rem; font-weight: 600; }
+  .section-body { padding: 24px; }
+  .problem-box { background: var(--danger-light); border-left: 3px solid var(--danger); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .solution-box { background: var(--success-light); border-left: 3px solid var(--success); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .info-box { background: var(--primary-light); border-left: 3px solid var(--primary); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .warning-box { background: var(--warning-light); border-left: 3px solid var(--warning); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .ai-box { background: var(--ai-light); border-left: 3px solid var(--ai); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .code-block { background: #1E293B; color: #E2E8F0; border-radius: 8px; padding: 16px; font-family: 'SF Mono', monospace; font-size: 0.8125rem; line-height: 1.7; overflow-x: auto; margin: 12px 0; white-space: pre; }
+  .code-inline { background: var(--gray-100); color: var(--danger); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; }
+  .change-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  .change-table th, .change-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--gray-200); font-size: 0.875rem; }
+  .change-table th { background: var(--gray-50); font-weight: 600; color: var(--gray-700); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+  .badge-danger { background: var(--danger-light); color: var(--danger); }
+  .badge-warning { background: var(--warning-light); color: var(--warning); }
+  .badge-primary { background: var(--primary-light); color: var(--primary); }
+  .badge-success { background: var(--success-light); color: var(--success); }
+  .badge-ai { background: var(--ai-light); color: var(--ai); }
+  p { margin-bottom: 12px; font-size: 0.9375rem; }
+  ul, ol { margin: 8px 0 12px 20px; font-size: 0.9375rem; }
+  li { margin-bottom: 6px; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 20px 0 8px; }
+  h4 { font-size: 0.9375rem; font-weight: 600; margin: 16px 0 8px; color: var(--gray-700); }
+  .file-ref { display: inline-flex; align-items: center; gap: 4px; background: var(--gray-100); padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 0.8125rem; color: var(--gray-700); }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .compare-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; }
+  .compare-card h4 { margin-top: 0; }
+  .widget-card { background: white; border: 2px solid var(--gray-200); border-radius: 12px; margin: 16px 0; overflow: hidden; }
+  .widget-header { padding: 14px 18px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; }
+  .widget-name { font-weight: 700; font-size: 0.9375rem; }
+  .widget-body { padding: 18px; }
+  .widget-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 16px 0; }
+  .tier-label { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tier-free { background: #F1F5F9; color: #64748B; }
+  .tier-pro { background: #EEF2FF; color: #6366F1; }
+  .tier-ent { background: #FEF2F2; color: #EF4444; }
+  .heatmap-preview { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; margin: 8px 0; }
+  .heatmap-cell { width: 100%; aspect-ratio: 1; border-radius: 3px; }
+  .competitor-row td:first-child { font-weight: 600; }
+  .check { color: var(--success); }
+  .cross { color: var(--gray-300); }
+  .star { color: var(--ai); }
+  .arch-diagram { background: #1E293B; color: #E2E8F0; border-radius: 8px; padding: 20px; font-family: 'SF Mono', monospace; font-size: 0.75rem; line-height: 1.8; overflow-x: auto; margin: 16px 0; white-space: pre; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>📊 Dashboard Analytics &amp; Activity Feed 기획</h1>
+<p class="subtitle">AI-Native 차별화 전략 — 경쟁사에 없는 인사이트 중심 대시보드</p>
+
+<div class="meta">
+  <div class="meta-item">
+    <div class="meta-label">작성일</div>
+    <div class="meta-value">2026-04-01</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">대상 페이지</div>
+    <div class="meta-value">project-detail (Analytics / Activity)</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">경쟁사 분석</div>
+    <div class="meta-value">TestRail · Zephyr · qTest · PractiTest</div>
+  </div>
+  <div class="meta-item">
+    <div class="meta-label">차별화 키워드</div>
+    <div class="meta-value">AI-Native · Predictive · Actionable</div>
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 1: 현재 상태 분석 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--gray-500);">1</div>
+    <div class="section-title">현재 상태 분석</div>
+  </div>
+  <div class="section-body">
+
+    <h3>1.1 Dashboard 탭 구조 (현재)</h3>
+    <p><span class="file-ref">src/pages/project-detail/page.tsx</span>의 <code>dashboardTab</code> state로 3개 탭을 관리하고 있으나, Analytics와 Activity Feed는 "Coming Soon" 플레이스홀더 상태입니다.</p>
+    <table class="change-table">
+      <thead>
+        <tr><th>탭</th><th>현재 상태</th><th>구현 수준</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Overview</strong></td><td>Release Readiness Score + My Runs + Recent Activity</td><td><span class="badge badge-success">구현됨</span></td></tr>
+        <tr><td><strong>Analytics</strong></td><td>"Coming Soon" 플레이스홀더</td><td><span class="badge badge-danger">미구현</span></td></tr>
+        <tr><td><strong>Activity Feed</strong></td><td>"Coming Soon" 플레이스홀더</td><td><span class="badge badge-danger">미구현</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>1.2 별도 Stats 페이지에 이미 구현된 분석 기능</h3>
+    <div class="info-box">
+      <strong>재사용 가능한 기존 자산:</strong> <code>src/pages/stats/</code>에 4개의 분석 페이지와 커스텀 훅이 이미 있습니다. 이 로직을 Analytics 탭으로 통합하면 공수를 크게 줄일 수 있습니다.
+    </div>
+    <table class="change-table">
+      <thead>
+        <tr><th>페이지</th><th>핵심 기능</th><th>훅</th><th>통합 방향</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="file-ref">PassRateReportPage</span></td>
+          <td>일/월별 Pass Rate 트렌드, 실패 TC 목록, 델타 비교</td>
+          <td><code>usePassRateReport</code></td>
+          <td>Analytics 탭 "Pass Rate 트렌드" 위젯으로 통합</td>
+        </tr>
+        <tr>
+          <td><span class="file-ref">TeamActivityPage</span></td>
+          <td>52주 히트맵, 팀원별 활동량, 라이브 피드</td>
+          <td><code>useTeamActivity</code></td>
+          <td>Activity Feed 탭 + Analytics "팀 성과" 위젯으로 분배</td>
+        </tr>
+        <tr>
+          <td><span class="file-ref">ActiveRunsPage</span></td>
+          <td>진행 중 Run 목록, 완료율, 미실행 TC 수</td>
+          <td><code>useActiveRuns</code></td>
+          <td>Analytics "실행 현황" 위젯으로 통합</td>
+        </tr>
+        <tr>
+          <td><span class="file-ref">TestCasesOverviewPage</span></td>
+          <td>TC 성장 추이, Priority/Lifecycle 분포, CSV export</td>
+          <td><code>useTestCasesOverview</code></td>
+          <td>Analytics "TC 품질 분석" 위젯으로 통합</td>
+        </tr>
+      </tbody>
+    </table>
+    <h3>1.3 사용 가능한 DB 테이블 &amp; 데이터</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>테이블</th><th>핵심 컬럼</th><th>Analytics 활용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>test_results</code></td><td>status, author, created_at, run_id, test_case_id</td><td>Pass/Fail 트렌드, 팀원별 실행량, Flaky TC 탐지</td></tr>
+        <tr><td><code>test_cases</code></td><td>priority, lifecycle_status, folder, assignee, created_by, created_at, is_automated</td><td>품질 분포, 커버리지, 자동화율</td></tr>
+        <tr><td><code>test_runs</code></td><td>status, name, milestone_id, assignees[], test_case_ids[], created_at</td><td>실행 현황, 마일스톤 진척</td></tr>
+        <tr><td><code>milestones</code></td><td>status, start_date, end_date, progress, parent_milestone_id</td><td>릴리즈 레디니스, 기한 추적</td></tr>
+        <tr><td><code>sessions</code></td><td>status, started_at, ended_at</td><td>탐색적 테스트 세션 추적</td></tr>
+        <tr><td><code>session_logs</code></td><td>type (note/passed/failed/blocked), created_at</td><td>세션 내 활동 분석</td></tr>
+        <tr><td><code>test_case_comments</code></td><td>user_id, comment, created_at</td><td>협업 활동 추적</td></tr>
+        <tr><td><code>project_members</code></td><td>user_id, role</td><td>팀 구성, 역할별 분석</td></tr>
+        <tr><td><code>profiles</code></td><td>full_name, email, avatar_emoji</td><td>팀원 정보 표시</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 2: 경쟁사 분석 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--danger);">2</div>
+    <div class="section-title">경쟁사 Analytics 비교 &amp; 차별화 기회</div>
+  </div>
+  <div class="section-body">
+
+    <h3>2.1 기능 비교 매트릭스</h3>
+    <p>✅ = 있음 &nbsp; ❌ = 없음 &nbsp; ⭐ = Testably AI 차별화</p>
+    <table class="change-table competitor-row">
+      <thead>
+        <tr><th>기능</th><th>TestRail</th><th>Zephyr</th><th>qTest</th><th>PractiTest</th><th>Testably</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Pass/Fail Rate 차트</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅ 기본</td></tr>
+        <tr><td>실행 진행률 추적</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅ 기본</td></tr>
+        <tr><td>시간 기반 트렌드 (일/주/월)</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td><td class="cross">❌</td><td class="check">✅ 기본</td></tr>
+        <tr><td>완료 시점 예측 (Forecasting)</td><td class="check">✅</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="star">⭐ AI 강화</td></tr>
+        <tr><td>팀원별 성과 분석</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="star">⭐ 신규</td></tr>
+        <tr><td>Flaky TC 자동 탐지</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="star">⭐ AI 신규</td></tr>
+        <tr><td>폴더/모듈별 커버리지 히트맵</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅ 기본</td><td class="cross">❌</td><td class="star">⭐ AI 강화</td></tr>
+        <tr><td>릴리즈 레디니스 스코어</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅ 기본</td><td class="cross">❌</td><td class="check">✅ 이미 구현</td></tr>
+        <tr><td>AI 인사이트 / 자연어 요약</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="star">⭐ 핵심 차별화</td></tr>
+        <tr><td>리스크 영역 예측</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="star">⭐ AI 신규</td></tr>
+        <tr><td>활동 피드 (실시간)</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="star">⭐ Realtime</td></tr>
+        <tr><td>AI 일일 요약</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="star">⭐ 핵심 차별화</td></tr>
+      </tbody>
+    </table>
+
+    <div class="solution-box">
+      <strong>✅ 차별화 전략 요약:</strong> 경쟁사 4개 모두 기본 차트(Pass Rate, 진행률)는 제공하지만, <strong>팀원별 성과 분석, Flaky TC 탐지, AI 인사이트/요약, 리스크 예측, 실시간 Activity Feed</strong>는 어디에도 없습니다. 이 5가지가 Testably의 AI-Native 포지셔닝을 강화하는 핵심 차별화 포인트입니다.
+    </div>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 3: Analytics 탭 — 위젯 설계 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--primary);">3</div>
+    <div class="section-title">Analytics 탭: 위젯 상세 설계</div>
+  </div>
+  <div class="section-body">
+
+    <p>Analytics 탭은 <strong>8개 위젯</strong>으로 구성하며, 3단계(Phase)로 나누어 구현합니다. 상단에 공통 <strong>기간 필터</strong>(7일 / 14일 / 30일 / 전체)와 <strong>마일스톤 필터</strong>를 배치합니다.</p>
+
+    <!-- Widget A: Pass Rate 트렌드 -->
+    <div class="widget-card">
+      <div class="widget-header">
+        <div><span class="widget-name">A. Pass Rate 트렌드</span> &nbsp;<span class="badge badge-danger">P0 · Phase 1</span></div>
+        <span class="tier-label tier-free">Free+</span>
+      </div>
+      <div class="widget-body">
+        <p><strong>목적:</strong> 시간에 따른 테스트 성공률 변화를 한눈에 파악. QA 팀의 가장 기본적인 건강 지표.</p>
+        <h4>시각화</h4>
+        <ul>
+          <li><strong>라인 차트</strong> — X축: 날짜, Y축: Pass Rate %, 보조선: 실행 건수 (바 차트 오버레이)</li>
+          <li>기간 선택에 따라 일별/주별 그래핑</li>
+          <li>이전 기간 대비 <strong>델타(Δ)</strong> 배지 표시 (▲+5.2% 또는 ▼-3.1%)</li>
+        </ul>
+        <h4>KPI 카드 (차트 상단 4개)</h4>
+        <table class="change-table">
+          <thead><tr><th>카드</th><th>값</th><th>델타</th></tr></thead>
+          <tbody>
+            <tr><td>Overall Pass Rate</td><td><code>(passed / executed) × 100</code></td><td>vs 이전 동일 기간</td></tr>
+            <tr><td>Total Executed</td><td>기간 내 실행된 결과 수</td><td>vs 이전 기간</td></tr>
+            <tr><td>Failed</td><td>실패 건수</td><td>vs 이전 기간</td></tr>
+            <tr><td>Blocked</td><td>차단 건수</td><td>vs 이전 기간</td></tr>
+          </tbody>
+        </table>
+        <h4>데이터 소스</h4>
+        <div class="code-block">// 재사용: usePassRateReport 훅
+const { data } = usePassRateReport(projectId, trendPeriod);
+// test_results WHERE project_id = ? AND created_at >= ?
+// GROUP BY DATE(created_at)</div>
+      </div>
+    </div>
+    <!-- Widget B: 팀원별 성과 분석 -->
+    <div class="widget-card">
+      <div class="widget-header">
+        <div><span class="widget-name">B. 팀원별 성과 분석</span> &nbsp;<span class="badge badge-danger">P0 · Phase 1</span> &nbsp;<span class="badge badge-ai">차별화</span></div>
+        <span class="tier-label tier-pro">Professional+</span>
+      </div>
+      <div class="widget-body">
+        <p><strong>목적:</strong> 팀원별 테스트 실행량, 발견 버그 수, 응답 속도를 비교. <em>경쟁사 4개 모두 이 기능이 없음.</em></p>
+        <h4>시각화</h4>
+        <ul>
+          <li><strong>팀원 리더보드 테이블</strong> — 이름, 실행 수, 발견 실패 수, 평균 응답 시간, 활동 스파크라인</li>
+          <li><strong>스택 바 차트</strong> — 팀원별 Passed / Failed / Blocked 분포</li>
+          <li>정렬 옵션: 실행 수, 실패 발견 수, 응답 속도</li>
+        </ul>
+        <h4>메트릭 정의</h4>
+        <table class="change-table">
+          <thead><tr><th>메트릭</th><th>계산 방법</th><th>의미</th></tr></thead>
+          <tbody>
+            <tr><td>실행 건수</td><td><code>COUNT(test_results) WHERE author = member</code></td><td>테스트 처리량</td></tr>
+            <tr><td>버그 발견율</td><td><code>COUNT(failed) / COUNT(executed)</code></td><td>높을수록 효과적 탐색적 테스트</td></tr>
+            <tr><td>평균 응답 시간</td><td><code>AVG(first_result_at - run.created_at)</code></td><td>Run 배정 후 첫 실행까지 시간</td></tr>
+            <tr><td>7일 활동 스파크라인</td><td>일별 <code>COUNT(test_results)</code></td><td>최근 활동 패턴</td></tr>
+          </tbody>
+        </table>
+        <h4>데이터 소스</h4>
+        <div class="code-block">// test_results.author → profiles.full_name 조인
+// GROUP BY author, DATE(created_at)
+// 재사용: useTeamActivity 훅 확장</div>
+      </div>
+    </div>
+    <!-- Widget C: Flaky TC 탐지 -->
+    <div class="widget-card">
+      <div class="widget-header">
+        <div><span class="widget-name">C. Flaky TC 탐지 (불안정 테스트)</span> &nbsp;<span class="badge badge-warning">P1 · Phase 2</span> &nbsp;<span class="badge badge-ai">AI 차별화</span></div>
+        <span class="tier-label tier-pro">Professional+</span>
+      </div>
+      <div class="widget-body">
+        <p><strong>목적:</strong> 같은 TC가 Pass/Fail을 반복하면 "Flaky"로 자동 탐지. 테스트 신뢰도를 떨어뜨리는 주범을 식별. <em>경쟁사 전원 미제공.</em></p>
+        <h4>시각화</h4>
+        <ul>
+          <li><strong>Flaky Score 테이블</strong> — TC명, 최근 N회 결과 시퀀스(●●○●○), Flaky Score, 마지막 실행일</li>
+          <li><strong>Flaky Score 공식:</strong> 최근 10회 실행에서 상태 전환(Pass→Fail, Fail→Pass) 횟수 ÷ 9 × 100</li>
+          <li>Score ≥ 50%를 Flaky로 표시, 빨간색 하이라이트</li>
+        </ul>
+        <h4>AI 인사이트 (Pro+)</h4>
+        <div class="ai-box">
+          <strong>🤖 AI Flaky 분석:</strong> "TC-042 '로그인 세션 만료 테스트'가 지난 2주간 6회 중 3회 Fail → Pass를 반복했습니다. 실패는 모두 월요일 오전에 발생하여, 주말 캐시 만료와 관련될 수 있습니다. 환경 의존적 TC로 분류를 권장합니다."
+        </div>
+        <h4>데이터 소스</h4>
+        <div class="code-block">// test_results WHERE test_case_id = ?
+// ORDER BY created_at DESC LIMIT 10
+// 전체 TC에 대해 Flaky Score 계산 → 상위 10개 표시
+// 신규 쿼리 필요 (기존 훅에 없음)</div>
+      </div>
+    </div>
+
+    <!-- Widget D: 폴더/모듈별 커버리지 히트맵 -->
+    <div class="widget-card">
+      <div class="widget-header">
+        <div><span class="widget-name">D. 폴더/모듈별 커버리지 히트맵</span> &nbsp;<span class="badge badge-warning">P1 · Phase 2</span> &nbsp;<span class="badge badge-ai">차별화</span></div>
+        <span class="tier-label tier-free">Free+</span>
+      </div>
+      <div class="widget-body">
+        <p><strong>목적:</strong> 프로젝트의 어떤 모듈/폴더가 테스트가 잘 되어 있고, 어디가 취약한지 한눈에 파악. <em>qTest만 기본 히트맵 제공, 나머지 경쟁사 없음.</em></p>
+        <h4>시각화</h4>
+        <ul>
+          <li><strong>트리맵 히트맵</strong> — 각 폴더를 사각형으로 표시, 크기 = TC 수, 색상 = Pass Rate (녹색 100% ~ 빨강 0%)</li>
+          <li>호버 시 상세 정보: 폴더명, TC 수, Pass/Fail/Untested 수, Pass Rate %</li>
+          <li>클릭 시 해당 폴더의 TC 목록으로 드릴다운</li>
+        </ul>
+        <h4>데이터 소스</h4>
+        <div class="code-block">// test_cases.folder → 폴더별 그룹핑
+// LEFT JOIN test_results (최신 결과만) → 상태 집계
+// GROUP BY folder
+// 기존 데이터로 계산 가능, 신규 쿼리 필요</div>
+      </div>
+    </div>
+    <!-- Widget E: 마일스톤/릴리즈 레디니스 -->
+    <div class="widget-card">
+      <div class="widget-header">
+        <div><span class="widget-name">E. 마일스톤 트래커 &amp; 릴리즈 번다운</span> &nbsp;<span class="badge badge-danger">P0 · Phase 1</span></div>
+        <span class="tier-label tier-free">Free+</span>
+      </div>
+      <div class="widget-body">
+        <p><strong>목적:</strong> 각 마일스톤의 진척도와 기한까지 남은 테스트를 번다운 차트로 시각화. 릴리즈 가능 여부를 데이터 기반으로 판단.</p>
+        <h4>시각화</h4>
+        <ul>
+          <li><strong>번다운 차트</strong> — X축: 날짜, Y축: 잔여 미실행 TC 수. 이상선(ideal line) vs 실제선</li>
+          <li><strong>마일스톤 카드 그리드</strong> — 각 마일스톤별 진행률 도넛, 남은 일수, 상태 배지(on track / at risk / overdue)</li>
+          <li>Overview 탭의 Release Readiness Score와 연계: Score ≥80 "Go", 60-79 "Conditional", &lt;60 "Not Ready"</li>
+        </ul>
+        <h4>위험 판정 로직</h4>
+        <div class="code-block">// daysRemaining = milestone.end_date - today
+// remainingTC = untested TC count in linked runs
+// dailyVelocity = executed TC count / elapsed days
+// estimatedDaysToComplete = remainingTC / dailyVelocity
+//
+// if (estimatedDaysToComplete > daysRemaining) → "At Risk" 🟠
+// if (end_date < today && progress < 100) → "Overdue" 🔴
+// else → "On Track" 🟢</div>
+        <h4>데이터 소스</h4>
+        <div class="code-block">// milestones WHERE project_id = ? AND status IN ('upcoming','started')
+// test_runs WHERE milestone_id = ?
+// test_results WHERE run_id IN (linked runs)
+// 기존 데이터 활용, 번다운 계산 로직 신규</div>
+      </div>
+    </div>
+
+    <!-- Widget F: TC 품질 분석 -->
+    <div class="widget-card">
+      <div class="widget-header">
+        <div><span class="widget-name">F. TC 품질 &amp; 성장 분석</span> &nbsp;<span class="badge badge-warning">P1 · Phase 2</span></div>
+        <span class="tier-label tier-free">Free+</span>
+      </div>
+      <div class="widget-body">
+        <p><strong>목적:</strong> TC 자산의 건강 상태를 한눈에 파악 — 성장 추이, Priority 분포, 자동화율, 가장 많이 실패하는 TC.</p>
+        <h4>시각화</h4>
+        <ul>
+          <li><strong>TC 성장 에어리어 차트</strong> — 주별 누적 TC 수 (재사용: useTestCasesOverview)</li>
+          <li><strong>Priority 도넛 차트</strong> — Critical / High / Medium / Low 분포</li>
+          <li><strong>Lifecycle 상태 바</strong> — Active / Draft / Deprecated 비율</li>
+          <li><strong>자동화율 게이지</strong> — <code>is_automated = true</code> 비율</li>
+          <li><strong>Top 10 실패 TC 테이블</strong> — 실패 횟수 순 정렬, Priority 배지, 마지막 실패일</li>
+        </ul>
+        <h4>데이터 소스</h4>
+        <div class="code-block">// 재사용: useTestCasesOverview 훅
+// + test_results GROUP BY test_case_id, status
+//   HAVING COUNT(status='failed') ORDER BY DESC LIMIT 10</div>
+      </div>
+    </div>
+    <!-- Widget G: AI 예측 & 추천 -->
+    <div class="widget-card">
+      <div class="widget-header">
+        <div><span class="widget-name">G. AI 인사이트 패널</span> &nbsp;<span class="badge badge-primary">P2 · Phase 3</span> &nbsp;<span class="badge badge-ai">핵심 차별화</span></div>
+        <span class="tier-label tier-pro">Professional+</span>
+      </div>
+      <div class="widget-body">
+        <p><strong>목적:</strong> AI가 프로젝트 데이터를 분석하여 자연어 인사이트와 액션 추천을 제공. <em>경쟁사 전원 미제공 — Testably만의 핵심 차별화.</em></p>
+        <div class="ai-box">
+          <strong>🤖 AI-Native 포지셔닝의 핵심</strong><br>
+          단순한 차트는 모든 경쟁사가 제공합니다. "데이터를 보여주는 것"이 아니라 "데이터가 의미하는 바를 알려주는 것"이 Testably의 차별화입니다.
+        </div>
+        <h4>AI 인사이트 유형</h4>
+        <table class="change-table">
+          <thead><tr><th>인사이트 유형</th><th>예시</th><th>데이터 기반</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>일일 요약</strong></td>
+              <td>"오늘 팀이 142건의 TC를 실행했고, Pass Rate가 어제 대비 3.2% 상승했습니다. 특히 '결제 모듈' 폴더의 Pass Rate가 95%로 안정화되었습니다."</td>
+              <td>test_results (당일), 폴더별 집계</td>
+            </tr>
+            <tr>
+              <td><strong>완료 예측</strong></td>
+              <td>"현재 속도(일 평균 45건)로 진행하면, Sprint 12 마일스톤은 4월 8일에 완료 예상됩니다. 기한(4월 10일)보다 2일 여유가 있습니다."</td>
+              <td>milestones, daily velocity 계산</td>
+            </tr>
+            <tr>
+              <td><strong>리스크 경고</strong></td>
+              <td>"'사용자 인증' 폴더의 Pass Rate가 지난 3일간 78% → 65% → 52%로 급락 중입니다. 최근 코드 변경의 영향일 수 있으니 확인이 필요합니다."</td>
+              <td>폴더별 Pass Rate 3일 트렌드</td>
+            </tr>
+            <tr>
+              <td><strong>팀 밸런스</strong></td>
+              <td>"김민수 님에게 미실행 TC 38건이 집중되어 있습니다. 이정현 님(현재 유휴)에게 12건을 재배정하면 3일 단축할 수 있습니다."</td>
+              <td>assignee별 미실행 TC, 팀원별 velocity</td>
+            </tr>
+            <tr>
+              <td><strong>품질 트렌드</strong></td>
+              <td>"이번 주 새로 발견된 결함 18건 중 12건(67%)이 '결제' 모듈에 집중되어 있습니다. 해당 모듈에 리그레션 테스트를 추가로 수행하는 것을 추천합니다."</td>
+              <td>test_results(failed), folder 분포</td>
+            </tr>
+          </tbody>
+        </table>
+        <h4>구현 방식</h4>
+        <div class="code-block">// 1. 프론트엔드에서 분석 데이터 수집 (이미 fetch된 데이터 활용)
+// 2. 규칙 기반 인사이트 (Phase 3a): 임계값 기반 경고/요약 생성
+//    - Pass Rate Δ > 10% → 급변 경고
+//    - Flaky Score > 50% TC 존재 → Flaky 경고
+//    - remainingTC / velocity > daysRemaining → 기한 위험
+// 3. LLM 기반 인사이트 (Phase 3b): Supabase Edge Function으로
+//    집계 데이터를 LLM에 전달, 자연어 요약 생성
+//    → 티어 게이팅: Professional+ 전용</div>
+      </div>
+    </div>
+    <!-- Widget H: 실행 현황 -->
+    <div class="widget-card">
+      <div class="widget-header">
+        <div><span class="widget-name">H. 실행 현황 요약</span> &nbsp;<span class="badge badge-danger">P0 · Phase 1</span></div>
+        <span class="tier-label tier-free">Free+</span>
+      </div>
+      <div class="widget-body">
+        <p><strong>목적:</strong> 현재 진행 중인 Run들의 상태를 요약. Overview 탭 "My Runs"의 전체 프로젝트 버전.</p>
+        <h4>시각화</h4>
+        <ul>
+          <li><strong>요약 바</strong> — 전체 Run 수 | Active | Completed | Paused | Under Review</li>
+          <li><strong>스택 진행률 바</strong> — 전체 TC 중 Passed(녹) / Failed(빨) / Blocked(주황) / Untested(회) 비율</li>
+          <li><strong>Run 카드 리스트</strong> — 각 Run별 미니 진행률, 담당자, 마일스톤, 남은 TC 수</li>
+        </ul>
+        <h4>데이터 소스</h4>
+        <div class="code-block">// 재사용: useActiveRuns 훅
+// test_runs WHERE project_id = ? AND status IN ('new','in_progress','paused','under_review')
+// + test_results 집계</div>
+      </div>
+    </div>
+
+    <h3>Analytics 탭 레이아웃 설계</h3>
+    <div class="arch-diagram">┌──────────────────────────────────────────────────────────────┐
+│  [기간 필터: 7d | 14d | 30d | All]  [마일스톤 필터: ▼]       │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─────────────── A. Pass Rate 트렌드 ─────────────────┐    │
+│  │  [KPI 카드 ×4]                                       │    │
+│  │  [라인차트 + 바 오버레이]                              │    │
+│  └──────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌──── E. 마일스톤 트래커 ────┐  ┌── H. 실행 현황 ─────┐    │
+│  │  번다운 차트                │  │  요약 바             │    │
+│  │  마일스톤 카드 그리드       │  │  스택 진행률         │    │
+│  └────────────────────────────┘  │  Run 카드 리스트     │    │
+│                                   └─────────────────────┘    │
+│  ┌──── B. 팀원별 성과 ────────────────────────────────┐     │
+│  │  리더보드 테이블 + 스택 바 차트              [Pro+] │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+│  ┌── D. 커버리지 히트맵 ──┐  ┌── F. TC 품질 분석 ────┐     │
+│  │  트리맵                 │  │  성장 차트 + 도넛     │     │
+│  └─────────────────────────┘  │  Top 10 실패 TC       │     │
+│                                └──────────────────────┘     │
+│  ┌── C. Flaky TC 탐지 ──────┐  ┌── G. AI 인사이트 ──┐     │
+│  │  Flaky Score 테이블 [Pro+]│  │  자연어 카드  [Pro+]│     │
+│  └───────────────────────────┘  └────────────────────┘     │
+└──────────────────────────────────────────────────────────────┘</div>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 4: Activity Feed 탭 설계 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--success);">4</div>
+    <div class="section-title">Activity Feed 탭: 상세 설계</div>
+  </div>
+  <div class="section-body">
+
+    <p>Activity Feed는 프로젝트의 모든 활동을 실시간으로 추적하는 "프로젝트의 맥박"입니다. 경쟁사 4개 모두 실시간 Activity Feed가 없으며, Supabase Realtime을 활용하면 즉시 차별화됩니다.</p>
+
+    <h3>4.1 트래킹 대상 활동 유형</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>카테고리</th><th>이벤트</th><th>표시 예시</th><th>데이터 소스</th><th>Phase</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td rowspan="3"><strong>테스트 실행</strong></td>
+          <td>결과 입력 (Pass/Fail/Block)</td>
+          <td>🟢 김민수가 TC-042 "로그인 테스트"를 <strong>Passed</strong>로 변경</td>
+          <td><code>test_results</code> INSERT/UPDATE</td>
+          <td><span class="badge badge-danger">P0</span></td>
+        </tr>
+        <tr>
+          <td>Run 시작/완료</td>
+          <td>🏃 이정현이 Run "Sprint 12 리그레션"을 시작함</td>
+          <td><code>test_runs</code> status 변경</td>
+          <td><span class="badge badge-danger">P0</span></td>
+        </tr>
+        <tr>
+          <td>Run 진행률 마일스톤</td>
+          <td>📊 Run "Sprint 12" 진행률 50% 달성</td>
+          <td><code>test_results</code> 집계 트리거</td>
+          <td><span class="badge badge-warning">P1</span></td>
+        </tr>
+        <tr>
+          <td rowspan="3"><strong>TC 관리</strong></td>
+          <td>TC 생성</td>
+          <td>📝 박지은이 TC "결제 취소 플로우" 생성</td>
+          <td><code>test_cases</code> INSERT</td>
+          <td><span class="badge badge-danger">P0</span></td>
+        </tr>
+        <tr>
+          <td>TC 수정</td>
+          <td>✏️ 김민수가 TC-015 Priority를 Medium → High로 변경</td>
+          <td><code>test_cases</code> UPDATE (변경 diff)</td>
+          <td><span class="badge badge-warning">P1</span></td>
+        </tr>
+        <tr>
+          <td>TC 댓글 추가</td>
+          <td>💬 이정현이 TC-042에 댓글 추가: "환경 이슈 확인 필요"</td>
+          <td><code>test_case_comments</code> INSERT</td>
+          <td><span class="badge badge-danger">P0</span></td>
+        </tr>
+        <tr>
+          <td rowspan="2"><strong>마일스톤</strong></td>
+          <td>마일스톤 생성/수정</td>
+          <td>🎯 박지은이 마일스톤 "v2.5 릴리즈" 생성 (기한: 4/15)</td>
+          <td><code>milestones</code> INSERT/UPDATE</td>
+          <td><span class="badge badge-danger">P0</span></td>
+        </tr>
+        <tr>
+          <td>마일스톤 상태 변경</td>
+          <td>✅ 마일스톤 "v2.4 핫픽스" 완료됨</td>
+          <td><code>milestones</code> status 변경</td>
+          <td><span class="badge badge-danger">P0</span></td>
+        </tr>
+        <tr>
+          <td rowspan="2"><strong>팀 활동</strong></td>
+          <td>멤버 초대/참여</td>
+          <td>👋 신입사원 최서연이 프로젝트에 참여함</td>
+          <td><code>project_members</code> INSERT</td>
+          <td><span class="badge badge-warning">P1</span></td>
+        </tr>
+        <tr>
+          <td>역할 변경</td>
+          <td>🔑 이정현의 역할이 Member → Admin으로 변경됨</td>
+          <td><code>project_members</code> role UPDATE</td>
+          <td><span class="badge badge-warning">P1</span></td>
+        </tr>
+        <tr>
+          <td rowspan="2"><strong>Jira 연동</strong></td>
+          <td>Jira 이슈 자동 생성</td>
+          <td>🐛 TC-042 실패 → Jira PROJ-456 자동 생성됨</td>
+          <td><code>create-jira-issue</code> 호출 로그</td>
+          <td><span class="badge badge-warning">P1</span></td>
+        </tr>
+        <tr>
+          <td>Jira 상태 동기화</td>
+          <td>🔄 PROJ-456 상태: Open → In Progress</td>
+          <td><code>jira-webhook-handler</code> 수신</td>
+          <td><span class="badge badge-primary">P2</span></td>
+        </tr>
+        <tr>
+          <td><strong>세션</strong></td>
+          <td>탐색적 테스트 세션 시작/종료</td>
+          <td>🔍 김민수가 탐색적 테스트 세션 시작 (45분)</td>
+          <td><code>sessions</code> INSERT/UPDATE</td>
+          <td><span class="badge badge-warning">P1</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <h3>4.2 Activity Feed UI 구성</h3>
+    <div class="arch-diagram">┌──────────────────────────────────────────────────────────────┐
+│  Activity Feed                                               │
+│                                                              │
+│  ┌─ 필터 바 ──────────────────────────────────────────────┐  │
+│  │ [전체▼] [팀원: 전체▼] [유형: 전체▼] [날짜: 최근 7일▼]  │  │
+│  │ [🔍 검색...]                                           │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌─ AI 일일 요약 (접이식 카드) ──────────────── [Pro+] ──┐  │
+│  │ 🤖 "오늘 팀이 87건 실행, Pass Rate 91.2%로 전일 대비  │  │
+│  │    +2.3%. 김민수 님이 가장 활발(32건). '결제 모듈'에서 │  │
+│  │    3건의 새 실패가 발견되어 확인이 필요합니다."         │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ── 오늘 ──────────────────────────────────────────────────  │
+│                                                              │
+│  ┌─ 피드 아이템 ──────────────────────────────────────────┐  │
+│  │ 🟢 김민수  ·  TC-042 "로그인 세션 만료"를 Passed       │  │
+│  │    Run: Sprint 12 리그레션  ·  2분 전                   │  │
+│  └────────────────────────────────────────────────────────┘  │
+│  ┌─ 피드 아이템 ──────────────────────────────────────────┐  │
+│  │ 🔴 이정현  ·  TC-015 "결제 취소" 실패                  │  │
+│  │    Run: Sprint 12 리그레션  ·  5분 전                   │  │
+│  │    💬 "타임아웃 에러 — 서버 응답 지연"                  │  │
+│  └────────────────────────────────────────────────────────┘  │
+│  ┌─ 그룹 이벤트 (동일 Run 활동 접기) ────────────────────┐  │
+│  │ 📊 박지은이 Run "회원가입 플로우"에서 12건 실행         │  │
+│  │    Passed: 10  ·  Failed: 1  ·  Blocked: 1  ·  15분 전 │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ── 어제 ──────────────────────────────────────────────────  │
+│  ...                                                         │
+│                                                              │
+│  [더 보기 ▼]                                                 │
+└──────────────────────────────────────────────────────────────┘</div>
+    <h3>4.3 필터링 &amp; 검색</h3>
+    <table class="change-table">
+      <thead>
+        <tr><th>필터</th><th>옵션</th><th>구현</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>팀원</strong></td><td>전체 / 개별 팀원 선택 (멀티셀렉트)</td><td><code>project_members</code> JOIN <code>profiles</code></td></tr>
+        <tr><td><strong>활동 유형</strong></td><td>전체 / 테스트 실행 / TC 관리 / 마일스톤 / 팀 / Jira</td><td>이벤트 카테고리 필터</td></tr>
+        <tr><td><strong>날짜</strong></td><td>오늘 / 최근 7일 / 최근 30일 / 커스텀 범위</td><td><code>created_at</code> 범위 쿼리</td></tr>
+        <tr><td><strong>검색</strong></td><td>TC 제목, Run 이름, 팀원 이름, 댓글 내용</td><td>클라이언트사이드 텍스트 검색 (P1)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.4 실시간 업데이트 (Supabase Realtime)</h3>
+    <div class="info-box">
+      <strong>Supabase Realtime 활용:</strong> Supabase의 Realtime 기능으로 DB 변경 사항을 WebSocket으로 즉시 수신할 수 있습니다. Activity Feed에 실시간 푸시를 적용하면, 팀원이 TC를 실행하는 순간 다른 팀원의 화면에 즉시 반영됩니다.
+    </div>
+    <div class="code-block">// Activity Feed 실시간 구독 예시
+import { supabase } from '../../lib/supabase';
+
+useEffect(() =&gt; {
+  const channel = supabase
+    .channel('project-activity')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'test_results',
+      filter: `project_id=eq.${projectId}`,
+    }, (payload) =&gt; {
+      // 새 결과가 추가되면 피드 상단에 즉시 표시
+      addFeedItem(formatTestResult(payload.new));
+    })
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'test_cases',
+      filter: `project_id=eq.${projectId}`,
+    }, (payload) =&gt; {
+      addFeedItem(formatTestCaseChange(payload));
+    })
+    .subscribe();
+
+  return () =&gt; { supabase.removeChannel(channel); };
+}, [projectId]);</div>
+    <h3>4.5 차별화 기능: AI 일일 요약 &amp; 중요 이벤트 하이라이트</h3>
+    <div class="ai-box">
+      <strong>🤖 AI Activity 요약 (Professional+ 전용)</strong><br>
+      매일 또는 요청 시, AI가 Activity Feed를 분석하여 3~5줄 자연어 요약을 생성합니다. 팀 리더가 모든 피드를 스크롤하지 않고도 하루의 핵심 활동을 파악할 수 있습니다.
+    </div>
+
+    <h4>중요 이벤트 자동 하이라이트 규칙</h4>
+    <table class="change-table">
+      <thead>
+        <tr><th>이벤트</th><th>하이라이트 조건</th><th>표시 방식</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Critical TC 실패</td><td>Priority=Critical인 TC가 Failed로 변경</td><td>🔴 빨간 왼쪽 보더 + 알림 배지</td></tr>
+        <tr><td>Run 완료 (Pass Rate 낮음)</td><td>Run 완료 시 Pass Rate &lt; 70%</td><td>🟠 주황 보더 + 경고 메시지</td></tr>
+        <tr><td>마일스톤 기한 임박</td><td>진행률 &lt; 80%이면서 남은 일수 &lt; 3일</td><td>⏰ 시간 아이콘 + 긴급 배지</td></tr>
+        <tr><td>대량 실패 연속 발생</td><td>같은 Run에서 5분 내 3건 이상 연속 실패</td><td>🔴 그룹 카드로 묶어 강조</td></tr>
+        <tr><td>팀원 장기 비활동</td><td>배정된 TC가 있는 팀원이 24시간 이상 활동 없음</td><td>💤 비활동 알림 (P2)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.6 DB 스키마 — activity_logs 테이블 (신규)</h3>
+    <div class="warning-box">
+      <strong>아키텍처 결정 필요:</strong> 현재 Activity 데이터는 여러 테이블에서 JOIN으로 조합합니다. 성능과 확장성을 위해 전용 <code>activity_logs</code> 테이블을 도입하는 것을 권장합니다.
+    </div>
+    <div class="code-block">-- 옵션 A: 전용 activity_logs 테이블 (추천)
+CREATE TABLE activity_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  actor_id UUID REFERENCES auth.users(id),
+  event_type TEXT NOT NULL,        -- 'test_result_created', 'tc_created', 'run_started', ...
+  event_category TEXT NOT NULL,    -- 'test_execution', 'tc_management', 'milestone', 'team', 'jira'
+  target_type TEXT,                -- 'test_result', 'test_case', 'test_run', 'milestone'
+  target_id UUID,                  -- 대상 레코드 ID
+  metadata JSONB DEFAULT '{}',     -- 이벤트별 추가 데이터 (TC명, 상태, Run명 등)
+  is_highlighted BOOLEAN DEFAULT false,  -- 중요 이벤트 플래그
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 인덱스
+CREATE INDEX idx_activity_logs_project ON activity_logs(project_id, created_at DESC);
+CREATE INDEX idx_activity_logs_actor ON activity_logs(actor_id, created_at DESC);
+CREATE INDEX idx_activity_logs_category ON activity_logs(event_category, created_at DESC);
+
+-- RLS
+ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view activity in their projects" ON activity_logs
+  FOR SELECT USING (
+    project_id IN (SELECT project_id FROM project_members WHERE user_id = auth.uid())
+  );</div>
+
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h4>옵션 A: 전용 테이블 ✅ (추천)</h4>
+        <ul>
+          <li>빠른 쿼리 (단일 테이블 scan)</li>
+          <li>Realtime 구독 용이 (1 테이블)</li>
+          <li>필터/검색 인덱스 최적화 가능</li>
+          <li>DB 트리거로 자동 기록</li>
+        </ul>
+        <p>단점: 데이터 중복, 마이그레이션 필요</p>
+      </div>
+      <div class="compare-card">
+        <h4>옵션 B: 기존 테이블 JOIN</h4>
+        <ul>
+          <li>추가 테이블 불필요</li>
+          <li>항상 최신 데이터</li>
+        </ul>
+        <p>단점: 복잡한 쿼리, 느린 성능, Realtime 여러 테이블 구독 필요, 스케일링 어려움</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 5: 티어 게이팅 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--warning);">5</div>
+    <div class="section-title">티어 게이팅 전략</div>
+  </div>
+  <div class="section-body">
+
+    <table class="change-table">
+      <thead>
+        <tr><th>기능</th><th>Free</th><th>Starter</th><th>Professional+</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>A. Pass Rate 트렌드 (기본 차트)</td><td>✅ 7일</td><td>✅ 30일</td><td>✅ 전체</td></tr>
+        <tr><td>E. 마일스톤 트래커</td><td>✅ 1개</td><td>✅ 5개</td><td>✅ 무제한</td></tr>
+        <tr><td>H. 실행 현황 요약</td><td>✅</td><td>✅</td><td>✅</td></tr>
+        <tr><td>B. 팀원별 성과 분석</td><td>🔒</td><td>🔒</td><td>✅</td></tr>
+        <tr><td>C. Flaky TC 탐지</td><td>🔒</td><td>✅ 상위 5개</td><td>✅ 전체</td></tr>
+        <tr><td>D. 커버리지 히트맵</td><td>✅ 기본</td><td>✅</td><td>✅ + 드릴다운</td></tr>
+        <tr><td>F. TC 품질 분석</td><td>✅ 기본</td><td>✅</td><td>✅</td></tr>
+        <tr><td>G. AI 인사이트 패널</td><td>🔒</td><td>🔒</td><td>✅</td></tr>
+        <tr><td>Activity Feed (기본)</td><td>✅ 최근 20건</td><td>✅ 최근 100건</td><td>✅ 무제한</td></tr>
+        <tr><td>Activity Feed (실시간)</td><td>🔒</td><td>✅</td><td>✅</td></tr>
+        <tr><td>Activity Feed (AI 요약)</td><td>🔒</td><td>🔒</td><td>✅</td></tr>
+        <tr><td>Activity Feed (검색)</td><td>🔒</td><td>✅</td><td>✅</td></tr>
+      </tbody>
+    </table>
+
+    <div class="info-box">
+      <strong>업셀 전략:</strong> Free 사용자에게 잠긴 위젯은 블러 처리된 미리보기와 "Professional로 업그레이드" CTA를 표시합니다. 특히 AI 인사이트와 팀 성과 분석은 Professional 전용으로, 가장 강력한 업셀 유인이 됩니다.
+    </div>
+
+  </div>
+</div>
+<!-- ============================================ -->
+<!-- SECTION 6: Phase별 구현 계획 -->
+<!-- ============================================ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number" style="background: var(--danger);">6</div>
+    <div class="section-title">Phase별 구현 계획</div>
+  </div>
+  <div class="section-body">
+
+    <h3>Phase 1: 핵심 Analytics + 기본 Activity Feed (2~3주)</h3>
+    <div class="solution-box"><strong>목표:</strong> "Coming Soon" 플레이스홀더를 실제 기능으로 교체. 기존 훅 재사용으로 빠른 구현.</div>
+    <table class="change-table">
+      <thead>
+        <tr><th>#</th><th>작업</th><th>위젯</th><th>예상 공수</th><th>담당</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1-1</td><td>Analytics 탭 레이아웃 + 기간/마일스톤 필터 공통 컴포넌트</td><td>공통</td><td>2일</td><td>Dev</td></tr>
+        <tr><td>1-2</td><td>Pass Rate 트렌드 위젯 (usePassRateReport 재사용)</td><td>A</td><td>2일</td><td>Dev</td></tr>
+        <tr><td>1-3</td><td>마일스톤 트래커 + 번다운 차트</td><td>E</td><td>3일</td><td>Dev</td></tr>
+        <tr><td>1-4</td><td>실행 현황 요약 위젯 (useActiveRuns 재사용)</td><td>H</td><td>1일</td><td>Dev</td></tr>
+        <tr><td>1-5</td><td>activity_logs 테이블 생성 + DB 트리거 (test_results, test_cases, milestones, test_runs)</td><td>Feed 기반</td><td>3일</td><td>Dev</td></tr>
+        <tr><td>1-6</td><td>Activity Feed 기본 UI (필터, 날짜 그룹핑, 페이지네이션)</td><td>Feed</td><td>3일</td><td>Dev</td></tr>
+        <tr><td>1-7</td><td>Desi 목업: Analytics 탭 전체 + Activity Feed 전체</td><td>디자인</td><td>3일</td><td>Desi</td></tr>
+      </tbody>
+    </table>
+    <h3>Phase 2: 심층 분석 위젯 + 실시간 피드 (2~3주)</h3>
+    <div class="info-box"><strong>목표:</strong> 경쟁사 대비 차별화 시작. 팀 성과, Flaky 탐지, 히트맵 + Realtime 피드.</div>
+    <table class="change-table">
+      <thead>
+        <tr><th>#</th><th>작업</th><th>위젯</th><th>예상 공수</th><th>담당</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>2-1</td><td>팀원별 성과 분석 위젯 (리더보드 + 스택 바 차트)</td><td>B</td><td>3일</td><td>Dev</td></tr>
+        <tr><td>2-2</td><td>Flaky TC 탐지 위젯 (Score 계산 + 테이블)</td><td>C</td><td>2일</td><td>Dev</td></tr>
+        <tr><td>2-3</td><td>폴더/모듈별 커버리지 히트맵 (트리맵 차트)</td><td>D</td><td>3일</td><td>Dev</td></tr>
+        <tr><td>2-4</td><td>TC 품질 &amp; 성장 분석 위젯 (useTestCasesOverview 확장)</td><td>F</td><td>2일</td><td>Dev</td></tr>
+        <tr><td>2-5</td><td>Supabase Realtime 구독 → Activity Feed 실시간 업데이트</td><td>Feed</td><td>2일</td><td>Dev</td></tr>
+        <tr><td>2-6</td><td>중요 이벤트 자동 하이라이트 (Critical 실패, 대량 실패, 기한 임박)</td><td>Feed</td><td>2일</td><td>Dev</td></tr>
+        <tr><td>2-7</td><td>Activity Feed 검색 + 팀원 멀티셀렉트 필터</td><td>Feed</td><td>1일</td><td>Dev</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Phase 3: AI 인사이트 + 고급 기능 (2주)</h3>
+    <div class="ai-box"><strong>목표:</strong> AI-Native 차별화 완성. 자연어 인사이트, 예측, 일일 요약.</div>
+    <table class="change-table">
+      <thead>
+        <tr><th>#</th><th>작업</th><th>위젯</th><th>예상 공수</th><th>담당</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>3-1</td><td>규칙 기반 인사이트 엔진 (임계값 경고, 패턴 탐지)</td><td>G (3a)</td><td>3일</td><td>Dev</td></tr>
+        <tr><td>3-2</td><td>LLM 기반 인사이트 Edge Function (집계 데이터 → 자연어 요약)</td><td>G (3b)</td><td>3일</td><td>Dev</td></tr>
+        <tr><td>3-3</td><td>AI 일일 Activity 요약 (Feed 상단 카드)</td><td>Feed AI</td><td>2일</td><td>Dev</td></tr>
+        <tr><td>3-4</td><td>티어 게이팅 UI (블러 미리보기 + 업그레이드 CTA)</td><td>공통</td><td>2일</td><td>Dev</td></tr>
+        <tr><td>3-5</td><td>마일스톤 번다운에 AI 완료 예측선 추가</td><td>E 확장</td><td>1일</td><td>Dev</td></tr>
+        <tr><td>3-6</td><td>Flaky TC에 AI 원인 분석 코멘트 추가</td><td>C 확장</td><td>2일</td><td>Dev</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
