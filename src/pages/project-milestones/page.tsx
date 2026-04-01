@@ -8,6 +8,7 @@ import { notifyProjectMembers } from '../../hooks/useNotifications';
 import { triggerWebhook } from '../../hooks/useWebhooks';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar, AvatarStack } from '../../components/Avatar';
+import { useToast, ToastContainer } from '../../components/Toast';
 
 interface Milestone {
   id: string;
@@ -86,6 +87,8 @@ export default function ProjectMilestones() {
   const [userProfile, setUserProfile] = useState<{ full_name: string; email: string; subscription_tier: number; avatar_emoji: string } | null>(null);
   const [milestoneRunAssignees, setMilestoneRunAssignees] = useState<Map<string, string[]>>(new Map());
   const [milestoneAssigneeProfiles, setMilestoneAssigneeProfiles] = useState<Map<string, { name: string | null; email: string; url: string | null }>>(new Map());
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const { toasts, showToast, dismiss } = useToast();
 
   useEffect(() => {
     if (id) {
@@ -371,7 +374,7 @@ export default function ProjectMilestones() {
         const selectedParent = milestones.find(m => m.id === parentMilestoneId) ||
           milestones.flatMap(m => m.subMilestones || []).find(m => m.id === parentMilestoneId);
         if (selectedParent && selectedParent.parent_milestone_id !== null) {
-          alert('Sub milestone 아래에는 추가 하위 milestone을 생성할 수 없습니다.');
+          showToast('Cannot create a sub milestone under another sub milestone (max 2 levels).', 'warning');
           return;
         }
       }
