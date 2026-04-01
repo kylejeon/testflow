@@ -242,6 +242,23 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
   });
   const parentProgressPct = parentTotal > 0 ? Math.round((parentTested / parentTotal) * 100) : 0;
 
+  // Global TC stats — sub-milestone rollup 계산에 필요하므로 먼저 집계
+  const globalTcStatusMap = new Map<string, string>();
+  allRawResults.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .forEach(r => { globalTcStatusMap.set(r.tcId, r.status); });
+
+  let aggPassed = 0, aggFailed = 0, aggBlocked = 0, aggRetest = 0;
+  globalTcStatusMap.forEach(status => {
+    if (status === 'passed') aggPassed++;
+    else if (status === 'failed') aggFailed++;
+    else if (status === 'blocked') aggBlocked++;
+    else if (status === 'retest') aggRetest++;
+  });
+  const aggTotal = allTestCaseIds.size;
+  const aggTested = aggPassed + aggFailed + aggBlocked + aggRetest;
+  const aggUntested = aggTotal - Math.min(globalTcStatusMap.size, aggTotal);
+  const aggPassRate = aggTested > 0 ? Math.round((aggPassed / aggTested) * 100) : 0;
+
   const subMilestoneProgress = new Map<string, number>();
   let rollupStats: RollupStats | null = null;
 
@@ -358,23 +375,6 @@ async function loadMilestoneDetailData(projectId: string, milestoneId: string): 
       if (p.email) assigneeProfilesMap.set(p.email, { name: p.full_name, email: p.email || '', url: p.avatar_url || null });
     });
   }
-
-  // Global TC stats
-  const globalTcStatusMap = new Map<string, string>();
-  allRawResults.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .forEach(r => { globalTcStatusMap.set(r.tcId, r.status); });
-
-  let aggPassed = 0, aggFailed = 0, aggBlocked = 0, aggRetest = 0;
-  globalTcStatusMap.forEach(status => {
-    if (status === 'passed') aggPassed++;
-    else if (status === 'failed') aggFailed++;
-    else if (status === 'blocked') aggBlocked++;
-    else if (status === 'retest') aggRetest++;
-  });
-  const aggTotal = allTestCaseIds.size;
-  const aggTested = aggPassed + aggFailed + aggBlocked + aggRetest;
-  const aggUntested = aggTotal - Math.min(globalTcStatusMap.size, aggTotal);
-  const aggPassRate = aggTested > 0 ? Math.round((aggPassed / aggTested) * 100) : 0;
 
   const failedBlockedTcList: FailedBlockedTcItem[] = [];
   globalTcStatusMap.forEach((status, tcId) => {
