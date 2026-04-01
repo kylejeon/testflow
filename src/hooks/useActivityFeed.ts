@@ -91,8 +91,15 @@ export function useActivityFeed(
       setFeedItems(filtered);
       setHasMore(hasMoreItems);
       setCursor(items[items.length - 1]?.created_at ?? null);
-    } catch (e) {
-      console.error('useActivityFeed:', e);
+    } catch (e: any) {
+      const msg = e?.message ?? String(e);
+      if (msg.includes('relation "activity_logs" does not exist') || msg.includes('42P01')) {
+        console.error('[useActivityFeed] activity_logs 테이블이 DB에 존재하지 않습니다. supabase/migrations/20260401_activity_logs.sql 마이그레이션을 Supabase Dashboard에서 실행해주세요.', e);
+      } else if (msg.includes('permission denied') || msg.includes('42501')) {
+        console.error('[useActivityFeed] RLS 권한 오류 — 로그인 상태를 확인해주세요.', e);
+      } else {
+        console.error('[useActivityFeed] Activity Feed 로드 실패:', msg, e);
+      }
       setFeedItems([]);
     } finally {
       setIsLoading(false);
