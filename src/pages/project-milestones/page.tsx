@@ -573,22 +573,6 @@ export default function ProjectMilestones() {
             <span className={`text-[0.625rem] font-semibold px-[0.4375rem] py-[0.125rem] rounded-full flex-shrink-0 ${info.badgeCls}`}>
               {info.label}
             </span>
-            {/* Sub assignee avatar */}
-            {(() => {
-              const subIds = milestoneRunAssignees.get(sub.id) || [];
-              if (subIds.length === 0) return null;
-              const p = milestoneAssigneeProfiles.get(subIds[0]);
-              return (
-                <Avatar
-                  size="xs"
-                  userId={subIds[0]}
-                  name={p?.name ?? undefined}
-                  email={p?.email ?? undefined}
-                  photoUrl={p?.url ?? undefined}
-                  className="flex-shrink-0"
-                />
-              );
-            })()}
             {/* Sub action button */}
             <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
               <button
@@ -963,6 +947,7 @@ export default function ProjectMilestones() {
                 updateData.end_date = formData.get('end_date');
               }
               handleUpdateMilestone(editingMilestone.id, updateData);
+              setEditingMilestone(null);
             }}>
               <div className="space-y-4">
                 <div>
