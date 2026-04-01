@@ -26,12 +26,26 @@ export function renderPage7(data: PdfData, pageNum: number, totalPages: number):
 </div>
 
 <div class="pdf-content">
-  <div style="background:rgb(248,250,252);border:1px solid rgb(226,232,240);border-radius:8px;padding:8px 16px;display:flex;justify-content:space-around;align-items:center;margin-bottom:14px;">
-    <span style="font-size:10px;color:rgb(100,116,139);">Total Members: <strong style="color:rgb(15,23,42);font-size:12px;">${members.length}</strong></span>
-    <span style="border-left:1px solid rgb(226,232,240);height:28px;"></span>
-    <span style="font-size:10px;color:rgb(100,116,139);">Active Today: <strong style="color:rgb(16,163,127);font-size:12px;">${activeToday}</strong></span>
-    <span style="border-left:1px solid rgb(226,232,240);height:28px;"></span>
-    <span style="font-size:10px;color:rgb(100,116,139);">Avg Execution/Member: <strong style="color:rgb(15,23,42);font-size:12px;">${avgExec}</strong></span>
+  <div style="background:rgb(248,250,252);border:1px solid rgb(226,232,240);border-radius:8px;padding:8px 16px;margin-bottom:14px;">
+    <table style="width:100%;table-layout:fixed;border-collapse:collapse;">
+      <tr>
+        <td style="text-align:center;vertical-align:middle;padding:4px;">
+          <span style="font-size:10px;color:rgb(100,116,139);">Total Members: <strong style="color:rgb(15,23,42);font-size:12px;">${members.length}</strong></span>
+        </td>
+        <td style="width:1px;vertical-align:middle;">
+          <span style="border-left:1px solid rgb(226,232,240);height:28px;display:inline-block;vertical-align:middle;"></span>
+        </td>
+        <td style="text-align:center;vertical-align:middle;padding:4px;">
+          <span style="font-size:10px;color:rgb(100,116,139);">Active Today: <strong style="color:rgb(16,163,127);font-size:12px;">${activeToday}</strong></span>
+        </td>
+        <td style="width:1px;vertical-align:middle;">
+          <span style="border-left:1px solid rgb(226,232,240);height:28px;display:inline-block;vertical-align:middle;"></span>
+        </td>
+        <td style="text-align:center;vertical-align:middle;padding:4px;">
+          <span style="font-size:10px;color:rgb(100,116,139);">Avg Execution/Member: <strong style="color:rgb(15,23,42);font-size:12px;">${avgExec}</strong></span>
+        </td>
+      </tr>
+    </table>
   </div>
 
   <div class="sec-title">Member Performance</div>
@@ -73,20 +87,28 @@ export function renderPage7(data: PdfData, pageNum: number, totalPages: number):
   <div class="sec-title">Contribution Distribution</div>
   <div style="margin-bottom:14px;">
     ${members.slice(0, 5).map((m, i) => `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-      <span style="width:70px;font-size:10px;color:rgb(15,23,42);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e(m.name || 'No assigned member')}</span>
-      <div style="flex:1;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
-        <div style="width:${m.contribution.toFixed(1)}%;height:100%;background:rgb(99,102,241);border-radius:3px;opacity:${barOpacities[i]};"></div>
+    <div style="display:table;width:100%;margin-bottom:6px;">
+      <div style="display:table-cell;vertical-align:middle;width:70px;">
+        <span style="font-size:10px;color:rgb(15,23,42);display:block;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e(m.name || 'No assigned member')}</span>
       </div>
-      <span style="width:40px;font-size:10px;font-weight:700;color:rgb(15,23,42);text-align:right;">${m.contribution.toFixed(1)}%</span>
+      <div style="display:table-cell;vertical-align:middle;padding-left:8px;">
+        <div style="height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
+          <div style="width:${m.contribution.toFixed(1)}%;height:100%;background:rgb(99,102,241);border-radius:3px;opacity:${barOpacities[i]};"></div>
+        </div>
+      </div>
+      <div style="display:table-cell;vertical-align:middle;width:40px;white-space:nowrap;text-align:right;padding-left:8px;font-size:10px;font-weight:700;color:rgb(15,23,42);">${m.contribution.toFixed(1)}%</div>
     </div>`).join('')}
     ${members.length > 5 ? `
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span style="width:70px;font-size:10px;color:rgb(100,116,139);text-align:right;">Others</span>
-      <div style="flex:1;height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
-        <div style="width:${members.slice(5).reduce((s, m) => s + m.contribution, 0).toFixed(1)}%;height:100%;background:rgb(203,213,225);border-radius:3px;"></div>
+    <div style="display:table;width:100%;">
+      <div style="display:table-cell;vertical-align:middle;width:70px;">
+        <span style="font-size:10px;color:rgb(100,116,139);display:block;text-align:right;">Others</span>
       </div>
-      <span style="width:40px;font-size:10px;font-weight:700;color:rgb(100,116,139);text-align:right;">${members.slice(5).reduce((s, m) => s + m.contribution, 0).toFixed(1)}%</span>
+      <div style="display:table-cell;vertical-align:middle;padding-left:8px;">
+        <div style="height:12px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
+          <div style="width:${members.slice(5).reduce((s, m) => s + m.contribution, 0).toFixed(1)}%;height:100%;background:rgb(203,213,225);border-radius:3px;"></div>
+        </div>
+      </div>
+      <div style="display:table-cell;vertical-align:middle;width:40px;white-space:nowrap;text-align:right;padding-left:8px;font-size:10px;font-weight:700;color:rgb(100,116,139);">${members.slice(5).reduce((s, m) => s + m.contribution, 0).toFixed(1)}%</div>
     </div>` : ''}
   </div>
 
@@ -114,8 +136,8 @@ export function renderPage7(data: PdfData, pageNum: number, totalPages: number):
 </div>
 
 <div class="pdf-footer">
-  <span>${e(data.projectName)}</span>
-  <span>Generated by Testably — ${today}</span>
-  <span>Page ${pageNum} of ${totalPages}</span>
+  <span style="position:absolute;left:80px;top:0;height:48px;line-height:48px;">${e(data.projectName)}</span>
+  <span style="position:absolute;left:0;right:0;top:0;height:48px;line-height:48px;text-align:center;">Generated by Testably — ${today}</span>
+  <span style="position:absolute;right:80px;top:0;height:48px;line-height:48px;">Page ${pageNum} of ${totalPages}</span>
 </div>`;
 }

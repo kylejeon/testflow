@@ -51,10 +51,10 @@ export function renderPage1(data: PdfData, pageNum: number, totalPages: number, 
   ];
 
   return `
-<div style="height:120px;background:linear-gradient(135deg,rgb(99,102,241) 0%,rgb(79,70,229) 50%,rgb(99,102,241) 100%);padding:0 60px;display:flex;flex-direction:column;justify-content:center;flex-shrink:0;">
-  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:18px;">
-    <span style="font-size:14px;font-weight:700;color:#fff;letter-spacing:.3px;">Testably</span>
-    <span style="font-size:10px;color:rgba(255,255,255,.8);">Report Generated: ${today}</span>
+<div style="height:120px;background:linear-gradient(135deg,rgb(99,102,241) 0%,rgb(79,70,229) 50%,rgb(99,102,241) 100%);padding:20px 60px 0;display:block;">
+  <div style="display:table;width:100%;margin-bottom:18px;">
+    <span style="display:table-cell;vertical-align:middle;font-size:14px;font-weight:700;color:#fff;letter-spacing:.3px;">Testably</span>
+    <span style="display:table-cell;vertical-align:middle;text-align:right;font-size:10px;color:rgba(255,255,255,.8);">Report Generated: ${today}</span>
   </div>
   <div style="font-size:24px;font-weight:700;color:#fff;margin-bottom:5px;">${e(data.projectName)}</div>
   <div style="font-size:13px;color:rgba(255,255,255,.85);">Quality Executive Report</div>
@@ -62,73 +62,99 @@ export function renderPage1(data: PdfData, pageNum: number, totalPages: number, 
 
 <div class="pdf-content" style="padding-top:16px;">
   <div class="sec-title" style="margin-top:0;">Release Readiness</div>
-  <div style="background:${releaseBg};border:2px solid ${releaseBorder};border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:18px;margin-bottom:12px;">
-    <!-- Fix 2: Flex centering for icon circle -->
-    <div style="width:44px;height:44px;border-radius:50%;background:${releaseColor};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;font-weight:700;color:#fff;line-height:1;">
-      ${releaseIcon}
-    </div>
-    <div>
-      <div style="font-size:15px;font-weight:700;color:${releaseColor};">${releaseLabel}</div>
-      <div style="font-size:12px;font-weight:700;color:rgb(15,23,42);margin-top:2px;">Score: ${data.releaseScore} / 100</div>
-      <div style="font-size:10px;color:rgb(100,116,139);margin-top:2px;">
-        ${data.releaseStatus === 'RELEASE_READY' ? 'Project meets quality gates for release' : data.releaseStatus === 'CONDITIONAL' ? 'Conditional release — some gates not met' : 'Project does not meet release criteria'}
+  <div style="background:${releaseBg};border:2px solid ${releaseBorder};border-radius:10px;padding:14px 18px;margin-bottom:12px;">
+    <div style="display:table;width:100%;">
+      <div style="display:table-cell;vertical-align:middle;width:62px;">
+        <div style="width:44px;height:44px;border-radius:50%;background:${releaseColor};font-size:22px;font-weight:700;color:#fff;text-align:center;line-height:44px;">${releaseIcon}</div>
+      </div>
+      <div style="display:table-cell;vertical-align:middle;padding-left:18px;">
+        <div style="font-size:15px;font-weight:700;color:${releaseColor};">${releaseLabel}</div>
+        <div style="font-size:12px;font-weight:700;color:rgb(15,23,42);margin-top:2px;">Score: ${data.releaseScore} / 100</div>
+        <div style="font-size:10px;color:rgb(100,116,139);margin-top:2px;">
+          ${data.releaseStatus === 'RELEASE_READY' ? 'Project meets quality gates for release' : data.releaseStatus === 'CONDITIONAL' ? 'Conditional release — some gates not met' : 'Project does not meet release criteria'}
+        </div>
       </div>
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
-    <div class="kpi-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 10px;">
-      <div class="kpi-label">Pass Rate (40%)</div>
-      <div style="font-size:13px;font-weight:700;color:${pctColor(data.passRate)};display:flex;align-items:center;justify-content:center;">${data.passRate.toFixed(1)}%</div>
-    </div>
-    <div class="kpi-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 10px;">
-      <div class="kpi-label">Critical Pass (25%)</div>
-      <div style="font-size:13px;font-weight:700;color:rgb(15,23,42);display:flex;align-items:center;justify-content:center;">${scoreBreak.critBugResolution.toFixed(0)}%</div>
-    </div>
-    <div class="kpi-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 10px;">
-      <div class="kpi-label">Coverage (20%)</div>
-      <div style="font-size:13px;font-weight:700;color:${pctColor(scoreBreak.coverageRate)};display:flex;align-items:center;justify-content:center;">${scoreBreak.coverageRate.toFixed(0)}%</div>
-    </div>
-    <div class="kpi-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 10px;">
-      <div class="kpi-label">Milestone (15%)</div>
-      <div style="font-size:13px;font-weight:700;color:${pctColor(scoreBreak.milestoneProgress)};display:flex;align-items:center;justify-content:center;">${scoreBreak.milestoneProgress.toFixed(0)}%</div>
-    </div>
-  </div>
+  <table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-bottom:14px;">
+    <tr>
+      <td style="width:25%;vertical-align:top;padding-right:4px;">
+        <div class="kpi-card" style="text-align:center;padding:8px 10px;">
+          <div class="kpi-label">Pass Rate (40%)</div>
+          <div style="font-size:13px;font-weight:700;color:${pctColor(data.passRate)};">${data.passRate.toFixed(1)}%</div>
+        </div>
+      </td>
+      <td style="width:25%;vertical-align:top;padding:0 2px;">
+        <div class="kpi-card" style="text-align:center;padding:8px 10px;">
+          <div class="kpi-label">Critical Pass (25%)</div>
+          <div style="font-size:13px;font-weight:700;color:rgb(15,23,42);">${scoreBreak.critBugResolution.toFixed(0)}%</div>
+        </div>
+      </td>
+      <td style="width:25%;vertical-align:top;padding:0 2px;">
+        <div class="kpi-card" style="text-align:center;padding:8px 10px;">
+          <div class="kpi-label">Coverage (20%)</div>
+          <div style="font-size:13px;font-weight:700;color:${pctColor(scoreBreak.coverageRate)};">${scoreBreak.coverageRate.toFixed(0)}%</div>
+        </div>
+      </td>
+      <td style="width:25%;vertical-align:top;padding-left:4px;">
+        <div class="kpi-card" style="text-align:center;padding:8px 10px;">
+          <div class="kpi-label">Milestone (15%)</div>
+          <div style="font-size:13px;font-weight:700;color:${pctColor(scoreBreak.milestoneProgress)};">${scoreBreak.milestoneProgress.toFixed(0)}%</div>
+        </div>
+      </td>
+    </tr>
+  </table>
 
   <div class="sec-title">Key Performance Indicators</div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
-    ${kpiItems.map(k => `
-    <div class="kpi-card">
-      <div class="kpi-label">${e(k.label)}</div>
-      <div class="kpi-val">${e(k.val)}${k.sub ? `<span style="font-size:11px;font-weight:400;color:rgb(100,116,139);"> ${e(k.sub)}</span>` : ''}</div>
-      ${deltaHtml(k.delta, k.positive)}
-    </div>`).join('')}
-  </div>
+  <table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-bottom:14px;">
+    <tr>
+      ${kpiItems.slice(0, 3).map((k, i) => `
+      <td style="width:33.33%;vertical-align:top;${i < 2 ? 'padding-right:5px;' : ''}${i > 0 ? 'padding-left:5px;' : ''}">
+        <div class="kpi-card">
+          <div class="kpi-label">${e(k.label)}</div>
+          <div class="kpi-val">${e(k.val)}${k.sub ? `<span style="font-size:11px;font-weight:400;color:rgb(100,116,139);"> ${e(k.sub)}</span>` : ''}</div>
+          ${deltaHtml(k.delta, k.positive)}
+        </div>
+      </td>`).join('')}
+    </tr>
+    <tr>
+      ${kpiItems.slice(3, 6).map((k, i) => `
+      <td style="width:33.33%;vertical-align:top;padding-top:5px;${i < 2 ? 'padding-right:5px;' : ''}${i > 0 ? 'padding-left:5px;' : ''}">
+        <div class="kpi-card">
+          <div class="kpi-label">${e(k.label)}</div>
+          <div class="kpi-val">${e(k.val)}${k.sub ? `<span style="font-size:11px;font-weight:400;color:rgb(100,116,139);"> ${e(k.sub)}</span>` : ''}</div>
+          ${deltaHtml(k.delta, k.positive)}
+        </div>
+      </td>`).join('')}
+    </tr>
+  </table>
 
   ${data.risks.length > 0 ? `
   <div class="sec-title">Risk Highlights</div>
   <div style="margin-bottom:14px;">
     ${data.risks.slice(0, 3).map(r => `
-    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgb(241,245,249);">
-      <span style="width:10px;height:10px;border-radius:50%;background:${riskColorMap[r.severity] || 'rgb(234,179,8)'};flex-shrink:0;display:inline-block;"></span>
-      <span style="font-size:10px;color:rgb(15,23,42);">${e(r.message)}</span>
+    <div style="display:table;width:100%;padding:5px 0;border-bottom:1px solid rgb(241,245,249);">
+      <span style="display:table-cell;vertical-align:middle;width:18px;">
+        <span style="width:10px;height:10px;border-radius:50%;background:${riskColorMap[r.severity] || 'rgb(234,179,8)'};display:inline-block;"></span>
+      </span>
+      <span style="display:table-cell;vertical-align:middle;font-size:10px;color:rgb(15,23,42);">${e(r.message)}</span>
     </div>`).join('')}
   </div>` : ''}
 
   <div class="sec-title">Table of Contents</div>
   <div style="background:rgb(248,250,252);border:1px solid rgb(226,232,240);border-radius:6px;padding:12px 16px;">
     ${tocPages.map(p => `
-    <div style="display:flex;align-items:center;padding:4px 0;border-bottom:1px dashed rgb(226,232,240);">
-      <span style="font-size:10px;color:rgb(15,23,42);">${e(p.label)}</span>
-      <span style="flex:1;border-bottom:1px dotted rgb(203,213,225);margin:0 8px;height:1px;"></span>
-      <span style="font-size:10px;font-weight:600;color:rgb(99,102,241);">${p.n}</span>
+    <div style="display:table;width:100%;padding:4px 0;border-bottom:1px dashed rgb(226,232,240);">
+      <span style="display:table-cell;vertical-align:middle;font-size:10px;color:rgb(15,23,42);">${e(p.label)}</span>
+      <span style="display:table-cell;vertical-align:middle;width:1%;white-space:nowrap;font-size:10px;font-weight:600;color:rgb(99,102,241);text-align:right;">${p.n}</span>
     </div>`).join('')}
   </div>
 </div>
 
 <div class="pdf-footer">
-  <span>${e(data.projectName)}</span>
-  <span>Generated by Testably — ${today}</span>
-  <span>Page ${pageNum} of ${totalPages}</span>
+  <span style="position:absolute;left:80px;top:0;height:48px;line-height:48px;">${e(data.projectName)}</span>
+  <span style="position:absolute;left:0;right:0;top:0;height:48px;line-height:48px;text-align:center;">Generated by Testably — ${today}</span>
+  <span style="position:absolute;right:80px;top:0;height:48px;line-height:48px;">Page ${pageNum} of ${totalPages}</span>
 </div>`;
 }
