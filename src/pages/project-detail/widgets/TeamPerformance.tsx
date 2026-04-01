@@ -90,12 +90,27 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
       const runIds = runs.map(r => r.id);
       let q = supabase
         .from('test_results')
-        .select('author, status, created_at')
+        .select('run_id, test_case_id, author, status, created_at')
         .in('run_id', runIds);
       if (ms > 0) q = q.gte('created_at', fromDate);
 
       const { data: results } = await q;
       if (!results?.length) { setMembers([]); setLoading(false); return; }
+
+      // Fallback: fetch run_testcase_assignees for results missing author
+      const missingAuthorKeys = new Set(
+        results.filter(r => !r.author).map(r => `${r.run_id}::${r.test_case_id}`)
+      );
+      const assigneeFallback = new Map<string, string>();
+      if (missingAuthorKeys.size > 0) {
+        const { data: assigneesData } = await supabase
+          .from('run_testcase_assignees')
+          .select('run_id, test_case_id, assignee')
+          .in('run_id', runIds);
+        (assigneesData ?? []).forEach(a => {
+          if (a.assignee) assigneeFallback.set(`${a.run_id}::${a.test_case_id}`, a.assignee);
+        });
+      }
 
       // Build 7-day date keys
       const dayKeys: string[] = [];
@@ -104,14 +119,14 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
         dayKeys.push(d.toISOString().slice(0, 10));
       }
 
-      // Aggregate by author
+      // Aggregate by author (fallback to assignee, then 'Unassigned')
       const byAuthor: Record<string, {
         passed: number; failed: number; blocked: number; total: number;
         daily: Record<string, number>; timestamps: number[];
       }> = {};
 
       results.forEach(r => {
-        const name = r.author || 'No assigned member';
+        const name = r.author || assigneeFallback.get(`${r.run_id}::${r.test_case_id}`) || 'Unassigned';
         if (!byAuthor[name]) byAuthor[name] = { passed: 0, failed: 0, blocked: 0, total: 0, daily: {}, timestamps: [] };
         if (r.status !== 'untested') {
           byAuthor[name].total++;

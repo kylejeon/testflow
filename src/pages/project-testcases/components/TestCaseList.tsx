@@ -35,6 +35,7 @@ interface TestCaseListProps {
   onRefresh: () => Promise<void>;
   projectId: string;
   projectName?: string;
+  projectPrefix?: string;
 }
 
 interface Folder {
@@ -164,7 +165,7 @@ const PRIORITY_DOT_COLORS: Record<string, string> = {
 };
 // ────────────────────────────────────────────────────────────────────────────
 
-export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId, projectName: propProjectName }: TestCaseListProps) {
+export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId, projectName: propProjectName, projectPrefix }: TestCaseListProps) {
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [showNewCaseModal, setShowNewCaseModal] = useState(false);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -875,6 +876,28 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
     return idA.localeCompare(idB);
   });
+
+  // Virtual ID map: for TCs without custom_id, assign a display ID using project prefix + sequential index
+  const virtualIdMap = (() => {
+    if (!projectPrefix) return new Map<string, string>();
+    const map = new Map<string, string>();
+    // Sort all TCs by created_at to get a stable sequential order
+    const sorted = [...testCases].sort((a, b) =>
+      new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime()
+    );
+    let seq = 0;
+    sorted.forEach(tc => {
+      if (!tc.custom_id) {
+        seq++;
+        map.set(tc.id, `${projectPrefix}-${String(seq).padStart(3, '0')}`);
+      } else {
+        // Track max existing number to avoid collision
+        const m = tc.custom_id.match(/-(\d+)$/);
+        if (m) seq = Math.max(seq, parseInt(m[1], 10));
+      }
+    });
+    return map;
+  })();
 
   // 전체 선택 여부 확인
   const isAllSelected = filteredTestCases.length > 0 && filteredTestCases.every(tc => selectedTestCaseIds.has(tc.id));
@@ -2232,8 +2255,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       </td>
                       {/* ID */}
                       <td className="px-4 py-[0.6875rem]" style={{ minWidth: '80px' }}>
-                        <span className="font-mono text-[0.8125rem] text-indigo-600 font-semibold cursor-pointer hover:underline whitespace-nowrap">
-                          {testCase.custom_id || '-'}
+                        <span className={`font-mono text-[0.8125rem] font-semibold cursor-pointer hover:underline whitespace-nowrap ${testCase.custom_id ? 'text-indigo-600' : 'text-gray-400'}`}>
+                          {testCase.custom_id || virtualIdMap.get(testCase.id) || '-'}
                         </span>
                       </td>
                       {/* Title */}
