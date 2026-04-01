@@ -107,12 +107,7 @@ export async function preparePdfData(
   const parentMilestones = milestones.filter((m: any) => !m.parent_milestone_id);
 
   const milestoneCards: MilestoneCard[] = parentMilestones.map((m: any) => {
-    const card = prepareMilestoneCard(m, allRunsRaw, rawTestResults);
-    // Roll-up 집계 milestone의 경우 집계 데이터로 덮어쓰기
-    if (m.isAggregated && m.rollupTotal > 0) {
-      card.progress = m.progress; // rollupProgress로 이미 업데이트됨
-    }
-    return card;
+    return prepareMilestoneCard(m, allRunsRaw, rawTestResults, milestones);
   });
   const activeMilestones = milestoneCards.filter(m => m.status !== 'Completed').length;
   const avgMilestoneProgress = milestoneCards.length > 0
@@ -192,7 +187,7 @@ export async function preparePdfData(
   let burndownTotalTCs = 0;
   let burndownMilestoneName = '';
   if (burndownMilestone) {
-    const bd = prepareBurndownData(burndownMilestone, allRunsRaw, rawTestResults);
+    const bd = prepareBurndownData(burndownMilestone, allRunsRaw, rawTestResults, milestones);
     burndownData = bd.points;
     burndownTotalTCs = bd.totalTCs;
     burndownMilestoneName = String(burndownMilestone.name || '');
@@ -426,7 +421,7 @@ function prepareFolderCoverage(testCases: any[], results: any[], allRunsRaw: any
     .sort((a, b) => b.untested - a.untested);
 }
 
-function prepareMilestoneCard(m: any, allRunsRaw: any[], rawTestResults: any[]): MilestoneCard {
+function prepareMilestoneCard(m: any, allRunsRaw: any[], rawTestResults: any[], allMilestones: any[] = []): MilestoneCard {
   const progress = m.progress ?? 0;
 
   const today = new Date();
@@ -435,17 +430,33 @@ function prepareMilestoneCard(m: any, allRunsRaw: any[], rawTestResults: any[]):
   const daysRemaining = dueDate
     ? Math.round((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : 999;
 
-  const mRuns = allRunsRaw.filter(r => r.milestone_id === m.id);
-  const totalTCs = mRuns.reduce((sum: number, r: any) => sum + (r.test_case_ids?.length || 0), 0);
-  const testedTCs = rawTestResults.filter(r => mRuns.some(run => run.id === r.run_id) && r.status !== 'untested').length;
-  const remainingTCs = Math.max(totalTCs - testedTCs, 0);
+  // Roll-up: include sub-milestone runs
+  const subIds = allMilestones.filter((s: any) => s.parent_milestone_id === m.id).map((s: any) => s.id);
+  const allMsIds = new Set([m.id, ...subIds]);
+  const mRuns = allRunsRaw.filter(r => allMsIds.has(r.milestone_id));
 
-  // Velocity: average TCs tested per day over last 7 days
-  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const recentResults = rawTestResults.filter(r =>
-    mRuns.some(run => run.id === r.run_id) && new Date(r.created_at) >= sevenDaysAgo
+  // Total unique TCs across all runs (deduplicated)
+  const allTCIds = new Set<string>();
+  mRuns.forEach((r: any) => (r.test_case_ids || []).forEach((id: string) => allTCIds.add(id)));
+  const totalTCs = allTCIds.size;
+
+  // Tested unique TCs (deduplicated by test_case_id — matches burndown logic)
+  const runIdSet = new Set(mRuns.map((r: any) => r.id));
+  const testedTCIds = new Set<string>(
+    rawTestResults
+      .filter((r: any) => runIdSet.has(r.run_id) && r.status && r.status !== 'untested')
+      .map((r: any) => r.test_case_id)
   );
-  const velocity = recentResults.length / 7;
+  const remainingTCs = Math.max(totalTCs - testedTCIds.size, 0);
+
+  // Velocity: unique TCs tested per day over last 7 days
+  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const recentUniqueTCs = new Set<string>(
+    rawTestResults
+      .filter((r: any) => runIdSet.has(r.run_id) && new Date(r.created_at) >= sevenDaysAgo && r.status && r.status !== 'untested')
+      .map((r: any) => r.test_case_id)
+  );
+  const velocity = recentUniqueTCs.size / 7;
 
   const estimatedDaysToComplete = velocity > 0 ? remainingTCs / velocity : 999;
   const estCompletionDate = new Date(today.getTime() + estimatedDaysToComplete * 24 * 60 * 60 * 1000);
@@ -601,9 +612,17 @@ function prepareBurndownData(
   milestone: any,
   allRunsRaw: any[],
   rawTestResults: any[],
+  allMilestones: any[] = [],
 ): { points: import('./pdfTypes').BurndownPoint[]; totalTCs: number } {
-  const mRuns = allRunsRaw.filter((r: any) => r.milestone_id === milestone.id);
-  const totalTCs = mRuns.reduce((sum: number, r: any) => sum + (r.test_case_ids?.length || 0), 0);
+  // Roll-up: include sub-milestone runs
+  const subIds = allMilestones.filter((s: any) => s.parent_milestone_id === milestone.id).map((s: any) => s.id);
+  const allMsIds = new Set([milestone.id, ...subIds]);
+  const mRuns = allRunsRaw.filter((r: any) => allMsIds.has(r.milestone_id));
+
+  // Total unique TCs across all runs
+  const allTCIds = new Set<string>();
+  mRuns.forEach((r: any) => (r.test_case_ids || []).forEach((id: string) => allTCIds.add(id)));
+  const totalTCs = allTCIds.size;
   if (totalTCs === 0) return { points: [], totalTCs: 0 };
 
   const startDate = milestone.start_date ? new Date(milestone.start_date)
