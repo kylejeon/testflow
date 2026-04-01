@@ -197,12 +197,12 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
             <table className="w-full text-[12px]">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 px-4 py-2 w-6">#</th>
-                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2">Member</th>
-                  <th className="text-center text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2">Executed</th>
-                  <th className="text-center text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2">Found Failures</th>
-                  <th className="text-center text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2">Avg Response</th>
-                  <th className="text-center text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2 pr-4">7-Day Activity</th>
+                  <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 px-4 py-2 w-6">#</th>
+                  <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2">Member</th>
+                  <th className="text-center text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2">Executed</th>
+                  <th className="text-center text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2">Found Failures</th>
+                  <th className="text-center text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2">Avg Response</th>
+                  <th className="text-center text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2 pr-4">7-Day Activity</th>
                 </tr>
               </thead>
               <tbody>
@@ -244,7 +244,7 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
                 return (
                   <div key={m.name} className="flex items-center gap-2">
                     <span className="w-[72px] text-[11px] text-gray-600 font-medium text-right truncate flex-shrink-0">{m.name}</span>
-                    <div className="flex-1 h-[10px] bg-gray-100 rounded-sm overflow-hidden">
+                    <div className="flex-1 h-[16px] bg-gray-100 rounded-sm overflow-hidden">
                       <div className="h-full flex" style={{ width: `${barW}%` }}>
                         <div style={{ width: `${passW}%`, backgroundColor: '#16A34A' }} />
                         <div style={{ width: `${failW}%`, backgroundColor: '#DC2626' }} />

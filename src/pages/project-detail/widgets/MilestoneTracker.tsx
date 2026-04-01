@@ -129,15 +129,17 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
       const runIds = runs.map(r => r.id);
       const totalTCs = [...new Set(runs.flatMap(r => (r.test_case_ids as string[]) ?? []))].length;
 
+      // Burndown counts only "passed" — remaining = TCs not yet passed
+      // This aligns with milestone progress (which reflects pass completion, not just execution)
       const { data: results } = await supabase
         .from('test_results')
         .select('test_case_id, created_at')
         .in('run_id', runIds)
         .gte('created_at', startDate.toISOString())
-        .neq('status', 'untested')
+        .eq('status', 'passed')
         .order('created_at', { ascending: true });
 
-      // Build daily executed map
+      // Build daily passed map (first pass per TC only)
       const seenTC = new Set<string>();
       const dailyExecuted: Record<string, number> = {};
       (results ?? []).forEach(r => {
@@ -215,7 +217,7 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
                     fill="none" strokeWidth={1.5} name="Ideal" />
                   <Area dataKey="actual" stroke="#6366F1" fill="#EEF2FF"
                     fillOpacity={0.4} strokeWidth={2.5} name="Remaining TCs"
-                    dot={{ r: 3, fill: '#6366F1' }} />
+                    dot={{ r: 3, fill: '#6366F1' }} name="Not Passed" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
