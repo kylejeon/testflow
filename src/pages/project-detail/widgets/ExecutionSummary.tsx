@@ -172,7 +172,7 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
           <i className="ri-play-circle-line text-emerald-500" />
           Run Status
         </div>
-        <div className="p-4 space-y-3 animate-pulse">
+        <div className="px-5 py-4 space-y-3 animate-pulse">
           <div className="h-10 bg-gray-50 rounded-lg" />
           <div className="h-4 bg-gray-50 rounded" />
           <div className="h-20 bg-gray-50 rounded-lg" />
@@ -242,9 +242,9 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
         {/* View all link */}
         <Link
           to={`/projects/${projectId}/runs`}
-          className="text-[12px] font-semibold text-indigo-500 hover:text-indigo-700 flex items-center gap-1"
+          className="text-[12px] font-semibold text-indigo-500 hover:text-indigo-700 text-center block py-2"
         >
-          View all runs <i className="ri-arrow-right-line" />
+          View all runs →
         </Link>
       </div>
     </div>

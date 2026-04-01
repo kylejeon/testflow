@@ -110,7 +110,7 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
-          <i className="ri-team-line text-indigo-500" />
+          <i className="ri-team-fill text-violet-500" />
           Team Performance
         </div>
         <div className="flex items-center gap-2">
