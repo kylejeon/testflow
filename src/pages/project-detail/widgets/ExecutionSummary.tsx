@@ -201,8 +201,8 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
             { label: 'Completed', value: data.completed, color: 'text-indigo-600',  bg: 'bg-indigo-50'  },
             { label: 'Paused',    value: data.paused,    color: 'text-amber-500',   bg: 'bg-amber-50'   },
           ].map(s => (
-            <div key={s.label} className={`${s.bg} rounded-lg p-3 text-center`}>
-              <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
+            <div key={s.label} className={`${s.bg} rounded-lg p-2.5 text-center`}>
+              <div className={`text-[16px] font-bold ${s.color}`}>{s.value}</div>
               <div className="text-[11px] text-gray-500 mt-0.5">{s.label}</div>
             </div>
           ))}
@@ -220,7 +220,7 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
             <div className="text-center text-sm text-gray-400 py-4">No runs yet</div>
           ) : (
             data.runs.map(run => (
-              <div key={run.id} className="flex items-center gap-2.5 py-1">
+              <div key={run.id} className="flex items-center gap-2.5 py-2 border-b border-gray-100 last:border-b-0">
                 <MiniDonut
                   passed={run.passed}
                   failed={run.failed}
@@ -228,7 +228,7 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
                   untested={run.untested}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-medium text-gray-800 truncate">{run.name}</div>
+                  <div className="text-[13px] font-medium text-gray-800 truncate">{run.name}</div>
                   <div className="text-[11px] text-gray-400">{run.statusLabel}</div>
                 </div>
                 <span className="text-[11px] text-gray-500 flex-shrink-0">
