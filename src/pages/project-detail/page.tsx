@@ -351,10 +351,14 @@ export default function ProjectDetail() {
           pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
           pdf.addFileToVFS('NotoSansKR-Bold.ttf', NotoSansKRBold);
           pdf.addFont('NotoSansKR-Bold.ttf', 'NotoSansKR', 'bold');
+          // ★ 폰트 검증 — splitTextToSize는 PubSub 미사용, 손상 폰트 시 throw
+          pdf.setFont('NotoSansKR', 'normal');
+          pdf.splitTextToSize('font-verify', 50);
           pdfFont = 'NotoSansKR';
         }
       } catch (fontErr) {
-        console.warn('PDF font load failed, falling back to helvetica:', fontErr);
+        console.warn('PDF font load/verify failed, falling back to helvetica:', fontErr);
+        pdfFont = 'helvetica';
       }
 
       const safeAllRuns = allRunsRaw || [];
