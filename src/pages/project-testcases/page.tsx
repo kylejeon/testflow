@@ -477,7 +477,6 @@ export default function ProjectTestCases() {
                 onRefresh={handleRefreshData}
                 projectId={id!}
                 projectName={project?.name || ''}
-                projectPrefix={project?.prefix || ''}
               />
             )}
           </div>

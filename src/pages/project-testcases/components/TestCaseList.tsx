@@ -35,7 +35,6 @@ interface TestCaseListProps {
   onRefresh: () => Promise<void>;
   projectId: string;
   projectName?: string;
-  projectPrefix?: string;
 }
 
 interface Folder {
@@ -165,7 +164,8 @@ const PRIORITY_DOT_COLORS: Record<string, string> = {
 };
 // ────────────────────────────────────────────────────────────────────────────
 
-export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId, projectName: propProjectName, projectPrefix }: TestCaseListProps) {
+export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId, projectName: propProjectName }: TestCaseListProps) {
+  const [projectPrefix, setProjectPrefix] = useState<string>('');
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [showNewCaseModal, setShowNewCaseModal] = useState(false);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -607,6 +607,18 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     };
 
     fetchFolders();
+  }, [projectId]);
+
+  // Fetch project prefix for virtual ID display
+  useEffect(() => {
+    supabase
+      .from('projects')
+      .select('prefix')
+      .eq('id', projectId)
+      .single()
+      .then(({ data }) => {
+        if (data?.prefix) setProjectPrefix(data.prefix);
+      });
   }, [projectId]);
 
   const handleAddFolder = async () => {

@@ -88,6 +88,17 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
       if (!runs?.length) { setMembers([]); setLoading(false); return; }
 
       const runIds = runs.map(r => r.id);
+
+      // Always fetch run_testcase_assignees first — this is the primary source for member names
+      const assigneeMap = new Map<string, string>();
+      const { data: assigneesData } = await supabase
+        .from('run_testcase_assignees')
+        .select('run_id, test_case_id, assignee')
+        .in('run_id', runIds);
+      (assigneesData ?? []).forEach(a => {
+        if (a.assignee) assigneeMap.set(`${a.run_id}::${a.test_case_id}`, a.assignee);
+      });
+
       let q = supabase
         .from('test_results')
         .select('run_id, test_case_id, author, status, created_at')
@@ -97,21 +108,6 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
       const { data: results } = await q;
       if (!results?.length) { setMembers([]); setLoading(false); return; }
 
-      // Fallback: fetch run_testcase_assignees for results missing author
-      const missingAuthorKeys = new Set(
-        results.filter(r => !r.author).map(r => `${r.run_id}::${r.test_case_id}`)
-      );
-      const assigneeFallback = new Map<string, string>();
-      if (missingAuthorKeys.size > 0) {
-        const { data: assigneesData } = await supabase
-          .from('run_testcase_assignees')
-          .select('run_id, test_case_id, assignee')
-          .in('run_id', runIds);
-        (assigneesData ?? []).forEach(a => {
-          if (a.assignee) assigneeFallback.set(`${a.run_id}::${a.test_case_id}`, a.assignee);
-        });
-      }
-
       // Build 7-day date keys
       const dayKeys: string[] = [];
       for (let i = 6; i >= 0; i--) {
@@ -119,14 +115,16 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
         dayKeys.push(d.toISOString().slice(0, 10));
       }
 
-      // Aggregate by author (fallback to assignee, then 'Unassigned')
+      // Aggregate by member: assignee (run_testcase_assignees) → author → skip unidentified
       const byAuthor: Record<string, {
         passed: number; failed: number; blocked: number; total: number;
         daily: Record<string, number>; timestamps: number[];
       }> = {};
 
       results.forEach(r => {
-        const name = r.author || assigneeFallback.get(`${r.run_id}::${r.test_case_id}`) || 'Unassigned';
+        const key = `${r.run_id}::${r.test_case_id}`;
+        const name = assigneeMap.get(key) || r.author || null;
+        if (!name) return; // skip results with no identifiable member
         if (!byAuthor[name]) byAuthor[name] = { passed: 0, failed: 0, blocked: 0, total: 0, daily: {}, timestamps: [] };
         if (r.status !== 'untested') {
           byAuthor[name].total++;
