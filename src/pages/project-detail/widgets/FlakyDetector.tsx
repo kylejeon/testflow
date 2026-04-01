@@ -173,10 +173,10 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
             <table className="w-full text-[12px]">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 px-4 py-2">Test Case</th>
-                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2">Sequence (Last 10)</th>
-                  <th className="text-center text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2 pr-2">Score</th>
-                  <th className="text-right text-[10px] font-bold uppercase tracking-wider text-gray-400 py-2 pr-4">Last Run</th>
+                  <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 px-4 py-2">Test Case</th>
+                  <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2">Sequence (Last 10)</th>
+                  <th className="text-center text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2 pr-2">Score</th>
+                  <th className="text-right text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2 pr-4">Last Run</th>
                 </tr>
               </thead>
               <tbody>
