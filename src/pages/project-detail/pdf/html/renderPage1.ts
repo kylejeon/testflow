@@ -26,8 +26,9 @@ export function renderPage1(data: PdfData, pageNum: number, totalPages: number, 
     { label: 'Pass Rate', val: `${data.passRate.toFixed(1)}%`, delta: data.passRateDelta, positive: data.passRateDelta >= 0 },
     { label: 'Total Executed', val: data.totalExecuted.toLocaleString(), delta: data.executedDelta, positive: data.executedDelta >= 0 },
     { label: 'Active Runs', val: `${data.activeRuns}`, sub: `of ${data.totalRuns}` },
-    { label: 'Failed TCs', val: `${data.failedCount}`, delta: data.failedDelta, positive: data.failedDelta >= 0 },
-    { label: 'Blocked', val: `${data.blockedCount}`, delta: data.blockedDelta, positive: data.blockedDelta >= 0 },
+    // 감소가 긍정적인 지표: delta <= 0 일 때 green
+    { label: 'Failed TCs', val: `${data.failedCount}`, delta: data.failedDelta, positive: data.failedDelta <= 0 },
+    { label: 'Blocked', val: `${data.blockedCount}`, delta: data.blockedDelta, positive: data.blockedDelta <= 0 },
     { label: 'Test Cases', val: `${data.totalTCs}`, sub: 'total' },
   ];
 
@@ -50,8 +51,7 @@ export function renderPage1(data: PdfData, pageNum: number, totalPages: number, 
   ];
 
   return `
-<!-- Fix 4: Tall cover header with dark navy gradient, inline styles to guarantee rendering -->
-<div style="height:160px;background:linear-gradient(135deg,#1e3a5f 0%,#2d5a87 60%,#1e3a5f 100%);padding:0 80px;display:flex;flex-direction:column;justify-content:center;flex-shrink:0;">
+<div style="height:120px;background:linear-gradient(135deg,rgb(99,102,241) 0%,rgb(79,70,229) 50%,rgb(99,102,241) 100%);padding:0 60px;display:flex;flex-direction:column;justify-content:center;flex-shrink:0;">
   <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:18px;">
     <span style="font-size:14px;font-weight:700;color:#fff;letter-spacing:.3px;">Testably</span>
     <span style="font-size:10px;color:rgba(255,255,255,.8);">Report Generated: ${today}</span>
@@ -77,21 +77,21 @@ export function renderPage1(data: PdfData, pageNum: number, totalPages: number, 
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
-    <div class="kpi-card" style="text-align:center;padding:8px 10px;">
+    <div class="kpi-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 10px;">
       <div class="kpi-label">Pass Rate (40%)</div>
-      <div style="font-size:13px;font-weight:700;color:${pctColor(data.passRate)};">${data.passRate.toFixed(1)}%</div>
+      <div style="font-size:13px;font-weight:700;color:${pctColor(data.passRate)};display:flex;align-items:center;justify-content:center;">${data.passRate.toFixed(1)}%</div>
     </div>
-    <div class="kpi-card" style="text-align:center;padding:8px 10px;">
+    <div class="kpi-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 10px;">
       <div class="kpi-label">Critical Pass (25%)</div>
-      <div style="font-size:13px;font-weight:700;color:rgb(15,23,42);">${scoreBreak.critBugResolution.toFixed(0)}%</div>
+      <div style="font-size:13px;font-weight:700;color:rgb(15,23,42);display:flex;align-items:center;justify-content:center;">${scoreBreak.critBugResolution.toFixed(0)}%</div>
     </div>
-    <div class="kpi-card" style="text-align:center;padding:8px 10px;">
+    <div class="kpi-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 10px;">
       <div class="kpi-label">Coverage (20%)</div>
-      <div style="font-size:13px;font-weight:700;color:${pctColor(scoreBreak.coverageRate)};">${scoreBreak.coverageRate.toFixed(0)}%</div>
+      <div style="font-size:13px;font-weight:700;color:${pctColor(scoreBreak.coverageRate)};display:flex;align-items:center;justify-content:center;">${scoreBreak.coverageRate.toFixed(0)}%</div>
     </div>
-    <div class="kpi-card" style="text-align:center;padding:8px 10px;">
+    <div class="kpi-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 10px;">
       <div class="kpi-label">Milestone (15%)</div>
-      <div style="font-size:13px;font-weight:700;color:${pctColor(scoreBreak.milestoneProgress)};">${scoreBreak.milestoneProgress.toFixed(0)}%</div>
+      <div style="font-size:13px;font-weight:700;color:${pctColor(scoreBreak.milestoneProgress)};display:flex;align-items:center;justify-content:center;">${scoreBreak.milestoneProgress.toFixed(0)}%</div>
     </div>
   </div>
 
@@ -109,8 +109,8 @@ export function renderPage1(data: PdfData, pageNum: number, totalPages: number, 
   <div class="sec-title">Risk Highlights</div>
   <div style="margin-bottom:14px;">
     ${data.risks.slice(0, 3).map(r => `
-    <div style="display:flex;align-items:flex-start;gap:10px;padding:5px 0;border-bottom:1px solid rgb(241,245,249);">
-      <span style="width:10px;height:10px;border-radius:50%;background:${riskColorMap[r.severity] || 'rgb(234,179,8)'};flex-shrink:0;margin-top:3px;display:inline-block;"></span>
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgb(241,245,249);">
+      <span style="width:10px;height:10px;border-radius:50%;background:${riskColorMap[r.severity] || 'rgb(234,179,8)'};flex-shrink:0;display:inline-block;"></span>
       <span style="font-size:10px;color:rgb(15,23,42);">${e(r.message)}</span>
     </div>`).join('')}
   </div>` : ''}

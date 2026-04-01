@@ -18,12 +18,12 @@ export function renderPage2(data: PdfData, pageNum: number, totalPages: number):
     ? ((data.failedCount / data.totalExecuted) * 100).toFixed(1) + '%' : '0%';
 
   const kpis = [
-    { label: 'Overall Pass Rate', val: `${data.passRate.toFixed(1)}%`, sub: 'Target: 90%', color: pctColor(data.passRate) },
-    { label: 'Execution Completion', val: `${data.executionComplete.toFixed(1)}%`, sub: 'Target: 95%', color: pctColor(data.executionComplete) },
-    { label: 'Defect Discovery Rate', val: defectRate, sub: 'Industry: 5-10%' },
-    { label: 'Automation Rate', val: data.automationRate < 0 ? 'N/A' : `${data.automationRate.toFixed(1)}%`, sub: data.automationRate < 0 ? 'No data' : 'Automated TCs' },
-    { label: 'Avg Run Pass Rate', val: `${data.avgRunPassRate.toFixed(1)}%`, sub: 'Across all runs', color: pctColor(data.avgRunPassRate) },
-    { label: 'Open Blockers', val: `${data.openBlockers}`, sub: data.openBlockers > 0 ? 'Needs attention' : 'All clear', color: data.openBlockers > 0 ? 'rgb(239,68,68)' : 'rgb(16,163,127)' },
+    { label: 'Overall Pass Rate', val: `${data.passRate.toFixed(1)}%`, sub: `Target: 90% ${data.passRate >= 90 ? '✅' : '⚠️'}`, color: pctColor(data.passRate) },
+    { label: 'Execution Completion', val: `${data.executionComplete.toFixed(1)}%`, sub: `Target: 95% ${data.executionComplete >= 95 ? '✅' : '⚠️'}`, color: pctColor(data.executionComplete) },
+    { label: 'Defect Discovery Rate', val: defectRate, sub: 'Industry: ~5-10%' },
+    { label: 'Automation Rate', val: data.automationRate < 0 ? 'N/A' : `${data.automationRate.toFixed(1)}%`, sub: data.automationRate < 0 ? 'No data' : `${data.totalTCs > 0 ? Math.round(data.automationRate / 100 * data.totalTCs) : 0} / ${data.totalTCs} TCs` },
+    { label: 'Avg Run Pass Rate', val: `${data.avgRunPassRate.toFixed(1)}%`, sub: `across ${data.totalRuns} runs`, color: pctColor(data.avgRunPassRate) },
+    { label: 'Open Blockers', val: `${data.openBlockers}`, sub: data.openBlockers > 0 ? '🔴 Needs attention' : '✅ All clear', color: data.openBlockers > 0 ? 'rgb(239,68,68)' : 'rgb(16,163,127)' },
   ];
 
   const priorities = [
@@ -32,9 +32,6 @@ export function renderPage2(data: PdfData, pageNum: number, totalPages: number):
     { label: 'Medium', color: 'rgb(99,102,241)', count: data.priorityCounts.medium },
     { label: 'Low', color: 'rgb(148,163,184)', count: data.priorityCounts.low },
   ];
-  const maxCount = Math.max(...priorities.map(p => p.count), 1);
-  const BAR_MAX_W = 380;
-
   const infoItems = [
     { label: 'PROJECT', val: data.projectName },
     { label: 'TOTAL RUNS', val: data.totalRuns },
@@ -78,28 +75,27 @@ export function renderPage2(data: PdfData, pageNum: number, totalPages: number):
   <div class="sec-title">Priority Distribution</div>
   <div style="margin-bottom:14px;">
     ${priorities.map(p => {
-      const barW = (p.count / maxCount) * BAR_MAX_W;
       const pct = data.totalTCs > 0 ? ((p.count / data.totalTCs) * 100).toFixed(1) : '0.0';
       return `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-      <span style="width:60px;font-size:10px;font-weight:700;color:${p.color};">${p.label}</span>
-      <div style="flex:1;height:14px;background:rgb(241,245,249);border-radius:4px;overflow:hidden;max-width:${BAR_MAX_W}px;">
-        <div style="width:${barW.toFixed(1)}px;height:100%;background:${p.color};border-radius:4px;"></div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:9px;font-weight:700;color:${p.color};margin-bottom:3px;">${p.label}</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="flex:1;height:15px;background:rgb(241,245,249);border-radius:3px;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:${p.color};border-radius:3px;"></div>
+        </div>
+        <span style="font-size:9px;color:rgb(100,116,139);width:70px;text-align:right;">${p.count} (${pct}%)</span>
       </div>
-      <span style="width:80px;font-size:10px;color:rgb(100,116,139);">${p.count} (${pct}%)</span>
     </div>`;
     }).join('')}
   </div>
 
   <div class="sec-title">Project Information</div>
-  <div style="background:rgb(248,250,252);border:1px solid rgb(226,232,240);border-radius:8px;padding:14px 18px;">
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
-      ${infoItems.map(item => `
-      <div>
-        <div style="font-size:9px;color:rgb(100,116,139);margin-bottom:2px;">${item.label}</div>
-        <div style="font-size:11px;font-weight:700;color:rgb(15,23,42);">${e(String(item.val || '-'))}</div>
-      </div>`).join('')}
-    </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;font-size:9px;">
+    ${infoItems.map((item, i) => `
+    <div style="display:flex;padding:5px 0;${i < infoItems.length - 2 ? 'border-bottom:1px solid rgb(241,245,249);' : ''}">
+      <span style="color:rgb(100,116,139);width:90px;font-size:8px;flex-shrink:0;">${item.label}:</span>
+      <span style="color:rgb(15,23,42);font-size:9px;font-weight:500;">${e(String(item.val || '-'))}</span>
+    </div>`).join('')}
   </div>
 </div>
 
