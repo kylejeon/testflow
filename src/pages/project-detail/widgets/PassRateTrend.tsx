@@ -42,8 +42,8 @@ function KPICard({ label, value, delta, deltaPositive }: {
 }) {
   const hasData = delta !== 0;
   return (
-    <div className="bg-gray-50 rounded-lg p-3.5">
-      <div className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">{label}</div>
+    <div className="bg-gray-50 rounded-lg px-4 py-3.5">
+      <div className="text-[11px] font-medium text-gray-500 uppercase tracking-[.05em] mb-1.5">{label}</div>
       <div className="text-2xl font-bold text-gray-900 mb-1">{value}</div>
       {hasData ? (
         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
@@ -250,9 +250,9 @@ export default function PassRateTrend({ projectId, period }: { projectId: string
               tick={{ fontSize: 11, fill: '#94A3B8' }} width={36} />
             <Tooltip content={<CustomTooltip />} />
             <Bar yAxisId="right" dataKey="executionCount" fill="#E2E8F0"
-              opacity={0.6} radius={[2, 2, 0, 0]} />
+              opacity={0.5} radius={[2, 2, 0, 0]} />
             <Line yAxisId="left" dataKey="passRate" stroke="#6366F1"
-              strokeWidth={2} dot={{ r: 3, fill: '#6366F1' }}
+              strokeWidth={2.5} dot={{ r: 3.5, fill: '#6366F1' }}
               activeDot={{ r: 5 }} />
           </ComposedChart>
         </ResponsiveContainer>

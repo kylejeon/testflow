@@ -153,7 +153,7 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
           <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
-            <i className="ri-flag-2-line text-indigo-500" />
+            <i className="ri-flag-2-fill text-amber-500" />
             Milestone Tracker
           </div>
         </div>
@@ -169,17 +169,17 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
-          <i className="ri-flag-2-line text-indigo-500" />
+          <i className="ri-flag-2-fill text-amber-500" />
           Milestone Tracker
         </div>
         <span className="text-[11px] text-gray-400">{activeMilestones.length} active milestone{activeMilestones.length !== 1 ? 's' : ''}</span>
       </div>
 
-      <div className="p-4">
+      <div className="px-5 py-4">
         {/* Milestone cards - horizontal scroll */}
-        <div className="flex gap-3 overflow-x-auto pb-2 mb-4">
+        <div className="flex gap-3 overflow-x-auto pb-1 mb-4">
           {milestoneList.map(ms => (
-            <div key={ms.id} className="min-w-[190px] border border-gray-200 rounded-lg p-3.5 flex-shrink-0">
+            <div key={ms.id} className="min-w-[200px] border border-gray-200 rounded-lg px-4 py-3.5 flex-shrink-0">
               <div className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full mb-2 ${
                 ms.riskStatus === 'on_track' ? 'bg-emerald-50 text-emerald-600' :
                 ms.riskStatus === 'at_risk' ? 'bg-amber-50 text-amber-600' :
@@ -191,7 +191,7 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
                 }`} />
                 {ms.riskStatus === 'on_track' ? 'On Track' : ms.riskStatus === 'at_risk' ? 'At Risk' : 'Overdue'}
               </div>
-              <div className="text-[13px] font-semibold text-gray-900 mb-2.5 leading-tight line-clamp-2">
+              <div className="text-[14px] font-semibold text-gray-900 mb-2.5 leading-tight line-clamp-2">
                 {ms.name}
               </div>
               <div className="h-1 bg-gray-200 rounded-full overflow-hidden mb-2">
@@ -200,7 +200,7 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
                   ms.riskStatus === 'at_risk' ? 'bg-amber-500' : 'bg-red-500'
                 }`} style={{ width: `${ms.progress}%` }} />
               </div>
-              <div className={`text-[11px] font-medium ${
+              <div className={`text-[12px] font-medium ${
                 ms.riskStatus === 'overdue' ? 'text-red-500' : 'text-gray-500'
               }`}>
                 {ms.progress}%
@@ -223,7 +223,7 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
               <div className="h-[180px] bg-gray-50 rounded-lg animate-pulse" />
             ) : burndownData.length > 0 ? (
               <ResponsiveContainer width="100%" height={180}>
-                <AreaChart data={burndownData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <AreaChart data={burndownData} margin={{ top: 8, right: 12, bottom: 4, left: -10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94A3B8' }} />
                   <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} width={30} />

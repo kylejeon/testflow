@@ -1,44 +1,52 @@
 import { jsPDF } from 'jspdf';
-import { ExportPDFInput, PdfConfig } from './pdfTypes';
+import { ExportPDFInput } from './pdfTypes';
 import { preparePdfData } from './pdfDataPrep';
-import { getDefaultConfig } from './pdfHelpers';
-import { drawPage1Cover } from './drawPage1Cover';
-import { drawPage2Scorecard } from './drawPage2Scorecard';
-import { drawPage3Trends } from './drawPage3Trends';
-import { drawPage4Execution } from './drawPage4Execution';
-import { drawPage5Milestone } from './drawPage5Milestone';
-import { drawPage6Risk } from './drawPage6Risk';
-import { drawPage7Team } from './drawPage7Team';
-import { drawPage8Appendix } from './drawPage8Appendix';
+import { PDF_PAGE_STYLES } from './html/commonStyles';
+import { renderPage1 } from './html/renderPage1';
+import { renderPage2 } from './html/renderPage2';
+import { renderPage3 } from './html/renderPage3';
+import { renderPage4 } from './html/renderPage4';
+import { renderPage5 } from './html/renderPage5';
+import { renderPage6 } from './html/renderPage6';
+import { renderPage7 } from './html/renderPage7';
+import { renderPage8 } from './html/renderPage8';
+
+const TC_PER_PAGE = 30;
+
+async function capturePageHtml(innerHtml: string): Promise<string> {
+  const html2canvas = (await import('html2canvas')).default;
+
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;z-index:-9999;overflow:hidden;background:#fff;';
+  container.innerHTML = `<style>${PDF_PAGE_STYLES}
+  /* Ensure no external font requests block rendering */
+  @font-face { font-family: 'Inter'; src: local('Inter'), local('Arial'); }
+  </style><div class="a4-page">${innerHtml}</div>`;
+  document.body.appendChild(container);
+
+  // Wait for layout
+  await new Promise(r => setTimeout(r, 80));
+
+  const pageEl = container.querySelector('.a4-page') as HTMLElement;
+  const canvas = await html2canvas(pageEl, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    width: 794,
+    height: 1123,
+    windowWidth: 794,
+    windowHeight: 1123,
+    backgroundColor: '#ffffff',
+    logging: false,
+  });
+
+  document.body.removeChild(container);
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
 
 export async function generateExecutiveReport(input: ExportPDFInput): Promise<void> {
-  const { default: jsPDFLib } = await import('jspdf');
-  const pdf = new jsPDFLib({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const config: PdfConfig = getDefaultConfig();
-
-  // ── Font setup: try NotoSansKR, fallback to helvetica ──
-  try {
-    const { NotoSansKRRegular } = await import('../../../assets/fonts/NotoSansKR-Regular');
-    const { NotoSansKRBold } = await import('../../../assets/fonts/NotoSansKR-Bold');
-    if (
-      typeof NotoSansKRRegular === 'string' && NotoSansKRRegular.length > 10000 &&
-      typeof NotoSansKRBold === 'string' && NotoSansKRBold.length > 10000
-    ) {
-      pdf.addFileToVFS('NotoSansKR-Regular.ttf', NotoSansKRRegular);
-      pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
-      pdf.addFileToVFS('NotoSansKR-Bold.ttf', NotoSansKRBold);
-      pdf.addFont('NotoSansKR-Bold.ttf', 'NotoSansKR', 'bold');
-      // Verify font integrity
-      pdf.setFont('NotoSansKR', 'normal');
-      pdf.splitTextToSize('font-verify', 50);
-      config.font = 'NotoSansKR';
-    }
-  } catch (fontErr) {
-    console.warn('[PDF] Font load failed, using helvetica:', fontErr);
-    config.font = 'helvetica';
-  }
-
   const tierLevel = input.tierLevel || 1;
+
   const data = await preparePdfData(
     input.project,
     input.testCaseCount,
@@ -49,39 +57,60 @@ export async function generateExecutiveReport(input: ExportPDFInput): Promise<vo
     input.projectPassRateData,
   );
 
-  // Determine total pages (P6, P7 require Professional+; P8 Appendix spans multiple pages)
-  const TC_PER_PAGE = 30;
   const maxTCs = tierLevel <= 1 ? 20 : data.testCases.length;
-  const appendixPages = Math.max(1, Math.ceil(Math.min(maxTCs, data.testCases.length) / TC_PER_PAGE));
+  const tcCount = Math.min(maxTCs, data.testCases.length);
+  const appendixPages = Math.max(1, Math.ceil(tcCount / TC_PER_PAGE));
   const basePages = tierLevel < 3 ? 6 : 8;
-  const totalPages = basePages - 1 + appendixPages; // last page replaced by N appendix pages
+  const totalPages = basePages - 1 + appendixPages;
   data.totalPages = totalPages;
 
-  const pageDrawers = [
-    drawPage1Cover,
-    drawPage2Scorecard,
-    drawPage3Trends,
-    drawPage4Execution,
-    drawPage5Milestone,
-    drawPage6Risk,
-    drawPage7Team,
-    drawPage8Appendix,
-  ];
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
   let pageNum = 1;
-  for (let i = 0; i < pageDrawers.length; i++) {
-    // Skip P6 (index 5) and P7 (index 6) for non-Professional tiers
-    if (tierLevel < 3 && (i === 5 || i === 6)) continue;
 
-    if (pageNum > 1) pdf.addPage();
+  const addPage = async (html: string, isFirst: boolean) => {
+    const imgData = await capturePageHtml(html);
+    if (!isFirst) pdf.addPage();
+    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+  };
 
-    try {
-      await pageDrawers[i]({ pdf, config, data, tierLevel, pageNum, totalPages });
-    } catch (err) {
-      console.error(`[PDF] Error drawing page ${pageNum} (drawer index ${i}):`, err);
-      // Continue to next page rather than aborting
-    }
+  // P1: Cover
+  await addPage(renderPage1(data, pageNum, totalPages, tierLevel), true);
+  pageNum++;
 
+  // P2: Scorecard
+  await addPage(renderPage2(data, pageNum, totalPages), false);
+  pageNum++;
+
+  // P3: Trends
+  await addPage(renderPage3(data, pageNum, totalPages), false);
+  pageNum++;
+
+  // P4: Execution
+  await addPage(renderPage4(data, pageNum, totalPages), false);
+  pageNum++;
+
+  // P5: Milestone
+  await addPage(renderPage5(data, pageNum, totalPages, tierLevel), false);
+  pageNum++;
+
+  if (tierLevel >= 3) {
+    // P6: Risk
+    await addPage(renderPage6(data, pageNum, totalPages), false);
+    pageNum++;
+
+    // P7: Team
+    await addPage(renderPage7(data, pageNum, totalPages), false);
+    pageNum++;
+  }
+
+  // P8+: Appendix (one or more pages)
+  for (let i = 0; i < appendixPages; i++) {
+    const slicedData = { ...data, testCases: data.testCases.slice(0, tcCount) };
+    await addPage(
+      renderPage8(slicedData, pageNum, totalPages, i, TC_PER_PAGE, i === 0),
+      false,
+    );
     pageNum++;
   }
 

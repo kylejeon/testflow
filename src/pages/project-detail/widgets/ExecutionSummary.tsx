@@ -41,7 +41,7 @@ function StackedBar({ passed, failed, blocked, untested }: { passed: number; fai
         <div style={{ width: `${(blocked / total) * 100}%` }} className="bg-amber-500" />
         <div style={{ width: `${(untested / total) * 100}%` }} className="bg-gray-200" />
       </div>
-      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+      <div className="flex items-center gap-3 mt-2 flex-wrap">
         <span className="flex items-center gap-1 text-[11px] text-gray-500"><StatusDot color="#16A34A" /> Passed {passed}</span>
         <span className="flex items-center gap-1 text-[11px] text-gray-500"><StatusDot color="#DC2626" /> Failed {failed}</span>
         <span className="flex items-center gap-1 text-[11px] text-gray-500"><StatusDot color="#D97706" /> Blocked {blocked}</span>
@@ -193,7 +193,7 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
         <span className="text-[11px] text-gray-400">{data.totalRuns} runs</span>
       </div>
 
-      <div className="p-4 flex flex-col gap-4 flex-1">
+      <div className="px-5 py-4 flex flex-col gap-4 flex-1">
         {/* Run counts */}
         <div className="grid grid-cols-3 gap-2">
           {[
