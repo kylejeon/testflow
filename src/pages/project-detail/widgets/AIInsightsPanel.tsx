@@ -12,40 +12,49 @@ interface Insight {
 
 const INSIGHT_STYLES = {
   daily_summary: {
-    gradient: 'from-violet-500 to-violet-600',
-    tagBg: 'bg-white/20',
+    bg: 'bg-violet-50',
+    border: 'border-violet-500',
+    tagBg: 'bg-violet-100 text-violet-700 border border-violet-200',
     icon: 'ri-sparkling-2-fill',
     label: 'Daily Summary',
+    linkColor: 'text-violet-600 hover:text-violet-800',
+    timeColor: 'text-violet-400',
   },
   risk_alert: {
-    gradient: 'from-red-500 to-rose-600',
-    tagBg: 'bg-white/20',
+    bg: 'bg-red-50',
+    border: 'border-red-500',
+    tagBg: 'bg-red-100 text-red-700 border border-red-200',
     icon: 'ri-alert-fill',
     label: 'Risk Alert',
+    linkColor: 'text-red-600 hover:text-red-800',
+    timeColor: 'text-red-400',
   },
   completion_forecast: {
-    gradient: 'from-indigo-500 to-indigo-600',
-    tagBg: 'bg-white/20',
+    bg: 'bg-indigo-50',
+    border: 'border-indigo-500',
+    tagBg: 'bg-indigo-100 text-indigo-700 border border-indigo-200',
     icon: 'ri-line-chart-line',
     label: 'Completion Forecast',
+    linkColor: 'text-indigo-600 hover:text-indigo-800',
+    timeColor: 'text-indigo-400',
   },
 };
 
 function InsightCard({ insight }: { insight: Insight }) {
   const style = INSIGHT_STYLES[insight.type];
   return (
-    <div className={`rounded-xl bg-gradient-to-br ${style.gradient} p-3.5 text-white`}>
+    <div className={`rounded-xl ${style.bg} border-l-[3px] ${style.border} p-3.5`}>
       <div className="flex items-center justify-between mb-2">
         <span className={`flex items-center gap-1.5 text-[11px] font-semibold ${style.tagBg} px-2 py-0.5 rounded-full`}>
           <i className={`${style.icon} text-[11px]`} />
           {style.label}
         </span>
-        <span className="text-[11px] text-white/70">{insight.timestamp}</span>
+        <span className={`text-[11px] ${style.timeColor}`}>{insight.timestamp}</span>
       </div>
-      <p className="text-[12px] leading-relaxed text-white/90 mb-2">{insight.body}</p>
+      <p className="text-[12px] leading-relaxed text-gray-700 mb-2">{insight.body}</p>
       <a
         href={insight.actionHref}
-        className="text-[11px] font-semibold text-white underline underline-offset-2 hover:text-white/80 transition-colors"
+        className={`text-[11px] font-semibold ${style.linkColor} underline underline-offset-2 transition-colors`}
       >
         {insight.actionLabel} →
       </a>
@@ -170,7 +179,10 @@ export default function AIInsightsPanel({ projectId }: { projectId: string }) {
           <i className="ri-sparkling-2-fill text-violet-500" />
           AI Insights
         </div>
-        <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">Pro+</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-gray-400">Updated just now</span>
+          <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">Pro+</span>
+        </div>
       </div>
 
       <div className="p-4 space-y-3">

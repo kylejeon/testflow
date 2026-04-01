@@ -263,16 +263,21 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
           <div>
             <div className="text-[11px] font-semibold text-gray-500 mb-2 text-center tracking-wide">PRIORITY</div>
             <div className="flex flex-col items-center gap-1.5">
-              <ResponsiveContainer width={80} height={80}>
-                <PieChart>
-                  <Pie data={priorityPieData} dataKey="value" cx="50%" cy="50%" innerRadius={25} outerRadius={40} strokeWidth={0}>
-                    {priorityPieData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomPieTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="relative" style={{ width: 80, height: 80 }}>
+                <ResponsiveContainer width={80} height={80}>
+                  <PieChart>
+                    <Pie data={priorityPieData} dataKey="value" cx="50%" cy="50%" innerRadius={25} outerRadius={40} strokeWidth={0}>
+                      {priorityPieData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomPieTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-[11px] font-bold text-gray-800">{data.totalTCs}</span>
+                </div>
+              </div>
               <div className="space-y-0.5 w-full">
                 {priorityPieData.map(d => (
                   <div key={d.name} className="flex items-center gap-1 text-[10px]">

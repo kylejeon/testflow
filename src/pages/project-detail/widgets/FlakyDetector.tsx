@@ -8,6 +8,7 @@ interface FlakyTC {
   flakyScore: number;
   recentStatuses: string[];
   folder: string;
+  lastRun: string;
 }
 
 function calculateFlakyScore(statuses: string[]): number {
@@ -76,10 +77,14 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
 
       if (!results?.length) { setFlaky([]); setLoading(false); return; }
 
-      // Group by TC, keep last 10
+      // Group by TC, keep last 10; track most recent run timestamp
       const byTC: Record<string, string[]> = {};
+      const lastRunAt: Record<string, string> = {};
       results.forEach(r => {
-        if (!byTC[r.test_case_id]) byTC[r.test_case_id] = [];
+        if (!byTC[r.test_case_id]) {
+          byTC[r.test_case_id] = [];
+          lastRunAt[r.test_case_id] = r.created_at; // results ordered desc, first = newest
+        }
         if (byTC[r.test_case_id].length < 10) byTC[r.test_case_id].push(r.status);
       });
 
@@ -107,6 +112,10 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
 
       const flakyItems: FlakyTC[] = candidates.map(c => {
         const tc = tcMap.get(c.tcId);
+        const lastRunIso = lastRunAt[c.tcId] ?? '';
+        const lastRunLabel = lastRunIso
+          ? new Date(lastRunIso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : '—';
         return {
           id: c.tcId,
           title: tc?.title ?? 'Unknown TC',
@@ -114,6 +123,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
           flakyScore: c.score,
           recentStatuses: c.statuses,
           folder: tc?.folder ?? '',
+          lastRun: lastRunLabel,
         };
       });
 
@@ -131,6 +141,11 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
         <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
           <i className="ri-bug-fill text-red-500" />
           Flaky TC Detection
+          {!loading && flaky.length > 0 && (
+            <span className="text-[11px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full ml-1">
+              {flaky.length} Flaky
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {subscriptionTier < 3 && (
@@ -140,11 +155,11 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
         </div>
       </div>
 
-      <div className="py-3">
+      <div className="py-2">
         {loading ? (
-          <div className="space-y-3">
+          <div className="space-y-2 px-4">
             {[1, 2, 3].map(i => (
-              <div key={i} className="h-12 bg-gray-50 rounded-lg animate-pulse" />
+              <div key={i} className="h-10 bg-gray-50 rounded-lg animate-pulse" />
             ))}
           </div>
         ) : flaky.length === 0 ? (
@@ -154,37 +169,42 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
             <p className="text-[12px] text-gray-400">모든 TC가 안정적으로 실행되고 있습니다</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {/* Header */}
-            <div className="flex items-center gap-2 text-[11px] text-gray-400 px-1">
-              <span className="flex-1">Test Case</span>
-              <span className="w-16 text-center">최근 실행</span>
-              <span className="w-12 text-center">불안정도</span>
-            </div>
-            {flaky.map(tc => (
-              <div key={tc.id} className="flex items-center gap-3 px-3.5 py-2.5 border-b border-gray-100 hover:bg-gray-50/70 transition-colors">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    {tc.customId && (
-                      <span className="text-[11px] font-mono text-gray-400 flex-shrink-0">{tc.customId}</span>
-                    )}
-                    <span className="text-[12px] font-medium text-gray-800 truncate">{tc.title}</span>
-                  </div>
-                  {tc.folder && (
-                    <span className="text-[11px] text-gray-400">{tc.folder}</span>
-                  )}
-                </div>
-                <div className="w-16 flex-shrink-0">
-                  <SequenceDots statuses={tc.recentStatuses} />
-                </div>
-                <div className="w-12 flex-shrink-0 text-center">
-                  <FlakyScoreBadge score={tc.flakyScore} />
-                </div>
-              </div>
-            ))}
+          <>
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left text-[11px] font-semibold text-gray-400 px-4 py-2">Test Case</th>
+                  <th className="text-left text-[11px] font-semibold text-gray-400 py-2">Sequence (last 10)</th>
+                  <th className="text-center text-[11px] font-semibold text-gray-400 py-2 pr-2">Score</th>
+                  <th className="text-right text-[11px] font-semibold text-gray-400 py-2 pr-4">Last Run</th>
+                </tr>
+              </thead>
+              <tbody>
+                {flaky.map(tc => (
+                  <tr
+                    key={tc.id}
+                    className={`border-b border-gray-100 hover:bg-gray-50/70 transition-colors ${tc.flakyScore >= 50 ? 'border-l-2 border-l-red-500' : ''}`}
+                  >
+                    <td className="pl-3.5 py-2.5 pr-2">
+                      <div className="font-medium text-gray-800 truncate max-w-[120px]">{tc.title}</div>
+                      {tc.customId && (
+                        <div className="text-[10px] font-mono text-gray-400">{tc.customId}</div>
+                      )}
+                    </td>
+                    <td className="py-2.5 pr-2">
+                      <SequenceDots statuses={tc.recentStatuses} />
+                    </td>
+                    <td className="py-2.5 pr-2 text-center">
+                      <FlakyScoreBadge score={tc.flakyScore} />
+                    </td>
+                    <td className="py-2.5 pr-4 text-right text-[11px] text-gray-400 whitespace-nowrap">{tc.lastRun}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
             {/* Dot legend */}
-            <div className="flex items-center gap-3 pt-1 flex-wrap">
+            <div className="flex items-center gap-3 px-4 pt-2">
               {[
                 { label: 'Passed', className: 'bg-green-600' },
                 { label: 'Failed', className: 'border-[1.5px] border-red-600 bg-transparent' },
@@ -196,7 +216,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                 </span>
               ))}
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

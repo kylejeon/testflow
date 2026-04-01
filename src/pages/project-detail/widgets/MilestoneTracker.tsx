@@ -181,48 +181,24 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
       </div>
 
       <div className="px-5 py-4">
-        {/* Milestone cards - horizontal scroll */}
-        <div className="flex gap-3 overflow-x-auto pb-1 mb-4">
-          {milestoneList.map(ms => (
-            <div key={ms.id} className="min-w-[200px] border border-gray-200 rounded-lg px-4 py-3.5 flex-shrink-0">
-              <div className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full mb-2 ${
-                ms.riskStatus === 'on_track' ? 'bg-emerald-50 text-emerald-600' :
-                ms.riskStatus === 'at_risk' ? 'bg-amber-50 text-amber-600' :
-                'bg-red-50 text-red-600'
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${
-                  ms.riskStatus === 'on_track' ? 'bg-emerald-500' :
-                  ms.riskStatus === 'at_risk' ? 'bg-amber-500' : 'bg-red-500'
-                }`} />
-                {ms.riskStatus === 'on_track' ? 'On Track' : ms.riskStatus === 'at_risk' ? 'At Risk' : 'Overdue'}
-              </div>
-              <div className="text-[14px] font-semibold text-gray-900 mb-2.5 leading-tight line-clamp-2">
-                {ms.name}
-              </div>
-              <div className="h-1 bg-gray-200 rounded-full overflow-hidden mb-2">
-                <div className={`h-full rounded-full transition-all ${
-                  ms.riskStatus === 'on_track' ? 'bg-emerald-500' :
-                  ms.riskStatus === 'at_risk' ? 'bg-amber-500' : 'bg-red-500'
-                }`} style={{ width: `${ms.progress}%` }} />
-              </div>
-              <div className={`text-[12px] font-medium ${
-                ms.riskStatus === 'overdue' ? 'text-red-500' : 'text-gray-500'
-              }`}>
-                {ms.progress}%
-                {ms.endDate && (
-                  <span> · {ms.daysRemaining >= 0 ? `D-${ms.daysRemaining}` : `D+${Math.abs(ms.daysRemaining)}`}</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Burndown chart for primary milestone */}
+        {/* Burndown chart for primary milestone — shown first per mockup */}
         {primaryMilestone && (
-          <div>
-            <div className="text-[12px] font-semibold text-gray-600 mb-2 flex items-center gap-1.5">
-              <i className="ri-bar-chart-line text-gray-400" />
-              Burndown — {primaryMilestone.name}
+          <div className="mb-4">
+            <div className="text-[12px] font-semibold text-gray-600 mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <i className="ri-bar-chart-line text-gray-400" />
+                Burndown — {primaryMilestone.name}
+              </span>
+              <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-4 border-t border-dashed border-gray-400" />
+                  Ideal
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-4 border-t-2 border-indigo-500" />
+                  Actual
+                </span>
+              </div>
             </div>
             {burndownLoading ? (
               <div className="h-[180px] bg-gray-50 rounded-lg animate-pulse" />
@@ -234,12 +210,6 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
                   <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} width={30} />
                   <Tooltip
                     contentStyle={{ background: '#1E293B', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12 }}
-                  />
-                  <Legend
-                    verticalAlign="top"
-                    align="right"
-                    iconType="line"
-                    wrapperStyle={{ fontSize: '10px', color: '#94A3B8' }}
                   />
                   <Area dataKey="ideal" stroke="#94A3B8" strokeDasharray="6 3"
                     fill="none" strokeWidth={1.5} name="Ideal" />
@@ -255,6 +225,45 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
             )}
           </div>
         )}
+
+        {/* Milestone cards below the burndown */}
+        <div className="flex gap-3 overflow-x-auto pb-1">
+          {milestoneList.map(ms => (
+            <div key={ms.id} className="min-w-[180px] border border-gray-200 rounded-lg px-3.5 py-3 flex-shrink-0">
+              <div className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full mb-2 ${
+                ms.riskStatus === 'on_track' ? 'bg-emerald-50 text-emerald-600' :
+                ms.riskStatus === 'at_risk' ? 'bg-amber-50 text-amber-600' :
+                'bg-red-50 text-red-600'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  ms.riskStatus === 'on_track' ? 'bg-emerald-500' :
+                  ms.riskStatus === 'at_risk' ? 'bg-amber-500' : 'bg-red-500'
+                }`} />
+                {ms.riskStatus === 'on_track' ? 'On Track' : ms.riskStatus === 'at_risk' ? 'At Risk' : 'Overdue'}
+              </div>
+              <div className="text-[13px] font-semibold text-gray-900 mb-2 leading-tight line-clamp-2">
+                {ms.name}
+              </div>
+              <div className="h-1 bg-gray-200 rounded-full overflow-hidden mb-1.5">
+                <div className={`h-full rounded-full transition-all ${
+                  ms.riskStatus === 'on_track' ? 'bg-emerald-500' :
+                  ms.riskStatus === 'at_risk' ? 'bg-amber-500' : 'bg-red-500'
+                }`} style={{ width: `${ms.progress}%` }} />
+              </div>
+              <div className={`text-[11px] font-medium ${
+                ms.riskStatus === 'overdue' ? 'text-red-500' : 'text-gray-500'
+              }`}>
+                {ms.progress}%
+                {ms.endDate && (
+                  <span>
+                    {' · '}{ms.daysRemaining >= 0 ? `D-${ms.daysRemaining}` : `D+${Math.abs(ms.daysRemaining)}`}
+                    {' '}({ms.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -202,7 +202,7 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
             { label: 'Paused',    value: data.paused,    color: 'text-amber-500',   bg: 'bg-gray-50' },
           ].map(s => (
             <div key={s.label} className={`${s.bg} rounded-lg p-2.5 text-center`}>
-              <div className={`text-[16px] font-bold ${s.color}`}>{s.value}</div>
+              <div className={`text-[22px] font-bold ${s.color}`}>{s.value}</div>
               <div className="text-[11px] text-gray-500 mt-0.5">{s.label}</div>
             </div>
           ))}
