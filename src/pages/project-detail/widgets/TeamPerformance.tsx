@@ -119,7 +119,7 @@ export default function TeamPerformance({ projectId, period }: { projectId: stri
         </div>
       </div>
 
-      <div className="p-5">
+      <div className="px-5 py-4">
         {loading ? (
           <div className="h-[220px] bg-gray-50 rounded-lg animate-pulse" />
         ) : members.length === 0 ? (

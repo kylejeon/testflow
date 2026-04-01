@@ -12,17 +12,17 @@ const EVENT_CONFIG: Record<string, { icon: string; color: string; bgColor: strin
   test_result_passed:       { icon: 'ri-checkbox-circle-fill', color: '#16A34A', bgColor: '#ECFDF5' },
   test_result_failed:       { icon: 'ri-close-circle-fill',    color: '#DC2626', bgColor: '#FEF2F2' },
   test_result_blocked:      { icon: 'ri-forbid-fill',          color: '#D97706', bgColor: '#FFFBEB' },
-  test_result_retest:       { icon: 'ri-refresh-line',         color: '#7C3AED', bgColor: '#F5F3FF' },
+  test_result_retest:       { icon: 'ri-refresh-fill',         color: '#7C3AED', bgColor: '#F5F3FF' },
   test_result_untested:     { icon: 'ri-subtract-line',        color: '#64748B', bgColor: '#F8FAFC' },
   run_started:              { icon: 'ri-play-circle-fill',     color: '#6366F1', bgColor: '#EEF2FF' },
   run_completed:            { icon: 'ri-flag-fill',            color: '#10B981', bgColor: '#ECFDF5' },
-  tc_created:               { icon: 'ri-file-add-line',        color: '#6366F1', bgColor: '#EEF2FF' },
-  tc_updated:               { icon: 'ri-edit-2-line',          color: '#F59E0B', bgColor: '#FFFBEB' },
-  tc_comment_added:         { icon: 'ri-chat-1-line',          color: '#64748B', bgColor: '#F8FAFC' },
+  tc_created:               { icon: 'ri-file-add-fill',        color: '#6366F1', bgColor: '#EEF2FF' },
+  tc_updated:               { icon: 'ri-edit-fill',            color: '#F59E0B', bgColor: '#FFFBEB' },
+  tc_comment_added:         { icon: 'ri-chat-3-fill',          color: '#64748B', bgColor: '#F8FAFC' },
   milestone_created:        { icon: 'ri-flag-2-fill',          color: '#F59E0B', bgColor: '#FFFBEB' },
   milestone_status_changed: { icon: 'ri-checkbox-circle-fill', color: '#10B981', bgColor: '#ECFDF5' },
-  member_joined:            { icon: 'ri-user-add-line',        color: '#6366F1', bgColor: '#EEF2FF' },
-  member_role_changed:      { icon: 'ri-shield-user-line',     color: '#F59E0B', bgColor: '#FFFBEB' },
+  member_joined:            { icon: 'ri-user-add-fill',        color: '#6366F1', bgColor: '#EEF2FF' },
+  member_role_changed:      { icon: 'ri-shield-user-fill',     color: '#F59E0B', bgColor: '#FFFBEB' },
 };
 
 const DEFAULT_CONFIG = { icon: 'ri-information-line', color: '#64748B', bgColor: '#F8FAFC' };
@@ -100,7 +100,7 @@ function FeedItem({ item }: { item: ActivityFeedItem }) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] text-gray-700 leading-[1.5]">
+        <p className="text-[13px] text-[#334155] leading-[1.5]">
           <strong className="text-gray-900 font-semibold">{item.actor_name}</strong>
           {' '}{formatEventMessage(item)}
         </p>
@@ -165,7 +165,7 @@ function AIDailySummary({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   return (
-    <div className="mx-5 mt-3 mb-2 rounded-xl overflow-hidden border border-violet-200"
+    <div className="mx-5 mt-3 mb-3 rounded-xl overflow-hidden border border-violet-200"
       style={{ background: 'linear-gradient(135deg, #f5f3ff 0%, #eef2ff 100%)' }}>
       <button
         className="w-full flex items-center justify-between px-[22px] pt-[18px] pb-3 cursor-pointer"
@@ -182,11 +182,11 @@ function AIDailySummary({ projectId }: { projectId: string }) {
         <div className="px-[22px] pb-[18px]">
           {summary ? (
             <>
-              <p className="text-[14px] text-gray-700 leading-[1.65]">{summary.text}</p>
+              <p className="text-[14px] text-[#334155] leading-[1.65]">{summary.text}</p>
               {summary.points.length > 0 && (
                 <ul className="mt-2 space-y-1">
                   {summary.points.map((p, i) => (
-                    <li key={i} className="text-[13px] text-gray-700 leading-[1.5]">{p}</li>
+                    <li key={i} className="text-[13px] text-[#334155] leading-[1.5]">{p}</li>
                   ))}
                 </ul>
               )}
@@ -248,7 +248,7 @@ function FilterChips({
   return (
     <div className="flex items-center gap-1.5 px-5 pb-2.5 pt-0 flex-wrap">
       {chips.map((chip, i) => (
-        <span key={i} className="flex items-center gap-1 bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full text-xs font-medium">
+        <span key={i} className="flex items-center gap-1 bg-indigo-50 text-indigo-500 px-2.5 py-1 rounded-full text-xs font-medium">
           {chip.label}
           <button onClick={chip.onRemove} className="ml-0.5 hover:text-indigo-900 cursor-pointer leading-none">
             <i className="ri-close-line text-[12px]" />
@@ -448,7 +448,7 @@ export default function ActivityFeedTab({ projectId, subscriptionTier }: Activit
           {grouped.map(([dateLabel, items]) => (
             <div key={dateLabel}>
               {/* Date divider */}
-              <div className="flex items-center gap-3 px-5 py-2.5 bg-gray-50/80">
+              <div className="flex items-center gap-3 px-5 py-2.5">
                 <span className="text-[11px] font-semibold text-gray-500 whitespace-nowrap">{dateLabel}</span>
                 <div className="flex-1 border-t border-gray-200" />
                 <span className="text-[11px] text-gray-400">{items.length}건</span>

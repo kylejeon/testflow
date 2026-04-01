@@ -140,7 +140,7 @@ export default function CoverageHeatmap({ projectId }: { projectId: string }) {
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
-          <i className="ri-layout-grid-2-line text-indigo-500" />
+          <i className="ri-layout-grid-fill text-indigo-500" />
           Coverage Heatmap
         </div>
         <div className="flex items-center gap-3">
@@ -151,7 +151,7 @@ export default function CoverageHeatmap({ projectId }: { projectId: string }) {
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="px-5 py-4">
         {loading ? (
           <div className="h-[210px] bg-gray-50 rounded-lg animate-pulse" />
         ) : folderData.length === 0 ? (

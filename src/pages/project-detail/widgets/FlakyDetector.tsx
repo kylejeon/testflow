@@ -140,7 +140,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
         </div>
       </div>
 
-      <div className="px-4 py-3">
+      <div className="py-3">
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (

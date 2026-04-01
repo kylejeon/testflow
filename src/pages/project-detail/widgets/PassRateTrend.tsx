@@ -46,7 +46,7 @@ function KPICard({ label, value, delta, deltaPositive }: {
       <div className="text-[11px] font-medium text-gray-500 uppercase tracking-[.05em] mb-1.5">{label}</div>
       <div className="text-2xl font-bold text-gray-900 mb-1">{value}</div>
       {hasData ? (
-        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-[3px] ${
           deltaPositive ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'
         }`}>
           {deltaPositive ? '▲' : '▼'} {Math.abs(delta)}{label.includes('Rate') ? '%' : ''}
@@ -225,7 +225,7 @@ export default function PassRateTrend({ projectId, period }: { projectId: string
         </span>
       </div>
 
-      <div className="p-5">
+      <div className="px-5 py-4">
         {/* KPI 4개 */}
         <div className="grid grid-cols-4 gap-3 mb-4">
           <KPICard label="Overall Pass Rate" value={`${data.passRate}%`}

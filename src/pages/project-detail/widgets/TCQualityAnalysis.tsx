@@ -217,7 +217,7 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
     return (
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gray-100 text-[15px] font-semibold text-gray-900">
-          <i className="ri-test-tube-line text-emerald-500" />
+          <i className="ri-test-tube-fill text-emerald-500" />
           TC Quality & Growth
         </div>
         <div className="p-4 h-[300px] animate-pulse bg-gray-50 rounded-lg m-4" />
@@ -233,7 +233,7 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
-          <i className="ri-test-tube-line text-emerald-500" />
+          <i className="ri-test-tube-fill text-emerald-500" />
           TC Quality & Growth
         </div>
         <span className="text-[12px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
@@ -242,7 +242,7 @@ export default function TCQualityAnalysis({ projectId }: { projectId: string }) 
 
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="px-5 py-4 space-y-4">
         {/* TC Growth chart */}
         <div>
           <div className="text-[12px] font-semibold text-gray-600 mb-2">TC 성장 추이 (최근 12주)</div>

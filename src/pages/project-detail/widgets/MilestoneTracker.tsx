@@ -234,7 +234,7 @@ export default function MilestoneTracker({ projectId, milestones }: MilestoneTra
                     verticalAlign="top"
                     align="right"
                     iconType="line"
-                    wrapperStyle={{ fontSize: '11px', color: '#6B7280' }}
+                    wrapperStyle={{ fontSize: '10px', color: '#94A3B8' }}
                   />
                   <Area dataKey="ideal" stroke="#94A3B8" strokeDasharray="6 3"
                     fill="none" strokeWidth={1.5} name="Ideal" />

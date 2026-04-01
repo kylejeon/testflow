@@ -27,7 +27,7 @@ interface SummaryData {
 }
 
 function StatusDot({ color }: { color: string }) {
-  return <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />;
+  return <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />;
 }
 
 function StackedBar({ passed, failed, blocked, untested }: { passed: number; failed: number; blocked: number; untested: number }) {
@@ -169,7 +169,7 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full">
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gray-100 text-[15px] font-semibold text-gray-900">
-          <i className="ri-play-circle-line text-emerald-500" />
+          <i className="ri-play-circle-fill text-emerald-500" />
           Run Status
         </div>
         <div className="px-5 py-4 space-y-3 animate-pulse">
@@ -187,7 +187,7 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full flex flex-col">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
         <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
-          <i className="ri-play-circle-line text-emerald-500" />
+          <i className="ri-play-circle-fill text-emerald-500" />
           Run Status
         </div>
         <span className="text-[11px] text-gray-400">{data.totalRuns} runs</span>
@@ -197,9 +197,9 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
         {/* Run counts */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: 'Active',    value: data.active,    color: 'text-emerald-600', bg: 'bg-emerald-50' },
-            { label: 'Completed', value: data.completed, color: 'text-indigo-600',  bg: 'bg-indigo-50'  },
-            { label: 'Paused',    value: data.paused,    color: 'text-amber-500',   bg: 'bg-amber-50'   },
+            { label: 'Active',    value: data.active,    color: 'text-emerald-600', bg: 'bg-gray-50' },
+            { label: 'Completed', value: data.completed, color: 'text-indigo-600',  bg: 'bg-gray-50' },
+            { label: 'Paused',    value: data.paused,    color: 'text-amber-500',   bg: 'bg-gray-50' },
           ].map(s => (
             <div key={s.label} className={`${s.bg} rounded-lg p-2.5 text-center`}>
               <div className={`text-[16px] font-bold ${s.color}`}>{s.value}</div>
@@ -228,7 +228,7 @@ export default function ExecutionSummary({ projectId }: { projectId: string }) {
                   untested={run.untested}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-gray-800 truncate">{run.name}</div>
+                  <div className="text-[13px] font-medium text-gray-900 truncate">{run.name}</div>
                   <div className="text-[11px] text-gray-400">{run.statusLabel}</div>
                 </div>
                 <span className="text-[11px] text-gray-500 flex-shrink-0">

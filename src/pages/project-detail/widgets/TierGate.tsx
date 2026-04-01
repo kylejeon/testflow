@@ -21,7 +21,7 @@ export default function TierGate({ requiredTier, currentTier, featureName, child
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-2">
         <i className="ri-lock-fill text-[32px] text-violet-500" />
-        <p className="text-[14px] font-medium text-gray-700 text-center">
+        <p className="text-[14px] font-medium text-[#334155] text-center">
           {featureName}
         </p>
         <p className="text-[12px] text-gray-500 text-center">
