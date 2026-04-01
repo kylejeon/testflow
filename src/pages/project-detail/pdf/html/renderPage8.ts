@@ -81,8 +81,8 @@ export function renderPage8(
     <tbody>
       ${tcsSlice.map((tc, i) => {
         const rowNum = startRow + i;
-        // Fix 1: Use seqId (TC-001 format) instead of raw UUID
-        const displayId = tc.seqId || `TC-${String(rowNum).padStart(3, '0')}`;
+        // custom_id 우선, 없으면 project.prefix 기반 seqId 사용
+        const displayId = tc.custom_id || tc.seqId || `TC-${String(rowNum).padStart(3, '0')}`;
         const title = (tc.title || `TC-${String(tc.id).slice(0, 8)}`);
         const displayTitle = title.length > 34 ? title.slice(0, 31) + '...' : title;
         const folder = (tc.folder_name || tc.folder || '-');

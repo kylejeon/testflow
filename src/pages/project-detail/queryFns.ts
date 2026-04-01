@@ -44,7 +44,7 @@ export async function loadProjectDetailData(id: string): Promise<ProjectDetailDa
     { data: sessionLogsData },
   ] = await Promise.all([
     runIds.length
-      ? supabase.from('test_results').select('run_id, test_case_id, status, created_at').in('run_id', runIds).order('created_at', { ascending: false })
+      ? supabase.from('test_results').select('run_id, test_case_id, status, created_at, author').in('run_id', runIds).order('created_at', { ascending: false })
       : Promise.resolve({ data: [], error: null }),
     sessionIds.length
       ? supabase.from('session_logs').select('session_id, type, created_at').in('session_id', sessionIds).order('created_at', { ascending: false })

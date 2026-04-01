@@ -42,11 +42,17 @@ export async function preparePdfData(
     .forEach((r: any) => { if (!latestByTC.has(r.test_case_id)) latestByTC.set(r.test_case_id, r.status); });
   testCases.forEach((tc: any) => { tc.latestResult = latestByTC.get(tc.id) || 'untested'; });
 
-  // ── Build display IDs: sort by created_at ASC → TC-001, TC-002, … ──
+  // ── Build display IDs: sort by created_at ASC, use project.prefix (not hardcoded "TC") ──
+  // custom_id가 있는 TC는 seqId를 부여하지 않음 (렌더링에서 custom_id 우선 사용)
+  const tcPrefix = String(project.prefix || 'TC');
   const testCasesForSeq = [...testCases].sort((a: any, b: any) =>
     new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-  testCasesForSeq.forEach((tc: any, i: number) => {
-    tc.seqId = `TC-${String(i + 1).padStart(3, '0')}`;
+  let seqCounter = 0;
+  testCasesForSeq.forEach((tc: any) => {
+    if (!tc.custom_id) {
+      seqCounter++;
+      tc.seqId = `${tcPrefix}-${String(seqCounter).padStart(3, '0')}`;
+    }
   });
 
   // ── Core status counts ──
@@ -193,10 +199,21 @@ export async function preparePdfData(
     burndownMilestoneName = String(burndownMilestone.name || '');
   }
 
-  // ── Team members (from test_results author field, mapped via profiles) ──
-  const { data: profilesRaw } = await supabase.from('profiles').select('id, full_name');
+  // ── Team members: run_testcase_assignees(1순위) → profiles(author UUID, 2순위) → skip ──
+  const pdfRunIds = allRunsRaw.map((r: any) => r.id);
+  const [{ data: profilesRaw }, { data: assigneesData }] = await Promise.all([
+    supabase.from('profiles').select('id, full_name'),
+    pdfRunIds.length
+      ? supabase.from('run_testcase_assignees').select('run_id, test_case_id, assignee').in('run_id', pdfRunIds)
+      : Promise.resolve({ data: [] }),
+  ]);
   const profileMap = new Map<string, string>((profilesRaw || []).map((p: any) => [p.id, p.full_name]));
-  const teamMembers = prepareTeamMembers(rawTestResults, profileMap);
+  // assigneeMap: "run_id::test_case_id" → assignee 이름 (직접 문자열, UUID 아님)
+  const assigneeMap = new Map<string, string>();
+  (assigneesData || []).forEach((a: any) => {
+    if (a.assignee) assigneeMap.set(`${a.run_id}::${a.test_case_id}`, a.assignee);
+  });
+  const teamMembers = prepareTeamMembers(rawTestResults, profileMap, assigneeMap);
 
   // ── Risk highlights ──
   const risks = prepareRiskHighlights(criticalFailures, milestoneCards, coverageGaps, passRate, weekComparison);
@@ -569,15 +586,21 @@ function prepareFlakyTCs(results: any[], testCasesMap: Map<string, any>): FlakyT
     .slice(0, 5);
 }
 
-function prepareTeamMembers(results: any[], profileMap: Map<string, string> = new Map()): TeamMember[] {
+function prepareTeamMembers(
+  results: any[],
+  profileMap: Map<string, string> = new Map(),
+  assigneeMap: Map<string, string> = new Map(),
+): TeamMember[] {
   const memberMap = new Map<string, { executed: number; passed: number; failed: number; blocked: number }>();
   results.forEach(r => {
-    const rawAuthor = r.author;
-    const author = (rawAuthor && profileMap.has(rawAuthor))
-      ? profileMap.get(rawAuthor)!
-      : 'No assigned member';
-    if (!memberMap.has(author)) memberMap.set(author, { executed: 0, passed: 0, failed: 0, blocked: 0 });
-    const m = memberMap.get(author)!;
+    const key = `${r.run_id}::${r.test_case_id}`;
+    // 우선순위: ① run_testcase_assignees.assignee → ② profiles(author UUID 조회) → ③ skip
+    const name =
+      assigneeMap.get(key) ||
+      (r.author && profileMap.has(r.author) ? profileMap.get(r.author)! : null);
+    if (!name) return; // 식별 불가 결과는 "No assigned member"로 묶지 않고 skip
+    if (!memberMap.has(name)) memberMap.set(name, { executed: 0, passed: 0, failed: 0, blocked: 0 });
+    const m = memberMap.get(name)!;
     m.executed++;
     if (r.status === 'passed') m.passed++;
     else if (r.status === 'failed') m.failed++;
