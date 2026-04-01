@@ -99,7 +99,7 @@ export default function AIInsightsPanel({ projectId }: { projectId: string }) {
         .from('milestones')
         .select('name, end_date, status')
         .eq('project_id', projectId)
-        .in('status', ['started', 'not_started'])
+        .in('status', ['upcoming', 'started', 'past_due'])
         .order('end_date', { ascending: true })
         .limit(1);
 
