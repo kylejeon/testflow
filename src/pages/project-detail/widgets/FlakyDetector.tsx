@@ -179,8 +179,10 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
         flaky_score: tc.flakyScore,
       }));
 
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error: fnError } = await supabase.functions.invoke('generate-testcases', {
         body: { action: 'analyze-flaky', project_id: projectId, flaky_tests: flakyTests },
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       });
 
       if (fnError) {

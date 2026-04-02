@@ -39,8 +39,10 @@ export default function AIRunSummaryPanel({ runId, runName, totalCount, onClose,
     setLoading(true);
     setError(null);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error: fnError } = await supabase.functions.invoke('generate-testcases', {
         body: { action: 'summarize-run', run_id: runId },
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       });
 
       if (fnError) {
