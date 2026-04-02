@@ -63,16 +63,29 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
     setError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error: fnError } = await supabase.functions.invoke('generate-testcases', {
-        body: { action: 'coverage-gap', project_id: projectId },
-        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      if (!session?.access_token) {
+        setError('Login required. Please sign in again.');
+        return;
+      }
+
+      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-testcases`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ action: 'coverage-gap', project_id: projectId }),
       });
 
-      if (fnError) {
-        const status = (fnError as any)?.context?.status;
-        if (status === 403) setError('Professional plan required for Coverage Gap Analysis');
-        else if (status === 429) setError('Monthly AI limit reached');
-        else setError('Analysis failed. Please try again.');
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 403) setError(data.error || 'Professional plan required for Coverage Gap Analysis');
+        else if (response.status === 422) setError(data.error || 'No test cases to analyze');
+        else if (response.status === 429) setError(data.error || 'Monthly AI limit reached. Please try again next month.');
+        else setError(data.error || 'Analysis failed. Please try again.');
         return;
       }
 
