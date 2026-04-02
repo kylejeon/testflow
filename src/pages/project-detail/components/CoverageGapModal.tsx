@@ -177,7 +177,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
             <div>
               <div style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>Coverage Gap Analysis</div>
               <div style={{ fontSize: '12px', color: '#64748B', marginTop: 1 }}>
-                {loading ? 'AI가 갭을 분석 중…' : result ? `${result.gaps.length}개 모듈에서 갭 발견` : ''}
+                {loading ? 'AI is analyzing gaps…' : result ? `Gaps found in ${result.gaps.length} module(s)` : ''}
               </div>
             </div>
           </div>
@@ -193,7 +193,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
           {loading && (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <div style={{ width: 32, height: 32, border: '3px solid #E2E8F0', borderTopColor: '#6366F1', borderRadius: '50%', animation: 'cgSpin 0.8s linear infinite', margin: '0 auto 14px' }} />
-              <p style={{ fontSize: '14px', color: '#64748B', margin: 0 }}>커버리지 갭 분석 중…</p>
+              <p style={{ fontSize: '14px', color: '#64748B', margin: 0 }}>Analyzing coverage gaps…</p>
               <p style={{ fontSize: '12px', color: '#94A3B8', marginTop: 4 }}>Usually takes 3-5 seconds</p>
               <style>{`@keyframes cgSpin { to { transform: rotate(360deg); } }`}</style>
             </div>
@@ -234,7 +234,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
                           <span style={{ fontSize: 11, color: '#64748B', background: 'rgba(255,255,255,0.7)', padding: '1px 8px', borderRadius: 4 }}>
                             {gap.module}
                           </span>
-                          <span style={{ fontSize: 11, color: '#64748B' }}>TC {gap.currentCount}개</span>
+                          <span style={{ fontSize: 11, color: '#64748B' }}>{gap.currentCount} TCs</span>
                         </div>
                         {gap.missingTypes.length > 0 && (
                           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -251,7 +251,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
                         onClick={() => toggleAll(gi, gap)}
                         style={{ fontSize: 11, color: '#6366F1', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                       >
-                        {allSelected ? '전체 해제' : '전체 선택'}
+                        {allSelected ? 'Deselect All' : 'Select All'}
                       </button>
                     </div>
 
@@ -296,14 +296,14 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
         {!loading && result && (
           <div style={{ padding: '16px 24px', borderTop: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: '#F8FAFC' }}>
             <span style={{ fontSize: 13, color: '#64748B' }}>
-              선택됨: <strong style={{ color: '#0F172A' }}>{selected.size}개</strong> / {totalSuggestions}개
+              Selected: <strong style={{ color: '#0F172A' }}>{selected.size}</strong> / {totalSuggestions}
             </span>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={onClose}
                 style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#334155' }}
               >
-                취소
+                Cancel
               </button>
               <button
                 onClick={() => {
@@ -321,7 +321,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
                 }}
               >
                 <i className="ri-sparkling-2-fill" />
-                선택한 TC 생성하기 ({selected.size}개) →
+                Generate Selected TCs ({selected.size}) →
               </button>
             </div>
           </div>
