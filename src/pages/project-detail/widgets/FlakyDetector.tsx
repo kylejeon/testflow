@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
+
+const CACHE_KEY_PREFIX = 'flaky_ai_cache_';
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 interface FlakyTC {
   id: string;
@@ -110,11 +113,39 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
   const [aiPatterns, setAiPatterns] = useState<FlakyPattern[]>([]);
   const [jiraCreating, setJiraCreating] = useState<string | null>(null);
   const [expandedJira, setExpandedJira] = useState<string | null>(null);
+  const [isCachedResult, setIsCachedResult] = useState(false);
 
   // Toast state
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
 
+  // Auto-scroll ref
+  const aiSectionRef = useRef<HTMLDivElement>(null);
+
   const limit = subscriptionTier >= 3 ? 20 : 5;
+
+  // Cache helpers
+  const getCacheKey = useCallback(() => `${CACHE_KEY_PREFIX}${projectId}`, [projectId]);
+
+  const readCache = useCallback((): FlakyPattern[] | null => {
+    try {
+      const raw = localStorage.getItem(getCacheKey());
+      if (!raw) return null;
+      const cached = JSON.parse(raw);
+      if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
+        localStorage.removeItem(getCacheKey());
+        return null;
+      }
+      return cached.patterns;
+    } catch {
+      return null;
+    }
+  }, [getCacheKey]);
+
+  const writeCache = useCallback((patterns: FlakyPattern[]) => {
+    try {
+      localStorage.setItem(getCacheKey(), JSON.stringify({ patterns, timestamp: Date.now() }));
+    } catch { /* ignore quota errors */ }
+  }, [getCacheKey]);
 
   useEffect(() => {
     load();
@@ -242,6 +273,8 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       }
 
       setAiPatterns(data.result.patterns);
+      setIsCachedResult(false);
+      writeCache(data.result.patterns);
     } catch {
       setAiError('Connection error. Please try again.');
     } finally {
@@ -253,7 +286,22 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
     if (!showDeepAnalysis) {
       setShowDeepAnalysis(true);
       if (aiPatterns.length === 0 && !aiLoading) {
-        runAIAnalysis();
+        // Check cache first
+        const cached = readCache();
+        if (cached && cached.length > 0) {
+          setAiPatterns(cached);
+          setIsCachedResult(true);
+          // Auto-scroll after cached data renders
+          setTimeout(() => {
+            aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }, 100);
+        } else {
+          runAIAnalysis().then(() => {
+            setTimeout(() => {
+              aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }, 100);
+          });
+        }
       }
     } else {
       setShowDeepAnalysis(false);
@@ -425,7 +473,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
 
               {/* ── AI Deep Analysis Accordion ── */}
               {showDeepAnalysis && (
-                <div style={{ borderTop: '2px solid #6366F1', marginTop: 8, animation: 'flakySlideDown 0.3s ease-out' }}>
+                <div ref={aiSectionRef} style={{ borderTop: '2px solid #6366F1', marginTop: 8, animation: 'flakySlideDown 0.3s ease-out' }}>
                   <style>{`@keyframes flakySlideDown { from { opacity:0; max-height:0; } to { opacity:1; max-height:2000px; } }`}</style>
 
                   {/* AI Section Header */}
@@ -440,7 +488,15 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       {!aiLoading && aiPatterns.length > 0 && (
                         <button
-                          onClick={runAIAnalysis}
+                          onClick={() => {
+                            localStorage.removeItem(getCacheKey());
+                            setIsCachedResult(false);
+                            runAIAnalysis().then(() => {
+                              setTimeout(() => {
+                                aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                              }, 100);
+                            });
+                          }}
                           style={{ fontSize: 11, color: '#6366F1', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
                         >
                           <i className="ri-refresh-line" /> Re-analyze
@@ -565,7 +621,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                                     display: 'inline-flex', alignItems: 'center', gap: 4,
                                   }}
                                 >
-                                  <i className="ri-jira-line" /> Create Jira for Pattern {letter}
+                                  <i className="ri-jira-line" /> Create Jira
                                 </button>
                               ) : (
                                 <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0', borderLeft: '3px solid #6366F1' }}>
@@ -584,6 +640,14 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                                       style={{ fontSize: 11, fontWeight: 600, color: '#64748B', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
                                     >
                                       Cancel
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setToast({ message: 'Edit Jira details in Jira after creation.', type: 'info' });
+                                      }}
+                                      style={{ fontSize: 11, fontWeight: 600, color: '#6366F1', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+                                    >
+                                      Edit
                                     </button>
                                     <button
                                       onClick={() => { createJiraForPattern(pattern); setExpandedJira(null); }}
@@ -610,7 +674,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <i className="ri-sparkling-2-fill" style={{ color: '#8B5CF6', fontSize: 12 }} />
                             <span style={{ fontSize: 11, color: '#94A3B8' }}>
-                              {aiPatterns.length} patterns · {totalFlakyTCs} flaky TCs · 1 AI credit used
+                              {aiPatterns.length} patterns · {totalFlakyTCs} flaky TCs · 1 AI credit used · Analysis cached for 24h
                             </span>
                           </div>
                           <button
