@@ -8,6 +8,7 @@ import CoverageHeatmap from './widgets/CoverageHeatmap';
 import TCQualityAnalysis from './widgets/TCQualityAnalysis';
 import AIInsightsPanel from './widgets/AIInsightsPanel';
 import TierGate from './widgets/TierGate';
+import ProjectStatsPanel from './widgets/ProjectStatsPanel';
 
 type PeriodFilter = '7d' | '14d' | '30d' | 'all';
 
@@ -62,6 +63,11 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
             </select>
           )}
         </div>
+
+        {/* Row 0: Comprehensive KPI Summary */}
+        <ProjectStatsPanel projectId={projectId} />
+
+        <div className="border-t border-gray-100 pt-5" />
 
         {/* Row 1: Pass Rate Trend (full width) */}
         <PassRateTrend projectId={projectId} period={period} />
