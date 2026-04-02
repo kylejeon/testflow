@@ -98,6 +98,7 @@ export default function ProjectDetail() {
         .eq('id', user.id)
         .maybeSingle();
       return {
+        id: user.id,
         email: data?.email || user.email || '',
         full_name: data?.full_name || '',
         subscription_tier: data?.subscription_tier || 1,
