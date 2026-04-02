@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { supabase } from '../../../lib/supabase';
 import ExportImportModal from './ExportImportModal';
+import CloneFromProjectModal from './CloneFromProjectModal';
 import { BulkActionBar } from '../../../components/BulkActionBar';
 import { StepEditor, type Step } from '../../../components/StepEditor';
 import { LifecycleBadge, type LifecycleStatus } from '../../../components/LifecycleBadge';
@@ -262,6 +263,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   const [showExportImportModal, setShowExportImportModal] = useState(false);
+  const [showCloneModal, setShowCloneModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [userTier, setUserTier] = useState<number>(1);
 
@@ -2171,6 +2173,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             <i className="ri-file-transfer-line text-base"></i>
             Export / Import
           </button>
+          <button
+            onClick={() => setShowCloneModal(true)}
+            className="px-[0.875rem] py-[0.4375rem] border border-violet-200 text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-all text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+          >
+            <i className="ri-file-copy-line text-base"></i>
+            다른 프로젝트에서 복제
+          </button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-hidden">
@@ -3290,6 +3299,15 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         </div>
       )}
 
+      {/* 다른 프로젝트에서 복제 모달 */}
+      {showCloneModal && (
+        <CloneFromProjectModal
+          targetProjectId={projectId}
+          onRefresh={onRefresh}
+          onClose={() => setShowCloneModal(false)}
+        />
+      )}
+
       {/* Export / Import 모달 */}
       {showExportImportModal && (
         <ExportImportModal
@@ -3298,6 +3316,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           projectName={propProjectName || ''}
           projectId={projectId}
           onImport={handleImportTestCases}
+          onRefresh={onRefresh}
           onClose={() => setShowExportImportModal(false)}
         />
       )}
