@@ -8,6 +8,7 @@ import { FocusMode, type FocusTestCase, type TestStatus } from '../../components
 import { StatusBadge } from '../../components/StatusBadge';
 import { DetailPanel } from '../../components/DetailPanel';
 import { Avatar } from '../../components/Avatar';
+import AIRunSummaryPanel from './components/AIRunSummaryPanel';
 
 interface TestCase {
   id: string;
@@ -163,6 +164,12 @@ export default function RunDetail() {
   const [runAssignees, setRunAssignees] = useState<Map<string, string>>(new Map());
   const [openAssigneeDropdown, setOpenAssigneeDropdown] = useState<string | null>(null);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showAISummary, setShowAISummary] = useState(false);
+  const [showUpgradeNudge, setShowUpgradeNudge] = useState(false);
+  const [showAINewBadge] = useState(() => {
+    const launchDate = new Date('2026-05-01');
+    return new Date() < new Date(launchDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  });
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   const selectTestCase = (tc: TestCaseWithRunStatus | null) => {
@@ -2083,6 +2090,59 @@ export default function RunDetail() {
                               {item.label}
                             </button>
                           ))}
+                          {/* Divider */}
+                          <div style={{ height: 1, background: '#E2E8F0', margin: '4px 0' }} />
+                          {/* AI Summary Menu Item */}
+                          {(userProfile?.subscription_tier ?? 1) >= 2 ? (
+                            <button
+                              role="menuitem"
+                              onClick={() => { setShowMoreMenu(false); setShowAISummary(true); setShowUpgradeNudge(false); }}
+                              className="group w-full flex items-center gap-2.5 px-3 py-2.5 text-[0.8125rem] font-medium transition-colors cursor-pointer hover:bg-[#F5F3FF]"
+                              style={{ color: '#4338CA', background: 'none', border: 'none', textAlign: 'left' }}
+                            >
+                              <i className="ri-sparkling-2-fill text-base flex-shrink-0" style={{ color: '#8B5CF6' }} />
+                              AI Summary
+                              {showAINewBadge && (
+                                <span
+                                  style={{
+                                    marginLeft: 'auto',
+                                    fontSize: '10px',
+                                    background: '#EDE9FE',
+                                    color: '#6D28D9',
+                                    padding: '1px 6px',
+                                    borderRadius: '4px',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  NEW
+                                </span>
+                              )}
+                            </button>
+                          ) : (
+                            <button
+                              role="menuitem"
+                              onClick={() => { setShowMoreMenu(false); setShowUpgradeNudge(true); setShowAISummary(false); }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[0.8125rem] font-medium cursor-pointer"
+                              style={{ color: '#94A3B8', background: 'none', border: 'none', textAlign: 'left', opacity: 0.6 }}
+                            >
+                              <i className="ri-lock-line text-base flex-shrink-0" style={{ color: '#94A3B8' }} />
+                              AI Summary
+                              <span
+                                style={{
+                                  marginLeft: 'auto',
+                                  fontSize: '10px',
+                                  background: '#F1F5F9',
+                                  color: '#94A3B8',
+                                  border: '1px solid #E2E8F0',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                STARTER
+                              </span>
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -2197,6 +2257,85 @@ export default function RunDetail() {
                   </div>
                 );
               })()}
+
+              {/* AI Run Summary Panel */}
+              {showAISummary && (
+                <AIRunSummaryPanel
+                  runId={runId!}
+                  runName={run?.name || ''}
+                  totalCount={testCases.length}
+                  onClose={() => setShowAISummary(false)}
+                  onToast={(msg, type) => setToast({ type, message: msg })}
+                />
+              )}
+
+              {/* Upgrade Nudge Panel (Free tier) */}
+              {showUpgradeNudge && (
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #1E1B4B, #312E81)',
+                    border: '1px solid #4338CA',
+                    borderRadius: '12px',
+                    padding: '24px',
+                    textAlign: 'center',
+                    marginBottom: '20px',
+                    position: 'relative',
+                  }}
+                >
+                  <button
+                    onClick={() => setShowUpgradeNudge(false)}
+                    style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#64748B',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                    }}
+                  >
+                    <i className="ri-close-line" />
+                  </button>
+                  <div style={{ fontSize: '24px', marginBottom: '10px' }}>✨</div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#C7D2FE', marginBottom: '6px' }}>
+                    AI Run Summary
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: '13px',
+                      color: '#94A3B8',
+                      marginBottom: '16px',
+                      lineHeight: 1.5,
+                      maxWidth: '360px',
+                      margin: '0 auto 16px',
+                    }}
+                  >
+                    Get instant failure pattern analysis, Go/No-Go recommendations, and one-click Jira issue creation.
+                  </p>
+                  <button
+                    onClick={() => navigate('/settings?tab=billing')}
+                    style={{
+                      background: '#6366F1',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '9px 18px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <i className="ri-vip-crown-fill" /> Upgrade to Starter — $49/mo
+                  </button>
+                  <div style={{ fontSize: '11px', color: '#475569', marginTop: '8px' }}>
+                    30 AI credits/month · All AI features
+                  </div>
+                </div>
+              )}
 
               <div className="bg-white rounded-[0.625rem] border border-gray-200 overflow-hidden">
                 <div className="flex items-center gap-[0.625rem] py-[0.875rem] px-[1.125rem] border-b border-gray-200">

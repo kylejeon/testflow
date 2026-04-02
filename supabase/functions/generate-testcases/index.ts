@@ -19,14 +19,15 @@ const SESSION_MIN_TIER = 3;  // Professional+
 const JIRA_MIN_TIER = 2;     // Starter+
 
 interface GenerateRequest {
-  project_id: string;
-  mode: 'text' | 'jira' | 'session';
+  project_id?: string;
+  mode?: 'text' | 'jira' | 'session';
   step?: 1 | 2;
-  action?: 'preview';       // jira preview: fetch & return issue data without AI generation
+  action?: 'preview' | 'summarize-run';
   input_text?: string;
   session_id?: string;
   jira_issue_keys?: string[];
   selected_titles?: string[];
+  run_id?: string;
 }
 
 interface JiraIssueData {
@@ -335,7 +336,243 @@ Deno.serve(async (req) => {
     }
 
     const body: GenerateRequest = await req.json();
-    const { project_id, mode, step, action, input_text, session_id, jira_issue_keys, selected_titles } = body;
+    const { project_id, mode, step, action, input_text, session_id, jira_issue_keys, selected_titles, run_id } = body;
+
+    // ── AI RUN SUMMARY (action: 'summarize-run') ──────────────
+    if (action === 'summarize-run') {
+      if (!run_id) {
+        return jsonResponse({ error: 'run_id is required for summarize-run' }, 400);
+      }
+
+      const tier = await getEffectiveTier(adminClient, user.id);
+      if (tier < 2) {
+        return jsonResponse({ error: 'Starter plan required', requiredTier: 2, upgradeUrl: '/settings/billing' }, 403);
+      }
+
+      // Monthly quota check (shared with TC generation)
+      const limit = PLAN_LIMITS[tier] ?? 5;
+      if (limit !== -1) {
+        const usage = await getMonthlyUsage(adminClient, user.id);
+        if (usage >= limit) {
+          return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
+        }
+      }
+
+      // Check cache: same run_id with prior summary
+      const { data: cached } = await adminClient
+        .from('ai_generation_logs')
+        .select('output_data, created_at')
+        .eq('mode', 'run-summary')
+        .eq('user_id', user.id)
+        .filter('input_data->>run_id', 'eq', run_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (cached?.output_data?.riskLevel) {
+        return jsonResponse({ success: true, summary: cached.output_data, cached: true });
+      }
+
+      // Fetch run metadata
+      const { data: runData, error: runError } = await adminClient
+        .from('test_runs')
+        .select('id, name, created_at, status, project_id')
+        .eq('id', run_id)
+        .maybeSingle();
+
+      if (runError || !runData) {
+        return jsonResponse({ error: 'Run not found' }, 404);
+      }
+
+      // Project access check via project_members or ownership
+      const { data: projectData } = await adminClient
+        .from('projects')
+        .select('id, owner_id')
+        .eq('id', runData.project_id)
+        .maybeSingle();
+
+      if (!projectData) {
+        return jsonResponse({ error: 'Project not found' }, 404);
+      }
+
+      if (projectData.owner_id !== user.id) {
+        const { data: memberCheck } = await adminClient
+          .from('project_members')
+          .select('id')
+          .eq('project_id', runData.project_id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (!memberCheck) {
+          return jsonResponse({ error: 'Access denied' }, 403);
+        }
+      }
+
+      // Fetch test results (status + test_case_id)
+      const { data: testResultsData } = await adminClient
+        .from('test_results')
+        .select('test_case_id, status, comment')
+        .eq('run_id', run_id);
+
+      const allResults = testResultsData || [];
+      if (allResults.length === 0) {
+        return jsonResponse({ error: 'No test results to analyze' }, 422);
+      }
+
+      // Fetch TC metadata for failed/blocked cases
+      const failedIds = allResults.filter((r: any) => r.status === 'failed').map((r: any) => r.test_case_id);
+      const blockedIds = allResults.filter((r: any) => r.status === 'blocked').map((r: any) => r.test_case_id);
+      const relevantIds = [...new Set([...failedIds, ...blockedIds])];
+
+      type TCMeta = { id: string; title: string; folder?: string; priority: string };
+      let tcMetaMap = new Map<string, TCMeta>();
+      if (relevantIds.length > 0) {
+        const { data: tcData } = await adminClient
+          .from('test_cases')
+          .select('id, title, folder, priority')
+          .in('id', relevantIds);
+        for (const tc of (tcData || []) as TCMeta[]) {
+          tcMetaMap.set(tc.id, tc);
+        }
+      }
+
+      const totalCount = allResults.length;
+      const passedCount = allResults.filter((r: any) => r.status === 'passed').length;
+      const failedCount = allResults.filter((r: any) => r.status === 'failed').length;
+      const blockedCount = allResults.filter((r: any) => r.status === 'blocked').length;
+      const skippedCount = allResults.filter((r: any) => r.status === 'skipped' || r.status === 'untested').length;
+
+      const failedResults = allResults.filter((r: any) => r.status === 'failed');
+      const blockedResults = allResults.filter((r: any) => r.status === 'blocked');
+
+      // Group failures by folder
+      const folderMap = new Map<string, number>();
+      for (const r of failedResults as any[]) {
+        const tc = tcMetaMap.get(r.test_case_id);
+        const folder = tc?.folder || 'unknown';
+        folderMap.set(folder, (folderMap.get(folder) || 0) + 1);
+      }
+      const failedByFolder = Array.from(folderMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([folder, count]) => ({ folder, count }));
+
+      const failedDetails = (failedResults as any[])
+        .slice(0, 30)
+        .map((r) => {
+          const tc = tcMetaMap.get(r.test_case_id);
+          return `  - [${tc?.priority || 'medium'}] ${tc?.title || '(unknown)'} (${tc?.folder || 'unknown'})`;
+        });
+
+      const blockedDetails = (blockedResults as any[])
+        .slice(0, 10)
+        .map((r) => {
+          const tc = tcMetaMap.get(r.test_case_id);
+          return `  - ${tc?.title || '(unknown)'} (${tc?.folder || 'unknown'})${r.comment ? ': ' + r.comment : ''}`;
+        });
+
+      const systemPrompt = `You are a senior QA analyst. The user already sees pass/fail numbers on screen.
+DO NOT repeat metrics. Instead provide:
+1. WHY: Root cause hypothesis for each failure cluster (group by folder/pattern)
+2. RISK: Overall risk level (HIGH/MEDIUM/LOW) with 1-sentence reasoning
+3. ACTIONS: Top 3 specific, actionable recommendations
+4. GO/NO-GO: Release decision with conditions
+Keep total response under 200 words. Be direct, skip pleasantries.
+
+Respond in valid JSON matching this schema:
+{
+  "riskLevel": "HIGH" | "MEDIUM" | "LOW",
+  "riskReason": "string (1 sentence)",
+  "narrative": "string (2-3 sentences, root cause analysis)",
+  "clusters": [
+    {
+      "name": "string",
+      "count": number,
+      "rootCause": "string",
+      "severity": "critical" | "major" | "minor",
+      "testIds": ["string"]
+    }
+  ],
+  "recommendations": ["string", "string", "string"],
+  "goNoGo": "GO" | "NO-GO" | "CONDITIONAL",
+  "goNoGoCondition": "string"
+}`;
+
+      const userMessage = `Run: ${runData.name}, ${runData.created_at}, ${totalCount} TCs
+Results: ${passedCount}P / ${failedCount}F / ${blockedCount}B / ${skippedCount}S
+
+Failed tests by folder:
+${failedByFolder.map((f) => `  ${f.folder}: ${f.count} failures`).join('\n') || '  (none)'}
+
+Failed test details:
+${failedDetails.join('\n') || '  (none)'}
+
+Blocked test details:
+${blockedDetails.join('\n') || '  (none)'}
+
+Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked ≤5%`;
+
+      const startTime = Date.now();
+      const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+      if (!apiKey) {
+        return jsonResponse({ error: 'AI service not configured' }, 500);
+      }
+
+      const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userMessage }],
+        }),
+      });
+
+      if (!claudeResp.ok) {
+        if (claudeResp.status === 429) {
+          return jsonResponse({ error: 'AI service busy. Please retry in 30 seconds.' }, 503);
+        }
+        return jsonResponse({ error: 'AI analysis failed' }, 500);
+      }
+
+      const claudeData = await claudeResp.json();
+      const rawText = claudeData.content?.[0]?.text || '';
+      const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0);
+      const latencyMs = Date.now() - startTime;
+
+      let aiSummary: any;
+      try {
+        aiSummary = parseJsonSafely(rawText);
+        if (!aiSummary.riskLevel || !aiSummary.clusters || !aiSummary.goNoGo) {
+          throw new Error('Missing required fields in AI response');
+        }
+      } catch (parseErr) {
+        console.error('AI response parse error:', parseErr, 'Raw:', rawText);
+        return jsonResponse({ error: 'Analysis failed — invalid response' }, 500);
+      }
+
+      // Log usage (step=1 so it counts against monthly quota)
+      await adminClient.from('ai_generation_logs').insert({
+        user_id: user.id,
+        project_id: runData.project_id,
+        mode: 'run-summary',
+        step: 1,
+        input_data: { run_id: run_id, total_tcs: totalCount },
+        output_data: aiSummary,
+        tokens_used: tokensUsed,
+        latency_ms: latencyMs,
+      });
+
+      const usage = await getMonthlyUsage(adminClient, user.id);
+      return jsonResponse({
+        success: true,
+        summary: aiSummary,
+        usage: { current: usage, limit: PLAN_LIMITS[tier] },
+      });
+    }
 
     if (!project_id || !mode) {
       return jsonResponse({ error: 'project_id and mode are required' }, 400);
