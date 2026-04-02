@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import PassRateTrend from './widgets/PassRateTrend';
 import MilestoneTracker from './widgets/MilestoneTracker';
 import ExecutionSummary from './widgets/ExecutionSummary';
@@ -10,6 +11,7 @@ import AIInsightsPanel from './widgets/AIInsightsPanel';
 import TierGate from './widgets/TierGate';
 import CoverageGapModal from './components/CoverageGapModal';
 import AIGenerateModal from '../project-testcases/components/AIGenerateModal';
+import { supabase } from '@/lib/supabase';
 
 type PeriodFilter = '7d' | '14d' | '30d' | 'all';
 
@@ -24,6 +26,7 @@ const PERIOD_LABELS: Record<PeriodFilter, string> = {
 };
 
 export default function AnalyticsTab({ projectId, milestones, subscriptionTier }: AnalyticsTabProps) {
+  const queryClient = useQueryClient();
   const [period, setPeriod] = useState<PeriodFilter>('30d');
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('');
   const [showCoverageGapModal, setShowCoverageGapModal] = useState(false);
@@ -125,7 +128,87 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
           subscriptionTier={subscriptionTier}
           initialTitles={gapTitles}
           onClose={() => { setShowAIGenFromGap(false); setGapTitles([]); }}
-          onSave={async () => { setShowAIGenFromGap(false); setGapTitles([]); }}
+          onSave={async (cases: any[]) => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+
+              // Get project prefix for custom_id generation
+              const { data: projectData } = await supabase
+                .from('projects')
+                .select('prefix')
+                .eq('id', projectId)
+                .maybeSingle();
+
+              const prefix = projectData?.prefix;
+
+              // Get max existing custom_id number for this project
+              let maxNum = 0;
+              if (prefix) {
+                const { data: existingCases } = await supabase
+                  .from('test_cases')
+                  .select('custom_id')
+                  .eq('project_id', projectId)
+                  .not('custom_id', 'is', null);
+
+                if (existingCases && existingCases.length > 0) {
+                  existingCases.forEach((tc: any) => {
+                    if (tc.custom_id) {
+                      const match = tc.custom_id.match(/-(\d+)$/);
+                      if (match) {
+                        const num = parseInt(match[1], 10);
+                        if (num > maxNum) maxNum = num;
+                      }
+                    }
+                  });
+                }
+              }
+
+              // Insert each generated TC
+              for (const tc of cases) {
+                maxNum += 1;
+                const custom_id = prefix ? `${prefix}-${maxNum}` : undefined;
+                const stepsStr = Array.isArray(tc.steps) ? tc.steps.join('\n') : (tc.steps || '');
+
+                const { data, error } = await supabase
+                  .from('test_cases')
+                  .insert([{
+                    project_id: projectId,
+                    title: tc.title,
+                    description: tc.description || '',
+                    precondition: tc.precondition || '',
+                    steps: stepsStr,
+                    expected_result: tc.expected_result || '',
+                    priority: tc.priority || 'medium',
+                    status: 'pending',
+                    lifecycle_status: 'draft',
+                    is_automated: false,
+                    created_by: user?.id,
+                    ...(custom_id ? { custom_id } : {}),
+                  }])
+                  .select()
+                  .single();
+
+                if (error) throw error;
+
+                // Record creation history
+                if (data && user) {
+                  await supabase.from('test_case_history').insert({
+                    test_case_id: data.id,
+                    user_id: user.id,
+                    action_type: 'created',
+                  });
+                }
+              }
+
+              // Refresh test cases cache
+              await queryClient.invalidateQueries({ queryKey: ['testCases', projectId] });
+
+              setShowAIGenFromGap(false);
+              setGapTitles([]);
+            } catch (error) {
+              console.error('Failed to save generated test cases:', error);
+            }
+          }}
         />
       )}
     </div>
