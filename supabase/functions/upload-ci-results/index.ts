@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { DOMParser } from 'https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts';
+import { checkRateLimit, rateLimitResponse, addRateLimitHeaders, RATE_CONFIGS } from '../_shared/rate-limit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -112,6 +113,14 @@ Deno.serve(async (req) => {
         }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // ── Rate Limiting (Token Bucket) ──────────────────────────
+    // CI 토큰 ID를 식별자로 사용: 토큰마다 독립 버킷 관리
+    const rlConfig = RATE_CONFIGS['ci_upload'];
+    const rlResult = await checkRateLimit(supabase, tokenData.id, 'ci_upload', rlConfig);
+    if (!rlResult.allowed) {
+      return rateLimitResponse(rlResult, corsHeaders);
     }
 
     // Update last_used_at
@@ -297,6 +306,12 @@ Deno.serve(async (req) => {
       console.error('Update error:', updateError);
     }
 
+    const responseHeaders = addRateLimitHeaders(
+      { ...corsHeaders, 'Content-Type': 'application/json' },
+      rlResult,
+      rlConfig,
+    );
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -304,7 +319,7 @@ Deno.serve(async (req) => {
         stats,
         uploaded_count: resolvedResults.length,
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: responseHeaders }
     );
 
   } catch (error) {

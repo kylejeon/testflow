@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { checkRateLimit, rateLimitResponse, RATE_CONFIGS } from '../_shared/rate-limit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -324,6 +325,13 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await adminClient.auth.getUser(jwt);
     if (authError || !user) {
       return jsonResponse({ error: 'Unauthorized', details: authError?.message }, 401);
+    }
+
+    // ── Rate Limiting (Token Bucket) ──────────────────────────
+    // user_id 기준 버킷: AI 생성은 월 한도 외에 burst도 제한
+    const rlResult = await checkRateLimit(adminClient, user.id, 'ai_generate', RATE_CONFIGS['ai_generate']);
+    if (!rlResult.allowed) {
+      return rateLimitResponse(rlResult, corsHeaders);
     }
 
     const body: GenerateRequest = await req.json();
