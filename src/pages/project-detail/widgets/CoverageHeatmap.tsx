@@ -55,7 +55,13 @@ function CustomContent(props: any) {
   );
 }
 
-export default function CoverageHeatmap({ projectId }: { projectId: string }) {
+interface CoverageHeatmapProps {
+  projectId: string;
+  subscriptionTier?: number;
+  onFindGaps?: () => void;
+}
+
+export default function CoverageHeatmap({ projectId, subscriptionTier = 1, onFindGaps }: CoverageHeatmapProps) {
   const [folderData, setFolderData] = useState<FolderData[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalTCs, setTotalTCs] = useState(0);
@@ -148,6 +154,27 @@ export default function CoverageHeatmap({ projectId }: { projectId: string }) {
             Coverage <span className="font-semibold text-gray-900">{overallCoverage}%</span>
           </span>
           <span className="text-[11px] text-gray-400">{totalTCs} TCs</span>
+          {subscriptionTier >= 3 ? (
+            <button
+              onClick={onFindGaps}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', border: 'none' }}
+              title="AI가 커버리지 갭을 분석하고 TC를 자동 생성합니다"
+            >
+              <i className="ri-sparkling-2-fill text-[12px]" />
+              Find Gaps
+            </button>
+          ) : (
+            <button
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-not-allowed opacity-50"
+              style={{ background: '#F1F5F9', color: '#94A3B8', border: '1px solid #E2E8F0' }}
+              title="Professional plan required"
+              disabled
+            >
+              <i className="ri-lock-line text-[11px]" />
+              Find Gaps
+            </button>
+          )}
         </div>
       </div>
 

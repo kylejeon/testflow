@@ -22,12 +22,15 @@ interface GenerateRequest {
   project_id?: string;
   mode?: 'text' | 'jira' | 'session';
   step?: 1 | 2;
-  action?: 'preview' | 'summarize-run';
+  action?: 'preview' | 'summarize-run' | 'coverage-gap';
   input_text?: string;
   session_id?: string;
   jira_issue_keys?: string[];
   selected_titles?: string[];
   run_id?: string;
+  // coverage-gap
+  test_cases?: { folder: string; title: string; priority: string }[];
+  milestone_id?: string;
 }
 
 interface JiraIssueData {
@@ -570,6 +573,184 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
       return jsonResponse({
         success: true,
         summary: aiSummary,
+        usage: { current: usage, limit: PLAN_LIMITS[tier] },
+      });
+    }
+
+    // ── COVERAGE GAP ANALYSIS (action: 'coverage-gap') ────────
+    if (action === 'coverage-gap') {
+      if (!project_id) {
+        return jsonResponse({ error: 'project_id is required for coverage-gap' }, 400);
+      }
+
+      const tier = await getEffectiveTier(adminClient, user.id);
+      const COV_MIN_TIER = 3; // Professional+
+      if (tier < COV_MIN_TIER) {
+        return jsonResponse({ error: 'Professional plan required', requiredTier: COV_MIN_TIER }, 403);
+      }
+
+      // Monthly quota check
+      const limit = PLAN_LIMITS[tier] ?? 5;
+      if (limit !== -1) {
+        const usage = await getMonthlyUsage(adminClient, user.id);
+        if (usage >= limit) {
+          return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
+        }
+      }
+
+      // Project access check
+      const { data: projectData } = await adminClient
+        .from('projects')
+        .select('id, owner_id, name')
+        .eq('id', project_id)
+        .maybeSingle();
+
+      if (!projectData) {
+        return jsonResponse({ error: 'Project not found' }, 404);
+      }
+
+      if (projectData.owner_id !== user.id) {
+        const { data: memberCheck } = await adminClient
+          .from('project_members')
+          .select('id')
+          .eq('project_id', project_id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (!memberCheck) {
+          return jsonResponse({ error: 'Access denied' }, 403);
+        }
+      }
+
+      // Fetch all TCs from DB if not provided in body
+      let tcList = body.test_cases;
+      if (!tcList || tcList.length === 0) {
+        const { data: dbTCs } = await adminClient
+          .from('test_cases')
+          .select('title, folder, priority')
+          .eq('project_id', project_id);
+        tcList = (dbTCs || []).map((tc: any) => ({
+          folder: tc.folder || 'General',
+          title: tc.title,
+          priority: tc.priority || 'medium',
+        }));
+      }
+
+      if (!tcList || tcList.length === 0) {
+        return jsonResponse({ error: 'No test cases found in this project' }, 422);
+      }
+
+      // Build folder summary for the prompt
+      const folderMap = new Map<string, { titles: string[]; priorities: string[] }>();
+      for (const tc of tcList) {
+        const folder = tc.folder || 'General';
+        if (!folderMap.has(folder)) folderMap.set(folder, { titles: [], priorities: [] });
+        folderMap.get(folder)!.titles.push(tc.title);
+        folderMap.get(folder)!.priorities.push(tc.priority);
+      }
+
+      const folderSummary = Array.from(folderMap.entries())
+        .map(([folder, data]) => {
+          const criticalCount = data.priorities.filter(p => p === 'critical').length;
+          return `${folder} (${data.titles.length} TCs, ${criticalCount} critical):\n${data.titles.slice(0, 10).map(t => `  - ${t}`).join('\n')}${data.titles.length > 10 ? `\n  ... and ${data.titles.length - 10} more` : ''}`;
+        })
+        .join('\n\n');
+
+      const systemPrompt = `You are a test coverage analyst. Given this project's TC distribution by folder, identify coverage gaps.
+DO NOT generate a heatmap or coverage % (user already sees this).
+Instead:
+1. GAPS: Identify folders with insufficient coverage. Rate: CRITICAL/HIGH/MEDIUM
+2. MISSING TYPES: For each gap, identify what TC types are missing (negative, boundary, error_handling, security, performance)
+3. SUGGESTIONS: For each gap, suggest 2-5 specific TC titles (actionable and specific, not generic)
+4. TYPE BALANCE: Overall project TC type distribution assessment
+Keep suggestions to max 15 total. Prioritize by business risk.
+
+Respond in valid JSON:
+{
+  "gaps": [
+    {
+      "module": "folder name",
+      "severity": "CRITICAL" | "HIGH" | "MEDIUM",
+      "currentCount": number,
+      "missingTypes": ["error_handling", "boundary", ...],
+      "reason": "string (1-2 sentences)",
+      "suggestions": [
+        { "title": "string", "type": "error_handling|boundary|negative|security|performance", "priority": "P1|P2|P3" }
+      ]
+    }
+  ],
+  "typeBalance": {
+    "positive": number,
+    "negative": number,
+    "boundary": number,
+    "errorHandling": number,
+    "security": number,
+    "performance": number
+  },
+  "typeAssessment": "string (1-2 sentences)"
+}`;
+
+      const userMessage = `Project: ${projectData.name}\nTotal TCs: ${tcList.length}\n\nTC Distribution by Folder:\n${folderSummary}`;
+
+      const startTime = Date.now();
+      const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+      if (!apiKey) {
+        return jsonResponse({ error: 'AI service not configured' }, 500);
+      }
+
+      const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userMessage }],
+        }),
+      });
+
+      if (!claudeResp.ok) {
+        if (claudeResp.status === 429) {
+          return jsonResponse({ error: 'AI service busy. Please retry in 30 seconds.' }, 503);
+        }
+        return jsonResponse({ error: 'AI analysis failed' }, 500);
+      }
+
+      const claudeData = await claudeResp.json();
+      const rawText = claudeData.content?.[0]?.text || '';
+      const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0);
+      const latencyMs = Date.now() - startTime;
+
+      let gapResult: any;
+      try {
+        gapResult = parseJsonSafely(rawText);
+        if (!gapResult.gaps || !Array.isArray(gapResult.gaps)) {
+          throw new Error('Missing gaps array in AI response');
+        }
+      } catch (parseErr) {
+        console.error('Coverage gap parse error:', parseErr, 'Raw:', rawText);
+        return jsonResponse({ error: 'Analysis failed — invalid response' }, 500);
+      }
+
+      // Log usage
+      await adminClient.from('ai_generation_logs').insert({
+        user_id: user.id,
+        project_id,
+        mode: 'run-summary', // reuse allowed mode for logging
+        step: 1,
+        input_data: { action: 'coverage-gap', total_tcs: tcList.length },
+        output_data: { gap_count: gapResult.gaps.length },
+        tokens_used: tokensUsed,
+        latency_ms: latencyMs,
+      });
+
+      const usage = await getMonthlyUsage(adminClient, user.id);
+      return jsonResponse({
+        success: true,
+        result: gapResult,
         usage: { current: usage, limit: PLAN_LIMITS[tier] },
       });
     }

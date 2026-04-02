@@ -38,6 +38,7 @@ interface AIGenerateModalProps {
   subscriptionTier: number;
   onSave: (cases: GeneratedCase[]) => Promise<void>;
   onClose: () => void;
+  initialTitles?: string[];
 }
 
 // Plan info
@@ -70,6 +71,7 @@ export default function AIGenerateModal({
   subscriptionTier,
   onSave,
   onClose,
+  initialTitles,
 }: AIGenerateModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('mode');
   const [mode, setMode] = useState<Mode>('text');
@@ -107,6 +109,11 @@ export default function AIGenerateModal({
   useEffect(() => {
     fetchMonthlyUsage();
     checkJiraConnection();
+    if (initialTitles && initialTitles.length > 0) {
+      setTitles(initialTitles);
+      setSelectedTitles(new Set(initialTitles));
+      setCurrentStep('titles');
+    }
   }, []);
 
   useEffect(() => {

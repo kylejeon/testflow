@@ -8,6 +8,8 @@ import CoverageHeatmap from './widgets/CoverageHeatmap';
 import TCQualityAnalysis from './widgets/TCQualityAnalysis';
 import AIInsightsPanel from './widgets/AIInsightsPanel';
 import TierGate from './widgets/TierGate';
+import CoverageGapModal from './components/CoverageGapModal';
+import AIGenerateModal from '../project-testcases/components/AIGenerateModal';
 
 type PeriodFilter = '7d' | '14d' | '30d' | 'all';
 
@@ -24,6 +26,9 @@ const PERIOD_LABELS: Record<PeriodFilter, string> = {
 export default function AnalyticsTab({ projectId, milestones, subscriptionTier }: AnalyticsTabProps) {
   const [period, setPeriod] = useState<PeriodFilter>('30d');
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string>('');
+  const [showCoverageGapModal, setShowCoverageGapModal] = useState(false);
+  const [gapTitles, setGapTitles] = useState<string[]>([]);
+  const [showAIGenFromGap, setShowAIGenFromGap] = useState(false);
 
   const filteredMilestones = selectedMilestoneId
     ? milestones.filter(m => m.id === selectedMilestoneId)
@@ -83,7 +88,11 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
 
         {/* Row 4: Coverage Heatmap (50%) + TC Quality (50%) */}
         <div className="grid grid-cols-2 gap-5">
-          <CoverageHeatmap projectId={projectId} />
+          <CoverageHeatmap
+            projectId={projectId}
+            subscriptionTier={subscriptionTier}
+            onFindGaps={() => setShowCoverageGapModal(true)}
+          />
           <TCQualityAnalysis projectId={projectId} />
         </div>
 
@@ -97,6 +106,28 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
           </TierGate>
         </div>
       </div>
+
+      {showCoverageGapModal && (
+        <CoverageGapModal
+          projectId={projectId}
+          onClose={() => setShowCoverageGapModal(false)}
+          onGenerateTCs={(titles) => {
+            setGapTitles(titles);
+            setShowCoverageGapModal(false);
+            setShowAIGenFromGap(true);
+          }}
+        />
+      )}
+
+      {showAIGenFromGap && (
+        <AIGenerateModal
+          projectId={projectId}
+          subscriptionTier={subscriptionTier}
+          initialTitles={gapTitles}
+          onClose={() => { setShowAIGenFromGap(false); setGapTitles([]); }}
+          onSave={async () => { setShowAIGenFromGap(false); setGapTitles([]); }}
+        />
+      )}
     </div>
   );
 }
