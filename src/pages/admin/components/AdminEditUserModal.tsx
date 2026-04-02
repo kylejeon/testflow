@@ -112,9 +112,9 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
       className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col" style={{ maxHeight: 'calc(100vh - 48px)' }}>
         {/* Header */}
-        <div className="bg-slate-900 px-6 py-5 flex items-center justify-between">
+        <div className="bg-slate-900 px-6 py-5 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-base flex-shrink-0">
               {initials}
@@ -132,7 +132,7 @@ export default function AdminEditUserModal({ user, onClose, onSaved }: AdminEdit
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
           {/* Plan Selection */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-3">
