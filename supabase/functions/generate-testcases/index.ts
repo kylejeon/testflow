@@ -22,7 +22,7 @@ interface GenerateRequest {
   project_id?: string;
   mode?: 'text' | 'jira' | 'session';
   step?: 1 | 2;
-  action?: 'preview' | 'summarize-run' | 'coverage-gap';
+  action?: 'preview' | 'summarize-run' | 'coverage-gap' | 'analyze-flaky';
   input_text?: string;
   session_id?: string;
   jira_issue_keys?: string[];
@@ -30,6 +30,8 @@ interface GenerateRequest {
   run_id?: string;
   // coverage-gap
   test_cases?: { folder: string; title: string; priority: string }[];
+  // analyze-flaky
+  flaky_tests?: { test_case_id: string; title: string; folder_path: string; recent_statuses: string[]; flaky_score: number }[];
   milestone_id?: string;
 }
 
@@ -751,6 +753,120 @@ Respond in valid JSON:
       return jsonResponse({
         success: true,
         result: gapResult,
+        usage: { current: usage, limit: PLAN_LIMITS[tier] },
+      });
+    }
+
+    // ── FLAKY ANALYSIS (action: 'analyze-flaky') ───────────────
+    if (action === 'analyze-flaky') {
+      if (!project_id) {
+        return jsonResponse({ error: 'project_id is required for analyze-flaky' }, 400);
+      }
+
+      const tier = await getEffectiveTier(adminClient, user.id);
+      if (tier < 3) {
+        return jsonResponse({ error: 'Professional plan required', requiredTier: 3 }, 403);
+      }
+
+      const limit = PLAN_LIMITS[tier] ?? 5;
+      if (limit !== -1) {
+        const usage = await getMonthlyUsage(adminClient, user.id);
+        if (usage >= limit) {
+          return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
+        }
+      }
+
+      const flakyTests: { test_case_id: string; title: string; folder_path: string; recent_statuses: string[]; flaky_score: number }[] = body.flaky_tests ?? [];
+      if (!flakyTests.length) {
+        return jsonResponse({ error: 'No flaky tests provided' }, 422);
+      }
+
+      const testList = flakyTests.map(t =>
+        `- [${t.test_case_id}] "${t.title}" (${t.folder_path || 'General'}) | Score: ${t.flaky_score}% | Sequence: ${t.recent_statuses.join('→')}`
+      ).join('\n');
+
+      const systemPrompt = `You are a test stability expert. Given these flaky tests with their pass/fail sequences:
+DO NOT recalculate flaky scores (user already sees them).
+Instead:
+1. CLUSTER: Group tests that are likely flaky for the same reason
+2. ROOT CAUSE: For each cluster, hypothesize the most likely cause (race_condition, shared_state, env_dependency, data_dependency, timing)
+3. FIX: For each cluster, suggest a specific, actionable fix (1-2 sentences)
+Keep total response under 150 words. Be technical and direct.
+
+Respond in valid JSON:
+{
+  "patterns": [
+    {
+      "name": "string (e.g. Race Condition)",
+      "category": "race_condition" | "shared_state" | "env_dependency" | "data_dependency" | "timing",
+      "testIds": ["test_case_id", ...],
+      "rootCause": "string (1-2 sentences)",
+      "fixSuggestion": "string (1-2 sentences)"
+    }
+  ]
+}`;
+
+      const userMessage = `Flaky Tests:\n${testList}`;
+
+      const startTime = Date.now();
+      const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+      if (!apiKey) {
+        return jsonResponse({ error: 'AI service not configured' }, 500);
+      }
+
+      const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userMessage }],
+        }),
+      });
+
+      if (!claudeResp.ok) {
+        if (claudeResp.status === 429) {
+          return jsonResponse({ error: 'AI service busy. Please retry in 30 seconds.' }, 503);
+        }
+        return jsonResponse({ error: 'AI analysis failed' }, 500);
+      }
+
+      const claudeData = await claudeResp.json();
+      const rawText = claudeData.content?.[0]?.text || '';
+      const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0);
+      const latencyMs = Date.now() - startTime;
+
+      let analysisResult: any;
+      try {
+        analysisResult = parseJsonSafely(rawText);
+        if (!analysisResult.patterns || !Array.isArray(analysisResult.patterns)) {
+          throw new Error('Missing patterns array in AI response');
+        }
+      } catch (parseErr) {
+        console.error('Flaky analysis parse error:', parseErr, 'Raw:', rawText);
+        return jsonResponse({ error: 'Analysis failed — invalid response' }, 500);
+      }
+
+      await adminClient.from('ai_generation_logs').insert({
+        user_id: user.id,
+        project_id,
+        mode: 'run-summary',
+        step: 1,
+        input_data: { action: 'analyze-flaky', flaky_count: flakyTests.length },
+        output_data: { pattern_count: analysisResult.patterns.length },
+        tokens_used: tokensUsed,
+        latency_ms: latencyMs,
+      });
+
+      const usage = await getMonthlyUsage(adminClient, user.id);
+      return jsonResponse({
+        success: true,
+        result: analysisResult,
         usage: { current: usage, limit: PLAN_LIMITS[tier] },
       });
     }

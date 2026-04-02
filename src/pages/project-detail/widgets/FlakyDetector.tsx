@@ -11,6 +11,30 @@ interface FlakyTC {
   lastRun: string;
 }
 
+interface FlakyPattern {
+  name: string;
+  category: 'race_condition' | 'shared_state' | 'env_dependency' | 'data_dependency' | 'timing';
+  testIds: string[];
+  rootCause: string;
+  fixSuggestion: string;
+}
+
+const CATEGORY_LABEL: Record<string, string> = {
+  race_condition: 'Race Condition',
+  shared_state: 'Shared State',
+  env_dependency: 'Env Dependency',
+  data_dependency: 'Data Dependency',
+  timing: 'Timing',
+};
+
+const CATEGORY_COLOR: Record<string, { bg: string; text: string; border: string }> = {
+  race_condition:   { bg: '#FEF2F2', text: '#991B1B', border: '#FCA5A5' },
+  shared_state:     { bg: '#FFFBEB', text: '#92400E', border: '#FCD34D' },
+  env_dependency:   { bg: '#EFF6FF', text: '#1E40AF', border: '#BFDBFE' },
+  data_dependency:  { bg: '#F5F3FF', text: '#5B21B6', border: '#DDD6FE' },
+  timing:           { bg: '#F0FDF4', text: '#14532D', border: '#86EFAC' },
+};
+
 function calculateFlakyScore(statuses: string[]): number {
   if (statuses.length < 2) return 0;
   let transitions = 0;
@@ -50,6 +74,13 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
   const [flaky, setFlaky] = useState<FlakyTC[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // AI Deep Analysis state
+  const [showDeepAnalysis, setShowDeepAnalysis] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiPatterns, setAiPatterns] = useState<FlakyPattern[]>([]);
+  const [jiraCreating, setJiraCreating] = useState<string | null>(null); // patternName
+
   const limit = subscriptionTier >= 3 ? 20 : 5;
 
   useEffect(() => {
@@ -83,7 +114,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       results.forEach(r => {
         if (!byTC[r.test_case_id]) {
           byTC[r.test_case_id] = [];
-          lastRunAt[r.test_case_id] = r.created_at; // results ordered desc, first = newest
+          lastRunAt[r.test_case_id] = r.created_at;
         }
         if (byTC[r.test_case_id].length < 10) byTC[r.test_case_id].push(r.status);
       });
@@ -92,7 +123,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       const candidates = Object.entries(byTC)
         .filter(([, statuses]) => statuses.length >= 3)
         .map(([tcId, statuses]) => {
-          const reversed = [...statuses].reverse(); // oldest → newest (non-mutating)
+          const reversed = [...statuses].reverse();
           return { tcId, statuses: reversed, score: calculateFlakyScore(reversed) };
         })
         .filter(c => c.score >= 40)
@@ -135,6 +166,98 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
     }
   }
 
+  async function runAIAnalysis() {
+    setAiLoading(true);
+    setAiError(null);
+    setAiPatterns([]);
+    try {
+      const flakyTests = flaky.map(tc => ({
+        test_case_id: tc.id,
+        title: tc.title,
+        folder_path: tc.folder,
+        recent_statuses: tc.recentStatuses,
+        flaky_score: tc.flakyScore,
+      }));
+
+      const { data, error: fnError } = await supabase.functions.invoke('generate-testcases', {
+        body: { action: 'analyze-flaky', project_id: projectId, flaky_tests: flakyTests },
+      });
+
+      if (fnError) {
+        const status = (fnError as any)?.context?.status;
+        if (status === 403) setAiError('Professional plan required');
+        else if (status === 429) setAiError('Monthly AI limit reached');
+        else setAiError('Analysis failed. Please try again.');
+        return;
+      }
+
+      if (!data?.success || !data?.result?.patterns) {
+        setAiError('Analysis failed. Please try again.');
+        return;
+      }
+
+      setAiPatterns(data.result.patterns);
+    } catch {
+      setAiError('Connection error. Please try again.');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  function handleAIAnalyzeClick() {
+    if (!showDeepAnalysis) {
+      setShowDeepAnalysis(true);
+      if (aiPatterns.length === 0 && !aiLoading) {
+        runAIAnalysis();
+      }
+    } else {
+      setShowDeepAnalysis(false);
+    }
+  }
+
+  // Build a title map for pattern cards
+  const tcTitleMap = new Map(flaky.map(tc => [tc.id, { title: tc.title, customId: tc.customId }]));
+
+  async function createJiraForPattern(pattern: FlakyPattern) {
+    const { data: jiraSettings } = await supabase
+      .from('jira_settings')
+      .select('domain, email, api_token, project_key')
+      .maybeSingle();
+
+    if (!jiraSettings?.domain || !jiraSettings?.api_token) {
+      alert('Jira not connected. Please configure Jira in Settings.');
+      return;
+    }
+
+    setJiraCreating(pattern.name);
+    try {
+      const tcList = pattern.testIds.map(id => {
+        const tc = tcTitleMap.get(id);
+        return tc ? `${tc.customId || id}: ${tc.title}` : id;
+      }).join('\n');
+
+      const { error } = await supabase.functions.invoke('create-jira-issue', {
+        body: {
+          domain: jiraSettings.domain,
+          email: jiraSettings.email,
+          apiToken: jiraSettings.api_token,
+          projectKey: jiraSettings.project_key,
+          summary: `[Flaky] ${pattern.name}: ${pattern.testIds.length} test(s) affected`,
+          description: `**Root Cause:** ${pattern.rootCause}\n\n**Fix Suggestion:** ${pattern.fixSuggestion}\n\n**Affected Tests:**\n${tcList}`,
+          issueType: 'Bug',
+          priority: 'High',
+        },
+      });
+
+      if (error) throw error;
+      alert(`Jira issue created for "${pattern.name}" pattern`);
+    } catch {
+      alert('Failed to create Jira issue. Please try again.');
+    } finally {
+      setJiraCreating(null);
+    }
+  }
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
@@ -148,6 +271,21 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
           )}
         </div>
         <div className="flex items-center gap-2">
+          {!loading && flaky.length > 0 && subscriptionTier >= 3 && (
+            <button
+              onClick={handleAIAnalyzeClick}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer hover:opacity-90"
+              style={{
+                background: showDeepAnalysis ? '#EEF2FF' : 'linear-gradient(135deg,#6366F1,#8B5CF6)',
+                color: showDeepAnalysis ? '#6366F1' : '#fff',
+                border: showDeepAnalysis ? '1px solid #C7D2FE' : 'none',
+              }}
+            >
+              <i className="ri-sparkling-2-fill text-[12px]" />
+              AI Analyze
+              {showDeepAnalysis && <i className="ri-arrow-up-s-line text-[12px]" />}
+            </button>
+          )}
           {subscriptionTier < 3 && (
             <span className="text-[11px] text-gray-400">Top {limit}</span>
           )}
@@ -217,6 +355,111 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                 </span>
               ))}
             </div>
+
+            {/* AI Deep Analysis Panel */}
+            {showDeepAnalysis && (
+              <div style={{ borderTop: '1px solid #E2E8F0', marginTop: 8 }}>
+                <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg,rgba(99,102,241,0.05),rgba(139,92,246,0.05))' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <i className="ri-sparkling-2-fill" style={{ color: '#6366F1', fontSize: 14 }} />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>AI Deep Analysis</span>
+                    </div>
+                    {!aiLoading && aiPatterns.length > 0 && (
+                      <button
+                        onClick={runAIAnalysis}
+                        style={{ fontSize: 11, color: '#6366F1', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        <i className="ri-refresh-line" /> Re-analyze
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Loading */}
+                  {aiLoading && (
+                    <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                      <div style={{ width: 28, height: 28, border: '3px solid #E2E8F0', borderTopColor: '#6366F1', borderRadius: '50%', animation: 'flakyAISpin 0.8s linear infinite', margin: '0 auto 10px' }} />
+                      <p style={{ fontSize: 12, color: '#64748B', margin: 0 }}>AI가 패턴을 분석 중…</p>
+                      <style>{`@keyframes flakyAISpin { to { transform: rotate(360deg); } }`}</style>
+                    </div>
+                  )}
+
+                  {/* Error */}
+                  {!aiLoading && aiError && (
+                    <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                      <p style={{ fontSize: 13, color: '#EF4444', marginBottom: 10 }}>⚠️ {aiError}</p>
+                      <button
+                        onClick={runAIAnalysis}
+                        style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', color: '#334155' }}
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Pattern Cards */}
+                  {!aiLoading && aiPatterns.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {aiPatterns.map((pattern, i) => {
+                        const colors = CATEGORY_COLOR[pattern.category] ?? CATEGORY_COLOR['timing'];
+                        return (
+                          <div
+                            key={i}
+                            style={{
+                              background: colors.bg,
+                              border: `1px solid ${colors.border}`,
+                              borderRadius: 8,
+                              padding: '10px 12px',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>{pattern.name}</span>
+                                  <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.7)', border: `1px solid ${colors.border}`, borderRadius: 4, padding: '1px 6px', color: colors.text, fontWeight: 600 }}>
+                                    {CATEGORY_LABEL[pattern.category] ?? pattern.category}
+                                  </span>
+                                  <span style={{ fontSize: 10, color: '#64748B' }}>{pattern.testIds.length} TC</span>
+                                </div>
+                                {/* Affected TCs */}
+                                <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 4 }}>
+                                  {pattern.testIds.map(id => {
+                                    const tc = tcTitleMap.get(id);
+                                    return (
+                                      <span key={id} style={{ fontSize: 10, background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 4, padding: '1px 5px', color: '#475569' }}>
+                                        {tc?.customId || id.slice(0, 8)}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => createJiraForPattern(pattern)}
+                                disabled={jiraCreating === pattern.name}
+                                style={{
+                                  fontSize: 10, fontWeight: 600, color: '#0052CC',
+                                  background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(0,82,204,0.2)',
+                                  borderRadius: 6, padding: '3px 8px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                                  opacity: jiraCreating === pattern.name ? 0.5 : 1,
+                                }}
+                              >
+                                {jiraCreating === pattern.name ? '…' : '+ Jira'}
+                              </button>
+                            </div>
+                            <p style={{ fontSize: 11, color: '#475569', margin: '0 0 3px', lineHeight: 1.5 }}>
+                              <strong>Root Cause:</strong> {pattern.rootCause}
+                            </p>
+                            <p style={{ fontSize: 11, color: '#475569', margin: 0, lineHeight: 1.5 }}>
+                              <strong>Fix:</strong> {pattern.fixSuggestion}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
