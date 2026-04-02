@@ -107,6 +107,26 @@ export default function ProjectDetail() {
     staleTime: 10 * 60_000,
   });
 
+  // Fetch actual AI usage count from ai_generation_logs
+  const { data: aiUsageCount = 0 } = useQuery({
+    queryKey: ['aiUsage', userProfile?.id],
+    queryFn: async () => {
+      if (!userProfile?.id) return 0;
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const { count } = await supabase
+        .from('ai_generation_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userProfile.id)
+        .eq('step', 1)
+        .gte('created_at', startOfMonth.toISOString());
+      return count || 0;
+    },
+    enabled: !!userProfile?.id,
+    staleTime: 30_000,
+  });
+
   // Project detail data: React Query
   const { data: projectData, isLoading } = useQuery({
     queryKey: ['project-detail', id],
@@ -499,26 +519,6 @@ export default function ProjectDetail() {
   const healthColor = passRate >= 80 ? '#16A34A' : passRate >= 50 ? '#D97706' : '#DC2626';
   const AI_LIMITS: Record<number, number> = { 1: 5, 2: 30, 3: 150, 4: -1, 5: -1, 6: -1 };
   const aiLimit = AI_LIMITS[currentTier] ?? 5;
-
-  // Fetch actual AI usage count from ai_generation_logs
-  const { data: aiUsageCount = 0 } = useQuery({
-    queryKey: ['aiUsage', userProfile?.id],
-    queryFn: async () => {
-      if (!userProfile?.id) return 0;
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      const { count } = await supabase
-        .from('ai_generation_logs')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userProfile.id)
-        .eq('step', 1)
-        .gte('created_at', startOfMonth.toISOString());
-      return count || 0;
-    },
-    enabled: !!userProfile?.id,
-    staleTime: 30_000,
-  });
 
   // ── Active milestones filter ──
   const activeMilestones = milestones.filter(m => {
