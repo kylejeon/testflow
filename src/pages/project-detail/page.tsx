@@ -500,6 +500,26 @@ export default function ProjectDetail() {
   const AI_LIMITS: Record<number, number> = { 1: 5, 2: 30, 3: 150, 4: -1, 5: -1, 6: -1 };
   const aiLimit = AI_LIMITS[currentTier] ?? 5;
 
+  // Fetch actual AI usage count from ai_generation_logs
+  const { data: aiUsageCount = 0 } = useQuery({
+    queryKey: ['aiUsage', userProfile?.id],
+    queryFn: async () => {
+      if (!userProfile?.id) return 0;
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const { count } = await supabase
+        .from('ai_generation_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userProfile.id)
+        .eq('step', 1)
+        .gte('created_at', startOfMonth.toISOString());
+      return count || 0;
+    },
+    enabled: !!userProfile?.id,
+    staleTime: 30_000,
+  });
+
   // ── Active milestones filter ──
   const activeMilestones = milestones.filter(m => {
     if (m.status === 'completed') return false;
@@ -1242,10 +1262,10 @@ export default function ProjectDetail() {
                       </div>
                     ) : (
                       <>
-                        <p className="text-xl font-bold text-gray-900 mb-0.5">—<span className="text-sm font-normal text-gray-400 ml-1">/ {aiLimit}</span></p>
+                        <p className="text-xl font-bold text-gray-900 mb-0.5">{aiUsageCount}<span className="text-sm font-normal text-gray-400 ml-1">/ {aiLimit}</span></p>
                         <p className="text-[11px] text-gray-400 mb-3">generations this month</p>
                         <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
-                          <div className="h-full rounded-full bg-indigo-500" style={{ width: '0%' }} />
+                          <div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.min(100, Math.round((aiUsageCount / aiLimit) * 100))}%` }} />
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] text-gray-400">Plan: <strong className="text-gray-600">{tierInfo?.name || 'Free'}</strong></span>

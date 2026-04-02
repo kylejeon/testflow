@@ -167,7 +167,20 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
               for (const tc of cases) {
                 maxNum += 1;
                 const custom_id = prefix ? `${prefix}-${maxNum}` : undefined;
-                const stepsStr = Array.isArray(tc.steps) ? tc.steps.join('\n') : (tc.steps || '');
+
+                let stepsStr = '';
+                let expectedResultStr = tc.expected_result || '';
+
+                if (Array.isArray(tc.steps)) {
+                  if (tc.steps.length > 0 && typeof tc.steps[0] === 'object' && tc.steps[0].action) {
+                    stepsStr = tc.steps.map((s: any, i: number) => `${i + 1}. ${s.action}`).join('\n');
+                    expectedResultStr = tc.steps.map((s: any, i: number) => `${i + 1}. ${s.expected || ''}`).join('\n');
+                  } else {
+                    stepsStr = tc.steps.map((s: string, i: number) => `${i + 1}. ${s}`).join('\n');
+                  }
+                } else {
+                  stepsStr = tc.steps || '';
+                }
 
                 const { data, error } = await supabase
                   .from('test_cases')
@@ -177,7 +190,7 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
                     description: tc.description || '',
                     precondition: tc.precondition || '',
                     steps: stepsStr,
-                    expected_result: tc.expected_result || '',
+                    expected_result: expectedResultStr,
                     priority: tc.priority || 'medium',
                     status: 'pending',
                     lifecycle_status: 'draft',

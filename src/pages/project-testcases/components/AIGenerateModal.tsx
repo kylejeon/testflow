@@ -24,11 +24,16 @@ interface JiraIssue {
   acceptanceCriteria?: string;
 }
 
+interface StepObject {
+  action: string;
+  expected: string;
+}
+
 interface GeneratedCase {
   title: string;
   description: string;
   precondition: string;
-  steps: string[];
+  steps: StepObject[] | string[];
   expected_result: string;
   priority: 'critical' | 'high' | 'medium' | 'low';
 }
@@ -929,11 +934,16 @@ export default function AIGenerateModal({
                         {tc.steps?.length > 0 && (
                           <div className="mt-2">
                             <p className="text-xs font-medium text-gray-600 mb-1">Steps ({tc.steps.length})</p>
-                            <ol className="space-y-0.5">
+                            <ol className="space-y-1">
                               {tc.steps.slice(0, 3).map((s, si) => (
-                                <li key={si} className="text-xs text-gray-500 flex gap-1.5">
-                                  <span className="shrink-0 font-medium text-gray-400">{si + 1}.</span>
-                                  <span className="truncate">{s}</span>
+                                <li key={si} className="text-xs text-gray-500">
+                                  <div className="flex gap-1.5">
+                                    <span className="shrink-0 font-medium text-gray-400">{si + 1}.</span>
+                                    <span className="truncate">{typeof s === 'object' && s.action ? s.action : String(s)}</span>
+                                  </div>
+                                  {typeof s === 'object' && s.expected && (
+                                    <div className="ml-4 text-green-600 truncate">✓ {s.expected}</div>
+                                  )}
                                 </li>
                               ))}
                               {tc.steps.length > 3 && (

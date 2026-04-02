@@ -194,7 +194,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <div style={{ width: 32, height: 32, border: '3px solid #E2E8F0', borderTopColor: '#6366F1', borderRadius: '50%', animation: 'cgSpin 0.8s linear infinite', margin: '0 auto 14px' }} />
               <p style={{ fontSize: '14px', color: '#64748B', margin: 0 }}>Analyzing coverage gaps…</p>
-              <p style={{ fontSize: '12px', color: '#94A3B8', marginTop: 4 }}>Usually takes 3-5 seconds</p>
+              <p style={{ fontSize: '12px', color: '#94A3B8', marginTop: 4 }}>Usually takes 10-20 seconds</p>
               <style>{`@keyframes cgSpin { to { transform: rotate(360deg); } }`}</style>
             </div>
           )}

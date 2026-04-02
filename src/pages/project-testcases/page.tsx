@@ -309,13 +309,28 @@ export default function ProjectTestCases() {
   // AI 생성 케이스 일괄 저장
   const handleSaveAIGeneratedCases = async (cases: any[]) => {
     for (const tc of cases) {
-      const stepsStr = Array.isArray(tc.steps) ? tc.steps.join('\n') : (tc.steps || '');
+      let stepsStr = '';
+      let expectedResultStr = tc.expected_result || '';
+
+      if (Array.isArray(tc.steps)) {
+        // New format: array of {action, expected} objects
+        if (tc.steps.length > 0 && typeof tc.steps[0] === 'object' && tc.steps[0].action) {
+          stepsStr = tc.steps.map((s: any, i: number) => `${i + 1}. ${s.action}`).join('\n');
+          expectedResultStr = tc.steps.map((s: any, i: number) => `${i + 1}. ${s.expected || ''}`).join('\n');
+        } else {
+          // Legacy format: array of strings
+          stepsStr = tc.steps.map((s: string, i: number) => `${i + 1}. ${s}`).join('\n');
+        }
+      } else {
+        stepsStr = tc.steps || '';
+      }
+
       await handleAddTestCase({
         title: tc.title,
         description: tc.description || '',
         precondition: tc.precondition || '',
         steps: stepsStr,
-        expected_result: tc.expected_result || '',
+        expected_result: expectedResultStr,
         priority: tc.priority || 'medium',
         status: 'pending',
         is_automated: false,

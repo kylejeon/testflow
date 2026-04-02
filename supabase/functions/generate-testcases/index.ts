@@ -269,10 +269,10 @@ Titles:
 ${titlesJson}
 
 Requirements:
-- For each title produce: title, description, precondition, steps (array of strings), expected_result, priority
+- For each title produce: title, description, precondition, steps (array of objects with "action" and "expected" fields), expected_result, priority
 - priority must be one of: "critical", "high", "medium", "low"
-- steps should be clear, numbered action steps
-- expected_result should be the overall expected outcome
+- Each step must have an "action" (what the tester does) and "expected" (what should happen after this step)
+- expected_result should be the overall expected outcome of the entire test case
 - Output ONLY a valid JSON array, no markdown, no explanation
 
 Example output format:
@@ -281,7 +281,12 @@ Example output format:
     "title": "User can log in with valid credentials",
     "description": "Verify that a registered user can successfully log in.",
     "precondition": "User account exists with email test@example.com and password Test1234!",
-    "steps": ["Navigate to /login", "Enter email test@example.com", "Enter password Test1234!", "Click Login button"],
+    "steps": [
+      {"action": "Navigate to /login", "expected": "Login page is displayed with email and password fields"},
+      {"action": "Enter email test@example.com", "expected": "Email field shows the entered email"},
+      {"action": "Enter password Test1234!", "expected": "Password field shows masked characters"},
+      {"action": "Click Login button", "expected": "User is redirected to the dashboard"}
+    ],
     "expected_result": "User is redirected to the dashboard and sees their name in the header.",
     "priority": "critical"
   }
