@@ -3,6 +3,57 @@ import MarketingLayout from '../../components/marketing/MarketingLayout';
 
 const entries = [
   {
+    date: 'April 2026',
+    title: 'Dashboard Analytics & Activity Feed',
+    category: 'New Feature',
+    categoryColor: 'bg-indigo-100 text-indigo-700',
+    description: 'Real-time project health dashboard with 8 analytics widgets and live activity feed. AI-powered insights via Edge Function.',
+    bullets: [
+      'Status Distribution, Pass Rate Trend, Execution Velocity, Priority Breakdown',
+      'Flaky Test Detection, Milestone Tracker, Coverage Heatmap, AI Insights',
+      'Real-time Activity Feed with filtering by action type',
+      'Tier-gated: Free basic widgets · Starter 6 widgets · Professional+ all 8 + AI',
+    ],
+  },
+  {
+    date: 'April 2026',
+    title: 'Executive Report PDF Export',
+    category: 'New Feature',
+    categoryColor: 'bg-indigo-100 text-indigo-700',
+    description: '8-page A4 PDF report generated directly in browser via jsPDF. Includes Release Readiness Score, Quality Gates, and Coverage Heatmap.',
+    bullets: [
+      'Cover, KPI Summary, Test Trends, Run Details, Milestones, Coverage, Team, Recommendations',
+      'Release Readiness Score with weighted formula (Pass Rate 40%, Coverage 20%, etc.)',
+      'Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%',
+      'Korean font (NotoSansKR) support · Branded header/footer with page numbers',
+    ],
+  },
+  {
+    date: 'April 2026',
+    title: 'Milestone Roll-up & Payment Integration',
+    category: 'New Feature',
+    categoryColor: 'bg-indigo-100 text-indigo-700',
+    description: 'Parent-Sub milestone auto-aggregation with roll-up stats, and Lemon Squeezy payment integration for tier-based billing.',
+    bullets: [
+      'Parent milestone auto-calculates progress from all sub-milestones and direct test cases',
+      'Auto status determination: all completed → completed, any past_due → past_due',
+      'Auto date range: Parent start = min(sub.start), end = max(sub.end)',
+      'Lemon Squeezy checkout with tier-based plans (Free / Starter / Professional / Enterprise S/M/L)',
+    ],
+  },
+  {
+    date: 'April 2026',
+    title: 'Export & Reporting Improvements',
+    category: 'Improvement',
+    categoryColor: 'bg-emerald-100 text-emerald-700',
+    description: 'Quality improvements across Run Detail Export and Dashboard Export. 10 fixes for data accuracy, layout consistency, and visual polish.',
+    bullets: [
+      'Run Detail Export: 4 quality fixes including data formatting and layout',
+      'Dashboard Export: 6 bug fixes for chart rendering and data accuracy',
+      'PDF visual alignment with designer mockups (18 items addressed)',
+    ],
+  },
+  {
     date: 'Q2 2026',
     title: 'AI Test Case Generation',
     category: 'Coming Soon',
