@@ -4,11 +4,5 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron/check-milestones",
-      "schedule": "0 0,6,12,18 * * *"
-    }
   ]
 }
