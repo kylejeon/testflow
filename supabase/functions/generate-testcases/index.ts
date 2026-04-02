@@ -324,12 +324,16 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // User-scoped client for auth validation (Supabase recommended pattern)
+    // Validate JWT by passing token directly to getUser()
+    // NOTE: getUser() without args looks up the local session (which doesn't exist
+    // when persistSession=false), causing "Auth session missing!".
+    // Passing the JWT explicitly makes it call GoTrue /user endpoint directly.
+    const token = authHeader.replace('Bearer ', '');
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    const { data: { user }, error: authError } = await userClient.auth.getUser(token);
     if (authError || !user) {
       return jsonResponse({ error: 'Unauthorized', details: authError?.message }, 401);
     }
