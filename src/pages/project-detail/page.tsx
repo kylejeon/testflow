@@ -120,7 +120,6 @@ export default function ProjectDetail() {
         .from('ai_generation_logs')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userProfile.id)
-        .eq('step', 1)
         .gte('created_at', startOfMonth.toISOString());
       return count || 0;
     },
