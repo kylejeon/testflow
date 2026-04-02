@@ -134,6 +134,7 @@ function AppContent() {
         const projectId = await createSampleProject();
         await setSampleProjectCreated();
         await markStep('createProject');
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
         navigate(`/projects/${projectId}`);
       }
     },

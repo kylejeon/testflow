@@ -365,6 +365,7 @@ export default function ProjectsContent() {
         return;
       }
       const projectId = await createSampleProject();
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
       navigate(`/projects/${projectId}`);
     } catch (err: any) {
       console.error('Sample project creation failed:', err);
@@ -403,6 +404,7 @@ export default function ProjectsContent() {
         return;
       }
       const projectId = await createSampleProject();
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
       showToast("Sample project created! Explore the pre-configured test cases, runs, and milestones.", 'success');
       navigate(`/projects/${projectId}`);
     } catch (err: any) {
