@@ -2178,7 +2178,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             className="px-[0.875rem] py-[0.4375rem] border border-violet-200 text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-all text-[0.8125rem] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <i className="ri-file-copy-line text-base"></i>
-            다른 프로젝트에서 복제
+            Clone from Project
           </button>
         </div>
 

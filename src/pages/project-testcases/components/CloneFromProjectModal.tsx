@@ -1,7 +1,6 @@
 /**
  * CloneFromProjectModal
- * 다른 프로젝트에서 테스트 케이스를 복제합니다.
- * 폴더(스위트) → 케이스 → 스텝 계층 구조를 유지합니다.
+ * Clone test cases from another project, preserving folder (suite → case → step) hierarchy.
  */
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
@@ -47,19 +46,16 @@ export default function CloneFromProjectModal({
   const [sourceCases, setSourceCases] = useState<SourceTestCase[]>([]);
   const [loadingCases, setLoadingCases] = useState(false);
 
-  // 선택 상태
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [folderFilter, setFolderFilter] = useState<string>('__all__');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 복제 진행
   const [cloning, setCloning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [clonedCount, setClonedCount] = useState(0);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string>('');
 
-  // 대상 프로젝트 prefix 및 소스 프로젝트 목록 로드
   useEffect(() => {
     (async () => {
       setLoadingProjects(true);
@@ -73,7 +69,6 @@ export default function CloneFromProjectModal({
     })();
   }, [targetProjectId]);
 
-  // 소스 프로젝트 선택 → 케이스 로드
   useEffect(() => {
     if (!selectedProjectId) { setSourceCases([]); return; }
     (async () => {
@@ -92,10 +87,8 @@ export default function CloneFromProjectModal({
     })();
   }, [selectedProjectId]);
 
-  // 폴더 목록
   const folders = ['__all__', ...new Set(sourceCases.map(tc => tc.folder || '(No Folder)'))];
 
-  // 필터된 케이스
   const filtered = sourceCases.filter(tc => {
     const inFolder = folderFilter === '__all__' || (tc.folder || '(No Folder)') === folderFilter;
     const inSearch = !searchQuery || tc.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -112,7 +105,6 @@ export default function CloneFromProjectModal({
 
   const toggleSelectAll = () => {
     if (selectedIds.size === filtered.length && filtered.length > 0) {
-      // 현재 필터된 케이스 모두 해제
       setSelectedIds(prev => {
         const next = new Set(prev);
         filtered.forEach(tc => next.delete(tc.id));
@@ -129,7 +121,6 @@ export default function CloneFromProjectModal({
 
   const allFilteredSelected = filtered.length > 0 && filtered.every(tc => selectedIds.has(tc.id));
 
-  // 복제 실행
   const handleClone = async () => {
     if (selectedIds.size === 0) return;
 
@@ -141,7 +132,6 @@ export default function CloneFromProjectModal({
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // 대상 프로젝트 현재 최대 번호 조회
       let maxNum = 0;
       const prefix = targetProjectPrefix;
       if (prefix) {
@@ -156,10 +146,8 @@ export default function CloneFromProjectModal({
         });
       }
 
-      // 복제할 케이스 선택
       const toBeCopied = sourceCases.filter(tc => selectedIds.has(tc.id));
 
-      // 폴더 자동 생성 (대상 프로젝트에 없는 폴더만)
       const requiredFolders = [...new Set(toBeCopied.map(tc => tc.folder).filter((f): f is string => !!f && f.trim() !== ''))];
       if (requiredFolders.length > 0) {
         const { data: existingFolders } = await supabase
@@ -173,7 +161,6 @@ export default function CloneFromProjectModal({
         }
       }
 
-      // 청크 분할 & 복제
       const chunks: SourceTestCase[][] = [];
       for (let i = 0; i < toBeCopied.length; i += CHUNK_SIZE) {
         chunks.push(toBeCopied.slice(i, i + CHUNK_SIZE));
@@ -210,7 +197,6 @@ export default function CloneFromProjectModal({
         totalCloned += inserted?.length ?? chunk.length;
         globalIdx += chunk.length;
 
-        // 히스토리 기록
         if (inserted && user) {
           await supabase.from('test_case_history').insert(
             inserted.map((tc: { id: string }) => ({
@@ -229,7 +215,7 @@ export default function CloneFromProjectModal({
       setDone(true);
       await onRefresh();
     } catch (err: any) {
-      setError(err.message || '복제 중 오류가 발생했습니다.');
+      setError(err.message || 'An error occurred while cloning. Please try again.');
     } finally {
       setCloning(false);
     }
@@ -254,8 +240,8 @@ export default function CloneFromProjectModal({
               <i className="ri-file-copy-line text-violet-600 text-xl"></i>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">다른 프로젝트에서 복제</h2>
-              <p className="text-sm text-gray-500 mt-0.5">폴더 구조를 유지하며 테스트 케이스를 복사합니다</p>
+              <h2 className="text-xl font-bold text-gray-900">Clone from Another Project</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Copy test cases while preserving folder structure</p>
             </div>
           </div>
           <button onClick={onClose} disabled={cloning}
@@ -267,33 +253,33 @@ export default function CloneFromProjectModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {done ? (
-            /* 완료 */
+            /* Done */
             <div className="text-center py-12">
               <div className="w-20 h-20 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <i className="ri-checkbox-circle-fill text-violet-500 text-4xl"></i>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">복제 완료!</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Clone Complete!</h3>
               <p className="text-gray-600">
-                <strong className="text-violet-600">{clonedCount}개</strong> 테스트 케이스가 복제되었습니다.
+                <strong className="text-violet-600">{clonedCount} test cases</strong> have been cloned successfully.
               </p>
               <button onClick={onClose}
                 className="mt-6 px-8 py-3 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-all font-semibold cursor-pointer">
-                닫기
+                Close
               </button>
             </div>
           ) : cloning ? (
-            /* 진행 중 */
+            /* In progress */
             <div className="py-8 space-y-6">
               <div className="text-center">
                 <div className="w-16 h-16 bg-violet-50 rounded-full flex items-center justify-center mx-auto mb-4">
                   <i className="ri-loader-4-line text-violet-500 text-3xl animate-spin"></i>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">복제 진행 중...</h3>
-                <p className="text-sm text-gray-500">{clonedCount}개 / {selectedIds.size}개 완료</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Cloning in progress...</h3>
+                <p className="text-sm text-gray-500">{clonedCount} / {selectedIds.size} completed</p>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-medium text-gray-500">
-                  <span>{clonedCount} / {selectedIds.size}개</span>
+                  <span>{clonedCount} / {selectedIds.size}</span>
                   <span>{progress}%</span>
                 </div>
                 <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
@@ -303,9 +289,9 @@ export default function CloneFromProjectModal({
             </div>
           ) : (
             <div className="space-y-5">
-              {/* 소스 프로젝트 선택 */}
+              {/* Source project selector */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">소스 프로젝트 선택</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Select Source Project</label>
                 {loadingProjects ? (
                   <div className="h-10 bg-gray-100 rounded-lg animate-pulse" />
                 ) : (
@@ -314,7 +300,7 @@ export default function CloneFromProjectModal({
                     onChange={e => setSelectedProjectId(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 cursor-pointer"
                   >
-                    <option value="">프로젝트를 선택하세요...</option>
+                    <option value="">Select a project...</option>
                     {projects.map(p => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
@@ -322,7 +308,7 @@ export default function CloneFromProjectModal({
                 )}
               </div>
 
-              {/* 케이스 목록 */}
+              {/* Case list */}
               {selectedProjectId && (
                 <>
                   {loadingCases ? (
@@ -334,17 +320,17 @@ export default function CloneFromProjectModal({
                   ) : sourceCases.length === 0 ? (
                     <div className="text-center py-10 text-gray-400">
                       <i className="ri-inbox-line text-4xl mb-2 block"></i>
-                      <p className="text-sm">이 프로젝트에 테스트 케이스가 없습니다.</p>
+                      <p className="text-sm">No test cases found in this project.</p>
                     </div>
                   ) : (
                     <>
-                      {/* 필터 & 선택 */}
+                      {/* Filter & search */}
                       <div className="flex items-center gap-2">
                         <div className="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
                           <i className="ri-search-line text-gray-400 text-sm"></i>
                           <input
                             type="text"
-                            placeholder="케이스 검색..."
+                            placeholder="Search cases..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             className="flex-1 bg-transparent text-sm outline-none text-gray-700"
@@ -356,32 +342,32 @@ export default function CloneFromProjectModal({
                           className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 bg-white focus:outline-none cursor-pointer"
                         >
                           {folders.map(f => (
-                            <option key={f} value={f}>{f === '__all__' ? '전체 폴더' : f}</option>
+                            <option key={f} value={f}>{f === '__all__' ? 'All Folders' : f}</option>
                           ))}
                         </select>
                       </div>
 
-                      {/* 전체 선택 헤더 */}
+                      {/* Select all header */}
                       <div className="flex items-center justify-between px-1">
                         <label className="flex items-center gap-2 cursor-pointer" onClick={toggleSelectAll}>
                           <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${allFilteredSelected ? 'bg-violet-500 border-violet-500' : 'bg-white border-gray-300'}`}>
                             {allFilteredSelected && <i className="ri-check-line text-white text-xs"></i>}
                           </div>
                           <span className="text-sm font-medium text-gray-700">
-                            전체 선택 ({filtered.length}개)
+                            Select All ({filtered.length})
                           </span>
                         </label>
                         {selectedIds.size > 0 && (
                           <span className="text-sm font-semibold text-violet-600">
-                            {selectedIds.size}개 선택됨
+                            {selectedIds.size} selected
                           </span>
                         )}
                       </div>
 
-                      {/* 케이스 목록 */}
+                      {/* Case list */}
                       <div className="border border-gray-200 rounded-lg overflow-hidden max-h-72 overflow-y-auto">
                         {filtered.length === 0 ? (
-                          <div className="py-6 text-center text-sm text-gray-400">검색 결과가 없습니다.</div>
+                          <div className="py-6 text-center text-sm text-gray-400">No results found.</div>
                         ) : (
                           filtered.map(tc => (
                             <div
@@ -412,7 +398,7 @@ export default function CloneFromProjectModal({
                         )}
                       </div>
 
-                      {/* 에러 */}
+                      {/* Error */}
                       {error && (
                         <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
                           <i className="ri-error-warning-line text-red-500 flex-shrink-0 mt-0.5"></i>
@@ -420,14 +406,14 @@ export default function CloneFromProjectModal({
                         </div>
                       )}
 
-                      {/* 복제 안내 */}
+                      {/* Clone info */}
                       {selectedIds.size > 0 && (
                         <div className="bg-violet-50 border border-violet-200 rounded-lg p-3 text-sm text-violet-700">
                           <i className="ri-information-line mr-1"></i>
-                          <strong>{selectedIds.size}개</strong>의 테스트 케이스가 현재 프로젝트에 복제됩니다.
-                          폴더 구조가 유지되며, <strong>Draft</strong> 상태로 추가됩니다.
+                          <strong>{selectedIds.size} test {selectedIds.size === 1 ? 'case' : 'cases'}</strong> will be cloned into this project.
+                          Folder structure will be preserved and cases will be added as <strong>Draft</strong>.
                           {targetProjectPrefix && (
-                            <span> ID는 <strong>{targetProjectPrefix}-N</strong> 형식으로 자동 부여됩니다.</span>
+                            <span> IDs will be assigned automatically as <strong>{targetProjectPrefix}-N</strong>.</span>
                           )}
                         </div>
                       )}
@@ -444,7 +430,7 @@ export default function CloneFromProjectModal({
           <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
             <button onClick={onClose}
               className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap">
-              취소
+              Cancel
             </button>
             <button
               onClick={handleClone}
@@ -452,7 +438,7 @@ export default function CloneFromProjectModal({
               className="px-6 py-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-all font-semibold cursor-pointer whitespace-nowrap flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <i className="ri-file-copy-line"></i>
-              {selectedIds.size > 0 ? `${selectedIds.size}개 복제` : '복제'}
+              {selectedIds.size > 0 ? `Clone ${selectedIds.size} ${selectedIds.size === 1 ? 'Case' : 'Cases'}` : 'Clone'}
             </button>
           </div>
         )}
