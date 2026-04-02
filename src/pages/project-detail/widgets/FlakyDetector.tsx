@@ -27,13 +27,13 @@ const CATEGORY_LABEL: Record<string, string> = {
   timing: 'Timing',
 };
 
-const CATEGORY_COLOR: Record<string, { bg: string; text: string; border: string }> = {
-  race_condition:   { bg: '#FEF2F2', text: '#991B1B', border: '#FCA5A5' },
-  shared_state:     { bg: '#FFFBEB', text: '#92400E', border: '#FCD34D' },
-  env_dependency:   { bg: '#EFF6FF', text: '#1E40AF', border: '#BFDBFE' },
-  data_dependency:  { bg: '#F5F3FF', text: '#5B21B6', border: '#DDD6FE' },
-  timing:           { bg: '#F0FDF4', text: '#14532D', border: '#86EFAC' },
-};
+const PATTERN_BADGE_COLORS: { bg: string; text: string }[] = [
+  { bg: '#7F1D1D', text: '#FCA5A5' },
+  { bg: '#78350F', text: '#FDE68A' },
+  { bg: '#1E3A5F', text: '#93C5FD' },
+  { bg: '#3B0764', text: '#D8B4FE' },
+  { bg: '#14532D', text: '#86EFAC' },
+];
 
 function calculateFlakyScore(statuses: string[]): number {
   if (statuses.length < 2) return 0;
@@ -70,6 +70,35 @@ function FlakyScoreBadge({ score }: { score: number }) {
   );
 }
 
+/* ── Toast Component ── */
+function Toast({ message, type, onClose }: { message: string; type: 'error' | 'success' | 'info'; onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const colors = {
+    error: 'bg-red-50 border-red-200 text-red-700',
+    success: 'bg-green-50 border-green-200 text-green-700',
+    info: 'bg-blue-50 border-blue-200 text-blue-700',
+  };
+
+  return (
+    <div
+      className={`fixed top-4 right-4 z-[9999] flex items-center gap-2 px-4 py-3 rounded-lg border shadow-lg text-[13px] font-medium ${colors[type]}`}
+      style={{ animation: 'toastSlideIn 0.3s ease-out' }}
+    >
+      {type === 'error' && <i className="ri-error-warning-fill" />}
+      {type === 'success' && <i className="ri-check-line" />}
+      {message}
+      <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100 cursor-pointer">
+        <i className="ri-close-line" />
+      </button>
+      <style>{`@keyframes toastSlideIn { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }`}</style>
+    </div>
+  );
+}
+
 export default function FlakyDetector({ projectId, subscriptionTier }: { projectId: string; subscriptionTier: number }) {
   const [flaky, setFlaky] = useState<FlakyTC[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +108,11 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiPatterns, setAiPatterns] = useState<FlakyPattern[]>([]);
-  const [jiraCreating, setJiraCreating] = useState<string | null>(null); // patternName
+  const [jiraCreating, setJiraCreating] = useState<string | null>(null);
+  const [expandedJira, setExpandedJira] = useState<string | null>(null);
+
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
 
   const limit = subscriptionTier >= 3 ? 20 : 5;
 
@@ -98,7 +131,6 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
 
       const runIds = runs.map(r => r.id);
 
-      // Fetch last 10 results per TC (ordered newest first)
       const { data: results } = await supabase
         .from('test_results')
         .select('test_case_id, status, created_at')
@@ -108,7 +140,6 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
 
       if (!results?.length) { setFlaky([]); setLoading(false); return; }
 
-      // Group by TC, keep last 10; track most recent run timestamp
       const byTC: Record<string, string[]> = {};
       const lastRunAt: Record<string, string> = {};
       results.forEach(r => {
@@ -119,7 +150,6 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
         if (byTC[r.test_case_id].length < 10) byTC[r.test_case_id].push(r.status);
       });
 
-      // Filter: at least 3 results, score >= 40
       const candidates = Object.entries(byTC)
         .filter(([, statuses]) => statuses.length >= 3)
         .map(([tcId, statuses]) => {
@@ -132,7 +162,6 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
 
       if (candidates.length === 0) { setFlaky([]); setLoading(false); return; }
 
-      // Fetch TC metadata
       const tcIds = candidates.map(c => c.tcId);
       const { data: tcs } = await supabase
         .from('test_cases')
@@ -180,16 +209,30 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       }));
 
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error: fnError } = await supabase.functions.invoke('generate-testcases', {
-        body: { action: 'analyze-flaky', project_id: projectId, flaky_tests: flakyTests },
-        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      if (!session?.access_token) {
+        setAiError('Login required. Please sign in again.');
+        return;
+      }
+
+      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-testcases`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ action: 'analyze-flaky', project_id: projectId, flaky_tests: flakyTests }),
       });
 
-      if (fnError) {
-        const status = (fnError as any)?.context?.status;
-        if (status === 403) setAiError('Professional plan required');
-        else if (status === 429) setAiError('Monthly AI limit reached');
-        else setAiError('Analysis failed. Please try again.');
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 403) setAiError('Professional plan required');
+        else if (response.status === 429) {
+          setAiError('Monthly AI limit reached');
+          setToast({ message: 'Monthly AI generation limit reached. Please upgrade your plan or try again next month.', type: 'error' });
+        } else setAiError('Analysis failed. Please try again.');
         return;
       }
 
@@ -217,8 +260,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
     }
   }
 
-  // Build a title map for pattern cards
-  const tcTitleMap = new Map(flaky.map(tc => [tc.id, { title: tc.title, customId: tc.customId }]));
+  const tcTitleMap = new Map(flaky.map(tc => [tc.id, { title: tc.title, customId: tc.customId, score: tc.flakyScore }]));
 
   async function createJiraForPattern(pattern: FlakyPattern) {
     const { data: jiraSettings } = await supabase
@@ -227,7 +269,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       .maybeSingle();
 
     if (!jiraSettings?.domain || !jiraSettings?.api_token) {
-      alert('Jira not connected. Please configure Jira in Settings.');
+      setToast({ message: 'Jira not connected. Please configure Jira in Settings.', type: 'error' });
       return;
     }
 
@@ -252,219 +294,348 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       });
 
       if (error) throw error;
-      alert(`Jira issue created for "${pattern.name}" pattern`);
+      setToast({ message: `Jira issue created for "${pattern.name}" pattern`, type: 'success' });
     } catch {
-      alert('Failed to create Jira issue. Please try again.');
+      setToast({ message: 'Failed to create Jira issue. Please try again.', type: 'error' });
     } finally {
       setJiraCreating(null);
     }
   }
 
+  async function createAllJiraIssues() {
+    for (const pattern of aiPatterns) {
+      await createJiraForPattern(pattern);
+    }
+  }
+
+  const totalFlakyTCs = aiPatterns.reduce((sum, p) => sum + p.testIds.length, 0);
+
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-        <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
-          <i className="ri-bug-fill text-red-500" />
-          Flaky TC Detection
-          {!loading && flaky.length > 0 && (
-            <span className="text-[11px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full ml-1">
-              {flaky.length} Flaky
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {!loading && flaky.length > 0 && subscriptionTier >= 3 && (
-            <button
-              onClick={handleAIAnalyzeClick}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer hover:opacity-90"
-              style={{
-                background: showDeepAnalysis ? '#EEF2FF' : 'linear-gradient(135deg,#6366F1,#8B5CF6)',
-                color: showDeepAnalysis ? '#6366F1' : '#fff',
-                border: showDeepAnalysis ? '1px solid #C7D2FE' : 'none',
-              }}
-            >
-              <i className="ri-sparkling-2-fill text-[12px]" />
-              AI Analyze
-              {showDeepAnalysis && <i className="ri-arrow-up-s-line text-[12px]" />}
-            </button>
-          )}
-          {subscriptionTier < 3 && (
-            <span className="text-[11px] text-gray-400">Top {limit}</span>
-          )}
-          <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">Pro+</span>
-        </div>
-      </div>
+    <>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="py-2">
-        {loading ? (
-          <div className="space-y-2 px-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-10 bg-gray-50 rounded-lg animate-pulse" />
-            ))}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+          <div className="flex items-center gap-2 text-[15px] font-semibold text-gray-900">
+            <i className="ri-shuffle-fill text-violet-500" />
+            Flaky Test Detection
+            {!loading && flaky.length > 0 && (
+              <span className="text-[11px] font-bold text-amber-600 ml-1">
+                {flaky.length} flaky
+              </span>
+            )}
           </div>
-        ) : flaky.length === 0 ? (
-          <div className="py-8 flex flex-col items-center text-center gap-2">
-            <i className="ri-shield-check-line text-3xl text-emerald-400" />
-            <p className="text-[13px] font-medium text-gray-700">No Flaky TCs</p>
-            <p className="text-[12px] text-gray-400">All TCs are running stably</p>
+          <div className="flex items-center gap-2">
+            {!loading && flaky.length > 0 && subscriptionTier >= 3 && (
+              <button
+                onClick={handleAIAnalyzeClick}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer hover:opacity-90"
+                style={{
+                  background: aiLoading ? '#4338CA' : showDeepAnalysis ? '#EEF2FF' : 'linear-gradient(135deg,#6366F1,#8B5CF6)',
+                  color: aiLoading ? '#C7D2FE' : showDeepAnalysis ? '#6366F1' : '#fff',
+                  border: showDeepAnalysis && !aiLoading ? '1px solid #C7D2FE' : 'none',
+                  cursor: aiLoading ? 'not-allowed' : 'pointer',
+                }}
+                disabled={aiLoading}
+              >
+                {aiLoading ? (
+                  <>
+                    <span style={{ width: 12, height: 12, border: '1.5px solid #6366F1', borderTopColor: '#C7D2FE', borderRadius: '50%', animation: 'flakyBtnSpin 0.8s linear infinite', display: 'inline-block' }} />
+                    Analyzing…
+                  </>
+                ) : (
+                  <>
+                    <i className="ri-sparkling-2-fill text-[12px]" />
+                    AI Analyze
+                    {showDeepAnalysis && <i className="ri-arrow-up-s-line text-[12px]" />}
+                  </>
+                )}
+              </button>
+            )}
+            {subscriptionTier < 3 && (
+              <span className="text-[11px] text-gray-400">Top {limit}</span>
+            )}
+            <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">Pro+</span>
           </div>
-        ) : (
-          <>
-            <table className="w-full text-[12px]">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 px-4 py-2 w-[80px]">ID</th>
-                  <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2">Test Case</th>
-                  <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2">Sequence (Last 10)</th>
-                  <th className="text-center text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2 pr-2">Score</th>
-                  <th className="text-right text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2 pr-4">Last Run</th>
-                </tr>
-              </thead>
-              <tbody>
-                {flaky.map(tc => (
-                  <tr
-                    key={tc.id}
-                    className={`border-b border-gray-100 hover:bg-gray-50/70 transition-colors ${tc.flakyScore >= 50 ? 'border-l-2 border-l-red-500' : ''}`}
-                  >
-                    <td className="pl-3.5 py-2.5 pr-2">
-                      <span className="text-[11px] font-mono text-gray-500">{tc.customId || '—'}</span>
-                    </td>
-                    <td className="py-2.5 pr-2">
-                      <div className="font-medium text-gray-800 truncate max-w-[120px]">{tc.title}</div>
-                    </td>
-                    <td className="py-2.5 pr-2">
-                      <SequenceDots statuses={tc.recentStatuses} />
-                    </td>
-                    <td className="py-2.5 pr-2 text-center">
-                      <FlakyScoreBadge score={tc.flakyScore} />
-                    </td>
-                    <td className="py-2.5 pr-4 text-right text-[11px] text-gray-400 whitespace-nowrap">{tc.lastRun}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        </div>
+        <style>{`@keyframes flakyBtnSpin { to { transform: rotate(360deg); } }`}</style>
 
-            {/* Dot legend */}
-            <div className="flex items-center gap-3 px-4 pt-2">
-              {[
-                { label: 'Passed', className: 'bg-green-600' },
-                { label: 'Failed', className: 'border-[1.5px] border-red-600 bg-transparent' },
-                { label: 'Blocked', className: 'bg-amber-500' },
-              ].map(l => (
-                <span key={l.label} className="flex items-center gap-1 text-[11px] text-gray-400">
-                  <span className={`w-2 h-2 rounded-full ${l.className}`} />
-                  {l.label}
-                </span>
+        <div className="py-2">
+          {loading ? (
+            <div className="space-y-2 px-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-10 bg-gray-50 rounded-lg animate-pulse" />
               ))}
             </div>
+          ) : flaky.length === 0 ? (
+            <div className="py-8 flex flex-col items-center text-center gap-2">
+              <i className="ri-shield-check-line text-3xl text-emerald-400" />
+              <p className="text-[13px] font-medium text-gray-700">No Flaky TCs</p>
+              <p className="text-[12px] text-gray-400">All TCs are running stably</p>
+            </div>
+          ) : (
+            <>
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 px-4 py-2 w-[80px]">ID</th>
+                    <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2">Test Case</th>
+                    <th className="text-left text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2">Sequence (Last 10)</th>
+                    <th className="text-center text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2 pr-2">Score</th>
+                    <th className="text-right text-[11px] font-extrabold uppercase tracking-wider text-gray-600 py-2 pr-4">Last Run</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {flaky.map(tc => (
+                    <tr
+                      key={tc.id}
+                      className={`border-b border-gray-100 hover:bg-gray-50/70 transition-colors ${tc.flakyScore >= 50 ? 'border-l-2 border-l-red-500' : ''}`}
+                    >
+                      <td className="pl-3.5 py-2.5 pr-2">
+                        <span className="text-[11px] font-mono text-gray-500">{tc.customId || '—'}</span>
+                      </td>
+                      <td className="py-2.5 pr-2">
+                        <div className="font-medium text-gray-800 truncate max-w-[120px]">{tc.title}</div>
+                      </td>
+                      <td className="py-2.5 pr-2">
+                        <SequenceDots statuses={tc.recentStatuses} />
+                      </td>
+                      <td className="py-2.5 pr-2 text-center">
+                        <FlakyScoreBadge score={tc.flakyScore} />
+                      </td>
+                      <td className="py-2.5 pr-4 text-right text-[11px] text-gray-400 whitespace-nowrap">{tc.lastRun}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-            {/* AI Deep Analysis Panel */}
-            {showDeepAnalysis && (
-              <div style={{ borderTop: '1px solid #E2E8F0', marginTop: 8 }}>
-                <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg,rgba(99,102,241,0.05),rgba(139,92,246,0.05))' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              {/* Dot legend */}
+              <div className="flex items-center gap-3 px-4 pt-2">
+                {[
+                  { label: 'Passed', className: 'bg-green-600' },
+                  { label: 'Failed', className: 'border-[1.5px] border-red-600 bg-transparent' },
+                  { label: 'Blocked', className: 'bg-amber-500' },
+                ].map(l => (
+                  <span key={l.label} className="flex items-center gap-1 text-[11px] text-gray-400">
+                    <span className={`w-2 h-2 rounded-full ${l.className}`} />
+                    {l.label}
+                  </span>
+                ))}
+              </div>
+
+              {/* ── AI Deep Analysis Accordion ── */}
+              {showDeepAnalysis && (
+                <div style={{ borderTop: '2px solid #6366F1', marginTop: 8, animation: 'flakySlideDown 0.3s ease-out' }}>
+                  <style>{`@keyframes flakySlideDown { from { opacity:0; max-height:0; } to { opacity:1; max-height:2000px; } }`}</style>
+
+                  {/* AI Section Header */}
+                  <div style={{ padding: '10px 16px', background: 'linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.04))', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <i className="ri-sparkling-2-fill" style={{ color: '#6366F1', fontSize: 14 }} />
                       <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>AI Deep Analysis</span>
+                      {!aiLoading && aiPatterns.length > 0 && (
+                        <span style={{ fontSize: 11, color: '#64748B', marginLeft: 6 }}>{aiPatterns.length} patterns found</span>
+                      )}
                     </div>
-                    {!aiLoading && aiPatterns.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {!aiLoading && aiPatterns.length > 0 && (
+                        <button
+                          onClick={runAIAnalysis}
+                          style={{ fontSize: 11, color: '#6366F1', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          <i className="ri-refresh-line" /> Re-analyze
+                        </button>
+                      )}
                       <button
-                        onClick={runAIAnalysis}
-                        style={{ fontSize: 11, color: '#6366F1', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                        onClick={() => setShowDeepAnalysis(false)}
+                        style={{ fontSize: 14, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
                       >
-                        <i className="ri-refresh-line" /> Re-analyze
+                        <i className="ri-arrow-up-s-line" />
                       </button>
-                    )}
+                    </div>
                   </div>
 
-                  {/* Loading */}
-                  {aiLoading && (
-                    <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                      <div style={{ width: 28, height: 28, border: '3px solid #E2E8F0', borderTopColor: '#6366F1', borderRadius: '50%', animation: 'flakyAISpin 0.8s linear infinite', margin: '0 auto 10px' }} />
-                      <p style={{ fontSize: 12, color: '#64748B', margin: 0 }}>AI가 패턴을 분석 중…</p>
-                      <style>{`@keyframes flakyAISpin { to { transform: rotate(360deg); } }`}</style>
-                    </div>
-                  )}
+                  <div style={{ padding: '14px 16px' }}>
+                    {/* Loading */}
+                    {aiLoading && (
+                      <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                        <div style={{ width: 28, height: 28, border: '3px solid #E2E8F0', borderTopColor: '#6366F1', borderRadius: '50%', animation: 'flakyAISpin 0.8s linear infinite', margin: '0 auto 10px' }} />
+                        <p style={{ fontSize: 13, color: '#64748B', margin: 0 }}>Analyzing flaky patterns for {flaky.length} tests…</p>
+                        <style>{`@keyframes flakyAISpin { to { transform: rotate(360deg); } }`}</style>
+                      </div>
+                    )}
 
-                  {/* Error */}
-                  {!aiLoading && aiError && (
-                    <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                      <p style={{ fontSize: 13, color: '#EF4444', marginBottom: 10 }}>⚠️ {aiError}</p>
-                      <button
-                        onClick={runAIAnalysis}
-                        style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', color: '#334155' }}
-                      >
-                        Try Again
-                      </button>
-                    </div>
-                  )}
+                    {/* Error */}
+                    {!aiLoading && aiError && (
+                      <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                        <p style={{ fontSize: 13, color: '#EF4444', marginBottom: 10 }}>⚠️ {aiError}</p>
+                        <button
+                          onClick={runAIAnalysis}
+                          style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', color: '#334155' }}
+                        >
+                          Try Again
+                        </button>
+                      </div>
+                    )}
 
-                  {/* Pattern Cards */}
-                  {!aiLoading && aiPatterns.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {aiPatterns.map((pattern, i) => {
-                        const colors = CATEGORY_COLOR[pattern.category] ?? CATEGORY_COLOR['timing'];
-                        return (
-                          <div
-                            key={i}
-                            style={{
-                              background: colors.bg,
-                              border: `1px solid ${colors.border}`,
-                              borderRadius: 8,
-                              padding: '10px 12px',
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                              <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>{pattern.name}</span>
-                                  <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.7)', border: `1px solid ${colors.border}`, borderRadius: 4, padding: '1px 6px', color: colors.text, fontWeight: 600 }}>
-                                    {CATEGORY_LABEL[pattern.category] ?? pattern.category}
-                                  </span>
-                                  <span style={{ fontSize: 10, color: '#64748B' }}>{pattern.testIds.length} TC</span>
-                                </div>
-                                {/* Affected TCs */}
-                                <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 4 }}>
-                                  {pattern.testIds.map(id => {
-                                    const tc = tcTitleMap.get(id);
-                                    return (
-                                      <span key={id} style={{ fontSize: 10, background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 4, padding: '1px 5px', color: '#475569' }}>
-                                        {tc?.customId || id.slice(0, 8)}
-                                      </span>
-                                    );
-                                  })}
+                    {/* ── Pattern Cards ── */}
+                    {!aiLoading && aiPatterns.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {aiPatterns.map((pattern, i) => {
+                          const badge = PATTERN_BADGE_COLORS[i % PATTERN_BADGE_COLORS.length];
+                          const letter = String.fromCharCode(65 + i); // A, B, C...
+                          const isJiraExpanded = expandedJira === pattern.name;
+
+                          return (
+                            <div
+                              key={i}
+                              style={{
+                                background: '#FAFBFC',
+                                border: '1px solid #E2E8F0',
+                                borderRadius: 10,
+                                padding: '14px 16px',
+                              }}
+                            >
+                              {/* Pattern Header */}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span style={{
+                                    width: 24, height: 24, borderRadius: 6,
+                                    background: badge.bg, color: badge.text,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: 11, fontWeight: 800,
+                                  }}>{letter}</span>
+                                  <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>{pattern.name}</span>
+                                  <span style={{ fontSize: 11, color: '#64748B', fontWeight: 400 }}>— {pattern.testIds.length} TCs</span>
                                 </div>
                               </div>
-                              <button
-                                onClick={() => createJiraForPattern(pattern)}
-                                disabled={jiraCreating === pattern.name}
-                                style={{
-                                  fontSize: 10, fontWeight: 600, color: '#0052CC',
-                                  background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(0,82,204,0.2)',
-                                  borderRadius: 6, padding: '3px 8px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                                  opacity: jiraCreating === pattern.name ? 0.5 : 1,
-                                }}
-                              >
-                                {jiraCreating === pattern.name ? '…' : '+ Jira'}
-                              </button>
+
+                              {/* Affected TC Tags */}
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                                {pattern.testIds.map(id => {
+                                  const tc = tcTitleMap.get(id);
+                                  return (
+                                    <span key={id} style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                                      padding: '3px 10px', background: '#F1F5F9', border: '1px solid #E2E8F0',
+                                      borderRadius: 6, fontSize: 11, color: '#475569',
+                                    }}>
+                                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B', flexShrink: 0 }} />
+                                      {tc?.customId || id.slice(0, 8)} {tc?.title || ''}
+                                      <span style={{ fontWeight: 700, color: '#D97706' }}>{tc?.score ?? ''}</span>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+
+                              {/* WHY FLAKY */}
+                              <div style={{ marginBottom: 8 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                                  <i className="ri-search-eye-line" style={{ marginRight: 4 }} />Why Flaky
+                                </div>
+                                <div style={{
+                                  padding: '8px 12px', background: '#FEF9F0', borderRadius: 6,
+                                  borderLeft: '3px solid #EF4444', fontSize: 12, color: '#475569', lineHeight: 1.6,
+                                }}>
+                                  {pattern.rootCause}
+                                </div>
+                              </div>
+
+                              {/* HOW TO FIX */}
+                              <div style={{ marginBottom: 10 }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                                  <i className="ri-tools-fill" style={{ marginRight: 4 }} />How to Fix
+                                </div>
+                                <div style={{
+                                  padding: '8px 12px', background: '#F0FDF4', borderRadius: 6,
+                                  borderLeft: '3px solid #10B981', fontSize: 12, color: '#475569', lineHeight: 1.6,
+                                }}>
+                                  {pattern.fixSuggestion}
+                                </div>
+                              </div>
+
+                              {/* Jira Action */}
+                              {!isJiraExpanded ? (
+                                <button
+                                  onClick={() => setExpandedJira(pattern.name)}
+                                  style={{
+                                    fontSize: 11, fontWeight: 600, color: '#6366F1',
+                                    background: '#EEF2FF', border: '1px solid #C7D2FE',
+                                    borderRadius: 6, padding: '5px 12px', cursor: 'pointer',
+                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                  }}
+                                >
+                                  <i className="ri-jira-line" /> Create Jira for Pattern {letter}
+                                </button>
+                              ) : (
+                                <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0', borderLeft: '3px solid #6366F1' }}>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 4 }}>
+                                    [Flaky] {pattern.name} in {CATEGORY_LABEL[pattern.category] ?? pattern.category} Tests
+                                  </div>
+                                  <div style={{ fontSize: 11, color: '#64748B' }}>
+                                    Priority: High · Labels: flaky, ai-detected, {pattern.category.replace('_', '-')}
+                                  </div>
+                                  <div style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
+                                    Linked: {pattern.testIds.map(id => tcTitleMap.get(id)?.customId || id.slice(0, 8)).join(', ')}
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 8 }}>
+                                    <button
+                                      onClick={() => setExpandedJira(null)}
+                                      style={{ fontSize: 11, fontWeight: 600, color: '#64748B', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={() => { createJiraForPattern(pattern); setExpandedJira(null); }}
+                                      disabled={jiraCreating === pattern.name}
+                                      style={{
+                                        fontSize: 11, fontWeight: 600, color: '#fff',
+                                        background: '#6366F1', border: 'none', borderRadius: 6,
+                                        padding: '4px 12px', cursor: 'pointer',
+                                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                                        opacity: jiraCreating === pattern.name ? 0.5 : 1,
+                                      }}
+                                    >
+                                      <i className="ri-jira-line" /> Create
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <p style={{ fontSize: 11, color: '#475569', margin: '0 0 3px', lineHeight: 1.5 }}>
-                              <strong>Root Cause:</strong> {pattern.rootCause}
-                            </p>
-                            <p style={{ fontSize: 11, color: '#475569', margin: 0, lineHeight: 1.5 }}>
-                              <strong>Fix:</strong> {pattern.fixSuggestion}
-                            </p>
+                          );
+                        })}
+
+                        {/* Bulk Action + Footer */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #E2E8F0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <i className="ri-sparkling-2-fill" style={{ color: '#8B5CF6', fontSize: 12 }} />
+                            <span style={{ fontSize: 11, color: '#94A3B8' }}>
+                              {aiPatterns.length} patterns · {totalFlakyTCs} flaky TCs · 1 AI credit used
+                            </span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          <button
+                            onClick={createAllJiraIssues}
+                            disabled={jiraCreating !== null}
+                            style={{
+                              fontSize: 11, fontWeight: 600, color: '#475569',
+                              background: '#F8FAFC', border: '1px solid #E2E8F0',
+                              borderRadius: 6, padding: '5px 12px', cursor: 'pointer',
+                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                              opacity: jiraCreating !== null ? 0.5 : 1,
+                            }}
+                          >
+                            <i className="ri-jira-line" /> Create All Issues ({aiPatterns.length})
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

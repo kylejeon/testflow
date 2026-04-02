@@ -81,6 +81,7 @@ async function getMonthlyUsage(
     .from('ai_generation_logs')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
+    .eq('step', 1)
     .gte('created_at', startOfMonth.toISOString());
 
   return count || 0;
@@ -949,8 +950,8 @@ Respond in valid JSON:
       return jsonResponse({ error: 'Jira mode requires Starter plan or higher.', current_tier: tier, required_tier: JIRA_MIN_TIER }, 403);
     }
 
-    // Monthly limit check (every API call counts)
-    {
+    // Monthly limit check (step 1 only — each flow counts as 1 usage)
+    if (step === 1) {
       const limit = PLAN_LIMITS[tier] ?? 5;
       if (limit !== -1) {
         const usage = await getMonthlyUsage(adminClient, user.id);
