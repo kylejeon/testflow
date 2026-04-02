@@ -182,19 +182,8 @@ export default function ProjectMilestones() {
             currentStatus = 'started';
             supabase.from('milestones').update({ status: 'started' }).eq('id', milestone.id);
           }
-          if (endDate < today) {
-            if (milestone.status !== 'past_due') {
-              supabase.from('projects').select('name').eq('id', id!).maybeSingle().then(({ data: proj }) => {
-                triggerWebhook(id!, 'milestone_past_due', {
-                  project_id: id!,
-                  project_name: proj?.name ?? '',
-                  milestone_id: milestone.id,
-                  milestone_name: milestone.name,
-                  end_date: milestone.end_date,
-                });
-              });
-            }
-          }
+          // Webhook for milestone_past_due is now handled by the server-side scheduler
+          // (check-milestone-past-due Edge Function) — no client-side webhook needed
         }
 
         const milestoneRuns = allRunsData?.filter(run => run.milestone_id === milestone.id) || [];
