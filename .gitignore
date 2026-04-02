@@ -1,4 +1,10 @@
 
+# AI outpuss
+pm/*
+desi/*
+outputs/*
+api/*
+
 # Dependencies
 node_modules
 .pnp
