@@ -173,11 +173,6 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
       to: `/projects/${projectId}/documentation`,
       active: path.includes('/documentation'),
     },
-    {
-      label: 'Stats',
-      to: `/projects/${projectId}/stats`,
-      active: path.includes('/stats'),
-    },
   ];
 
   return (

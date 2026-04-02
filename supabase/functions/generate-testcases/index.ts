@@ -319,19 +319,25 @@ Deno.serve(async (req) => {
     if (!authHeader?.startsWith('Bearer ')) {
       return jsonResponse({ error: 'Missing Authorization header' }, 401);
     }
-    const jwt = authHeader.replace('Bearer ', '');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+    // User-scoped client for auth validation (Supabase recommended pattern)
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
-
-    const { data: { user }, error: authError } = await adminClient.auth.getUser(jwt);
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) {
       return jsonResponse({ error: 'Unauthorized', details: authError?.message }, 401);
     }
+
+    // Admin client for all DB operations (bypasses RLS)
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
     // ── Rate Limiting (Token Bucket) ──────────────────────────
     // user_id 기준 버킷: AI 생성은 월 한도 외에 burst도 제한

@@ -35,7 +35,6 @@ const RefundPolicyPage = lazy(() => import('../pages/refund/page'));
 const CookiePolicyPage = lazy(() => import('../pages/cookies/page'));
 const AdminPage = lazy(() => import('../pages/admin/page'));
 const ProjectIntegrations = lazy(() => import('../pages/project-integrations/page'));
-const ProjectStatsPage = lazy(() => import('../pages/project-stats/page'));
 const TestCasesOverviewPage = lazy(() => import('../pages/stats/TestCasesOverviewPage'));
 const ActiveRunsPage = lazy(() => import('../pages/stats/ActiveRunsPage'));
 const PassRateReportPage = lazy(() => import('../pages/stats/PassRateReportPage'));
@@ -133,10 +132,6 @@ const routes: RouteObject[] = [
   {
     path: '/projects/:id/integrations',
     element: <ProjectIntegrations />,
-  },
-  {
-    path: '/projects/:id/stats',
-    element: <ProjectStatsPage />,
   },
   {
     path: '/testcases',
