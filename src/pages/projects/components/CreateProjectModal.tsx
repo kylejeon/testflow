@@ -71,6 +71,17 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
     checkProjectLimit();
   }, []);
 
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
   const checkProjectLimit = async () => {
     try {
       setLoading(true);
@@ -189,8 +200,11 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
-        <div className="p-6 border-b border-gray-200">
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col"
+        style={{ maxHeight: 'calc(100vh - 48px)' }}
+      >
+        <div className="p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">Create New Project</h2>
             <button
@@ -203,11 +217,11 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
         </div>
 
         {loading ? (
-          <div className="p-12 flex justify-center">
+          <div className="p-12 flex justify-center flex-1">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
           </div>
         ) : !canCreate ? (
-          <div className="p-6">
+          <div className="p-6 flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
             <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
               <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <i className="ri-error-warning-line text-3xl text-amber-600"></i>
@@ -239,8 +253,8 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="p-6 space-y-5">
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+            <div className="p-6 space-y-5 flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
               {/* Template picker */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -363,7 +377,10 @@ export default function CreateProjectModal({ onClose, onCreate }: CreateProjectM
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
+            <div
+              className="p-6 border-t border-gray-200 flex items-center justify-end gap-3 flex-shrink-0"
+              style={{ boxShadow: '0 -1px 3px rgba(0,0,0,0.05)' }}
+            >
               <button
                 type="button"
                 onClick={onClose}

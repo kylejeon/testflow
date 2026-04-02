@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Project } from '../../../lib/supabase';
 
 interface EditProjectModalProps {
@@ -23,10 +23,24 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
     }
   };
 
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-lg shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+      <div
+        className="bg-white rounded-xl w-full max-w-lg shadow-2xl flex flex-col"
+        style={{ maxHeight: 'calc(100vh - 48px)' }}
+      >
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
               <i className="ri-edit-line text-indigo-600 text-xl"></i>
@@ -43,8 +57,8 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="p-6 space-y-5 flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Project Name <span className="text-red-500">*</span>
@@ -101,7 +115,7 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
                 maxLength={20}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono uppercase"
               />
-              <p className="mt-1 text-xs text-gray-500">이 프로젝트와 연결할 Jira 프로젝트 키 (선택사항)</p>
+              <p className="mt-1 text-xs text-gray-500">Enter the Jira project key to link with this project (optional)</p>
             </div>
 
             <div>
@@ -119,7 +133,7 @@ export default function EditProjectModal({ project, onClose, onUpdate }: EditPro
             </div>
           </div>
 
-          <div className="flex gap-3 p-6 border-t border-gray-200">
+          <div className="flex gap-3 p-6 border-t border-gray-200 flex-shrink-0" style={{ boxShadow: '0 -1px 3px rgba(0,0,0,0.05)' }}>
             <button
               type="button"
               onClick={onClose}
