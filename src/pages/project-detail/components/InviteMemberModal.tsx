@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { createNotification } from '../../../hooks/useNotifications';
+import { notifyProjectMembers } from '../../../hooks/useNotifications';
 import { triggerWebhook } from '../../../hooks/useWebhooks';
 import { sendLoopsEvent } from '../../../lib/loops';
 import { markOnboardingStep } from '../../../lib/onboardingMarker';
@@ -129,18 +129,19 @@ export default function InviteMemberModal({
           .eq('id', projectId)
           .maybeSingle();
 
-        // Notify the invited user
-        await createNotification({
-          userId: existingUser.id,
-          type: 'member_joined',
-          title: 'You have been invited to a project',
-          message: `You have been added to ${projectData?.name || 'the project'} as ${role}.`,
-          link: `/projects/${projectId}`,
+        // Notify project members (respects each user's notification preferences)
+        // type: 'invitation_sent' — inviter is excluded, newly added member is included
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        await notifyProjectMembers({
           projectId,
+          excludeUserId: currentUser?.id,
+          type: 'invitation_sent',
+          title: 'New member joined the project',
+          message: `${email} has been added to ${projectData?.name || 'the project'} as ${role}.`,
+          link: `/projects/${projectId}`,
         });
 
         // Fire webhook events for member notifications
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
         const { data: inviterProfile } = await supabase
           .from('profiles')
           .select('full_name, email')

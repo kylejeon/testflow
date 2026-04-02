@@ -147,7 +147,7 @@ export function useNotifications() {
   };
 }
 
-// Helper: create a notification for a specific user
+// Helper: create a notification for a specific user (respects notification preferences)
 export async function createNotification(params: {
   userId: string;
   type: string;
@@ -157,6 +157,16 @@ export async function createNotification(params: {
   projectId?: string;
 }) {
   try {
+    // Check user's notification preference for this type before inserting
+    const { data: prefs } = await supabase
+      .from('notification_preferences')
+      .select(params.type)
+      .eq('user_id', params.userId)
+      .maybeSingle();
+
+    // If the preference record exists and this type is explicitly set to false, skip
+    if (prefs && (prefs as Record<string, unknown>)[params.type] === false) return;
+
     const { error } = await supabase.from('notifications').insert([
       {
         user_id: params.userId,

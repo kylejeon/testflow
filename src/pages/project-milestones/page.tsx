@@ -426,7 +426,16 @@ export default function ProjectMilestones() {
     try {
       const milestone = milestones.find(m => m.id === milestoneId || m.subMilestones?.find((s: any) => s.id === milestoneId));
       const milestoneName = milestone?.id === milestoneId ? milestone?.name : milestone?.subMilestones?.find((s: any) => s.id === milestoneId)?.name || 'Milestone';
+      const { data: { user } } = await supabase.auth.getUser();
       const { data: projectData } = await supabase.from('projects').select('name').eq('id', id!).maybeSingle();
+      await notifyProjectMembers({
+        projectId: id!,
+        excludeUserId: user?.id,
+        type: 'milestone_started',
+        title: 'Milestone started',
+        message: `"${milestoneName}" milestone has been started.`,
+        link: `/projects/${id}/milestones`,
+      });
       triggerWebhook(id!, 'milestone_started', {
         project_id: id!,
         project_name: projectData?.name ?? '',
@@ -434,7 +443,7 @@ export default function ProjectMilestones() {
         milestone_name: milestoneName,
       });
     } catch (err) {
-      console.warn('milestone_started webhook error:', err);
+      console.warn('milestone_started webhook/notification error:', err);
     }
   };
 
