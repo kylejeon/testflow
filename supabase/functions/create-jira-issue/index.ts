@@ -58,21 +58,7 @@ serve(async (req) => {
 
     // Add optional fields
     if (description) {
-      issueData.fields.description = {
-        type: 'doc',
-        version: 1,
-        content: [
-          {
-            type: 'paragraph',
-            content: [
-              {
-                type: 'text',
-                text: stripHtml(description)
-              }
-            ]
-          }
-        ]
-      };
+      issueData.fields.description = textToADF(stripHtml(description));
     }
 
     if (priority) {
@@ -122,43 +108,58 @@ serve(async (req) => {
     if (response.ok) {
       const data = await response.json();
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           issue: {
             key: data.key,
             id: data.id,
             self: data.self
           }
         }),
-        { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     } else {
       const errorText = await response.text();
       let errorMessage = 'Failed to create issue';
-      
+      let errorDetails: any = {};
+
       try {
         const errorData = JSON.parse(errorText);
-        if (errorData.errors) {
-          errorMessage = Object.values(errorData.errors).join(', ');
-        } else if (errorData.errorMessages) {
+        errorDetails = errorData;
+        if (errorData.errors && Object.keys(errorData.errors).length > 0) {
+          errorMessage = Object.entries(errorData.errors)
+            .map(([field, msg]) => `${field}: ${msg}`)
+            .join(', ');
+        } else if (errorData.errorMessages && errorData.errorMessages.length > 0) {
           errorMessage = errorData.errorMessages.join(', ');
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
         }
       } catch (e) {
         errorMessage = errorText;
       }
 
+      // Log the full Jira API error for debugging
+      console.error('[create-jira-issue] Jira API error', {
+        status: response.status,
+        errorMessage,
+        errorDetails,
+        requestBody: JSON.stringify(issueData),
+      });
+
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: errorMessage,
-          details: errorText 
+          details: errorDetails,
+          jiraStatus: response.status,
         }),
-        { 
-          status: response.status, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
@@ -175,6 +176,59 @@ serve(async (req) => {
     );
   }
 });
+
+/**
+ * Converts plain text (with \n line breaks) to Atlassian Document Format (ADF).
+ * Jira API v3 requires ADF for the description field.
+ * - \n\n (blank line) → new paragraph node
+ * - \n (single newline) → hardBreak node within a paragraph
+ * - text nodes must NOT contain \n characters
+ */
+function textToADF(text: string): object {
+  if (!text || !text.trim()) {
+    return {
+      type: 'doc',
+      version: 1,
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }],
+    };
+  }
+
+  // Split by blank lines into paragraphs
+  const paragraphBlocks = text.split(/\n{2,}/);
+
+  const content = paragraphBlocks
+    .filter(block => block.trim())
+    .map(block => {
+      // Split each paragraph block by single newlines
+      const lines = block.split('\n');
+      const inlineContent: any[] = [];
+
+      lines.forEach((line, idx) => {
+        if (line) {
+          inlineContent.push({ type: 'text', text: line });
+        }
+        // Add hardBreak between lines (not after the last one)
+        if (idx < lines.length - 1) {
+          inlineContent.push({ type: 'hardBreak' });
+        }
+      });
+
+      return {
+        type: 'paragraph',
+        content: inlineContent.length > 0
+          ? inlineContent
+          : [{ type: 'text', text: '' }],
+      };
+    });
+
+  return {
+    type: 'doc',
+    version: 1,
+    content: content.length > 0
+      ? content
+      : [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }],
+  };
+}
 
 function stripHtml(html: string): string {
   if (!html) return '';
