@@ -176,21 +176,86 @@ function empty(): TCOverviewData {
 }
 
 export async function exportTestCasesCSV(projectIds: string[], projectNameMap: Record<string, string>) {
-  const { data: tcs } = await supabase
-    .from('test_cases')
-    .select('id, project_id, title, priority, status, created_at')
-    .in('project_id', projectIds)
-    .order('created_at', { ascending: false });
+  const { data: { session } } = await supabase.auth.getSession();
+
+  // Fetch user date/time format settings
+  let dateFormat = 'YYYY-MM-DD';
+  let timeFormat: '24h' | '12h' = '24h';
+  let timezone = 'UTC';
+  let autoDetectTz = true;
+  if (session) {
+    const { data: prefs } = await supabase
+      .from('profiles')
+      .select('timezone, date_format, time_format, auto_detect_tz')
+      .eq('id', session.user.id)
+      .maybeSingle();
+    if (prefs) {
+      if (prefs.date_format) dateFormat = prefs.date_format;
+      if (prefs.time_format) timeFormat = prefs.time_format as '24h' | '12h';
+      if (prefs.timezone) timezone = prefs.timezone;
+      if (prefs.auto_detect_tz !== null && prefs.auto_detect_tz !== undefined) autoDetectTz = prefs.auto_detect_tz;
+    }
+  }
+
+  const formatDate = (isoString: string | null | undefined): string => {
+    if (!isoString) return '';
+    try {
+      const tz = autoDetectTz ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone;
+      const date = new Date(isoString);
+      const opts: Intl.DateTimeFormatOptions = { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: timeFormat === '12h' };
+      const parts = new Intl.DateTimeFormat('en-US', opts).formatToParts(date);
+      const get = (type: string) => parts.find(p => p.type === type)?.value ?? '';
+      const year = get('year'), month = get('month'), day = get('day');
+      const hour = get('hour'), minute = get('minute'), dayPeriod = get('dayPeriod');
+      let datePart = '';
+      if (dateFormat === 'MM/DD/YYYY') datePart = `${month}/${day}/${year}`;
+      else if (dateFormat === 'DD/MM/YYYY') datePart = `${day}/${month}/${year}`;
+      else datePart = `${year}-${month}-${day}`;
+      const timePart = timeFormat === '12h' ? `${hour}:${minute} ${dayPeriod}` : `${hour}:${minute}`;
+      return `${datePart} ${timePart}`;
+    } catch {
+      return isoString;
+    }
+  };
+
+  // Fetch test cases with custom_id and projects with prefix for correct ID labeling
+  const [{ data: tcs }, { data: projectsData }] = await Promise.all([
+    supabase
+      .from('test_cases')
+      .select('id, project_id, title, priority, status, created_at, custom_id')
+      .in('project_id', projectIds)
+      .order('created_at', { ascending: true }),
+    supabase.from('projects').select('id, prefix').in('id', projectIds),
+  ]);
+
+  const projectPrefixMap: Record<string, string> = {};
+  (projectsData ?? []).forEach(p => { if (p.prefix) projectPrefixMap[p.id] = p.prefix; });
+
+  // Build tcIdLabelMap using the same logic as the overview hook
+  const tcIdLabelMap: Record<string, string> = {};
+  const projectTcCounter: Record<string, number> = {};
+  (tcs ?? []).forEach(tc => {
+    if (tc.custom_id) {
+      tcIdLabelMap[tc.id] = tc.custom_id;
+    } else {
+      const prefix = projectPrefixMap[tc.project_id] || 'TC';
+      projectTcCounter[prefix] = (projectTcCounter[prefix] || 0) + 1;
+      tcIdLabelMap[tc.id] = `${prefix}-${projectTcCounter[prefix].toString().padStart(3, '0')}`;
+    }
+  });
+
+  // Sort descending for CSV output (most recent first)
+  const sortedTcs = [...(tcs ?? [])].sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
 
   const LIFECYCLE_LABEL: Record<string, string> = { active: 'Active', draft: 'Draft', deprecated: 'Deprecated' };
 
-  const rows = (tcs ?? []).map((tc, i) => [
-    `TC-${(tcs!.length - i).toString().padStart(3, '0')}`,
+  const rows = sortedTcs.map(tc => [
+    tcIdLabelMap[tc.id] ?? tc.id.slice(0, 8),
     `"${(tc.title ?? '').replace(/"/g, '""')}"`,
-    projectNameMap[tc.project_id] ?? 'Unknown',
+    `"${(projectNameMap[tc.project_id] ?? 'Unknown').replace(/"/g, '""')}"`,
     tc.priority ?? '',
-    LIFECYCLE_LABEL[tc.status] ?? tc.status ?? '',
-    tc.created_at ?? '',
+    LIFECYCLE_LABEL[(tc.status ?? '').toLowerCase()] ?? tc.status ?? '',
+    formatDate(tc.created_at),
   ]);
 
   const header = ['ID', 'Title', 'Project', 'Priority', 'Lifecycle Status', 'Created At'];
