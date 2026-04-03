@@ -114,6 +114,8 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
   const [jiraCreating, setJiraCreating] = useState<string | null>(null);
   const [expandedJira, setExpandedJira] = useState<string | null>(null);
   const [isCachedResult, setIsCachedResult] = useState(false);
+  const [editingPatterns, setEditingPatterns] = useState<Record<string, boolean>>({});
+  const [editValues, setEditValues] = useState<Record<string, { summary: string; priority: string; labels: string }>>({});
 
   // Toast state
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
@@ -310,6 +312,28 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
 
   const tcTitleMap = new Map(flaky.map(tc => [tc.id, { title: tc.title, customId: tc.customId, score: tc.flakyScore }]));
 
+  function getDefaultJiraValues(pattern: FlakyPattern) {
+    const tcCustomIds = pattern.testIds
+      .map(id => tcTitleMap.get(id)?.customId)
+      .filter(Boolean) as string[];
+    return {
+      summary: `[Flaky] ${pattern.name}: ${pattern.testIds.length} test(s) affected`,
+      priority: 'High',
+      labels: ['flaky', 'ai-detected', pattern.category.replace('_', '-'), ...tcCustomIds].join(', '),
+    };
+  }
+
+  function handleEditClick(pattern: FlakyPattern) {
+    if (!editValues[pattern.name]) {
+      setEditValues(prev => ({ ...prev, [pattern.name]: getDefaultJiraValues(pattern) }));
+    }
+    setEditingPatterns(prev => ({ ...prev, [pattern.name]: true }));
+  }
+
+  function handleEditDone(patternName: string) {
+    setEditingPatterns(prev => ({ ...prev, [patternName]: false }));
+  }
+
   async function createJiraForPattern(pattern: FlakyPattern) {
     const { data: jiraSettings } = await supabase
       .from('jira_settings')
@@ -328,16 +352,20 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
         return tc ? `${tc.customId || id}: ${tc.title}` : id;
       }).join('\n');
 
+      const vals = editValues[pattern.name] ?? getDefaultJiraValues(pattern);
+      const labels = vals.labels.split(',').map(l => l.trim()).filter(Boolean);
+
       const { error } = await supabase.functions.invoke('create-jira-issue', {
         body: {
           domain: jiraSettings.domain,
           email: jiraSettings.email,
           apiToken: jiraSettings.api_token,
           projectKey: jiraSettings.project_key,
-          summary: `[Flaky] ${pattern.name}: ${pattern.testIds.length} test(s) affected`,
+          summary: vals.summary,
           description: `**Root Cause:** ${pattern.rootCause}\n\n**Fix Suggestion:** ${pattern.fixSuggestion}\n\n**Affected Tests:**\n${tcList}`,
           issueType: 'Bug',
-          priority: 'High',
+          priority: vals.priority,
+          labels,
         },
       });
 
@@ -613,7 +641,12 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                               {/* Jira Action */}
                               {!isJiraExpanded ? (
                                 <button
-                                  onClick={() => setExpandedJira(pattern.name)}
+                                  onClick={() => {
+                                    setExpandedJira(pattern.name);
+                                    if (!editValues[pattern.name]) {
+                                      setEditValues(prev => ({ ...prev, [pattern.name]: getDefaultJiraValues(pattern) }));
+                                    }
+                                  }}
                                   style={{
                                     fontSize: 11, fontWeight: 600, color: '#6366F1',
                                     background: '#EEF2FF', border: '1px solid #C7D2FE',
@@ -623,48 +656,96 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                                 >
                                   <i className="ri-jira-line" /> Create Jira
                                 </button>
-                              ) : (
-                                <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0', borderLeft: '3px solid #6366F1' }}>
-                                  <div style={{ fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 4 }}>
-                                    [Flaky] {pattern.name} in {CATEGORY_LABEL[pattern.category] ?? pattern.category} Tests
+                              ) : (() => {
+                                const isEditing = editingPatterns[pattern.name] ?? false;
+                                const vals = editValues[pattern.name] ?? getDefaultJiraValues(pattern);
+                                return (
+                                  <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0', borderLeft: '3px solid #6366F1' }}>
+                                    {isEditing ? (
+                                      /* ── Edit Mode ── */
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                        <div>
+                                          <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>Summary</div>
+                                          <input
+                                            value={vals.summary}
+                                            onChange={e => setEditValues(prev => ({ ...prev, [pattern.name]: { ...prev[pattern.name], summary: e.target.value } }))}
+                                            style={{ width: '100%', fontSize: 12, fontWeight: 600, color: '#0F172A', border: '1px solid #C7D2FE', borderRadius: 6, padding: '5px 8px', background: '#fff', outline: 'none', boxSizing: 'border-box' }}
+                                          />
+                                        </div>
+                                        <div>
+                                          <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>Priority</div>
+                                          <select
+                                            value={vals.priority}
+                                            onChange={e => setEditValues(prev => ({ ...prev, [pattern.name]: { ...prev[pattern.name], priority: e.target.value } }))}
+                                            style={{ fontSize: 12, color: '#0F172A', border: '1px solid #C7D2FE', borderRadius: 6, padding: '5px 8px', background: '#fff', outline: 'none', cursor: 'pointer' }}
+                                          >
+                                            <option>Highest</option>
+                                            <option>High</option>
+                                            <option>Medium</option>
+                                            <option>Low</option>
+                                          </select>
+                                        </div>
+                                        <div>
+                                          <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>Labels <span style={{ fontWeight: 400, textTransform: 'none' }}>(comma-separated)</span></div>
+                                          <input
+                                            value={vals.labels}
+                                            onChange={e => setEditValues(prev => ({ ...prev, [pattern.name]: { ...prev[pattern.name], labels: e.target.value } }))}
+                                            style={{ width: '100%', fontSize: 12, color: '#475569', border: '1px solid #C7D2FE', borderRadius: 6, padding: '5px 8px', background: '#fff', outline: 'none', boxSizing: 'border-box' }}
+                                          />
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 2 }}>
+                                          <button
+                                            onClick={() => handleEditDone(pattern.name)}
+                                            style={{ fontSize: 11, fontWeight: 600, color: '#6366F1', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+                                          >
+                                            Done
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      /* ── Preview Mode ── */
+                                      <>
+                                        <div style={{ fontSize: 12, fontWeight: 600, color: '#0F172A', marginBottom: 4 }}>
+                                          {vals.summary}
+                                        </div>
+                                        <div style={{ fontSize: 11, color: '#64748B' }}>
+                                          Priority: {vals.priority}
+                                        </div>
+                                        <div style={{ fontSize: 11, color: '#64748B', marginTop: 2, wordBreak: 'break-word' }}>
+                                          Labels: {vals.labels}
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 8 }}>
+                                          <button
+                                            onClick={() => { setExpandedJira(null); setEditingPatterns(prev => ({ ...prev, [pattern.name]: false })); }}
+                                            style={{ fontSize: 11, fontWeight: 600, color: '#64748B', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            onClick={() => handleEditClick(pattern)}
+                                            style={{ fontSize: 11, fontWeight: 600, color: '#6366F1', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+                                          >
+                                            <i className="ri-edit-line" /> Edit
+                                          </button>
+                                          <button
+                                            onClick={() => { createJiraForPattern(pattern); setExpandedJira(null); setEditingPatterns(prev => ({ ...prev, [pattern.name]: false })); }}
+                                            disabled={jiraCreating === pattern.name}
+                                            style={{
+                                              fontSize: 11, fontWeight: 600, color: '#fff',
+                                              background: '#6366F1', border: 'none', borderRadius: 6,
+                                              padding: '4px 12px', cursor: 'pointer',
+                                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                                              opacity: jiraCreating === pattern.name ? 0.5 : 1,
+                                            }}
+                                          >
+                                            <i className="ri-jira-line" /> Create
+                                          </button>
+                                        </div>
+                                      </>
+                                    )}
                                   </div>
-                                  <div style={{ fontSize: 11, color: '#64748B' }}>
-                                    Priority: High · Labels: flaky, ai-detected, {pattern.category.replace('_', '-')}
-                                  </div>
-                                  <div style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
-                                    Linked: {pattern.testIds.map(id => tcTitleMap.get(id)?.customId || id.slice(0, 8)).join(', ')}
-                                  </div>
-                                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 8 }}>
-                                    <button
-                                      onClick={() => setExpandedJira(null)}
-                                      style={{ fontSize: 11, fontWeight: 600, color: '#64748B', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setToast({ message: 'Edit Jira details in Jira after creation.', type: 'info' });
-                                      }}
-                                      style={{ fontSize: 11, fontWeight: 600, color: '#6366F1', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
-                                    >
-                                      Edit
-                                    </button>
-                                    <button
-                                      onClick={() => { createJiraForPattern(pattern); setExpandedJira(null); }}
-                                      disabled={jiraCreating === pattern.name}
-                                      style={{
-                                        fontSize: 11, fontWeight: 600, color: '#fff',
-                                        background: '#6366F1', border: 'none', borderRadius: 6,
-                                        padding: '4px 12px', cursor: 'pointer',
-                                        display: 'inline-flex', alignItems: 'center', gap: 4,
-                                        opacity: jiraCreating === pattern.name ? 0.5 : 1,
-                                      }}
-                                    >
-                                      <i className="ri-jira-line" /> Create
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
+                                );
+                              })()}
                             </div>
                           );
                         })}
