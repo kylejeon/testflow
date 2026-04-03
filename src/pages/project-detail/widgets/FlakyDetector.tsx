@@ -78,7 +78,8 @@ function Toast({ message, type, onClose }: { message: string; type: 'error' | 's
   useEffect(() => {
     const timer = setTimeout(onClose, 5000);
     return () => clearTimeout(timer);
-  }, [onClose]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const colors = {
     error: 'bg-red-50 border-red-200 text-red-700',

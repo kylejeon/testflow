@@ -2274,7 +2274,7 @@ export default function RunDetail() {
                     failedCount={_failed}
                     blockedCount={_blocked}
                     onClose={() => setShowAISummary(false)}
-                    onToast={(msg, type) => setToast({ type, message: msg })}
+                    onToast={(msg, type) => showToast(type, msg)}
                   />
                 );
               })()}
