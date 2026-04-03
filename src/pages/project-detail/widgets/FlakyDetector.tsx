@@ -378,8 +378,8 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       const labels = vals.labels.split(',').map(l => l.trim()).filter(Boolean);
 
       const { data: { session } } = await supabase.auth.getSession();
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL as string;
+      const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY as string;
 
       const res = await fetch(`${supabaseUrl}/functions/v1/create-jira-issue`, {
         method: 'POST',

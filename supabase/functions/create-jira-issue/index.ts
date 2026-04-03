@@ -11,6 +11,8 @@ serve(async (req) => {
   }
 
   try {
+    const body = await req.json();
+
     const {
       domain,
       email,
@@ -25,67 +27,73 @@ serve(async (req) => {
       components,
       fieldMappings,
       fieldContext,
-    } = await req.json();
+    } = body;
 
-    if (!domain || !email || !apiToken || !projectKey || !summary) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    // Log received params for debugging (masks token)
+    console.log('[create-jira-issue] received params:', {
+      domain,
+      email,
+      apiToken: apiToken ? `${String(apiToken).slice(0, 8)}...` : null,
+      projectKey,
+      summary,
+      issueType,
+      priority,
+      labelsCount: Array.isArray(labels) ? labels.length : labels,
+      hasDescription: !!description,
+    });
 
-    const cleanDomain = domain
+    // Validate required fields individually for precise error messages
+    if (!domain)      return json400('Missing required field: domain');
+    if (!email)       return json400('Missing required field: email');
+    if (!apiToken)    return json400('Missing required field: apiToken');
+    if (!projectKey)  return json400('Missing required field: projectKey');
+    if (!summary)     return json400('Missing required field: summary');
+
+    const cleanDomain = String(domain)
       .replace(/^https?:?\/?\/?\/?/i, '')
       .replace(/\/+$/, '')
-      .replace(/\/+/g, '/');
+      .trim();
+
     const auth = btoa(`${email}:${apiToken}`);
 
-    // Prepare issue data
-    const issueData: any = {
+    // Build Jira issue payload (Jira REST API v3)
+    const issueData: Record<string, any> = {
       fields: {
-        project: {
-          key: projectKey
-        },
-        summary: stripHtml(summary),
-        issuetype: {
-          name: issueType || 'Bug'
-        }
-      }
+        project:   { key: String(projectKey).trim() },
+        summary:   stripHtml(String(summary)),
+        issuetype: { name: issueType || 'Bug' },
+      },
     };
 
-    // Add optional fields
+    // description → must be ADF (Atlassian Document Format) for API v3
     if (description) {
-      issueData.fields.description = textToADF(stripHtml(description));
+      issueData.fields.description = textToADF(stripHtml(String(description)));
     }
 
+    // priority → { name: "High" }
     if (priority) {
-      issueData.fields.priority = {
-        name: priority
-      };
+      issueData.fields.priority = { name: String(priority) };
     }
 
-    if (labels && labels.length > 0) {
-      issueData.fields.labels = labels;
+    // labels → plain string array (no spaces allowed per Jira spec)
+    if (Array.isArray(labels) && labels.length > 0) {
+      issueData.fields.labels = labels.map((l: any) => String(l).replace(/\s+/g, '-'));
     }
 
-    // Assignee: accountId 또는 emailAddress 방식 모두 시도
+    // assignee
     if (assignee) {
-      // Jira Cloud는 accountId, Server는 name/emailAddress
-      issueData.fields.assignee = assignee.includes('@')
+      issueData.fields.assignee = String(assignee).includes('@')
         ? { emailAddress: assignee }
         : { accountId: assignee };
     }
 
-    // Components
-    if (components && components.length > 0) {
+    // components
+    if (Array.isArray(components) && components.length > 0) {
       issueData.fields.components = components.map((name: string) => ({ name }));
     }
 
-    // Apply custom field mappings
-    if (fieldMappings && fieldMappings.length > 0 && fieldContext) {
+    // custom field mappings
+    if (Array.isArray(fieldMappings) && fieldMappings.length > 0 && fieldContext) {
       for (const mapping of fieldMappings) {
         const value = resolveTestablyFieldValue(mapping.testably_field, fieldContext);
         if (value && mapping.jira_field_id) {
@@ -94,140 +102,129 @@ serve(async (req) => {
       }
     }
 
-    // Create issue in Jira
-    const response = await fetch(`https://${cleanDomain}/rest/api/3/issue`, {
+    // Log the exact request body being sent to Jira
+    console.log('[create-jira-issue] sending to Jira:', JSON.stringify(issueData, null, 2));
+
+    const jiraUrl = `https://${cleanDomain}/rest/api/3/issue`;
+    const response = await fetch(jiraUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
+        'Accept':        'application/json',
+        'Content-Type':  'application/json',
       },
-      body: JSON.stringify(issueData)
+      body: JSON.stringify(issueData),
     });
 
+    const responseText = await response.text();
+    console.log('[create-jira-issue] Jira response status:', response.status);
+    console.log('[create-jira-issue] Jira response body:', responseText);
+
     if (response.ok) {
-      const data = await response.json();
+      let data: any = {};
+      try { data = JSON.parse(responseText); } catch (_) { /* ignore */ }
       return new Response(
-        JSON.stringify({
-          success: true,
-          issue: {
-            key: data.key,
-            id: data.id,
-            self: data.self
-          }
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    } else {
-      const errorText = await response.text();
-      let errorMessage = 'Failed to create issue';
-      let errorDetails: any = {};
-
-      try {
-        const errorData = JSON.parse(errorText);
-        errorDetails = errorData;
-        if (errorData.errors && Object.keys(errorData.errors).length > 0) {
-          errorMessage = Object.entries(errorData.errors)
-            .map(([field, msg]) => `${field}: ${msg}`)
-            .join(', ');
-        } else if (errorData.errorMessages && errorData.errorMessages.length > 0) {
-          errorMessage = errorData.errorMessages.join(', ');
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
-        }
-      } catch (e) {
-        errorMessage = errorText;
-      }
-
-      // Log the full Jira API error for debugging
-      console.error('[create-jira-issue] Jira API error', {
-        status: response.status,
-        errorMessage,
-        errorDetails,
-        requestBody: JSON.stringify(issueData),
-      });
-
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: errorMessage,
-          details: errorDetails,
-          jiraStatus: response.status,
-        }),
-        {
-          status: response.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        JSON.stringify({ success: true, issue: { key: data.key, id: data.id, self: data.self } }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
-  } catch (error) {
+
+    // --- Jira returned an error ---
+    let jiraErrorMessage = `Jira API error (HTTP ${response.status})`;
+    let jiraErrorDetails: any = {};
+
+    try {
+      const errorData = JSON.parse(responseText);
+      jiraErrorDetails = errorData;
+
+      // Field-level errors e.g. { "errors": { "description": "Field ... unknown." } }
+      if (errorData.errors && Object.keys(errorData.errors).length > 0) {
+        jiraErrorMessage = Object.entries(errorData.errors)
+          .map(([field, msg]) => `[${field}] ${msg}`)
+          .join(' | ');
+      } else if (Array.isArray(errorData.errorMessages) && errorData.errorMessages.length > 0) {
+        jiraErrorMessage = errorData.errorMessages.join(' | ');
+      } else if (errorData.message) {
+        jiraErrorMessage = errorData.message;
+      }
+    } catch (_) {
+      jiraErrorMessage = responseText || jiraErrorMessage;
+    }
+
+    console.error('[create-jira-issue] Jira error:', jiraErrorMessage, jiraErrorDetails);
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: jiraErrorMessage,
+        jiraStatus: response.status,
+        details: jiraErrorDetails,
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+
+  } catch (err: any) {
+    console.error('[create-jira-issue] unhandled error:', err);
+    return new Response(
+      JSON.stringify({ success: false, error: err?.message ?? 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
 });
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function json400(message: string): Response {
+  console.warn('[create-jira-issue] 400:', message);
+  return new Response(
+    JSON.stringify({ error: message }),
+    { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+  );
+}
+
 /**
  * Converts plain text (with \n line breaks) to Atlassian Document Format (ADF).
- * Jira API v3 requires ADF for the description field.
- * - \n\n (blank line) → new paragraph node
- * - \n (single newline) → hardBreak node within a paragraph
- * - text nodes must NOT contain \n characters
+ *
+ * Jira REST API v3 requires ADF for the description field.
+ * Rules:
+ *   - `text` nodes must NOT contain \n characters
+ *   - \n\n (blank line) → new paragraph node
+ *   - \n  (single line break) → hardBreak node inside a paragraph
  */
-function textToADF(text: string): object {
-  if (!text || !text.trim()) {
-    return {
-      type: 'doc',
-      version: 1,
-      content: [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }],
-    };
-  }
+function textToADF(text: string): Record<string, any> {
+  const emptyDoc = {
+    type: 'doc', version: 1,
+    content: [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }],
+  };
 
-  // Split by blank lines into paragraphs
-  const paragraphBlocks = text.split(/\n{2,}/);
+  if (!text || !text.trim()) return emptyDoc;
 
-  const content = paragraphBlocks
-    .filter(block => block.trim())
-    .map(block => {
-      // Split each paragraph block by single newlines
-      const lines = block.split('\n');
-      const inlineContent: any[] = [];
+  // Split into paragraph blocks on 2+ consecutive newlines
+  const blocks = text.split(/\n{2,}/).filter(b => b.trim());
+  if (blocks.length === 0) return emptyDoc;
 
-      lines.forEach((line, idx) => {
-        if (line) {
-          inlineContent.push({ type: 'text', text: line });
-        }
-        // Add hardBreak between lines (not after the last one)
-        if (idx < lines.length - 1) {
-          inlineContent.push({ type: 'hardBreak' });
-        }
-      });
+  const content = blocks.map(block => {
+    const lines = block.split('\n');
+    const inlineNodes: any[] = [];
 
-      return {
-        type: 'paragraph',
-        content: inlineContent.length > 0
-          ? inlineContent
-          : [{ type: 'text', text: '' }],
-      };
+    lines.forEach((line, idx) => {
+      // Only push text node if line is non-empty
+      if (line) {
+        inlineNodes.push({ type: 'text', text: line });
+      }
+      // Insert hardBreak between lines (not after the last line of the block)
+      if (idx < lines.length - 1 && inlineNodes.length > 0) {
+        inlineNodes.push({ type: 'hardBreak' });
+      }
     });
 
-  return {
-    type: 'doc',
-    version: 1,
-    content: content.length > 0
-      ? content
-      : [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }],
-  };
+    return {
+      type: 'paragraph',
+      content: inlineNodes.length > 0 ? inlineNodes : [{ type: 'text', text: '' }],
+    };
+  });
+
+  return { type: 'doc', version: 1, content };
 }
 
 function stripHtml(html: string): string {
@@ -250,11 +247,11 @@ function stripHtml(html: string): string {
 
 function resolveTestablyFieldValue(field: string, ctx: any): any {
   switch (field) {
-    case 'tc_tags': return ctx.tags?.join(', ') || null;
-    case 'tc_precondition': return ctx.precondition || null;
-    case 'milestone_name': return ctx.milestoneName || null;
-    case 'run_name': return ctx.runName || null;
-    case 'custom_text': return ctx.customValue || null;
-    default: return null;
+    case 'tc_tags':        return ctx.tags?.join(', ') || null;
+    case 'tc_precondition': return ctx.precondition   || null;
+    case 'milestone_name': return ctx.milestoneName   || null;
+    case 'run_name':       return ctx.runName         || null;
+    case 'custom_text':    return ctx.customValue     || null;
+    default:               return null;
   }
 }
