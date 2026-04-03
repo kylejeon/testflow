@@ -157,7 +157,16 @@ export default function ProjectTestCases() {
 
       const { data, error } = await supabase
         .from('test_cases')
-        .insert([{ ...testCase, lifecycle_status: 'draft', project_id: id, created_by: user?.id, ...(custom_id ? { custom_id } : {}) }])
+        .insert([{
+          ...testCase,
+          lifecycle_status: 'draft',
+          project_id: id,
+          created_by: user?.id,
+          version_major: 1,
+          version_minor: 0,
+          version_status: 'published',
+          ...(custom_id ? { custom_id } : {}),
+        }])
         .select(`
           *,
           creator:profiles!test_cases_created_by_fkey(full_name, email)
@@ -174,6 +183,10 @@ export default function ProjectTestCases() {
           test_case_id: data.id,
           user_id: user.id,
           action_type: 'created',
+          version_major: 1,
+          version_minor: 0,
+          version_status: 'published',
+          change_summary: 'Created test case',
         });
       }
 

@@ -2445,7 +2445,7 @@ export default function RunDetail() {
                       />
                     </div>
                     <div className="col-span-1">
-                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">ID</span>
+                      <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">ID / Ver</span>
                     </div>
                     <div className="col-span-3">
                       <span className="text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-[0.04em]">Test Case</span>
@@ -2490,10 +2490,20 @@ export default function RunDetail() {
                             onChange={(e) => handleSelectOne(testCase.id, e.target.checked)}
                           />
                         </div>
-                        <div className="col-span-1 flex items-center">
+                        <div className="col-span-1 flex flex-col justify-center gap-0.5">
                           <span className="font-mono text-[0.8125rem] text-indigo-600 font-semibold whitespace-nowrap">
                             {(testCase as any).custom_id || '-'}
                           </span>
+                          {(testCase as any).version_major !== undefined && (
+                            <span className={`text-[0.5625rem] font-semibold ${
+                              (testCase as any).version_status === 'draft'
+                                ? 'text-amber-600'
+                                : 'text-emerald-600'
+                            }`}>
+                              v{(testCase as any).version_major ?? 1}.{(testCase as any).version_minor ?? 0}
+                              {(testCase as any).version_status === 'draft' && ' ⚠'}
+                            </span>
+                          )}
                         </div>
                         <div className="col-span-3 flex items-center">
                           <span className="text-[0.8125rem] font-semibold text-[#0F172A] truncate block max-w-[260px] hover:text-indigo-600">

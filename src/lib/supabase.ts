@@ -80,6 +80,10 @@ export interface TestCase {
   assignee: string | null;
   created_at: string;
   updated_at: string;
+  // Versioning (added in tc_versioning migration)
+  version_major: number;
+  version_minor: number;
+  version_status: 'draft' | 'published';
 }
 
 export type LifecycleStatus = 'draft' | 'active' | 'deprecated';

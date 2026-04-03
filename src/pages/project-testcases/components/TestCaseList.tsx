@@ -26,6 +26,9 @@ interface TestCase {
   updated_at: string;
   project_id: string;
   lifecycle_status?: LifecycleStatus;
+  version_major?: number;
+  version_minor?: number;
+  version_status?: 'draft' | 'published';
 }
 
 interface TestCaseListProps {
@@ -81,6 +84,10 @@ interface TestCaseHistory {
   old_value?: string;
   new_value?: string;
   created_at: string;
+  version_major?: number;
+  version_minor?: number;
+  version_status?: 'draft' | 'published';
+  change_summary?: string;
   user?: {
     full_name: string;
     email: string;
@@ -261,6 +268,17 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
   // 히스토리 모달 상태
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+  // ── TC Versioning state ──────────────────────────────────────────────────
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishingVersion, setPublishingVersion] = useState(false);
+  const [showRollbackModal, setShowRollbackModal] = useState(false);
+  const [rollbackTarget, setRollbackTarget] = useState<TestCaseHistory | null>(null);
+  const [showCherryPickModal, setShowCherryPickModal] = useState(false);
+  const [cherryPickFields, setCherryPickFields] = useState<Record<string, boolean>>({});
+  const [cherryPickSource, setCherryPickSource] = useState<TestCaseHistory | null>(null);
+  const [expandedMajors, setExpandedMajors] = useState<Set<number>>(new Set());
+  // ────────────────────────────────────────────────────────────────────────
 
   const [showExportImportModal, setShowExportImportModal] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
@@ -1051,19 +1069,40 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         if (oldSnapshot.assignee !== newSnapshot.assignee) changedFields.push('assignee');
         if (oldSnapshot.is_automated !== newSnapshot.is_automated) changedFields.push('is_automated');
 
+        // Auto-increment minor version, set status to 'draft'
+        const newMinor = (editingTestCase.version_minor ?? 0) + 1;
+        const currentMajor = editingTestCase.version_major ?? 1;
+        const changeSummary = generateChangeSummary(oldSnapshot, newSnapshot);
+
         // 히스토리 기록 (전체 스냅샷 저장)
         await supabase.from('test_case_history').insert({
           test_case_id: editingTestCase.id,
           user_id: user.id,
           action_type: 'updated',
+          version_major: currentMajor,
+          version_minor: newMinor,
+          version_status: 'draft',
           field_name: changedFields.join(', ') || 'no changes',
           old_value: JSON.stringify(oldSnapshot),
           new_value: JSON.stringify(newSnapshot),
+          change_summary: changeSummary,
+        });
+
+        // Update version on the TC itself
+        await supabase.from('test_cases').update({
+          version_minor: newMinor,
+          version_status: 'draft',
+        }).eq('id', editingTestCase.id);
+
+        // Propagate version to finalTestCase
+        Object.assign(updatedTestCaseData, {
+          version_minor: newMinor,
+          version_status: 'draft' as const,
         });
       }
 
-      const finalTestCase = { 
-        ...editingTestCase, 
+      const finalTestCase = {
+        ...editingTestCase,
         ...updatedTestCaseData,
       };
       onUpdate(finalTestCase);
@@ -1510,26 +1549,187 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   };
 
   const handleHistoryClick = (history: TestCaseHistory) => {
-    if (history.action_type !== 'updated') return; // 'updated'만 클릭 가능
+    if (!history.old_value && !history.new_value) return;
     setSelectedHistory(history);
     setShowHistoryModal(true);
   };
 
-  const handleRestoreVersion = async () => {
-    if (!selectedHistory || !selectedTestCase) return;
-    
+  // ── Publish Version ──────────────────────────────────────────────────────
+  const handlePublishVersion = async () => {
+    if (!selectedTestCase) return;
+    try {
+      setPublishingVersion(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const newMajor = (selectedTestCase.version_major ?? 1) + 1;
+      const snapshot = {
+        title: selectedTestCase.title,
+        description: selectedTestCase.description || '',
+        precondition: selectedTestCase.precondition || '',
+        priority: selectedTestCase.priority,
+        folder: selectedTestCase.folder || '',
+        tags: selectedTestCase.tags || '',
+        steps: selectedTestCase.steps || '',
+        expected_result: selectedTestCase.expected_result || '',
+        assignee: selectedTestCase.assignee || '',
+        is_automated: selectedTestCase.is_automated,
+        lifecycle_status: selectedTestCase.lifecycle_status || 'active',
+      };
+
+      // Update test_cases
+      const { data, error } = await supabase
+        .from('test_cases')
+        .update({
+          version_major: newMajor,
+          version_minor: 0,
+          version_status: 'published',
+          lifecycle_status: 'active',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedTestCase.id)
+        .select('*, creator:profiles!test_cases_created_by_fkey(full_name, email)')
+        .single();
+
+      if (error) throw error;
+
+      // Insert version snapshot (ignore conflict if already exists)
+      await supabase.from('test_case_version_snapshots').upsert({
+        test_case_id: selectedTestCase.id,
+        version_major: newMajor,
+        version_minor: 0,
+        snapshot,
+      }, { onConflict: 'test_case_id,version_major,version_minor' });
+
+      // Insert history record
+      await supabase.from('test_case_history').insert({
+        test_case_id: selectedTestCase.id,
+        user_id: user.id,
+        action_type: 'published',
+        version_major: newMajor,
+        version_minor: 0,
+        version_status: 'published',
+        change_summary: `Published v${newMajor}.0`,
+      });
+
+      onUpdate(data);
+      setSelectedTestCase(data);
+      setShowPublishModal(false);
+      fetchHistory(selectedTestCase.id);
+      setToastMessage(`v${newMajor}.0 published successfully`);
+      setToastType('success');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (error) {
+      console.error('Publish error:', error);
+    } finally {
+      setPublishingVersion(false);
+    }
+  };
+
+  // ── Cherry-pick Partial Restore (Pro) ────────────────────────────────────
+  const handleCherryPickRestore = async () => {
+    if (!cherryPickSource || !selectedTestCase) return;
     try {
       setRestoringHistory(true);
-      
-      // old_value에서 이전 스냅샷 파싱
-      const oldSnapshot: TestCaseSnapshot = JSON.parse(selectedHistory.old_value || '{}');
-      
-      // 테스트 케이스 업데이트
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const oldSnapshot: TestCaseSnapshot = JSON.parse(cherryPickSource.old_value || '{}');
+      const selectedFields = Object.entries(cherryPickFields)
+        .filter(([, checked]) => checked)
+        .map(([f]) => f);
+
+      if (selectedFields.length === 0) return;
+
+      const newMinor = (selectedTestCase.version_minor ?? 0) + 1;
+      const currentMajor = selectedTestCase.version_major ?? 1;
+
+      const updateData: Record<string, any> = {
+        version_minor: newMinor,
+        version_status: 'draft',
+        updated_at: new Date().toISOString(),
+      };
+      for (const field of selectedFields) {
+        updateData[field] = field === 'is_automated'
+          ? oldSnapshot.is_automated
+          : (oldSnapshot as any)[field] || null;
+      }
+
+      const { data, error } = await supabase
+        .from('test_cases')
+        .update(updateData)
+        .eq('id', selectedTestCase.id)
+        .select('*, creator:profiles!test_cases_created_by_fkey(full_name, email)')
+        .single();
+
+      if (error) throw error;
+
+      const currentSnapshot: TestCaseSnapshot = {
+        title: selectedTestCase.title,
+        description: selectedTestCase.description || '',
+        precondition: selectedTestCase.precondition || '',
+        priority: selectedTestCase.priority,
+        folder: selectedTestCase.folder || '',
+        tags: selectedTestCase.tags || '',
+        steps: selectedTestCase.steps || '',
+        expected_result: selectedTestCase.expected_result || '',
+        assignee: selectedTestCase.assignee || '',
+        is_automated: selectedTestCase.is_automated,
+      };
+      const newSnapshot = { ...currentSnapshot };
+      for (const field of selectedFields) {
+        (newSnapshot as any)[field] = (oldSnapshot as any)[field];
+      }
+
+      await supabase.from('test_case_history').insert({
+        test_case_id: selectedTestCase.id,
+        user_id: user.id,
+        action_type: 'partial_restored',
+        version_major: currentMajor,
+        version_minor: newMinor,
+        version_status: 'draft',
+        field_name: selectedFields.join(', '),
+        old_value: JSON.stringify(currentSnapshot),
+        new_value: JSON.stringify(newSnapshot),
+        change_summary: `Partial restore: ${selectedFields.join(', ')} from v${cherryPickSource.version_major ?? 1}.${cherryPickSource.version_minor ?? 0}`,
+      });
+
+      onUpdate(data);
+      setSelectedTestCase(data);
+      setShowCherryPickModal(false);
+      setCherryPickSource(null);
+      setCherryPickFields({});
+      setShowHistoryModal(false);
+      setSelectedHistory(null);
+      fetchHistory(selectedTestCase.id);
+    } catch (error) {
+      console.error('Cherry-pick error:', error);
+    } finally {
+      setRestoringHistory(false);
+    }
+  };
+  // ────────────────────────────────────────────────────────────────────────
+
+  const handleRestoreVersion = async () => {
+    if (!rollbackTarget || !selectedTestCase) return;
+
+    try {
+      setRestoringHistory(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Restore to old_value snapshot (creates a new draft minor version)
+      const oldSnapshot: TestCaseSnapshot = JSON.parse(rollbackTarget.old_value || '{}');
+      const newMinor = (selectedTestCase.version_minor ?? 0) + 1;
+      const currentMajor = selectedTestCase.version_major ?? 1;
+
       const { data, error } = await supabase
         .from('test_cases')
         .update({
           title: oldSnapshot.title,
           description: oldSnapshot.description || null,
+          precondition: oldSnapshot.precondition || null,
           priority: oldSnapshot.priority,
           folder: oldSnapshot.folder || null,
           tags: oldSnapshot.tags || null,
@@ -1537,51 +1737,51 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           expected_result: oldSnapshot.expected_result || null,
           assignee: oldSnapshot.assignee || null,
           is_automated: oldSnapshot.is_automated,
+          version_minor: newMinor,
+          version_status: 'draft',
           updated_at: new Date().toISOString(),
         })
         .eq('id', selectedTestCase.id)
-        .select()
+        .select('*, creator:profiles!test_cases_created_by_fkey(full_name, email)')
         .single();
 
       if (error) throw error;
 
-      // 복원 히스토리 기록
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const currentSnapshot: TestCaseSnapshot = {
-          title: selectedTestCase.title,
-          description: selectedTestCase.description || '',
-          precondition: selectedTestCase.precondition || '',
-          priority: selectedTestCase.priority,
-          folder: selectedTestCase.folder || '',
-          tags: selectedTestCase.tags || '',
-          steps: selectedTestCase.steps || '',
-          expected_result: selectedTestCase.expected_result || '',
-          assignee: selectedTestCase.assignee || '',
-          is_automated: selectedTestCase.is_automated,
-        };
+      const currentSnapshot: TestCaseSnapshot = {
+        title: selectedTestCase.title,
+        description: selectedTestCase.description || '',
+        precondition: selectedTestCase.precondition || '',
+        priority: selectedTestCase.priority,
+        folder: selectedTestCase.folder || '',
+        tags: selectedTestCase.tags || '',
+        steps: selectedTestCase.steps || '',
+        expected_result: selectedTestCase.expected_result || '',
+        assignee: selectedTestCase.assignee || '',
+        is_automated: selectedTestCase.is_automated,
+      };
 
-        await supabase.from('test_case_history').insert({
-          test_case_id: selectedTestCase.id,
-          user_id: user.id,
-          action_type: 'restored',
-          field_name: 'restored from previous version',
-          old_value: JSON.stringify(currentSnapshot),
-          new_value: JSON.stringify(oldSnapshot),
-        });
-      }
+      await supabase.from('test_case_history').insert({
+        test_case_id: selectedTestCase.id,
+        user_id: user.id,
+        action_type: 'restored',
+        version_major: currentMajor,
+        version_minor: newMinor,
+        version_status: 'draft',
+        field_name: 'restored from previous version',
+        old_value: JSON.stringify(currentSnapshot),
+        new_value: JSON.stringify(oldSnapshot),
+        change_summary: `Restored to v${rollbackTarget.version_major ?? 1}.${rollbackTarget.version_minor ?? 0}`,
+      });
 
-      // UI 업데이트
       onUpdate(data);
       setSelectedTestCase(data);
+      setShowRollbackModal(false);
+      setRollbackTarget(null);
       setShowHistoryModal(false);
       setSelectedHistory(null);
       fetchHistory(selectedTestCase.id);
-      
-      alert('이전 버전으로 복원되었습니다.');
     } catch (error) {
       console.error('복원 오류:', error);
-      alert('Failed to restore.');
     } finally {
       setRestoringHistory(false);
     }
@@ -1632,6 +1832,69 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       .replace(/\n{3,}/g, '\n\n')
       .trim();
   };
+
+  // ── TC Versioning helpers ────────────────────────────────────────────────
+
+  const generateChangeSummary = (oldS: TestCaseSnapshot, newS: TestCaseSnapshot): string => {
+    const changes: string[] = [];
+    if (oldS.title !== newS.title) changes.push('title');
+    if (oldS.priority !== newS.priority) changes.push(`priority (${oldS.priority}→${newS.priority})`);
+    if (oldS.steps !== newS.steps) {
+      const oldCount = oldS.steps ? oldS.steps.split('\n').filter(Boolean).length : 0;
+      const newCount = newS.steps ? newS.steps.split('\n').filter(Boolean).length : 0;
+      const diff = newCount - oldCount;
+      changes.push(diff > 0 ? `steps (+${diff})` : diff < 0 ? `steps (-${Math.abs(diff)})` : 'steps');
+    }
+    if (oldS.description !== newS.description) changes.push('description');
+    if (oldS.precondition !== newS.precondition) changes.push('precondition');
+    if (oldS.expected_result !== newS.expected_result) changes.push('expected result');
+    if (oldS.folder !== newS.folder) changes.push('folder');
+    if (oldS.tags !== newS.tags) changes.push('tags');
+    if (oldS.assignee !== newS.assignee) changes.push('assignee');
+    if (oldS.is_automated !== newS.is_automated) changes.push('automated');
+    return changes.length > 0 ? `Updated ${changes.join(', ')}` : 'No changes';
+  };
+
+  type DiffLine = { type: 'unchanged' | 'added' | 'removed'; text: string };
+
+  const computeLineDiff = (oldText: string, newText: string): DiffLine[] => {
+    const oldLines = (oldText || '').split('\n').filter(Boolean);
+    const newLines = (newText || '').split('\n').filter(Boolean);
+    if (oldLines.length === 0 && newLines.length === 0) return [];
+
+    // LCS-based line diff (O(mn) – acceptable for short step lists)
+    const m = oldLines.length, n = newLines.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] = oldLines[i - 1] === newLines[j - 1]
+          ? dp[i - 1][j - 1] + 1
+          : Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+    const result: DiffLine[] = [];
+    let i = m, j = n;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+        result.unshift({ type: 'unchanged', text: oldLines[i - 1] });
+        i--; j--;
+      } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+        result.unshift({ type: 'added', text: newLines[j - 1] });
+        j--;
+      } else {
+        result.unshift({ type: 'removed', text: oldLines[i - 1] });
+        i--;
+      }
+    }
+    return result;
+  };
+
+  const versionLabel = (major?: number, minor?: number, status?: string) => {
+    const m = major ?? 1, n = minor ?? 0;
+    return `v${m}.${n}`;
+  };
+
+  // ────────────────────────────────────────────────────────────────────────
 
   // Tag 관련 함수들
   const getTagsArray = (): string[] => {
@@ -2365,11 +2628,30 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           <div className="px-5 pt-4 pb-[0.875rem] border-b border-[#E2E8F0] flex-shrink-0">
             <div className="flex items-start justify-between gap-2 mb-[0.5rem]">
               <div className="flex-1 min-w-0">
-                {selectedTestCase.custom_id && (
-                  <div className="text-[0.6875rem] font-mono text-[#94A3B8] mb-[0.25rem]">
-                    {selectedTestCase.custom_id}
-                  </div>
-                )}
+                <div className="flex items-center gap-2 mb-[0.25rem] flex-wrap">
+                  {selectedTestCase.custom_id && (
+                    <span className="text-[0.6875rem] font-mono text-[#94A3B8]">
+                      {selectedTestCase.custom_id}
+                    </span>
+                  )}
+                  {/* Version badge */}
+                  {(() => {
+                    const major = selectedTestCase.version_major ?? 1;
+                    const minor = selectedTestCase.version_minor ?? 0;
+                    const status = selectedTestCase.version_status ?? 'published';
+                    const isDraft = status === 'draft';
+                    return (
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[0.6875rem] font-bold border ${
+                        isDraft
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      }`}>
+                        <i className={`text-[0.75rem] ${isDraft ? 'ri-edit-circle-line' : 'ri-checkbox-circle-fill'}`}></i>
+                        v{major}.{minor} {isDraft ? 'Draft' : 'Published'}
+                      </span>
+                    );
+                  })()}
+                </div>
                 <h2 className="text-[0.9375rem] font-bold text-[#0F172A] leading-[1.3]">
                   {selectedTestCase.title}
                 </h2>
@@ -2805,9 +3087,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               </div>
             )}
 
-            {/* History Tab */}
+            {/* History Tab — Version Timeline */}
             {activeTab === 'history' && (
-              <div className="space-y-0">
+              <div>
                 {loadingHistory ? (
                   <div className="text-center py-8 text-[#94A3B8] text-[0.75rem]">Loading...</div>
                 ) : historyData.length === 0 ? (
@@ -2815,48 +3097,159 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                     <i className="ri-time-line text-2xl text-[#CBD5E1] block mb-1"></i>
                     <p className="text-[0.75rem] text-[#94A3B8]">No history yet</p>
                   </div>
-                ) : (
-                  historyData.map((history: any) => {
-                    const userName = history.user?.full_name || history.user?.email || 'Unknown';
-                    const timestamp = new Date(history.created_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                    const changedFields = history.field_name?.split(', ').filter((f: string) => f && f !== 'no changes') || [];
-                    let actionMessage = '';
-                    if (history.action_type === 'created') {
-                      actionMessage = 'created this test case';
-                    } else if (history.action_type === 'restored') {
-                      actionMessage = 'restored to previous version';
-                    } else if (history.action_type === 'updated') {
-                      actionMessage = changedFields.length > 0 ? changedFields.map((f: string) => getFieldLabel(f)).join(', ') : 'updated this test case';
+                ) : (() => {
+                  // Group history items by version_major
+                  type GroupEntry = { published: TestCaseHistory | null; drafts: TestCaseHistory[] };
+                  const groups = new Map<number, GroupEntry>();
+                  const ungrouped: TestCaseHistory[] = [];
+                  for (const h of historyData) {
+                    const major = h.version_major;
+                    if (major === undefined || major === null) {
+                      ungrouped.push(h);
+                      continue;
                     }
+                    if (!groups.has(major)) groups.set(major, { published: null, drafts: [] });
+                    const g = groups.get(major)!;
+                    if (h.action_type === 'published' || h.action_type === 'created') {
+                      g.published = h;
+                    } else {
+                      g.drafts.push(h);
+                    }
+                  }
+                  // Sort by major desc
+                  const sortedGroups = [...groups.entries()].sort((a, b) => b[0] - a[0]);
+
+                  const renderHistoryItem = (h: TestCaseHistory, isMinor = false) => {
+                    const userName = h.user?.full_name || h.user?.email || 'Unknown';
+                    const dateStr = new Date(h.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const hasDiff = !!(h.old_value && h.new_value);
+                    const isDraft = h.version_status === 'draft' || (h.action_type !== 'created' && h.action_type !== 'published');
+
+                    let actionMsg = '';
+                    if (h.action_type === 'created') actionMsg = 'created this test case';
+                    else if (h.action_type === 'published') actionMsg = 'published this version';
+                    else if (h.action_type === 'restored') actionMsg = 'restored to previous version';
+                    else if (h.action_type === 'partial_restored') actionMsg = `partial restore: ${h.field_name || ''}`;
+                    else {
+                      actionMsg = h.change_summary || (h.field_name && h.field_name !== 'no changes'
+                        ? h.field_name.split(', ').map(f => getFieldLabel(f)).join(', ')
+                        : 'updated');
+                    }
+
+                    const chips = h.field_name
+                      ? h.field_name.split(', ').filter(f => f && f !== 'no changes').slice(0, 3)
+                      : [];
+
                     return (
-                      <div key={history.id} className="flex gap-2 py-2 border-b border-[#F1F5F9]">
-                        <div className="w-[6px] h-[6px] rounded-full bg-[#C7D2FE] flex-shrink-0 mt-[0.4rem]"></div>
-                        <div className="flex-1">
-                          <div className="text-[0.75rem] text-[#334155] leading-[1.4]">
-                            <strong className="font-semibold text-[#0F172A]">{userName}</strong>
-                            {history.action_type === 'updated' && changedFields.length > 0 ? (
-                              <> changed {changedFields.map((f: string, idx: number) => (
-                                <span key={f}><strong>{getFieldLabel(f)}</strong>{idx < changedFields.length - 1 && ', '}</span>
-                              ))}</>
-                            ) : (
-                              <> {actionMessage}</>
+                      <div key={h.id} className={`relative pl-5 pb-3 ${isMinor ? 'py-2' : ''}`}>
+                        {/* Timeline dot */}
+                        <div className={`absolute left-0 top-[0.35rem] w-[0.625rem] h-[0.625rem] rounded-full border-2 ${
+                          h.action_type === 'created'
+                            ? 'bg-[#6366F1] border-[#6366F1]'
+                            : h.action_type === 'published'
+                            ? 'bg-emerald-500 border-emerald-500'
+                            : 'bg-white border-[#CBD5E1]'
+                        }`}></div>
+
+                        <div className="flex items-start justify-between gap-1 flex-wrap">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {h.version_major !== undefined && (
+                              <span className="text-[0.75rem] font-bold text-[#0F172A]">
+                                v{h.version_major}.{h.version_minor ?? 0}
+                              </span>
+                            )}
+                            <span className={`text-[0.5625rem] font-semibold px-1.5 py-0.5 rounded ${
+                              isDraft
+                                ? 'bg-amber-50 text-amber-700'
+                                : 'bg-emerald-50 text-emerald-700'
+                            }`}>
+                              {isDraft ? 'Draft' : 'Published'}
+                            </span>
+                            {h.action_type === 'created' && (
+                              <span className="text-[0.5625rem] font-semibold px-1.5 py-0.5 rounded bg-[#EEF2FF] text-[#6366F1]">Initial</span>
                             )}
                           </div>
-                          <div className="text-[0.6875rem] text-[#94A3B8]">{timestamp}</div>
-                          {history.action_type === 'updated' && history.old_value && history.new_value && (
+                          <span className="text-[0.625rem] text-[#94A3B8]">{dateStr}</span>
+                        </div>
+
+                        <div className="text-[0.75rem] text-[#475569] mt-0.5 leading-[1.4]">
+                          <strong className="font-semibold text-[#0F172A]">{userName}</strong>{' '}
+                          {actionMsg}
+                        </div>
+
+                        {chips.length > 0 && (
+                          <div className="flex gap-1 flex-wrap mt-1">
+                            {chips.map(c => (
+                              <span key={c} className="px-1.5 py-0.5 bg-[#F1F5F9] rounded text-[0.5625rem] font-medium text-[#64748B]">
+                                {getFieldLabel(c)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 mt-1.5">
+                          {hasDiff && (
                             <button
-                              onClick={() => handleHistoryClick(history)}
-                              className="text-[0.75rem] text-[#6366F1] hover:text-[#4F46E5] mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none"
+                              onClick={() => handleHistoryClick(h)}
+                              className="text-[0.6875rem] text-[#6366F1] hover:text-[#4F46E5] flex items-center gap-1 cursor-pointer bg-transparent border-none px-0 font-semibold"
                             >
-                              <i className="ri-eye-line"></i>
-                              View changes
+                              <i className="ri-git-commit-line text-xs"></i> View diff
+                            </button>
+                          )}
+                          {(h.action_type === 'created' || h.action_type === 'published' || hasDiff) && h.old_value && (
+                            <button
+                              onClick={() => { setRollbackTarget(h); setShowRollbackModal(true); }}
+                              className="text-[0.6875rem] text-[#94A3B8] hover:text-[#475569] flex items-center gap-1 cursor-pointer bg-transparent border-none px-0 font-semibold"
+                            >
+                              <i className="ri-arrow-go-back-line text-xs"></i> Restore
                             </button>
                           )}
                         </div>
                       </div>
                     );
-                  })
-                )}
+                  };
+
+                  return (
+                    <div className="relative">
+                      {/* Vertical line */}
+                      <div className="absolute left-[0.28125rem] top-2 bottom-2 w-[2px] bg-[#E2E8F0] rounded-full"></div>
+
+                      {sortedGroups.map(([major, group]) => (
+                        <div key={major}>
+                          {/* Published / Created entry */}
+                          {group.published && renderHistoryItem(group.published)}
+
+                          {/* Draft entries — collapsed by default */}
+                          {group.drafts.length > 0 && (
+                            <div className="relative pl-5 pb-2">
+                              <div className="absolute left-0 top-[0.35rem] w-[0.625rem] h-[0.625rem] rounded-full border-2 bg-white border-[#CBD5E1]"></div>
+                              <button
+                                onClick={() => setExpandedMajors(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(major)) next.delete(major); else next.add(major);
+                                  return next;
+                                })}
+                                className="text-[0.6875rem] text-[#94A3B8] hover:text-[#6366F1] flex items-center gap-1 cursor-pointer bg-transparent border-none px-0"
+                              >
+                                <i className={`text-xs ${expandedMajors.has(major) ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'}`}></i>
+                                {group.drafts.length} draft version{group.drafts.length > 1 ? 's' : ''}
+                                {' '}(v{major}.1–v{major}.{group.drafts.reduce((acc, d) => Math.max(acc, d.version_minor ?? 0), 0)})
+                              </button>
+                              {expandedMajors.has(major) && (
+                                <div className="mt-1 border-l-2 border-[#EEF2FF] ml-1 pl-3 space-y-0">
+                                  {group.drafts.map(d => renderHistoryItem(d, true))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      {/* Legacy history items without version info */}
+                      {ungrouped.map(h => renderHistoryItem(h))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -2865,6 +3258,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
           {/* §5 — Footer */}
           <div className="px-5 py-[0.75rem] border-t border-[#E2E8F0] flex gap-2 flex-shrink-0">
+            {/* Publish button — only shown when version_status is 'draft' */}
+            {(selectedTestCase.version_status === 'draft') && (
+              <button
+                onClick={() => setShowPublishModal(true)}
+                className="px-[0.75rem] py-[0.4375rem] bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1 border-none"
+              >
+                <i className="ri-upload-2-line text-sm"></i>
+                Publish v{(selectedTestCase.version_major ?? 1) + 1}.0
+              </button>
+            )}
             <button
               onClick={() => handleEdit(selectedTestCase)}
               className="flex-1 px-[0.75rem] py-[0.4375rem] bg-[#6366F1] text-white rounded-lg hover:bg-[#4F46E5] transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1 border-none"
@@ -2878,9 +3281,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   setSelectedTestCase(null);
                 }
               }}
-              className="flex-1 px-[0.75rem] py-[0.4375rem] bg-white text-[#EF4444] border border-[#FCA5A5] rounded-lg hover:bg-[#FEF2F2] transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1"
+              className="px-[0.75rem] py-[0.4375rem] bg-white text-[#EF4444] border border-[#FCA5A5] rounded-lg hover:bg-[#FEF2F2] transition-all font-semibold text-[0.8125rem] cursor-pointer whitespace-nowrap flex items-center justify-center gap-1"
             >
-              <i className="ri-delete-bin-line text-sm"></i> Delete
+              <i className="ri-delete-bin-line text-sm"></i>
             </button>
           </div>
         </div>
@@ -3365,193 +3768,339 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         </div>
       )}
 
-      {/* 히스토리 비교 모달 */}
-      {showHistoryModal && selectedHistory && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Version Comparison</h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {new Date(selectedHistory.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                    {' by '}
-                    {selectedHistory.user?.full_name || selectedHistory.user?.email || 'Unknown user'}
-                  </p>
+      {/* ── Version Diff Modal (enhanced) ── */}
+      {showHistoryModal && selectedHistory && (() => {
+        const oldS = parseSnapshot(selectedHistory.old_value);
+        const newS = parseSnapshot(selectedHistory.new_value);
+        if (!oldS || !newS) return null;
+
+        type FieldDef = { key: keyof TestCaseSnapshot; label: string; multiline?: boolean };
+        const fields: FieldDef[] = [
+          { key: 'title', label: 'Title' },
+          { key: 'description', label: 'Description', multiline: true },
+          { key: 'precondition', label: 'Precondition', multiline: true },
+          { key: 'priority', label: 'Priority' },
+          { key: 'folder', label: 'Folder' },
+          { key: 'tags', label: 'Tags' },
+          { key: 'steps', label: 'Steps', multiline: true },
+          { key: 'expected_result', label: 'Expected Result', multiline: true },
+          { key: 'assignee', label: 'Assignee' },
+          { key: 'is_automated', label: 'Automated' },
+        ];
+
+        const changedFields = fields.filter(f => {
+          const o = f.key === 'is_automated' ? String(oldS[f.key]) : stripHtml(String(oldS[f.key] ?? ''));
+          const n = f.key === 'is_automated' ? String(newS[f.key]) : stripHtml(String(newS[f.key] ?? ''));
+          return o !== n;
+        });
+        const unchangedCount = fields.length - changedFields.length;
+
+        const fromVer = `v${selectedHistory.version_major ?? 1}.${selectedHistory.version_minor ?? 0}`;
+        const toVer = selectedTestCase
+          ? `v${selectedTestCase.version_major ?? 1}.${selectedTestCase.version_minor ?? 0}`
+          : 'Current';
+        const isProUser = userTier >= 3;
+
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+              {/* Header */}
+              <div className="px-5 py-3.5 border-b border-[#E2E8F0] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <i className="ri-git-commit-line text-[#6366F1] text-lg"></i>
+                  <h2 className="text-[0.9375rem] font-bold text-[#0F172A]">Version Diff</h2>
+                  <span className="text-[0.75rem] text-[#94A3B8]">{fromVer} → {toVer}</span>
                 </div>
                 <button
-                  onClick={() => {
-                    setShowHistoryModal(false);
-                    setSelectedHistory(null);
-                  }}
-                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+                  onClick={() => { setShowHistoryModal(false); setSelectedHistory(null); }}
+                  className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F1F5F9] rounded-md cursor-pointer border-none bg-transparent"
                 >
-                  <i className="ri-close-line text-xl"></i>
+                  <i className="ri-close-line"></i>
                 </button>
               </div>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="grid grid-cols-2 gap-6">
-                {/* Before (Old Value) */}
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <h3 className="text-lg font-semibold text-gray-900">Before</h3>
-                  </div>
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-4">
-                    {(() => {
-                      const oldSnapshot = parseSnapshot(selectedHistory.old_value);
-                      if (!oldSnapshot) {
-                        return <p className="text-sm text-gray-500">No previous data available</p>;
-                      }
-                      return (
-                        <>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Title</label>
-                            <p className="text-sm text-gray-900">{oldSnapshot.title || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Description</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(oldSnapshot.description || '-')}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PreCondition</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(oldSnapshot.precondition || '-')}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Priority</label>
-                            <p className="text-sm text-gray-900">{oldSnapshot.priority || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Folder</label>
-                            <p className="text-sm text-gray-900">{oldSnapshot.folder || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Tags</label>
-                            <p className="text-sm text-gray-900">{oldSnapshot.tags || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Steps</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(oldSnapshot.steps || '-')}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Expected Result</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(oldSnapshot.expected_result || '-')}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Assignee</label>
-                            <p className="text-sm text-gray-900">{oldSnapshot.assignee || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Automated</label>
-                            <p className="text-sm text-gray-900">{oldSnapshot.is_automated ? 'Yes' : 'No'}</p>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
 
-                {/* After (New Value) */}
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <h3 className="text-lg font-semibold text-gray-900">After</h3>
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                {/* Changed fields */}
+                {changedFields.map(f => {
+                  const oldVal = f.key === 'is_automated' ? (oldS[f.key] ? 'Yes' : 'No') : stripHtml(String(oldS[f.key] ?? ''));
+                  const newVal = f.key === 'is_automated' ? (newS[f.key] ? 'Yes' : 'No') : stripHtml(String(newS[f.key] ?? ''));
+                  const isMultiline = f.multiline && (oldVal.includes('\n') || newVal.includes('\n') || oldVal.length > 80 || newVal.length > 80);
+                  const lineDiff = isMultiline ? computeLineDiff(oldVal, newVal) : null;
+
+                  return (
+                    <div key={f.key} className="border border-[#E2E8F0] rounded-lg overflow-hidden">
+                      <div className="px-3 py-2 bg-[#F8FAFC] border-b border-[#E2E8F0] flex items-center justify-between">
+                        <span className="text-[0.75rem] font-semibold text-amber-700 flex items-center gap-1.5">
+                          <i className="ri-edit-line text-xs"></i>
+                          {f.label}
+                        </span>
+                        {isProUser ? (
+                          <button
+                            onClick={() => {
+                              setCherryPickSource(selectedHistory);
+                              setCherryPickFields({ [f.key]: true });
+                              setShowCherryPickModal(true);
+                            }}
+                            className="flex items-center gap-1 px-2 py-0.5 text-[0.625rem] font-semibold text-violet-700 border border-violet-200 rounded bg-violet-50 hover:bg-violet-100 cursor-pointer"
+                          >
+                            <i className="ri-arrow-go-back-line text-[0.625rem]"></i>
+                            Restore field
+                          </button>
+                        ) : (
+                          <span className="flex items-center gap-1 px-2 py-0.5 text-[0.625rem] font-semibold text-[#94A3B8] border border-[#E2E8F0] rounded bg-[#F8FAFC] cursor-not-allowed">
+                            <i className="ri-arrow-go-back-line text-[0.625rem]"></i>
+                            Restore field
+                            <span className="ml-0.5 px-1 py-px text-[0.5rem] font-bold bg-violet-500 text-white rounded">PRO</span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-0 divide-x divide-[#E2E8F0]">
+                        <div className="px-3 py-2">
+                          <div className="text-[0.5625rem] font-semibold uppercase text-[#94A3B8] tracking-wider mb-1.5">{fromVer} (Before)</div>
+                          {lineDiff ? (
+                            <div className="font-mono text-[0.75rem] space-y-0.5 leading-[1.5]">
+                              {lineDiff.map((line, i) => (
+                                <div key={i} className={`px-1 rounded ${
+                                  line.type === 'removed' ? 'bg-red-100 text-red-800 line-through' :
+                                  line.type === 'unchanged' ? 'text-[#64748B]' : 'text-[#94A3B8] opacity-30'
+                                }`}>{line.type === 'removed' || line.type === 'unchanged' ? line.text : ''}</div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-[0.8125rem] px-1.5 py-0.5 bg-red-100 text-red-800 rounded line-through">{oldVal || '-'}</span>
+                          )}
+                        </div>
+                        <div className="px-3 py-2">
+                          <div className="text-[0.5625rem] font-semibold uppercase text-[#94A3B8] tracking-wider mb-1.5">{toVer} (After)</div>
+                          {lineDiff ? (
+                            <div className="font-mono text-[0.75rem] space-y-0.5 leading-[1.5]">
+                              {lineDiff.map((line, i) => (
+                                <div key={i} className={`px-1 rounded ${
+                                  line.type === 'added' ? 'bg-emerald-100 text-emerald-800' :
+                                  line.type === 'unchanged' ? 'text-[#64748B]' : 'text-[#94A3B8] opacity-30'
+                                }`}>{line.type === 'added' || line.type === 'unchanged' ? line.text : ''}</div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-[0.8125rem] px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded">{newVal || '-'}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Unchanged fields — collapsed */}
+                {unchangedCount > 0 && (
+                  <div className="px-3 py-2 text-center text-[0.75rem] text-[#94A3B8] border border-dashed border-[#E2E8F0] rounded-lg cursor-default">
+                    <i className="ri-eye-off-line text-xs mr-1"></i>
+                    {unchangedCount} unchanged field{unchangedCount !== 1 ? 's' : ''} hidden
                   </div>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-4">
-                    {(() => {
-                      const newSnapshot = parseSnapshot(selectedHistory.new_value);
-                      if (!newSnapshot) {
-                        return <p className="text-sm text-gray-500">No data available</p>;
-                      }
-                      return (
-                        <>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Title</label>
-                            <p className="text-sm text-gray-900">{newSnapshot.title || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Description</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(newSnapshot.description || '-')}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PreCondition</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(newSnapshot.precondition || '-')}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Priority</label>
-                            <p className="text-sm text-gray-900">{newSnapshot.priority || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Folder</label>
-                            <p className="text-sm text-gray-900">{newSnapshot.folder || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Tags</label>
-                            <p className="text-sm text-gray-900">{newSnapshot.tags || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Steps</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(newSnapshot.steps || '-')}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Expected Result</label>
-                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{stripHtml(newSnapshot.expected_result || '-')}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Assignee</label>
-                            <p className="text-sm text-gray-900">{newSnapshot.assignee || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Automated</label>
-                            <p className="text-sm text-gray-900">{newSnapshot.is_automated ? 'Yes' : 'No'}</p>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
+                )}
               </div>
-            </div>
 
-            <div className="p-6 border-t border-gray-200 flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                <i className="ri-information-line mr-1"></i>
-                Restore will revert the test case to the "Before" state
-              </p>
-              <div className="flex items-center gap-3">
+              {/* Footer */}
+              <div className="px-5 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC] flex items-center justify-between">
                 <button
-                  onClick={() => {
-                    setShowHistoryModal(false);
-                    setSelectedHistory(null);
-                  }}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap"
+                  onClick={() => { setRollbackTarget(selectedHistory); setShowRollbackModal(true); }}
+                  className="px-3 py-1.5 border border-[#E2E8F0] text-[0.8125rem] font-semibold text-[#475569] rounded-lg hover:bg-white cursor-pointer flex items-center gap-1.5 bg-white"
+                >
+                  <i className="ri-arrow-go-back-line text-sm"></i>
+                  Restore entire {fromVer}
+                </button>
+                <button
+                  onClick={() => { setShowHistoryModal(false); setSelectedHistory(null); }}
+                  className="px-4 py-1.5 border border-[#E2E8F0] text-[0.8125rem] font-semibold text-[#475569] rounded-lg hover:bg-white cursor-pointer bg-white"
                 >
                   Close
                 </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Publish Version Confirm Modal ── */}
+      {showPublishModal && selectedTestCase && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
+              <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
+                <i className="ri-upload-2-line text-emerald-500"></i>
+                Publish Version
+              </h3>
+              <button onClick={() => setShowPublishModal(false)} className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F1F5F9] rounded-md cursor-pointer border-none bg-transparent">
+                <i className="ri-close-line"></i>
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <div className="text-center px-4 py-3 border border-[#E2E8F0] rounded-lg">
+                  <div className="text-[1rem] font-bold text-[#0F172A]">v{selectedTestCase.version_major ?? 1}.{selectedTestCase.version_minor ?? 0}</div>
+                  <div className="text-[0.625rem] text-[#94A3B8] mt-0.5">Current Draft</div>
+                </div>
+                <i className="ri-arrow-right-line text-[#94A3B8] text-lg"></i>
+                <div className="text-center px-4 py-3 border border-emerald-200 bg-emerald-50 rounded-lg">
+                  <div className="text-[1rem] font-bold text-emerald-700">v{(selectedTestCase.version_major ?? 1) + 1}.0</div>
+                  <div className="text-[0.625rem] text-emerald-600 mt-0.5">Published</div>
+                </div>
+              </div>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2.5 text-[0.75rem] text-emerald-700 leading-[1.5]">
+                <strong>Publish v{(selectedTestCase.version_major ?? 1) + 1}.0?</strong>
+                <br />
+                This version will be used in future test runs. Current draft history is preserved.
+              </div>
+            </div>
+            <div className="px-5 py-3 border-t border-[#E2E8F0] flex gap-2 justify-end">
+              <button onClick={() => setShowPublishModal(false)} className="px-4 py-2 text-[0.8125rem] font-semibold text-[#64748B] border border-[#E2E8F0] rounded-lg hover:bg-[#F8FAFC] cursor-pointer">
+                Cancel
+              </button>
+              <button
+                onClick={handlePublishVersion}
+                disabled={publishingVersion}
+                className="px-4 py-2 text-[0.8125rem] font-semibold text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {publishingVersion ? <><i className="ri-loader-4-line animate-spin"></i> Publishing...</> : <><i className="ri-upload-2-line"></i> Publish v{(selectedTestCase.version_major ?? 1) + 1}.0</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Rollback Confirm Modal ── */}
+      {showRollbackModal && rollbackTarget && selectedTestCase && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
+              <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
+                <i className="ri-arrow-go-back-line text-amber-500"></i>
+                Restore Version
+              </h3>
+              <button onClick={() => { setShowRollbackModal(false); setRollbackTarget(null); }} className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F1F5F9] rounded-md cursor-pointer border-none bg-transparent">
+                <i className="ri-close-line"></i>
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <div className="text-center px-4 py-3 border border-[#E2E8F0] rounded-lg">
+                  <div className="text-[1rem] font-bold text-[#0F172A]">v{selectedTestCase.version_major ?? 1}.{selectedTestCase.version_minor ?? 0}</div>
+                  <div className="text-[0.625rem] text-[#94A3B8] mt-0.5">Current</div>
+                </div>
+                <i className="ri-arrow-right-line text-[#94A3B8] text-lg"></i>
+                <div className="text-center px-4 py-3 border border-amber-200 bg-amber-50 rounded-lg">
+                  <div className="text-[1rem] font-bold text-amber-700">v{rollbackTarget.version_major ?? 1}.{rollbackTarget.version_minor ?? 0}</div>
+                  <div className="text-[0.625rem] text-amber-600 mt-0.5">Restore to</div>
+                </div>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-[0.75rem] text-amber-700 leading-[1.5]">
+                <strong>Restore to v{rollbackTarget.version_major ?? 1}.{rollbackTarget.version_minor ?? 0}?</strong>
+                <br />
+                A new draft <strong>v{selectedTestCase.version_major ?? 1}.{(selectedTestCase.version_minor ?? 0) + 1}</strong> will be created with that content. Current version stays in history.
+              </div>
+            </div>
+            <div className="px-5 py-3 border-t border-[#E2E8F0] flex gap-2 justify-end">
+              <button onClick={() => { setShowRollbackModal(false); setRollbackTarget(null); }} className="px-4 py-2 text-[0.8125rem] font-semibold text-[#64748B] border border-[#E2E8F0] rounded-lg hover:bg-[#F8FAFC] cursor-pointer">
+                Cancel
+              </button>
+              <button
+                onClick={handleRestoreVersion}
+                disabled={restoringHistory}
+                className="px-4 py-2 text-[0.8125rem] font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {restoringHistory ? <><i className="ri-loader-4-line animate-spin"></i> Restoring...</> : <><i className="ri-arrow-go-back-line"></i> Restore</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cherry-pick Partial Restore Modal (Pro) ── */}
+      {showCherryPickModal && cherryPickSource && selectedTestCase && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
+              <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
+                <i className="ri-git-branch-line text-violet-500"></i>
+                Partial Restore from v{cherryPickSource.version_major ?? 1}.{cherryPickSource.version_minor ?? 0}
+                <span className="text-[0.5rem] font-bold bg-violet-500 text-white px-1.5 py-0.5 rounded">PRO</span>
+              </h3>
+              <button onClick={() => { setShowCherryPickModal(false); setCherryPickSource(null); setCherryPickFields({}); }} className="w-7 h-7 flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F1F5F9] rounded-md cursor-pointer border-none bg-transparent">
+                <i className="ri-close-line"></i>
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-[0.75rem] text-[#64748B] mb-3 leading-[1.5]">
+                Select fields to restore from <strong>v{cherryPickSource.version_major ?? 1}.{cherryPickSource.version_minor ?? 0}</strong>. A new draft <strong>v{selectedTestCase.version_major ?? 1}.{(selectedTestCase.version_minor ?? 0) + 1}</strong> will be created.
+              </p>
+              <div className="border-2 border-violet-200 rounded-lg overflow-hidden">
+                <div className="px-3 py-2 bg-gradient-to-r from-violet-600 to-violet-700 flex items-center justify-between">
+                  <span className="text-[0.75rem] font-bold text-violet-100 flex items-center gap-1.5">
+                    <i className="ri-checkbox-multiple-line"></i> Select fields to restore
+                  </span>
+                  <span className="text-[0.625rem] text-violet-300">
+                    {Object.values(cherryPickFields).filter(Boolean).length} selected
+                  </span>
+                </div>
+                <div className="p-2 space-y-1">
+                  {(() => {
+                    const oldS = parseSnapshot(cherryPickSource.old_value);
+                    const newS = parseSnapshot(cherryPickSource.new_value);
+                    if (!oldS || !newS) return null;
+                    const fieldDefs: { key: keyof TestCaseSnapshot; label: string }[] = [
+                      { key: 'title', label: 'Title' }, { key: 'description', label: 'Description' },
+                      { key: 'precondition', label: 'Precondition' }, { key: 'priority', label: 'Priority' },
+                      { key: 'folder', label: 'Folder' }, { key: 'tags', label: 'Tags' },
+                      { key: 'steps', label: 'Steps' }, { key: 'expected_result', label: 'Expected Result' },
+                      { key: 'assignee', label: 'Assignee' }, { key: 'is_automated', label: 'Automated' },
+                    ];
+                    const changedFDs = fieldDefs.filter(f => {
+                      const o = f.key === 'is_automated' ? String(oldS[f.key]) : stripHtml(String(oldS[f.key] ?? ''));
+                      const n = f.key === 'is_automated' ? String(newS[f.key]) : stripHtml(String(newS[f.key] ?? ''));
+                      return o !== n;
+                    });
+                    return changedFDs.map(f => {
+                      const oldVal = f.key === 'is_automated' ? (oldS[f.key] ? 'Yes' : 'No') : stripHtml(String(oldS[f.key] ?? ''));
+                      const newVal = f.key === 'is_automated' ? (newS[f.key] ? 'Yes' : 'No') : stripHtml(String(newS[f.key] ?? ''));
+                      const checked = !!cherryPickFields[f.key];
+                      return (
+                        <div
+                          key={f.key}
+                          onClick={() => setCherryPickFields(prev => ({ ...prev, [f.key]: !prev[f.key] }))}
+                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer border transition-all ${
+                            checked ? 'border-violet-300 bg-violet-50' : 'border-[#E2E8F0] hover:bg-[#F8FAFC]'
+                          }`}
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+                            checked ? 'bg-violet-500 border-violet-500' : 'border-[#CBD5E1]'
+                          }`}>
+                            {checked && <i className="ri-check-line text-white text-[0.5rem]"></i>}
+                          </div>
+                          <span className="text-[0.75rem] font-semibold text-[#334155] min-w-[80px]">{f.label}</span>
+                          <span className="text-[0.6875rem] text-[#94A3B8] flex-1 truncate">
+                            {newVal.slice(0, 30)} → <strong className="text-emerald-700">{oldVal.slice(0, 30)}</strong>
+                          </span>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-3 border-t border-[#E2E8F0] flex items-center justify-between">
+              <span className="text-[0.6875rem] text-[#94A3B8]">
+                <strong className="text-[#475569]">{Object.values(cherryPickFields).filter(Boolean).length}</strong> field{Object.values(cherryPickFields).filter(Boolean).length !== 1 ? 's' : ''} selected
+              </span>
+              <div className="flex gap-2">
+                <button onClick={() => { setShowCherryPickModal(false); setCherryPickSource(null); setCherryPickFields({}); }} className="px-3 py-1.5 text-[0.8125rem] font-semibold text-[#64748B] border border-[#E2E8F0] rounded-lg hover:bg-[#F8FAFC] cursor-pointer">
+                  Cancel
+                </button>
                 <button
-                  onClick={handleRestoreVersion}
-                  disabled={restoringHistory || !parseSnapshot(selectedHistory.old_value)}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  onClick={handleCherryPickRestore}
+                  disabled={restoringHistory || Object.values(cherryPickFields).filter(Boolean).length === 0}
+                  className="px-3 py-1.5 text-[0.8125rem] font-semibold text-white bg-violet-500 rounded-lg hover:bg-violet-600 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {restoringHistory ? (
-                    <>
-                      <i className="ri-loader-4-line animate-spin"></i>
-                      Restoring...
-                    </>
-                  ) : (
-                    <>
-                      <i className="ri-history-line"></i>
-                      Restore to Before
-                    </>
-                  )}
+                  {restoringHistory ? <><i className="ri-loader-4-line animate-spin"></i> Restoring...</> : <><i className="ri-arrow-go-back-line"></i> Restore {Object.values(cherryPickFields).filter(Boolean).length} field{Object.values(cherryPickFields).filter(Boolean).length !== 1 ? 's' : ''}</>}
                 </button>
               </div>
             </div>
