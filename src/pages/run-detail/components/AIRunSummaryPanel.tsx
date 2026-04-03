@@ -40,29 +40,42 @@ export default function AIRunSummaryPanel({ runId, runName, totalCount, onClose,
     setError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error: fnError } = await supabase.functions.invoke('generate-testcases', {
-        body: { action: 'summarize-run', run_id: runId },
-        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      if (!session?.access_token) {
+        setError('Please log in again');
+        return;
+      }
+
+      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL as string;
+      const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY as string;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/generate-testcases`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ action: 'summarize-run', run_id: runId }),
       });
 
-      if (fnError) {
-        // supabase.functions.invoke wraps HTTP errors
-        const status = (fnError as any)?.context?.status;
-        const body = (fnError as any)?.context;
+      const data = await res.json();
+
+      if (!res.ok) {
         let errMsg = 'Analysis couldn\'t be completed';
-        if (status === 429) {
-          const d = typeof body === 'object' ? body : {};
-          if (d?.error?.includes?.('Monthly') || d?.error?.includes?.('limit')) {
-            errMsg = `Monthly AI limit reached (${d.usage ?? '?'}/${d.limit ?? '?'})`;
+        if (res.status === 429) {
+          if (data?.error?.includes?.('Monthly') || data?.error?.includes?.('limit')) {
+            errMsg = `Monthly AI limit reached (${data.usage ?? '?'}/${data.limit ?? '?'})`;
           } else {
             errMsg = 'Too many requests. Please wait a moment.';
           }
-        } else if (status === 403) {
+        } else if (res.status === 403) {
           errMsg = 'AI Summary requires Starter plan';
-        } else if (status === 422) {
+        } else if (res.status === 422) {
           errMsg = 'No test results to analyze';
-        } else if (status === 401) {
+        } else if (res.status === 401) {
           errMsg = 'Please log in again';
+        } else if (data?.error) {
+          errMsg = data.error;
         }
         setError(errMsg);
         return;
@@ -74,7 +87,7 @@ export default function AIRunSummaryPanel({ runId, runName, totalCount, onClose,
       }
 
       if (!data?.success || !data?.summary) {
-        setError('Analysis couldn\'t be completed');
+        setError(data?.error || 'Analysis couldn\'t be completed');
         return;
       }
 

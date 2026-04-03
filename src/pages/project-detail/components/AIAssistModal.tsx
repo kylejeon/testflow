@@ -40,57 +40,9 @@ const ACTIONS: Action[] = [
     iconColor: 'text-violet-400',
     comingSoon: false,
   },
-  {
-    id: 'summarize',
-    title: 'Summarize Run Results',
-    description: 'AI-generated summary with risk assessment and key findings',
-    icon: 'ri-file-chart-fill',
-    iconBg: 'bg-emerald-500/20',
-    iconColor: 'text-emerald-400',
-    comingSoon: true,
-    comingSoonDesc: 'AI-powered run analysis is coming soon. Get instant summaries with risk assessment, key findings, and actionable recommendations.',
-    comingSoonFeatures: [
-      { icon: 'ri-bar-chart-line', iconColor: 'text-emerald-400', label: 'Pass/Fail/Skip breakdown' },
-      { icon: 'ri-alert-line', iconColor: 'text-amber-400', label: 'Risk level assessment' },
-      { icon: 'ri-search-eye-line', iconColor: 'text-indigo-400', label: 'Key findings & patterns' },
-      { icon: 'ri-lightbulb-line', iconColor: 'text-violet-400', label: 'Actionable recommendations' },
-    ],
-  },
-  {
-    id: 'analyze',
-    title: 'Analyze Failed Tests',
-    description: 'Cluster failures, detect flaky tests, and suggest root causes',
-    icon: 'ri-bug-fill',
-    iconBg: 'bg-red-500/20',
-    iconColor: 'text-red-400',
-    comingSoon: true,
-    comingSoonDesc: 'AI failure analysis is coming soon. Automatically cluster related failures, detect flaky tests, and get root cause hypotheses.',
-    comingSoonFeatures: [
-      { icon: 'ri-stack-line', iconColor: 'text-red-400', label: 'Failure pattern clustering' },
-      { icon: 'ri-flashlight-line', iconColor: 'text-amber-400', label: 'Flaky test detection' },
-      { icon: 'ri-search-2-line', iconColor: 'text-indigo-400', label: 'Root cause hypotheses' },
-      { icon: 'ri-tools-line', iconColor: 'text-emerald-400', label: 'Fix suggestions per cluster' },
-    ],
-  },
-  {
-    id: 'coverage',
-    title: 'Coverage Gap Analysis',
-    description: 'Identify untested areas and auto-suggest test cases to fill gaps',
-    icon: 'ri-shield-check-fill',
-    iconBg: 'bg-amber-500/20',
-    iconColor: 'text-amber-400',
-    comingSoon: true,
-    comingSoonDesc: 'AI coverage analysis is coming soon. Identify untested modules, visualize coverage heatmaps, and get TC suggestions to fill gaps.',
-    comingSoonFeatures: [
-      { icon: 'ri-layout-grid-line', iconColor: 'text-amber-400', label: 'Module coverage heatmap' },
-      { icon: 'ri-pie-chart-2-line', iconColor: 'text-indigo-400', label: 'TC type balance analysis' },
-      { icon: 'ri-add-circle-line', iconColor: 'text-emerald-400', label: 'Auto-suggested test cases' },
-      { icon: 'ri-alert-line', iconColor: 'text-red-400', label: 'Gap severity ranking' },
-    ],
-  },
 ];
 
-type Phase = 'menu' | 'edge-cases' | 'summarize' | 'analyze' | 'coverage';
+type Phase = 'menu' | 'edge-cases';
 
 interface GeneratedTC {
   id: string;
