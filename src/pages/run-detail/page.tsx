@@ -2272,12 +2272,6 @@ export default function RunDetail() {
                     passedCount={_passed}
                     failedCount={_failed}
                     blockedCount={_blocked}
-                    testCaseList={testCases.map(tc => ({
-                      id: tc.id,
-                      title: tc.title,
-                      folder: tc.folder,
-                      runStatus: tc.runStatus,
-                    }))}
                     onClose={() => setShowAISummary(false)}
                     onToast={(msg, type) => setToast({ type, message: msg })}
                   />
