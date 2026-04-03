@@ -55,8 +55,9 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GapResult | null>(null);
-  // Map: "gapIndex-suggestionIndex" → selected
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [tcCount, setTcCount] = useState<number>(0);
+  const [moduleCount, setModuleCount] = useState<number>(0);
 
   const runAnalysis = async () => {
     setLoading(true);
@@ -113,6 +114,16 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
   };
 
   useEffect(() => {
+    supabase
+      .from('test_cases')
+      .select('folder')
+      .eq('project_id', projectId)
+      .then(({ data }) => {
+        if (data) {
+          setTcCount(data.length);
+          setModuleCount(new Set(data.map(tc => tc.folder || 'General')).size);
+        }
+      });
     runAnalysis();
   }, []);
 
@@ -191,10 +202,12 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
 
           {/* Loading */}
           {loading && (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <div style={{ width: 32, height: 32, border: '3px solid #E2E8F0', borderTopColor: '#6366F1', borderRadius: '50%', animation: 'cgSpin 0.8s linear infinite', margin: '0 auto 14px' }} />
-              <p style={{ fontSize: '14px', color: '#64748B', margin: 0 }}>Analyzing coverage gaps…</p>
-              <p style={{ fontSize: '12px', color: '#94A3B8', marginTop: 4 }}>Usually takes 10-20 seconds</p>
+            <div style={{ textAlign: 'center', padding: '52px 24px', background: '#0F172A', borderRadius: 12, margin: '4px 0' }}>
+              <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#818CF8', borderRadius: '50%', animation: 'cgSpin 0.8s linear infinite', margin: '0 auto 20px' }} />
+              <p style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: '0 0 8px' }}>
+                Analyzing {tcCount > 0 ? tcCount : '…'} test cases across {moduleCount > 0 ? moduleCount : '…'} modules...
+              </p>
+              <p style={{ fontSize: '13px', color: '#94A3B8', margin: 0 }}>Identifying coverage gaps and suggesting TCs</p>
               <style>{`@keyframes cgSpin { to { transform: rotate(360deg); } }`}</style>
             </div>
           )}
