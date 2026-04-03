@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 
 
@@ -51,6 +52,8 @@ export default function AIRunSummaryPanel({
   const [copied, setCopied] = useState(false);
   const [jiraPreviewCluster, setJiraPreviewCluster] = useState<AISummaryCluster | null>(null);
   const [jiraCreating, setJiraCreating] = useState(false);
+  const [reRunning, setReRunning] = useState(false);
+  const navigate = useNavigate();
 
   const fetchSummary = async () => {
     setLoading(true);
@@ -230,6 +233,63 @@ export default function AIRunSummaryPanel({
       onToast('Failed to create Jira issue', 'error');
     } finally {
       setJiraCreating(false);
+    }
+  };
+
+  const handleReRunFailed = async () => {
+    if (reRunning || failedCount === 0) return;
+    setReRunning(true);
+    try {
+      // 1. Get failed test_case_ids from current run
+      const { data: failedResults, error: fetchErr } = await supabase
+        .from('test_results')
+        .select('test_case_id')
+        .eq('run_id', runId)
+        .eq('status', 'failed');
+
+      if (fetchErr) throw fetchErr;
+
+      const failedTcIds = [...new Set((failedResults || []).map((r: any) => r.test_case_id as string))];
+      if (failedTcIds.length === 0) {
+        onToast('No failed test cases found to re-run', 'error');
+        return;
+      }
+
+      // 2. Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // 3. Create new run with failed TCs only
+      const newRunName = `[Re-run] ${runName} — Failed only`;
+      const { data: inserted, error: insertErr } = await supabase
+        .from('test_runs')
+        .insert([{
+          project_id: projectId,
+          name: newRunName,
+          status: 'new',
+          progress: 0,
+          passed: 0,
+          failed: 0,
+          blocked: 0,
+          retest: 0,
+          untested: failedTcIds.length,
+          test_case_ids: failedTcIds,
+          tags: [],
+          assignees: user?.id ? [user.id] : [],
+          is_automated: false,
+          executed_at: new Date().toISOString(),
+        }])
+        .select('id')
+        .single();
+
+      if (insertErr) throw insertErr;
+
+      onToast(`New run created with ${failedTcIds.length} failed test case${failedTcIds.length === 1 ? '' : 's'}`, 'success');
+      onClose();
+      navigate(`/projects/${projectId}/runs/${inserted.id}`);
+    } catch (err: any) {
+      onToast(err?.message || 'Failed to create re-run', 'error');
+    } finally {
+      setReRunning(false);
     }
   };
 
@@ -643,22 +703,38 @@ export default function AIRunSummaryPanel({
                 </button>
               )}
               <button
-                onClick={() => onToast('Re-run feature coming soon', 'success')}
+                onClick={handleReRunFailed}
+                disabled={reRunning || failedCount === 0}
                 style={{
-                  background: '#1E293B',
+                  background: reRunning ? '#0F172A' : '#1E293B',
                   border: '1px solid #334155',
-                  color: '#CBD5E1',
+                  color: (reRunning || failedCount === 0) ? '#475569' : '#CBD5E1',
                   borderRadius: '6px',
                   padding: '6px 12px',
                   fontSize: '12px',
                   fontWeight: 600,
-                  cursor: 'pointer',
+                  cursor: (reRunning || failedCount === 0) ? 'not-allowed' : 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
+                  opacity: failedCount === 0 ? 0.5 : 1,
                 }}
               >
-                <i className="ri-refresh-line" /> Re-run Failed Only
+                {reRunning ? (
+                  <>
+                    <span
+                      style={{
+                        width: 10, height: 10, borderRadius: '50%',
+                        border: '2px solid #475569', borderTopColor: '#94A3B8',
+                        display: 'inline-block',
+                        animation: 'aiPanelSpin 0.8s linear infinite',
+                      }}
+                    />
+                    Creating…
+                  </>
+                ) : (
+                  <><i className="ri-refresh-line" /> Re-run Failed Only ({failedCount})</>
+                )}
               </button>
             </div>
 
