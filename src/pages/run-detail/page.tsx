@@ -2259,15 +2259,30 @@ export default function RunDetail() {
               })()}
 
               {/* AI Run Summary Panel */}
-              {showAISummary && (
-                <AIRunSummaryPanel
-                  runId={runId!}
-                  runName={run?.name || ''}
-                  totalCount={testCases.length}
-                  onClose={() => setShowAISummary(false)}
-                  onToast={(msg, type) => setToast({ type, message: msg })}
-                />
-              )}
+              {showAISummary && (() => {
+                const _passed = testCases.filter(tc => tc.runStatus === 'passed').length;
+                const _failed = testCases.filter(tc => tc.runStatus === 'failed').length;
+                const _blocked = testCases.filter(tc => tc.runStatus === 'blocked').length;
+                return (
+                  <AIRunSummaryPanel
+                    runId={runId!}
+                    runName={run?.name || ''}
+                    totalCount={testCases.length}
+                    runDate={run?.created_at}
+                    passedCount={_passed}
+                    failedCount={_failed}
+                    blockedCount={_blocked}
+                    testCaseList={testCases.map(tc => ({
+                      id: tc.id,
+                      title: tc.title,
+                      folder: tc.folder,
+                      runStatus: tc.runStatus,
+                    }))}
+                    onClose={() => setShowAISummary(false)}
+                    onToast={(msg, type) => setToast({ type, message: msg })}
+                  />
+                );
+              })()}
 
               {/* Upgrade Nudge Panel (Free tier) */}
               {showUpgradeNudge && (

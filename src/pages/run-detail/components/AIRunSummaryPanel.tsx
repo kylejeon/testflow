@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 
+interface RunTC {
+  id: string;
+  title: string;
+  folder?: string;
+  runStatus: 'passed' | 'failed' | 'blocked' | 'retest' | 'untested';
+}
+
 interface AISummaryCluster {
   name: string;
   count: number;
@@ -23,17 +30,34 @@ interface AIRunSummaryPanelProps {
   runId: string;
   runName: string;
   totalCount: number;
+  runDate?: string;
+  passedCount?: number;
+  failedCount?: number;
+  blockedCount?: number;
+  testCaseList?: RunTC[];
   onClose: () => void;
   onToast: (msg: string, type: 'success' | 'error') => void;
 }
 
-export default function AIRunSummaryPanel({ runId, runName, totalCount, onClose, onToast }: AIRunSummaryPanelProps) {
+export default function AIRunSummaryPanel({
+  runId,
+  runName,
+  totalCount,
+  runDate,
+  passedCount = 0,
+  failedCount = 0,
+  blockedCount = 0,
+  testCaseList = [],
+  onClose,
+  onToast,
+}: AIRunSummaryPanelProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<AISummaryResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [jiraPreviewCluster, setJiraPreviewCluster] = useState<AISummaryCluster | null>(null);
   const [jiraCreating, setJiraCreating] = useState(false);
+  const [tcListExpanded, setTcListExpanded] = useState(false);
 
   const fetchSummary = async () => {
     setLoading(true);
@@ -329,7 +353,7 @@ export default function AIRunSummaryPanel({ runId, runName, totalCount, onClose,
               Analyzing {totalCount} results for patterns…
             </p>
             <p style={{ fontSize: '11px', color: '#475569', marginTop: '4px', marginBottom: 0 }}>
-              Usually takes 3-5 seconds
+              Usually takes 10-15 seconds
             </p>
           </div>
         )}
@@ -359,6 +383,56 @@ export default function AIRunSummaryPanel({ runId, runName, totalCount, onClose,
         {/* Summary */}
         {!loading && summary && (
           <>
+            {/* Run stats header */}
+            {(() => {
+              const passRate = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
+              const formattedDate = runDate
+                ? new Date(runDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              return (
+                <div
+                  style={{
+                    background: '#1E293B',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    marginBottom: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '6px 16px',
+                  }}
+                >
+                  <span style={{ fontSize: '12px', color: '#94A3B8' }}>
+                    <i className="ri-calendar-line" style={{ marginRight: '4px', color: '#64748B' }} />
+                    {formattedDate}
+                  </span>
+                  <span style={{ color: '#334155', fontSize: '12px' }}>·</span>
+                  <span style={{ fontSize: '12px', color: '#94A3B8' }}>
+                    <span style={{ fontWeight: 700, color: passRate >= 90 ? '#4ADE80' : passRate >= 70 ? '#FCD34D' : '#F87171' }}>
+                      {passRate}%
+                    </span>
+                    {' '}pass rate
+                  </span>
+                  <span style={{ color: '#334155', fontSize: '12px' }}>·</span>
+                  <span style={{ fontSize: '12px', color: '#94A3B8' }}>
+                    <span style={{ fontWeight: 600, color: '#CBD5E1' }}>{totalCount}</span> total
+                  </span>
+                  <span style={{ color: '#334155', fontSize: '12px' }}>·</span>
+                  <span style={{ fontSize: '12px', color: '#F87171' }}>
+                    <span style={{ fontWeight: 600 }}>{failedCount}</span> failed
+                  </span>
+                  {blockedCount > 0 && (
+                    <>
+                      <span style={{ color: '#334155', fontSize: '12px' }}>·</span>
+                      <span style={{ fontSize: '12px', color: '#FCD34D' }}>
+                        <span style={{ fontWeight: 600 }}>{blockedCount}</span> blocked
+                      </span>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Risk badge + credit */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
               <span
@@ -376,8 +450,7 @@ export default function AIRunSummaryPanel({ runId, runName, totalCount, onClose,
                 <i className="ri-error-warning-fill" /> {summary.riskLevel}
               </span>
               <span style={{ fontSize: '11px', color: '#475569' }}>
-                1 AI credit ·{' '}
-                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                1 AI credit
               </span>
             </div>
 
@@ -582,6 +655,97 @@ export default function AIRunSummaryPanel({ runId, runName, totalCount, onClose,
                 <i className="ri-refresh-line" /> Re-run Failed Only
               </button>
             </div>
+
+            {/* Test Cases List */}
+            {testCaseList.length > 0 && (() => {
+              const PREVIEW_COUNT = 3;
+              const shown = tcListExpanded ? testCaseList : testCaseList.slice(0, PREVIEW_COUNT);
+              const remaining = testCaseList.length - PREVIEW_COUNT;
+              const statusDot = (status: string) => {
+                if (status === 'failed') return { color: '#EF4444', icon: '●' };
+                if (status === 'blocked') return { color: '#F59E0B', icon: '●' };
+                if (status === 'passed') return { color: '#4ADE80', icon: '●' };
+                if (status === 'retest') return { color: '#A78BFA', icon: '●' };
+                return { color: '#475569', icon: '○' };
+              };
+              return (
+                <div style={{ marginTop: '16px', borderTop: '1px solid #1E293B', paddingTop: '14px' }}>
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: '#64748B',
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    Test Cases ({testCaseList.length})
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {shown.map((tc) => {
+                      const dot = statusDot(tc.runStatus);
+                      return (
+                        <div
+                          key={tc.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'baseline',
+                            gap: '8px',
+                            padding: '6px 10px',
+                            borderRadius: '6px',
+                            background: '#0F172A',
+                            fontSize: '12px',
+                          }}
+                        >
+                          <span style={{ color: dot.color, fontSize: '10px', flexShrink: 0 }}>{dot.icon}</span>
+                          <span style={{ color: '#CBD5E1', flex: 1, lineHeight: 1.4 }}>{tc.title}</span>
+                          {tc.folder && (
+                            <span style={{ color: '#475569', flexShrink: 0, fontFamily: 'monospace', fontSize: '11px' }}>
+                              {tc.folder}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {!tcListExpanded && remaining > 0 && (
+                    <button
+                      onClick={() => setTcListExpanded(true)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#6366F1',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        padding: '6px 0 0',
+                        display: 'block',
+                      }}
+                    >
+                      + {remaining} more
+                    </button>
+                  )}
+                  {tcListExpanded && testCaseList.length > PREVIEW_COUNT && (
+                    <button
+                      onClick={() => setTcListExpanded(false)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#475569',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        padding: '6px 0 0',
+                        display: 'block',
+                      }}
+                    >
+                      Show less
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Jira Inline Preview */}
             {jiraPreviewCluster && (
