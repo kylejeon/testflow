@@ -150,52 +150,34 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
     } catch { /* ignore quota errors */ }
   }, [getCacheKey]);
 
-  // Load jira_issues created state from DB (stored in ai_generation_logs.output_data)
+  // Load which patterns already have Jira issues from dedicated DB table
   const loadJiraCreatedState = useCallback(async () => {
     try {
-      const { data: logRecord } = await supabase
-        .from('ai_generation_logs')
-        .select('output_data')
-        .eq('project_id', projectId)
-        .filter('input_data->>action', 'eq', 'analyze-flaky')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data } = await supabase
+        .from('jira_created_issues')
+        .select('pattern_name')
+        .eq('project_id', projectId);
 
-      if (logRecord?.output_data?.jira_issues) {
-        const createdSet = new Set<string>(Object.keys(logRecord.output_data.jira_issues));
-        setJiraCreated(createdSet);
+      if (data && data.length > 0) {
+        setJiraCreated(new Set<string>(data.map((r: any) => r.pattern_name)));
       }
     } catch (e) {
       console.error('Failed to load Jira created state:', e);
     }
   }, [projectId]);
 
-  // Persist jira issue creation to DB (update ai_generation_logs.output_data)
+  // Persist jira issue creation to dedicated DB table
   const saveJiraCreatedToDB = useCallback(async (patternName: string, jiraKey: string) => {
     try {
-      const { data: logRecord } = await supabase
-        .from('ai_generation_logs')
-        .select('id, output_data')
-        .eq('project_id', projectId)
-        .filter('input_data->>action', 'eq', 'analyze-flaky')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (logRecord) {
-        const updatedOutput = {
-          ...logRecord.output_data,
-          jira_issues: {
-            ...(logRecord.output_data?.jira_issues ?? {}),
-            [patternName]: jiraKey,
-          },
-        };
-        await supabase
-          .from('ai_generation_logs')
-          .update({ output_data: updatedOutput })
-          .eq('id', logRecord.id);
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase
+        .from('jira_created_issues')
+        .upsert({
+          project_id: projectId,
+          pattern_name: patternName,
+          jira_issue_key: jiraKey,
+          created_by: user?.id ?? null,
+        }, { onConflict: 'project_id,pattern_name' });
     } catch (e) {
       console.error('Failed to save Jira created state to DB:', e);
     }
@@ -731,22 +713,37 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
 
                               {/* Jira Action */}
                               {!isJiraExpanded ? (
-                                <button
-                                  onClick={() => {
-                                    setExpandedJira(pattern.name);
-                                    if (!editValues[pattern.name]) {
-                                      setEditValues(prev => ({ ...prev, [pattern.name]: getDefaultJiraValues(pattern) }));
-                                    }
-                                  }}
-                                  style={{
-                                    fontSize: 11, fontWeight: 600, color: '#6366F1',
-                                    background: '#EEF2FF', border: '1px solid #C7D2FE',
-                                    borderRadius: 6, padding: '5px 12px', cursor: 'pointer',
-                                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                                  }}
-                                >
-                                  <i className="ri-jira-line" /> Create Jira
-                                </button>
+                                jiraCreated.has(pattern.name) ? (
+                                  /* Already created — show disabled "Created" button */
+                                  <button
+                                    disabled
+                                    style={{
+                                      fontSize: 11, fontWeight: 600, color: '#94A3B8',
+                                      background: '#F1F5F9', border: '1px solid #E2E8F0',
+                                      borderRadius: 6, padding: '5px 12px', cursor: 'not-allowed',
+                                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                                    }}
+                                  >
+                                    <i className="ri-check-line" /> Created
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      setExpandedJira(pattern.name);
+                                      if (!editValues[pattern.name]) {
+                                        setEditValues(prev => ({ ...prev, [pattern.name]: getDefaultJiraValues(pattern) }));
+                                      }
+                                    }}
+                                    style={{
+                                      fontSize: 11, fontWeight: 600, color: '#6366F1',
+                                      background: '#EEF2FF', border: '1px solid #C7D2FE',
+                                      borderRadius: 6, padding: '5px 12px', cursor: 'pointer',
+                                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                                    }}
+                                  >
+                                    <i className="ri-jira-line" /> Create Jira
+                                  </button>
+                                )
                               ) : (() => {
                                 const isEditing = editingPatterns[pattern.name] ?? false;
                                 const vals = editValues[pattern.name] ?? getDefaultJiraValues(pattern);

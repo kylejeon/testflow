@@ -36,3 +36,50 @@ WHERE user_id IS NULL;
 --    이미 실행했더라도 재실행해도 무해합니다
 -- ============================================================
 NOTIFY pgrst, 'reload schema';
+
+
+-- ============================================================
+-- jira_created_issues 테이블 (2026-04-04)
+-- Flaky AI Analyze에서 Jira 이슈 생성 기록 — 새로고침 후에도 "Created" 상태 유지
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS jira_created_issues (
+  id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id    UUID        NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  pattern_name  TEXT        NOT NULL,
+  jira_issue_key TEXT       NOT NULL,
+  created_by    UUID        REFERENCES auth.users(id),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (project_id, pattern_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_jira_created_issues_project
+  ON jira_created_issues (project_id);
+
+ALTER TABLE jira_created_issues ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "project members can read jira_created_issues"
+  ON jira_created_issues FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM project_members
+      WHERE project_members.project_id = jira_created_issues.project_id
+        AND project_members.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "project members can insert jira_created_issues"
+  ON jira_created_issues FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM project_members
+      WHERE project_members.project_id = jira_created_issues.project_id
+        AND project_members.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "creator can delete jira_created_issues"
+  ON jira_created_issues FOR DELETE
+  USING (created_by = auth.uid());
+
+NOTIFY pgrst, 'reload schema';
