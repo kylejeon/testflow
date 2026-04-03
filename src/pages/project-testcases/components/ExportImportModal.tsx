@@ -30,6 +30,7 @@ interface ExportImportModalProps {
 }
 
 type ModalTab = 'export' | 'import';
+type ExportScope = 'all' | 'selected';
 
 const ALL_COLUMNS = [
   { key: 'ID',                  label: 'ID',                  required: false },
@@ -45,8 +46,72 @@ const ALL_COLUMNS = [
   { key: 'References',          label: 'References',          required: false },
 ];
 
-// 청크 단위 크기 (Supabase 권장 배치 상한)
 const CHUNK_SIZE = 200;
+
+const PRIORITY_CONFIG = {
+  critical: { icon: 'ri-arrow-up-double-line', color: '#DC2626', label: 'Critical' },
+  high:     { icon: 'ri-arrow-up-line',        color: '#EA580C', label: 'High'     },
+  medium:   { icon: 'ri-equal-line',           color: '#D97706', label: 'Medium'   },
+  low:      { icon: 'ri-arrow-down-line',      color: '#16A34A', label: 'Low'      },
+};
+
+function PriorityBadge({ priority }: { priority: string }) {
+  const cfg = PRIORITY_CONFIG[priority?.toLowerCase() as keyof typeof PRIORITY_CONFIG]
+    ?? { icon: 'ri-equal-line', color: '#94A3B8', label: priority || 'Medium' };
+  return (
+    <span style={{ color: cfg.color, fontSize: 11, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+      <i className={cfg.icon} style={{ fontSize: 11 }} />
+      {cfg.label}
+    </span>
+  );
+}
+
+function StatusPill({ status }: { status?: string }) {
+  const isDraft = status === 'draft';
+  return (
+    <span style={{
+      background: isDraft ? '#FEF9C3' : '#DCFCE7',
+      color:      isDraft ? '#854D0E' : '#166534',
+      border:     `1px solid ${isDraft ? '#FDE68A' : '#BBF7D0'}`,
+      fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 9999,
+      display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap',
+    }}>
+      {isDraft ? 'Draft' : 'Active'}
+    </span>
+  );
+}
+
+function HighlightText({ text, keyword }: { text: string; keyword: string }) {
+  if (!keyword.trim()) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(keyword.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <strong style={{ background: '#FEF08A', padding: '0 2px', borderRadius: 2, color: '#0F172A', fontWeight: 700 }}>
+        {text.slice(idx, idx + keyword.length)}
+      </strong>
+      {text.slice(idx + keyword.length)}
+    </>
+  );
+}
+
+// Shared checkbox visual
+function Checkbox({ checked, indeterminate, disabled }: { checked: boolean; indeterminate?: boolean; disabled?: boolean }) {
+  return (
+    <div style={{
+      width: 16, height: 16, flexShrink: 0,
+      border: `1.5px solid ${checked || indeterminate ? '#6366F1' : '#CBD5E1'}`,
+      borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: checked || indeterminate ? '#6366F1' : 'white',
+      transition: 'all .15s', cursor: disabled ? 'default' : 'pointer',
+      opacity: disabled ? 0.7 : 1,
+    }}>
+      {indeterminate && <div style={{ width: 8, height: 2, background: 'white', borderRadius: 1 }} />}
+      {checked && !indeterminate && <i className="ri-check-line" style={{ color: 'white', fontSize: 11 }} />}
+    </div>
+  );
+}
 
 export default function ExportImportModal({
   testCases,
@@ -56,640 +121,636 @@ export default function ExportImportModal({
   onRefresh,
   onClose,
 }: ExportImportModalProps) {
-  const [activeTab, setActiveTab] = useState<ModalTab>('export');
-  const [exportScope, setExportScope] = useState<'all' | 'selected'>('all');
-  const [resolvedProjectName, setResolvedProjectName] = useState<string>(projectName || '');
+  const [activeTab, setActiveTab]       = useState<ModalTab>('export');
+  const [exportScope, setExportScope]   = useState<ExportScope>('all');
+  const [resolvedProjectName, setResolvedProjectName] = useState(projectName || '');
 
+  // Columns
   const [selectedColumns, setSelectedColumns] = useState<Set<string>>(
     new Set(ALL_COLUMNS.map(c => c.key))
   );
 
-  // Import 상태
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [importPreview, setImportPreview] = useState<ImportedTestCase[] | null>(null);
-  const [importErrors, setImportErrors] = useState<string[]>([]);
-  const [importWarnings, setImportWarnings] = useState<string[]>([]);
-  const [totalRows, setTotalRows] = useState(0);
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // TC picker
+  const [selectedExportTcIds, setSelectedExportTcIds] = useState<Set<string>>(
+    new Set(selectedTestCaseIds)
+  );
+  const [tcSearch, setTcSearch]               = useState('');
+  const [tcSectionFilter, setTcSectionFilter] = useState('');
+  const [tcPriorityFilter, setTcPriorityFilter] = useState('');
+  const [showSectionDd, setShowSectionDd]     = useState(false);
+  const [showPriorityDd, setShowPriorityDd]   = useState(false);
+  const sectionRef  = useRef<HTMLDivElement>(null);
+  const priorityRef = useRef<HTMLDivElement>(null);
 
-  // 비동기 청크 처리 상태
-  const [importing, setImporting] = useState(false);
-  const [importDone, setImportDone] = useState(false);
+  // Import
+  const [importFile, setImportFile]       = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<ImportedTestCase[] | null>(null);
+  const [importErrors, setImportErrors]   = useState<string[]>([]);
+  const [importWarnings, setImportWarnings] = useState<string[]>([]);
+  const [totalRows, setTotalRows]         = useState(0);
+  const [dragOver, setDragOver]           = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting]         = useState(false);
+  const [importDone, setImportDone]       = useState(false);
   const [importedCount, setImportedCount] = useState(0);
-  const [failedCount, setFailedCount] = useState(0);
-  const [progress, setProgress] = useState(0); // 0~100
-  const [currentChunk, setCurrentChunk] = useState(0);
-  const [totalChunks, setTotalChunks] = useState(0);
+  const [failedCount, setFailedCount]     = useState(0);
+  const [progress, setProgress]           = useState(0);
+  const [currentChunk, setCurrentChunk]   = useState(0);
+  const [totalChunks, setTotalChunks]     = useState(0);
   const cancelRef = useRef(false);
 
-  // 프로젝트 이름 조회
+  // Close dropdowns on outside click
   useEffect(() => {
-    const fetchProjectName = async () => {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const handler = (e: MouseEvent) => {
+      if (sectionRef.current && !sectionRef.current.contains(e.target as Node)) setShowSectionDd(false);
+      if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) setShowPriorityDd(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Resolve project name
+  useEffect(() => {
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    (async () => {
       if (projectId) {
         try {
           const { data } = await supabase.from('projects').select('name').eq('id', projectId).maybeSingle();
-          if (data?.name && !uuidRegex.test(data.name.trim())) { setResolvedProjectName(data.name); return; }
-        } catch { /* fallthrough */ }
+          if (data?.name && !uuid.test(data.name.trim())) { setResolvedProjectName(data.name); return; }
+        } catch { /* ignore */ }
       }
-      if (projectName && !uuidRegex.test(projectName.trim())) { setResolvedProjectName(projectName); return; }
-      const pathMatch = window.location.pathname.match(/\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
-      if (pathMatch) {
+      if (projectName && !uuid.test(projectName.trim())) { setResolvedProjectName(projectName); return; }
+      const m = window.location.pathname.match(/\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+      if (m) {
         try {
-          const { data } = await supabase.from('projects').select('name').eq('id', pathMatch[1]).maybeSingle();
-          if (data?.name && !uuidRegex.test(data.name.trim())) { setResolvedProjectName(data.name); return; }
+          const { data } = await supabase.from('projects').select('name').eq('id', m[1]).maybeSingle();
+          if (data?.name && !uuid.test(data.name.trim())) { setResolvedProjectName(data.name); return; }
         } catch { /* ignore */ }
       }
       setResolvedProjectName('project');
-    };
-    fetchProjectName();
+    })();
   }, [projectId, projectName]);
 
-  const exportTargetCases =
-    exportScope === 'selected' && selectedTestCaseIds.size > 0
-      ? testCases.filter(tc => selectedTestCaseIds.has(tc.id))
-      : testCases;
+  // Derived
+  const uniqueFolders = [...new Set(testCases.map(tc => tc.folder).filter(Boolean))] as string[];
 
+  const filteredTcs = testCases.filter(tc => {
+    if (tcSectionFilter && tc.folder !== tcSectionFilter) return false;
+    if (tcPriorityFilter && tc.priority?.toLowerCase() !== tcPriorityFilter) return false;
+    if (tcSearch.trim()) {
+      const q = tcSearch.toLowerCase();
+      if (!tc.custom_id?.toLowerCase().includes(q) && !tc.title.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  const exportTargetCases = exportScope === 'selected'
+    ? testCases.filter(tc => selectedExportTcIds.has(tc.id))
+    : testCases;
+
+  const hasActiveFilters = !!(tcSearch.trim() || tcSectionFilter || tcPriorityFilter);
+
+  const isAllFilteredSelected = filteredTcs.length > 0 && filteredTcs.every(tc => selectedExportTcIds.has(tc.id));
+  const isSomeFilteredSelected = filteredTcs.some(tc => selectedExportTcIds.has(tc.id)) && !isAllFilteredSelected;
+
+  const nonRequired = ALL_COLUMNS.filter(c => !c.required);
+  const allNonReqChecked = nonRequired.every(c => selectedColumns.has(c.key));
+
+  const estimatedChunks = importPreview ? Math.ceil(importPreview.length / CHUNK_SIZE) : 0;
+
+  // Summary bar state
+  const noTcsSelected = exportScope === 'selected' && selectedExportTcIds.size === 0;
+  const exportReady   = exportScope === 'selected' && selectedExportTcIds.size > 0 && !hasActiveFilters;
+
+  // Handlers
   const toggleColumn = (key: string) => {
-    const col = ALL_COLUMNS.find(c => c.key === key);
-    if (col?.required) return;
-    setSelectedColumns(prev => {
-      const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
-      return next;
-    });
+    if (ALL_COLUMNS.find(c => c.key === key)?.required) return;
+    setSelectedColumns(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
   };
-
   const toggleAllColumns = () => {
-    const nonRequired = ALL_COLUMNS.filter(c => !c.required).map(c => c.key);
-    const allChecked = nonRequired.every(k => selectedColumns.has(k));
-    setSelectedColumns(prev => {
-      const next = new Set(prev);
-      allChecked ? nonRequired.forEach(k => next.delete(k)) : nonRequired.forEach(k => next.add(k));
-      return next;
-    });
+    const keys = nonRequired.map(c => c.key);
+    const allOn = keys.every(k => selectedColumns.has(k));
+    setSelectedColumns(prev => { const n = new Set(prev); allOn ? keys.forEach(k => n.delete(k)) : keys.forEach(k => n.add(k)); return n; });
   };
+  const toggleTc = (id: string) =>
+    setSelectedExportTcIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const selectAllFiltered = () =>
+    setSelectedExportTcIds(prev => { const n = new Set(prev); filteredTcs.forEach(tc => n.add(tc.id)); return n; });
+  const clearSelection = () => setSelectedExportTcIds(new Set());
+  const clearFilters   = () => { setTcSearch(''); setTcSectionFilter(''); setTcPriorityFilter(''); };
 
-  const handleExport = () => {
-    exportToTestRail(exportTargetCases, resolvedProjectName, selectedColumns);
-  };
+  const handleExport = () => exportToTestRail(exportTargetCases, resolvedProjectName, selectedColumns);
 
-  // 파일 파싱
   const handleFileSelect = useCallback((file: File) => {
-    setImportFile(file);
-    setImportPreview(null);
-    setImportErrors([]);
-    setImportWarnings([]);
-    setImportDone(false);
-    setProgress(0);
-
+    setImportFile(file); setImportPreview(null); setImportErrors([]); setImportWarnings([]);
+    setImportDone(false); setProgress(0);
     const ext = file.name.split('.').pop()?.toLowerCase();
     const isExcel = ext === 'xlsx' || ext === 'xls';
-
+    const reader = new FileReader();
     if (isExcel) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const buffer = e.target?.result as ArrayBuffer;
-        const result = parseExcelImport(buffer);
-        setImportErrors(result.errors);
-        setImportWarnings(result.warnings);
-        setTotalRows(result.totalRows);
-        setImportPreview(result.success ? result.data : null);
+      reader.onload = e => {
+        const r = parseExcelImport(e.target?.result as ArrayBuffer);
+        setImportErrors(r.errors); setImportWarnings(r.warnings); setTotalRows(r.totalRows);
+        setImportPreview(r.success ? r.data : null);
       };
       reader.readAsArrayBuffer(file);
     } else {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const result = parseCSVImport(text);
-        setImportErrors(result.errors);
-        setImportWarnings(result.warnings);
-        setTotalRows(result.totalRows);
-        setImportPreview(result.success ? result.data : null);
+      reader.onload = e => {
+        const r = parseCSVImport(e.target?.result as string);
+        setImportErrors(r.errors); setImportWarnings(r.warnings); setTotalRows(r.totalRows);
+        setImportPreview(r.success ? r.data : null);
       };
       reader.readAsText(file, 'UTF-8');
     }
   }, []);
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFileSelect(file);
-  };
-
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
+    e.preventDefault(); setDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext === 'csv' || ext === 'xlsx' || ext === 'xls') {
-      handleFileSelect(file);
-    } else {
-      setImportErrors(['Only CSV or Excel (.xlsx, .xls) files are supported.']);
-    }
+    if (ext === 'csv' || ext === 'xlsx' || ext === 'xls') handleFileSelect(file);
+    else setImportErrors(['Only CSV or Excel (.xlsx, .xls) files are supported.']);
   };
 
-  // 청크 기반 비동기 Import
   const handleImportConfirm = async () => {
-    if (!importPreview || importPreview.length === 0 || !projectId) return;
-
+    if (!importPreview || !importPreview.length || !projectId) return;
     cancelRef.current = false;
-    setImporting(true);
-    setProgress(0);
-    setImportedCount(0);
-    setFailedCount(0);
-
+    setImporting(true); setProgress(0); setImportedCount(0); setFailedCount(0);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-
-      // 프로젝트 prefix 조회
-      const { data: projectData } = await supabase
-        .from('projects').select('prefix').eq('id', projectId).maybeSingle();
-      const prefix = projectData?.prefix as string | null;
-
-      // 현재 최대 번호 조회
+      const { data: pd } = await supabase.from('projects').select('prefix').eq('id', projectId).maybeSingle();
+      const prefix = pd?.prefix as string | null;
       let maxNum = 0;
       if (prefix) {
-        const { data: existingCases } = await supabase
-          .from('test_cases').select('custom_id').eq('project_id', projectId).not('custom_id', 'is', null);
-        (existingCases || []).forEach((tc: { custom_id: string | null }) => {
-          const match = tc.custom_id?.match(/-(\d+)$/);
-          if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+        const { data: ex } = await supabase.from('test_cases').select('custom_id').eq('project_id', projectId).not('custom_id', 'is', null);
+        (ex || []).forEach((tc: { custom_id: string | null }) => {
+          const m = tc.custom_id?.match(/-(\d+)$/); if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
         });
       }
-
-      // 폴더 자동 생성
-      const requiredFolderNames = [...new Set(
-        importPreview.map(tc => tc.folder).filter((f): f is string => !!f && f.trim() !== '')
-      )];
-      if (requiredFolderNames.length > 0) {
-        const { data: existingFolders } = await supabase
-          .from('folders').select('name').eq('project_id', projectId);
-        const existingNames = new Set((existingFolders || []).map((f: { name: string }) => f.name));
-        const toCreate = requiredFolderNames.filter(n => !existingNames.has(n));
-        if (toCreate.length > 0) {
-          await supabase.from('folders').insert(
-            toCreate.map(name => ({ project_id: projectId, name, icon: 'ri-folder-line', color: 'gray' }))
-          );
-        }
+      // Auto-create folders
+      const folderNames = [...new Set(importPreview.map(tc => tc.folder).filter((f): f is string => !!f && f.trim() !== ''))];
+      if (folderNames.length) {
+        const { data: ef } = await supabase.from('folders').select('name').eq('project_id', projectId);
+        const existing = new Set((ef || []).map((f: { name: string }) => f.name));
+        const toCreate = folderNames.filter(n => !existing.has(n));
+        if (toCreate.length) await supabase.from('folders').insert(toCreate.map(name => ({ project_id: projectId, name, icon: 'ri-folder-line', color: 'gray' })));
       }
-
-      // 청크 분할
       const chunks: ImportedTestCase[][] = [];
-      for (let i = 0; i < importPreview.length; i += CHUNK_SIZE) {
-        chunks.push(importPreview.slice(i, i + CHUNK_SIZE));
-      }
+      for (let i = 0; i < importPreview.length; i += CHUNK_SIZE) chunks.push(importPreview.slice(i, i + CHUNK_SIZE));
       setTotalChunks(chunks.length);
-
-      let totalInserted = 0;
-      let totalFailed = 0;
-      let globalIdx = 0;
-
+      let totalIns = 0, totalFail = 0, globalIdx = 0;
       for (let ci = 0; ci < chunks.length; ci++) {
         if (cancelRef.current) break;
-
         setCurrentChunk(ci + 1);
-
         const chunk = chunks[ci];
-        const insertData = chunk.map((tc, idx) => ({
-          project_id: projectId,
-          title: tc.title || 'Untitled',
-          description: tc.description || null,
-          precondition: tc.precondition || null,
-          priority: tc.priority || 'medium',
-          status: 'untested',
-          is_automated: tc.is_automated || false,
-          folder: tc.folder || null,
-          tags: tc.tags || null,
-          steps: tc.steps || null,
-          expected_result: tc.expected_result || null,
-          assignee: null,
-          created_by: user?.id || null,
-          lifecycle_status: 'draft',
+        const rows = chunk.map((tc, idx) => ({
+          project_id: projectId, title: tc.title || 'Untitled', description: tc.description || null,
+          precondition: tc.precondition || null, priority: tc.priority || 'medium', status: 'untested',
+          is_automated: tc.is_automated || false, folder: tc.folder || null, tags: tc.tags || null,
+          steps: tc.steps || null, expected_result: tc.expected_result || null, assignee: null,
+          created_by: user?.id || null, lifecycle_status: 'draft',
           ...(prefix ? { custom_id: `${prefix}-${maxNum + globalIdx + idx + 1}` } : {}),
         }));
-
-        const { data: inserted, error } = await supabase
-          .from('test_cases').insert(insertData).select('id');
-
-        if (error) {
-          totalFailed += chunk.length;
-        } else {
-          totalInserted += inserted?.length ?? chunk.length;
-          // 히스토리 기록 (실패해도 무시)
-          if (inserted && user) {
-            await supabase.from('test_case_history').insert(
-              inserted.map((tc: { id: string }) => ({
-                test_case_id: tc.id, user_id: user.id, action_type: 'created',
-              }))
-            ).then(() => {/* fire-and-forget */});
-          }
+        const { data: ins, error } = await supabase.from('test_cases').insert(rows).select('id');
+        if (error) { totalFail += chunk.length; }
+        else {
+          totalIns += ins?.length ?? chunk.length;
+          if (ins && user) await supabase.from('test_case_history').insert(ins.map((tc: { id: string }) => ({ test_case_id: tc.id, user_id: user.id, action_type: 'created' }))).then(() => {});
         }
-
         globalIdx += chunk.length;
-        setImportedCount(totalInserted);
-        setFailedCount(totalFailed);
+        setImportedCount(totalIns); setFailedCount(totalFail);
         setProgress(Math.round(((ci + 1) / chunks.length) * 100));
-
-        // 다음 청크 전 짧은 양보 (UI 업데이트)
         await new Promise(r => setTimeout(r, 0));
       }
-
       setImportDone(true);
-      // 부모 목록 새로고침
       if (onRefresh) await onRefresh();
-    } catch (err) {
+    } catch {
       setImportErrors(['An error occurred during import. Please try again.']);
-    } finally {
-      setImporting(false);
-    }
+    } finally { setImporting(false); }
   };
 
-  const handleCancel = () => {
-    cancelRef.current = true;
+  // ─── Styles ────────────────────────────────────────────────────────────────
+  const S = {
+    label: { fontSize: 11, fontWeight: 600, color: '#64748B', textTransform: 'uppercase' as const, letterSpacing: '0.04em', display: 'block', marginBottom: 8 },
+    section: { padding: '12px 20px', borderBottom: '1px solid #F1F5F9' },
+    filterBtn: (active: boolean): React.CSSProperties => ({
+      display: 'inline-flex', alignItems: 'center', gap: 3, padding: '4px 8px',
+      border: `1px solid ${active ? '#6366F1' : '#E2E8F0'}`, borderRadius: 6, fontSize: 11, fontWeight: 500,
+      color: active ? '#6366F1' : '#475569', cursor: 'pointer',
+      background: active ? '#EEF2FF' : 'white', fontFamily: 'inherit',
+    }),
+    dd: { position: 'absolute' as const, top: '100%', left: 0, marginTop: 4, zIndex: 60, background: 'white', border: '1px solid #E2E8F0', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', minWidth: 140, overflow: 'hidden' },
+    ddBtn: (active: boolean): React.CSSProperties => ({ display: 'block', width: '100%', padding: '7px 12px', textAlign: 'left', fontSize: 12, color: active ? '#6366F1' : '#334155', background: active ? '#EEF2FF' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }),
   };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority?.toLowerCase()) {
-      case 'critical': return 'bg-red-100 text-red-700';
-      case 'high':     return 'bg-orange-100 text-orange-700';
-      case 'medium':   return 'bg-yellow-100 text-yellow-700';
-      default:         return 'bg-gray-100 text-gray-700';
-    }
-  };
-
-  const nonRequiredCount = ALL_COLUMNS.filter(c => !c.required).length;
-  const checkedNonRequiredCount = ALL_COLUMNS.filter(c => !c.required && selectedColumns.has(c.key)).length;
-  const allNonRequiredChecked = checkedNonRequiredCount === nonRequiredCount;
-
-  const estimatedChunks = importPreview ? Math.ceil(importPreview.length / CHUNK_SIZE) : 0;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
-              <i className="ri-file-transfer-line text-indigo-600 text-xl"></i>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Export / Import</h2>
-              <p className="text-sm text-gray-500 mt-0.5">Export and import test cases as CSV or Excel files</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            disabled={importing}
-            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer disabled:opacity-40"
-          >
-            <i className="ri-close-line text-xl"></i>
-          </button>
-        </div>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(15,23,42,0.4)' }}
+      onClick={e => { if (e.target === e.currentTarget && !importing) onClose(); }}
+    >
+      <div style={{ background: 'white', borderRadius: 12, width: '100%', maxWidth: 580, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 px-6">
-          {(['export', 'import'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => { if (!importing) { setActiveTab(tab); setImportDone(false); } }}
-              className={`px-5 py-3 text-sm font-semibold transition-all cursor-pointer whitespace-nowrap border-b-2 -mb-px ${
-                activeTab === tab ? 'text-indigo-600 border-indigo-600' : 'text-gray-500 border-transparent hover:text-gray-700'
-              }`}
-            >
-              <i className={`${tab === 'export' ? 'ri-download-line' : 'ri-upload-line'} mr-2`}></i>
-              {tab === 'export' ? 'Export' : 'Import'}
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <div style={{ padding: '16px 20px 0', borderBottom: '1px solid #E2E8F0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0F172A' }}>Export / Import</h3>
+            <button onClick={() => { if (!importing) onClose(); }}
+              style={{ background: 'none', border: 'none', cursor: importing ? 'not-allowed' : 'pointer', color: '#94A3B8', fontSize: 18, padding: 4, borderRadius: 6, display: 'flex', opacity: importing ? 0.4 : 1 }}>
+              <i className="ri-close-line" />
             </button>
-          ))}
+          </div>
+          <div style={{ display: 'flex' }}>
+            {(['export', 'import'] as const).map(tab => (
+              <button key={tab}
+                onClick={() => { if (!importing) { setActiveTab(tab); setImportDone(false); } }}
+                style={{ padding: '8px 16px', fontSize: 13, fontWeight: activeTab === tab ? 600 : 500, color: activeTab === tab ? '#6366F1' : '#64748B', background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === tab ? '#6366F1' : 'transparent'}`, marginBottom: -1, cursor: 'pointer', fontFamily: 'inherit' }}>
+                <i className={`${tab === 'export' ? 'ri-download-2-line' : 'ri-upload-2-line'} mr-1`} />
+                {tab === 'export' ? 'Export' : 'Import'}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        {/* ── Body ───────────────────────────────────────────────────────── */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
 
-          {/* ── EXPORT TAB ── */}
-          {activeTab === 'export' && (
-            <div className="space-y-6">
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 flex items-start gap-3">
-                <i className="ri-information-line text-indigo-600 text-lg mt-0.5 flex-shrink-0"></i>
-                <div>
-                  <p className="text-sm font-semibold text-indigo-800 mb-1">Export as CSV</p>
-                  <p className="text-sm text-indigo-700">
-                    The exported CSV can be re-imported using the <strong>Import Cases</strong> feature.
-                    Select the columns to include.
-                  </p>
-                </div>
+          {/* ══ EXPORT TAB ══════════════════════════════════════════════════ */}
+          {activeTab === 'export' && (<>
+
+            {/* Title row */}
+            <div style={S.section}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>Export as CSV</span>
+                <span style={{ fontSize: 11, color: '#94A3B8' }}>CSV / Excel format</span>
               </div>
+            </div>
 
-              {/* Export Scope */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Export Range</label>
-                <div className="space-y-3">
-                  {[
-                    { value: 'all' as const, label: 'All Test Cases', desc: `All cases in this project (${testCases.length})`, count: testCases.length },
-                    { value: 'selected' as const, label: 'Selected Test Cases', desc: selectedTestCaseIds.size === 0 ? 'Select cases from the list first' : `${selectedTestCaseIds.size} selected`, count: selectedTestCaseIds.size },
-                  ].map(opt => (
-                    <label
-                      key={opt.value}
-                      className={`flex items-center gap-3 p-4 border-2 rounded-lg transition-all ${
-                        opt.disabled ? 'opacity-40 cursor-not-allowed border-gray-200' : 'cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30'
-                      }`}
-                      style={{
-                        borderColor: exportScope === opt.value && !opt.disabled ? '#6366F1' : '#e5e7eb',
-                        background: exportScope === opt.value && !opt.disabled ? '#f0fdfa' : '',
-                      }}
-                    >
-                      <input type="radio" name="exportScope" value={opt.value} checked={exportScope === opt.value}
-                        onChange={() => setExportScope(opt.value)} disabled={opt.disabled}
-                        className="w-4 h-4 text-indigo-600 cursor-pointer" />
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-900">{opt.label}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
+            {/* Export Range */}
+            <div style={S.section}>
+              <span style={S.label}>Export Range</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {([
+                  { value: 'all'      as const, label: 'All Test Cases',      sub: `${testCases.length} test cases` },
+                  { value: 'selected' as const, label: 'Selected Test Cases', sub: selectedExportTcIds.size > 0 ? `${selectedExportTcIds.size} selected` : 'Choose specific TCs' },
+                ] as const).map(opt => (
+                  <div key={opt.value} onClick={() => setExportScope(opt.value)}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', transition: 'all .15s', border: `1.5px solid ${exportScope === opt.value ? '#6366F1' : '#E2E8F0'}`, background: exportScope === opt.value ? '#EEF2FF' : 'white' }}>
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${exportScope === opt.value ? '#6366F1' : '#CBD5E1'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {exportScope === opt.value && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366F1' }} />}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: exportScope === opt.value ? 600 : 500, color: exportScope === opt.value ? '#6366F1' : '#334155' }}>{opt.label}</div>
+                      <div style={{ fontSize: 11, color: exportScope === opt.value ? '#818CF8' : '#94A3B8', marginTop: 1 }}>{opt.sub}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── TC Picker Panel (Selected mode) ────────────────────────── */}
+            {exportScope === 'selected' && (
+              <div style={{ borderBottom: '1px solid #E2E8F0' }}>
+
+                {/* Toolbar */}
+                <div style={{ padding: '10px 20px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {/* Search */}
+                  <div style={{ flex: 1, minWidth: 160, display: 'flex', alignItems: 'center', gap: 6, background: 'white', border: `1px solid ${tcSearch ? '#6366F1' : '#E2E8F0'}`, borderRadius: 6, padding: '5px 10px', boxShadow: tcSearch ? '0 0 0 2px rgba(99,102,241,0.12)' : 'none' }}>
+                    <i className="ri-search-line" style={{ color: tcSearch ? '#6366F1' : '#94A3B8', fontSize: 14, flexShrink: 0 }} />
+                    <input type="text" value={tcSearch} onChange={e => setTcSearch(e.target.value)}
+                      placeholder="Search by ID or title..."
+                      style={{ border: 'none', outline: 'none', fontSize: 12, fontFamily: 'inherit', color: '#334155', width: '100%', background: 'transparent' }} />
+                    {tcSearch && (
+                      <button onClick={() => setTcSearch('')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94A3B8', padding: 0, fontSize: 13, display: 'flex' }}>
+                        <i className="ri-close-circle-fill" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Section filter */}
+                  <div ref={sectionRef} style={{ position: 'relative' }}>
+                    <button style={S.filterBtn(!!tcSectionFilter)}
+                      onClick={() => { setShowSectionDd(p => !p); setShowPriorityDd(false); }}>
+                      <i className="ri-folder-3-line" style={{ fontSize: 12 }} />
+                      {tcSectionFilter || 'Section'}
+                      {tcSectionFilter
+                        ? <i className="ri-close-line" style={{ fontSize: 10 }} onClick={e => { e.stopPropagation(); setTcSectionFilter(''); }} />
+                        : <i className="ri-arrow-down-s-line" style={{ fontSize: 12 }} />}
+                    </button>
+                    {showSectionDd && uniqueFolders.length > 0 && (
+                      <div style={S.dd}>
+                        {uniqueFolders.map(f => (
+                          <button key={f} style={S.ddBtn(tcSectionFilter === f)}
+                            onClick={() => { setTcSectionFilter(f); setShowSectionDd(false); }}>{f}</button>
+                        ))}
                       </div>
-                      {opt.count > 0 && (
-                        <span className="text-sm font-bold text-indigo-600">{opt.count}</span>
-                      )}
-                    </label>
-                  ))}
-                </div>
-              </div>
+                    )}
+                  </div>
 
-              {/* Columns */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-semibold text-gray-700">
-                    Columns to Export
-                    <span className="ml-2 text-xs font-normal text-gray-400">({selectedColumns.size} / {ALL_COLUMNS.length} selected)</span>
-                  </label>
-                  <button onClick={toggleAllColumns}
-                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap transition-colors">
-                    {allNonRequiredChecked ? 'Deselect All' : 'Select All'}
+                  {/* Priority filter */}
+                  <div ref={priorityRef} style={{ position: 'relative' }}>
+                    <button style={S.filterBtn(!!tcPriorityFilter)}
+                      onClick={() => { setShowPriorityDd(p => !p); setShowSectionDd(false); }}>
+                      <i className="ri-flag-line" style={{ fontSize: 12 }} />
+                      {tcPriorityFilter ? tcPriorityFilter.charAt(0).toUpperCase() + tcPriorityFilter.slice(1) : 'Priority'}
+                      {tcPriorityFilter
+                        ? <i className="ri-close-line" style={{ fontSize: 10 }} onClick={e => { e.stopPropagation(); setTcPriorityFilter(''); }} />
+                        : <i className="ri-arrow-down-s-line" style={{ fontSize: 12 }} />}
+                    </button>
+                    {showPriorityDd && (
+                      <div style={S.dd}>
+                        {(['critical', 'high', 'medium', 'low'] as const).map(p => (
+                          <button key={p} style={S.ddBtn(tcPriorityFilter === p)}
+                            onClick={() => { setTcPriorityFilter(p); setShowPriorityDd(false); }}>
+                            <PriorityBadge priority={p} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Select All */}
+                  <button onClick={selectAllFiltered}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', fontSize: 11, fontWeight: 600, color: '#6366F1', cursor: 'pointer', border: 'none', borderRadius: 6, background: 'transparent', fontFamily: 'inherit' }}>
+                    <i className="ri-checkbox-multiple-line" /> Select All
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {ALL_COLUMNS.map(col => {
-                    const checked = selectedColumns.has(col.key);
+
+                {/* Counter bar */}
+                {selectedExportTcIds.size > 0 && (
+                  <div style={{ padding: '7px 20px', background: hasActiveFilters ? '#EEF2FF' : '#ECFDF5', borderBottom: `1px solid ${hasActiveFilters ? '#C7D2FE' : '#A7F3D0'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: hasActiveFilters ? '#6366F1' : '#065F46' }}>
+                    <span>
+                      {!hasActiveFilters && <i className="ri-checkbox-circle-fill" style={{ fontSize: 13, verticalAlign: -2, marginRight: 3 }} />}
+                      <strong>{selectedExportTcIds.size}</strong>
+                      {hasActiveFilters
+                        ? ` selected · Showing ${filteredTcs.length} result${filteredTcs.length !== 1 ? 's' : ''}${tcSearch ? ` for "${tcSearch}"` : ''}`
+                        : ` test case${selectedExportTcIds.size !== 1 ? 's' : ''} ready to export`}
+                    </span>
+                    <span onClick={hasActiveFilters ? clearFilters : clearSelection}
+                      style={{ fontSize: 11, cursor: 'pointer', opacity: 0.7 }}>
+                      {hasActiveFilters ? 'Clear filters' : 'Clear selection'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Table header */}
+                <div style={{ display: 'grid', gridTemplateColumns: '28px 56px 1fr 70px 56px', padding: '5px 20px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', alignItems: 'center' }}>
+                  <span>
+                    <div onClick={() => isAllFilteredSelected || isSomeFilteredSelected ? clearSelection() : selectAllFiltered()} style={{ cursor: 'pointer' }}>
+                      <Checkbox checked={isAllFilteredSelected} indeterminate={isSomeFilteredSelected} />
+                    </div>
+                  </span>
+                  <span>ID</span>
+                  <span>Title</span>
+                  <span>Priority</span>
+                  <span>Status</span>
+                </div>
+
+                {/* TC rows */}
+                <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+                  {filteredTcs.length === 0 ? (
+                    <div style={{ padding: '24px 20px', textAlign: 'center', fontSize: 12, color: '#94A3B8' }}>
+                      {hasActiveFilters ? 'No test cases match your filters' : 'No test cases found'}
+                    </div>
+                  ) : filteredTcs.map(tc => {
+                    const sel = selectedExportTcIds.has(tc.id);
                     return (
-                      <label key={col.key} onClick={() => !col.required && toggleColumn(col.key)}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all select-none ${
-                          col.required ? 'cursor-not-allowed border-indigo-200 bg-indigo-50/60'
-                            : checked ? 'cursor-pointer border-indigo-300 bg-indigo-50/40 hover:bg-indigo-50'
-                            : 'cursor-pointer border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                        }`}>
-                        <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
-                          {col.required ? (
-                            <div className="w-4 h-4 rounded bg-indigo-500 flex items-center justify-center">
-                              <i className="ri-check-line text-white text-xs"></i>
-                            </div>
-                          ) : (
-                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${checked ? 'bg-indigo-500 border-indigo-500' : 'bg-white border-gray-300'}`}>
-                              {checked && <i className="ri-check-line text-white text-xs"></i>}
-                            </div>
-                          )}
-                        </div>
-                        <span className={`text-sm font-medium flex-1 ${checked || col.required ? 'text-gray-800' : 'text-gray-400'}`}>{col.label}</span>
-                        {col.required && <span className="text-xs text-indigo-500 font-semibold whitespace-nowrap">Required</span>}
-                      </label>
+                      <div key={tc.id} onClick={() => toggleTc(tc.id)}
+                        style={{ display: 'grid', gridTemplateColumns: '28px 56px 1fr 70px 56px', padding: '7px 20px', borderBottom: '1px solid #F1F5F9', alignItems: 'center', fontSize: 12, cursor: 'pointer', background: sel ? '#EEF2FF' : 'white', transition: 'background .1s' }}>
+                        <Checkbox checked={sel} />
+                        <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#6366F1', fontWeight: 600 }}>{tc.custom_id || '—'}</span>
+                        <span style={{ fontSize: 12, fontWeight: 500, color: sel ? '#6366F1' : '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 8 }}>
+                          <HighlightText text={tc.title} keyword={tcSearch} />
+                        </span>
+                        <PriorityBadge priority={tc.priority} />
+                        <StatusPill status={tc.status} />
+                      </div>
                     );
                   })}
+                  {hasActiveFilters && filteredTcs.length < testCases.length && (
+                    <div style={{ padding: '7px 20px', textAlign: 'center', fontSize: 11, color: '#94A3B8' }}>
+                      Showing {filteredTcs.length} of {testCases.length} · Clear filters to see all
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
-              <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Export Summary</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    <strong className="text-indigo-600">{exportTargetCases.length} test cases</strong>
-                    {' · '}
-                    <strong className="text-indigo-600">{selectedColumns.size} columns</strong>
-                    {' '}will be saved as a CSV file.
-                  </p>
-                </div>
-                <i className="ri-file-excel-2-line text-4xl text-green-500"></i>
+            {/* Columns to Export */}
+            <div style={S.section}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={S.label}>Columns to Export</span>
+                <button onClick={toggleAllColumns}
+                  style={{ fontSize: 11, fontWeight: 500, color: '#6366F1', cursor: 'pointer', border: 'none', background: 'none', padding: 0, fontFamily: 'inherit' }}>
+                  {allNonReqChecked ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+                {ALL_COLUMNS.map(col => {
+                  const checked = selectedColumns.has(col.key);
+                  return (
+                    <label key={col.key} onClick={() => !col.required && toggleColumn(col.key)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', fontSize: 13, color: checked || col.required ? '#334155' : '#94A3B8', cursor: col.required ? 'default' : 'pointer' }}>
+                      <Checkbox checked={checked} disabled={col.required} />
+                      <span>
+                        {col.label}
+                        {col.required && <span style={{ fontSize: 10, color: '#6366F1', fontWeight: 600, marginLeft: 4 }}>(Required)</span>}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
-          )}
+          </>)}
 
-          {/* ── IMPORT TAB ── */}
+          {/* ══ IMPORT TAB ══════════════════════════════════════════════════ */}
           {activeTab === 'import' && (
-            <div className="space-y-6">
+            <div style={{ padding: 20 }}>
               {importDone ? (
-                /* ── 완료 화면 ── */
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i className="ri-checkbox-circle-fill text-indigo-500 text-4xl"></i>
+                <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                  <div style={{ width: 64, height: 64, background: '#EEF2FF', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                    <i className="ri-checkbox-circle-fill" style={{ fontSize: 32, color: '#6366F1' }} />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Import Complete!</h3>
-                  <p className="text-gray-600">
-                    <strong className="text-indigo-600">{importedCount}</strong> test case{importedCount !== 1 ? 's' : ''} imported successfully.
-                    {failedCount > 0 && (
-                      <span className="text-red-600 ml-1">({failedCount} failed)</span>
-                    )}
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', marginBottom: 8 }}>Import Complete!</h3>
+                  <p style={{ fontSize: 14, color: '#64748B' }}>
+                    <strong style={{ color: '#6366F1' }}>{importedCount}</strong> test case{importedCount !== 1 ? 's' : ''} imported successfully.
+                    {failedCount > 0 && <span style={{ color: '#EF4444', marginLeft: 4 }}>({failedCount} failed)</span>}
                   </p>
-                  <button onClick={onClose}
-                    className="mt-6 px-8 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap">
-                    Close
-                  </button>
+                  <button onClick={onClose} style={{ marginTop: 20, padding: '10px 28px', background: '#6366F1', color: 'white', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Close</button>
                 </div>
               ) : importing ? (
-                /* ── 진행 중 화면 ── */
-                <div className="py-8 space-y-6">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <i className="ri-loader-4-line text-indigo-500 text-3xl animate-spin"></i>
+                <div style={{ padding: '20px 0' }}>
+                  <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                    <div style={{ width: 48, height: 48, background: '#EEF2FF', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                      <i className="ri-loader-4-line animate-spin" style={{ fontSize: 24, color: '#6366F1' }} />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-1">Import in Progress...</h3>
-                    <p className="text-sm text-gray-500">
-                      Processing chunk {currentChunk} / {totalChunks} &nbsp;·&nbsp;
-                      {importedCount} done
-                    </p>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', marginBottom: 4 }}>Import in Progress...</h3>
+                    <p style={{ fontSize: 13, color: '#64748B' }}>Processing chunk {currentChunk} / {totalChunks} &nbsp;·&nbsp; {importedCount} done</p>
                   </div>
-
-                  {/* Progress bar */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs font-medium text-gray-500">
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748B', marginBottom: 4 }}>
                       <span>{importedCount} / {importPreview?.length ?? 0}</span>
                       <span>{progress}%</span>
                     </div>
-                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-indigo-500 rounded-full transition-all duration-300"
-                        style={{ width: `${progress}%` }}
-                      />
+                    <div style={{ height: 8, background: '#F1F5F9', borderRadius: 9999, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', background: '#6366F1', borderRadius: 9999, width: `${progress}%`, transition: 'width 300ms' }} />
                     </div>
-                    <p className="text-xs text-gray-400 text-center">
-                      Large files are processed in chunks of {CHUNK_SIZE}.
-                    </p>
+                    <p style={{ fontSize: 11, color: '#94A3B8', textAlign: 'center', marginTop: 6 }}>Large files are processed in chunks of {CHUNK_SIZE}.</p>
                   </div>
-
-                  <div className="text-center">
-                    <button onClick={handleCancel}
-                      className="px-5 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-all font-medium cursor-pointer text-sm">
-                      <i className="ri-stop-circle-line mr-1"></i>
-                      Stop
+                  <div style={{ textAlign: 'center' }}>
+                    <button onClick={() => { cancelRef.current = true; }}
+                      style={{ padding: '6px 16px', border: '1px solid #FCA5A5', color: '#DC2626', borderRadius: 8, background: 'white', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <i className="ri-stop-circle-line" /> Stop
                     </button>
                   </div>
                 </div>
-              ) : (
-                /* ── 파일 선택 / 미리보기 ── */
-                <>
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-                    <i className="ri-information-line text-amber-600 text-lg mt-0.5 flex-shrink-0"></i>
-                    <div>
-                      <p className="text-sm font-semibold text-amber-800 mb-1">CSV / Excel File Import</p>
-                      <p className="text-sm text-amber-700">
-                        Supports <strong>.csv</strong>, <strong>.xlsx</strong>, and <strong>.xls</strong> files.
-                        Title, Section, Steps, Expected Result, and Priority fields are auto-mapped.
-                        <br />
-                        <span className="text-amber-600 font-medium">Files with 10,000+ rows are processed in stable chunks of {CHUNK_SIZE}.</span>
-                      </p>
+              ) : (<>
+                {/* Title + formats */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', marginBottom: 4 }}>CSV / Excel File Import</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#94A3B8', marginBottom: 14 }}>
+                    Supported formats:
+                    {['.csv', '.xlsx', '.xls'].map(f => (
+                      <span key={f} style={{ padding: '2px 8px', background: '#F1F5F9', borderRadius: 4, fontWeight: 600, fontSize: 10, color: '#64748B' }}>{f}</span>
+                    ))}
+                  </div>
+                  <div>
+                    {[
+                      { icon: 'ri-magic-line',  text: <><strong>Title</strong>, <strong>Section</strong>, <strong>Steps</strong>, <strong>Expected Result</strong>, and <strong>Priority</strong> fields are auto-mapped</> },
+                      { icon: 'ri-stack-line',   text: <>Files with <strong>10,000+ rows</strong> are processed in stable chunks of {CHUNK_SIZE}</> },
+                    ].map((item, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '5px 0', fontSize: 12, color: '#475569', lineHeight: 1.5 }}>
+                        <i className={item.icon} style={{ fontSize: 14, color: '#6366F1', flexShrink: 0, marginTop: 1 }} />
+                        <span>{item.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Dropzone / file info */}
+                {!importFile ? (
+                  <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
+                    onDrop={handleDrop} onClick={() => fileInputRef.current?.click()}
+                    style={{ border: `2px dashed ${dragOver ? '#6366F1' : '#CBD5E1'}`, borderRadius: 10, padding: '32px 20px', textAlign: 'center', cursor: 'pointer', background: dragOver ? '#EEF2FF' : '#F8FAFC', transition: 'all .2s' }}>
+                    <i className="ri-upload-cloud-2-line" style={{ fontSize: 32, color: dragOver ? '#6366F1' : '#CBD5E1', display: 'block', marginBottom: 8 }} />
+                    <p style={{ fontSize: 13, color: '#64748B' }}>
+                      Drag &amp; drop or <span style={{ color: '#6366F1', fontWeight: 600 }}>click to select</span> a file
+                    </p>
+                    <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }} style={{ display: 'none' }} />
+                  </div>
+                ) : (
+                  <div style={{ border: '1px solid #E2E8F0', borderRadius: 8, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, background: '#DCFCE7', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <i className={importFile.name.endsWith('.csv') ? 'ri-file-text-line' : 'ri-file-excel-2-line'} style={{ fontSize: 20, color: '#16A34A' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{importFile.name}</p>
+                      <p style={{ fontSize: 11, color: '#64748B' }}>{(importFile.size / 1024).toFixed(1)} KB{totalRows > 0 && ` · ${totalRows} rows`}</p>
+                    </div>
+                    <button onClick={() => { setImportFile(null); setImportPreview(null); setImportErrors([]); setImportWarnings([]); setTotalRows(0); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                      style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', border: 'none', background: 'none', cursor: 'pointer', borderRadius: 6 }}>
+                      <i className="ri-close-line" style={{ fontSize: 18 }} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Errors */}
+                {importErrors.length > 0 && (
+                  <div style={{ marginTop: 12, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: 14 }}>
+                    {importErrors.map((err, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        <i className="ri-error-warning-line" style={{ color: '#EF4444', marginTop: 2, flexShrink: 0 }} />
+                        <p style={{ fontSize: 13, color: '#DC2626' }}>{err}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Warnings */}
+                {importWarnings.length > 0 && (
+                  <div style={{ marginTop: 12, background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8, padding: 14 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#92400E', marginBottom: 8 }}>
+                      <i className="ri-alert-line" style={{ marginRight: 4 }} />Warnings ({importWarnings.length})
+                    </p>
+                    <div style={{ maxHeight: 96, overflowY: 'auto' }}>
+                      {importWarnings.map((w, i) => <p key={i} style={{ fontSize: 11, color: '#B45309' }}>{w}</p>)}
                     </div>
                   </div>
+                )}
 
-                  {!importFile ? (
-                    <div
-                      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                      onDragLeave={() => setDragOver(false)}
-                      onDrop={handleDrop}
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
-                        dragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i className="ri-file-upload-line text-3xl text-gray-400"></i>
-                      </div>
-                      <p className="text-base font-semibold text-gray-700 mb-1">
-                        Drag & drop or click to select a file
+                {/* Preview */}
+                {importPreview && importPreview.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
+                        Preview — <span style={{ color: '#6366F1' }}>{importPreview.length} test case{importPreview.length !== 1 ? 's' : ''}</span>
+                        {estimatedChunks > 1 && <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 400, marginLeft: 8 }}>(processed in {estimatedChunks} chunks)</span>}
                       </p>
-                      <p className="text-sm text-gray-500">Supported formats: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong></p>
-                      <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls"
-                        onChange={handleFileInputChange} className="hidden" />
+                      <span style={{ fontSize: 11, color: '#94A3B8' }}>Showing up to 5</span>
                     </div>
-                  ) : (
-                    <div className="border border-gray-200 rounded-lg p-4 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i className={`text-green-600 text-xl ${importFile.name.endsWith('.csv') ? 'ri-file-text-line' : 'ri-file-excel-2-line'}`}></i>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{importFile.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {(importFile.size / 1024).toFixed(1)} KB
-                          {totalRows > 0 && ` · ${totalRows} rows`}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setImportFile(null); setImportPreview(null);
-                          setImportErrors([]); setImportWarnings([]); setTotalRows(0);
-                          if (fileInputRef.current) fileInputRef.current.value = '';
-                        }}
-                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer">
-                        <i className="ri-close-line text-lg"></i>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* 에러 */}
-                  {importErrors.length > 0 && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-1">
-                      {importErrors.map((err, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <i className="ri-error-warning-line text-red-500 mt-0.5 flex-shrink-0"></i>
-                          <p className="text-sm text-red-700">{err}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* 경고 */}
-                  {importWarnings.length > 0 && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <p className="text-sm font-semibold text-yellow-800 mb-2">
-                        <i className="ri-alert-line mr-1"></i>
-                        Warnings ({importWarnings.length})
-                      </p>
-                      <div className="space-y-1 max-h-24 overflow-y-auto">
-                        {importWarnings.map((w, i) => (
-                          <p key={i} className="text-xs text-yellow-700">{w}</p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 미리보기 + 청크 안내 */}
-                  {importPreview && importPreview.length > 0 && (
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm font-semibold text-gray-700">
-                          Preview — <span className="text-indigo-600">{importPreview.length} test case{importPreview.length !== 1 ? 's' : ''}</span>
-                          {estimatedChunks > 1 && (
-                            <span className="ml-2 text-xs text-gray-400 font-normal">
-                              (processed in {estimatedChunks} chunks)
-                            </span>
-                          )}
-                        </p>
-                        <span className="text-xs text-gray-500">Showing up to 5</span>
-                      </div>
-                      <div className="border border-gray-200 rounded-lg overflow-hidden">
-                        <table className="w-full text-sm">
-                          <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Title</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Section</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Priority</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Steps</th>
+                    <div style={{ border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}>
+                      <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                        <thead style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                          <tr>{['Title','Section','Priority','Steps'].map(h => (
+                            <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: '#64748B', textTransform: 'uppercase' }}>{h}</th>
+                          ))}</tr>
+                        </thead>
+                        <tbody>
+                          {importPreview.slice(0, 5).map((tc, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                              <td style={{ padding: '8px 12px', fontWeight: 500, color: '#0F172A', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tc.title}</td>
+                              <td style={{ padding: '8px 12px', color: '#64748B', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tc.folder || '-'}</td>
+                              <td style={{ padding: '8px 12px' }}><PriorityBadge priority={tc.priority || 'medium'} /></td>
+                              <td style={{ padding: '8px 12px', color: '#64748B', fontSize: 11, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tc.steps ? tc.steps.split('\n')[0] : '-'}</td>
                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100">
-                            {importPreview.slice(0, 5).map((tc, i) => (
-                              <tr key={i} className="hover:bg-gray-50">
-                                <td className="px-4 py-3 font-medium text-gray-900 max-w-[180px] truncate">{tc.title}</td>
-                                <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate">{tc.folder || '-'}</td>
-                                <td className="px-4 py-3">
-                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${getPriorityColor(tc.priority || '')}`}>
-                                    {(tc.priority || 'medium').toUpperCase()}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3 text-gray-500 text-xs max-w-[160px] truncate">
-                                  {tc.steps ? tc.steps.split('\n')[0] : '-'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        {importPreview.length > 5 && (
-                          <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
-                            +{importPreview.length - 5} more...
-                          </div>
-                        )}
-                      </div>
+                          ))}
+                        </tbody>
+                      </table>
+                      {importPreview.length > 5 && (
+                        <div style={{ padding: '6px 12px', background: '#F8FAFC', borderTop: '1px solid #E2E8F0', fontSize: 11, color: '#94A3B8', textAlign: 'center' }}>
+                          +{importPreview.length - 5} more...
+                        </div>
+                      )}
                     </div>
-                  )}
-                </>
-              )}
+                  </div>
+                )}
+              </>)}
             </div>
           )}
         </div>
 
-        {/* Footer */}
+        {/* ── Export Summary bar ──────────────────────────────────────────── */}
+        {activeTab === 'export' && !importing && (
+          <div style={{ padding: '10px 20px', borderTop: '1px solid #E2E8F0', background: noTcsSelected ? 'white' : exportReady ? '#ECFDF5' : '#F8FAFC', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: noTcsSelected ? '#F59E0B' : exportReady ? '#065F46' : '#64748B' }}>
+            <i className={noTcsSelected ? 'ri-error-warning-line' : exportReady ? 'ri-checkbox-circle-fill' : 'ri-information-line'}
+              style={{ fontSize: 14, color: noTcsSelected ? '#F59E0B' : exportReady ? '#10B981' : '#94A3B8' }} />
+            {noTcsSelected
+              ? 'No test cases selected — choose at least one TC to export'
+              : <span><strong style={{ color: exportReady ? '#065F46' : '#334155' }}>{exportTargetCases.length}</strong> test cases · <strong style={{ color: exportReady ? '#065F46' : '#334155' }}>{selectedColumns.size}</strong> columns will be saved as a CSV file</span>
+            }
+          </div>
+        )}
+
+        {/* ── Footer ─────────────────────────────────────────────────────── */}
         {!importDone && !importing && (
-          <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
-            <button onClick={onClose}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap">
+          <div style={{ padding: '12px 20px', borderTop: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', background: '#F8FAFC', gap: 8 }}>
+            <button onClick={() => { if (!importing) onClose(); }}
+              style={{ padding: '8px 16px', border: '1px solid #E2E8F0', background: 'white', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer', fontFamily: 'inherit' }}>
               Cancel
             </button>
             {activeTab === 'export' ? (
-              <button onClick={handleExport} disabled={selectedColumns.size === 0 || exportTargetCases.length === 0}
-                className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
-                <i className="ri-download-line"></i>
+              <button onClick={handleExport}
+                disabled={selectedColumns.size === 0 || exportTargetCases.length === 0}
+                style={{ padding: '8px 16px', background: '#6366F1', color: 'white', border: '1px solid #6366F1', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: exportTargetCases.length === 0 ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 6, opacity: selectedColumns.size === 0 || exportTargetCases.length === 0 ? 0.5 : 1, transition: 'all .15s' }}>
+                <i className="ri-download-2-line" style={{ fontSize: 15 }} />
                 Download CSV ({exportTargetCases.length})
               </button>
             ) : (
               <button onClick={handleImportConfirm}
                 disabled={!importPreview || importPreview.length === 0}
-                className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
-                <i className="ri-upload-line"></i>
+                style={{ padding: '8px 16px', background: '#6366F1', color: 'white', border: '1px solid #6366F1', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: !importPreview || !importPreview.length ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 6, opacity: !importPreview || !importPreview.length ? 0.5 : 1 }}>
+                <i className="ri-upload-2-line" style={{ fontSize: 15 }} />
                 {importPreview ? `Start Import (${importPreview.length})` : 'Import'}
               </button>
             )}
