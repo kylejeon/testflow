@@ -1099,6 +1099,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           version_minor: newMinor,
           version_status: 'draft' as const,
         });
+
+        // Auto-expand this major group so the new draft entry is visible when user opens History tab
+        setExpandedMajors(prev => new Set([...prev, currentMajor]));
       }
 
       const finalTestCase = {
@@ -1110,10 +1113,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       // Update the selected test case in the details panel
       if (selectedTestCase?.id === editingTestCase.id) {
         setSelectedTestCase(finalTestCase);
-        // 히스토리 새로고침
-        if (activeTab === 'history') {
-          fetchHistory(editingTestCase.id);
-        }
+        // 히스토리 항상 새로고침 (탭과 무관하게)
+        fetchHistory(editingTestCase.id);
       }
       setEditingTestCase(null);
     } else {
@@ -1622,6 +1623,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
       console.error('Publish error:', error);
+      setShowPublishModal(false);
+      setToastMessage('Failed to publish version. Please try again.');
+      setToastType('error');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     } finally {
       setPublishingVersion(false);
     }
