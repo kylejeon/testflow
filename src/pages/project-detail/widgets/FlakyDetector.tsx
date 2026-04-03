@@ -112,6 +112,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiPatterns, setAiPatterns] = useState<FlakyPattern[]>([]);
   const [jiraCreating, setJiraCreating] = useState<string | null>(null);
+  const [jiraCreated, setJiraCreated] = useState<Set<string>>(new Set());
   const [expandedJira, setExpandedJira] = useState<string | null>(null);
   const [isCachedResult, setIsCachedResult] = useState(false);
   const [editingPatterns, setEditingPatterns] = useState<Record<string, boolean>>({});
@@ -404,6 +405,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       const resData = await res.json();
       if (!res.ok) throw new Error(resData?.error || 'Failed to create Jira issue');
 
+      setJiraCreated(prev => new Set(prev).add(pattern.name));
       setToast({ message: `Jira issue created for "${pattern.name}" pattern`, type: 'success' });
     } catch (err: any) {
       setToast({ message: err?.message || 'Failed to create Jira issue. Please try again.', type: 'error' });
@@ -762,17 +764,29 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                                             <i className="ri-edit-line" /> Edit
                                           </button>
                                           <button
-                                            onClick={() => { createJiraForPattern(pattern); setExpandedJira(null); setEditingPatterns(prev => ({ ...prev, [pattern.name]: false })); }}
-                                            disabled={jiraCreating === pattern.name}
+                                            onClick={() => {
+                                              if (jiraCreated.has(pattern.name)) return;
+                                              createJiraForPattern(pattern);
+                                              setExpandedJira(null);
+                                              setEditingPatterns(prev => ({ ...prev, [pattern.name]: false }));
+                                            }}
+                                            disabled={jiraCreating === pattern.name || jiraCreated.has(pattern.name)}
                                             style={{
-                                              fontSize: 11, fontWeight: 600, color: '#fff',
-                                              background: '#6366F1', border: 'none', borderRadius: 6,
-                                              padding: '4px 12px', cursor: 'pointer',
+                                              fontSize: 11, fontWeight: 600,
+                                              color: jiraCreated.has(pattern.name) ? '#94A3B8' : '#fff',
+                                              background: jiraCreated.has(pattern.name) ? '#F1F5F9' : '#6366F1',
+                                              border: jiraCreated.has(pattern.name) ? '1px solid #E2E8F0' : 'none',
+                                              borderRadius: 6,
+                                              padding: '4px 12px',
+                                              cursor: (jiraCreating === pattern.name || jiraCreated.has(pattern.name)) ? 'not-allowed' : 'pointer',
                                               display: 'inline-flex', alignItems: 'center', gap: 4,
                                               opacity: jiraCreating === pattern.name ? 0.5 : 1,
                                             }}
                                           >
-                                            <i className="ri-jira-line" /> Create
+                                            {jiraCreated.has(pattern.name)
+                                              ? <><i className="ri-check-line" /> Created</>
+                                              : <><i className="ri-jira-line" /> Create</>
+                                            }
                                           </button>
                                         </div>
                                       </>
@@ -792,19 +806,31 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                               {aiPatterns.length} patterns · {totalFlakyTCs} flaky TCs · 1 AI credit used · Analysis cached for 24h
                             </span>
                           </div>
-                          <button
-                            onClick={createAllJiraIssues}
-                            disabled={jiraCreating !== null}
-                            style={{
-                              fontSize: 11, fontWeight: 600, color: '#475569',
-                              background: '#F8FAFC', border: '1px solid #E2E8F0',
-                              borderRadius: 6, padding: '5px 12px', cursor: 'pointer',
-                              display: 'inline-flex', alignItems: 'center', gap: 4,
-                              opacity: jiraCreating !== null ? 0.5 : 1,
-                            }}
-                          >
-                            <i className="ri-jira-line" /> Create All Issues ({aiPatterns.length})
-                          </button>
+                          {(() => {
+                            const allCreated = aiPatterns.length > 0 && aiPatterns.every(p => jiraCreated.has(p.name));
+                            const isDisabled = jiraCreating !== null || allCreated;
+                            return (
+                              <button
+                                onClick={createAllJiraIssues}
+                                disabled={isDisabled}
+                                style={{
+                                  fontSize: 11, fontWeight: 600,
+                                  color: allCreated ? '#94A3B8' : '#475569',
+                                  background: allCreated ? '#F1F5F9' : '#F8FAFC',
+                                  border: '1px solid #E2E8F0',
+                                  borderRadius: 6, padding: '5px 12px',
+                                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                                  opacity: jiraCreating !== null ? 0.5 : 1,
+                                }}
+                              >
+                                {allCreated
+                                  ? <><i className="ri-check-line" /> All Issues Created</>
+                                  : <><i className="ri-jira-line" /> Create All Issues ({aiPatterns.length - jiraCreated.size} remaining)</>
+                                }
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}
