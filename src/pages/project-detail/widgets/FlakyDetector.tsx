@@ -340,8 +340,20 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       .select('domain, email, api_token, project_key')
       .maybeSingle();
 
-    if (!jiraSettings?.domain || !jiraSettings?.api_token) {
-      setToast({ message: 'Jira not connected. Please configure Jira in Settings.', type: 'error' });
+    if (!jiraSettings?.domain) {
+      setToast({ message: 'Jira not connected: domain is missing. Please configure Jira in Settings.', type: 'error' });
+      return;
+    }
+    if (!jiraSettings?.email) {
+      setToast({ message: 'Jira not connected: email is missing. Please configure Jira in Settings.', type: 'error' });
+      return;
+    }
+    if (!jiraSettings?.api_token) {
+      setToast({ message: 'Jira not connected: API token is missing. Please configure Jira in Settings.', type: 'error' });
+      return;
+    }
+    if (!jiraSettings?.project_key) {
+      setToast({ message: 'Jira not connected: project key is missing. Please configure Jira in Settings.', type: 'error' });
       return;
     }
 
@@ -355,8 +367,18 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       const vals = editValues[pattern.name] ?? getDefaultJiraValues(pattern);
       const labels = vals.labels.split(',').map(l => l.trim()).filter(Boolean);
 
-      const { error } = await supabase.functions.invoke('create-jira-issue', {
-        body: {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/create-jira-issue`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({
           domain: jiraSettings.domain,
           email: jiraSettings.email,
           apiToken: jiraSettings.api_token,
@@ -366,13 +388,15 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
           issueType: 'Bug',
           priority: vals.priority,
           labels,
-        },
+        }),
       });
 
-      if (error) throw error;
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData?.error || 'Failed to create Jira issue');
+
       setToast({ message: `Jira issue created for "${pattern.name}" pattern`, type: 'success' });
-    } catch {
-      setToast({ message: 'Failed to create Jira issue. Please try again.', type: 'error' });
+    } catch (err: any) {
+      setToast({ message: err?.message || 'Failed to create Jira issue. Please try again.', type: 'error' });
     } finally {
       setJiraCreating(null);
     }
