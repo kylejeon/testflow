@@ -33,7 +33,7 @@ function CustomPieTooltip({ active, payload }: any) {
   return (
     <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl">
       <p className="font-semibold">{payload[0].name}</p>
-      <p>{payload[0].value}개 ({Math.round(payload[0].payload.percent * 100)}%)</p>
+      <p>{payload[0].value} ({Math.round(payload[0].payload.percent * 100)}%)</p>
     </div>
   );
 }

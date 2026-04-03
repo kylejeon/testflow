@@ -22,7 +22,7 @@ interface AnalyticsTabProps {
 }
 
 const PERIOD_LABELS: Record<PeriodFilter, string> = {
-  '7d': '7d', '14d': '14d', '30d': '30d', 'all': '전체',
+  '7d': '7d', '14d': '14d', '30d': '30d', 'all': 'All',
 };
 
 export default function AnalyticsTab({ projectId, milestones, subscriptionTier }: AnalyticsTabProps) {
@@ -85,7 +85,7 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
         </div>
 
         {/* Row 3: Team Performance (full width, Pro+) */}
-        <TierGate requiredTier={3} currentTier={subscriptionTier} featureName="팀원별 성과 분석">
+        <TierGate requiredTier={3} currentTier={subscriptionTier} featureName="Team Performance Analysis">
           <TeamPerformance projectId={projectId} period={period} />
         </TierGate>
 
@@ -101,7 +101,7 @@ export default function AnalyticsTab({ projectId, milestones, subscriptionTier }
 
         {/* Row 5: Flaky TC Detector (50%, Pro+) + AI Insights (50%, Starter+) */}
         <div className="grid grid-cols-2 gap-5">
-          <TierGate requiredTier={3} currentTier={subscriptionTier} featureName="Flaky TC 감지">
+          <TierGate requiredTier={3} currentTier={subscriptionTier} featureName="Flaky TC Detection">
             <FlakyDetector projectId={projectId} subscriptionTier={subscriptionTier} />
           </TierGate>
           <TierGate requiredTier={2} currentTier={subscriptionTier} featureName="AI Insights">

@@ -15,14 +15,14 @@ interface ProjectStatsPanelProps {
 }
 
 const PERIOD_OPTIONS: { value: StatsPeriod; label: string }[] = [
-  { value: '7d',  label: '7일' },
-  { value: '14d', label: '14일' },
-  { value: '30d', label: '30일' },
-  { value: 'all', label: '전체' },
+  { value: '7d',  label: '7d' },
+  { value: '14d', label: '14d' },
+  { value: '30d', label: '30d' },
+  { value: 'all', label: 'All' },
 ];
 
 function DeltaBadge({ delta, unit = 'pp' }: { delta: number; unit?: string }) {
-  if (delta === 0) return <span className="text-[11px] text-gray-400">변화 없음</span>;
+  if (delta === 0) return <span className="text-[11px] text-gray-400">No change</span>;
   const positive = delta > 0;
   return (
     <span className={`inline-flex items-center gap-[2px] text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${
@@ -71,16 +71,16 @@ const PRIORITY_META: Record<string, { label: string; color: string; dot: string 
 };
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
-  upcoming:   { label: '예정', color: '#94A3B8' },
-  started:    { label: '진행 중', color: '#6366F1' },
-  active:     { label: '활성', color: '#6366F1' },
-  past_due:   { label: '지연', color: '#EF4444' },
-  completed:  { label: '완료', color: '#22C55E' },
+  upcoming:   { label: 'Upcoming',    color: '#94A3B8' },
+  started:    { label: 'In Progress', color: '#6366F1' },
+  active:     { label: 'Active',      color: '#6366F1' },
+  past_due:   { label: 'Overdue',     color: '#EF4444' },
+  completed:  { label: 'Completed',   color: '#22C55E' },
 };
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 export default function ProjectStatsPanel({ projectId }: ProjectStatsPanelProps) {
@@ -108,7 +108,7 @@ export default function ProjectStatsPanel({ projectId }: ProjectStatsPanelProps)
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
           <i className="ri-bar-chart-2-line text-indigo-500"></i>
-          핵심 지표
+          Key Metrics
         </h3>
         <div className="flex items-center gap-1">
           {PERIOD_OPTIONS.map(opt => (
@@ -138,26 +138,26 @@ export default function ProjectStatsPanel({ projectId }: ProjectStatsPanelProps)
           iconColor="text-emerald-600"
         />
         <KPICard
-          label="커버리지"
+          label="Coverage"
           value={`${data.coverageRate}%`}
-          sub={`${data.totalExecuted}/${data.totalCases}개 실행됨`}
+          sub={`${data.totalExecuted}/${data.totalCases} executed`}
           icon="ri-shield-check-line"
           iconBg="bg-indigo-50"
           iconColor="text-indigo-600"
         />
         <KPICard
-          label="실패"
+          label="Failed"
           value={String(data.failed)}
-          sub={data.blocked > 0 ? `차단 ${data.blocked}개 포함` : undefined}
+          sub={data.blocked > 0 ? `${data.blocked} blocked` : undefined}
           delta={period !== 'all' ? -(data.failed - Math.max(0, data.failed - data.executedDelta)) : undefined}
           icon="ri-close-circle-line"
           iconBg="bg-red-50"
           iconColor="text-red-500"
         />
         <KPICard
-          label="진행 중 런"
+          label="Active Runs"
           value={String(data.activeRuns)}
-          sub={`완료 ${data.completedRuns}개`}
+          sub={`${data.completedRuns} completed`}
           icon="ri-play-circle-line"
           iconBg="bg-amber-50"
           iconColor="text-amber-500"
@@ -167,7 +167,7 @@ export default function ProjectStatsPanel({ projectId }: ProjectStatsPanelProps)
       {/* 상태 분포 막대 */}
       {totalStack > 0 && (
         <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">실행 결과 분포</p>
+          <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Execution Result Distribution</p>
           <div className="h-3 rounded-full flex overflow-hidden mb-3">
             {data.passed  > 0 && <div style={{ width: `${(data.passed  / totalStack) * 100}%`, backgroundColor: '#22C55E' }} />}
             {data.failed  > 0 && <div style={{ width: `${(data.failed  / totalStack) * 100}%`, backgroundColor: '#EF4444' }} />}
@@ -193,7 +193,7 @@ export default function ProjectStatsPanel({ projectId }: ProjectStatsPanelProps)
       {/* Pass Rate 추이 차트 */}
       {data.dailyTrend.length > 0 && data.dailyTrend.some(d => d.passed + d.failed + d.blocked > 0) && (
         <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Pass Rate 추이</p>
+          <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Pass Rate Trend</p>
           <ResponsiveContainer width="100%" height={120}>
             <AreaChart data={data.dailyTrend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
               <defs>
@@ -219,7 +219,7 @@ export default function ProjectStatsPanel({ projectId }: ProjectStatsPanelProps)
       {/* 우선순위별 커버리지 */}
       {data.priorityDist.length > 0 && (
         <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">우선순위별 Pass Rate</p>
+          <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Pass Rate by Priority</p>
           <div className="space-y-3">
             {data.priorityDist.map(pd => {
               const meta = PRIORITY_META[pd.priority] || { label: pd.priority, color: '#94A3B8', dot: 'bg-gray-400' };
@@ -229,7 +229,7 @@ export default function ProjectStatsPanel({ projectId }: ProjectStatsPanelProps)
                     <span className="flex items-center gap-1.5 text-xs font-medium text-gray-700">
                       <span className={`w-2 h-2 rounded-full ${meta.dot}`}></span>
                       {meta.label}
-                      <span className="text-gray-400">({pd.count}개)</span>
+                      <span className="text-gray-400">({pd.count})</span>
                     </span>
                     <span className="text-xs font-semibold text-gray-700">{pd.passRate}%</span>
                   </div>
@@ -244,7 +244,7 @@ export default function ProjectStatsPanel({ projectId }: ProjectStatsPanelProps)
       {/* 마일스톤 현황 */}
       {data.milestoneStats.length > 0 && (
         <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">마일스톤 현황</p>
+          <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Milestone Status</p>
           <div className="space-y-3">
             {data.milestoneStats.map(ms => {
               const statusMeta = STATUS_META[ms.status] || { label: ms.status, color: '#94A3B8' };
@@ -266,14 +266,14 @@ export default function ProjectStatsPanel({ projectId }: ProjectStatsPanelProps)
                         <div style={{ width: `${(ms.blocked / ms.total) * 100}%`, backgroundColor: '#F59E0B' }} />
                       </div>
                       <div className="flex items-center gap-3 text-[11px] text-gray-500">
-                        <span><strong className="text-emerald-600">{ms.passed}</strong> 통과</span>
-                        <span><strong className="text-red-500">{ms.failed}</strong> 실패</span>
-                        {ms.blocked > 0 && <span><strong className="text-amber-500">{ms.blocked}</strong> 차단</span>}
+                        <span><strong className="text-emerald-600">{ms.passed}</strong> passed</span>
+                        <span><strong className="text-red-500">{ms.failed}</strong> failed</span>
+                        {ms.blocked > 0 && <span><strong className="text-amber-500">{ms.blocked}</strong> blocked</span>}
                         <span className="ml-auto font-semibold text-gray-700">{ms.passRate}%</span>
                       </div>
                     </>
                   ) : (
-                    <p className="text-[11px] text-gray-400">실행 데이터 없음</p>
+                    <p className="text-[11px] text-gray-400">No execution data</p>
                   )}
                 </div>
               );

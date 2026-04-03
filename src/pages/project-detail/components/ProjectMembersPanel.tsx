@@ -365,7 +365,7 @@ export default function ProjectMembersPanel({
                       <div>
                         <div style={{ fontWeight: 600, color: '#0F172A' }}>
                           {member.profile.full_name || member.profile.email}
-                          {isSelf && <span style={{ marginLeft: '0.375rem', fontSize: '0.6875rem', color: '#94A3B8' }}>(나)</span>}
+                          {isSelf && <span style={{ marginLeft: '0.375rem', fontSize: '0.6875rem', color: '#94A3B8' }}>(me)</span>}
                         </div>
                         <div style={{ fontSize: '0.6875rem', color: '#94A3B8' }}>{member.profile.email}</div>
                       </div>

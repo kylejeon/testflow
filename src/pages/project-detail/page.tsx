@@ -501,8 +501,8 @@ export default function ProjectDetail() {
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <i className="ri-error-warning-line text-3xl text-gray-400"></i>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">프로젝트를 찾을 수 없습니다</h3>
-                <Link to="/projects" className="text-indigo-600 hover:text-indigo-700 font-medium">프로젝트 목록으로 돌아가기</Link>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Project not found</h3>
+                <Link to="/projects" className="text-indigo-600 hover:text-indigo-700 font-medium">Back to Projects</Link>
               </div>
             </main>
           </div>

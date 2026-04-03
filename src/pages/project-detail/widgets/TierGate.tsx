@@ -25,13 +25,13 @@ export default function TierGate({ requiredTier, currentTier, featureName, child
           {featureName}
         </p>
         <p className="text-[12px] text-gray-500 text-center">
-          {tierLabel}+ 플랜에서 사용 가능합니다
+          Available on {tierLabel}+ plan
         </p>
         <a
           href="/settings"
           className="text-[13px] font-semibold text-indigo-500 hover:text-indigo-700 mt-1"
         >
-          업그레이드 →
+          Upgrade →
         </a>
       </div>
     </div>

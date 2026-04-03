@@ -135,7 +135,7 @@ function AIDailySummary({ projectId }: { projectId: string }) {
         const { data: runs } = await supabase
           .from('test_runs').select('id').eq('project_id', projectId);
         const runIds = (runs ?? []).map((r: any) => r.id);
-        if (!runIds.length) { setSummary({ text: '오늘 실행된 테스트가 없습니다.', points: [] }); return; }
+        if (!runIds.length) { setSummary({ text: 'No tests were executed today.', points: [] }); return; }
 
         const since = new Date(Date.now() - 86400000).toISOString();
         const { data: results } = await supabase

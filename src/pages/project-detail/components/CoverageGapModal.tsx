@@ -192,7 +192,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
               <div style={{ fontSize: '12px', color: '#64748B', marginTop: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
                 {loading ? 'AI is analyzing gaps…' : result ? `Gaps found in ${result.gaps.length} module(s)` : ''}
                 {!loading && result && isCached && (
-                  <span style={{ fontSize: 10, fontWeight: 600, background: '#EEF2FF', color: '#6366F1', borderRadius: 4, padding: '1px 6px' }}>캐시됨</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, background: '#EEF2FF', color: '#6366F1', borderRadius: 4, padding: '1px 6px' }}>Cached</span>
                 )}
               </div>
             </div>
@@ -346,7 +346,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
                     </div>
                     {weakTypes.length > 0 && (
                       <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #E2E8F0', fontSize: 12, color: '#DC2626', fontWeight: 500 }}>
-                        → {weakTypes.join(', ')} 테스트가 심각하게 부족합니다
+                        → {weakTypes.join(', ')} tests are critically insufficient
                       </div>
                     )}
                   </div>

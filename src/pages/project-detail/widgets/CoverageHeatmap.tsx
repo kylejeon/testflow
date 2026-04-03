@@ -159,7 +159,7 @@ export default function CoverageHeatmap({ projectId, subscriptionTier = 1, onFin
               onClick={onFindGaps}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer hover:opacity-90"
               style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', border: 'none' }}
-              title="AI가 커버리지 갭을 분석하고 TC를 자동 생성합니다"
+              title="AI analyzes coverage gaps and auto-generates test cases"
             >
               <i className="ri-sparkling-2-fill text-[12px]" />
               Find Gaps
@@ -183,7 +183,7 @@ export default function CoverageHeatmap({ projectId, subscriptionTier = 1, onFin
           <div className="h-[210px] bg-gray-50 rounded-lg animate-pulse" />
         ) : folderData.length === 0 ? (
           <div className="h-[100px] flex items-center justify-center text-gray-400 text-sm">
-            TC가 없습니다
+            No test cases
           </div>
         ) : (
           <>
