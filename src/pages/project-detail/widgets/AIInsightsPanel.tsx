@@ -185,7 +185,7 @@ export default function AIInsightsPanel({ projectId, milestones = [] }: { projec
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-gray-400">Updated just now</span>
-          <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">Pro+</span>
+          <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">Starter+</span>
         </div>
       </div>
 
