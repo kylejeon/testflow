@@ -225,13 +225,48 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
           {/* Results */}
           {!loading && result && (
             <>
-              {/* Type Balance Banner */}
-              {result.typeAssessment && (
-                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#475569', lineHeight: 1.6 }}>
-                  <span style={{ fontWeight: 700, color: '#334155' }}>TC Type Balance: </span>
-                  {result.typeAssessment}
-                </div>
-              )}
+              {/* TC Type Balance Card */}
+              {result.typeBalance && (() => {
+                const tb = result.typeBalance;
+                const types = [
+                  { key: 'positive',     label: 'Positive',      icon: '✅', color: '#22C55E', count: tb.positive     ?? 0 },
+                  { key: 'negative',     label: 'Negative',      icon: '❌', color: '#3B82F6', count: tb.negative     ?? 0 },
+                  { key: 'boundary',     label: 'Boundary',      icon: '⚠️', color: '#8B5CF6', count: tb.boundary     ?? 0 },
+                  { key: 'errorHandling',label: 'Error Handling',icon: '🔴', color: '#EF4444', count: tb.errorHandling ?? 0 },
+                  { key: 'security',     label: 'Security',      icon: '🔒', color: '#F59E0B', count: tb.security     ?? 0 },
+                ];
+                const total = types.reduce((s, t) => s + t.count, 0);
+                const withPct = types.map(t => ({ ...t, pct: total > 0 ? Math.round((t.count / total) * 100) : 0 }));
+                const LOW_THRESHOLD = 10;
+                const weakTypes = withPct.filter(t => t.pct < LOW_THRESHOLD).map(t => t.label);
+                return (
+                  <div style={{ background: '#0F172A', borderRadius: 12, padding: '16px 20px', marginBottom: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 }}>
+                      TC Type Balance
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {withPct.map(t => (
+                        <div key={t.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 13, width: 18, flexShrink: 0 }}>{t.icon}</span>
+                          <span style={{ fontSize: 12, color: '#CBD5E1', width: 110, flexShrink: 0 }}>{t.label}</span>
+                          <div style={{ flex: 1, height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ width: `${t.pct}%`, height: '100%', background: t.color, borderRadius: 4, transition: 'width 0.6s ease' }} />
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#E2E8F0', width: 36, textAlign: 'right', flexShrink: 0 }}>{t.pct}%</span>
+                          {t.pct < LOW_THRESHOLD && (
+                            <span style={{ fontSize: 13, flexShrink: 0 }} title="Coverage is critically low">⚠️</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {weakTypes.length > 0 && (
+                      <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: 12, color: '#FBBF24' }}>
+                        → {weakTypes.join(', ')} 테스트가 심각하게 부족합니다
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Gap Cards */}
               {result.gaps.map((gap, gi) => {
