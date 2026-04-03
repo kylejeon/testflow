@@ -186,7 +186,7 @@ export default function ExportImportModal({
     if (ext === 'csv' || ext === 'xlsx' || ext === 'xls') {
       handleFileSelect(file);
     } else {
-      setImportErrors(['CSV 또는 Excel(.xlsx, .xls) 파일만 지원합니다.']);
+      setImportErrors(['Only CSV or Excel (.xlsx, .xls) files are supported.']);
     }
   };
 
@@ -300,7 +300,7 @@ export default function ExportImportModal({
       // 부모 목록 새로고침
       if (onRefresh) await onRefresh();
     } catch (err) {
-      setImportErrors(['Import 중 오류가 발생했습니다. 다시 시도해주세요.']);
+      setImportErrors(['An error occurred during import. Please try again.']);
     } finally {
       setImporting(false);
     }
@@ -336,7 +336,7 @@ export default function ExportImportModal({
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">Export / Import</h2>
-              <p className="text-sm text-gray-500 mt-0.5">CSV 및 Excel 파일로 테스트 케이스를 내보내고 가져옵니다</p>
+              <p className="text-sm text-gray-500 mt-0.5">Export and import test cases as CSV or Excel files</p>
             </div>
           </div>
           <button
@@ -373,21 +373,21 @@ export default function ExportImportModal({
               <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 flex items-start gap-3">
                 <i className="ri-information-line text-indigo-600 text-lg mt-0.5 flex-shrink-0"></i>
                 <div>
-                  <p className="text-sm font-semibold text-indigo-800 mb-1">CSV로 내보내기</p>
+                  <p className="text-sm font-semibold text-indigo-800 mb-1">Export as CSV</p>
                   <p className="text-sm text-indigo-700">
-                    내보낸 CSV는 <strong>Import Cases</strong> 기능으로 다시 가져올 수 있습니다.
-                    포함할 컬럼을 선택해주세요.
+                    The exported CSV can be re-imported using the <strong>Import Cases</strong> feature.
+                    Select the columns to include.
                   </p>
                 </div>
               </div>
 
               {/* Export Scope */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">내보내기 범위</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">Export Range</label>
                 <div className="space-y-3">
                   {[
-                    { value: 'all' as const, label: '전체 테스트 케이스', desc: `현재 프로젝트의 모든 케이스 (${testCases.length}개)`, count: testCases.length },
-                    { value: 'selected' as const, label: '선택된 테스트 케이스', desc: selectedTestCaseIds.size === 0 ? '목록에서 케이스를 먼저 선택해주세요' : `${selectedTestCaseIds.size}개 선택됨`, count: selectedTestCaseIds.size, disabled: selectedTestCaseIds.size === 0 },
+                    { value: 'all' as const, label: 'All Test Cases', desc: `All cases in this project (${testCases.length})`, count: testCases.length },
+                    { value: 'selected' as const, label: 'Selected Test Cases', desc: selectedTestCaseIds.size === 0 ? 'Select cases from the list first' : `${selectedTestCaseIds.size} selected`, count: selectedTestCaseIds.size },
                   ].map(opt => (
                     <label
                       key={opt.value}
@@ -407,7 +407,7 @@ export default function ExportImportModal({
                         <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
                       </div>
                       {opt.count > 0 && (
-                        <span className="text-sm font-bold text-indigo-600">{opt.count}개</span>
+                        <span className="text-sm font-bold text-indigo-600">{opt.count}</span>
                       )}
                     </label>
                   ))}
@@ -418,12 +418,12 @@ export default function ExportImportModal({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-sm font-semibold text-gray-700">
-                    내보낼 컬럼
-                    <span className="ml-2 text-xs font-normal text-gray-400">({selectedColumns.size} / {ALL_COLUMNS.length} 선택)</span>
+                    Columns to Export
+                    <span className="ml-2 text-xs font-normal text-gray-400">({selectedColumns.size} / {ALL_COLUMNS.length} selected)</span>
                   </label>
                   <button onClick={toggleAllColumns}
                     className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap transition-colors">
-                    {allNonRequiredChecked ? '전체 해제' : '전체 선택'}
+                    {allNonRequiredChecked ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -448,7 +448,7 @@ export default function ExportImportModal({
                           )}
                         </div>
                         <span className={`text-sm font-medium flex-1 ${checked || col.required ? 'text-gray-800' : 'text-gray-400'}`}>{col.label}</span>
-                        {col.required && <span className="text-xs text-indigo-500 font-semibold whitespace-nowrap">필수</span>}
+                        {col.required && <span className="text-xs text-indigo-500 font-semibold whitespace-nowrap">Required</span>}
                       </label>
                     );
                   })}
@@ -457,12 +457,12 @@ export default function ExportImportModal({
 
               <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">내보내기 요약</p>
+                  <p className="text-sm font-semibold text-gray-900">Export Summary</p>
                   <p className="text-sm text-gray-500 mt-1">
-                    <strong className="text-indigo-600">{exportTargetCases.length}개 테스트 케이스</strong>
+                    <strong className="text-indigo-600">{exportTargetCases.length} test cases</strong>
                     {' · '}
-                    <strong className="text-indigo-600">{selectedColumns.size}개 컬럼</strong>
-                    {' '}CSV 파일로 저장됩니다.
+                    <strong className="text-indigo-600">{selectedColumns.size} columns</strong>
+                    {' '}will be saved as a CSV file.
                   </p>
                 </div>
                 <i className="ri-file-excel-2-line text-4xl text-green-500"></i>
@@ -479,16 +479,16 @@ export default function ExportImportModal({
                   <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i className="ri-checkbox-circle-fill text-indigo-500 text-4xl"></i>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Import 완료!</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Import Complete!</h3>
                   <p className="text-gray-600">
-                    <strong className="text-indigo-600">{importedCount}개</strong> 테스트 케이스를 성공적으로 가져왔습니다.
+                    <strong className="text-indigo-600">{importedCount}</strong> test case{importedCount !== 1 ? 's' : ''} imported successfully.
                     {failedCount > 0 && (
-                      <span className="text-red-600 ml-1">({failedCount}개 실패)</span>
+                      <span className="text-red-600 ml-1">({failedCount} failed)</span>
                     )}
                   </p>
                   <button onClick={onClose}
                     className="mt-6 px-8 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap">
-                    닫기
+                    Close
                   </button>
                 </div>
               ) : importing ? (
@@ -498,17 +498,17 @@ export default function ExportImportModal({
                     <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
                       <i className="ri-loader-4-line text-indigo-500 text-3xl animate-spin"></i>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-1">Import 진행 중...</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">Import in Progress...</h3>
                     <p className="text-sm text-gray-500">
-                      청크 {currentChunk} / {totalChunks} 처리 중 &nbsp;·&nbsp;
-                      {importedCount}개 완료
+                      Processing chunk {currentChunk} / {totalChunks} &nbsp;·&nbsp;
+                      {importedCount} done
                     </p>
                   </div>
 
                   {/* Progress bar */}
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs font-medium text-gray-500">
-                      <span>{importedCount} / {importPreview?.length ?? 0}개</span>
+                      <span>{importedCount} / {importPreview?.length ?? 0}</span>
                       <span>{progress}%</span>
                     </div>
                     <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
@@ -518,7 +518,7 @@ export default function ExportImportModal({
                       />
                     </div>
                     <p className="text-xs text-gray-400 text-center">
-                      대용량 파일은 청크({CHUNK_SIZE}개) 단위로 처리됩니다.
+                      Large files are processed in chunks of {CHUNK_SIZE}.
                     </p>
                   </div>
 
@@ -526,7 +526,7 @@ export default function ExportImportModal({
                     <button onClick={handleCancel}
                       className="px-5 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-all font-medium cursor-pointer text-sm">
                       <i className="ri-stop-circle-line mr-1"></i>
-                      중단
+                      Stop
                     </button>
                   </div>
                 </div>
@@ -536,12 +536,12 @@ export default function ExportImportModal({
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
                     <i className="ri-information-line text-amber-600 text-lg mt-0.5 flex-shrink-0"></i>
                     <div>
-                      <p className="text-sm font-semibold text-amber-800 mb-1">CSV / Excel 파일 Import</p>
+                      <p className="text-sm font-semibold text-amber-800 mb-1">CSV / Excel File Import</p>
                       <p className="text-sm text-amber-700">
-                        <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong> 파일을 지원합니다.
-                        Title, Section, Steps, Expected Result, Priority 필드가 자동으로 매핑됩니다.
+                        Supports <strong>.csv</strong>, <strong>.xlsx</strong>, and <strong>.xls</strong> files.
+                        Title, Section, Steps, Expected Result, and Priority fields are auto-mapped.
                         <br />
-                        <span className="text-amber-600 font-medium">10,000개 이상의 대용량 파일도 청크({CHUNK_SIZE}개) 단위로 안정적으로 처리됩니다.</span>
+                        <span className="text-amber-600 font-medium">Files with 10,000+ rows are processed in stable chunks of {CHUNK_SIZE}.</span>
                       </p>
                     </div>
                   </div>
@@ -560,9 +560,9 @@ export default function ExportImportModal({
                         <i className="ri-file-upload-line text-3xl text-gray-400"></i>
                       </div>
                       <p className="text-base font-semibold text-gray-700 mb-1">
-                        파일을 드래그 & 드롭하거나 클릭하여 선택
+                        Drag & drop or click to select a file
                       </p>
-                      <p className="text-sm text-gray-500">지원 형식: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong></p>
+                      <p className="text-sm text-gray-500">Supported formats: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong></p>
                       <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls"
                         onChange={handleFileInputChange} className="hidden" />
                     </div>
@@ -575,7 +575,7 @@ export default function ExportImportModal({
                         <p className="text-sm font-semibold text-gray-900 truncate">{importFile.name}</p>
                         <p className="text-xs text-gray-500">
                           {(importFile.size / 1024).toFixed(1)} KB
-                          {totalRows > 0 && ` · ${totalRows}행`}
+                          {totalRows > 0 && ` · ${totalRows} rows`}
                         </p>
                       </div>
                       <button
@@ -607,7 +607,7 @@ export default function ExportImportModal({
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                       <p className="text-sm font-semibold text-yellow-800 mb-2">
                         <i className="ri-alert-line mr-1"></i>
-                        경고 ({importWarnings.length}개)
+                        Warnings ({importWarnings.length})
                       </p>
                       <div className="space-y-1 max-h-24 overflow-y-auto">
                         {importWarnings.map((w, i) => (
@@ -622,14 +622,14 @@ export default function ExportImportModal({
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-sm font-semibold text-gray-700">
-                          미리보기 — <span className="text-indigo-600">{importPreview.length}개 테스트 케이스</span>
+                          Preview — <span className="text-indigo-600">{importPreview.length} test case{importPreview.length !== 1 ? 's' : ''}</span>
                           {estimatedChunks > 1 && (
                             <span className="ml-2 text-xs text-gray-400 font-normal">
-                              ({estimatedChunks}개 청크로 처리됨)
+                              (processed in {estimatedChunks} chunks)
                             </span>
                           )}
                         </p>
-                        <span className="text-xs text-gray-500">최대 5개 표시</span>
+                        <span className="text-xs text-gray-500">Showing up to 5</span>
                       </div>
                       <div className="border border-gray-200 rounded-lg overflow-hidden">
                         <table className="w-full text-sm">
@@ -660,7 +660,7 @@ export default function ExportImportModal({
                         </table>
                         {importPreview.length > 5 && (
                           <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
-                            +{importPreview.length - 5}개 더...
+                            +{importPreview.length - 5} more...
                           </div>
                         )}
                       </div>
@@ -677,20 +677,20 @@ export default function ExportImportModal({
           <div className="p-6 border-t border-gray-200 flex items-center justify-end gap-3">
             <button onClick={onClose}
               className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold cursor-pointer whitespace-nowrap">
-              취소
+              Cancel
             </button>
             {activeTab === 'export' ? (
-              <button onClick={handleExport} disabled={selectedColumns.size === 0}
+              <button onClick={handleExport} disabled={selectedColumns.size === 0 || exportTargetCases.length === 0}
                 className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
                 <i className="ri-download-line"></i>
-                CSV 다운로드 ({exportTargetCases.length}개)
+                Download CSV ({exportTargetCases.length})
               </button>
             ) : (
               <button onClick={handleImportConfirm}
                 disabled={!importPreview || importPreview.length === 0}
                 className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all font-semibold cursor-pointer whitespace-nowrap flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
                 <i className="ri-upload-line"></i>
-                {importPreview ? `${importPreview.length}개 Import 시작` : 'Import'}
+                {importPreview ? `Start Import (${importPreview.length})` : 'Import'}
               </button>
             )}
           </div>
