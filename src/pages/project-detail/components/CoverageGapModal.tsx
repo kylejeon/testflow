@@ -202,12 +202,12 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
 
           {/* Loading */}
           {loading && (
-            <div style={{ textAlign: 'center', padding: '52px 24px', background: '#0F172A', borderRadius: 12, margin: '4px 0' }}>
-              <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#818CF8', borderRadius: '50%', animation: 'cgSpin 0.8s linear infinite', margin: '0 auto 20px' }} />
-              <p style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: '0 0 8px' }}>
+            <div style={{ textAlign: 'center', padding: '52px 24px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, margin: '4px 0' }}>
+              <div style={{ width: 36, height: 36, border: '3px solid #E2E8F0', borderTopColor: '#6366F1', borderRadius: '50%', animation: 'cgSpin 0.8s linear infinite', margin: '0 auto 20px' }} />
+              <p style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px' }}>
                 Analyzing {tcCount > 0 ? tcCount : '…'} test cases across {moduleCount > 0 ? moduleCount : '…'} modules...
               </p>
-              <p style={{ fontSize: '13px', color: '#94A3B8', margin: 0 }}>Identifying coverage gaps and suggesting TCs</p>
+              <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>Identifying coverage gaps and suggesting TCs</p>
               <style>{`@keyframes cgSpin { to { transform: rotate(360deg); } }`}</style>
             </div>
           )}
@@ -225,49 +225,6 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
           {/* Results */}
           {!loading && result && (
             <>
-              {/* TC Type Balance Card */}
-              {result.typeBalance && (() => {
-                const tb = result.typeBalance;
-                const types = [
-                  { key: 'positive',     label: 'Positive',      icon: '✅', color: '#22C55E', count: tb.positive     ?? 0 },
-                  { key: 'negative',     label: 'Negative',      icon: '❌', color: '#3B82F6', count: tb.negative     ?? 0 },
-                  { key: 'boundary',     label: 'Boundary',      icon: '⚠️', color: '#8B5CF6', count: tb.boundary     ?? 0 },
-                  { key: 'errorHandling',label: 'Error Handling',icon: '🔴', color: '#EF4444', count: tb.errorHandling ?? 0 },
-                  { key: 'security',     label: 'Security',      icon: '🔒', color: '#F59E0B', count: tb.security     ?? 0 },
-                ];
-                const total = types.reduce((s, t) => s + t.count, 0);
-                const withPct = types.map(t => ({ ...t, pct: total > 0 ? Math.round((t.count / total) * 100) : 0 }));
-                const LOW_THRESHOLD = 10;
-                const weakTypes = withPct.filter(t => t.pct < LOW_THRESHOLD).map(t => t.label);
-                return (
-                  <div style={{ background: '#0F172A', borderRadius: 12, padding: '16px 20px', marginBottom: 16 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 }}>
-                      TC Type Balance
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {withPct.map(t => (
-                        <div key={t.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: 13, width: 18, flexShrink: 0 }}>{t.icon}</span>
-                          <span style={{ fontSize: 12, color: '#CBD5E1', width: 110, flexShrink: 0 }}>{t.label}</span>
-                          <div style={{ flex: 1, height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                            <div style={{ width: `${t.pct}%`, height: '100%', background: t.color, borderRadius: 4, transition: 'width 0.6s ease' }} />
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#E2E8F0', width: 36, textAlign: 'right', flexShrink: 0 }}>{t.pct}%</span>
-                          {t.pct < LOW_THRESHOLD && (
-                            <span style={{ fontSize: 13, flexShrink: 0 }} title="Coverage is critically low">⚠️</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    {weakTypes.length > 0 && (
-                      <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: 12, color: '#FBBF24' }}>
-                        → {weakTypes.join(', ')} 테스트가 심각하게 부족합니다
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
               {/* Gap Cards */}
               {result.gaps.map((gap, gi) => {
                 const cfg = SEVERITY_CONFIG[gap.severity] ?? SEVERITY_CONFIG.MEDIUM;
@@ -336,6 +293,49 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
                   </div>
                 );
               })}
+
+              {/* TC Type Balance — 결과 맨 하단 */}
+              {result.typeBalance && (() => {
+                const tb = result.typeBalance;
+                const types = [
+                  { key: 'positive',      label: 'Positive',       icon: '✅', color: '#22C55E', count: tb.positive      ?? 0 },
+                  { key: 'negative',      label: 'Negative',       icon: '❌', color: '#3B82F6', count: tb.negative      ?? 0 },
+                  { key: 'boundary',      label: 'Boundary',       icon: '⚠️', color: '#8B5CF6', count: tb.boundary      ?? 0 },
+                  { key: 'errorHandling', label: 'Error Handling',  icon: '🔴', color: '#EF4444', count: tb.errorHandling ?? 0 },
+                  { key: 'security',      label: 'Security',       icon: '🔒', color: '#F59E0B', count: tb.security      ?? 0 },
+                ];
+                const total = types.reduce((s, t) => s + t.count, 0);
+                const withPct = types.map(t => ({ ...t, pct: total > 0 ? Math.round((t.count / total) * 100) : 0 }));
+                const LOW_THRESHOLD = 10;
+                const weakTypes = withPct.filter(t => t.pct < LOW_THRESHOLD).map(t => t.label);
+                return (
+                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px 20px', marginTop: 4 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#64748B', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 }}>
+                      TC Type Balance
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {withPct.map(t => (
+                        <div key={t.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 13, width: 18, flexShrink: 0 }}>{t.icon}</span>
+                          <span style={{ fontSize: 12, color: '#475569', width: 110, flexShrink: 0 }}>{t.label}</span>
+                          <div style={{ flex: 1, height: 8, background: '#E2E8F0', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ width: `${t.pct}%`, height: '100%', background: t.color, borderRadius: 4, transition: 'width 0.6s ease' }} />
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#334155', width: 36, textAlign: 'right', flexShrink: 0 }}>{t.pct}%</span>
+                          {t.pct < LOW_THRESHOLD && (
+                            <span style={{ fontSize: 13, flexShrink: 0 }} title="Coverage is critically low">⚠️</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {weakTypes.length > 0 && (
+                      <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #E2E8F0', fontSize: 12, color: '#DC2626', fontWeight: 500 }}>
+                        → {weakTypes.join(', ')} 테스트가 심각하게 부족합니다
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </>
           )}
         </div>
