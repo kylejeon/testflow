@@ -239,7 +239,10 @@ export default function ExportImportModal({
   const clearSelection = () => setSelectedExportTcIds(new Set());
   const clearFilters   = () => { setTcSearch(''); setTcSectionFilter(''); setTcPriorityFilter(''); };
 
-  const handleExport = () => exportToTestRail(exportTargetCases, resolvedProjectName, selectedColumns);
+  const handleExport = () => {
+    exportToTestRail(exportTargetCases, resolvedProjectName, selectedColumns);
+    onClose();
+  };
 
   const handleFileSelect = useCallback((file: File) => {
     setImportFile(file); setImportPreview(null); setImportErrors([]); setImportWarnings([]);
