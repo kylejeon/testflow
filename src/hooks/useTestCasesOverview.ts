@@ -222,7 +222,7 @@ export async function exportTestCasesCSV(projectIds: string[], projectNameMap: R
   const [{ data: tcs }, { data: projectsData }] = await Promise.all([
     supabase
       .from('test_cases')
-      .select('id, project_id, title, priority, status, created_at, custom_id')
+      .select('id, project_id, title, priority, lifecycle_status, created_at, custom_id')
       .in('project_id', projectIds)
       .order('created_at', { ascending: true }),
     supabase.from('projects').select('id, prefix').in('id', projectIds),
@@ -254,7 +254,7 @@ export async function exportTestCasesCSV(projectIds: string[], projectNameMap: R
     `"${(tc.title ?? '').replace(/"/g, '""')}"`,
     `"${(projectNameMap[tc.project_id] ?? 'Unknown').replace(/"/g, '""')}"`,
     tc.priority ?? '',
-    LIFECYCLE_LABEL[(tc.status ?? '').toLowerCase()] ?? tc.status ?? '',
+    LIFECYCLE_LABEL[(tc.lifecycle_status ?? '').toLowerCase()] ?? tc.lifecycle_status ?? '',
     formatDate(tc.created_at),
   ]);
 
