@@ -335,25 +335,35 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
   }
 
   async function createJiraForPattern(pattern: FlakyPattern) {
+    // Fetch global Jira credentials from jira_settings
     const { data: jiraSettings } = await supabase
       .from('jira_settings')
-      .select('domain, email, api_token, project_key')
+      .select('domain, email, api_token')
       .maybeSingle();
 
     if (!jiraSettings?.domain) {
-      setToast({ message: 'Jira not connected: domain is missing. Please configure Jira in Settings.', type: 'error' });
+      setToast({ message: 'Jira not connected: domain is missing. Please configure Jira in Settings > Integrations.', type: 'error' });
       return;
     }
     if (!jiraSettings?.email) {
-      setToast({ message: 'Jira not connected: email is missing. Please configure Jira in Settings.', type: 'error' });
+      setToast({ message: 'Jira not connected: email is missing. Please configure Jira in Settings > Integrations.', type: 'error' });
       return;
     }
     if (!jiraSettings?.api_token) {
-      setToast({ message: 'Jira not connected: API token is missing. Please configure Jira in Settings.', type: 'error' });
+      setToast({ message: 'Jira not connected: API token is missing. Please configure Jira in Settings > Integrations.', type: 'error' });
       return;
     }
-    if (!jiraSettings?.project_key) {
-      setToast({ message: 'Jira not connected: project key is missing. Please configure Jira in Settings.', type: 'error' });
+
+    // Fetch per-project Jira project key from projects table
+    const { data: projectData } = await supabase
+      .from('projects')
+      .select('jira_project_key')
+      .eq('id', projectId)
+      .maybeSingle();
+
+    const projectKey = projectData?.jira_project_key;
+    if (!projectKey) {
+      setToast({ message: 'Jira Project Key is not set for this project. Please edit the project and enter a Jira Project Key.', type: 'error' });
       return;
     }
 
@@ -382,7 +392,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
           domain: jiraSettings.domain,
           email: jiraSettings.email,
           apiToken: jiraSettings.api_token,
-          projectKey: jiraSettings.project_key,
+          projectKey,
           summary: vals.summary,
           description: `**Root Cause:** ${pattern.rootCause}\n\n**Fix Suggestion:** ${pattern.fixSuggestion}\n\n**Affected Tests:**\n${tcList}`,
           issueType: 'Bug',
