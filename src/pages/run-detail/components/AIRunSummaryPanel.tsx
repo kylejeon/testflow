@@ -22,6 +22,7 @@ interface AISummaryResult {
 
 interface AIRunSummaryPanelProps {
   runId: string;
+  projectId: string;
   runName: string;
   totalCount: number;
   runDate?: string;
@@ -34,6 +35,7 @@ interface AIRunSummaryPanelProps {
 
 export default function AIRunSummaryPanel({
   runId,
+  projectId,
   runName,
   totalCount,
   runDate,
@@ -165,51 +167,64 @@ export default function AIRunSummaryPanel({
         return;
       }
 
+      // Global Jira credentials (domain, email, api_token, issue_type)
       const { data: jiraCreds } = await supabase
         .from('jira_settings')
-        .select('domain, email, api_token, project_key, issue_type')
+        .select('domain, email, api_token, issue_type')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
-      if (!jiraCreds?.domain || !jiraCreds?.email || !jiraCreds?.api_token || !jiraCreds?.project_key) {
-        onToast('Jira not connected. Set up in Settings > Integrations.', 'error');
+      if (!jiraCreds?.domain) { onToast('Jira not connected: domain missing. Set up in Settings > Integrations.', 'error'); return; }
+      if (!jiraCreds?.email)  { onToast('Jira not connected: email missing. Set up in Settings > Integrations.', 'error'); return; }
+      if (!jiraCreds?.api_token) { onToast('Jira not connected: API token missing. Set up in Settings > Integrations.', 'error'); return; }
+
+      // Per-project Jira project key (same as FlakyDetector)
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('jira_project_key')
+        .eq('id', projectId)
+        .maybeSingle();
+
+      const projectKey = projectData?.jira_project_key;
+      if (!projectKey) {
+        onToast('Jira Project Key is not set for this project. Please edit the project and enter a Jira Project Key.', 'error');
         return;
       }
 
       const issueSummary = `[Bug] ${jiraPreviewCluster.name} Failures — ${jiraPreviewCluster.rootCause}`;
       const descriptionText = `AI-detected failure cluster from run "${runName}".\n\nRoot cause: ${jiraPreviewCluster.rootCause}\nAffected tests: ${jiraPreviewCluster.count}\n\nDetected by Testably AI Run Summary.`;
-      const priorityMap = { critical: 'Critical', major: 'High', minor: 'Medium' };
+      const priorityMap: Record<string, string> = { critical: 'Critical', major: 'High', minor: 'Medium' };
 
-      const issueBody = {
-        fields: {
-          project: { key: jiraCreds.project_key },
-          summary: issueSummary,
-          description: {
-            type: 'doc',
-            version: 1,
-            content: [{ type: 'paragraph', content: [{ type: 'text', text: descriptionText }] }],
-          },
-          issuetype: { name: jiraCreds.issue_type || 'Bug' },
-          priority: { name: priorityMap[jiraPreviewCluster.severity] ?? 'Medium' },
-          labels: ['ai-detected', 'regression'],
-        },
-      };
+      const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL as string;
+      const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY as string;
 
-      const resp = await fetch(`https://${jiraCreds.domain}/rest/api/3/issue`, {
+      const resp = await fetch(`${supabaseUrl}/functions/v1/create-jira-issue`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${btoa(`${jiraCreds.email}:${jiraCreds.api_token}`)}`,
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify(issueBody),
+        body: JSON.stringify({
+          domain: jiraCreds.domain,
+          email: jiraCreds.email,
+          apiToken: jiraCreds.api_token,
+          projectKey,
+          summary: issueSummary,
+          description: descriptionText,
+          issueType: jiraCreds.issue_type || 'Bug',
+          priority: priorityMap[jiraPreviewCluster.severity] ?? 'Medium',
+          labels: ['ai-detected', 'regression'],
+        }),
       });
 
+      const respData = await resp.json();
       if (resp.ok) {
-        const jiraData = await resp.json();
-        onToast(`Jira issue ${jiraData.key} created`, 'success');
+        const jiraKey = respData.issue?.key;
+        onToast(`Jira issue${jiraKey ? ` ${jiraKey}` : ''} created`, 'success');
         setJiraPreviewCluster(null);
       } else {
-        onToast('Failed to create Jira issue', 'error');
+        onToast(respData?.error || 'Failed to create Jira issue', 'error');
       }
     } catch {
       onToast('Failed to create Jira issue', 'error');

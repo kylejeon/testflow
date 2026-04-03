@@ -2266,6 +2266,7 @@ export default function RunDetail() {
                 return (
                   <AIRunSummaryPanel
                     runId={runId!}
+                    projectId={projectId!}
                     runName={run?.name || ''}
                     totalCount={testCases.length}
                     runDate={run?.created_at}
