@@ -342,6 +342,11 @@ export default function ProjectsContent() {
     if ((queryError as Error)?.message === 'UNAUTHENTICATED') navigate('/auth');
   }, [queryError]);
 
+  // Refetch on every mount so navigating back to Dashboard always shows fresh data
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['projects'] });
+  }, []);
+
   /** Check if a sample project already exists for the current user */
   const findExistingSample = async (): Promise<string | null> => {
     const { data: { user } } = await supabase.auth.getUser();
