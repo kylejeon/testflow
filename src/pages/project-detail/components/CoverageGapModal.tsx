@@ -58,8 +58,9 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tcCount, setTcCount] = useState<number>(0);
   const [moduleCount, setModuleCount] = useState<number>(0);
+  const [isCached, setIsCached] = useState(false);
 
-  const runAnalysis = async () => {
+  const runAnalysis = async (forceReanalyze = false) => {
     setLoading(true);
     setError(null);
     try {
@@ -77,7 +78,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
           Authorization: `Bearer ${session.access_token}`,
           apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ action: 'coverage-gap', project_id: projectId }),
+        body: JSON.stringify({ action: 'coverage-gap', project_id: projectId, force_reanalyze: forceReanalyze }),
       });
 
       const data = await response.json();
@@ -97,6 +98,7 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
 
       const gapResult: GapResult = data.result;
       setResult(gapResult);
+      setIsCached(!!data.cached);
 
       // Auto-select all P1 suggestions
       const autoSelected = new Set<string>();
@@ -187,14 +189,28 @@ export default function CoverageGapModal({ projectId, onClose, onGenerateTCs }: 
             </div>
             <div>
               <div style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>Coverage Gap Analysis</div>
-              <div style={{ fontSize: '12px', color: '#64748B', marginTop: 1 }}>
+              <div style={{ fontSize: '12px', color: '#64748B', marginTop: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
                 {loading ? 'AI is analyzing gaps…' : result ? `Gaps found in ${result.gaps.length} module(s)` : ''}
+                {!loading && result && isCached && (
+                  <span style={{ fontSize: 10, fontWeight: 600, background: '#EEF2FF', color: '#6366F1', borderRadius: 4, padding: '1px 6px' }}>캐시됨</span>
+                )}
               </div>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: 20, padding: '4px', lineHeight: 1 }}>
-            <i className="ri-close-line" />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {!loading && result && (
+              <button
+                onClick={() => runAnalysis(true)}
+                style={{ fontSize: 12, fontWeight: 600, color: '#6366F1', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <i className="ri-refresh-line" style={{ fontSize: 13 }} />
+                Re-analyze
+              </button>
+            )}
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: 20, padding: '4px', lineHeight: 1 }}>
+              <i className="ri-close-line" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}

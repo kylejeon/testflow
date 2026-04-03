@@ -228,7 +228,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
     }
   }
 
-  async function runAIAnalysis() {
+  async function runAIAnalysis(forceReanalyze = false) {
     setAiLoading(true);
     setAiError(null);
     setAiPatterns([]);
@@ -255,7 +255,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
           Authorization: `Bearer ${session.access_token}`,
           apikey: import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ action: 'analyze-flaky', project_id: projectId, flaky_tests: flakyTests }),
+        body: JSON.stringify({ action: 'analyze-flaky', project_id: projectId, flaky_tests: flakyTests, force_reanalyze: forceReanalyze }),
       });
 
       const data = await response.json();
@@ -519,7 +519,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
                           onClick={() => {
                             localStorage.removeItem(getCacheKey());
                             setIsCachedResult(false);
-                            runAIAnalysis().then(() => {
+                            runAIAnalysis(true).then(() => {
                               setTimeout(() => {
                                 aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
                               }, 100);

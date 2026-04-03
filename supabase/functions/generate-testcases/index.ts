@@ -33,6 +33,7 @@ interface GenerateRequest {
   // analyze-flaky
   flaky_tests?: { test_case_id: string; title: string; folder_path: string; recent_statuses: string[]; flaky_score: number }[];
   milestone_id?: string;
+  force_reanalyze?: boolean;
 }
 
 interface JiraIssueData {
@@ -162,6 +163,13 @@ interface AnthropicError {
   message: string;
 }
 
+/** SHA-256 해시 계산 (캐시 키용) */
+async function computeHash(data: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const buffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
+  return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 /** Anthropic Claude API 호출 */
 async function callClaude(prompt: string): Promise<{ content: string; tokens: number }> {
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -180,6 +188,7 @@ async function callClaude(prompt: string): Promise<{ content: string; tokens: nu
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,
+      temperature: 0,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
@@ -378,19 +387,21 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Check cache: same run_id with prior summary
-      const { data: cached } = await adminClient
-        .from('ai_generation_logs')
-        .select('output_data, created_at')
-        .eq('mode', 'run-summary')
-        .eq('user_id', user.id)
-        .filter('input_data->>run_id', 'eq', run_id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Check cache: same run_id with prior summary (skip if force_reanalyze)
+      if (!body.force_reanalyze) {
+        const { data: cached } = await adminClient
+          .from('ai_generation_logs')
+          .select('output_data, created_at')
+          .eq('mode', 'run-summary')
+          .eq('user_id', user.id)
+          .filter('input_data->>run_id', 'eq', run_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (cached?.output_data?.riskLevel) {
-        return jsonResponse({ success: true, summary: cached.output_data, cached: true });
+        if (cached?.output_data?.riskLevel) {
+          return jsonResponse({ success: true, summary: cached.output_data, cached: true });
+        }
       }
 
       // Fetch run metadata
@@ -546,6 +557,7 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 2048,
+          temperature: 0,
           system: systemPrompt,
           messages: [{ role: 'user', content: userMessage }],
         }),
@@ -656,6 +668,28 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
         return jsonResponse({ error: 'No test cases found in this project' }, 422);
       }
 
+      // Hash-based cache: sort TCs for deterministic hash regardless of order
+      const sortedForHash = [...tcList]
+        .sort((a, b) => (a.folder + a.title).localeCompare(b.folder + b.title))
+        .map(t => `${t.folder}|${t.title}|${t.priority}`)
+        .join('\n');
+      const contentHash = await computeHash(sortedForHash);
+
+      if (!body.force_reanalyze) {
+        const { data: cached } = await adminClient
+          .from('ai_generation_logs')
+          .select('output_data, created_at')
+          .eq('mode', 'run-summary')
+          .filter('input_data->>content_hash', 'eq', contentHash)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (cached?.output_data?.gaps) {
+          return jsonResponse({ success: true, result: cached.output_data, cached: true });
+        }
+      }
+
       // Build folder summary for the prompt
       const folderMap = new Map<string, { titles: string[]; priorities: string[] }>();
       for (const tc of tcList) {
@@ -724,6 +758,7 @@ Respond in valid JSON:
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 2048,
+          temperature: 0,
           system: systemPrompt,
           messages: [{ role: 'user', content: userMessage }],
         }),
@@ -752,14 +787,14 @@ Respond in valid JSON:
         return jsonResponse({ error: 'Analysis failed — invalid response' }, 500);
       }
 
-      // Log usage
+      // Log usage — store full result + hash for future cache hits
       await adminClient.from('ai_generation_logs').insert({
         user_id: user.id,
         project_id,
-        mode: 'run-summary', // reuse allowed mode for logging
+        mode: 'run-summary',
         step: 1,
-        input_data: { action: 'coverage-gap', total_tcs: tcList.length },
-        output_data: { gap_count: gapResult.gaps.length },
+        input_data: { action: 'coverage-gap', total_tcs: tcList.length, content_hash: contentHash },
+        output_data: gapResult,
         tokens_used: tokensUsed,
         latency_ms: latencyMs,
       });
@@ -794,6 +829,26 @@ Respond in valid JSON:
       const flakyTests: { test_case_id: string; title: string; folder_path: string; recent_statuses: string[]; flaky_score: number }[] = body.flaky_tests ?? [];
       if (!flakyTests.length) {
         return jsonResponse({ error: 'No flaky tests provided' }, 422);
+      }
+
+      // Hash-based cache: sort by test_case_id for deterministic key
+      const sortedFlaky = [...flakyTests].sort((a, b) => a.test_case_id.localeCompare(b.test_case_id));
+      const flakyHashInput = sortedFlaky.map(t => `${t.test_case_id}|${t.flaky_score}|${t.recent_statuses.join(',')}`).join('\n');
+      const flakyHash = await computeHash(flakyHashInput);
+
+      if (!body.force_reanalyze) {
+        const { data: cachedFlaky } = await adminClient
+          .from('ai_generation_logs')
+          .select('output_data, created_at')
+          .eq('mode', 'run-summary')
+          .filter('input_data->>content_hash', 'eq', flakyHash)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (cachedFlaky?.output_data?.patterns) {
+          return jsonResponse({ success: true, result: cachedFlaky.output_data, cached: true });
+        }
       }
 
       const testList = flakyTests.map(t =>
@@ -839,6 +894,7 @@ Respond in valid JSON:
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1024,
+          temperature: 0,
           system: systemPrompt,
           messages: [{ role: 'user', content: userMessage }],
         }),
@@ -872,8 +928,8 @@ Respond in valid JSON:
         project_id,
         mode: 'run-summary',
         step: 1,
-        input_data: { action: 'analyze-flaky', flaky_count: flakyTests.length },
-        output_data: { pattern_count: analysisResult.patterns.length },
+        input_data: { action: 'analyze-flaky', flaky_count: flakyTests.length, content_hash: flakyHash },
+        output_data: analysisResult,
         tokens_used: tokensUsed,
         latency_ms: latencyMs,
       });
