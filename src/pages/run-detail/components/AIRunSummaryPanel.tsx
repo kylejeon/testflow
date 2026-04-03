@@ -193,7 +193,7 @@ export default function AIRunSummaryPanel({
 
       const issueSummary = `[Bug] ${jiraPreviewCluster.name} Failures — ${jiraPreviewCluster.rootCause}`;
       const descriptionText = `AI-detected failure cluster from run "${runName}".\n\nRoot cause: ${jiraPreviewCluster.rootCause}\nAffected tests: ${jiraPreviewCluster.count}\n\nDetected by Testably AI Run Summary.`;
-      const priorityMap: Record<string, string> = { critical: 'Critical', major: 'High', minor: 'Medium' };
+      const priorityMap: Record<string, string> = { critical: 'Highest', major: 'High', minor: 'Medium' };
 
       const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL as string;
       const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY as string;

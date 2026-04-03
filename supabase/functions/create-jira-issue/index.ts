@@ -70,9 +70,19 @@ serve(async (req) => {
       issueData.fields.description = textToADF(stripHtml(String(description)));
     }
 
-    // priority → { name: "High" }
+    // priority → must be { name: "High" } object for Jira REST API v3
+    // Handle both string "High" and pre-formatted { name: "High" } inputs defensively
     if (priority) {
-      issueData.fields.priority = { name: String(priority) };
+      let priorityName: string;
+      if (typeof priority === 'object' && priority !== null) {
+        // Caller already passed { name: "High" } — extract the name
+        priorityName = String((priority as Record<string, unknown>).name ?? '');
+      } else {
+        priorityName = String(priority);
+      }
+      if (priorityName) {
+        issueData.fields.priority = { name: priorityName };
+      }
     }
 
     // labels → plain string array (no spaces allowed per Jira spec)
