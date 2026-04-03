@@ -415,10 +415,10 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: 'Run not found' }, 404);
       }
 
-      // Project access check via project_members or ownership
+      // Project access check via project_members
       const { data: projectData } = await adminClient
         .from('projects')
-        .select('id, owner_id')
+        .select('id')
         .eq('id', runData.project_id)
         .maybeSingle();
 
@@ -426,22 +426,20 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: 'Project not found' }, 404);
       }
 
-      if (projectData.owner_id !== user.id) {
-        const { data: memberCheck } = await adminClient
-          .from('project_members')
-          .select('id')
-          .eq('project_id', runData.project_id)
-          .eq('user_id', user.id)
-          .maybeSingle();
-        if (!memberCheck) {
-          return jsonResponse({ error: 'Access denied' }, 403);
-        }
+      const { data: memberCheck } = await adminClient
+        .from('project_members')
+        .select('id')
+        .eq('project_id', runData.project_id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!memberCheck) {
+        return jsonResponse({ error: 'Access denied' }, 403);
       }
 
       // Fetch test results (status + test_case_id)
       const { data: testResultsData } = await adminClient
         .from('test_results')
-        .select('test_case_id, status, comment')
+        .select('test_case_id, status, note')
         .eq('run_id', run_id);
 
       const allResults = testResultsData || [];
@@ -497,7 +495,7 @@ Deno.serve(async (req) => {
         .slice(0, 10)
         .map((r) => {
           const tc = tcMetaMap.get(r.test_case_id);
-          return `  - ${tc?.title || '(unknown)'} (${tc?.folder || 'unknown'})${r.comment ? ': ' + r.comment : ''}`;
+          return `  - ${tc?.title || '(unknown)'} (${tc?.folder || 'unknown'})${r.note ? ': ' + r.note : ''}`;
         });
 
       const systemPrompt = `You are a senior QA analyst. The user already sees pass/fail numbers on screen.
