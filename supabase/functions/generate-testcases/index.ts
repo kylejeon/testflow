@@ -1075,7 +1075,7 @@ Respond in valid JSON:
 
         const { data: sessionData } = await adminClient
           .from('sessions')
-          .select('name, mission')
+          .select('name, charter')
           .eq('id', session_id)
           .eq('project_id', project_id)
           .maybeSingle();
@@ -1094,7 +1094,7 @@ Respond in valid JSON:
           .map((l: any) => `[${l.type.toUpperCase()}] ${l.content}`)
           .join('\n');
 
-        const sessionSummary = `Session: ${sessionData.name}\nMission: ${sessionData.mission || '(none)'}\n\nLogs:\n${logSummary || '(no logs)'}`;
+        const sessionSummary = `Session: ${sessionData.name}\nMission: ${sessionData.charter || '(none)'}\n\nLogs:\n${logSummary || '(no logs)'}`;
         prompt = buildTitlePromptSession(sessionSummary);
       }
 

@@ -10,7 +10,7 @@ interface SessionLog {
 interface Session {
   id: string;
   name: string;
-  mission: string;
+  charter: string;   // DB column name (was incorrectly 'mission')
   status: string;
   created_at: string;
   session_logs?: SessionLog[];
@@ -169,7 +169,7 @@ export default function AIGenerateModal({
     try {
       const { data, error: fetchError } = await supabase
         .from('sessions')
-        .select('id, name, mission, status, created_at, session_logs(type)')
+        .select('id, name, charter, status, created_at, session_logs(type)')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
       if (fetchError) throw fetchError;
@@ -341,7 +341,7 @@ export default function AIGenerateModal({
     if (sessionFilter === 'active' && s.status === 'completed') return false;
     if (sessionSearch.trim()) {
       const q = sessionSearch.toLowerCase();
-      return s.name.toLowerCase().includes(q) || (s.mission?.toLowerCase().includes(q) ?? false);
+      return s.name.toLowerCase().includes(q) || (s.charter?.toLowerCase().includes(q) ?? false);
     }
     return true;
   });
@@ -773,7 +773,7 @@ export default function AIGenerateModal({
                             />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-900 truncate">{s.name}</p>
-                              {s.mission && <p className="text-xs text-gray-500 truncate">{s.mission}</p>}
+                              {s.charter && <p className="text-xs text-gray-500 truncate">{s.charter}</p>}
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 {logCount > 0 && (
                                   <span className="text-xs text-gray-400">
