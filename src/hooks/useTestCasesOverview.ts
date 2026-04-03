@@ -222,7 +222,7 @@ export async function exportTestCasesCSV(projectIds: string[], projectNameMap: R
   const [{ data: tcs }, { data: projectsData }] = await Promise.all([
     supabase
       .from('test_cases')
-      .select('id, project_id, title, priority, lifecycle_status, created_at, custom_id')
+      .select('id, project_id, title, priority, lifecycle_status, created_at, custom_id, tags')
       .in('project_id', projectIds)
       .order('created_at', { ascending: true }),
     supabase.from('projects').select('id, prefix').in('id', projectIds),
@@ -255,10 +255,11 @@ export async function exportTestCasesCSV(projectIds: string[], projectNameMap: R
     `"${(projectNameMap[tc.project_id] ?? 'Unknown').replace(/"/g, '""')}"`,
     tc.priority ?? '',
     LIFECYCLE_LABEL[(tc.lifecycle_status ?? '').toLowerCase()] ?? tc.lifecycle_status ?? '',
+    `"${(tc.tags ?? '').replace(/"/g, '""')}"`,
     formatDate(tc.created_at),
   ]);
 
-  const header = ['ID', 'Title', 'Project', 'Priority', 'Lifecycle Status', 'Created At'];
+  const header = ['ID', 'Title', 'Project', 'Priority', 'Lifecycle Status', 'Tags', 'Created At'];
   const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
