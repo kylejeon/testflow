@@ -150,6 +150,57 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
     } catch { /* ignore quota errors */ }
   }, [getCacheKey]);
 
+  // Load jira_issues created state from DB (stored in ai_generation_logs.output_data)
+  const loadJiraCreatedState = useCallback(async () => {
+    try {
+      const { data: logRecord } = await supabase
+        .from('ai_generation_logs')
+        .select('output_data')
+        .eq('project_id', projectId)
+        .filter('input_data->>action', 'eq', 'analyze-flaky')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (logRecord?.output_data?.jira_issues) {
+        const createdSet = new Set<string>(Object.keys(logRecord.output_data.jira_issues));
+        setJiraCreated(createdSet);
+      }
+    } catch (e) {
+      console.error('Failed to load Jira created state:', e);
+    }
+  }, [projectId]);
+
+  // Persist jira issue creation to DB (update ai_generation_logs.output_data)
+  const saveJiraCreatedToDB = useCallback(async (patternName: string, jiraKey: string) => {
+    try {
+      const { data: logRecord } = await supabase
+        .from('ai_generation_logs')
+        .select('id, output_data')
+        .eq('project_id', projectId)
+        .filter('input_data->>action', 'eq', 'analyze-flaky')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (logRecord) {
+        const updatedOutput = {
+          ...logRecord.output_data,
+          jira_issues: {
+            ...(logRecord.output_data?.jira_issues ?? {}),
+            [patternName]: jiraKey,
+          },
+        };
+        await supabase
+          .from('ai_generation_logs')
+          .update({ output_data: updatedOutput })
+          .eq('id', logRecord.id);
+      }
+    } catch (e) {
+      console.error('Failed to save Jira created state to DB:', e);
+    }
+  }, [projectId]);
+
   useEffect(() => {
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -278,6 +329,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       setAiPatterns(data.result.patterns);
       setIsCachedResult(false);
       writeCache(data.result.patterns);
+      loadJiraCreatedState();
     } catch {
       setAiError('Connection error. Please try again.');
     } finally {
@@ -294,6 +346,7 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
         if (cached && cached.length > 0) {
           setAiPatterns(cached);
           setIsCachedResult(true);
+          loadJiraCreatedState();
           // Auto-scroll after cached data renders
           setTimeout(() => {
             aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -405,8 +458,10 @@ export default function FlakyDetector({ projectId, subscriptionTier }: { project
       const resData = await res.json();
       if (!res.ok) throw new Error(resData?.error || 'Failed to create Jira issue');
 
+      const jiraKey = resData.issue?.key ?? pattern.name;
       setJiraCreated(prev => new Set(prev).add(pattern.name));
-      setToast({ message: `Jira issue created for "${pattern.name}" pattern`, type: 'success' });
+      saveJiraCreatedToDB(pattern.name, jiraKey);
+      setToast({ message: `Jira issue created for "${pattern.name}" pattern${resData.issue?.key ? ` (${resData.issue.key})` : ''}`, type: 'success' });
     } catch (err: any) {
       setToast({ message: err?.message || 'Failed to create Jira issue. Please try again.', type: 'error' });
     } finally {
