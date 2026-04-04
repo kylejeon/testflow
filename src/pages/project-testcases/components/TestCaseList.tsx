@@ -3834,10 +3834,17 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         });
         const unchangedCount = fields.length - changedFields.length;
 
-        const fromVer = `v${selectedHistory.version_major ?? 1}.${selectedHistory.version_minor ?? 0}`;
-        const toVer = selectedTestCase
-          ? `v${selectedTestCase.version_major ?? 1}.${selectedTestCase.version_minor ?? 0}`
-          : 'Current';
+        // history record stores the version *created* by this entry (e.g. v1.1).
+        // old_value = state before the edit (v1.0), new_value = state after (v1.1).
+        // So: toVer = history record's version, fromVer = one step before.
+        const histMajor = selectedHistory.version_major ?? 1;
+        const histMinor = selectedHistory.version_minor ?? 0;
+        const toVer = `v${histMajor}.${histMinor}`;
+        const fromVer = histMinor > 0
+          ? `v${histMajor}.${histMinor - 1}`
+          : histMajor > 1
+            ? `v${histMajor - 1}.x`
+            : 'Initial';
         const isProUser = userTier >= 3;
 
         return (
