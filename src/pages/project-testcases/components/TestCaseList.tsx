@@ -3960,7 +3960,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               {/* Footer */}
               <div className="px-5 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC] flex items-center justify-between">
                 <button
-                  onClick={() => { setRollbackTarget(selectedHistory); setShowRollbackModal(true); }}
+                  onClick={() => {
+                    // The old_value in selectedHistory IS the state we restore to (fromVer content).
+                    // Override version numbers to fromVer so the confirm dialog displays correctly.
+                    setRollbackTarget({
+                      ...selectedHistory,
+                      version_major: prevEntry?.version_major ?? histMajor,
+                      version_minor: prevEntry?.version_minor ?? (histMinor > 0 ? histMinor - 1 : 0),
+                    });
+                    setShowRollbackModal(true);
+                  }}
                   className="px-3 py-1.5 border border-[#E2E8F0] text-[0.8125rem] font-semibold text-[#475569] rounded-lg hover:bg-white cursor-pointer flex items-center gap-1.5 bg-white"
                 >
                   <i className="ri-arrow-go-back-line text-sm"></i>
