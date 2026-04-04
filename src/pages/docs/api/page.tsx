@@ -51,6 +51,22 @@ const endpoints = [
     href: '/docs/api/milestones',
   },
   {
+    icon: 'ri-upload-cloud-line',
+    title: 'CI/CD Results Upload',
+    badge: 'POST',
+    badgeColor: 'bg-blue-100 text-blue-700',
+    desc: 'Upload test results from CI/CD pipelines. Supports JSON and JUnit XML formats. Used by @testably/playwright-reporter, cypress-reporter, jest-reporter SDKs.',
+    href: '/docs/api/ci-upload',
+  },
+  {
+    icon: 'ri-history-line',
+    title: 'Upload Logs',
+    badge: 'GET',
+    badgeColor: 'bg-green-100 text-green-700',
+    desc: 'Retrieve recent CI/CD upload history. View upload status, result counts, and error details for each pipeline run.',
+    href: '/docs/api/ci-upload',
+  },
+  {
     icon: 'ri-webhook-line',
     title: 'Webhooks',
     badge: 'POST',

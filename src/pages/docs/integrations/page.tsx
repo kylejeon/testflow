@@ -260,10 +260,78 @@ export default function IntegrationsPage() {
         </div>
       </section>
 
+      {/* SDK Reporters */}
+      <section className="mb-10">
+        <div className="bg-white border border-gray-200 rounded-xl p-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+            <i className="ri-terminal-line text-indigo-500" />
+            Test Automation SDK Reporters
+          </h2>
+          <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+            Testably provides native reporter plugins for the most popular test frameworks. After your test suite runs, the reporter automatically uploads results to a Testably run — no manual API calls needed.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            {[
+              {
+                icon: 'ri-code-s-slash-line',
+                name: 'Playwright',
+                pkg: '@testably/playwright-reporter',
+                desc: 'Auto-uploads results after playwright test completes.',
+              },
+              {
+                icon: 'ri-test-tube-line',
+                name: 'Cypress',
+                pkg: '@testably/cypress-reporter',
+                desc: 'Hooks into after:run to push results at the end of your Cypress suite.',
+              },
+              {
+                icon: 'ri-javascript-line',
+                name: 'Jest',
+                pkg: '@testably/jest-reporter',
+                desc: 'Implements onRunComplete to bulk upload Jest results.',
+              },
+            ].map((sdk) => (
+              <div key={sdk.name} className="bg-gray-50 border border-gray-100 rounded-xl p-5">
+                <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
+                  <i className={`${sdk.icon} text-indigo-600 text-lg`} />
+                </div>
+                <p className="font-semibold text-gray-900 text-sm mb-1">{sdk.name}</p>
+                <code className="text-xs font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded block mb-2 break-all">{sdk.pkg}</code>
+                <p className="text-xs text-gray-500 leading-relaxed">{sdk.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-gray-900 rounded-xl overflow-hidden mb-4">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-white/10">
+              <i className="ri-terminal-line text-indigo-400 text-sm" />
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Quick Install</span>
+            </div>
+            <pre className="p-5 text-sm font-mono text-gray-300 leading-relaxed overflow-x-auto whitespace-pre">{`# Playwright
+npm install --save-dev @testably/playwright-reporter
+
+# Cypress
+npm install --save-dev @testably/cypress-reporter
+
+# Jest
+npm install --save-dev @testably/jest-reporter`}</pre>
+          </div>
+
+          <Link
+            to="/docs/cicd"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+          >
+            <i className="ri-terminal-line text-sm" />
+            Full SDK setup guide with CI/CD pipeline examples
+          </Link>
+        </div>
+      </section>
+
       {/* Next steps */}
       <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
         <h3 className="font-semibold text-gray-900 mb-3">Related Guides</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Link
             to="/docs/webhooks"
             className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg p-4 hover:border-indigo-300 hover:shadow-sm transition-all group"
@@ -282,6 +350,16 @@ export default function IntegrationsPage() {
             <div>
               <p className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">CI/CD Integration</p>
               <p className="text-xs text-gray-500">Automate result uploads from pipelines</p>
+            </div>
+          </Link>
+          <Link
+            to="/docs/api/ci-upload"
+            className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg p-4 hover:border-indigo-300 hover:shadow-sm transition-all group"
+          >
+            <i className="ri-upload-cloud-line text-indigo-500 text-lg" />
+            <div>
+              <p className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">CI/CD Upload API</p>
+              <p className="text-xs text-gray-500">REST endpoint reference</p>
             </div>
           </Link>
         </div>

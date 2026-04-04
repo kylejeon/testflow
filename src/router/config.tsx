@@ -59,6 +59,7 @@ const DocsApiProjectsPage = lazy(() => import('../pages/docs/api/projects/page')
 const DocsApiTestCasesPage = lazy(() => import('../pages/docs/api/test-cases/page'));
 const DocsApiTestRunsPage = lazy(() => import('../pages/docs/api/test-runs/page'));
 const DocsApiTestResultsPage = lazy(() => import('../pages/docs/api/test-results/page'));
+const DocsApiCiUploadPage = lazy(() => import('../pages/docs/api/ci-upload/page'));
 const DocsApiMilestonesPage = lazy(() => import('../pages/docs/api/milestones/page'));
 const DocsApiDiscoveryLogsPage = lazy(() => import('../pages/docs/api/discovery-logs/page'));
 const DocsApiMembersPage = lazy(() => import('../pages/docs/api/members/page'));
@@ -260,6 +261,10 @@ const routes: RouteObject[] = [
   {
     path: '/docs/api/test-results',
     element: <DocsApiTestResultsPage />,
+  },
+  {
+    path: '/docs/api/ci-upload',
+    element: <DocsApiCiUploadPage />,
   },
   {
     path: '/docs/api/milestones',

@@ -30,6 +30,8 @@ const categories = [
   { icon: 'ri-search-eye-line', title: 'Discovery Logs', desc: 'Start sessions, record observations, screenshots, TC conversion', href: '/docs/discovery-logs' },
   { icon: 'ri-team-line', title: 'Team & Permissions', desc: 'Invite members, roles (Admin/Member/Viewer), access control', href: '/docs/team-permissions' },
   { icon: 'ri-plug-line', title: 'Integrations', desc: 'Jira setup, CI/CD API, Slack & Teams notifications', href: '/docs/integrations' },
+  { icon: 'ri-terminal-line', title: 'CI/CD & Test Automation SDK', desc: 'Playwright, Cypress, Jest reporters. CI/CD pipeline integration.', href: '/docs/cicd' },
+  { icon: 'ri-upload-2-line', title: 'Import / Export', desc: 'Import test cases from CSV, export runs to Excel or PDF', href: '/docs/import-export' },
   { icon: 'ri-bank-card-line', title: 'Account & Billing', desc: 'Plan changes, payment management, invoices', href: '/docs/account-billing' },
   { icon: 'ri-keyboard-line', title: 'Keyboard Shortcuts', desc: 'Complete shortcut reference, Cmd+K, G-chords, Focus Mode keys', href: '/docs/keyboard-shortcuts' },
   { icon: 'ri-question-line', title: 'FAQ & Troubleshooting', desc: 'Common questions and error resolution', href: '/docs/faq' },

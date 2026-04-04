@@ -53,6 +53,7 @@ const navSections: NavSection[] = [
       { label: 'Test Cases', to: '/docs/api/test-cases' },
       { label: 'Test Runs', to: '/docs/api/test-runs' },
       { label: 'Test Results', to: '/docs/api/test-results' },
+      { label: 'CI/CD Upload', to: '/docs/api/ci-upload' },
       { label: 'Milestones', to: '/docs/api/milestones' },
       { label: 'Discovery Logs', to: '/docs/api/discovery-logs' },
       { label: 'Members', to: '/docs/api/members' },
