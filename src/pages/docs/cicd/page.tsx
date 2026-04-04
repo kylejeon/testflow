@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import DocsLayout from '../../../components/docs/DocsLayout';
 
-type CITab = 'github' | 'gitlab' | 'python';
+type CITab = 'github' | 'gitlab' | 'python' | 'playwright' | 'cypress' | 'jest';
 
 const ghWorkflow = `name: Testably Upload
 
@@ -155,6 +155,101 @@ def pytest_sessionfinish(session, exitstatus):
 # def test_dashboard_loads():
 #     assert dashboard.status_code == 200`;
 
+const playwrightInstall = `npm install --save-dev @testably/playwright-reporter`;
+
+const playwrightConfig = `// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  reporter: [
+    ['html'],
+    ['@testably/playwright-reporter', {
+      // Options (all optional — env vars are used by default)
+      testCaseIdSource: 'annotation', // 'annotation' | 'tag' | 'title' | 'custom'
+      failOnUploadError: false,
+    }],
+  ],
+});`;
+
+const playwrightTestAnnotation = `// e2e/login.spec.ts
+import { test } from '@playwright/test';
+
+// Method 1: Annotation (recommended)
+test('login with valid credentials', async ({ page }) => {
+  test.info().annotations.push({ type: 'testably', description: 'TC-001' });
+  await page.goto('/login');
+  // ...
+});
+
+// Method 2: Tag
+test('checkout flow @TC-045', async ({ page }) => {
+  // ...
+});
+
+// Method 3: Title pattern
+test('[TC-010] dashboard loads correctly', async ({ page }) => {
+  // ...
+});`;
+
+const cypressInstall = `npm install --save-dev @testably/cypress-reporter`;
+
+const cypressConfig = `// cypress.config.ts
+import { defineConfig } from 'cypress';
+import { setupTestablyReporter } from '@testably/cypress-reporter';
+
+export default defineConfig({
+  e2e: {
+    setupNodeEvents(on, config) {
+      setupTestablyReporter(on, config, {
+        // Options (all optional — env vars are used by default)
+        testCaseIdSource: 'title', // 'title' | 'custom'
+        failOnUploadError: false,
+      });
+    },
+  },
+});`;
+
+const cypressTest = `// cypress/e2e/login.cy.ts
+describe('Login', () => {
+  it('[TC-001] should login with valid credentials', () => {
+    cy.visit('/login');
+    // ...
+  });
+
+  it('[TC-002] should show error for invalid password', () => {
+    // ...
+  });
+});`;
+
+const jestInstall = `npm install --save-dev @testably/jest-reporter`;
+
+const jestConfig = `// jest.config.ts
+export default {
+  reporters: [
+    'default',
+    ['@testably/jest-reporter', {
+      // Options (all optional — env vars are used by default)
+      testCaseIdSource: 'title', // 'title' | 'custom'
+      failOnUploadError: false,
+    }],
+  ],
+};`;
+
+const jestTest = `// __tests__/login.test.ts
+describe('Login', () => {
+  it('[TC-001] should login with valid credentials', () => {
+    // ...
+  });
+
+  it('[TC-002] should show error for invalid password', () => {
+    // ...
+  });
+});`;
+
+const sdkEnvVars = `TESTABLY_URL=https://your-project.supabase.co
+TESTABLY_TOKEN=testably_your_ci_token_here
+TESTABLY_RUN_ID=your-run-uuid-here`;
+
 const statusValues = [
   { value: 'passed', desc: 'Test executed successfully', color: 'bg-green-100 text-green-700' },
   { value: 'failed', desc: 'Test did not meet expected result', color: 'bg-red-100 text-red-700' },
@@ -166,6 +261,9 @@ export default function CICDPage() {
   const [activeTab, setActiveTab] = useState<CITab>('github');
 
   const tabs: { key: CITab; label: string; icon: string }[] = [
+    { key: 'playwright', label: 'Playwright', icon: 'ri-test-tube-line' },
+    { key: 'cypress', label: 'Cypress', icon: 'ri-bug-line' },
+    { key: 'jest', label: 'Jest', icon: 'ri-code-box-line' },
     { key: 'github', label: 'GitHub Actions', icon: 'ri-github-line' },
     { key: 'gitlab', label: 'GitLab CI', icon: 'ri-gitlab-line' },
     { key: 'python', label: 'Python (pytest)', icon: 'ri-code-s-slash-line' },
@@ -185,7 +283,7 @@ export default function CICDPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-3">CI/CD Integration Guide</h1>
         <p className="text-gray-500 text-lg leading-relaxed">
-          Automatically upload test results from your CI/CD pipeline to Testably. Supports GitHub Actions, GitLab CI, and Python-based workflows.
+          Automatically upload test results from your CI/CD pipeline to Testably. Use our SDK reporters for Playwright, Cypress, and Jest, or integrate manually via GitHub Actions, GitLab CI, and Python.
         </p>
       </div>
 
@@ -245,6 +343,304 @@ export default function CICDPage() {
             </button>
           ))}
         </div>
+
+        {/* Playwright */}
+        {activeTab === 'playwright' && (
+          <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <i className="ri-test-tube-line text-indigo-500" />
+              Playwright Reporter
+            </h2>
+
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <i className="ri-information-line text-indigo-500 mt-0.5" />
+                <p className="text-sm text-indigo-800">
+                  <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">@testably/playwright-reporter</code> hooks into Playwright's native reporter API. No wrappers or config changes to your test files are required.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 1 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">1</span>
+                </div>
+                <p className="text-gray-900 font-medium">Install the package</p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Shell</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{playwrightInstall}</pre>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">2</span>
+                </div>
+                <p className="text-gray-900 font-medium">Configure in <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">playwright.config.ts</code></p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">TypeScript</span>
+                  <span className="text-xs text-gray-600 ml-auto">playwright.config.ts</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{playwrightConfig}</pre>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">3</span>
+                </div>
+                <p className="text-gray-900 font-medium">Map test cases to Testably TC IDs</p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">TypeScript</span>
+                  <span className="text-xs text-gray-600 ml-auto">e2e/login.spec.ts</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{playwrightTestAnnotation}</pre>
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">4</span>
+                </div>
+                <p className="text-gray-900 font-medium">Set environment variables</p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Shell</span>
+                  <span className="text-xs text-gray-600 ml-auto">.env / CI secrets</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{sdkEnvVars}</pre>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <i className="ri-alert-line text-amber-500 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-medium mb-1">TC ID Mapping Strategies</p>
+                  <ul className="list-disc list-inside space-y-1 text-amber-700">
+                    <li><code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-xs">annotation</code> — <code className="font-mono text-xs">test.info().annotations.push(&#123; type: 'testably', description: 'TC-001' &#125;)</code> (default)</li>
+                    <li><code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-xs">tag</code> — <code className="font-mono text-xs">@TC-001</code> in test title or tags</li>
+                    <li><code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-xs">title</code> — <code className="font-mono text-xs">[TC-001]</code> pattern in test title</li>
+                    <li><code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-xs">custom</code> — provide a <code className="font-mono text-xs">mapTestCaseId(name, file)</code> function</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cypress */}
+        {activeTab === 'cypress' && (
+          <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <i className="ri-bug-line text-green-600" />
+              Cypress Reporter
+            </h2>
+
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <i className="ri-information-line text-indigo-500 mt-0.5" />
+                <p className="text-sm text-indigo-800">
+                  <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">@testably/cypress-reporter</code> uses Cypress's <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">after:run</code> plugin event to collect and upload results after the full run completes.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 1 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">1</span>
+                </div>
+                <p className="text-gray-900 font-medium">Install the package</p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Shell</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{cypressInstall}</pre>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">2</span>
+                </div>
+                <p className="text-gray-900 font-medium">Configure in <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">cypress.config.ts</code></p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">TypeScript</span>
+                  <span className="text-xs text-gray-600 ml-auto">cypress.config.ts</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{cypressConfig}</pre>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">3</span>
+                </div>
+                <p className="text-gray-900 font-medium">Tag tests with TC IDs in test titles</p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">TypeScript</span>
+                  <span className="text-xs text-gray-600 ml-auto">cypress/e2e/login.cy.ts</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{cypressTest}</pre>
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">4</span>
+                </div>
+                <p className="text-gray-900 font-medium">Set environment variables</p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Shell</span>
+                  <span className="text-xs text-gray-600 ml-auto">.env / CI secrets</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{sdkEnvVars}</pre>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <i className="ri-information-line text-blue-500 mt-0.5" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">TC ID matching</p>
+                  <p className="text-blue-700">The reporter searches for <code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">[TC-001]</code> or <code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">TC-001</code> patterns anywhere in the full test title (including describe blocks). UUID format is also supported.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Jest */}
+        {activeTab === 'jest' && (
+          <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <i className="ri-code-box-line text-red-500" />
+              Jest Reporter
+            </h2>
+
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <i className="ri-information-line text-indigo-500 mt-0.5" />
+                <p className="text-sm text-indigo-800">
+                  <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">@testably/jest-reporter</code> implements Jest's Custom Reporter interface. Results are uploaded once after the entire test suite completes via <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">onRunComplete</code>.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 1 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">1</span>
+                </div>
+                <p className="text-gray-900 font-medium">Install the package</p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Shell</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{jestInstall}</pre>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">2</span>
+                </div>
+                <p className="text-gray-900 font-medium">Configure in <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">jest.config.ts</code></p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">TypeScript</span>
+                  <span className="text-xs text-gray-600 ml-auto">jest.config.ts</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{jestConfig}</pre>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">3</span>
+                </div>
+                <p className="text-gray-900 font-medium">Tag tests with TC IDs in test titles</p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">TypeScript</span>
+                  <span className="text-xs text-gray-600 ml-auto">__tests__/login.test.ts</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{jestTest}</pre>
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">4</span>
+                </div>
+                <p className="text-gray-900 font-medium">Set environment variables</p>
+              </div>
+              <div className="rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Shell</span>
+                  <span className="text-xs text-gray-600 ml-auto">.env / CI secrets</span>
+                </div>
+                <pre className="bg-gray-900 text-gray-300 rounded-b-lg p-4 font-mono text-sm overflow-x-auto whitespace-pre">{sdkEnvVars}</pre>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <i className="ri-information-line text-blue-500 mt-0.5" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">Jest status mapping</p>
+                  <ul className="list-disc list-inside space-y-1 text-blue-700">
+                    <li><code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">passed</code> → <code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">passed</code></li>
+                    <li><code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">failed</code> → <code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">failed</code></li>
+                    <li><code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">pending</code> / <code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">skipped</code> → <code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">blocked</code></li>
+                    <li><code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">todo</code> → <code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">untested</code></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* GitHub Actions */}
         {activeTab === 'github' && (
@@ -409,6 +805,53 @@ export default function CICDPage() {
             </div>
           </div>
         )}
+      </section>
+
+      {/* Troubleshooting */}
+      <section className="mb-10">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <i className="ri-question-answer-line text-indigo-500" />
+            Troubleshooting
+          </h2>
+
+          <div className="space-y-4">
+            <div className="border border-gray-100 rounded-lg p-4">
+              <p className="font-medium text-gray-900 mb-1">"No mapped test results to upload" — nothing gets uploaded</p>
+              <p className="text-sm text-gray-500">
+                The reporter could not extract a TC ID from any test. Make sure your test titles contain a <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">[TC-001]</code> pattern, or that you've added the correct annotation/tag. Enable <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">verbose: true</code> in the reporter config to see which tests are being skipped.
+              </p>
+            </div>
+
+            <div className="border border-gray-100 rounded-lg p-4">
+              <p className="font-medium text-gray-900 mb-1">401 Unauthorized</p>
+              <p className="text-sm text-gray-500">
+                Check that <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">TESTABLY_TOKEN</code> is set correctly in your CI environment. Tokens start with <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">testably_</code>. Generate a new token in <span className="font-medium text-gray-700">Settings &rarr; CI/CD</span>.
+              </p>
+            </div>
+
+            <div className="border border-gray-100 rounded-lg p-4">
+              <p className="font-medium text-gray-900 mb-1">403 Forbidden / Tier error</p>
+              <p className="text-sm text-gray-500">
+                The CI/CD integration requires a <span className="font-medium text-gray-700">Professional</span> plan or higher. Upgrade your plan in <span className="font-medium text-gray-700">Settings &rarr; Billing</span>.
+              </p>
+            </div>
+
+            <div className="border border-gray-100 rounded-lg p-4">
+              <p className="font-medium text-gray-900 mb-1">Run not found (404)</p>
+              <p className="text-sm text-gray-500">
+                Verify that <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">TESTABLY_RUN_ID</code> is a valid run UUID for your project. The run must exist and be in an open state before uploading results.
+              </p>
+            </div>
+
+            <div className="border border-gray-100 rounded-lg p-4">
+              <p className="font-medium text-gray-900 mb-1">429 Rate Limited</p>
+              <p className="text-sm text-gray-500">
+                The SDK automatically retries with exponential backoff and respects the <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">Retry-After</code> header. If you're consistently hitting rate limits, consider batching fewer results per run or contacting support.
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Common Reference */}
