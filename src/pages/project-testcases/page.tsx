@@ -203,8 +203,17 @@ export default function ProjectTestCases() {
 
   const handleUpdateTestCase = async (updatedTestCase: any) => {
     try {
-      const { creator, ...updateData } = updatedTestCase;
-      
+      // Strip non-column and separately-managed fields so the Supabase update
+      // never fails due to unknown columns (e.g. version fields before migration,
+      // or relational join fields). Version columns are already saved by handleSubmit.
+      const {
+        creator,
+        version_major,
+        version_minor,
+        version_status,
+        ...updateData
+      } = updatedTestCase;
+
       const { error } = await supabase
         .from('test_cases')
         .update({ ...updateData, updated_at: new Date().toISOString() })
