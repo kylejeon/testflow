@@ -1,0 +1,35 @@
+{
+  "name": "@testably/cypress-reporter",
+  "version": "1.0.0",
+  "description": "Cypress plugin for Testably — automatically uploads test results to your Testably runs via after:run event",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "jest"
+  },
+  "keywords": ["testably", "cypress", "reporter", "plugin", "ci", "test-automation"],
+  "license": "MIT",
+  "peerDependencies": {
+    "cypress": ">=10.0.0"
+  },
+  "dependencies": {
+    "@testably/reporter-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "cypress": "^13.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
