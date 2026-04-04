@@ -1,0 +1,35 @@
+{
+  "name": "@testably/playwright-reporter",
+  "version": "1.0.0",
+  "description": "Playwright custom reporter for Testably — automatically uploads test results to your Testably runs",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "jest"
+  },
+  "keywords": ["testably", "playwright", "reporter", "ci", "test-automation"],
+  "license": "MIT",
+  "peerDependencies": {
+    "@playwright/test": ">=1.30.0"
+  },
+  "dependencies": {
+    "@testably/reporter-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}

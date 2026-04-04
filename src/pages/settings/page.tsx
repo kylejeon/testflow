@@ -332,6 +332,31 @@ export default function SettingsPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<'github' | 'gitlab' | 'python'>('github');
   const [scopeGuideTab, setScopeGuideTab] = useState<'github' | 'gitlab'>('github');
   const [ciTokensFetched, setCiTokensFetched] = useState(false);
+
+  // SDK Quick Start
+  const [sdkQuickStartTab, setSdkQuickStartTab] = useState<'playwright' | 'cypress' | 'jest' | 'curl'>('playwright');
+
+  // Connection Test
+  const [connTestTokenId, setConnTestTokenId] = useState<string>('');
+  const [connTestRunId, setConnTestRunId] = useState('');
+  const [connTestLoading, setConnTestLoading] = useState(false);
+  type ConnTestResult = { ok: boolean; run_name?: string; tier?: number; latency_ms?: number; error?: string };
+  const [connTestResult, setConnTestResult] = useState<ConnTestResult | null>(null);
+
+  // Recent Uploads
+  interface UploadLog {
+    id: string;
+    ci_token_name: string;
+    run_name: string | null;
+    uploaded_count: number;
+    total_count: number;
+    status: 'success' | 'partial' | 'failed';
+    source: string | null;
+    created_at: string;
+  }
+  const [uploadLogs, setUploadLogs] = useState<UploadLog[]>([]);
+  const [loadingUploadLogs, setLoadingUploadLogs] = useState(false);
+  const [uploadLogsFetched, setUploadLogsFetched] = useState(false);
   const [webhooksFetched, setWebhooksFetched] = useState(false);
 
   // Preferences state
@@ -426,11 +451,14 @@ export default function SettingsPage() {
       fetchCITokens();
       setCiTokensFetched(true);
     }
+    if (activeTab === 'api' && !uploadLogsFetched) {
+      fetchUploadLogs();
+    }
     if (activeTab === 'integrations' && !webhooksFetched) {
       fetchWebhooks();
       setWebhooksFetched(true);
     }
-  }, [activeTab, ciTokensFetched, webhooksFetched]);
+  }, [activeTab, ciTokensFetched, webhooksFetched, uploadLogsFetched]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -959,6 +987,67 @@ export default function SettingsPage() {
       console.error('CI 토큰 로딩 오류:', error);
     } finally {
       setLoadingTokens(false);
+    }
+  };
+
+  const fetchUploadLogs = async () => {
+    try {
+      setLoadingUploadLogs(true);
+      const { data, error } = await supabase
+        .from('ci_upload_logs')
+        .select('id, ci_token_name, run_name, uploaded_count, total_count, status, source, created_at')
+        .eq('dry_run', false)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      setUploadLogs(data || []);
+    } catch (err) {
+      console.error('Upload logs fetch error:', err);
+    } finally {
+      setLoadingUploadLogs(false);
+      setUploadLogsFetched(true);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    const selectedToken = ciTokens.find((t) => t.id === connTestTokenId) ?? ciTokens[0];
+    if (!selectedToken) {
+      alert('Please create an API token first.');
+      return;
+    }
+    if (!connTestRunId.trim()) {
+      alert('Please enter a Run ID.');
+      return;
+    }
+    setConnTestLoading(true);
+    setConnTestResult(null);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${selectedToken.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ run_id: connTestRunId.trim(), dry_run: true }),
+        },
+      );
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setConnTestResult({
+          ok: true,
+          run_name: json.run_name,
+          tier: json.tier,
+          latency_ms: json.latency_ms,
+        });
+      } else {
+        setConnTestResult({ ok: false, error: json.error ?? `HTTP ${res.status}` });
+      }
+    } catch (err) {
+      setConnTestResult({ ok: false, error: (err as Error).message });
+    } finally {
+      setConnTestLoading(false);
     }
   };
 
@@ -2593,6 +2682,370 @@ def pytest_sessionfinish(session, exitstatus):
                               </div>
                             )}
                           </div>
+                      </div>
+
+                      {/* ── SDK Quick Start ── */}
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5 flex items-center gap-2">
+                          <i className="ri-terminal-box-line text-[#6366F1]"></i>
+                          SDK Quick Start
+                        </h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-4">Install a reporter package and upload test results automatically from your CI pipeline.</p>
+
+                        {/* Framework tabs */}
+                        <div className="flex gap-2 mb-5 flex-wrap">
+                          {(['playwright', 'cypress', 'jest', 'curl'] as const).map((fw) => (
+                            <button
+                              key={fw}
+                              onClick={() => setSdkQuickStartTab(fw)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-[0.3125rem] rounded-[0.375rem] text-[0.75rem] font-semibold cursor-pointer capitalize ${sdkQuickStartTab === fw ? 'bg-[#6366F1] text-white border border-[#6366F1]' : 'border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC]'}`}
+                            >
+                              {fw === 'playwright' && <i className="ri-play-circle-line"></i>}
+                              {fw === 'cypress' && <i className="ri-test-tube-line"></i>}
+                              {fw === 'jest' && <i className="ri-javascript-line"></i>}
+                              {fw === 'curl' && <i className="ri-terminal-line"></i>}
+                              {fw === 'curl' ? 'Manual (cURL)' : fw.charAt(0).toUpperCase() + fw.slice(1)}
+                            </button>
+                          ))}
+                        </div>
+
+                        {sdkQuickStartTab !== 'curl' && (
+                          <div className="space-y-4">
+                            {/* Step 1 */}
+                            <div>
+                              <div className="text-[0.6875rem] font-bold text-[#6366F1] uppercase tracking-wide mb-1.5">Step 1 — Install</div>
+                              <div className="relative">
+                                <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-[0.5rem] px-4 py-3 text-[0.75rem] font-mono overflow-x-auto">{`npm install @testably/${sdkQuickStartTab}-reporter`}</pre>
+                                <button
+                                  onClick={() => handleCopyToken(`npm install @testably/${sdkQuickStartTab}-reporter`)}
+                                  className="absolute top-2 right-2 px-2 py-1 text-[0.6875rem] font-semibold rounded bg-white/10 hover:bg-white/20 text-[#94A3B8] transition-colors cursor-pointer"
+                                >
+                                  {copiedToken === `npm install @testably/${sdkQuickStartTab}-reporter` ? <><i className="ri-check-line text-[#86EFAC]"></i> Copied</> : <><i className="ri-file-copy-line"></i> Copy</>}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Step 2 */}
+                            <div>
+                              <div className="text-[0.6875rem] font-bold text-[#6366F1] uppercase tracking-wide mb-1.5">Step 2 — Configure</div>
+                              <div className="relative">
+                                {sdkQuickStartTab === 'playwright' && (
+                                  <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-[0.5rem] px-4 py-3 text-[0.75rem] font-mono overflow-x-auto whitespace-pre">{`// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  reporter: [
+    ['html'],
+    ['@testably/playwright-reporter', {
+      testCaseIdSource: 'annotation',  // default
+      failOnUploadError: false,
+    }],
+  ],
+});`}</pre>
+                                )}
+                                {sdkQuickStartTab === 'cypress' && (
+                                  <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-[0.5rem] px-4 py-3 text-[0.75rem] font-mono overflow-x-auto whitespace-pre">{`// cypress.config.ts
+import { defineConfig } from 'cypress';
+import { setupTestablyReporter } from '@testably/cypress-reporter';
+
+export default defineConfig({
+  e2e: {
+    setupNodeEvents(on, config) {
+      setupTestablyReporter(on, config, {
+        testCaseIdSource: 'title',
+      });
+    },
+  },
+});`}</pre>
+                                )}
+                                {sdkQuickStartTab === 'jest' && (
+                                  <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-[0.5rem] px-4 py-3 text-[0.75rem] font-mono overflow-x-auto whitespace-pre">{`// jest.config.ts
+export default {
+  reporters: [
+    'default',
+    ['@testably/jest-reporter', {
+      testCaseIdSource: 'title',
+      failOnUploadError: false,
+    }],
+  ],
+};`}</pre>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    const snippets: Record<string, string> = {
+                                      playwright: `// playwright.config.ts\nimport { defineConfig } from '@playwright/test';\n\nexport default defineConfig({\n  reporter: [\n    ['html'],\n    ['@testably/playwright-reporter', {\n      testCaseIdSource: 'annotation',\n      failOnUploadError: false,\n    }],\n  ],\n});`,
+                                      cypress: `// cypress.config.ts\nimport { defineConfig } from 'cypress';\nimport { setupTestablyReporter } from '@testably/cypress-reporter';\n\nexport default defineConfig({\n  e2e: {\n    setupNodeEvents(on, config) {\n      setupTestablyReporter(on, config, {\n        testCaseIdSource: 'title',\n      });\n    },\n  },\n});`,
+                                      jest: `// jest.config.ts\nexport default {\n  reporters: [\n    'default',\n    ['@testably/jest-reporter', {\n      testCaseIdSource: 'title',\n      failOnUploadError: false,\n    }],\n  ],\n};`,
+                                    };
+                                    handleCopyToken(snippets[sdkQuickStartTab] ?? '');
+                                  }}
+                                  className="absolute top-2 right-2 px-2 py-1 text-[0.6875rem] font-semibold rounded bg-white/10 hover:bg-white/20 text-[#94A3B8] transition-colors cursor-pointer"
+                                >
+                                  <i className="ri-file-copy-line"></i> Copy
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Step 3 */}
+                            <div>
+                              <div className="text-[0.6875rem] font-bold text-[#6366F1] uppercase tracking-wide mb-1.5">Step 3 — Map Test Cases</div>
+                              <div className="relative">
+                                {sdkQuickStartTab === 'playwright' && (
+                                  <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-[0.5rem] px-4 py-3 text-[0.75rem] font-mono overflow-x-auto whitespace-pre">{`import { test } from '@playwright/test';
+
+test('login with valid credentials', async ({ page }) => {
+  // Option A: Annotation (recommended)
+  test.info().annotations.push({ type: 'testably', description: 'TC-001' });
+
+  // Option B: Tag
+  // test.info().annotations.push({ type: 'tag', description: '@TC-001' });
+  await page.goto('/login');
+});`}</pre>
+                                )}
+                                {sdkQuickStartTab === 'cypress' && (
+                                  <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-[0.5rem] px-4 py-3 text-[0.75rem] font-mono overflow-x-auto whitespace-pre">{`// cypress/e2e/login.cy.ts
+describe('Login', () => {
+  it('[TC-001] should login with valid credentials', () => {
+    cy.visit('/login');
+    // ...
+  });
+
+  it('[TC-002] should show error for invalid password', () => {
+    // ...
+  });
+});`}</pre>
+                                )}
+                                {sdkQuickStartTab === 'jest' && (
+                                  <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-[0.5rem] px-4 py-3 text-[0.75rem] font-mono overflow-x-auto whitespace-pre">{`// __tests__/login.test.ts
+describe('Login', () => {
+  it('[TC-001] should login with valid credentials', () => {
+    // ...
+  });
+
+  it('[TC-002] should fail with wrong password', () => {
+    // ...
+  });
+});`}</pre>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    const snippets: Record<string, string> = {
+                                      playwright: `import { test } from '@playwright/test';\n\ntest('login with valid credentials', async ({ page }) => {\n  test.info().annotations.push({ type: 'testably', description: 'TC-001' });\n  await page.goto('/login');\n});`,
+                                      cypress: `describe('Login', () => {\n  it('[TC-001] should login with valid credentials', () => {\n    cy.visit('/login');\n  });\n});`,
+                                      jest: `describe('Login', () => {\n  it('[TC-001] should login with valid credentials', () => {\n    // ...\n  });\n});`,
+                                    };
+                                    handleCopyToken(snippets[sdkQuickStartTab] ?? '');
+                                  }}
+                                  className="absolute top-2 right-2 px-2 py-1 text-[0.6875rem] font-semibold rounded bg-white/10 hover:bg-white/20 text-[#94A3B8] transition-colors cursor-pointer"
+                                >
+                                  <i className="ri-file-copy-line"></i> Copy
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Step 4 */}
+                            <div>
+                              <div className="text-[0.6875rem] font-bold text-[#6366F1] uppercase tracking-wide mb-1.5">Step 4 — Set Environment Variables</div>
+                              <div className="space-y-1.5">
+                                {[
+                                  { key: 'TESTABLY_URL', value: import.meta.env.VITE_PUBLIC_SUPABASE_URL ?? '' },
+                                  { key: 'TESTABLY_TOKEN', value: ciTokens[0]?.token ?? '<your-ci-token>' },
+                                  { key: 'TESTABLY_RUN_ID', value: '<your-run-id>' },
+                                ].map(({ key, value }) => (
+                                  <div key={key} className="flex items-center gap-2 px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[0.375rem]">
+                                    <span className="text-[0.75rem] font-mono font-semibold text-[#4F46E5] whitespace-nowrap">{key}</span>
+                                    <span className="text-[0.75rem] text-[#64748B]">=</span>
+                                    <span className="text-[0.75rem] font-mono text-[#334155] truncate flex-1">{value}</span>
+                                    <button onClick={() => handleCopyToken(`${key}=${value}`)} className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-[#E2E8F0] text-[#94A3B8] cursor-pointer transition-colors">
+                                      {copiedToken === `${key}=${value}` ? <i className="ri-check-line text-[#6366F1]" style={{ fontSize: '0.75rem' }}></i> : <i className="ri-file-copy-line" style={{ fontSize: '0.75rem' }}></i>}
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {sdkQuickStartTab === 'curl' && (
+                          <div className="space-y-4">
+                            <p className="text-[0.8125rem] text-[#64748B]">Upload test results directly via cURL without installing any package.</p>
+                            <div className="relative">
+                              <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-[0.5rem] px-4 py-3 text-[0.75rem] font-mono overflow-x-auto whitespace-pre">{`curl -X POST \\
+  ${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results \\
+  -H "Authorization: Bearer ${ciTokens[0]?.token ?? '<your-ci-token>'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "run_id": "<your-run-uuid>",
+    "format": "json",
+    "results": [
+      { "test_case_id": "TC-001", "status": "passed", "elapsed": 1500 },
+      { "test_case_id": "TC-002", "status": "failed", "note": "Assertion error" }
+    ]
+  }'`}</pre>
+                              <button
+                                onClick={() => handleCopyToken(`curl -X POST \\\n  ${import.meta.env.VITE_PUBLIC_SUPABASE_URL}/functions/v1/upload-ci-results \\\n  -H "Authorization: Bearer ${ciTokens[0]?.token ?? '<your-ci-token>'}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"run_id":"<your-run-uuid>","format":"json","results":[{"test_case_id":"TC-001","status":"passed"}]}'`)}
+                                className="absolute top-2 right-2 px-2 py-1 text-[0.6875rem] font-semibold rounded bg-white/10 hover:bg-white/20 text-[#94A3B8] transition-colors cursor-pointer"
+                              >
+                                <i className="ri-file-copy-line"></i> Copy
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Connection Test ── */}
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5 flex items-center gap-2">
+                          <i className="ri-plug-line text-[#6366F1]"></i>
+                          Connection Test
+                        </h3>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-4">Verify that your token and Run ID are correctly configured without uploading any results.</p>
+                        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                          <div className="flex-1">
+                            <label className="block text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide mb-1">Token</label>
+                            <select
+                              value={connTestTokenId}
+                              onChange={(e) => setConnTestTokenId(e.target.value)}
+                              className="w-full px-3 py-2 border border-[#E2E8F0] rounded-[0.375rem] text-[0.8125rem] text-[#0F172A] bg-white focus:outline-none focus:ring-2 focus:ring-[#6366F1]/30"
+                            >
+                              <option value="">— select token —</option>
+                              {ciTokens.map((t) => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[0.6875rem] font-semibold text-[#64748B] uppercase tracking-wide mb-1">Run ID</label>
+                            <input
+                              type="text"
+                              value={connTestRunId}
+                              onChange={(e) => setConnTestRunId(e.target.value)}
+                              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                              className="w-full px-3 py-2 border border-[#E2E8F0] rounded-[0.375rem] text-[0.8125rem] font-mono text-[#0F172A] bg-white focus:outline-none focus:ring-2 focus:ring-[#6366F1]/30 placeholder:text-[#CBD5E1]"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleTestConnection}
+                          disabled={connTestLoading || !isProfessionalOrHigher}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[#6366F1] text-white text-[0.8125rem] font-semibold hover:bg-[#4F46E5] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {connTestLoading
+                            ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Testing...</>
+                            : <><i className="ri-plug-line"></i> Test Connection</>}
+                        </button>
+
+                        {connTestResult && (
+                          <div className={`mt-4 p-4 rounded-[0.5rem] border ${connTestResult.ok ? 'bg-[#F0FDF4] border-[#BBF7D0]' : 'bg-[#FEF2F2] border-[#FECACA]'}`}>
+                            {connTestResult.ok ? (
+                              <div className="space-y-1.5">
+                                <div className="flex items-center gap-2 text-[0.8125rem] font-semibold text-[#15803D]"><i className="ri-checkbox-circle-fill text-[#22C55E]"></i> Authentication: OK</div>
+                                <div className="flex items-center gap-2 text-[0.8125rem] text-[#166534]"><i className="ri-checkbox-circle-fill text-[#22C55E]"></i> Tier Check: {connTestResult.tier !== undefined ? `Tier ${connTestResult.tier}` : 'Professional'}</div>
+                                {connTestResult.run_name && <div className="flex items-center gap-2 text-[0.8125rem] text-[#166534]"><i className="ri-checkbox-circle-fill text-[#22C55E]"></i> Run Access: <span className="font-semibold">{connTestResult.run_name}</span></div>}
+                                {connTestResult.latency_ms !== undefined && <div className="flex items-center gap-2 text-[0.8125rem] text-[#64748B]"><i className="ri-time-line"></i> Latency: {connTestResult.latency_ms}ms</div>}
+                              </div>
+                            ) : (
+                              <div className="flex items-start gap-2 text-[0.8125rem] font-semibold text-[#DC2626]">
+                                <i className="ri-close-circle-fill text-[#EF4444] flex-shrink-0 mt-0.5"></i>
+                                <span>Connection failed: {connTestResult.error}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Recent Uploads ── */}
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5 flex items-center gap-2">
+                              <i className="ri-history-line text-[#6366F1]"></i>
+                              Recent Uploads
+                            </h3>
+                            <p className="text-[0.8125rem] text-[#64748B]">Last 10 upload requests from your CI pipelines.</p>
+                          </div>
+                          <button
+                            onClick={() => { setUploadLogsFetched(false); }}
+                            className="w-7 h-7 flex items-center justify-center rounded-[0.375rem] border border-[#E2E8F0] bg-white hover:bg-[#F1F5F9] text-[#64748B] cursor-pointer transition-colors"
+                            title="Refresh"
+                          >
+                            <i className="ri-refresh-line" style={{ fontSize: '0.875rem' }}></i>
+                          </button>
+                        </div>
+
+                        {loadingUploadLogs ? (
+                          <div className="flex justify-center py-8">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#6366F1]"></div>
+                          </div>
+                        ) : uploadLogs.length === 0 ? (
+                          <div className="text-center py-8 text-[#94A3B8] text-[0.8125rem]">
+                            <i className="ri-upload-cloud-2-line block mb-2" style={{ fontSize: '2rem' }}></i>
+                            No uploads yet. Run your tests with the SDK to see history here.
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-[0.8125rem]">
+                              <thead>
+                                <tr className="border-b border-[#E2E8F0]">
+                                  <th className="text-left py-2 pr-4 text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide">Time</th>
+                                  <th className="text-left py-2 pr-4 text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide">Token</th>
+                                  <th className="text-left py-2 pr-4 text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide">Run</th>
+                                  <th className="text-left py-2 pr-4 text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide">Results</th>
+                                  <th className="text-left py-2 text-[0.6875rem] font-semibold text-[#94A3B8] uppercase tracking-wide">Source</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {uploadLogs.map((log) => {
+                                  const statusIcon = log.status === 'success'
+                                    ? <i className="ri-checkbox-circle-fill text-[#22C55E]"></i>
+                                    : log.status === 'partial'
+                                    ? <i className="ri-error-warning-fill text-[#F59E0B]"></i>
+                                    : <i className="ri-close-circle-fill text-[#EF4444]"></i>;
+
+                                  const elapsed = Date.now() - new Date(log.created_at).getTime();
+                                  const relativeTime = elapsed < 60000
+                                    ? `${Math.round(elapsed / 1000)}s ago`
+                                    : elapsed < 3600000
+                                    ? `${Math.round(elapsed / 60000)}m ago`
+                                    : elapsed < 86400000
+                                    ? `${Math.round(elapsed / 3600000)}h ago`
+                                    : `${Math.round(elapsed / 86400000)}d ago`;
+
+                                  const sourceIcon: Record<string, string> = {
+                                    playwright: 'ri-play-circle-line',
+                                    cypress: 'ri-test-tube-line',
+                                    jest: 'ri-javascript-line',
+                                    curl: 'ri-terminal-line',
+                                    python: 'ri-code-line',
+                                    unknown: 'ri-question-line',
+                                  };
+
+                                  return (
+                                    <tr key={log.id} className="border-b border-[#F1F5F9] last:border-0 hover:bg-[#F8FAFC] transition-colors">
+                                      <td className="py-2.5 pr-4 text-[#64748B] whitespace-nowrap">{relativeTime}</td>
+                                      <td className="py-2.5 pr-4 font-medium text-[#0F172A] whitespace-nowrap">{log.ci_token_name}</td>
+                                      <td className="py-2.5 pr-4 text-[#334155] max-w-[8rem] truncate" title={log.run_name ?? undefined}>{log.run_name ?? '—'}</td>
+                                      <td className="py-2.5 pr-4 whitespace-nowrap">
+                                        <span className="flex items-center gap-1.5">
+                                          {statusIcon}
+                                          <span className="text-[#334155]">{log.uploaded_count}/{log.total_count}</span>
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5">
+                                        {log.source ? (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#F1F5F9] rounded text-[0.6875rem] text-[#475569] font-medium capitalize">
+                                            <i className={sourceIcon[log.source] ?? 'ri-question-line'}></i>
+                                            {log.source}
+                                          </span>
+                                        ) : '—'}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </div>
 
                       {/* ── API Token Scope Configuration Guide ── */}

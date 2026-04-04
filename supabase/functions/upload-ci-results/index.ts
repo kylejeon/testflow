@@ -21,6 +21,7 @@ interface RequestBody {
   results?: TestResult[];
   format?: 'json' | 'junit';
   junit_xml?: string;
+  dry_run?: boolean; // Connection Test용: 인증/권한/Run 확인만 수행, DB에 저장하지 않음
 }
 
 interface UploadRecord {
@@ -40,6 +41,17 @@ interface DlqEntry {
   raw_record: UploadRecord;
   error_message: string;
   error_code?: string;
+}
+
+/** User-Agent에서 SDK source 감지 */
+function detectSource(userAgent: string | null): string {
+  if (!userAgent) return 'unknown';
+  if (userAgent.includes('playwright-reporter')) return 'playwright';
+  if (userAgent.includes('cypress-reporter')) return 'cypress';
+  if (userAgent.includes('jest-reporter')) return 'jest';
+  if (userAgent.toLowerCase().includes('curl')) return 'curl';
+  if (userAgent.toLowerCase().includes('python')) return 'python';
+  return 'unknown';
 }
 
 /** UUID 형식인지 확인 */
@@ -153,6 +165,8 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const startTime = Date.now();
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return new Response(
@@ -170,7 +184,7 @@ Deno.serve(async (req) => {
     // ── CI 토큰 검증 ──────────────────────────────────────────
     const { data: tokenData, error: tokenError } = await supabase
       .from('ci_tokens')
-      .select('id, user_id')
+      .select('id, user_id, name')
       .eq('token', token)
       .eq('is_active', true)
       .maybeSingle();
@@ -209,7 +223,7 @@ Deno.serve(async (req) => {
       .then(() => {});
 
     const body: RequestBody = await req.json();
-    const { run_id, results, format = 'json', junit_xml } = body;
+    const { run_id, results, format = 'json', junit_xml, dry_run = false } = body;
 
     if (!run_id) {
       return new Response(
@@ -221,7 +235,7 @@ Deno.serve(async (req) => {
     // ── Run 존재 & 접근 권한 확인 ─────────────────────────────
     const { data: runData, error: runError } = await supabase
       .from('test_runs')
-      .select('id, project_id')
+      .select('id, name, project_id')
       .eq('id', run_id)
       .maybeSingle();
 
@@ -243,6 +257,21 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Access denied to this project' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // ── dry_run: 인증/권한/Run 확인만 수행하고 반환 ──────────────
+    if (dry_run) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          dry_run: true,
+          message: 'Connection test passed',
+          run_name: runData.name,
+          tier,
+          latency_ms: Date.now() - startTime,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
@@ -362,6 +391,36 @@ Deno.serve(async (req) => {
       rlResult,
       rlConfig,
     );
+
+    const uploadStatus = hasPartialFailure
+      ? (succeeded.length > 0 ? 'partial' : 'failed')
+      : 'success';
+
+    // ── ci_upload_logs 비동기 기록 (응답 지연 없음) ────────────
+    const logPromise = supabase.from('ci_upload_logs').insert({
+      ci_token_id:    tokenData.id,
+      ci_token_name:  tokenData.name,
+      user_id:        tokenData.user_id,
+      run_id,
+      run_name:       runData.name,
+      project_id:     runData.project_id,
+      total_count:    parsedResults.length,
+      uploaded_count: succeeded.length,
+      failed_count:   failed.length,
+      partial_failure: hasPartialFailure,
+      format,
+      source:         detectSource(req.headers.get('User-Agent')),
+      sdk_version:    req.headers.get('X-Testably-SDK-Version'),
+      user_agent:     req.headers.get('User-Agent'),
+      stats,
+      status:         uploadStatus,
+      error_message:  null,
+      duration_ms:    Date.now() - startTime,
+    });
+
+    // fire-and-forget (응답 지연 방지)
+    // deno-lint-ignore no-explicit-any
+    (globalThis as any).EdgeRuntime?.waitUntil?.(logPromise) ?? logPromise.then(() => {});
 
     return new Response(
       JSON.stringify({
