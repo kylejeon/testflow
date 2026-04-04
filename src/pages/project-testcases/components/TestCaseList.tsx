@@ -1019,14 +1019,27 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       // 변경된 필드 추적 및 히스토리 기록
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // editingTestCase.steps가 배열인지 문자열인지 확인
-        const oldStepsString = Array.isArray(editingTestCase.steps)
-          ? editingTestCase.steps.map(s => s.step).join('\n')
+        // Normalize old steps/expected_result through the SAME parse→re-serialize
+        // pipeline as the new snapshot to prevent false diffs from format differences
+        // (e.g. missing "N. " prefix, empty trailing entries, raw DB format mismatches).
+        const oldRawSteps = Array.isArray(editingTestCase.steps)
+          ? editingTestCase.steps.map((s: any) => s.step).join('\n')
           : (editingTestCase.steps || '');
-        
-        const oldExpectedResultString = Array.isArray(editingTestCase.steps)
-          ? editingTestCase.steps.map(s => s.expectedResult).join('\n')
+        const oldRawER = Array.isArray(editingTestCase.steps)
+          ? editingTestCase.steps.map((s: any) => s.expectedResult).join('\n')
           : (editingTestCase.expected_result || '');
+
+        // Parse old steps — same logic as handleEdit
+        const oldStepsArr = oldRawSteps.split('\n').filter((s: string) => s.trim());
+        const oldERArr    = oldRawER.split('\n').filter((s: string) => s.trim());
+
+        // Re-serialize with "N. " prefix — same logic as stepsString / expectedResultString
+        const oldStepsString = oldStepsArr
+          .map((s: string, i: number) => `${i + 1}. ${s.replace(/^\d+\.\s*/, '')}`)
+          .join('\n');
+        const oldExpectedResultString = oldStepsArr
+          .map((_: string, i: number) => `${i + 1}. ${(oldERArr[i] || '').replace(/^\d+\.\s*/, '')}`)
+          .join('\n');
 
         // 이전 스냅샷 저장 (old_value에 JSON으로 저장)
         const oldSnapshot: TestCaseSnapshot = {
@@ -1899,6 +1912,15 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     const m = major ?? 1, n = minor ?? 0;
     return `v${m}.${n}`;
   };
+
+  // Normalize steps/expected_result for comparison: strip "N. " prefix, remove empty lines,
+  // re-number, rejoin. Handles legacy data with missing prefixes or trailing empty entries.
+  const normalizeStepField = (text: string): string =>
+    (text || '').split('\n')
+      .map(s => s.replace(/^\d+\.\s*/, '').trim())
+      .filter(s => s !== '')
+      .map((s, i) => `${i + 1}. ${s}`)
+      .join('\n');
 
   // ────────────────────────────────────────────────────────────────────────
 
@@ -3795,8 +3817,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         ];
 
         const changedFields = fields.filter(f => {
-          const o = f.key === 'is_automated' ? String(oldS[f.key]) : stripHtml(String(oldS[f.key] ?? ''));
-          const n = f.key === 'is_automated' ? String(newS[f.key]) : stripHtml(String(newS[f.key] ?? ''));
+          if (f.key === 'is_automated') return String(oldS[f.key]) !== String(newS[f.key]);
+          // steps/expected_result: normalize before comparing to avoid false diffs
+          // from format differences (e.g. trailing "N. " entries, missing prefix)
+          const isStepField = f.key === 'steps' || f.key === 'expected_result';
+          const o = isStepField
+            ? normalizeStepField(String(oldS[f.key] ?? ''))
+            : stripHtml(String(oldS[f.key] ?? ''));
+          const n = isStepField
+            ? normalizeStepField(String(newS[f.key] ?? ''))
+            : stripHtml(String(newS[f.key] ?? ''));
           return o !== n;
         });
         const unchangedCount = fields.length - changedFields.length;
@@ -3829,8 +3859,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
               <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
                 {/* Changed fields */}
                 {changedFields.map(f => {
-                  const oldVal = f.key === 'is_automated' ? (oldS[f.key] ? 'Yes' : 'No') : stripHtml(String(oldS[f.key] ?? ''));
-                  const newVal = f.key === 'is_automated' ? (newS[f.key] ? 'Yes' : 'No') : stripHtml(String(newS[f.key] ?? ''));
+                  const isStepField = f.key === 'steps' || f.key === 'expected_result';
+                  const rawOld = f.key === 'is_automated' ? (oldS[f.key] ? 'Yes' : 'No') : stripHtml(String(oldS[f.key] ?? ''));
+                  const rawNew = f.key === 'is_automated' ? (newS[f.key] ? 'Yes' : 'No') : stripHtml(String(newS[f.key] ?? ''));
+                  const oldVal = isStepField ? normalizeStepField(rawOld) : rawOld;
+                  const newVal = isStepField ? normalizeStepField(rawNew) : rawNew;
                   const isMultiline = f.multiline && (oldVal.includes('\n') || newVal.includes('\n') || oldVal.length > 80 || newVal.length > 80);
                   const lineDiff = isMultiline ? computeLineDiff(oldVal, newVal) : null;
 
