@@ -22,7 +22,7 @@ interface GenerateRequest {
   project_id?: string;
   mode?: 'text' | 'jira' | 'session';
   step?: 1 | 2;
-  action?: 'preview' | 'summarize-run' | 'coverage-gap' | 'analyze-flaky';
+  action?: 'preview' | 'summarize-run' | 'coverage-gap' | 'analyze-flaky' | 'suggest-from-requirement';
   input_text?: string;
   session_id?: string;
   jira_issue_keys?: string[];
@@ -32,6 +32,11 @@ interface GenerateRequest {
   test_cases?: { folder: string; title: string; priority: string }[];
   // analyze-flaky
   flaky_tests?: { test_case_id: string; title: string; folder_path: string; recent_statuses: string[]; flaky_score: number }[];
+  // suggest-from-requirement
+  requirement_id?: string;
+  requirement_title?: string;
+  requirement_description?: string;
+  existing_tcs?: { custom_id: string; title: string }[];
   milestone_id?: string;
   force_reanalyze?: boolean;
 }
@@ -782,24 +787,70 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
         })
         .join('\n\n');
 
-      const systemPrompt = `You are a test coverage analyst. Given this project's TC distribution by folder, identify coverage gaps.
+      // RTM 데이터 추가 (requirements가 존재하면 포함)
+      const { data: requirements } = await adminClient
+        .from('requirements')
+        .select('custom_id, title, description, priority, category')
+        .eq('project_id', project_id)
+        .eq('status', 'active')
+        .limit(100);
+
+      let requirementsSummary = '';
+      if (requirements && requirements.length > 0) {
+        // 각 requirement에 연결된 TC 수 조회
+        const reqIds = (requirements as any[]).map((r: any) => r.custom_id);
+        const { data: coverageRows } = await adminClient
+          .from('requirement_coverage_summary')
+          .select('custom_id, total_linked_tcs, gap_type')
+          .eq('project_id', project_id);
+
+        const coverageMap = new Map<string, { total: number; gap: string }>();
+        (coverageRows || []).forEach((row: any) => {
+          coverageMap.set(row.custom_id, { total: row.total_linked_tcs, gap: row.gap_type });
+        });
+
+        const noTcReqs = (requirements as any[]).filter((r: any) => {
+          const c = coverageMap.get(r.custom_id);
+          return !c || c.total === 0;
+        });
+        const partialReqs = (requirements as any[]).filter((r: any) => {
+          const c = coverageMap.get(r.custom_id);
+          return c && c.total > 0 && c.gap !== 'covered';
+        });
+
+        requirementsSummary = `\n\nREQUIREMENTS AND TEST COVERAGE (${requirements.length} total):
+No TC coverage (${noTcReqs.length} requirements — CRITICAL):
+${noTcReqs.slice(0, 10).map((r: any) => `  - ${r.custom_id} [${r.priority}]: ${r.title}`).join('\n') || '  (none)'}
+
+Partially covered / failing (${partialReqs.length} requirements):
+${partialReqs.slice(0, 10).map((r: any) => {
+  const c = coverageMap.get(r.custom_id);
+  return `  - ${r.custom_id} [${r.priority}]: ${r.title} (gap: ${c?.gap})`;
+}).join('\n') || '  (none)'}`;
+
+        void reqIds; // suppress unused warning
+      }
+
+      const systemPrompt = `You are a test coverage analyst. Given this project's TC distribution by folder${requirements && requirements.length > 0 ? ' AND requirements coverage' : ''}, identify coverage gaps.
 DO NOT generate a heatmap or coverage % (user already sees this).
 Instead:
-1. GAPS: Identify folders with insufficient coverage. Rate: CRITICAL/HIGH/MEDIUM
+1. GAPS: Identify folders and requirements with insufficient coverage. Rate: CRITICAL/HIGH/MEDIUM
 2. MISSING TYPES: For each gap, identify what TC types are missing (negative, boundary, error_handling, security, performance)
 3. SUGGESTIONS: For each gap, suggest 2-5 specific TC titles (actionable and specific, not generic)
 4. TYPE BALANCE: Overall project TC type distribution assessment
+${requirements && requirements.length > 0 ? '5. REQUIREMENT GAPS: Flag requirements with zero TC coverage as highest priority.' : ''}
 Keep suggestions to max 15 total. Prioritize by business risk.
 
 Respond in valid JSON:
 {
   "gaps": [
     {
-      "module": "folder name",
+      "module": "folder name or requirement ID",
       "severity": "CRITICAL" | "HIGH" | "MEDIUM",
       "currentCount": number,
       "missingTypes": ["error_handling", "boundary", ...],
       "reason": "string (1-2 sentences)",
+      "requirementId": "REQ-001 or null",
       "suggestions": [
         { "title": "string", "type": "error_handling|boundary|negative|security|performance", "priority": "P1|P2|P3" }
       ]
@@ -816,7 +867,7 @@ Respond in valid JSON:
   "typeAssessment": "string (1-2 sentences)"
 }`;
 
-      const userMessage = `Project: ${projectData.name}\nTotal TCs: ${tcList.length}\n\nTC Distribution by Folder:\n${folderSummary}`;
+      const userMessage = `Project: ${projectData.name}\nTotal TCs: ${tcList.length}\n\nTC Distribution by Folder:\n${folderSummary}${requirementsSummary}`;
 
       const startTime = Date.now();
       const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -879,6 +930,119 @@ Respond in valid JSON:
       return jsonResponse({
         success: true,
         result: gapResult,
+        usage: { current: usage, limit: PLAN_LIMITS[tier] },
+      });
+    }
+
+    // ── AI TC SUGGESTION FROM REQUIREMENT (action: 'suggest-from-requirement') ──
+    if (action === 'suggest-from-requirement') {
+      const { requirement_id, requirement_title, requirement_description, existing_tcs = [] } = body;
+
+      if (!requirement_id || !requirement_title) {
+        return jsonResponse({ error: 'requirement_id and requirement_title are required' }, 400);
+      }
+
+      const { tier, ownerId } = await getEffectiveTier(adminClient, user.id);
+      if (tier < 2) {
+        return jsonResponse({ error: 'Starter plan required', requiredTier: 2, upgradeUrl: '/settings/billing' }, 403);
+      }
+
+      const limit = PLAN_LIMITS[tier] ?? 5;
+      if (limit !== -1) {
+        const usage = await getMonthlyUsage(adminClient, ownerId);
+        if (usage >= limit) {
+          return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
+        }
+      }
+
+      const existingList = (existing_tcs as { custom_id: string; title: string }[])
+        .map(tc => `- ${tc.custom_id}: ${tc.title}`)
+        .join('\n') || '(none)';
+
+      const systemPrompt = `You are a senior QA engineer. Analyze the given requirement and suggest test cases that are NOT already covered.
+Generate test cases covering:
+1. Happy path (positive) tests
+2. Negative / error scenarios
+3. Boundary value tests
+4. Edge cases
+
+For each suggestion return:
+- title: concise, descriptive (under 80 chars)
+- priority: "critical" | "high" | "medium" | "low"
+- type: "positive" | "negative" | "boundary" | "error_handling" | "security"
+- steps: array of { action: string, expected: string }
+- precondition: string (may be empty)
+
+Respond ONLY with a valid JSON array. Max 8 suggestions. No markdown, no explanation.`;
+
+      const userMessage = `REQUIREMENT:
+Title: ${requirement_title}
+Description: ${requirement_description || '(no description)'}
+
+ALREADY LINKED TEST CASES:
+${existingList}
+
+Suggest test cases not yet covered.`;
+
+      const startTime = Date.now();
+      const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+      if (!apiKey) {
+        return jsonResponse({ error: 'AI service not configured' }, 500);
+      }
+
+      const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4096,
+          temperature: 0,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userMessage }],
+        }),
+      });
+
+      if (!claudeResp.ok) {
+        if (claudeResp.status === 429) {
+          return jsonResponse({ error: 'AI service busy. Please retry in 30 seconds.' }, 503);
+        }
+        return jsonResponse({ error: 'AI suggestion failed' }, 500);
+      }
+
+      const claudeData = await claudeResp.json();
+      const rawText = claudeData.content?.[0]?.text || '';
+      const tokensUsed = (claudeData.usage?.input_tokens || 0) + (claudeData.usage?.output_tokens || 0);
+      const latencyMs = Date.now() - startTime;
+
+      let suggestions: any[];
+      try {
+        suggestions = parseJsonSafely(rawText);
+        if (!Array.isArray(suggestions)) throw new Error('Expected JSON array');
+      } catch (parseErr) {
+        console.error('suggest-from-requirement parse error:', parseErr, 'Raw:', rawText);
+        return jsonResponse({ error: 'AI returned an unexpected format' }, 500);
+      }
+
+      await adminClient.from('ai_generation_logs').insert({
+        user_id: user.id,
+        project_id: project_id || null,
+        mode: 'requirement-suggest',
+        step: 1,
+        input_data: { action: 'suggest-from-requirement', requirement_id, existing_tc_count: existing_tcs.length },
+        output_data: { suggestions },
+        tokens_used: tokensUsed,
+        latency_ms: latencyMs,
+      });
+
+      const usage = await getMonthlyUsage(adminClient, ownerId);
+      return jsonResponse({
+        success: true,
+        suggestions,
+        requirement_id,
         usage: { current: usage, limit: PLAN_LIMITS[tier] },
       });
     }
