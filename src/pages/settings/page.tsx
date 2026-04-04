@@ -69,7 +69,7 @@ const TIER_INFO = {
     icon: 'ri-user-line',
     monthlyPrice: 0,
     priceDesc: 'Free',
-    features: ['Up to 3 projects', 'Up to 3 team members', 'Basic test management', 'Jira Integration (Link)', '5 AI generations / month', 'Community support'],
+    features: ['Up to 3 projects', 'Up to 3 team members', 'Basic test management', 'TC Versioning', 'Export/Import CSV', 'Suggest Edge Cases (AI)', 'Jira Integration (Link)', '5 AI generations / month', 'Community support'],
   },
   2: {
     name: 'Starter',
@@ -77,7 +77,7 @@ const TIER_INFO = {
     icon: 'ri-star-line',
     monthlyPrice: 49,
     priceDesc: '/ mo',
-    features: ['Up to 10 projects', 'Up to 5 team members', 'Jira Integration', 'Slack & Teams Integration', '30 AI generations / month', 'Basic reporting', 'Testcase Export/Import', 'Export PDF Report'],
+    features: ['Up to 10 projects', 'Up to 5 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', '30 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Basic reporting', 'Export PDF Report'],
   },
   3: {
     name: 'Professional',
@@ -85,7 +85,7 @@ const TIER_INFO = {
     icon: 'ri-vip-crown-line',
     monthlyPrice: 99,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', 'Up to 20 team members', 'Jira Integration', 'Slack & Teams Integration', '150 AI generations / month', 'Advanced reporting', 'Testcase Export/Import', 'Export PDF Report', 'CI/CD Integration', 'Priority support'],
+    features: ['Unlimited projects', 'Up to 20 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', '150 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'Export PDF Report', 'CI/CD Integration', 'Priority support'],
   },
   4: {
     name: 'Enterprise S',
@@ -93,7 +93,7 @@ const TIER_INFO = {
     icon: 'ri-building-2-line',
     monthlyPrice: 249,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', '21–50 team members', 'Jira Integration', 'Slack & Teams Integration', 'Unlimited AI generations', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
+    features: ['Unlimited projects', '21–50 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
   },
   5: {
     name: 'Enterprise M',
@@ -101,7 +101,7 @@ const TIER_INFO = {
     icon: 'ri-building-4-line',
     monthlyPrice: 499,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', '51–100 team members', 'Jira Integration', 'Slack & Teams Integration', 'Unlimited AI generations', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
+    features: ['Unlimited projects', '51–100 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
   },
   6: {
     name: 'Enterprise L',
@@ -109,7 +109,7 @@ const TIER_INFO = {
     icon: 'ri-government-line',
     monthlyPrice: -1,
     priceDesc: 'Contact Sales',
-    features: ['Unlimited projects', '100+ team members', 'Jira Integration', 'Slack & Teams Integration', 'Unlimited AI generations', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee', 'Custom contract & SLA'],
+    features: ['Unlimited projects', '100+ team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee', 'Custom contract & SLA'],
   },
 };
 
@@ -1850,8 +1850,11 @@ def pytest_sessionfinish(session, exitstatus):
                       {/* ════════ Jira Integration ════════ */}
                       <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
                         <div className="flex items-center justify-between mb-0.5">
-                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-1.5">
+                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
                             <i className="ri-links-fill text-[#1E40AF]"></i> Jira Integration
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold">
+                              <i className="ri-star-line"></i> Starter+
+                            </span>
                           </h3>
                           {!isStarterOrHigher && (
                             <span className="px-2.5 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold flex items-center gap-1">
@@ -2235,8 +2238,11 @@ def pytest_sessionfinish(session, exitstatus):
                       {/* ── Slack & Teams Webhooks ── */}
                       <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
                         <div className="flex items-center justify-between mb-0.5">
-                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-1.5">
+                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
                             <i className="ri-webhook-fill text-[#F59E0B]"></i> Slack &amp; Teams Webhooks
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold">
+                              <i className="ri-star-line"></i> Starter+
+                            </span>
                           </h3>
                           {!isStarterOrHigher && (
                             <span className="px-2.5 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold flex items-center gap-1">
@@ -2405,8 +2411,11 @@ def pytest_sessionfinish(session, exitstatus):
                       {/* ── CI/CD Integration ── */}
                       <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
                         <div className="flex items-center justify-between mb-0.5">
-                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-1.5">
+                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
                             <i className="ri-git-branch-fill text-[#22C55E]"></i> CI/CD Pipelines
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#EEF2FF] text-[#4338CA] border border-[#C7D2FE] rounded-full text-[0.625rem] font-semibold">
+                              <i className="ri-vip-crown-line"></i> Professional+
+                            </span>
                           </h3>
                           {!isProfessionalOrHigher && (
                             <span className="px-2.5 py-0.5 bg-[#EEF2FF] text-[#4338CA] border border-[#C7D2FE] rounded-full text-[0.625rem] font-semibold flex items-center gap-1">
@@ -2602,7 +2611,12 @@ def pytest_sessionfinish(session, exitstatus):
                       <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6 mb-5">
                           <div className="flex items-start justify-between mb-4">
                             <div>
-                              <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5">API Tokens</h3>
+                              <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5 flex items-center gap-2">
+                                API Tokens
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#EEF2FF] text-[#4338CA] border border-[#C7D2FE] rounded-full text-[0.625rem] font-semibold">
+                                  <i className="ri-vip-crown-line"></i> Professional+
+                                </span>
+                              </h3>
                               <p className="text-[0.8125rem] text-[#64748B]">Manage API tokens for your CI/CD pipeline.</p>
                             </div>
                             <button
@@ -2689,6 +2703,9 @@ def pytest_sessionfinish(session, exitstatus):
                         <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-0.5 flex items-center gap-2">
                           <i className="ri-terminal-box-line text-[#6366F1]"></i>
                           SDK Quick Start
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#EEF2FF] text-[#4338CA] border border-[#C7D2FE] rounded-full text-[0.625rem] font-semibold">
+                            <i className="ri-vip-crown-line"></i> Professional+
+                          </span>
                         </h3>
                         <p className="text-[0.8125rem] text-[#64748B] mb-4">Install a reporter package and upload test results automatically from your CI pipeline.</p>
 
