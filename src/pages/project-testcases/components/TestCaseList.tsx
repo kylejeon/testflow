@@ -1626,10 +1626,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         change_summary: `Published v${newMajor}.0`,
       });
 
-      onUpdate(data);
+      // Use onRefresh instead of onUpdate: restore/publish already wrote to DB directly.
+      // Calling onUpdate would trigger a second Supabase update (in handleUpdateTestCase)
+      // that could overwrite or corrupt the just-saved state.
+      await onRefresh();
       setSelectedTestCase(data);
       setShowPublishModal(false);
-      fetchHistory(selectedTestCase.id);
+      fetchHistory(data.id);
       setToastMessage(`v${newMajor}.0 published successfully`);
       setToastType('success');
       setShowToast(true);
@@ -1714,14 +1717,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         change_summary: `Partial restore: ${selectedFields.join(', ')} from v${cherryPickSource.version_major ?? 1}.${cherryPickSource.version_minor ?? 0}`,
       });
 
-      onUpdate(data);
+      await onRefresh();
       setSelectedTestCase(data);
       setShowCherryPickModal(false);
       setCherryPickSource(null);
       setCherryPickFields({});
       setShowHistoryModal(false);
       setSelectedHistory(null);
-      fetchHistory(selectedTestCase.id);
+      fetchHistory(data.id);
     } catch (error) {
       console.error('Cherry-pick error:', error);
     } finally {
@@ -1792,13 +1795,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         change_summary: `Restored to v${rollbackTarget.version_major ?? 1}.${rollbackTarget.version_minor ?? 0}`,
       });
 
-      onUpdate(data);
+      await onRefresh();
       setSelectedTestCase(data);
       setShowRollbackModal(false);
       setRollbackTarget(null);
       setShowHistoryModal(false);
       setSelectedHistory(null);
-      fetchHistory(selectedTestCase.id);
+      fetchHistory(data.id);
     } catch (error) {
       console.error('복원 오류:', error);
     } finally {
