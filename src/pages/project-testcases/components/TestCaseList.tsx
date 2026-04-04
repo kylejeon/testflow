@@ -3835,15 +3835,22 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         const unchangedCount = fields.length - changedFields.length;
 
         // history record stores the version *created* by this entry (e.g. v1.1).
-        // old_value = state before the edit (v1.0), new_value = state after (v1.1).
-        // So: toVer = history record's version, fromVer = one step before.
+        // old_value = state before edit (v1.0), new_value = state after (v1.1).
+        // toVer = this entry's version; fromVer = the previous entry's version.
+        // We look it up from historyData (sorted DESC) instead of doing arithmetic
+        // on histMinor-1, which breaks when version_minor is null/undefined for
+        // older records that predate the migration.
         const histMajor = selectedHistory.version_major ?? 1;
         const histMinor = selectedHistory.version_minor ?? 0;
         const toVer = `v${histMajor}.${histMinor}`;
-        const fromVer = histMinor > 0
-          ? `v${histMajor}.${histMinor - 1}`
-          : histMajor > 1
-            ? `v${histMajor - 1}.x`
+        const selectedIdx = historyData.findIndex(h => h.id === selectedHistory.id);
+        const prevEntry = selectedIdx >= 0 && selectedIdx < historyData.length - 1
+          ? historyData[selectedIdx + 1]
+          : null;
+        const fromVer = prevEntry && prevEntry.version_major != null
+          ? `v${prevEntry.version_major}.${prevEntry.version_minor ?? 0}`
+          : histMinor > 0
+            ? `v${histMajor}.${histMinor - 1}`   // arithmetic fallback
             : 'Initial';
         const isProUser = userTier >= 3;
 
