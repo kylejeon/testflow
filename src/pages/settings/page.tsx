@@ -652,7 +652,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleTestConnection = async () => {
+  const handleJiraTestConnection = async () => {
     if (!jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken) {
       setTestResult({ success: false, message: 'Please fill in all required fields.' });
       return;
@@ -2001,7 +2001,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   <option value="Epic">Epic</option>
                                 </select>
                                 <button
-                                  onClick={handleTestConnection}
+                                  onClick={handleJiraTestConnection}
                                   disabled={testing || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher || isJiraLocked}
                                   className="inline-flex items-center gap-[0.3125rem] px-4 py-[0.4375rem] border border-[#E2E8F0] bg-white text-[#475569] rounded-md hover:bg-[#F8FAFC] transition-colors text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
