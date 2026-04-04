@@ -3264,7 +3264,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                               >
                                 <i className={`text-xs ${expandedMajors.has(major) ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'}`}></i>
                                 {group.drafts.length} draft version{group.drafts.length > 1 ? 's' : ''}
-                                {' '}(v{major}.1–v{major}.{group.drafts.reduce((acc, d) => Math.max(acc, d.version_minor ?? 0), 0)})
+                                {' '}(v{major}.0–v{major}.{group.drafts.reduce((acc, d) => Math.max(acc, d.version_minor ?? 0), 0)})
                               </button>
                               {expandedMajors.has(major) && (
                                 <div className="mt-1 border-l-2 border-[#EEF2FF] ml-1 pl-3 space-y-0">
