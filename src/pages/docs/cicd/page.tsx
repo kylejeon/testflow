@@ -258,7 +258,7 @@ const statusValues = [
 ];
 
 export default function CICDPage() {
-  const [activeTab, setActiveTab] = useState<CITab>('github');
+  const [activeTab, setActiveTab] = useState<CITab>('playwright');
 
   const tabs: { key: CITab; label: string; icon: string }[] = [
     { key: 'playwright', label: 'Playwright', icon: 'ri-test-tube-line' },
