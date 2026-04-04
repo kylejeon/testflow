@@ -108,23 +108,57 @@ export default function ProjectDetail() {
     staleTime: 10 * 60_000,
   });
 
-  // Fetch actual AI usage count from ai_generation_logs
+  // Fetch AI usage count — owner 기준 팀 전체 사용량
   const { data: aiUsageCount = 0 } = useQuery({
-    queryKey: ['aiUsage', userProfile?.id],
+    queryKey: ['aiUsage', userProfile?.id, id],
     queryFn: async () => {
       if (!userProfile?.id) return 0;
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
+
+      // 현재 프로젝트의 owner 조회
+      const { data: projectRow } = await supabase
+        .from('projects')
+        .select('created_by')
+        .eq('id', id)
+        .maybeSingle();
+
+      const ownerId: string = projectRow?.created_by || userProfile.id;
+
+      // owner가 소유한 모든 프로젝트 조회
+      const { data: ownerProjects } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('created_by', ownerId);
+
+      if (!ownerProjects || ownerProjects.length === 0) {
+        const { count } = await supabase
+          .from('ai_generation_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', ownerId)
+          .eq('step', 1)
+          .gte('created_at', startOfMonth.toISOString());
+        return count || 0;
+      }
+
+      const projectIds = ownerProjects.map((p: any) => p.id);
+      const { data: members } = await supabase
+        .from('project_members')
+        .select('user_id')
+        .in('project_id', projectIds);
+
+      const memberIds = [...new Set([ownerId, ...(members ?? []).map((m: any) => m.user_id)])];
+
       const { count } = await supabase
         .from('ai_generation_logs')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', userProfile.id)
+        .in('user_id', memberIds)
         .eq('step', 1)
         .gte('created_at', startOfMonth.toISOString());
       return count || 0;
     },
-    enabled: !!userProfile?.id,
+    enabled: !!userProfile?.id && !!id,
     staleTime: 30_000,
   });
 

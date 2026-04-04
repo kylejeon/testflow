@@ -11,6 +11,7 @@ import NotificationSettingsPanel from './components/NotificationSettingsPanel';
 import ProfileSettingsPanel from './components/ProfileSettingsPanel';
 import ProjectMembersPanel from '../project-detail/components/ProjectMembersPanel';
 import InviteMemberModal from '../project-detail/components/InviteMemberModal';
+import { getPaymentProvider, openCheckout } from '../../lib/payment';
 
 interface JiraSettings {
   domain: string;
@@ -39,9 +40,11 @@ interface JiraField {
 }
 
 interface UserProfile {
+  id: string;
   email: string;
   full_name: string;
   subscription_tier: number;
+  payment_provider?: string | null;
   trial_started_at: string | null;
   trial_ends_at: string | null;
   is_trial: boolean;
@@ -127,7 +130,7 @@ async function loadSettingsData(): Promise<{
 
   const [profileResult, jiraResult, memberResult] = await Promise.all([
     supabase.from('profiles')
-      .select('email, full_name, subscription_tier, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji')
+      .select('id, email, full_name, subscription_tier, payment_provider, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji')
       .eq('id', user.id)
       .maybeSingle(),
     supabase.from('jira_settings').select('*').eq('user_id', user.id).maybeSingle(),
@@ -159,9 +162,11 @@ async function loadSettingsData(): Promise<{
     }
 
     userProfile = {
+      id: user.id,
       email: data.email || user.email || '',
       full_name: data.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
       subscription_tier: tier,
+      payment_provider: data.payment_provider || null,
       trial_started_at: data.trial_started_at || null,
       trial_ends_at: data.trial_ends_at || null,
       is_trial: isTrial,
@@ -171,9 +176,11 @@ async function loadSettingsData(): Promise<{
     };
   } else {
     userProfile = {
+      id: user.id,
       email: user.email || '',
       full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
       subscription_tier: 1,
+      payment_provider: null,
       trial_started_at: null,
       trial_ends_at: null,
       is_trial: false,
@@ -1420,6 +1427,12 @@ def pytest_sessionfinish(session, exitstatus):
   const isProfessionalOrHigher = currentTier >= 3;
   const isStarterOrHigher = currentTier >= 2;
 
+  const handleUpgrade = async (planName: string, period: 'monthly' | 'annual' = 'monthly') => {
+    if (!userProfile) return;
+    const provider = getPaymentProvider(userProfile);
+    await openCheckout(planName, period, provider, userProfile.email, userProfile.id);
+  };
+
   // 무료 체험 남은 일수 계산
   const trialDaysLeft = (() => {
     if (!userProfile?.is_trial || !userProfile?.trial_ends_at) return null;
@@ -1668,14 +1681,14 @@ def pytest_sessionfinish(session, exitstatus):
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <a
-                            href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry"
+                          <button
+                            onClick={() => handleUpgrade(tierInfo.name === 'Free' ? 'Starter' : tierInfo.name, 'monthly')}
                             className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-[0.375rem] bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer"
                             style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
                           >
                             <i className="ri-arrow-up-circle-line text-sm"></i>
                             Upgrade
-                          </a>
+                          </button>
                           <button
                             onClick={() => setShowAllPlansModal(true)}
                             className="inline-flex items-center gap-1.5 text-[0.8125rem] font-medium px-[0.875rem] py-[0.4375rem] rounded-[0.375rem] border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-colors cursor-pointer"
@@ -1767,9 +1780,9 @@ def pytest_sessionfinish(session, exitstatus):
                             <div className="flex-1">
                               <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-1">Jira Integration is available on Starter and above</div>
                               <div className="text-[0.75rem] text-[#64748B] mb-2.5">Create Jira issues directly from test results and enhance team collaboration.</div>
-                              <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#CA8A04' }}>
-                                <i className="ri-arrow-up-circle-line"></i> Contact Us to Upgrade
-                              </a>
+                              <button onClick={() => handleUpgrade('Starter')} className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#CA8A04' }}>
+                                <i className="ri-arrow-up-circle-line"></i> Upgrade to Starter
+                              </button>
                             </div>
                           </div>
                         )}
@@ -2152,9 +2165,9 @@ def pytest_sessionfinish(session, exitstatus):
                             <div className="flex-1">
                               <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-1">Slack &amp; Teams Integration is available on Starter and above</div>
                               <div className="text-[0.75rem] text-[#64748B] mb-2.5">Get real-time notifications in Slack or Microsoft Teams when test runs complete, milestones change, and more.</div>
-                              <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#CA8A04' }}>
-                                <i className="ri-arrow-up-circle-line"></i> Contact Us to Upgrade
-                              </a>
+                              <button onClick={() => handleUpgrade('Starter')} className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#CA8A04' }}>
+                                <i className="ri-arrow-up-circle-line"></i> Upgrade to Starter
+                              </button>
                             </div>
                           </div>
                         )}
@@ -2322,9 +2335,9 @@ def pytest_sessionfinish(session, exitstatus):
                             <div className="flex-1">
                               <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-1">CI/CD Integration is available on Professional and above</div>
                               <div className="text-[0.75rem] text-[#64748B] mb-2.5">Upload results directly from your automated test pipelines.</div>
-                              <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#6366F1' }}>
-                                <i className="ri-arrow-up-circle-line"></i> Contact Us to Upgrade
-                              </a>
+                              <button onClick={() => handleUpgrade('Professional')} className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#6366F1' }}>
+                                <i className="ri-arrow-up-circle-line"></i> Upgrade to Professional
+                              </button>
                             </div>
                           </div>
                         )}
@@ -2490,9 +2503,9 @@ def pytest_sessionfinish(session, exitstatus):
                           <div className="flex-1">
                             <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-0.5">CI/CD Integration is available on Professional and above</div>
                             <div className="text-[0.75rem] text-[#64748B] mb-3">Upload results directly from your automated test pipelines and enhance team collaboration.</div>
-                            <a href="mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry" className="inline-flex items-center gap-[0.3125rem] text-[0.75rem] font-semibold px-3 py-[0.375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors">
-                              <i className="ri-arrow-up-circle-line"></i> Contact Us to Upgrade
-                            </a>
+                            <button onClick={() => handleUpgrade('Professional')} className="inline-flex items-center gap-[0.3125rem] text-[0.75rem] font-semibold px-3 py-[0.375rem] rounded-md bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer">
+                              <i className="ri-arrow-up-circle-line"></i> Upgrade to Professional
+                            </button>
                           </div>
                         </div>
                       )}
@@ -3063,14 +3076,21 @@ def pytest_sessionfinish(session, exitstatus):
                         ))}
                       </ul>
                       {!isCurrentTier && tierNum > currentTier && (
-                        <a
-                          href={tierNum >= 6 ? 'mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry' : 'mailto:hello@testably.app?subject=Plan%20Upgrade%20Inquiry'}
-                          className={`w-full px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer block text-center ${
-                            tierNum >= 6 ? 'border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white' : 'bg-indigo-500 text-white hover:bg-indigo-600'
-                          }`}
-                        >
-                          {tierNum >= 6 ? 'Contact Sales' : 'Contact Us to Upgrade'}
-                        </a>
+                        tierNum >= 6 ? (
+                          <a
+                            href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
+                            className="w-full px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer block text-center border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white"
+                          >
+                            Contact Sales
+                          </a>
+                        ) : (
+                          <button
+                            onClick={() => handleUpgrade(TIER_INFO[tierNum as keyof typeof TIER_INFO]?.name ?? 'Starter')}
+                            className="w-full px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer block text-center bg-indigo-500 text-white hover:bg-indigo-600"
+                          >
+                            Upgrade
+                          </button>
+                        )
                       )}
                     </div>
                   );

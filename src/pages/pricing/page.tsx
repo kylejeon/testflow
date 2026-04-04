@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
+import { supabase } from '../../lib/supabase';
+import { getPaymentProvider, openCheckout } from '../../lib/payment';
 
 const plans = [
   {
@@ -176,7 +178,7 @@ const faqs = [
   },
   {
     q: 'What payment methods do you accept?',
-    a: 'We accept all major credit cards (Visa, Mastercard, American Express) and process payments securely via Stripe.',
+    a: 'We accept all major credit cards (Visa, Mastercard, American Express). Payments are processed securely via Lemon Squeezy.',
   },
 ];
 
@@ -188,6 +190,30 @@ function CheckIcon({ checked }: { checked: boolean }) {
 export default function PricingPage() {
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [userSession, setUserSession] = useState<{ id: string; email: string; payment_provider?: string | null; subscription_tier?: number } | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase.from('profiles')
+        .select('id, payment_provider, subscription_tier')
+        .eq('id', user.id)
+        .maybeSingle();
+      setUserSession({
+        id: user.id,
+        email: user.email || '',
+        payment_provider: data?.payment_provider ?? null,
+        subscription_tier: data?.subscription_tier ?? 1,
+      });
+    });
+  }, []);
+
+  const handlePlanCta = async (planName: string) => {
+    if (planName === 'Free') { navigate('/auth'); return; }
+    if (!userSession) { navigate('/auth'); return; }
+    const provider = getPaymentProvider(userSession);
+    await openCheckout(planName, 'monthly', provider, userSession.email, userSession.id);
+  };
 
   return (
     <MarketingLayout
@@ -255,7 +281,7 @@ export default function PricingPage() {
                   </ul>
 
                   <button
-                    onClick={() => navigate('/auth')}
+                    onClick={() => handlePlanCta(plan.name)}
                     className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
                       plan.highlighted ? 'bg-white text-indigo-600 hover:bg-gray-50' : 'bg-indigo-500 text-white hover:bg-indigo-600'
                     }`}
@@ -306,20 +332,20 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    {tier.cta === 'Start Free Trial' ? (
-                      <button
-                        onClick={() => navigate('/auth')}
-                        className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
-                      >
-                        {tier.cta}
-                      </button>
-                    ) : (
+                    {tier.cta === 'Contact Sales' ? (
                       <a
                         href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
                         className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
                       >
                         {tier.cta}
                       </a>
+                    ) : (
+                      <button
+                        onClick={() => handlePlanCta(tier.name)}
+                        className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap block text-center border-2 border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white"
+                      >
+                        {tier.cta}
+                      </button>
                     )}
                   </div>
                 ))}

@@ -49,39 +49,117 @@ interface JiraFetchError {
   reason: string;
 }
 
-/** 유효 구독 티어 반환 (만료된 트라이얼은 Free=1 처리) */
+/** 유효 구독 티어 반환 — 본인 또는 소속 프로젝트 owner 중 최고 티어 */
 async function getEffectiveTier(
   supabase: ReturnType<typeof createClient>,
   userId: string,
-): Promise<number> {
-  const { data } = await supabase
+): Promise<{ tier: number; ownerId: string }> {
+  // 1. 본인 티어 조회
+  const { data: profile } = await supabase
     .from('profiles')
     .select('subscription_tier, is_trial, trial_ends_at')
     .eq('id', userId)
     .maybeSingle();
 
-  if (!data) return 1;
-
-  let tier = data.subscription_tier || 1;
-  if (data.is_trial && data.trial_ends_at) {
-    if (new Date() > new Date(data.trial_ends_at)) tier = 1;
+  let ownTier = profile?.subscription_tier || 1;
+  if (profile?.is_trial && profile?.trial_ends_at) {
+    if (new Date() > new Date(profile.trial_ends_at)) ownTier = 1;
   }
-  return tier;
+
+  // 2. 본인이 유료 구독자면 본인 기준
+  if (ownTier > 1) {
+    return { tier: ownTier, ownerId: userId };
+  }
+
+  // 3. 소속 프로젝트 owner들의 티어 조회
+  const { data: memberships } = await supabase
+    .from('project_members')
+    .select('project_id, role')
+    .eq('user_id', userId);
+
+  if (!memberships || memberships.length === 0) {
+    return { tier: ownTier, ownerId: userId };
+  }
+
+  const projectIds = memberships.map((m: any) => m.project_id);
+
+  // 프로젝트 owner(created_by) 목록 조회
+  const { data: projects } = await supabase
+    .from('projects')
+    .select('id, created_by')
+    .in('id', projectIds);
+
+  if (!projects || projects.length === 0) {
+    return { tier: ownTier, ownerId: userId };
+  }
+
+  const ownerIds = [...new Set((projects as any[]).map((p: any) => p.created_by).filter(Boolean))];
+
+  // owner들의 티어 조회
+  const { data: ownerProfiles } = await supabase
+    .from('profiles')
+    .select('id, subscription_tier, is_trial, trial_ends_at')
+    .in('id', ownerIds);
+
+  // 가장 높은 티어의 owner 찾기
+  let bestTier = ownTier;
+  let bestOwnerId = userId;
+
+  (ownerProfiles ?? []).forEach((op: any) => {
+    let ownerTier = op.subscription_tier || 1;
+    if (op.is_trial && op.trial_ends_at) {
+      if (new Date() > new Date(op.trial_ends_at)) ownerTier = 1;
+    }
+    if (ownerTier > bestTier) {
+      bestTier = ownerTier;
+      bestOwnerId = op.id;
+    }
+  });
+
+  return { tier: bestTier, ownerId: bestOwnerId };
 }
 
-/** 당월 사용 횟수 조회 */
+/** 당월 팀 전체 사용 횟수 조회 (owner 기준) */
 async function getMonthlyUsage(
   supabase: ReturnType<typeof createClient>,
-  userId: string,
+  ownerId: string,
 ): Promise<number> {
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
+  // owner가 소유한 프로젝트의 모든 멤버 ID 조회
+  const { data: ownerProjects } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('created_by', ownerId);
+
+  if (!ownerProjects || ownerProjects.length === 0) {
+    // owner 본인 사용량만 조회 (프로젝트 없는 경우)
+    const { count } = await supabase
+      .from('ai_generation_logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', ownerId)
+      .eq('step', 1)
+      .gte('created_at', startOfMonth.toISOString());
+    return count || 0;
+  }
+
+  const projectIds = (ownerProjects as any[]).map((p: any) => p.id);
+
+  // 해당 프로젝트들의 모든 멤버 ID 조회
+  const { data: members } = await supabase
+    .from('project_members')
+    .select('user_id')
+    .in('project_id', projectIds);
+
+  const memberIds = [...new Set([ownerId, ...((members ?? []) as any[]).map((m: any) => m.user_id)])];
+
+  // 팀 전체 사용량 합산
   const { count } = await supabase
     .from('ai_generation_logs')
     .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
+    .in('user_id', memberIds)
     .eq('step', 1)
     .gte('created_at', startOfMonth.toISOString());
 
@@ -373,7 +451,7 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: 'run_id is required for summarize-run' }, 400);
       }
 
-      const tier = await getEffectiveTier(adminClient, user.id);
+      const { tier, ownerId } = await getEffectiveTier(adminClient, user.id);
       if (tier < 2) {
         return jsonResponse({ error: 'Starter plan required', requiredTier: 2, upgradeUrl: '/settings/billing' }, 403);
       }
@@ -381,7 +459,7 @@ Deno.serve(async (req) => {
       // Monthly quota check (shared with TC generation)
       const limit = PLAN_LIMITS[tier] ?? 5;
       if (limit !== -1) {
-        const usage = await getMonthlyUsage(adminClient, user.id);
+        const usage = await getMonthlyUsage(adminClient, ownerId);
         if (usage >= limit) {
           return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
         }
@@ -596,7 +674,7 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
         latency_ms: latencyMs,
       });
 
-      const usage = await getMonthlyUsage(adminClient, user.id);
+      const usage = await getMonthlyUsage(adminClient, ownerId);
       return jsonResponse({
         success: true,
         summary: aiSummary,
@@ -610,7 +688,7 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
         return jsonResponse({ error: 'project_id is required for coverage-gap' }, 400);
       }
 
-      const tier = await getEffectiveTier(adminClient, user.id);
+      const { tier, ownerId } = await getEffectiveTier(adminClient, user.id);
       const COV_MIN_TIER = 3; // Professional+
       if (tier < COV_MIN_TIER) {
         return jsonResponse({ error: 'Professional plan required', requiredTier: COV_MIN_TIER }, 403);
@@ -619,7 +697,7 @@ Quality Gates: Pass Rate ≥90%, Critical Failures = 0, Coverage ≥80%, Blocked
       // Monthly quota check
       const limit = PLAN_LIMITS[tier] ?? 5;
       if (limit !== -1) {
-        const usage = await getMonthlyUsage(adminClient, user.id);
+        const usage = await getMonthlyUsage(adminClient, ownerId);
         if (usage >= limit) {
           return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
         }
@@ -797,7 +875,7 @@ Respond in valid JSON:
         latency_ms: latencyMs,
       });
 
-      const usage = await getMonthlyUsage(adminClient, user.id);
+      const usage = await getMonthlyUsage(adminClient, ownerId);
       return jsonResponse({
         success: true,
         result: gapResult,
@@ -811,14 +889,14 @@ Respond in valid JSON:
         return jsonResponse({ error: 'project_id is required for analyze-flaky' }, 400);
       }
 
-      const tier = await getEffectiveTier(adminClient, user.id);
+      const { tier, ownerId } = await getEffectiveTier(adminClient, user.id);
       if (tier < 3) {
         return jsonResponse({ error: 'Professional plan required', requiredTier: 3 }, 403);
       }
 
       const limit = PLAN_LIMITS[tier] ?? 5;
       if (limit !== -1) {
-        const usage = await getMonthlyUsage(adminClient, user.id);
+        const usage = await getMonthlyUsage(adminClient, ownerId);
         if (usage >= limit) {
           return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
         }
@@ -932,7 +1010,7 @@ Respond in valid JSON:
         latency_ms: latencyMs,
       });
 
-      const usage = await getMonthlyUsage(adminClient, user.id);
+      const usage = await getMonthlyUsage(adminClient, ownerId);
       return jsonResponse({
         success: true,
         result: analysisResult,
@@ -944,7 +1022,7 @@ Respond in valid JSON:
       return jsonResponse({ error: 'project_id and mode are required' }, 400);
     }
 
-    const tier = await getEffectiveTier(adminClient, user.id);
+    const { tier, ownerId } = await getEffectiveTier(adminClient, user.id);
 
     // ── JIRA PREVIEW (action: 'preview') ──────────────────────
     if (action === 'preview' && mode === 'jira') {
@@ -1008,7 +1086,7 @@ Respond in valid JSON:
     if (step === 1) {
       const limit = PLAN_LIMITS[tier] ?? 5;
       if (limit !== -1) {
-        const usage = await getMonthlyUsage(adminClient, user.id);
+        const usage = await getMonthlyUsage(adminClient, ownerId);
         if (usage >= limit) {
           return jsonResponse({ error: 'Monthly AI generation limit reached.', usage, limit, current_tier: tier }, 429);
         }

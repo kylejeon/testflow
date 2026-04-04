@@ -3,8 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import SEOHead from '../../components/SEOHead';
 import Logo from '../../components/Logo';
 import { useLanguage } from '../../hooks/useLanguage';
-import { openPaddleCheckout, registerPaddleErrorHandler } from '../../lib/paddle';
+import { registerPaddleErrorHandler } from '../../lib/paddle';
 import { useToast, ToastContainer } from '../../components/Toast';
+import { supabase } from '../../lib/supabase';
+import { getPaymentProvider, openCheckout } from '../../lib/payment';
 
 const content = {
   en: {
@@ -778,15 +780,35 @@ export default function HomePage() {
   const t = content[lang];
 
   const { toasts, showToast, dismiss } = useToast();
+  const [userSession, setUserSession] = useState<{ id: string; email: string; payment_provider?: string | null; subscription_tier?: number } | null>(null);
 
   // Register Paddle error handler so checkout errors surface as toasts
   useEffect(() => {
     registerPaddleErrorHandler((msg) => showToast(msg, 'error'));
   }, [showToast]);
 
+  // Load user session for checkout
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase.from('profiles')
+        .select('id, payment_provider, subscription_tier')
+        .eq('id', user.id)
+        .maybeSingle();
+      setUserSession({
+        id: user.id,
+        email: user.email || '',
+        payment_provider: data?.payment_provider ?? null,
+        subscription_tier: data?.subscription_tier ?? 1,
+      });
+    });
+  }, []);
+
   const handlePlanClick = async (planName: string) => {
     if (planName === 'Free') { navigate('/auth'); return; }
-    const opened = await openPaddleCheckout(planName, 'monthly');
+    if (!userSession) { navigate('/auth'); return; }
+    const provider = getPaymentProvider(userSession);
+    const opened = await openCheckout(planName, 'monthly', provider, userSession.email, userSession.id);
     if (!opened) navigate('/auth');
   };
 
