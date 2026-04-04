@@ -1746,11 +1746,6 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       const newMinor = (selectedTestCase.version_minor ?? 0) + 1;
       const currentMajor = selectedTestCase.version_major ?? 1;
 
-      // Compute the version being restored to (old_value's version = prev history entry)
-      const rIdx = historyData.findIndex(h => h.id === rollbackTarget.id);
-      const rPrevEntry = rIdx >= 0 && rIdx < historyData.length - 1 ? historyData[rIdx + 1] : null;
-      const restoredToMajor = rPrevEntry?.version_major ?? rollbackTarget.version_major ?? 1;
-      const restoredToMinor = rPrevEntry?.version_minor ?? Math.max(0, (rollbackTarget.version_minor ?? 0) - 1);
 
       const { data, error } = await supabase
         .from('test_cases')
@@ -1798,7 +1793,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         field_name: 'restored from previous version',
         old_value: JSON.stringify(currentSnapshot),
         new_value: JSON.stringify(oldSnapshot),
-        change_summary: `Restored to v${restoredToMajor}.${restoredToMinor}`,
+        change_summary: `Restored to v${rollbackTarget.version_major ?? 1}.${rollbackTarget.version_minor ?? 0}`,
       });
 
       await onRefresh();
@@ -2370,23 +2365,6 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     };
     return fieldLabels[field] || field;
   };
-
-  // Compute display versions for the Restore confirmation modal.
-  // rollbackTarget.version_minor is the version CREATED by the edit; old_value holds
-  // the state BEFORE that edit (the version we actually restore to).
-  // historyData is DESC by created_at, so historyData[idx+1] is the prior entry.
-  const rollbackIdx = rollbackTarget ? historyData.findIndex(h => h.id === rollbackTarget.id) : -1;
-  const rollbackPrevEntry = rollbackIdx >= 0 && rollbackIdx < historyData.length - 1 ? historyData[rollbackIdx + 1] : null;
-  const restoreMajor = rollbackPrevEntry?.version_major ?? rollbackTarget?.version_major ?? 1;
-  const restoreMinor = rollbackPrevEntry?.version_minor ?? Math.max(0, (rollbackTarget?.version_minor ?? 0) - 1);
-  // "Current" should show the last published (stable) version, not the draft.
-  const lastPublishedEntry = historyData.find(h => h.action_type === 'published');
-  const currentPubMajor = selectedTestCase?.version_status === 'published'
-    ? (selectedTestCase?.version_major ?? 1)
-    : (lastPublishedEntry?.version_major ?? selectedTestCase?.version_major ?? 1);
-  const currentPubMinor = selectedTestCase?.version_status === 'published'
-    ? (selectedTestCase?.version_minor ?? 0)
-    : (lastPublishedEntry?.version_minor ?? 0);
 
   return (
     <>
@@ -4063,17 +4041,17 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
             <div className="px-5 py-4">
               <div className="flex items-center justify-center gap-4 mb-4">
                 <div className="text-center px-4 py-3 border border-[#E2E8F0] rounded-lg">
-                  <div className="text-[1rem] font-bold text-[#0F172A]">v{currentPubMajor}.{currentPubMinor}</div>
+                  <div className="text-[1rem] font-bold text-[#0F172A]">v{selectedTestCase.version_major ?? 1}.{selectedTestCase.version_minor ?? 0}</div>
                   <div className="text-[0.625rem] text-[#94A3B8] mt-0.5">Current</div>
                 </div>
                 <i className="ri-arrow-right-line text-[#94A3B8] text-lg"></i>
                 <div className="text-center px-4 py-3 border border-amber-200 bg-amber-50 rounded-lg">
-                  <div className="text-[1rem] font-bold text-amber-700">v{restoreMajor}.{restoreMinor}</div>
+                  <div className="text-[1rem] font-bold text-amber-700">v{rollbackTarget.version_major ?? 1}.{rollbackTarget.version_minor ?? 0}</div>
                   <div className="text-[0.625rem] text-amber-600 mt-0.5">Restore to</div>
                 </div>
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-[0.75rem] text-amber-700 leading-[1.5]">
-                <strong>Restore to v{restoreMajor}.{restoreMinor}?</strong>
+                <strong>Restore to v{rollbackTarget.version_major ?? 1}.{rollbackTarget.version_minor ?? 0}?</strong>
                 <br />
                 A new draft <strong>v{selectedTestCase.version_major ?? 1}.{(selectedTestCase.version_minor ?? 0) + 1}</strong> will be created with that content. Current version stays in history.
               </div>
