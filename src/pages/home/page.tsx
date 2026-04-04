@@ -151,6 +151,22 @@ const content = {
         iconColor: 'text-rose-600',
         tag: 'Analytics',
       },
+      {
+        icon: 'ri-git-branch-line',
+        title: 'TC Versioning',
+        description: 'Track every change to your test cases with Major/Minor versioning. Browse version history, compare diffs side-by-side, restore any previous version, and publish releases — full audit trail with zero effort.',
+        color: 'bg-teal-50',
+        iconColor: 'text-teal-600',
+        tag: 'Versioning',
+      },
+      {
+        icon: 'ri-terminal-box-line',
+        title: 'Test Automation SDK',
+        description: 'Connect Playwright, Cypress, and Jest to Testably in one command: npm install @testably/reporter. Results flow into your runs automatically — no manual uploads, no config headaches. Fully compatible with the existing CI/CD API.',
+        color: 'bg-sky-50',
+        iconColor: 'text-sky-600',
+        tag: 'SDK',
+      },
     ],
     workflowSection: {
       badge: 'How It Works',
@@ -521,6 +537,22 @@ const content = {
         iconColor: 'text-rose-600',
         tag: '분석',
       },
+      {
+        icon: 'ri-git-branch-line',
+        title: 'TC 버전 관리',
+        description: 'Major/Minor 버전 관리로 테스트 케이스의 모든 변경 이력을 추적하세요. 버전 히스토리 열람, Diff 비교, 이전 버전 복원, 릴리즈 Publish까지 — 완전한 감사 추적을 자동으로 제공합니다.',
+        color: 'bg-teal-50',
+        iconColor: 'text-teal-600',
+        tag: '버전관리',
+      },
+      {
+        icon: 'ri-terminal-box-line',
+        title: '자동화 테스트 SDK',
+        description: 'npm install @testably/reporter 한 줄로 Playwright, Cypress, Jest를 연결하세요. 결과가 자동으로 Run에 반영되며 기존 CI/CD API와 완전히 호환됩니다.',
+        color: 'bg-sky-50',
+        iconColor: 'text-sky-600',
+        tag: 'SDK',
+      },
     ],
     workflowSection: {
       badge: '워크플로우',
@@ -763,6 +795,8 @@ const FEATURE_ICON_STYLES = [
   { bg: 'rgba(148,163,184,0.12)', color: '#94A3B8' },
   { bg: 'rgba(16,185,129,0.12)', color: '#34D399' },
   { bg: 'rgba(244,63,94,0.12)', color: '#FB7185' },
+  { bg: 'rgba(20,184,166,0.12)', color: '#2DD4BF' },
+  { bg: 'rgba(14,165,233,0.12)', color: '#38BDF8' },
 ];
 
 export default function HomePage() {
