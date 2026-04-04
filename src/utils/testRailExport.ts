@@ -120,10 +120,11 @@ export const parseCSV = (csvText: string): Record<string, string>[] => {
 
     if (char === '"') {
       if (inQuotes && next === '"') {
-        current += '"';
+        current += '""';
         i++;
       } else {
         inQuotes = !inQuotes;
+        current += char;
       }
     } else if ((char === '\n' || char === '\r') && !inQuotes) {
       if (char === '\r' && next === '\n') i++;
