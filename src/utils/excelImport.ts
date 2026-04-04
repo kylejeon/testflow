@@ -74,7 +74,7 @@ function rowToTestCase(
     steps: formatSteps(get('steps', 'test steps', 'step')) || undefined,
     expected_result: formatSteps(get('expected result', 'expected results', 'expected')) || undefined,
     is_automated: get('automation type', 'automated', 'type').toLowerCase().includes('auto'),
-    tags: get('references', 'tags', 'labels', '태그') || undefined,
+    tags: get('tags', 'references', 'labels', '태그') || undefined,
     status: 'untested',
     custom_id: get('id', 'case id', 'test case id') || undefined,
   };

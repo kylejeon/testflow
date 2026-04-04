@@ -43,7 +43,7 @@ const ALL_COLUMNS = [
   { key: 'Priority',            label: 'Priority',            required: false },
   { key: 'Type',                label: 'Type',                required: false },
   { key: 'Automation Type',     label: 'Automation Type',     required: false },
-  { key: 'References',          label: 'References',          required: false },
+  { key: 'Tags',                 label: 'Tags',                 required: false },
 ];
 
 const CHUNK_SIZE = 200;

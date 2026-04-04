@@ -14,7 +14,7 @@ export interface TestRailRow {
   'Priority': string;
   'Type': string;
   'Automation Type': string;
-  'References': string;
+  'Tags': string;
   'Estimate': string;
   'Mission': string;
   'Goals': string;
@@ -204,7 +204,7 @@ export const exportToTestRail = (
     'Priority',
     'Type',
     'Automation Type',
-    'References',
+    'Tags',
     'Estimate',
     'Mission',
     'Goals',
@@ -229,7 +229,7 @@ export const exportToTestRail = (
       case 'Priority':            return priorityToTestRail(tc.priority);
       case 'Type':                return 'Functional';
       case 'Automation Type':     return tc.is_automated ? 'Automated' : 'None';
-      case 'References':          return tc.tags || '';
+      case 'Tags':                return tc.tags || '';
       case 'Estimate':            return '';
       case 'Mission':             return '';
       case 'Goals':               return '';
@@ -323,7 +323,7 @@ export const importFromTestRail = (csvText: string): {
       const preconditionRaw = getField('Preconditions', 'Precondition', 'Pre-conditions');
       const descriptionRaw = getField('Section Description', 'Description', 'Details');
       const automationRaw = getField('Automation Type', 'Automated', 'Type');
-      const referencesRaw = getField('References', 'Tags', 'Labels');
+      const referencesRaw = getField('Tags', 'References', 'Labels');
       const idRaw = getField('ID', 'Case ID', 'Test Case ID');
 
       // Steps를 번호 형식으로 변환
