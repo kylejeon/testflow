@@ -338,31 +338,26 @@ export default function ProjectTraceability() {
     return null;
   };
 
-  // Export CSV — includes summary block + matrix
+  // Export CSV — summary block above original matrix
   const handleExportCSV = () => {
     const tcList = testCases;
-    const q = (s: string) => `"${s.replace(/"/g, '""')}"`;
 
+    // ── Summary block ──────────────────────────────────────────────────────────
     const summaryRows = [
-      ['=== Traceability Matrix Summary ==='],
-      ['Project', q(project?.name || projectId || '')],
-      ['Exported', q(new Date().toLocaleString())],
-      [],
+      ['Summary', 'Value'],
+      ['Project', project?.name || projectId || ''],
+      ['Exported', new Date().toLocaleString()],
       ['Overall Coverage', `${summary.overallPct}%`],
       ['Total Requirements', String(summary.total)],
       ['Fully Covered', String(summary.fullyCovered)],
       ['Partial Coverage', String(summary.partial)],
       ['No Coverage', String(summary.noCoverage)],
-      [],
+      [],  // blank separator row
     ];
 
-    const header = ['Requirement ID', 'Requirement', 'Priority', 'Status',
-      ...tcList.map((tc) => q(`${tc.custom_id}: ${tc.title}`)),
-      'Coverage %', 'Passed', 'Failed', 'Blocked', 'Untested'];
-
+    // ── Original matrix (unchanged) ────────────────────────────────────────────
+    const header = ['Requirement ID', 'Requirement', 'Priority', ...tcList.map((tc) => tc.custom_id), 'Coverage %'];
     const matrixRows = filteredReqs.map((req) => {
-      const cov = coverageMap[req.id] || { total: 0, executed: 0, passed: 0, failed: 0, blocked: 0, pct: 0 };
-      const untested = cov.total - cov.executed;
       const cells = tcList.map((tc) => {
         const cell = getCell(req.id, tc.id);
         if (!cell.status) return '';
@@ -370,20 +365,9 @@ export default function ProjectTraceability() {
         if (cell.status === 'failed') return 'Failed';
         if (cell.status === 'blocked') return 'Blocked';
         if (cell.status === 'untested') return 'Untested';
-        return 'Linked';
+        return '';
       });
-      return [
-        req.custom_id,
-        q(req.title),
-        req.priority,
-        req.status,
-        ...cells,
-        String(cov.pct),
-        String(cov.passed),
-        String(cov.failed),
-        String(cov.blocked),
-        String(untested),
-      ];
+      return [req.custom_id, `"${req.title.replace(/"/g, '""')}"`, req.priority, ...cells, String(coverageMap[req.id]?.pct || 0)];
     });
 
     const allRows = [...summaryRows, header, ...matrixRows];
