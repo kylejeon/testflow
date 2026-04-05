@@ -196,7 +196,7 @@ export default function ProjectRequirements() {
         let executed = 0, passed = 0, failed = 0, blocked = 0;
         for (const l of reqLinks) {
           const s = resultMap[l.test_case_id];
-          if (s) executed++;
+          if (s && s !== 'untested') executed++;
           if (s === 'passed') passed++;
           if (s === 'failed') failed++;
           if (s === 'blocked') blocked++;
