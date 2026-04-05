@@ -167,7 +167,7 @@ CREATE POLICY "Project members can manage requirements"
     OR EXISTS (
       SELECT 1 FROM projects p
       WHERE p.id = requirements.project_id
-        AND p.created_by = auth.uid()
+        AND p.owner_id = auth.uid()
     )
   );
 
@@ -187,7 +187,7 @@ CREATE POLICY "Project members can manage requirement-tc links"
       FROM requirements r
       JOIN projects p ON p.id = r.project_id
       WHERE r.id = requirement_tc_links.requirement_id
-        AND p.created_by = auth.uid()
+        AND p.owner_id = auth.uid()
     )
   );
 
@@ -207,7 +207,7 @@ CREATE POLICY "Project members can view requirement history"
       FROM requirements r
       JOIN projects p ON p.id = r.project_id
       WHERE r.id = requirement_history.requirement_id
-        AND p.created_by = auth.uid()
+        AND p.owner_id = auth.uid()
     )
   );
 
