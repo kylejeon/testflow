@@ -17,7 +17,7 @@ interface TC {
   custom_id: string;
   title: string;
   priority: string;
-  folder_path: string | null;
+  folder: string | null;
   latest_status?: string;
 }
 
@@ -46,7 +46,7 @@ export default function LinkTCModal({ projectId, requirement, onClose, onLinked 
     queryFn: async () => {
       const { data, error } = await supabase
         .from('test_cases')
-        .select('id, custom_id, title, priority, folder_path')
+        .select('id, custom_id, title, priority, folder')
         .eq('project_id', projectId)
         .order('custom_id', { ascending: true });
       if (error) throw error;
@@ -253,8 +253,8 @@ export default function LinkTCModal({ projectId, requirement, onClose, onLinked 
                       <span className="text-xs font-mono text-indigo-600 font-semibold flex-shrink-0">{tc.custom_id}</span>
                       <span className="text-sm text-slate-700 truncate">{tc.title}</span>
                     </div>
-                    {tc.folder_path && (
-                      <div className="text-xs text-slate-400 mt-0.5 truncate">{tc.folder_path}</div>
+                    {tc.folder && (
+                      <div className="text-xs text-slate-400 mt-0.5 truncate">{tc.folder}</div>
                     )}
                   </div>
                   <span className={`text-[0.65rem] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ${

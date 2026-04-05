@@ -196,7 +196,7 @@ export default function ProjectTraceability() {
       if (!tcIds.length) return [];
       const { data, error } = await supabase
         .from('test_cases')
-        .select('id, custom_id, title, priority, folder_path')
+        .select('id, custom_id, title, priority, folder')
         .in('id', tcIds)
         .order('custom_id');
       if (error) throw error;
