@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
     }
 
     const toInsert: RequirementInsert[] = [];
-    const toUpdate: { external_id: string; external_status: string; last_synced_at: string }[] = [];
+    const toUpdate: { external_id: string; external_status: string; last_synced_at: string; title: string; priority: string; category: string }[] = [];
 
     for (const issue of jiraIssues) {
       const f = issue.fields || {};
@@ -287,6 +287,9 @@ Deno.serve(async (req) => {
           external_id: issue.key,
           external_status: row.external_status,
           last_synced_at: row.last_synced_at,
+          title: row.title,
+          priority: row.priority,
+          category: row.category,
         });
       } else {
         toInsert.push(row);
