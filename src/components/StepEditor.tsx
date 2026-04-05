@@ -29,6 +29,7 @@ function newId() { return String(++_nextId); }
 export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSharedStep }: StepEditorProps) {
   const [focusedCell, setFocusedCell] = useState<{ stepId: string; field: 'step' | 'expected' } | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [hoveredStepId, setHoveredStepId] = useState<string | null>(null);
   const textareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
 
   // Close context menu on outside click
@@ -164,10 +165,10 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
           return (
             <div
               key={step.id}
-              className="group relative flex gap-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"
+              className="relative flex gap-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"
             >
               {/* Drag handle */}
-              <div className="flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-indigo-300">
+              <div className="flex-shrink-0 mt-1 opacity-0 hover:opacity-100 transition-opacity cursor-grab text-indigo-300">
                 <i className="ri-draggable text-base" />
               </div>
 
@@ -194,7 +195,7 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
               <button
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); deleteStep(step.id); }}
-                className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 rounded mt-1"
+                className="flex-shrink-0 opacity-0 hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 rounded mt-1"
                 tabIndex={-1}
               >
                 <i className="ri-delete-bin-line text-sm" />
@@ -204,13 +205,17 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
         }
 
         // ── Normal step row ──────────────────────────────────────────────────
+        const isHovered = hoveredStepId === step.id;
         return (
           <div
             key={step.id}
-            className="group relative flex gap-3 p-3 rounded-lg border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-colors"
+            className="relative flex gap-3 p-3 rounded-lg border transition-colors"
+            style={{ borderColor: isHovered ? '#E5E7EB' : 'transparent', backgroundColor: isHovered ? '#F9FAFB' : 'transparent' }}
+            onMouseEnter={() => setHoveredStepId(step.id)}
+            onMouseLeave={() => setHoveredStepId(null)}
           >
             {/* Drag handle */}
-            <div className="flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-gray-300">
+            <div className={`flex-shrink-0 mt-1 transition-opacity cursor-grab text-gray-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
               <i className="ri-draggable text-base" />
             </div>
 
@@ -267,7 +272,7 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
                       e.preventDefault();
                       setOpenMenuId(openMenuId === step.id ? null : step.id);
                     }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-500 rounded"
+                    className={`transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-500 rounded ${isHovered ? 'opacity-100' : 'opacity-0'}`}
                     tabIndex={-1}
                   >
                     <i className="ri-more-line text-sm" />
@@ -298,7 +303,7 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
                 <button
                   type="button"
                   onMouseDown={(e) => { e.preventDefault(); deleteStep(step.id); }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 rounded"
+                  className={`transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 rounded ${isHovered ? 'opacity-100' : 'opacity-0'}`}
                   tabIndex={-1}
                 >
                   <i className="ri-delete-bin-line text-sm" />
