@@ -240,7 +240,7 @@ export default function ProjectRequirements() {
 
   const handleExportCSV = () => {
     const rows = [
-      ['ID', 'Title', 'Priority', 'Status', 'Category', 'Source', 'External ID', 'TCs', 'Coverage %'],
+      ['ID', 'Title', 'Priority', 'Status', 'Category', 'Source', 'Jira Issue Key', 'TCs', 'Coverage %'],
       ...filtered.map((r) => {
         const cov = coverageMap[r.id];
         return [
