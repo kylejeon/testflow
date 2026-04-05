@@ -418,11 +418,11 @@ export default function ProjectTraceability() {
       const cov = coverageMap[req.id] || { total: 0, executed: 0, passed: 0, failed: 0, blocked: 0, pct: 0 };
       const gapType = getGapType(req);
       const gapBadge = gapType === 'no_tc'
-        ? '<span style="color:#DC2626;font-size:9px;font-weight:700">⬛ No TC</span>'
+        ? '<span style="color:#DC2626;font-size:9px;font-weight:700">🔴 No TC</span>'
         : gapType === 'no_exec'
-        ? '<span style="color:#D97706;font-size:9px;font-weight:700">⚠ No Run</span>'
+        ? '<span style="color:#D97706;font-size:9px;font-weight:700">🟡 No Run</span>'
         : gapType === 'fail'
-        ? '<span style="color:#DC2626;font-size:9px;font-weight:700">✗ Fail</span>'
+        ? '<span style="color:#DC2626;font-size:9px;font-weight:700">🔴 Fail</span>'
         : '';
 
       const cells = tcList.map((tc) => {
