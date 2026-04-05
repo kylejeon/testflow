@@ -1207,6 +1207,23 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         };
 
         // 변경된 필드 목록 생성
+        // Use normalizeStepField for step fields to avoid false positives from
+        // minor formatting differences (e.g. trailing spaces, number prefix variants).
+        const normalizeForCompare = (text: string) => {
+          if (!text) return '';
+          try {
+            const parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) {
+              return parsed.map((s: any, i: number) =>
+                s.type === 'shared_step_ref'
+                  ? `${i + 1}. 🔗 [${s.shared_step_custom_id}] ${s.shared_step_name}`
+                  : `${i + 1}. ${(s.step || '').trim()}`
+              ).join('\n');
+            }
+          } catch {}
+          return text.split('\n').map(s => s.replace(/^\d+\.\s*/, '').trim()).filter(Boolean).map((s, i) => `${i + 1}. ${s}`).join('\n');
+        };
+
         const changedFields: string[] = [];
         if (oldSnapshot.title !== newSnapshot.title) changedFields.push('title');
         if (oldSnapshot.description !== newSnapshot.description) changedFields.push('description');
@@ -1214,44 +1231,48 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         if (oldSnapshot.priority !== newSnapshot.priority) changedFields.push('priority');
         if (oldSnapshot.folder !== newSnapshot.folder) changedFields.push('folder');
         if (oldSnapshot.tags !== newSnapshot.tags) changedFields.push('tags');
-        if (oldSnapshot.steps !== newSnapshot.steps) changedFields.push('steps');
-        if (oldSnapshot.expected_result !== newSnapshot.expected_result) changedFields.push('expected_result');
+        if (normalizeForCompare(oldSnapshot.steps) !== normalizeForCompare(newSnapshot.steps)) changedFields.push('steps');
+        if (normalizeForCompare(oldSnapshot.expected_result) !== normalizeForCompare(newSnapshot.expected_result)) changedFields.push('expected_result');
         if (oldSnapshot.assignee !== newSnapshot.assignee) changedFields.push('assignee');
-        if (oldSnapshot.is_automated !== newSnapshot.is_automated) changedFields.push('is_automated');
+        if (String(oldSnapshot.is_automated) !== String(newSnapshot.is_automated)) changedFields.push('is_automated');
 
-        // Auto-increment minor version, set status to 'draft'
-        const newMinor = (editingTestCase.version_minor ?? 0) + 1;
-        const currentMajor = editingTestCase.version_major ?? 1;
-        const changeSummary = generateChangeSummary(oldSnapshot, newSnapshot);
+        // Only create a new version when something actually changed.
+        // If all fields are identical (e.g. Convert to Shared Step with same content),
+        // skip the history record and version bump entirely.
+        if (changedFields.length > 0) {
+          const newMinor = (editingTestCase.version_minor ?? 0) + 1;
+          const currentMajor = editingTestCase.version_major ?? 1;
+          const changeSummary = generateChangeSummary(oldSnapshot, newSnapshot);
 
-        // 히스토리 기록 (전체 스냅샷 저장)
-        await supabase.from('test_case_history').insert({
-          test_case_id: editingTestCase.id,
-          user_id: user.id,
-          action_type: 'updated',
-          version_major: currentMajor,
-          version_minor: newMinor,
-          version_status: 'draft',
-          field_name: changedFields.join(', ') || 'no changes',
-          old_value: JSON.stringify(oldSnapshot),
-          new_value: JSON.stringify(newSnapshot),
-          change_summary: changeSummary,
-        });
+          // 히스토리 기록 (전체 스냅샷 저장)
+          await supabase.from('test_case_history').insert({
+            test_case_id: editingTestCase.id,
+            user_id: user.id,
+            action_type: 'updated',
+            version_major: currentMajor,
+            version_minor: newMinor,
+            version_status: 'draft',
+            field_name: changedFields.join(', '),
+            old_value: JSON.stringify(oldSnapshot),
+            new_value: JSON.stringify(newSnapshot),
+            change_summary: changeSummary,
+          });
 
-        // Update version on the TC itself
-        await supabase.from('test_cases').update({
-          version_minor: newMinor,
-          version_status: 'draft',
-        }).eq('id', editingTestCase.id);
+          // Update version on the TC itself
+          await supabase.from('test_cases').update({
+            version_minor: newMinor,
+            version_status: 'draft',
+          }).eq('id', editingTestCase.id);
 
-        // Propagate version to finalTestCase
-        Object.assign(updatedTestCaseData, {
-          version_minor: newMinor,
-          version_status: 'draft' as const,
-        });
+          // Propagate version to finalTestCase
+          Object.assign(updatedTestCaseData, {
+            version_minor: newMinor,
+            version_status: 'draft' as const,
+          });
 
-        // Auto-expand this major group so the new draft entry is visible when user opens History tab
-        setExpandedMajors(prev => new Set([...prev, currentMajor]));
+          // Auto-expand this major group so the new draft entry is visible when user opens History tab
+          setExpandedMajors(prev => new Set([...prev, currentMajor]));
+        }
       }
 
       const finalTestCase = {
