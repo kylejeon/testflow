@@ -1076,14 +1076,31 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       return;
     }
 
-    // Serialize steps — use JSON when SharedStepRef present, plain text otherwise
+    // Serialize steps — use JSON when SharedStepRef present, plain text otherwise.
+    // Refresh shared_step_version numbers to current DB version so stored refs stay in sync.
     const hasSharedRef = testSteps.some(s => isSharedStepRef(s));
+
+    let effectiveTestSteps: AnyStep[] = testSteps;
+    if (hasSharedRef) {
+      const refIds = (testSteps.filter(s => isSharedStepRef(s)) as SharedStepRef[]).map(s => s.shared_step_id);
+      const { data: latestVersions } = await supabase
+        .from('shared_steps')
+        .select('id, version')
+        .in('id', refIds);
+      const versionMap = new Map<string, number>((latestVersions || []).map((ss: any) => [ss.id, ss.version]));
+      effectiveTestSteps = testSteps.map(s =>
+        isSharedStepRef(s) && versionMap.has(s.shared_step_id)
+          ? { ...s, shared_step_version: versionMap.get(s.shared_step_id)! }
+          : s
+      );
+    }
+
     const stepsString = hasSharedRef
-      ? JSON.stringify(testSteps)
-      : testSteps.map((step, index) => `${index + 1}. ${(step as TestStep).step}`).join('\n');
+      ? JSON.stringify(effectiveTestSteps)
+      : effectiveTestSteps.map((step, index) => `${index + 1}. ${(step as TestStep).step}`).join('\n');
     const expectedResultString = hasSharedRef
       ? ''
-      : testSteps.map((step, index) => `${index + 1}. ${(step as TestStep).expectedResult}`).join('\n');
+      : effectiveTestSteps.map((step, index) => `${index + 1}. ${(step as TestStep).expectedResult}`).join('\n');
 
     const updatedTestCaseData = {
       ...newTestCase,

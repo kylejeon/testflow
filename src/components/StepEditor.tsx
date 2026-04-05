@@ -338,11 +338,13 @@ export function SharedStepRefRow({ step, showDelete, onDelete }: SharedStepRefRo
   const [subSteps, setSubSteps] = useState<Array<{ step: string; expectedResult: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(true);
+  // currentVersion tracks the actual DB version; initialized to linked version to avoid flash
+  const [currentVersion, setCurrentVersion] = useState(step.shared_step_version);
 
   useEffect(() => {
     supabase
       .from('shared_steps')
-      .select('steps')
+      .select('steps, version')
       .eq('id', step.shared_step_id)
       .single()
       .then(({ data, error }) => {
@@ -356,6 +358,7 @@ export function SharedStepRefRow({ step, showDelete, onDelete }: SharedStepRefRo
           const parsed = typeof data.steps === 'string' ? JSON.parse(data.steps) : data.steps;
           if (Array.isArray(parsed)) setSubSteps(parsed);
         }
+        if (data?.version != null) setCurrentVersion(data.version);
         setLoading(false);
       });
   }, [step.shared_step_id]);
@@ -387,8 +390,15 @@ export function SharedStepRefRow({ step, showDelete, onDelete }: SharedStepRefRo
         {/* Name */}
         <span className="text-sm font-medium text-slate-700 truncate flex-1 min-w-0">{step.shared_step_name}</span>
 
-        {/* Version + Shared badge */}
-        <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{step.shared_step_version}</span>
+        {/* Version + Shared badge — show actual DB version; flag if linked version is stale */}
+        <span className="text-[0.65rem] flex-shrink-0 flex items-center gap-1">
+          <span className="text-indigo-400">v{currentVersion}</span>
+          {currentVersion !== step.shared_step_version && (
+            <span className="text-amber-500 font-semibold" title={`Linked at v${step.shared_step_version}, updated to v${currentVersion}`}>
+              ↑
+            </span>
+          )}
+        </span>
         <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">
           Shared
         </span>
