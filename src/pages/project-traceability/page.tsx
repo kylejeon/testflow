@@ -211,11 +211,12 @@ export default function ProjectTraceability() {
     queryKey: ['latestResults', tcIds.join(',')],
     queryFn: async () => {
       if (!tcIds.length) return {};
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('test_results')
-        .select('id, test_case_id, status, note, created_at, executor:profiles(full_name)')
+        .select('id, test_case_id, status, note, created_at, author')
         .in('test_case_id', tcIds)
         .order('created_at', { ascending: false });
+      if (error) throw error;
       const map: Record<string, { id: string; status: string; note: string | null; created_at: string; executor: string | null }> = {};
       for (const r of data || []) {
         if (!map[r.test_case_id]) {
@@ -224,7 +225,7 @@ export default function ProjectTraceability() {
             status: r.status,
             note: r.note || null,
             created_at: r.created_at,
-            executor: (r.executor as any)?.full_name || null,
+            executor: r.author || null,
           };
         }
       }
@@ -252,7 +253,7 @@ export default function ProjectTraceability() {
       let executed = 0, passed = 0, failed = 0, blocked = 0;
       for (const tcId of linked) {
         const r = resultMap[tcId];
-        if (r) { executed++; }
+        if (r && r.status !== 'untested') { executed++; }
         if (r?.status === 'passed') passed++;
         if (r?.status === 'failed') failed++;
         if (r?.status === 'blocked') blocked++;
