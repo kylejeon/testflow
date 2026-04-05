@@ -9,6 +9,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { DetailPanel } from '../../components/DetailPanel';
 import { Avatar } from '../../components/Avatar';
 import AIRunSummaryPanel from './components/AIRunSummaryPanel';
+import { type AnyStep, type NormalStep, isSharedStepRef } from '../../types/shared-steps';
 
 interface TestCase {
   id: string;
@@ -127,6 +128,7 @@ export default function RunDetail() {
     attachments: [] as { name: string; url: string; size: number }[],
   });
   const [stepStatuses, setStepStatuses] = useState<Record<number, string>>({});
+  const [sharedStepsCache, setSharedStepsCache] = useState<Record<string, { name: string; custom_id: string; steps: NormalStep[] }>>({});
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedResult, setSelectedResult] = useState<TestResult | null>(null);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -203,6 +205,30 @@ export default function RunDetail() {
       fetchComments();
     }
   }, [selectedTestCase]);
+
+  // Fetch shared step contents when selected TC has SharedStepRef entries
+  useEffect(() => {
+    if (!selectedTestCase?.steps) { setSharedStepsCache({}); return; }
+    let parsed: AnyStep[] | null = null;
+    try {
+      const p = JSON.parse(selectedTestCase.steps);
+      if (Array.isArray(p)) parsed = p as AnyStep[];
+    } catch {}
+    if (!parsed) { setSharedStepsCache({}); return; }
+    const refs = parsed.filter(isSharedStepRef);
+    if (refs.length === 0) { setSharedStepsCache({}); return; }
+    const ids = [...new Set(refs.map((r) => r.shared_step_id))];
+    supabase
+      .from('shared_steps')
+      .select('id, name, custom_id, steps')
+      .in('id', ids)
+      .then(({ data }) => {
+        if (!data) return;
+        const cache: Record<string, { name: string; custom_id: string; steps: NormalStep[] }> = {};
+        data.forEach((ss) => { cache[ss.id] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps }; });
+        setSharedStepsCache(cache);
+      });
+  }, [selectedTestCase?.id]);
 
   // Close more menu on outside click
   useEffect(() => {
@@ -2826,55 +2852,114 @@ export default function RunDetail() {
                     </div>
 
                     {/* Steps */}
-                    {selectedTestCase.steps && selectedTestCase.expected_result && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">Steps</label>
-                        <div className="space-y-3">
-                          {selectedTestCase.steps.split('\n').filter(s => s.trim()).map((step, index) => {
-                            const expectedResults = selectedTestCase.expected_result?.split('\n').filter(s => s.trim()) || [];
-                            const expectedResult = expectedResults[index] || '';
-                            const stepContent = step.replace(/^\d+\.\s*/, '');
-                            const isHtml = /<[^>]+>/.test(stepContent);
-                            const expectedContent = expectedResult.replace(/^\d+\.\s*/, '');
-                            const expectedIsHtml = /<[^>]+>/.test(expectedContent);
-                            return (
-                              <div key={index} className="border border-gray-200 rounded-lg p-3">
-                                <div className="flex items-start gap-3 mb-2">
-                                  <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <span className="text-indigo-700 text-xs font-bold">{index + 1}</span>
-                                  </div>
-                                  <div className="flex-1">
-                                    {isHtml ? (
-                                      <div className="text-sm text-gray-700 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: stepContent }} />
-                                    ) : (
-                                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{stepContent}</p>
-                                    )}
-                                    {expectedContent && (
-                                      <div className="mt-1 flex items-start gap-1">
-                                        <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
-                                        <p className="text-sm text-green-600 leading-relaxed">
-                                          {expectedIsHtml ? expectedContent.replace(/<[^>]*>/g, '').trim() : expectedContent}
-                                        </p>
+                    {selectedTestCase.steps && (() => {
+                      // Try new JSON array format first
+                      let parsed: AnyStep[] | null = null;
+                      try {
+                        const p = JSON.parse(selectedTestCase.steps!);
+                        if (Array.isArray(p)) parsed = p as AnyStep[];
+                      } catch {}
+
+                      if (parsed) {
+                        const flatSteps = expandFlatSteps(parsed, sharedStepsCache);
+                        if (flatSteps.length === 0) return null;
+                        return (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-3">Steps</label>
+                            <div className="space-y-2">
+                              {flatSteps.map((fs) => (
+                                <div key={fs.flatIndex}>
+                                  {fs.groupHeader && (
+                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-t-lg bg-violet-50 border border-violet-200 border-b-0">
+                                      <i className="ri-links-line text-violet-500 text-xs" />
+                                      <span className="text-xs font-semibold text-violet-700">{fs.groupHeader}</span>
+                                    </div>
+                                  )}
+                                  <div className={`border p-3 ${fs.isSubStep ? 'border-violet-200 bg-violet-50/30 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'border-gray-200 rounded-lg'}`}>
+                                    <div className="flex items-start gap-3 mb-2">
+                                      <div className={`w-6 h-6 ${fs.isSubStep ? 'bg-violet-100' : 'bg-indigo-100'} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                                        <span className={`${fs.isSubStep ? 'text-violet-700' : 'text-indigo-700'} text-xs font-bold`}>{fs.flatIndex + 1}</span>
                                       </div>
-                                    )}
+                                      <div className="flex-1">
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
+                                        {fs.expectedResult && (
+                                          <div className="mt-1 flex items-start gap-1">
+                                            <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                            <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <select
+                                      value={stepStatuses[fs.flatIndex] || 'untested'}
+                                      onChange={(e) => handleStepStatusChange(fs.flatIndex, e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    >
+                                      <option value="untested">Untested</option>
+                                      <option value="passed">Passed</option>
+                                      <option value="failed">Failed</option>
+                                      <option value="blocked">Blocked</option>
+                                    </select>
                                   </div>
                                 </div>
-                                <select
-                                  value={stepStatuses[index] || 'untested'}
-                                  onChange={(e) => handleStepStatusChange(index, e.target.value)}
-                                  className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                >
-                                  <option value="untested">Untested</option>
-                                  <option value="passed">Passed</option>
-                                  <option value="failed">Failed</option>
-                                  <option value="blocked">Blocked</option>
-                                </select>
-                              </div>
-                            );
-                          })}
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Fallback: old newline-delimited string format
+                      if (!selectedTestCase.expected_result) return null;
+                      return (
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-3">Steps</label>
+                          <div className="space-y-3">
+                            {selectedTestCase.steps!.split('\n').filter(s => s.trim()).map((step, index) => {
+                              const expectedResults = selectedTestCase.expected_result?.split('\n').filter(s => s.trim()) || [];
+                              const expectedResult = expectedResults[index] || '';
+                              const stepContent = step.replace(/^\d+\.\s*/, '');
+                              const isHtml = /<[^>]+>/.test(stepContent);
+                              const expectedContent = expectedResult.replace(/^\d+\.\s*/, '');
+                              const expectedIsHtml = /<[^>]+>/.test(expectedContent);
+                              return (
+                                <div key={index} className="border border-gray-200 rounded-lg p-3">
+                                  <div className="flex items-start gap-3 mb-2">
+                                    <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                      <span className="text-indigo-700 text-xs font-bold">{index + 1}</span>
+                                    </div>
+                                    <div className="flex-1">
+                                      {isHtml ? (
+                                        <div className="text-sm text-gray-700 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: stepContent }} />
+                                      ) : (
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{stepContent}</p>
+                                      )}
+                                      {expectedContent && (
+                                        <div className="mt-1 flex items-start gap-1">
+                                          <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                          <p className="text-sm text-green-600 leading-relaxed">
+                                            {expectedIsHtml ? expectedContent.replace(/<[^>]*>/g, '').trim() : expectedContent}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <select
+                                    value={stepStatuses[index] || 'untested'}
+                                    onChange={(e) => handleStepStatusChange(index, e.target.value)}
+                                    className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  >
+                                    <option value="untested">Untested</option>
+                                    <option value="passed">Passed</option>
+                                    <option value="failed">Failed</option>
+                                    <option value="blocked">Blocked</option>
+                                  </select>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Right Column Fields */}
                     <div className="grid grid-cols-2 gap-4">
@@ -3232,6 +3317,7 @@ export default function RunDetail() {
               result={selectedResult}
               testCase={selectedTestCase}
               jiraDomain={jiraDomain}
+              sharedStepsCache={sharedStepsCache}
               onClose={() => setSelectedResult(null)}
             />
           )}
@@ -3266,14 +3352,66 @@ export default function RunDetail() {
   );
 }
 
+// ── Shared step expansion helpers ─────────────────────────────────────────────
+
+type SharedStepCache = Record<string, { name: string; custom_id: string; steps: NormalStep[] }>;
+
+interface FlatStep {
+  flatIndex: number;
+  step: string;
+  expectedResult: string;
+  isSubStep: boolean;
+  groupHeader?: string; // set only on first sub-step of each shared group
+}
+
+function expandFlatSteps(steps: AnyStep[], cache: SharedStepCache): FlatStep[] {
+  const flat: FlatStep[] = [];
+  for (const s of steps) {
+    if (isSharedStepRef(s)) {
+      const cached = cache[s.shared_step_id];
+      const subSteps = cached?.steps ?? [];
+      if (subSteps.length === 0) {
+        flat.push({
+          flatIndex: flat.length,
+          step: 'Loading…',
+          expectedResult: '',
+          isSubStep: true,
+          groupHeader: `${s.shared_step_custom_id}: ${s.shared_step_name}`,
+        });
+      } else {
+        subSteps.forEach((sub, subIdx) => {
+          flat.push({
+            flatIndex: flat.length,
+            step: sub.step,
+            expectedResult: sub.expectedResult,
+            isSubStep: true,
+            groupHeader: subIdx === 0 ? `${s.shared_step_custom_id}: ${s.shared_step_name}` : undefined,
+          });
+        });
+      }
+    } else {
+      flat.push({
+        flatIndex: flat.length,
+        step: s.step,
+        expectedResult: s.expectedResult,
+        isSubStep: false,
+      });
+    }
+  }
+  return flat;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+
 interface ResultDetailModalProps {
   result: TestResult;
   testCase: TestCase | null;
   jiraDomain: string;
+  sharedStepsCache: SharedStepCache;
   onClose: () => void;
 }
 
-function ResultDetailModal({ result, testCase, jiraDomain, onClose }: ResultDetailModalProps) {
+function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, onClose }: ResultDetailModalProps) {
   const getJiraIssueUrl = (issueKey: string) => {
     if (!jiraDomain) return '#';
     return `https://${jiraDomain}/browse/${issueKey}`;
@@ -3358,16 +3496,62 @@ function ResultDetailModal({ result, testCase, jiraDomain, onClose }: ResultDeta
             </div>
           )}
 
-          {result.stepStatuses && Object.keys(result.stepStatuses).length > 0 && testCase?.steps && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
-              <div className="space-y-2">
-                {(() => {
-                  const stepsArray = testCase.steps.split('\n').filter((s: string) => s.trim());
-                  return stepsArray.map((step: string, index: number) => {
+          {result.stepStatuses && Object.keys(result.stepStatuses).length > 0 && testCase?.steps && (() => {
+            // Try new JSON array format first
+            let parsed: AnyStep[] | null = null;
+            try {
+              const p = JSON.parse(testCase.steps!);
+              if (Array.isArray(p)) parsed = p as AnyStep[];
+            } catch {}
+
+            if (parsed) {
+              const flatSteps = expandFlatSteps(parsed, sharedStepsCache);
+              return (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
+                  <div className="space-y-1.5">
+                    {flatSteps.map((fs) => {
+                      const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
+                      const statusInfo = getStepStatusInfo(status);
+                      return (
+                        <div key={fs.flatIndex}>
+                          {fs.groupHeader && (
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-t-lg bg-violet-50 border border-violet-200 border-b-0 mt-2">
+                              <i className="ri-links-line text-violet-500 text-xs" />
+                              <span className="text-xs font-semibold text-violet-700">{fs.groupHeader}</span>
+                            </div>
+                          )}
+                          <div className={`flex items-center gap-3 p-3 ${fs.isSubStep ? 'bg-violet-50/40 border border-violet-100 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'bg-gray-50 rounded-lg'}`}>
+                            <div className={`w-6 h-6 ${fs.isSubStep ? 'bg-violet-100' : 'bg-indigo-100'} rounded-lg flex items-center justify-center ${fs.isSubStep ? 'text-violet-700' : 'text-indigo-700'} font-semibold text-xs flex-shrink-0`}>
+                              {fs.flatIndex + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-700 truncate">{fs.step}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
+                              <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>
+                                {statusInfo.label}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+
+            // Fallback: old newline-delimited string format
+            const stepsArray = testCase.steps!.split('\n').filter((s: string) => s.trim());
+            return (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
+                <div className="space-y-2">
+                  {stepsArray.map((_step: string, index: number) => {
                     const status = result.stepStatuses?.[index] || 'untested';
                     const statusInfo = getStepStatusInfo(status);
-                    
                     return (
                       <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                         <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-semibold text-xs flex-shrink-0">
@@ -3384,11 +3568,11 @@ function ResultDetailModal({ result, testCase, jiraDomain, onClose }: ResultDeta
                         </div>
                       </div>
                     );
-                  });
-                })()}
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {result.attachments.length > 0 && (
             <div>
