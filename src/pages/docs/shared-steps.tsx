@@ -20,7 +20,7 @@ function StepList({ steps }: { steps: { num: number; title: string; desc: string
 }
 
 const createSharedStepSteps = [
-  { num: 1, title: 'Open Shared Steps library', desc: 'Navigate to Project → Shared Steps. Click "+ New Shared Step" to open the creation modal.' },
+  { num: 1, title: 'Open Steps Library', desc: 'Navigate to Project → Steps Library. Click "+ New Shared Step" to open the creation modal.' },
   { num: 2, title: 'Fill in the details', desc: 'Enter a name (required), optional description, category, and tags. Tags support comma separation (e.g. "login, auth, smoke").' },
   { num: 3, title: 'Add steps', desc: 'Define the step sequence just like you would in a regular test case: each row has a step description and an expected result.' },
   { num: 4, title: 'Save', desc: 'Click "Save". A unique ID is assigned (e.g. SS-001) and the shared step is immediately available to insert into any test case in the project.' },
@@ -60,7 +60,7 @@ export default function DocsSharedStepsPage() {
           </span>
         </div>
         <p className="text-gray-500 text-base leading-relaxed max-w-2xl">
-          Shared Steps let you define a reusable sequence of test steps once and insert them into any number of test cases across your project. When a shared step is updated, all references are versioned so existing test cases remain stable.
+          Steps Library lets you define a reusable sequence of test steps once and insert them into any number of test cases across your project. When a shared step is updated, all references are versioned so existing test cases remain stable.
         </p>
       </div>
 
@@ -75,7 +75,7 @@ export default function DocsSharedStepsPage() {
             <h2 className="text-xl font-bold text-gray-900">Overview</h2>
           </div>
           <p className="text-gray-500 text-sm leading-relaxed mb-4">
-            Shared Steps solve the problem of duplicated step sequences across your test suite. Common examples include:
+            Steps Library solves the problem of duplicated step sequences across your test suite. Common examples include:
           </p>
           <ul className="space-y-2 mb-5">
             {[
