@@ -4,6 +4,34 @@ import MarketingLayout from '../../components/marketing/MarketingLayout';
 const entries = [
   {
     date: 'April 2026',
+    title: 'Requirements Traceability Matrix (RTM)',
+    category: 'New Feature',
+    categoryColor: 'bg-blue-100 text-blue-700',
+    description: 'Link requirements to test cases and runs. Get full visibility into coverage status — know exactly which requirements are tested, partially covered, or missing.',
+    bullets: [
+      'Map requirements to one or multiple test cases',
+      'Real-time coverage status per requirement (Covered / Partial / Not Covered)',
+      'Starter: 50 requirements · Professional+: Unlimited',
+      'Enterprise: Audit trail + Jira two-way sync',
+      'Export RTM report as CSV',
+    ],
+  },
+  {
+    date: 'April 2026',
+    title: 'Shared / Reusable Test Steps',
+    category: 'New Feature',
+    categoryColor: 'bg-green-100 text-green-700',
+    description: 'Create a shared library of test steps that can be reused across multiple test cases. Keep your test suite DRY and maintainable.',
+    bullets: [
+      'Create named step groups in the Shared Steps library',
+      'Embed shared steps into any test case with one click',
+      'Changes to shared steps propagate automatically to all referencing test cases',
+      'Starter: 20 shared steps · Professional+: Unlimited',
+      'Enterprise: full version history for all shared steps',
+    ],
+  },
+  {
+    date: 'April 2026',
     title: 'TC Versioning',
     category: 'New Feature',
     categoryColor: 'bg-teal-100 text-teal-700',
