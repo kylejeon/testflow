@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
@@ -39,43 +40,58 @@ function SummaryCard({ label, value, sub, color }: { label: string; value: strin
   );
 }
 
-// ── Cell popover ──────────────────────────────────────────────────────────────
-function CellPopover({ cell, req, tcTitle, onClose }: {
+// ── Cell popover (portal-based, overflow-safe) ────────────────────────────────
+const POPOVER_W = 224; // 14rem
+const POPOVER_GAP = 6;
+
+function CellPopover({ cell, req, tcTitle, anchorRect, onClose }: {
   cell: CellData;
   req: Requirement;
   tcTitle: string;
+  anchorRect: DOMRect;
   onClose: () => void;
 }) {
   if (!cell.status) return null;
   const cfg = STATUS_CONFIG[cell.status];
-  return (
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  // Vertical: prefer below anchor, flip above if too close to bottom
+  const showAbove = anchorRect.bottom + POPOVER_GAP + 160 > vh;
+  const top = showAbove
+    ? anchorRect.top - POPOVER_GAP - 160
+    : anchorRect.bottom + POPOVER_GAP;
+
+  // Horizontal: center on anchor, clamp within viewport
+  const rawLeft = anchorRect.left + anchorRect.width / 2 - POPOVER_W / 2;
+  const left = Math.max(8, Math.min(rawLeft, vw - POPOVER_W - 8));
+
+  return createPortal(
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 100 }} onClick={onClose} />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onClick={onClose} />
       <div style={{
-        position: 'absolute',
-        top: '100%',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        marginTop: '0.25rem',
+        position: 'fixed',
+        top,
+        left,
+        width: POPOVER_W,
         background: '#fff',
         border: '1px solid #E2E8F0',
         borderRadius: '0.625rem',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-        zIndex: 101,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+        zIndex: 9999,
         padding: '0.875rem',
-        minWidth: '14rem',
-        maxWidth: '20rem',
       }}>
         <div className="flex items-center gap-2 mb-2">
           <span style={{ fontSize: '1rem' }}>{cfg.icon}</span>
           <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>{cfg.label}</span>
         </div>
         <div style={{ fontSize: '0.75rem', color: '#64748B', marginBottom: '0.5rem' }}>
-          <div className="font-medium text-slate-700 truncate">{tcTitle}</div>
-          <div className="text-slate-400 mt-0.5 truncate">{req.custom_id}: {req.title}</div>
+          <div className="font-medium text-slate-700" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tcTitle}</div>
+          <div className="text-slate-400 mt-0.5" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{req.custom_id}: {req.title}</div>
         </div>
         {cell.note && (
-          <div style={{ fontSize: '0.75rem', color: '#374151', background: '#F8FAFC', borderRadius: '0.375rem', padding: '0.375rem 0.5rem', marginTop: '0.5rem' }}>
+          <div style={{ fontSize: '0.75rem', color: '#374151', background: '#F8FAFC', borderRadius: '0.375rem', padding: '0.375rem 0.5rem', marginTop: '0.5rem', wordBreak: 'break-word' }}>
             {cell.note}
           </div>
         )}
@@ -86,7 +102,8 @@ function CellPopover({ cell, req, tcTitle, onClose }: {
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
 
@@ -125,7 +142,7 @@ export default function ProjectTraceability() {
 
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [gapOnly, setGapOnly] = useState(false);
-  const [popover, setPopover] = useState<{ reqId: string; tcId: string } | null>(null);
+  const [popover, setPopover] = useState<{ reqId: string; tcId: string; rect: DOMRect } | null>(null);
   const [exporting, setExporting] = useState(false);
 
   // Project info
@@ -587,9 +604,12 @@ export default function ProjectTraceability() {
 
                           const cfg = STATUS_CONFIG[cell.status];
                           return (
-                            <td key={tc.id} style={{ padding: '0.25rem', textAlign: 'center', borderRight: '1px solid #F8FAFC', position: 'relative' }}>
+                            <td key={tc.id} style={{ padding: '0.25rem', textAlign: 'center', borderRight: '1px solid #F8FAFC' }}>
                               <button
-                                onClick={() => setPopover(isOpen ? null : { reqId: req.id, tcId: tc.id })}
+                                onClick={(e) => {
+                                  if (isOpen) { setPopover(null); }
+                                  else { setPopover({ reqId: req.id, tcId: tc.id, rect: e.currentTarget.getBoundingClientRect() }); }
+                                }}
                                 style={{
                                   width: '2.25rem',
                                   height: '2.25rem',
@@ -610,11 +630,12 @@ export default function ProjectTraceability() {
                                 <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: cfg.dot }} />
                               </button>
 
-                              {isOpen && (
+                              {isOpen && popover?.rect && (
                                 <CellPopover
                                   cell={cell}
                                   req={req}
                                   tcTitle={tc.title}
+                                  anchorRect={popover.rect}
                                   onClose={() => setPopover(null)}
                                 />
                               )}
