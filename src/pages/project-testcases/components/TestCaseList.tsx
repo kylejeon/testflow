@@ -4,7 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import ExportImportModal from './ExportImportModal';
 import CloneFromProjectModal from './CloneFromProjectModal';
 import { BulkActionBar } from '../../../components/BulkActionBar';
-import { StepEditor, type Step } from '../../../components/StepEditor';
+import { StepEditor, SharedStepRefRow, type Step } from '../../../components/StepEditor';
 import InsertSharedStepModal from '../../project-shared-steps/components/InsertSharedStepModal';
 import type { AnyStep, SharedTestStep } from '../../../types/shared-steps';
 import { isSharedStepRef } from '../../../types/shared-steps';
@@ -2914,7 +2914,13 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 if (stepsList.length > 0) {
                   return (
                     <div className="flex flex-col gap-[0.375rem]">
-                      {stepsList.map((s, index) => (
+                      {stepsList.map((s: any, index) => {
+                        // SharedStepRef — render expanded read-only view
+                        if (isSharedStepRef(s)) {
+                          return <SharedStepRefRow key={s.id || index} step={s} showDelete={false} />;
+                        }
+                        // Normal step
+                        return (
                         <div key={index} className="flex gap-2 bg-[#F8FAFC] rounded-lg px-[0.75rem] py-[0.5rem] items-start">
                           <div className="w-5 h-5 rounded-full flex items-center justify-center font-bold flex-shrink-0 mt-[0.0625rem] bg-[#EEF2FF] text-[#4338CA]" style={{ fontSize: '0.625rem' }}>
                             {index + 1}
@@ -2933,7 +2939,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                             )}
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 } else if (selectedTestCase.expected_result) {

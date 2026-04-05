@@ -232,7 +232,7 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
 
             {/* Actions: ⋮ menu + delete */}
             <div className="flex-shrink-0 flex flex-col gap-1 mt-1">
-              {/* ⋮ context menu */}
+              {/* ⋮ context menu — always visible */}
               {onConvertToSharedStep && (
                 <div className="relative">
                   <button
@@ -241,10 +241,11 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
                       e.preventDefault();
                       setOpenMenuId(openMenuId === step.id ? null : step.id);
                     }}
-                    className={`transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-500 rounded ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
                     tabIndex={-1}
+                    title="More options"
                   >
-                    <i className="ri-more-line text-sm" />
+                    <i className="ri-more-2-fill text-base" />
                   </button>
                   {openMenuId === step.id && (
                     <div
@@ -312,11 +313,11 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
 
 interface SharedStepRefRowProps {
   step: SharedStepRef;
-  showDelete: boolean;
-  onDelete: () => void;
+  showDelete?: boolean;
+  onDelete?: () => void;
 }
 
-function SharedStepRefRow({ step, showDelete, onDelete }: SharedStepRefRowProps) {
+export function SharedStepRefRow({ step, showDelete, onDelete }: SharedStepRefRowProps) {
   const [subSteps, setSubSteps] = useState<Array<{ step: string; expectedResult: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(true);
@@ -327,8 +328,17 @@ function SharedStepRefRow({ step, showDelete, onDelete }: SharedStepRefRowProps)
       .select('steps')
       .eq('id', step.shared_step_id)
       .single()
-      .then(({ data }) => {
-        if (data?.steps && Array.isArray(data.steps)) setSubSteps(data.steps);
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('[SharedStepRefRow] fetch error:', error.message, 'shared_step_id:', step.shared_step_id);
+          setLoading(false);
+          return;
+        }
+        if (data?.steps) {
+          // steps may be a JSON string (TEXT column) or already parsed (JSONB)
+          const parsed = typeof data.steps === 'string' ? JSON.parse(data.steps) : data.steps;
+          if (Array.isArray(parsed)) setSubSteps(parsed);
+        }
         setLoading(false);
       });
   }, [step.shared_step_id]);
@@ -367,7 +377,7 @@ function SharedStepRefRow({ step, showDelete, onDelete }: SharedStepRefRowProps)
         </span>
 
         {/* Delete */}
-        {showDelete && (
+        {showDelete && onDelete && (
           <button
             type="button"
             onMouseDown={(e) => { e.preventDefault(); onDelete(); }}
