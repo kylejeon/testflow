@@ -193,10 +193,32 @@ export default function SharedStepModal({ projectId, sharedStep, onClose, onSave
                 <label className={labelCls}>Tags</label>
                 <input
                   className={fieldCls}
-                  value={tags}
-                  onChange={e => setTags(e.target.value)}
-                  placeholder="login, smoke (comma-separated)"
+                  value={tagInput}
+                  onChange={e => setTagInput(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  onCompositionStart={() => setIsComposing(true)}
+                  onCompositionEnd={() => setIsComposing(false)}
+                  placeholder="Enter tag and press Enter"
                 />
+                {getTagsArray().length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {getTagsArray().map((tag, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="w-3.5 h-3.5 flex items-center justify-center text-indigo-500 hover:text-indigo-800 hover:bg-indigo-200 rounded-full transition-colors"
+                        >
+                          <i className="ri-close-line text-[10px]" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
