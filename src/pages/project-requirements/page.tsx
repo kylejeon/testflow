@@ -111,7 +111,7 @@ export default function ProjectRequirements() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('projects')
-        .select('id, name, prefix')
+        .select('id, name, prefix, jira_project_key')
         .eq('id', projectId!)
         .single();
       if (error) throw error;
@@ -527,6 +527,7 @@ export default function ProjectRequirements() {
       {showJiraImport && (
         <JiraImportModal
           projectId={projectId!}
+          projectJiraKey={project?.jira_project_key || ''}
           existingExternalIds={requirements.filter((r) => r.source === 'jira').map((r) => r.external_id!).filter(Boolean)}
           onClose={() => setShowJiraImport(false)}
           onImported={(count) => {

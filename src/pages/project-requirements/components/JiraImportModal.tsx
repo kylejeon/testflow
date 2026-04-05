@@ -16,6 +16,7 @@ interface JiraPreviewIssue {
 
 interface Props {
   projectId: string;
+  projectJiraKey?: string;
   existingExternalIds: string[];
   onClose: () => void;
   onImported: (count: number) => void;
@@ -24,7 +25,10 @@ interface Props {
 
 const ISSUE_TYPE_OPTIONS = ['Story', 'Epic', 'Task', 'Bug', 'Sub-task'];
 
-export default function JiraImportModal({ projectId, existingExternalIds, onClose, onImported, tier }: Props) {
+// Only uppercase letters allowed (e.g. "GW", not "GW-266")
+const PROJECT_KEY_REGEX = /^[A-Z]+$/;
+
+export default function JiraImportModal({ projectId, projectJiraKey = '', existingExternalIds, onClose, onImported, tier }: Props) {
   const [jiraProjectKey, setJiraProjectKey] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(['Story', 'Epic']));
   const [savedProjectKey, setSavedProjectKey] = useState('');
