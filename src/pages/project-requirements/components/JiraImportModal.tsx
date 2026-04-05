@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Link } from 'react-router-dom';
 
-const fieldCls = `w-full border border-slate-200 rounded-lg text-sm text-slate-700 px-3 py-2 bg-white focus:outline-none focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-colors`;
 const labelCls = `block text-xs font-semibold text-slate-600 mb-1`;
 
 interface JiraPreviewIssue {
@@ -25,13 +24,8 @@ interface Props {
 
 const ISSUE_TYPE_OPTIONS = ['Story', 'Epic', 'Task', 'Bug', 'Sub-task'];
 
-// Only uppercase letters allowed (e.g. "GW", not "GW-266")
-const PROJECT_KEY_REGEX = /^[A-Z]+$/;
-
 export default function JiraImportModal({ projectId, projectJiraKey = '', existingExternalIds, onClose, onImported, tier }: Props) {
-  const [jiraProjectKey, setJiraProjectKey] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(['Story', 'Epic']));
-  const [savedProjectKey, setSavedProjectKey] = useState('');
   const [jiraConnected, setJiraConnected] = useState<boolean | null>(null);
   const [previewIssues, setPreviewIssues] = useState<JiraPreviewIssue[] | null>(null);
   const [selectedIssueIds, setSelectedIssueIds] = useState<Set<string>>(new Set());
@@ -46,29 +40,19 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  // Load saved Jira settings
+  // Check Jira connection status
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data } = await supabase
         .from('jira_settings')
-        .select('domain, email, api_token, project_key')
+        .select('domain, email, api_token')
         .eq('user_id', user.id)
         .maybeSingle();
-      if (data?.domain && data?.email && data?.api_token) {
-        setJiraConnected(true);
-        // Project-level jira_project_key takes priority over global jira_settings key
-        const keyToUse = projectJiraKey || data.project_key || '';
-        if (keyToUse) {
-          setSavedProjectKey(keyToUse);
-          setJiraProjectKey(keyToUse);
-        }
-      } else {
-        setJiraConnected(false);
-      }
+      setJiraConnected(!!(data?.domain && data?.email && data?.api_token));
     })();
-  }, [projectJiraKey]);
+  }, []);
 
   const toggleType = (type: string) => {
     setSelectedTypes((prev) => {
@@ -84,11 +68,6 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
   };
 
   const handleFetch = async () => {
-    if (!jiraProjectKey.trim()) { setError('Please enter a Jira project key.'); return; }
-    if (!PROJECT_KEY_REGEX.test(jiraProjectKey.trim().toUpperCase())) {
-      setError('Invalid project key. Use only letters (e.g. "GW"), not an issue key like "GW-266".');
-      return;
-    }
     setFetching(true);
     setError(null);
     setPreviewIssues(null);
@@ -97,7 +76,7 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
       const { data, error: fnError } = await supabase.functions.invoke('fetch-jira-requirements', {
         body: {
           project_id: projectId,
-          jira_project_key: jiraProjectKey.trim().toUpperCase(),
+          jira_project_key: projectJiraKey || undefined,
           issue_types: [...selectedTypes],
           max_results: 100,
           dry_run: true,
@@ -128,7 +107,7 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
       const { data, error: fnError } = await supabase.functions.invoke('fetch-jira-requirements', {
         body: {
           project_id: projectId,
-          jira_project_key: jiraProjectKey.trim().toUpperCase(),
+          jira_project_key: projectJiraKey || undefined,
           issue_types: [...selectedTypes],
           max_results: 100,
           dry_run: false,
@@ -216,30 +195,12 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
           {/* Config step */}
           {jiraConnected === true && step === 'config' && (
             <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {savedProjectKey && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-100 text-green-700 text-xs">
-                  <i className="ri-check-circle-line" />
-                  <span>
-                    {projectJiraKey
-                      ? <>Using project Jira key: <strong>{savedProjectKey}</strong></>
-                      : <>Using saved Jira project key: <strong>{savedProjectKey}</strong></>
-                    }
-                  </span>
+              {projectJiraKey && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-xs">
+                  <i className="ri-jira-line" />
+                  <span>Jira Project: <strong>{projectJiraKey}</strong></span>
                 </div>
               )}
-
-              <div>
-                <label className={labelCls}>Jira Project Key <span className="text-red-400">*</span></label>
-                <input
-                  type="text"
-                  value={jiraProjectKey}
-                  onChange={(e) => setJiraProjectKey(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
-                  className={fieldCls}
-                  placeholder="e.g. PROJ, MYAPP"
-                  autoFocus
-                />
-                <p className="text-xs text-slate-400 mt-1">Letters only — the key prefix of your Jira project (e.g. PROJ for PROJ-101)</p>
-              </div>
 
               <div>
                 <label className={labelCls}>Issue Types</label>
@@ -393,16 +354,16 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
               {step === 'config' ? (
                 <button
                   onClick={handleFetch}
-                  disabled={fetching || !jiraProjectKey.trim()}
+                  disabled={fetching}
                   style={{
                     padding: '0.4375rem 1rem',
                     borderRadius: '0.5rem',
                     fontSize: '0.8125rem',
                     fontWeight: 600,
                     color: '#fff',
-                    background: fetching || !jiraProjectKey.trim() ? '#A5B4FC' : '#6366F1',
+                    background: fetching ? '#A5B4FC' : '#6366F1',
                     border: 'none',
-                    cursor: fetching || !jiraProjectKey.trim() ? 'not-allowed' : 'pointer',
+                    cursor: fetching ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.375rem',
