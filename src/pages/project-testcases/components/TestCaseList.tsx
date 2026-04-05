@@ -1085,17 +1085,6 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       ? ''
       : testSteps.map((step, index) => `${index + 1}. ${(step as TestStep).expectedResult}`).join('\n');
 
-    // Snapshot strings — always plain text so Version Diff displays cleanly
-    // Steps: actions only; Expected Result: expected results only (separate sections)
-    const snapshotStepsString = testSteps.map((s, i) => {
-      if (isSharedStepRef(s)) return `${i + 1}. 🔗 [${s.shared_step_custom_id}] ${s.shared_step_name} (v${s.shared_step_version})`;
-      return `${i + 1}. ${(s as TestStep).step}`;
-    }).join('\n');
-    const snapshotExpectedResultString = testSteps.map((s, i) => {
-      if (isSharedStepRef(s)) return null;
-      return `${i + 1}. ${(s as TestStep).expectedResult}`;
-    }).filter(Boolean).join('\n');
-
     const updatedTestCaseData = {
       ...newTestCase,
       steps: stepsString,
@@ -1106,34 +1095,76 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       // 변경된 필드 추적 및 히스토리 기록
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Build old snapshot strings — always plain text, split into actions and expected
-        // results so Version Diff shows them in separate sections.
+        // ── Snapshot building ────────────────────────────────────────────────
+        // SharedStepRefs are expanded to their actual sub-step content so that
+        // "Convert to Shared Step" (same content, different wrapper) produces no diff.
+
         const rawStepsVal = editingTestCase.steps || '';
         const oldRawSteps = Array.isArray(rawStepsVal)
           ? JSON.stringify(rawStepsVal)
           : String(rawStepsVal);
 
+        // Collect all SharedStepRef IDs from both old and new steps for a batch fetch
+        const snapshotRefIds = new Set<string>();
+        testSteps.forEach(s => { if (isSharedStepRef(s)) snapshotRefIds.add(s.shared_step_id); });
+        try {
+          const parsedForIds = JSON.parse(oldRawSteps);
+          if (Array.isArray(parsedForIds)) {
+            parsedForIds.forEach((s: any) => { if (s?.type === 'shared_step_ref') snapshotRefIds.add(s.shared_step_id); });
+          }
+        } catch {}
+
+        // Fetch actual sub-step content for each SharedStepRef
+        const sharedContentMap = new Map<string, Array<{step: string, expectedResult: string}>>();
+        if (snapshotRefIds.size > 0) {
+          const { data: sharedData } = await supabase
+            .from('shared_steps')
+            .select('id, steps')
+            .in('id', [...snapshotRefIds]);
+          (sharedData || []).forEach((ss: any) => {
+            try {
+              const steps = typeof ss.steps === 'string' ? JSON.parse(ss.steps) : ss.steps;
+              if (Array.isArray(steps)) {
+                sharedContentMap.set(ss.id, steps.map((c: any) => ({ step: c.step || '', expectedResult: c.expectedResult || '' })));
+              }
+            } catch {}
+          });
+        }
+
+        // Expand an array of steps (any format) — SharedStepRefs become their sub-steps
+        const expandStepsForSnapshot = (stepsArr: any[]): Array<{step: string, expectedResult: string}> => {
+          const result: Array<{step: string, expectedResult: string}> = [];
+          for (const s of stepsArr) {
+            if (s?.type === 'shared_step_ref') {
+              const content = sharedContentMap.get(s.shared_step_id);
+              if (content?.length) result.push(...content);
+            } else {
+              result.push({ step: s.step || '', expectedResult: s.expectedResult || '' });
+            }
+          }
+          return result;
+        };
+
+        // Build NEW snapshot strings (expanded)
+        const expandedNew = expandStepsForSnapshot([...testSteps]);
+        const snapshotStepsString = expandedNew.map((s, i) => `${i + 1}. ${s.step}`).join('\n');
+        const snapshotExpectedResultString = expandedNew
+          .map((s, i) => s.expectedResult ? `${i + 1}. ${s.expectedResult}` : null)
+          .filter(Boolean).join('\n');
+
+        // Build OLD snapshot strings (expanded)
         let oldStepsString: string;
         let oldExpectedResultString: string;
         try {
           const parsedOld = JSON.parse(oldRawSteps);
           if (!Array.isArray(parsedOld)) throw new Error('not array');
-          // JSON format: extract step actions and expected results separately
-          oldStepsString = parsedOld.map((s: any, i: number) => {
-            if (s.type === 'shared_step_ref') {
-              return `${i + 1}. 🔗 [${s.shared_step_custom_id}] ${s.shared_step_name} (v${s.shared_step_version})`;
-            }
-            return `${i + 1}. ${s.step || ''}`;
-          }).join('\n');
-          oldExpectedResultString = parsedOld
-            .map((s: any, i: number) => {
-              if (s.type === 'shared_step_ref') return null;
-              return `${i + 1}. ${s.expectedResult || ''}`;
-            })
-            .filter(Boolean)
-            .join('\n');
+          const expandedOld = expandStepsForSnapshot(parsedOld);
+          oldStepsString = expandedOld.map((s, i) => `${i + 1}. ${s.step}`).join('\n');
+          oldExpectedResultString = expandedOld
+            .map((s, i) => s.expectedResult ? `${i + 1}. ${s.expectedResult}` : null)
+            .filter(Boolean).join('\n');
         } catch {
-          // Plain text format
+          // Plain text format (legacy TCs)
           const oldRawER = Array.isArray(rawStepsVal)
             ? (rawStepsVal as any[]).map((s: any) => s.expectedResult).join('\n')
             : (editingTestCase.expected_result || '');
@@ -4073,8 +4104,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                 {/* Changed fields */}
                 {changedFields.map(f => {
                   const isStepField = f.key === 'steps' || f.key === 'expected_result';
-                  const rawOld = f.key === 'is_automated' ? (oldS[f.key] ? 'Yes' : 'No') : stripHtml(String(oldS[f.key] ?? ''));
-                  const rawNew = f.key === 'is_automated' ? (newS[f.key] ? 'Yes' : 'No') : stripHtml(String(newS[f.key] ?? ''));
+                  // Step fields must NOT go through stripHtml — it collapses \n to spaces,
+                  // destroying the multi-line structure that computeLineDiff relies on.
+                  const rawOld = f.key === 'is_automated' ? (oldS[f.key] ? 'Yes' : 'No')
+                    : isStepField ? String(oldS[f.key] ?? '')
+                    : stripHtml(String(oldS[f.key] ?? ''));
+                  const rawNew = f.key === 'is_automated' ? (newS[f.key] ? 'Yes' : 'No')
+                    : isStepField ? String(newS[f.key] ?? '')
+                    : stripHtml(String(newS[f.key] ?? ''));
                   const oldVal = isStepField ? normalizeStepField(rawOld) : rawOld;
                   const newVal = isStepField ? normalizeStepField(rawNew) : rawNew;
                   const isMultiline = f.multiline && (oldVal.includes('\n') || newVal.includes('\n') || oldVal.length > 80 || newVal.length > 80);
