@@ -109,7 +109,7 @@ function CellPopover({ cell, req, tcTitle, anchorRect, onClose }: {
 
 // ── Gap badge ─────────────────────────────────────────────────────────────────
 function GapBadge({ type }: { type: 'no_tc' | 'no_exec' | 'fail' }) {
-  if (type === 'no_tc') return <span className="inline-flex items-center gap-0.5 text-[0.6rem] font-semibold text-red-600 bg-red-50 border border-red-100 px-1 rounded">🔴 No TC</span>;
+  if (type === 'no_tc') return <span className="inline-flex items-center gap-0.5 text-[0.6rem] font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-1 rounded">🟡 No TC</span>;
   if (type === 'no_exec') return <span className="inline-flex items-center gap-0.5 text-[0.6rem] font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-1 rounded">🟡 No Run</span>;
   return <span className="inline-flex items-center gap-0.5 text-[0.6rem] font-semibold text-red-600 bg-red-50 border border-red-100 px-1 rounded">🔴 Fail</span>;
 }
@@ -402,7 +402,7 @@ export default function ProjectTraceability() {
       const cov = coverageMap[req.id] || { total: 0, executed: 0, passed: 0, failed: 0, blocked: 0, pct: 0 };
       const gapType = getGapType(req);
       const gapBadge = gapType === 'no_tc'
-        ? '<span style="color:#DC2626;font-size:9px;font-weight:700">🔴 No TC</span>'
+        ? '<span style="color:#D97706;font-size:9px;font-weight:700">🟡 No TC</span>'
         : gapType === 'no_exec'
         ? '<span style="color:#D97706;font-size:9px;font-weight:700">🟡 No Run</span>'
         : gapType === 'fail'
