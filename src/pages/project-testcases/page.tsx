@@ -175,6 +175,30 @@ export default function ProjectTestCases() {
 
       if (error) throw error;
 
+      // Sync shared_step_usage for any SharedStepRefs in the new TC
+      if (data && user) {
+        try {
+          const stepsVal = testCase.steps || '';
+          const stepsArr = JSON.parse(stepsVal);
+          if (Array.isArray(stepsArr)) {
+            const refs = stepsArr
+              .map((s: any, idx: number) => ({ s, idx }))
+              .filter(({ s }) => s?.type === 'shared_step_ref');
+            if (refs.length > 0) {
+              await supabase.from('shared_step_usage').insert(
+                refs.map(({ s, idx }: any) => ({
+                  shared_step_id: s.shared_step_id,
+                  test_case_id: data.id,
+                  position: idx,
+                  linked_version: s.shared_step_version,
+                  linked_by: user.id,
+                }))
+              );
+            }
+          }
+        } catch {}
+      }
+
       void markOnboardingStep('createTestcase');
 
       // 생성 히스토리 기록

@@ -1079,6 +1079,33 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     }
   };
 
+  // Sync shared_step_usage table so SharedStepModal can find TCs referencing a Shared Step
+  const syncSharedStepUsage = async (tcId: string, stepsJson: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    // Delete stale records for this TC first
+    await supabase.from('shared_step_usage').delete().eq('test_case_id', tcId);
+    try {
+      const stepsArr = JSON.parse(stepsJson);
+      if (Array.isArray(stepsArr)) {
+        const refs = stepsArr
+          .map((s: any, idx: number) => ({ s, idx }))
+          .filter(({ s }) => s?.type === 'shared_step_ref');
+        if (refs.length > 0) {
+          await supabase.from('shared_step_usage').insert(
+            refs.map(({ s, idx }) => ({
+              shared_step_id: s.shared_step_id,
+              test_case_id: tcId,
+              position: idx,
+              linked_version: s.shared_step_version,
+              linked_by: user.id,
+            }))
+          );
+        }
+      }
+    } catch {}
+  };
+
   const handleSubmit = async () => {
     if (!newTestCase.title.trim()) {
       alert('테스트 케이스 제목을 입력해주세요.');
@@ -1284,6 +1311,9 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           setExpandedMajors(prev => new Set([...prev, currentMajor]));
         }
       }
+
+      // Sync shared_step_usage for the edited TC
+      await syncSharedStepUsage(editingTestCase.id, stepsString);
 
       const finalTestCase = {
         ...editingTestCase,
