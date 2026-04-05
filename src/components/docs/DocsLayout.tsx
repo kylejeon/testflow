@@ -30,6 +30,8 @@ const navSections: NavSection[] = [
       { label: 'Test Runs', to: '/docs/test-runs' },
       { label: 'Milestones', to: '/docs/milestones' },
       { label: 'Discovery Logs', to: '/docs/discovery-logs' },
+      { label: 'Requirements Traceability', to: '/docs/requirements-traceability' },
+      { label: 'Shared Steps', to: '/docs/shared-steps' },
       { label: 'Team & Permissions', to: '/docs/team-permissions' },
     ],
   },

@@ -70,6 +70,8 @@ const DocsTestCasesPage = lazy(() => import('../pages/docs/test-cases'));
 const DocsTestRunsPage = lazy(() => import('../pages/docs/test-runs'));
 const DocsMilestonesPage = lazy(() => import('../pages/docs/milestones'));
 const DocsDiscoveryLogsPage = lazy(() => import('../pages/docs/discovery-logs'));
+const DocsRequirementsTraceabilityPage = lazy(() => import('../pages/docs/requirements-traceability'));
+const DocsSharedStepsPage = lazy(() => import('../pages/docs/shared-steps'));
 const DocsTeamPermissionsPage = lazy(() => import('../pages/docs/team-permissions'));
 const DocsAccountBillingPage = lazy(() => import('../pages/docs/account-billing'));
 const DocsKeyboardShortcutsPage = lazy(() => import('../pages/docs/keyboard-shortcuts'));
@@ -308,6 +310,14 @@ const routes: RouteObject[] = [
   {
     path: '/docs/discovery-logs',
     element: <DocsDiscoveryLogsPage />,
+  },
+  {
+    path: '/docs/requirements-traceability',
+    element: <DocsRequirementsTraceabilityPage />,
+  },
+  {
+    path: '/docs/shared-steps',
+    element: <DocsSharedStepsPage />,
   },
   {
     path: '/docs/team-permissions',
