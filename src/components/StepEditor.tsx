@@ -562,16 +562,16 @@ export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion }
               >
                 Keep v{step.shared_step_version}
               </button>
-              {onUpdateVersion && (
-                <button
-                  type="button"
-                  onClick={() => { onUpdateVersion(step.id, latestVersion); setShowVersionDiff(false); }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
-                >
-                  <i className="ri-arrow-up-line" />
-                  Update to v{latestVersion}
-                </button>
-              )}
+              <button
+                type="button"
+                disabled={!onUpdateVersion}
+                onClick={() => { if (onUpdateVersion) { onUpdateVersion(step.id, latestVersion); setShowVersionDiff(false); } }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title={!onUpdateVersion ? 'Open the TC editor to update the version' : undefined}
+              >
+                <i className="ri-arrow-up-line" />
+                Update to v{latestVersion}
+              </button>
             </div>
           </div>
         </div>,
