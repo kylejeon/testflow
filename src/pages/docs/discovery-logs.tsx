@@ -38,7 +38,7 @@ const addEntrySteps = [
 export default function DocsDiscoveryLogsPage() {
   return (
     <DocsLayout
-      title="Discovery Logs | Testably Docs"
+      title="Exploratory | Testably Docs"
       description="Start exploratory testing sessions, record observations in real-time, and convert findings into formal test cases."
     >
       {/* Page header */}
