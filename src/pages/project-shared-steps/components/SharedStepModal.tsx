@@ -35,6 +35,14 @@ export default function SharedStepModal({ projectId, sharedStep, onClose, onSave
   const [error, setError] = useState<string | null>(null);
   const [usageCount, setUsageCount] = useState(sharedStep?.usage_count || 0);
 
+  // Bulk TC update dialog (shown after saving an edit when TCs reference this shared step)
+  interface UsageTC { test_case_id: string; custom_id: string; title: string; priority: string; linked_version: number; }
+  const [showBulkUpdate, setShowBulkUpdate] = useState(false);
+  const [usageTCs, setUsageTCs] = useState<UsageTC[]>([]);
+  const [selectedTCIds, setSelectedTCIds] = useState<Set<string>>(new Set());
+  const [savedNewVersion, setSavedNewVersion] = useState(0);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
@@ -86,24 +94,95 @@ export default function SharedStepModal({ projectId, sharedStep, onClose, onSave
       };
 
       if (isEdit) {
+        const newVersion = sharedStep!.version + 1;
+
+        // Record the current (old) version content in shared_step_versions before updating
+        await supabase.from('shared_step_versions').insert({
+          shared_step_id: sharedStep!.id,
+          version: sharedStep!.version,
+          steps: sharedStep!.steps,
+          name: sharedStep!.name,
+          changed_by: user.id,
+          change_summary: `Updated to v${newVersion}`,
+        });
+
         const { error: err } = await supabase
           .from('shared_steps')
-          .update({ ...payload, version: sharedStep.version + 1 })
-          .eq('id', sharedStep.id);
+          .update({ ...payload, version: newVersion })
+          .eq('id', sharedStep!.id);
         if (err) throw err;
+
+        // Query TCs that reference this shared step
+        const { data: usages } = await supabase
+          .from('shared_step_usage')
+          .select('test_case_id, linked_version, test_cases!inner(custom_id, title, priority)')
+          .eq('shared_step_id', sharedStep!.id);
+
+        if (usages && usages.length > 0) {
+          // Deduplicate by test_case_id
+          const seen = new Set<string>();
+          const unique = (usages as any[]).filter(u => {
+            if (seen.has(u.test_case_id)) return false;
+            seen.add(u.test_case_id);
+            return true;
+          });
+          const tcList = unique.map((u: any) => ({
+            test_case_id: u.test_case_id,
+            custom_id: u.test_cases?.custom_id || '',
+            title: u.test_cases?.title || '',
+            priority: u.test_cases?.priority || 'medium',
+            linked_version: u.linked_version,
+          }));
+          setUsageTCs(tcList);
+          setSelectedTCIds(new Set(tcList.map((t: any) => t.test_case_id)));
+          setSavedNewVersion(newVersion);
+          setShowBulkUpdate(true);
+          // Don't call onSaved yet — wait for user decision
+        } else {
+          onSaved();
+        }
       } else {
         const { error: err } = await supabase
           .from('shared_steps')
           .insert({ ...payload, project_id: projectId, created_by: user.id });
         if (err) throw err;
+        onSaved();
       }
-
-      onSaved();
     } catch (err: any) {
       setError(err.message || 'Failed to save.');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleBulkUpdate = async () => {
+    setBulkUpdating(true);
+    try {
+      const tcIds = [...selectedTCIds];
+      const { data: tcs } = await supabase
+        .from('test_cases')
+        .select('id, steps')
+        .in('id', tcIds);
+
+      for (const tc of (tcs || [])) {
+        try {
+          const raw = typeof tc.steps === 'string' ? JSON.parse(tc.steps) : (tc.steps || []);
+          const updated = (Array.isArray(raw) ? raw : []).map((s: any) =>
+            s?.type === 'shared_step_ref' && s.shared_step_id === sharedStep!.id
+              ? { ...s, shared_step_version: savedNewVersion }
+              : s
+          );
+          await supabase.from('test_cases').update({ steps: JSON.stringify(updated) }).eq('id', tc.id);
+        } catch {}
+      }
+    } finally {
+      setBulkUpdating(false);
+      onSaved();
+    }
+  };
+
+  const handleSkipBulkUpdate = () => {
+    onSaved();
   };
 
   return (
@@ -262,6 +341,90 @@ export default function SharedStepModal({ projectId, sharedStep, onClose, onSave
           </button>
         </div>
       </div>
+
+      {/* Bulk TC update dialog */}
+      {showBulkUpdate && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 1100 }} />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            width: '560px', maxWidth: 'calc(100vw - 2rem)', maxHeight: '80vh',
+            background: '#fff', borderRadius: '1rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+            zIndex: 1101, display: 'flex', flexDirection: 'column',
+          }}>
+            {/* Header */}
+            <div style={{ padding: '1.25rem 1.5rem 1rem', borderBottom: '1px solid #F1F5F9' }}>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <i className="ri-refresh-line text-amber-600 text-base" />
+                </div>
+                <h2 className="text-sm font-semibold text-slate-800">
+                  {usageTCs.length} test case{usageTCs.length !== 1 ? 's' : ''} using this shared step
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 ml-10">
+                Select which test cases to update to v{savedNewVersion}. Others will keep their current pinned version and show an ↑ indicator.
+              </p>
+            </div>
+
+            {/* TC list */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1.5rem' }}>
+              {/* Select all */}
+              <label className="flex items-center gap-2 py-2 border-b border-slate-100 cursor-pointer mb-1">
+                <input
+                  type="checkbox"
+                  checked={selectedTCIds.size === usageTCs.length}
+                  onChange={e => setSelectedTCIds(e.target.checked ? new Set(usageTCs.map(t => t.test_case_id)) : new Set())}
+                  className="rounded border-slate-300 text-indigo-600"
+                />
+                <span className="text-xs font-semibold text-slate-600">Select all</span>
+              </label>
+              <div className="space-y-1">
+                {usageTCs.map(tc => (
+                  <label key={tc.test_case_id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedTCIds.has(tc.test_case_id)}
+                      onChange={e => {
+                        const next = new Set(selectedTCIds);
+                        if (e.target.checked) next.add(tc.test_case_id);
+                        else next.delete(tc.test_case_id);
+                        setSelectedTCIds(next);
+                      }}
+                      className="rounded border-slate-300 text-indigo-600"
+                    />
+                    <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded flex-shrink-0">
+                      {tc.custom_id}
+                    </span>
+                    <span className="text-xs text-slate-700 flex-1 truncate">{tc.title}</span>
+                    <span className="text-[0.65rem] text-slate-400 flex-shrink-0">v{tc.linked_version}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #F1F5F9' }} className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleSkipBulkUpdate}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors"
+              >
+                Update later
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkUpdate}
+                disabled={bulkUpdating || selectedTCIds.size === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              >
+                {bulkUpdating ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-refresh-line" />}
+                {bulkUpdating ? 'Updating…' : `Update ${selectedTCIds.size} TC${selectedTCIds.size !== 1 ? 's' : ''} to v${savedNewVersion}`}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

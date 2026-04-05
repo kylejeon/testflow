@@ -15,6 +15,7 @@ interface StepEditorProps {
   onChange: (steps: AnyStep[]) => void;
   onInsertSharedStep?: () => void;
   onConvertToSharedStep?: (stepId: string) => void;
+  onUpdateSharedStepVersion?: (stepId: string, newVersion: number) => void;
 }
 
 let _nextId = Date.now();
@@ -28,7 +29,7 @@ function newId() { return String(++_nextId); }
  * - Backspace on empty step removes it and focuses previous
  * - SharedStepRef items render as non-editable badges
  */
-export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSharedStep }: StepEditorProps) {
+export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSharedStep, onUpdateSharedStepVersion }: StepEditorProps) {
   const [focusedCell, setFocusedCell] = useState<{ stepId: string; field: 'step' | 'expected' } | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
@@ -175,6 +176,7 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
               step={step}
               showDelete={steps.length > 1}
               onDelete={() => deleteStep(step.id)}
+              onUpdateVersion={onUpdateSharedStepVersion}
             />
           );
         }
@@ -328,124 +330,254 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
 
 // ── Shared Step reference row (fetches + renders actual steps) ─────────────
 
+type SubStep = { step: string; expectedResult: string };
+
 interface SharedStepRefRowProps {
   step: SharedStepRef;
   showDelete?: boolean;
   onDelete?: () => void;
+  onUpdateVersion?: (stepId: string, newVersion: number) => void;
 }
 
-export function SharedStepRefRow({ step, showDelete, onDelete }: SharedStepRefRowProps) {
-  const [subSteps, setSubSteps] = useState<Array<{ step: string; expectedResult: string }>>([]);
+export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion }: SharedStepRefRowProps) {
+  const [pinnedSteps, setPinnedSteps] = useState<SubStep[]>([]);
+  const [latestSteps, setLatestSteps] = useState<SubStep[]>([]);
+  const [latestVersion, setLatestVersion] = useState(step.shared_step_version);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(true);
-  // currentVersion tracks the actual DB version; initialized to linked version to avoid flash
-  const [currentVersion, setCurrentVersion] = useState(step.shared_step_version);
+  const [showVersionDiff, setShowVersionDiff] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from('shared_steps')
-      .select('steps, version')
-      .eq('id', step.shared_step_id)
-      .single()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('[SharedStepRefRow] fetch error:', error.message, 'shared_step_id:', step.shared_step_id);
-          setLoading(false);
-          return;
-        }
-        if (data?.steps) {
-          // steps may be a JSON string (TEXT column) or already parsed (JSONB)
-          const parsed = typeof data.steps === 'string' ? JSON.parse(data.steps) : data.steps;
-          if (Array.isArray(parsed)) setSubSteps(parsed);
-        }
-        if (data?.version != null) setCurrentVersion(data.version);
+    let cancelled = false;
+    const parseSteps = (raw: any): SubStep[] => {
+      if (!raw) return [];
+      try {
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        return Array.isArray(parsed) ? parsed : [];
+      } catch { return []; }
+    };
+
+    const load = async () => {
+      const { data: latest, error } = await supabase
+        .from('shared_steps')
+        .select('steps, version')
+        .eq('id', step.shared_step_id)
+        .single();
+
+      if (cancelled) return;
+      if (error) {
+        console.error('[SharedStepRefRow] fetch error:', error.message, 'id:', step.shared_step_id);
         setLoading(false);
-      });
-  }, [step.shared_step_id]);
+        return;
+      }
+
+      const latestVer = latest?.version ?? step.shared_step_version;
+      const latestSubs = parseSteps(latest?.steps);
+      setLatestVersion(latestVer);
+      setLatestSteps(latestSubs);
+
+      if (step.shared_step_version >= latestVer) {
+        setPinnedSteps(latestSubs);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch pinned version content from history
+      const { data: hist } = await supabase
+        .from('shared_step_versions')
+        .select('steps')
+        .eq('shared_step_id', step.shared_step_id)
+        .eq('version', step.shared_step_version)
+        .maybeSingle();
+
+      if (cancelled) return;
+      setPinnedSteps(hist?.steps ? parseSteps(hist.steps) : latestSubs);
+      setLoading(false);
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, [step.shared_step_id, step.shared_step_version]);
+
+  const hasDrift = latestVersion > step.shared_step_version;
+
+  const renderSubStep = (s: SubStep, i: number, highlight = false) => (
+    <div key={i} className="flex gap-2">
+      <div className={`flex-shrink-0 w-5 h-5 rounded-full text-[0.6rem] font-bold flex items-center justify-center mt-0.5 ${highlight ? 'bg-emerald-200 text-emerald-700' : 'bg-indigo-200 text-indigo-600'}`}>
+        {i + 1}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-slate-700 leading-relaxed">{s.step}</p>
+        {s.expectedResult && (
+          <div className="mt-1 pl-2 border-l-2 border-indigo-200">
+            <p className="text-[0.7rem] text-indigo-500 leading-relaxed">{s.expectedResult}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 overflow-hidden">
-      {/* Header row */}
-      <div className="flex items-center gap-2 px-3 py-2.5">
-        {/* Collapse/expand toggle */}
-        <button
-          type="button"
-          onClick={() => setExpanded(e => !e)}
-          className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-indigo-400 hover:text-indigo-600 transition-colors"
-          tabIndex={-1}
-        >
-          <i className={`text-xs ${expanded ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'}`} />
-        </button>
-
-        {/* Link icon */}
-        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center">
-          <i className="ri-links-line text-[0.6rem]" />
-        </div>
-
-        {/* ID badge */}
-        <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded flex-shrink-0">
-          {step.shared_step_custom_id}
-        </span>
-
-        {/* Name */}
-        <span className="text-sm font-medium text-slate-700 truncate flex-1 min-w-0">{step.shared_step_name}</span>
-
-        {/* Version + Shared badge — show actual DB version; flag if linked version is stale */}
-        <span className="text-[0.65rem] flex-shrink-0 flex items-center gap-1">
-          <span className="text-indigo-400">v{currentVersion}</span>
-          {currentVersion !== step.shared_step_version && (
-            <span className="text-amber-500 font-semibold" title={`Linked at v${step.shared_step_version}, updated to v${currentVersion}`}>
-              ↑
-            </span>
-          )}
-        </span>
-        <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">
-          Shared
-        </span>
-
-        {/* Delete */}
-        {showDelete && onDelete && (
+    <>
+      <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 overflow-hidden">
+        {/* Header row */}
+        <div className="flex items-center gap-2 px-3 py-2.5">
+          {/* Collapse/expand toggle */}
           <button
             type="button"
-            onMouseDown={(e) => { e.preventDefault(); onDelete(); }}
-            className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-indigo-300 hover:text-red-500 transition-colors rounded"
+            onClick={() => setExpanded(e => !e)}
+            className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-indigo-400 hover:text-indigo-600 transition-colors"
             tabIndex={-1}
           >
-            <i className="ri-delete-bin-line text-xs" />
+            <i className={`text-xs ${expanded ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'}`} />
           </button>
+
+          {/* Link icon */}
+          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center">
+            <i className="ri-links-line text-[0.6rem]" />
+          </div>
+
+          {/* ID badge */}
+          <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded flex-shrink-0">
+            {step.shared_step_custom_id}
+          </span>
+
+          {/* Name */}
+          <span className="text-sm font-medium text-slate-700 truncate flex-1 min-w-0">{step.shared_step_name}</span>
+
+          {/* Version + drift indicator */}
+          <span className="text-[0.65rem] flex-shrink-0 flex items-center gap-1">
+            <span className="text-indigo-400">v{step.shared_step_version}</span>
+            {hasDrift && (
+              <button
+                type="button"
+                onClick={() => setShowVersionDiff(true)}
+                className="inline-flex items-center gap-0.5 px-1 py-px bg-amber-100 text-amber-600 hover:bg-amber-200 border border-amber-300 rounded text-[0.6rem] font-bold transition-colors"
+                title={`v${latestVersion} available — click to view changes`}
+              >
+                <i className="ri-arrow-up-line text-[0.6rem]" /> v{latestVersion}
+              </button>
+            )}
+          </span>
+
+          {/* Shared badge */}
+          <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">
+            Shared
+          </span>
+
+          {/* Delete */}
+          {showDelete && onDelete && (
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); onDelete(); }}
+              className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-indigo-300 hover:text-red-500 transition-colors rounded"
+              tabIndex={-1}
+            >
+              <i className="ri-delete-bin-line text-xs" />
+            </button>
+          )}
+        </div>
+
+        {/* Sub-steps (pinned version, expanded) */}
+        {expanded && (
+          <div className="border-t border-indigo-100 px-3 pb-3 pt-2 space-y-2">
+            {loading ? (
+              <div className="flex items-center gap-2 text-xs text-indigo-400 py-1">
+                <i className="ri-loader-4-line animate-spin" /> Loading steps…
+              </div>
+            ) : pinnedSteps.length === 0 ? (
+              <p className="text-xs text-indigo-300 italic">No steps defined.</p>
+            ) : (
+              pinnedSteps.map((s, i) => renderSubStep(s, i))
+            )}
+          </div>
         )}
       </div>
 
-      {/* Sub-steps (expanded) */}
-      {expanded && (
-        <div className="border-t border-indigo-100 px-3 pb-3 pt-2 space-y-2">
-          {loading ? (
-            <div className="flex items-center gap-2 text-xs text-indigo-400 py-1">
-              <i className="ri-loader-4-line animate-spin" /> Loading steps…
-            </div>
-          ) : subSteps.length === 0 ? (
-            <p className="text-xs text-indigo-300 italic">No steps defined.</p>
-          ) : (
-            subSteps.map((s, i) => (
-              <div key={i} className="flex gap-2">
-                {/* Sub-step number */}
-                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-200 text-indigo-600 text-[0.6rem] font-bold flex items-center justify-center mt-0.5">
-                  {i + 1}
+      {/* Version Diff modal — portal to escape overflow clipping */}
+      {showVersionDiff && createPortal(
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[9999]"
+          style={{ background: 'rgba(15,23,42,0.5)' }}
+          onClick={() => setShowVersionDiff(false)}
+        >
+          <div
+            className="bg-white rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded">
+                    {step.shared_step_custom_id}
+                  </span>
+                  <h3 className="text-sm font-semibold text-slate-800">{step.shared_step_name}</h3>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-700 leading-relaxed">{s.step}</p>
-                  {s.expectedResult && (
-                    <div className="mt-1 pl-2 border-l-2 border-indigo-200">
-                      <p className="text-[0.7rem] text-indigo-500 leading-relaxed">{s.expectedResult}</p>
-                    </div>
-                  )}
+                <p className="text-xs text-slate-400 mt-0.5">
+                  New version available — v{step.shared_step_version} (current) → v{latestVersion} (latest)
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVersionDiff(false)}
+                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <i className="ri-close-line text-lg" />
+              </button>
+            </div>
+
+            {/* Body: side-by-side diff */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-2 divide-x divide-slate-200">
+                <div className="p-4">
+                  <div className="text-[0.6875rem] font-semibold uppercase text-slate-400 tracking-wider mb-3">
+                    v{step.shared_step_version} (Current)
+                  </div>
+                  <div className="space-y-2">
+                    {pinnedSteps.length === 0
+                      ? <p className="text-xs text-slate-300 italic">No steps</p>
+                      : pinnedSteps.map((s, i) => renderSubStep(s, i))}
+                  </div>
+                </div>
+                <div className="p-4 bg-emerald-50/40">
+                  <div className="text-[0.6875rem] font-semibold uppercase text-emerald-600 tracking-wider mb-3">
+                    v{latestVersion} (Latest)
+                  </div>
+                  <div className="space-y-2">
+                    {latestSteps.length === 0
+                      ? <p className="text-xs text-slate-300 italic">No steps</p>
+                      : latestSteps.map((s, i) => renderSubStep(s, i, true))}
+                  </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3 border-t border-slate-200 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowVersionDiff(false)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors"
+              >
+                Keep v{step.shared_step_version}
+              </button>
+              {onUpdateVersion && (
+                <button
+                  type="button"
+                  onClick={() => { onUpdateVersion(step.id, latestVersion); setShowVersionDiff(false); }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                >
+                  <i className="ri-arrow-up-line" />
+                  Update to v{latestVersion}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
 

@@ -1021,6 +1021,15 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     setShowInsertSharedStepModal(false);
   };
 
+  // Update a SharedStepRef's pinned version when user clicks "Update to vN"
+  const handleUpdateSharedStepVersion = (stepId: string, newVersion: number) => {
+    setTestSteps(prev => prev.map(s =>
+      isSharedStepRef(s) && s.id === stepId
+        ? { ...s, shared_step_version: newVersion }
+        : s
+    ));
+  };
+
   // Start "Convert to Shared Step" flow for a given step id
   const handleConvertToSharedStep = (stepId: string) => {
     const step = testSteps.find(s => s.id === stepId);
@@ -1077,30 +1086,14 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     }
 
     // Serialize steps — use JSON when SharedStepRef present, plain text otherwise.
-    // Refresh shared_step_version numbers to current DB version so stored refs stay in sync.
+    // SharedStepRef versions are pinned (user controls updates via ↑ button in editor).
     const hasSharedRef = testSteps.some(s => isSharedStepRef(s));
-
-    let effectiveTestSteps: AnyStep[] = testSteps;
-    if (hasSharedRef) {
-      const refIds = (testSteps.filter(s => isSharedStepRef(s)) as SharedStepRef[]).map(s => s.shared_step_id);
-      const { data: latestVersions } = await supabase
-        .from('shared_steps')
-        .select('id, version')
-        .in('id', refIds);
-      const versionMap = new Map<string, number>((latestVersions || []).map((ss: any) => [ss.id, ss.version]));
-      effectiveTestSteps = testSteps.map(s =>
-        isSharedStepRef(s) && versionMap.has(s.shared_step_id)
-          ? { ...s, shared_step_version: versionMap.get(s.shared_step_id)! }
-          : s
-      );
-    }
-
     const stepsString = hasSharedRef
-      ? JSON.stringify(effectiveTestSteps)
-      : effectiveTestSteps.map((step, index) => `${index + 1}. ${(step as TestStep).step}`).join('\n');
+      ? JSON.stringify(testSteps)
+      : testSteps.map((step, index) => `${index + 1}. ${(step as TestStep).step}`).join('\n');
     const expectedResultString = hasSharedRef
       ? ''
-      : effectiveTestSteps.map((step, index) => `${index + 1}. ${(step as TestStep).expectedResult}`).join('\n');
+      : testSteps.map((step, index) => `${index + 1}. ${(step as TestStep).expectedResult}`).join('\n');
 
     const updatedTestCaseData = {
       ...newTestCase,
@@ -3820,6 +3813,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       onChange={(steps) => setTestSteps(steps)}
                       onInsertSharedStep={() => setShowInsertSharedStepModal(true)}
                       onConvertToSharedStep={handleConvertToSharedStep}
+                      onUpdateSharedStepVersion={handleUpdateSharedStepVersion}
                     />
                   </div>
 
