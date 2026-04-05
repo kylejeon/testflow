@@ -1096,26 +1096,38 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         // Normalize old steps/expected_result through the SAME parse→re-serialize
-        // pipeline as the new snapshot to prevent false diffs from format differences
-        // (e.g. missing "N. " prefix, empty trailing entries, raw DB format mismatches).
-        const oldRawSteps = Array.isArray(editingTestCase.steps)
-          ? editingTestCase.steps.map((s: any) => s.step).join('\n')
-          : (editingTestCase.steps || '');
-        const oldRawER = Array.isArray(editingTestCase.steps)
-          ? editingTestCase.steps.map((s: any) => s.expectedResult).join('\n')
-          : (editingTestCase.expected_result || '');
+        // pipeline as the new snapshot to prevent false diffs from format differences.
+        const rawStepsVal = editingTestCase.steps || '';
+        const oldRawSteps = Array.isArray(rawStepsVal)
+          ? JSON.stringify(rawStepsVal)
+          : String(rawStepsVal);
 
-        // Parse old steps — same logic as handleEdit
-        const oldStepsArr = oldRawSteps.split('\n').filter((s: string) => s.trim());
-        const oldERArr    = oldRawER.split('\n').filter((s: string) => s.trim());
-
-        // Re-serialize with "N. " prefix — same logic as stepsString / expectedResultString
-        const oldStepsString = oldStepsArr
-          .map((s: string, i: number) => `${i + 1}. ${s.replace(/^\d+\.\s*/, '')}`)
-          .join('\n');
-        const oldExpectedResultString = oldStepsArr
-          .map((_: string, i: number) => `${i + 1}. ${(oldERArr[i] || '').replace(/^\d+\.\s*/, '')}`)
-          .join('\n');
+        // If the stored steps are a JSON array (may contain SharedStepRefs), preserve
+        // the JSON string so normalizeStepField can render them correctly in Version Diff.
+        let oldStepsString: string;
+        let oldExpectedResultString: string;
+        try {
+          const parsedOld = JSON.parse(oldRawSteps);
+          if (Array.isArray(parsedOld)) {
+            // Preserve JSON — normalizeStepField will format it
+            oldStepsString = oldRawSteps;
+            oldExpectedResultString = '';
+          } else {
+            throw new Error('not array');
+          }
+        } catch {
+          const oldRawER = Array.isArray(rawStepsVal)
+            ? (rawStepsVal as any[]).map((s: any) => s.expectedResult).join('\n')
+            : (editingTestCase.expected_result || '');
+          const oldStepsArr = oldRawSteps.split('\n').filter((s: string) => s.trim());
+          const oldERArr    = oldRawER.split('\n').filter((s: string) => s.trim());
+          oldStepsString = oldStepsArr
+            .map((s: string, i: number) => `${i + 1}. ${s.replace(/^\d+\.\s*/, '')}`)
+            .join('\n');
+          oldExpectedResultString = oldStepsArr
+            .map((_: string, i: number) => `${i + 1}. ${(oldERArr[i] || '').replace(/^\d+\.\s*/, '')}`)
+            .join('\n');
+        }
 
         // 이전 스냅샷 저장 (old_value에 JSON으로 저장)
         const oldSnapshot: TestCaseSnapshot = {

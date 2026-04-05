@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { AnyStep, SharedStepRef } from '../types/shared-steps';
 import { isSharedStepRef } from '../types/shared-steps';
 import { supabase } from '../lib/supabase';
@@ -30,15 +31,20 @@ function newId() { return String(++_nextId); }
 export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSharedStep }: StepEditorProps) {
   const [focusedCell, setFocusedCell] = useState<{ stepId: string; field: 'step' | 'expected' } | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
   const [hoveredStepId, setHoveredStepId] = useState<string | null>(null);
   const textareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
 
-  // Close context menu on outside click
+  // Close context menu on outside click or scroll
   useEffect(() => {
     if (!openMenuId) return;
-    const handler = () => setOpenMenuId(null);
+    const handler = () => { setOpenMenuId(null); setMenuPos(null); };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('scroll', handler, true);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('scroll', handler, true);
+    };
   }, [openMenuId]);
 
   const getRef = (id: string, field: 'step' | 'expected') =>
@@ -232,14 +238,21 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
 
             {/* Actions: ⋮ menu + delete */}
             <div className="flex-shrink-0 flex flex-col gap-1 mt-1">
-              {/* ⋮ context menu — always visible */}
+              {/* ⋮ context menu — portal-rendered to escape overflow:auto clipping */}
               {onConvertToSharedStep && (
-                <div className="relative">
+                <>
                   <button
                     type="button"
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      setOpenMenuId(openMenuId === step.id ? null : step.id);
+                      if (openMenuId === step.id) {
+                        setOpenMenuId(null);
+                        setMenuPos(null);
+                      } else {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                        setOpenMenuId(step.id);
+                      }
                     }}
                     className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
                     tabIndex={-1}
@@ -247,15 +260,17 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
                   >
                     <i className="ri-more-2-line text-base" />
                   </button>
-                  {openMenuId === step.id && (
+                  {openMenuId === step.id && menuPos && createPortal(
                     <div
-                      className="absolute right-0 top-7 w-52 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1"
+                      style={{ position: 'fixed', top: menuPos.top, right: menuPos.right, zIndex: 9999 }}
+                      className="w-52 bg-white border border-slate-200 rounded-lg shadow-lg py-1"
                       onMouseDown={(e) => e.stopPropagation()}
                     >
                       <button
                         type="button"
                         onClick={() => {
                           setOpenMenuId(null);
+                          setMenuPos(null);
                           onConvertToSharedStep(step.id);
                         }}
                         className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
@@ -263,9 +278,10 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
                         <i className="ri-links-line text-indigo-500" />
                         Convert to Shared Step
                       </button>
-                    </div>
+                    </div>,
+                    document.body
                   )}
-                </div>
+                </>
               )}
 
               {/* Delete */}
