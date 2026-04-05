@@ -58,15 +58,17 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
         .maybeSingle();
       if (data?.domain && data?.email && data?.api_token) {
         setJiraConnected(true);
-        if (data.project_key) {
-          setSavedProjectKey(data.project_key);
-          setJiraProjectKey(data.project_key);
+        // Project-level jira_project_key takes priority over global jira_settings key
+        const keyToUse = projectJiraKey || data.project_key || '';
+        if (keyToUse) {
+          setSavedProjectKey(keyToUse);
+          setJiraProjectKey(keyToUse);
         }
       } else {
         setJiraConnected(false);
       }
     })();
-  }, []);
+  }, [projectJiraKey]);
 
   const toggleType = (type: string) => {
     setSelectedTypes((prev) => {
@@ -83,6 +85,10 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
 
   const handleFetch = async () => {
     if (!jiraProjectKey.trim()) { setError('Please enter a Jira project key.'); return; }
+    if (!PROJECT_KEY_REGEX.test(jiraProjectKey.trim().toUpperCase())) {
+      setError('Invalid project key. Use only letters (e.g. "GW"), not an issue key like "GW-266".');
+      return;
+    }
     setFetching(true);
     setError(null);
     setPreviewIssues(null);
@@ -213,7 +219,12 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
               {savedProjectKey && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-100 text-green-700 text-xs">
                   <i className="ri-check-circle-line" />
-                  <span>Using saved Jira project key: <strong>{savedProjectKey}</strong></span>
+                  <span>
+                    {projectJiraKey
+                      ? <>Using project Jira key: <strong>{savedProjectKey}</strong></>
+                      : <>Using saved Jira project key: <strong>{savedProjectKey}</strong></>
+                    }
+                  </span>
                 </div>
               )}
 
@@ -222,12 +233,12 @@ export default function JiraImportModal({ projectId, projectJiraKey = '', existi
                 <input
                   type="text"
                   value={jiraProjectKey}
-                  onChange={(e) => setJiraProjectKey(e.target.value.toUpperCase())}
+                  onChange={(e) => setJiraProjectKey(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
                   className={fieldCls}
                   placeholder="e.g. PROJ, MYAPP"
                   autoFocus
                 />
-                <p className="text-xs text-slate-400 mt-1">The key prefix of your Jira project (e.g. PROJ for PROJ-101)</p>
+                <p className="text-xs text-slate-400 mt-1">Letters only — the key prefix of your Jira project (e.g. PROJ for PROJ-101)</p>
               </div>
 
               <div>
