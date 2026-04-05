@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { AnyStep } from '../types/shared-steps';
+import type { AnyStep, SharedStepRef } from '../types/shared-steps';
 import { isSharedStepRef } from '../types/shared-steps';
+import { supabase } from '../lib/supabase';
 
 export interface Step {
   id: string;
@@ -163,44 +164,12 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
         // ── Shared Step reference row ────────────────────────────────────────
         if (isSharedStepRef(step)) {
           return (
-            <div
+            <SharedStepRefRow
               key={step.id}
-              className="relative flex gap-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"
-            >
-              {/* Drag handle */}
-              <div className="flex-shrink-0 mt-1 opacity-0 hover:opacity-100 transition-opacity cursor-grab text-indigo-300">
-                <i className="ri-draggable text-base" />
-              </div>
-
-              {/* Link icon */}
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center mt-1">
-                <i className="ri-links-line text-xs" />
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded flex-shrink-0">
-                    {step.shared_step_custom_id}
-                  </span>
-                  <span className="text-sm font-medium text-slate-700 truncate">{step.shared_step_name}</span>
-                  <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{step.shared_step_version}</span>
-                  <span className="ml-auto text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">
-                    Shared
-                  </span>
-                </div>
-              </div>
-
-              {/* Delete */}
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); deleteStep(step.id); }}
-                className="flex-shrink-0 opacity-0 hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 rounded mt-1"
-                tabIndex={-1}
-              >
-                <i className="ri-delete-bin-line text-sm" />
-              </button>
-            </div>
+              step={step}
+              showDelete={steps.length > 1}
+              onDelete={() => deleteStep(step.id)}
+            />
           );
         }
 
@@ -335,6 +304,110 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Shared Step reference row (fetches + renders actual steps) ─────────────
+
+interface SharedStepRefRowProps {
+  step: SharedStepRef;
+  showDelete: boolean;
+  onDelete: () => void;
+}
+
+function SharedStepRefRow({ step, showDelete, onDelete }: SharedStepRefRowProps) {
+  const [subSteps, setSubSteps] = useState<Array<{ step: string; expectedResult: string }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from('shared_steps')
+      .select('steps')
+      .eq('id', step.shared_step_id)
+      .single()
+      .then(({ data }) => {
+        if (data?.steps && Array.isArray(data.steps)) setSubSteps(data.steps);
+        setLoading(false);
+      });
+  }, [step.shared_step_id]);
+
+  return (
+    <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 overflow-hidden">
+      {/* Header row */}
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        {/* Collapse/expand toggle */}
+        <button
+          type="button"
+          onClick={() => setExpanded(e => !e)}
+          className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-indigo-400 hover:text-indigo-600 transition-colors"
+          tabIndex={-1}
+        >
+          <i className={`text-xs ${expanded ? 'ri-arrow-down-s-line' : 'ri-arrow-right-s-line'}`} />
+        </button>
+
+        {/* Link icon */}
+        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center">
+          <i className="ri-links-line text-[0.6rem]" />
+        </div>
+
+        {/* ID badge */}
+        <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded flex-shrink-0">
+          {step.shared_step_custom_id}
+        </span>
+
+        {/* Name */}
+        <span className="text-sm font-medium text-slate-700 truncate flex-1 min-w-0">{step.shared_step_name}</span>
+
+        {/* Version + Shared badge */}
+        <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{step.shared_step_version}</span>
+        <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">
+          Shared
+        </span>
+
+        {/* Delete */}
+        {showDelete && (
+          <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); onDelete(); }}
+            className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-indigo-300 hover:text-red-500 transition-colors rounded"
+            tabIndex={-1}
+          >
+            <i className="ri-delete-bin-line text-xs" />
+          </button>
+        )}
+      </div>
+
+      {/* Sub-steps (expanded) */}
+      {expanded && (
+        <div className="border-t border-indigo-100 px-3 pb-3 pt-2 space-y-2">
+          {loading ? (
+            <div className="flex items-center gap-2 text-xs text-indigo-400 py-1">
+              <i className="ri-loader-4-line animate-spin" /> Loading steps…
+            </div>
+          ) : subSteps.length === 0 ? (
+            <p className="text-xs text-indigo-300 italic">No steps defined.</p>
+          ) : (
+            subSteps.map((s, i) => (
+              <div key={i} className="flex gap-2">
+                {/* Sub-step number */}
+                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-200 text-indigo-600 text-[0.6rem] font-bold flex items-center justify-center mt-0.5">
+                  {i + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-slate-700 leading-relaxed">{s.step}</p>
+                  {s.expectedResult && (
+                    <div className="mt-1 pl-2 border-l-2 border-indigo-200">
+                      <p className="text-[0.7rem] text-indigo-500 leading-relaxed">{s.expectedResult}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
