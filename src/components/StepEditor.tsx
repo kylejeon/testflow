@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import type { AnyStep } from '../types/shared-steps';
+import { isSharedStepRef } from '../types/shared-steps';
 
 export interface Step {
   id: string;
@@ -7,8 +9,10 @@ export interface Step {
 }
 
 interface StepEditorProps {
-  steps: Step[];
-  onChange: (steps: Step[]) => void;
+  steps: AnyStep[];
+  onChange: (steps: AnyStep[]) => void;
+  onInsertSharedStep?: () => void;
+  onConvertToSharedStep?: (stepId: string) => void;
 }
 
 let _nextId = Date.now();
@@ -20,11 +24,20 @@ function newId() { return String(++_nextId); }
  * - Tab / Shift+Tab navigates between step ↔ expected result fields
  * - Enter on step field adds a new step below and focuses it
  * - Backspace on empty step removes it and focuses previous
- * - Drag handle on hover (decorative, visual only)
+ * - SharedStepRef items render as non-editable badges
  */
-export function StepEditor({ steps, onChange }: StepEditorProps) {
+export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSharedStep }: StepEditorProps) {
   const [focusedCell, setFocusedCell] = useState<{ stepId: string; field: 'step' | 'expected' } | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const textareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
+
+  // Close context menu on outside click
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handler = () => setOpenMenuId(null);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openMenuId]);
 
   const getRef = (id: string, field: 'step' | 'expected') =>
     `${id}:${field}`;
@@ -57,15 +70,27 @@ export function StepEditor({ steps, onChange }: StepEditorProps) {
 
   const deleteStep = (id: string) => {
     if (steps.length <= 1) {
-      onChange([{ ...steps[0], step: '', expectedResult: '' }]);
-      focusCell(steps[0].id, 'step');
+      const s = steps[0];
+      if (isSharedStepRef(s)) {
+        // Replace shared ref with empty normal step
+        const empty = { id: newId(), step: '', expectedResult: '' };
+        onChange([empty]);
+        requestAnimationFrame(() => focusCell(empty.id, 'step'));
+      } else {
+        onChange([{ ...s, step: '', expectedResult: '' }]);
+        focusCell(s.id, 'step');
+      }
       return;
     }
     const idx = steps.findIndex(s => s.id === id);
+    const remaining = steps.filter(s => s.id !== id);
+    onChange(remaining);
+    // Focus previous normal step if available
     const prevIdx = Math.max(0, idx - 1);
-    const prevId = steps[prevIdx].id;
-    onChange(steps.filter(s => s.id !== id));
-    requestAnimationFrame(() => focusCell(prevId, 'step', true));
+    const prev = remaining[prevIdx];
+    if (prev && !isSharedStepRef(prev)) {
+      requestAnimationFrame(() => focusCell(prev.id, 'step', true));
+    }
   };
 
   const handleKeyDown = (
@@ -73,7 +98,10 @@ export function StepEditor({ steps, onChange }: StepEditorProps) {
     id: string,
     field: 'step' | 'expected'
   ) => {
+    // Only normal steps have textareas, so skip SharedStepRef
+    const normalSteps = steps.filter(s => !isSharedStepRef(s));
     const idx = steps.findIndex(s => s.id === id);
+    const normalIdx = normalSteps.findIndex(s => s.id === id);
 
     if (field === 'step') {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -91,19 +119,20 @@ export function StepEditor({ steps, onChange }: StepEditorProps) {
         focusCell(id, 'expected');
         return;
       }
-      if (e.key === 'Tab' && e.shiftKey && idx > 0) {
+      if (e.key === 'Tab' && e.shiftKey && normalIdx > 0) {
         e.preventDefault();
-        focusCell(steps[idx - 1].id, 'expected');
+        focusCell(normalSteps[normalIdx - 1].id, 'expected');
         return;
       }
     } else {
       // expected result field
       if (e.key === 'Tab' && !e.shiftKey) {
         e.preventDefault();
-        if (idx < steps.length - 1) {
-          focusCell(steps[idx + 1].id, 'step');
+        // Find next normal step after current position
+        const nextNormal = steps.slice(idx + 1).find(s => !isSharedStepRef(s));
+        if (nextNormal) {
+          focusCell(nextNormal.id, 'step');
         } else {
-          // last step — add new
           addStepAfter(id);
         }
         return;
@@ -130,7 +159,51 @@ export function StepEditor({ steps, onChange }: StepEditorProps) {
   return (
     <div className="space-y-2">
       {steps.map((step, index) => {
-        const isEditing = focusedCell?.stepId === step.id;
+        // ── Shared Step reference row ────────────────────────────────────────
+        if (isSharedStepRef(step)) {
+          return (
+            <div
+              key={step.id}
+              className="group relative flex gap-3 p-3 rounded-lg border border-indigo-200 bg-indigo-50/60"
+            >
+              {/* Drag handle */}
+              <div className="flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-indigo-300">
+                <i className="ri-draggable text-base" />
+              </div>
+
+              {/* Link icon */}
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center mt-1">
+                <i className="ri-links-line text-xs" />
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded flex-shrink-0">
+                    {step.shared_step_custom_id}
+                  </span>
+                  <span className="text-sm font-medium text-slate-700 truncate">{step.shared_step_name}</span>
+                  <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{step.shared_step_version}</span>
+                  <span className="ml-auto text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">
+                    Shared
+                  </span>
+                </div>
+              </div>
+
+              {/* Delete */}
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); deleteStep(step.id); }}
+                className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 rounded mt-1"
+                tabIndex={-1}
+              >
+                <i className="ri-delete-bin-line text-sm" />
+              </button>
+            </div>
+          );
+        }
+
+        // ── Normal step row ──────────────────────────────────────────────────
         return (
           <div
             key={step.id}
@@ -183,29 +256,80 @@ export function StepEditor({ steps, onChange }: StepEditorProps) {
               </div>
             </div>
 
-            {/* Delete button */}
-            {steps.length > 1 && (
-              <button
-                onMouseDown={(e) => { e.preventDefault(); deleteStep(step.id); }}
-                className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 rounded mt-1"
-                tabIndex={-1}
-              >
-                <i className="ri-delete-bin-line text-sm" />
-              </button>
-            )}
+            {/* Actions: ⋮ menu + delete */}
+            <div className="flex-shrink-0 flex flex-col gap-1 mt-1">
+              {/* ⋮ context menu */}
+              {onConvertToSharedStep && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setOpenMenuId(openMenuId === step.id ? null : step.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-500 rounded"
+                    tabIndex={-1}
+                  >
+                    <i className="ri-more-line text-sm" />
+                  </button>
+                  {openMenuId === step.id && (
+                    <div
+                      className="absolute right-0 top-7 w-52 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1"
+                      onMouseDown={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          onConvertToSharedStep(step.id);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      >
+                        <i className="ri-links-line text-indigo-500" />
+                        Convert to Shared Step
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Delete */}
+              {steps.length > 1 && (
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); deleteStep(step.id); }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 rounded"
+                  tabIndex={-1}
+                >
+                  <i className="ri-delete-bin-line text-sm" />
+                </button>
+              )}
+            </div>
           </div>
         );
       })}
 
-      {/* Add step */}
-      <button
-        type="button"
-        onClick={() => addStepAfter(steps[steps.length - 1].id)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
-      >
-        <i className="ri-add-line" />
-        Add step
-      </button>
+      {/* Bottom action buttons */}
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => addStepAfter(steps[steps.length - 1].id)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
+        >
+          <i className="ri-add-line" />
+          Add step
+        </button>
+        {onInsertSharedStep && (
+          <button
+            type="button"
+            onClick={onInsertSharedStep}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-violet-500 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-colors"
+          >
+            <i className="ri-links-line" />
+            Insert Shared Step
+          </button>
+        )}
+      </div>
     </div>
   );
 }

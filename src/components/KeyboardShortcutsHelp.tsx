@@ -58,8 +58,8 @@ const GROUPS: Group[] = [
       { label: 'Open Command Palette', keys: ['Cmd', 'K'] },
       { label: 'Show keyboard shortcuts', keys: ['?'], single: true },
       { label: 'Go to Test Cases', keys: ['G', 'T'], chord: true },
-      { label: 'Go to Runs & Results', keys: ['G', 'R'], chord: true },
-      { label: 'Go to Discovery Logs', keys: ['G', 'D'], chord: true },
+      { label: 'Go to Runs', keys: ['G', 'R'], chord: true },
+      { label: 'Go to Exploratory', keys: ['G', 'D'], chord: true },
       { label: 'Go to Milestones', keys: ['G', 'M'], chord: true },
       { label: 'Go to Projects', keys: ['G', 'P'], chord: true },
       { label: 'Enter Focus Mode', keys: ['Cmd', 'Shift', 'F'] },
@@ -133,7 +133,7 @@ const CONTEXT_SHORTCUTS: {
   },
   {
     pattern: /\/runs/,
-    title: 'Runs & Results',
+    title: 'Runs',
     shortcuts: [
       { label: 'Navigate items', keys: ['↑', '↓'], single: true },
       { label: 'Open / expand item', keys: ['Enter'] },
@@ -149,7 +149,7 @@ const CONTEXT_SHORTCUTS: {
   },
   {
     pattern: /\/discovery-logs|\/sessions/,
-    title: 'Discovery Logs',
+    title: 'Exploratory',
     shortcuts: [
       { label: 'Navigate items', keys: ['↑', '↓'], single: true },
       { label: 'Open / expand item', keys: ['Enter'] },

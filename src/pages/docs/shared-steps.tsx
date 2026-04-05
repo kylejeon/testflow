@@ -43,15 +43,15 @@ const inlineConvertSteps = [
 export default function DocsSharedStepsPage() {
   return (
     <DocsLayout
-      title="Shared / Reusable Test Steps | Testably Docs"
-      description="Learn how to create a Shared Steps library, insert reusable step blocks into test cases, convert inline steps, and track usage across your project."
+      title="Steps Library | Testably Docs"
+      description="Learn how to create a Steps Library, insert reusable step blocks into test cases, convert inline steps, and track usage across your project."
     >
       {/* Page header */}
       <div className="mb-10">
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
           <Link to="/docs" className="hover:text-indigo-600 transition-colors">Docs</Link>
           <i className="ri-arrow-right-s-line text-gray-400" />
-          <span className="text-gray-900 font-medium">Shared Steps</span>
+          <span className="text-gray-900 font-medium">Steps Library</span>
         </div>
         <div className="flex items-center gap-3 mb-3">
           <h1 className="text-3xl font-bold text-gray-900">Shared / Reusable Test Steps</h1>
@@ -92,7 +92,7 @@ export default function DocsSharedStepsPage() {
           </ul>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
-            <p className="text-sm font-semibold text-blue-800 mb-1">Plan Limits — Shared Steps</p>
+            <p className="text-sm font-semibold text-blue-800 mb-1">Plan Limits — Steps Library</p>
             <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-blue-700">
               <span>Free: <strong>Not available</strong></span>
               <span>Starter: <strong>Up to 20 shared steps per project</strong></span>
@@ -110,7 +110,7 @@ export default function DocsSharedStepsPage() {
             <h2 className="text-xl font-bold text-gray-900">Creating a Shared Step</h2>
           </div>
           <p className="text-gray-500 text-sm leading-relaxed mb-2">
-            Go to <strong>Project → Shared Steps</strong> and click <strong>"+ New Shared Step"</strong> to open the library editor.
+            Go to <strong>Project → Steps Library</strong> and click <strong>"+ New Shared Step"</strong> to open the library editor.
           </p>
 
           <StepList steps={createSharedStepSteps} />
@@ -169,7 +169,7 @@ export default function DocsSharedStepsPage() {
             <h2 className="text-xl font-bold text-gray-900">Managing the Library</h2>
           </div>
           <p className="text-gray-500 text-sm leading-relaxed mb-4">
-            The Shared Steps library page lists all shared steps for the current project. You can search by name or ID, filter by category, and sort by usage count.
+            The Steps Library page lists all shared steps for the current project. You can search by name or ID, filter by category, and sort by usage count.
           </p>
 
           <h3 className="text-base font-semibold text-gray-900 mb-2">Editing a Shared Step</h3>
@@ -290,7 +290,7 @@ export default function DocsSharedStepsPage() {
         <section className="bg-indigo-50 border border-indigo-100 rounded-xl p-6">
           <h3 className="font-semibold text-indigo-900 mb-3">Next Steps</h3>
           <p className="text-sm text-indigo-700 mb-4">
-            Shared Steps pair well with the Requirements Traceability Matrix for comprehensive coverage visibility.
+            Steps Library pairs well with the Requirements Traceability Matrix for comprehensive coverage visibility.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Link

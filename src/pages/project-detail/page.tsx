@@ -1200,7 +1200,7 @@ export default function ProjectDetail() {
                       { label: 'Test Cases', value: testCaseCount, link: `/projects/${id}/testcases`, color: '#6366F1' },
                       { label: 'Pass Rate', value: prTotal > 0 ? `${passRate}%` : '—', link: `/projects/${id}/runs`, color: healthColor },
                       { label: 'Active Runs', value: activeRunsCount, link: `/projects/${id}/runs`, color: '#6366F1' },
-                      { label: 'Discovery Logs', value: sessions.length, link: `/projects/${id}/discovery-logs`, color: '#8B5CF6' },
+                      { label: 'Exploratory', value: sessions.length, link: `/projects/${id}/discovery-logs`, color: '#8B5CF6' },
                     ].map(({ label, value, link, color }) => (
                       <Link key={label} to={link} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0 hover:bg-slate-50 rounded-lg px-2 -mx-2 transition-colors">
                         <div>

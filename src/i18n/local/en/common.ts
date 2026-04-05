@@ -4,8 +4,8 @@ export const common = {
   milestones: 'Milestones',
   documentation: 'Documentation',
   testCases: 'Test Cases',
-  runsAndResults: 'Runs & Results',
-  sessions: 'Discovery Logs',
+  runsAndResults: 'Runs',
+  sessions: 'Exploratory',
   settings: 'Settings',
   projects: 'Projects',
   

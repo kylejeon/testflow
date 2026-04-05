@@ -154,7 +154,12 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
       active: path.includes('/testcases'),
     },
     {
-      label: 'Runs & Results',
+      label: 'Steps Library',
+      to: `/projects/${projectId}/shared-steps`,
+      active: path.includes('/shared-steps'),
+    },
+    {
+      label: 'Runs',
       to: `/projects/${projectId}/runs`,
       active: path.includes('/runs'),
     },
@@ -174,14 +179,9 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
       active: path.includes('/milestones'),
     },
     {
-      label: 'Discovery Logs',
+      label: 'Exploratory',
       to: `/projects/${projectId}/discovery-logs`,
       active: path.includes('/discovery-logs') || path.includes('/sessions'),
-    },
-    {
-      label: 'Shared Steps',
-      to: `/projects/${projectId}/shared-steps`,
-      active: path.includes('/shared-steps'),
     },
     {
       label: 'Documents',

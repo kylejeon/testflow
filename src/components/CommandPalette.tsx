@@ -95,10 +95,10 @@ export function CommandPalette({ open, onClose, projectId, onAIGenerate }: Comma
             },
             {
               id: 'page-discovery',
-              title: 'Discovery Logs',
+              title: 'Exploratory',
               subtitle: 'Current project',
               icon: 'ri-compass-discover-line',
-              action: () => navigateTo(`/projects/${projectId}/discovery-logs`, { id: 'page-discovery', title: 'Discovery Logs', icon: 'ri-compass-discover-line', path: `/projects/${projectId}/discovery-logs` }),
+              action: () => navigateTo(`/projects/${projectId}/discovery-logs`, { id: 'page-discovery', title: 'Exploratory', icon: 'ri-compass-discover-line', path: `/projects/${projectId}/discovery-logs` }),
             },
             {
               id: 'page-milestones',

@@ -978,10 +978,10 @@ export default function MilestoneDetail() {
               )}
             </div>
 
-            {/* Discovery Logs */}
+            {/* Exploratory */}
             <div>
               <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <i className="ri-search-eye-line" style={{ fontSize: '0.8125rem' }} /> Discovery Logs
+                <i className="ri-search-eye-line" style={{ fontSize: '0.8125rem' }} /> Exploratory
                 <span style={{ fontSize: '0.625rem', fontWeight: 700, background: '#F1F5F9', color: '#94A3B8', padding: '0.0625rem 0.375rem', borderRadius: '9999px' }}>{sessions.length}</span>
               </div>
               {sessions.length === 0 ? (

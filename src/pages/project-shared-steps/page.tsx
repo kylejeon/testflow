@@ -405,7 +405,7 @@ export default function ProjectSharedSteps() {
           <div>
             <h1 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
               <i className="ri-links-line text-indigo-500" />
-              Shared Steps
+              Steps Library
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
               Reusable step sequences referenced by multiple test cases

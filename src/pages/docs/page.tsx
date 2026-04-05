@@ -27,7 +27,7 @@ const categories = [
   { icon: 'ri-file-list-3-line', title: 'Test Cases', desc: 'Create, edit, folders, tags, priority, bulk ops, AI generation', href: '/docs/test-cases' },
   { icon: 'ri-play-circle-line', title: 'Test Runs', desc: 'Create runs, assign cases, results, Focus Mode, statuses', href: '/docs/test-runs' },
   { icon: 'ri-flag-line', title: 'Milestones', desc: 'Create milestones, link runs, progress tracking, releases', href: '/docs/milestones' },
-  { icon: 'ri-search-eye-line', title: 'Discovery Logs', desc: 'Start sessions, record observations, screenshots, TC conversion', href: '/docs/discovery-logs' },
+  { icon: 'ri-search-eye-line', title: 'Exploratory', desc: 'Start sessions, record observations, screenshots, TC conversion', href: '/docs/discovery-logs' },
   { icon: 'ri-team-line', title: 'Team & Permissions', desc: 'Invite members, roles (Admin/Member/Viewer), access control', href: '/docs/team-permissions' },
   { icon: 'ri-plug-line', title: 'Integrations', desc: 'Jira setup, CI/CD API, Slack & Teams notifications', href: '/docs/integrations' },
   { icon: 'ri-terminal-line', title: 'CI/CD & Test Automation SDK', desc: 'Playwright, Cypress, Jest reporters. CI/CD pipeline integration.', href: '/docs/cicd' },

@@ -5,6 +5,9 @@ import ExportImportModal from './ExportImportModal';
 import CloneFromProjectModal from './CloneFromProjectModal';
 import { BulkActionBar } from '../../../components/BulkActionBar';
 import { StepEditor, type Step } from '../../../components/StepEditor';
+import InsertSharedStepModal from '../../project-shared-steps/components/InsertSharedStepModal';
+import type { AnyStep, SharedTestStep } from '../../../types/shared-steps';
+import { isSharedStepRef } from '../../../types/shared-steps';
 import { LifecycleBadge, type LifecycleStatus } from '../../../components/LifecycleBadge';
 import { Avatar } from '../../../components/Avatar';
 
@@ -189,7 +192,11 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
-  const [testSteps, setTestSteps] = useState<TestStep[]>([{ id: '1', step: '', expectedResult: '' }]);
+  const [testSteps, setTestSteps] = useState<AnyStep[]>([{ id: '1', step: '', expectedResult: '' }]);
+  const [showInsertSharedStepModal, setShowInsertSharedStepModal] = useState(false);
+  const [convertingStep, setConvertingStep] = useState<{ id: string; step: string; expectedResult: string } | null>(null);
+  const [convertName, setConvertName] = useState('');
+  const [convertSaving, setConvertSaving] = useState(false);
   const [historyData, setHistoryData] = useState<TestCaseHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id: string; full_name: string; email: string } | null>(null);
@@ -994,20 +1001,89 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     ));
   };
 
+  // Insert a SharedTestStep as a SharedStepRef at the end of the steps list
+  const handleInsertSharedStep = (ss: SharedTestStep) => {
+    const ref: AnyStep = {
+      id: crypto.randomUUID(),
+      type: 'shared_step_ref',
+      shared_step_id: ss.id,
+      shared_step_custom_id: ss.custom_id,
+      shared_step_name: ss.name,
+      shared_step_version: ss.version,
+    };
+    setTestSteps(prev => {
+      // Remove trailing empty step if it's the only one
+      const filtered = prev.length === 1 && !isSharedStepRef(prev[0]) && !(prev[0] as TestStep).step.trim()
+        ? []
+        : [...prev];
+      return [...filtered, ref];
+    });
+    setShowInsertSharedStepModal(false);
+  };
+
+  // Start "Convert to Shared Step" flow for a given step id
+  const handleConvertToSharedStep = (stepId: string) => {
+    const step = testSteps.find(s => s.id === stepId);
+    if (!step || isSharedStepRef(step)) return;
+    const normal = step as TestStep;
+    setConvertingStep({ id: stepId, step: normal.step, expectedResult: normal.expectedResult });
+    setConvertName(normal.step.substring(0, 60).trim() || 'New Shared Step');
+  };
+
+  // Confirm conversion: create shared step in DB, replace inline step with SharedStepRef
+  const handleConfirmConvert = async () => {
+    if (!convertingStep || !convertName.trim()) return;
+    setConvertSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      const { data, error } = await supabase
+        .from('shared_steps')
+        .insert({
+          project_id: projectId,
+          name: convertName.trim(),
+          steps: [{ id: crypto.randomUUID(), step: convertingStep.step, expectedResult: convertingStep.expectedResult }],
+          description: null,
+          category: null,
+          tags: null,
+          created_by: user.id,
+          updated_by: user.id,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      const ref: AnyStep = {
+        id: convertingStep.id,
+        type: 'shared_step_ref',
+        shared_step_id: data.id,
+        shared_step_custom_id: data.custom_id,
+        shared_step_name: data.name,
+        shared_step_version: data.version,
+      };
+      setTestSteps(prev => prev.map(s => s.id === convertingStep.id ? ref : s));
+      setConvertingStep(null);
+      setConvertName('');
+    } catch (err: any) {
+      alert(err.message || 'Failed to convert step.');
+    } finally {
+      setConvertSaving(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!newTestCase.title.trim()) {
       alert('테스트 케이스 제목을 입력해주세요.');
       return;
     }
 
-    // Convert steps array to string format for storage
-    const stepsString = testSteps
-      .map((step, index) => `${index + 1}. ${step.step}`)
-      .join('\n');
-    
-    const expectedResultString = testSteps
-      .map((step, index) => `${index + 1}. ${step.expectedResult}`)
-      .join('\n');
+    // Serialize steps — use JSON when SharedStepRef present, plain text otherwise
+    const hasSharedRef = testSteps.some(s => isSharedStepRef(s));
+    const stepsString = hasSharedRef
+      ? JSON.stringify(testSteps)
+      : testSteps.map((step, index) => `${index + 1}. ${(step as TestStep).step}`).join('\n');
+    const expectedResultString = hasSharedRef
+      ? ''
+      : testSteps.map((step, index) => `${index + 1}. ${(step as TestStep).expectedResult}`).join('\n');
 
     const updatedTestCaseData = {
       ...newTestCase,
@@ -1172,17 +1248,29 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
     });
     setTagInput('');
 
-    // Parse steps back to array format
+    // Parse steps back to array format (handles both JSON and plain text)
     if (testCase.steps) {
-      const stepsArray = testCase.steps.split('\n').filter(s => s.trim());
-      const expectedResults = testCase.expected_result?.split('\n').filter(s => s.trim()) || [];
-      
-      const parsedSteps: TestStep[] = stepsArray.map((step, index) => ({
+      try {
+        const parsed = JSON.parse(testCase.steps);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const withIds: AnyStep[] = parsed.map((s: any, i: number) =>
+            s.type === 'shared_step_ref'
+              ? s
+              : { id: s.id || String(i + 1), step: s.step || '', expectedResult: s.expectedResult || '' }
+          );
+          setTestSteps(withIds);
+          setShowNewCaseModal(true);
+          return;
+        }
+      } catch {}
+      // Plain text fallback
+      const stepsArray = testCase.steps.split('\n').filter((s: string) => s.trim());
+      const expectedResults = testCase.expected_result?.split('\n').filter((s: string) => s.trim()) || [];
+      const parsedSteps: AnyStep[] = stepsArray.map((step: string, index: number) => ({
         id: (index + 1).toString(),
         step: step.replace(/^\d+\.\s*/, ''),
         expectedResult: expectedResults[index]?.replace(/^\d+\.\s*/, '') || '',
       }));
-
       setTestSteps(parsedSteps.length > 0 ? parsedSteps : [{ id: '1', step: '', expectedResult: '' }]);
     } else {
       setTestSteps([{ id: '1', step: '', expectedResult: '' }]);
@@ -3554,8 +3642,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       </button>
                     </div>
                     <StepEditor
-                      steps={testSteps as Step[]}
-                      onChange={(steps) => setTestSteps(steps as TestStep[])}
+                      steps={testSteps}
+                      onChange={(steps) => setTestSteps(steps)}
+                      onInsertSharedStep={() => setShowInsertSharedStepModal(true)}
+                      onConvertToSharedStep={handleConvertToSharedStep}
                     />
                   </div>
 

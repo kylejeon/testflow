@@ -1,5 +1,5 @@
 export const runs = {
-  title: 'Runs & Results',
+  title: 'Runs',
   createRun: 'Create Run',
   editRun: 'Edit Run',
   deleteRun: 'Delete Run',

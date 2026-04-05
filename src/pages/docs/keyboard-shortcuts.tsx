@@ -117,8 +117,8 @@ export default function DocsKeyboardShortcutsPage() {
           </p>
           <ShortcutTable rows={[
             { keys: <KbdChord first="G" second="T" />, action: 'Test Cases', desc: 'Go to the Test Cases list for the current project.' },
-            { keys: <KbdChord first="G" second="R" />, action: 'Runs & Results', desc: 'Go to the Runs list for the current project.' },
-            { keys: <KbdChord first="G" second="D" />, action: 'Discovery Logs', desc: 'Go to the Discovery Logs list for the current project.' },
+            { keys: <KbdChord first="G" second="R" />, action: 'Runs', desc: 'Go to the Runs list for the current project.' },
+            { keys: <KbdChord first="G" second="D" />, action: 'Exploratory', desc: 'Go to the Exploratory list for the current project.' },
             { keys: <KbdChord first="G" second="M" />, action: 'Milestones', desc: 'Go to the Milestones list for the current project.' },
             { keys: <KbdChord first="G" second="P" />, action: 'Projects', desc: 'Go to the Projects home page.' },
           ]} />
