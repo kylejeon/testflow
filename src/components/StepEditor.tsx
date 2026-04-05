@@ -199,6 +199,7 @@ export function StepEditor({ steps, onChange }: StepEditorProps) {
 
       {/* Add step */}
       <button
+        type="button"
         onClick={() => addStepAfter(steps[steps.length - 1].id)}
         className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
       >
