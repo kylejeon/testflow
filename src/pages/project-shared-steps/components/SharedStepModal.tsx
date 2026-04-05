@@ -24,6 +24,8 @@ export default function SharedStepModal({ projectId, sharedStep, onClose, onSave
   const [description, setDescription] = useState(sharedStep?.description || '');
   const [category, setCategory] = useState(sharedStep?.category || '');
   const [tags, setTags] = useState(sharedStep?.tags || '');
+  const [tagInput, setTagInput] = useState('');
+  const [isComposing, setIsComposing] = useState(false);
   const [steps, setSteps] = useState<Step[]>(
     sharedStep?.steps && sharedStep.steps.length > 0
       ? sharedStep.steps
@@ -38,6 +40,27 @@ export default function SharedStepModal({ projectId, sharedStep, onClose, onSave
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
+
+  const getTagsArray = () =>
+    tags ? tags.split(',').map(t => t.trim()).filter(t => t) : [];
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isComposing) {
+      e.preventDefault();
+      const trimmed = tagInput.trim();
+      if (trimmed) {
+        const current = getTagsArray();
+        if (!current.includes(trimmed)) {
+          setTags([...current, trimmed].join(', '));
+        }
+        setTagInput('');
+      }
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(getTagsArray().filter(t => t !== tagToRemove).join(', '));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -228,10 +228,7 @@ export default function ProjectSharedSteps() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('shared_steps')
-        .select(`
-          *,
-          creator:profiles!shared_steps_created_by_fkey(full_name, email)
-        `)
+        .select('*')
         .eq('project_id', projectId!)
         .order('custom_id', { ascending: true });
       if (error) throw error;
