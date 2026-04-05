@@ -338,11 +338,31 @@ export default function ProjectTraceability() {
     return null;
   };
 
-  // Export CSV
+  // Export CSV — includes summary block + matrix
   const handleExportCSV = () => {
     const tcList = testCases;
-    const header = ['Requirement ID', 'Requirement', 'Priority', ...tcList.map((tc) => tc.custom_id), 'Coverage %'];
-    const rows = filteredReqs.map((req) => {
+    const q = (s: string) => `"${s.replace(/"/g, '""')}"`;
+
+    const summaryRows = [
+      ['=== Traceability Matrix Summary ==='],
+      ['Project', q(project?.name || projectId || '')],
+      ['Exported', q(new Date().toLocaleString())],
+      [],
+      ['Overall Coverage', `${summary.overallPct}%`],
+      ['Total Requirements', String(summary.total)],
+      ['Fully Covered', String(summary.fullyCovered)],
+      ['Partial Coverage', String(summary.partial)],
+      ['No Coverage', String(summary.noCoverage)],
+      [],
+    ];
+
+    const header = ['Requirement ID', 'Requirement', 'Priority', 'Status',
+      ...tcList.map((tc) => q(`${tc.custom_id}: ${tc.title}`)),
+      'Coverage %', 'Passed', 'Failed', 'Blocked', 'Untested'];
+
+    const matrixRows = filteredReqs.map((req) => {
+      const cov = coverageMap[req.id] || { total: 0, executed: 0, passed: 0, failed: 0, blocked: 0, pct: 0 };
+      const untested = cov.total - cov.executed;
       const cells = tcList.map((tc) => {
         const cell = getCell(req.id, tc.id);
         if (!cell.status) return '';
@@ -350,12 +370,25 @@ export default function ProjectTraceability() {
         if (cell.status === 'failed') return 'Failed';
         if (cell.status === 'blocked') return 'Blocked';
         if (cell.status === 'untested') return 'Untested';
-        return '';
+        return 'Linked';
       });
-      return [req.custom_id, `"${req.title.replace(/"/g, '""')}"`, req.priority, ...cells, String(coverageMap[req.id]?.pct || 0)];
+      return [
+        req.custom_id,
+        q(req.title),
+        req.priority,
+        req.status,
+        ...cells,
+        String(cov.pct),
+        String(cov.passed),
+        String(cov.failed),
+        String(cov.blocked),
+        String(untested),
+      ];
     });
-    const csv = [header, ...rows].map((r) => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+
+    const allRows = [...summaryRows, header, ...matrixRows];
+    const csv = allRows.map((r) => r.join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -364,9 +397,108 @@ export default function ProjectTraceability() {
     URL.revokeObjectURL(url);
   };
 
-  // Export PDF (simple print approach)
+  // Export PDF — builds a standalone HTML page with full matrix text labels
   const handleExportPDF = () => {
-    window.print();
+    const tcList = testCases;
+    const STATUS_LABEL: Record<string, string> = {
+      passed: 'Passed', failed: 'Failed', blocked: 'Blocked', untested: 'Untested', linked: 'Linked',
+    };
+    const STATUS_COLOR: Record<string, string> = {
+      passed: '#166534', failed: '#991B1B', blocked: '#92400E', untested: '#475569', linked: '#94A3B8',
+    };
+    const STATUS_BG: Record<string, string> = {
+      passed: '#DCFCE7', failed: '#FEE2E2', blocked: '#FEF3C7', untested: '#F1F5F9', linked: '#F8FAFC',
+    };
+
+    const tcHeaders = tcList.map((tc) =>
+      `<th style="padding:4px 6px;font-size:10px;font-weight:600;color:#475569;border:1px solid #E2E8F0;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis" title="${tc.title}">${tc.custom_id}</th>`
+    ).join('');
+
+    const matrixRows = filteredReqs.map((req) => {
+      const cov = coverageMap[req.id] || { total: 0, executed: 0, passed: 0, failed: 0, blocked: 0, pct: 0 };
+      const gapType = getGapType(req);
+      const gapBadge = gapType === 'no_tc'
+        ? '<span style="color:#DC2626;font-size:9px;font-weight:700">⬛ No TC</span>'
+        : gapType === 'no_exec'
+        ? '<span style="color:#D97706;font-size:9px;font-weight:700">⚠ No Run</span>'
+        : gapType === 'fail'
+        ? '<span style="color:#DC2626;font-size:9px;font-weight:700">✗ Fail</span>'
+        : '';
+
+      const cells = tcList.map((tc) => {
+        const cell = getCell(req.id, tc.id);
+        if (!cell.status) return '<td style="border:1px solid #E2E8F0;"></td>';
+        const label = STATUS_LABEL[cell.status] || '';
+        const color = STATUS_COLOR[cell.status] || '#475569';
+        const bg = STATUS_BG[cell.status] || '#fff';
+        return `<td style="padding:3px 5px;text-align:center;border:1px solid #E2E8F0;background:${bg}"><span style="font-size:9px;font-weight:600;color:${color}">${label}</span></td>`;
+      }).join('');
+
+      const covColor = cov.pct === 100 ? '#166534' : cov.pct >= 50 ? '#1D4ED8' : '#991B1B';
+
+      return `<tr>
+        <td style="padding:5px 8px;border:1px solid #E2E8F0;min-width:120px">
+          <div style="font-size:10px;font-weight:700;color:#4338CA;font-family:monospace">${req.custom_id} ${gapBadge}</div>
+          <div style="font-size:10px;color:#1E293B;margin-top:2px">${req.title}</div>
+          <div style="font-size:9px;color:#94A3B8">${req.priority} · ${req.status}</div>
+        </td>
+        ${cells}
+        <td style="padding:5px 8px;border:1px solid #E2E8F0;white-space:nowrap;text-align:right">
+          <span style="font-size:11px;font-weight:700;color:${covColor}">${cov.pct}%</span>
+          <div style="font-size:9px;color:#94A3B8">${cov.passed}P · ${cov.failed}F · ${cov.total - cov.executed}U</div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>RTM – ${project?.name || ''}</title>
+  <style>
+    body { font-family: -apple-system, Arial, sans-serif; margin: 0; padding: 20px; color: #1E293B; font-size: 12px; }
+    @page { size: landscape; margin: 12mm; }
+    table { border-collapse: collapse; width: 100%; }
+    h1 { font-size: 16px; margin: 0 0 4px; }
+    .summary { display: flex; gap: 16px; margin: 12px 0 16px; flex-wrap: wrap; }
+    .card { border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 12px; min-width: 110px; }
+    .card-val { font-size: 18px; font-weight: 700; }
+    .card-lbl { font-size: 10px; color: #64748B; margin-top: 2px; }
+    @media print { button { display: none; } }
+  </style>
+</head>
+<body>
+  <h1>Traceability Matrix — ${project?.name || ''}</h1>
+  <p style="color:#64748B;font-size:11px;margin:0 0 12px">Exported ${new Date().toLocaleString()} · ${filteredReqs.length} requirements · ${tcList.length} test cases</p>
+
+  <div class="summary">
+    <div class="card"><div class="card-val" style="color:${summary.overallPct >= 80 ? '#166534' : summary.overallPct >= 50 ? '#1D4ED8' : '#991B1B'}">${summary.overallPct}%</div><div class="card-lbl">Overall Coverage</div></div>
+    <div class="card"><div class="card-val">${summary.total}</div><div class="card-lbl">Total Requirements</div></div>
+    <div class="card"><div class="card-val" style="color:#166534">${summary.fullyCovered}</div><div class="card-lbl">Fully Covered</div></div>
+    <div class="card"><div class="card-val" style="color:#1D4ED8">${summary.partial}</div><div class="card-lbl">Partial Coverage</div></div>
+    <div class="card"><div class="card-val" style="color:#991B1B">${summary.noCoverage}</div><div class="card-lbl">No Coverage</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr style="background:#F8FAFC">
+        <th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:600;color:#64748B;border:1px solid #E2E8F0;min-width:140px">Requirement</th>
+        ${tcHeaders}
+        <th style="padding:5px 8px;text-align:right;font-size:10px;font-weight:600;color:#64748B;border:1px solid #E2E8F0;min-width:70px">Coverage</th>
+      </tr>
+    </thead>
+    <tbody>${matrixRows}</tbody>
+  </table>
+
+  <script>window.onload = () => window.print();</script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=1200,height=800');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    }
   };
 
   if (tier < 2) {
