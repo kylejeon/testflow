@@ -3569,6 +3569,65 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
         </div>
       )}
 
+      {/* Insert Shared Step modal */}
+      {showInsertSharedStepModal && (
+        <InsertSharedStepModal
+          projectId={projectId}
+          onInsert={handleInsertSharedStep}
+          onClose={() => setShowInsertSharedStepModal(false)}
+        />
+      )}
+
+      {/* Convert to Shared Step dialog */}
+      {convertingStep && (
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 1099, backdropFilter: 'blur(2px)' }}
+            onClick={() => { setConvertingStep(null); setConvertName(''); }}
+          />
+          <div
+            style={{
+              position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+              width: '420px', maxWidth: 'calc(100vw - 2rem)', background: '#fff',
+              borderRadius: '1rem', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', zIndex: 1100, padding: '1.5rem',
+            }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <i className="ri-links-line text-indigo-500 text-lg" />
+              <h2 className="text-sm font-semibold text-slate-800">Convert to Shared Step</h2>
+            </div>
+            <p className="text-xs text-slate-500 mb-3">
+              This step will be saved as a new Shared Step and replaced with a reference.
+            </p>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Shared Step Name <span className="text-red-400">*</span></label>
+            <input
+              className="w-full border border-slate-200 rounded-lg text-sm text-slate-700 px-3 py-2 bg-white focus:outline-none focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-colors mb-4"
+              value={convertName}
+              onChange={e => setConvertName(e.target.value)}
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setConvertingStep(null); setConvertName(''); }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmConvert}
+                disabled={!convertName.trim() || convertSaving}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              >
+                {convertSaving ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-links-line" />}
+                {convertSaving ? 'Converting…' : 'Convert & Save'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* 새 테스트 케이스 모달 */}
       {showNewCaseModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -3631,15 +3690,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                   
                   {/* Steps Section */}
                   <div>
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="mb-3">
                       <label className="block text-sm font-semibold text-gray-700">Steps</label>
-                      <button
-                        onClick={handleAddStep}
-                        className="flex items-center gap-1 px-3 py-1 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                      >
-                        <i className="ri-add-line text-lg w-4 h-4 flex items-center justify-center"></i>
-                        Add step
-                      </button>
                     </div>
                     <StepEditor
                       steps={testSteps}
