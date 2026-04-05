@@ -2029,7 +2029,7 @@ def pytest_sessionfinish(session, exitstatus):
                               <select
                                 value={jiraSettings.autoCreateOnFailure}
                                 onChange={(e) => setJiraSettings({ ...jiraSettings, autoCreateOnFailure: e.target.value })}
-                                disabled={!isStarterOrHigher}
+                                disabled={!isStarterOrHigher || isJiraLocked}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <option value="disabled">Disabled (manual only)</option>
