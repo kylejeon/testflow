@@ -10,6 +10,8 @@ import { triggerWebhook } from '../../hooks/useWebhooks';
 import ProjectHeader from '../../components/ProjectHeader';
 import { Avatar } from '../../components/Avatar';
 import { useToast, ToastContainer } from '../../components/Toast';
+import { type AnyStep, isSharedStepRef } from '../../types/shared-steps';
+import { type SharedStepCache, expandFlatSteps } from '../../lib/expandSharedSteps';
 
 interface TestRun {
   id: string;
@@ -51,6 +53,8 @@ interface TestCase {
   status: string;
   tags?: string[];
   description?: string;
+  steps?: string;
+  assignee?: string;
 }
 
 interface FolderMeta {
@@ -931,6 +935,49 @@ export default function ProjectRunsPage() {
               .from('run_testcase_assignees')
               .upsert(tcAssigneeRows, { onConflict: 'run_id,test_case_id' });
           }
+
+          // ── Build steps snapshot ─────────────────────────────────────────────
+          // Capture current TC steps (expanding SharedStepRefs) so Run execution
+          // is immune to future TC or Shared Step edits.
+          const tcsInRun = testCases.filter(tc => testCaseIds.includes(tc.id) && tc.steps);
+          const sharedStepIds = new Set<string>();
+          for (const tc of tcsInRun) {
+            try {
+              const p = JSON.parse(tc.steps!);
+              if (Array.isArray(p)) {
+                (p as AnyStep[]).filter(isSharedStepRef).forEach(r => sharedStepIds.add(r.shared_step_id));
+              }
+            } catch {}
+          }
+
+          let ssCache: SharedStepCache = {};
+          if (sharedStepIds.size > 0) {
+            const { data: ssData } = await supabase
+              .from('shared_steps')
+              .select('id, name, custom_id, steps')
+              .in('id', [...sharedStepIds]);
+            if (ssData) {
+              ssData.forEach((ss: any) => { ssCache[ss.id] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps }; });
+            }
+          }
+
+          const stepsSnapshot: Record<string, any[]> = {};
+          for (const tc of tcsInRun) {
+            try {
+              const parsed = JSON.parse(tc.steps!) as AnyStep[];
+              if (Array.isArray(parsed)) {
+                stepsSnapshot[tc.id] = expandFlatSteps(parsed, ssCache);
+              }
+            } catch {}
+          }
+
+          if (Object.keys(stepsSnapshot).length > 0) {
+            await supabase
+              .from('test_runs')
+              .update({ steps_snapshot: stepsSnapshot })
+              .eq('id', newRunId);
+          }
+          // ────────────────────────────────────────────────────────────────────
         }
 
         void markOnboardingStep('runTest');

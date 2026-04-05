@@ -129,7 +129,10 @@ export default function RunDetail() {
     attachments: [] as { name: string; url: string; size: number }[],
   });
   const [stepStatuses, setStepStatuses] = useState<Record<number, string>>({});
-  const [sharedStepsCache, setSharedStepsCache] = useState<Record<string, { name: string; custom_id: string; steps: NormalStep[] }>>({});
+  const [sharedStepsCache, setSharedStepsCache] = useState<SharedStepCache>({});
+  // stepsSnapshot: loaded from test_runs.steps_snapshot at run load time
+  // keyed by tc_id → FlatStep[] (SharedStepRefs already expanded at run creation)
+  const [stepsSnapshot, setStepsSnapshot] = useState<Record<string, FlatStep[]>>({});
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedResult, setSelectedResult] = useState<TestResult | null>(null);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -208,8 +211,12 @@ export default function RunDetail() {
   }, [selectedTestCase]);
 
   // Fetch shared step contents when selected TC has SharedStepRef entries
+  // Skipped when steps_snapshot is available (snapshot already has expanded steps)
   useEffect(() => {
-    if (!selectedTestCase?.steps) { setSharedStepsCache({}); return; }
+    if (!selectedTestCase?.id) { setSharedStepsCache({}); return; }
+    // If this run has a snapshot for this TC, no need to fetch live shared steps
+    if (stepsSnapshot[selectedTestCase.id]) { setSharedStepsCache({}); return; }
+    if (!selectedTestCase.steps) { setSharedStepsCache({}); return; }
     let parsed: AnyStep[] | null = null;
     try {
       const p = JSON.parse(selectedTestCase.steps);
@@ -225,11 +232,11 @@ export default function RunDetail() {
       .in('id', ids)
       .then(({ data }) => {
         if (!data) return;
-        const cache: Record<string, { name: string; custom_id: string; steps: NormalStep[] }> = {};
+        const cache: SharedStepCache = {};
         data.forEach((ss) => { cache[ss.id] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps }; });
         setSharedStepsCache(cache);
       });
-  }, [selectedTestCase?.id]);
+  }, [selectedTestCase?.id, stepsSnapshot]);
 
   // Close more menu on outside click
   useEffect(() => {
@@ -660,6 +667,11 @@ export default function RunDetail() {
 
       if (runError) throw runError;
       setRun(runData);
+
+      // Load steps snapshot captured at run creation time (if present)
+      if (runData.steps_snapshot && typeof runData.steps_snapshot === 'object') {
+        setStepsSnapshot(runData.steps_snapshot as Record<string, FlatStep[]>);
+      }
 
       if (runData.test_case_ids && runData.test_case_ids.length > 0) {
         const { data: testCasesData, error: testCasesError } = await supabase
@@ -2853,7 +2865,56 @@ export default function RunDetail() {
                     </div>
 
                     {/* Steps */}
-                    {selectedTestCase.steps && (() => {
+                    {(selectedTestCase.steps || stepsSnapshot[selectedTestCase.id]) && (() => {
+                      // Prefer snapshot captured at run creation (immune to later edits)
+                      const snapshotSteps = stepsSnapshot[selectedTestCase.id];
+                      if (snapshotSteps) {
+                        if (snapshotSteps.length === 0) return null;
+                        return (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-3">Steps</label>
+                            <div className="space-y-2">
+                              {snapshotSteps.map((fs) => (
+                                <div key={fs.flatIndex}>
+                                  {fs.groupHeader && (
+                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-t-lg bg-violet-50 border border-violet-200 border-b-0">
+                                      <i className="ri-links-line text-violet-500 text-xs" />
+                                      <span className="text-xs font-semibold text-violet-700">{fs.groupHeader}</span>
+                                    </div>
+                                  )}
+                                  <div className={`border p-3 ${fs.isSubStep ? 'border-violet-200 bg-violet-50/30 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'border-gray-200 rounded-lg'}`}>
+                                    <div className="flex items-start gap-3 mb-2">
+                                      <div className={`w-6 h-6 ${fs.isSubStep ? 'bg-violet-100' : 'bg-indigo-100'} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                                        <span className={`${fs.isSubStep ? 'text-violet-700' : 'text-indigo-700'} text-xs font-bold`}>{fs.flatIndex + 1}</span>
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
+                                        {fs.expectedResult && (
+                                          <div className="mt-1 flex items-start gap-1">
+                                            <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                            <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <select
+                                      value={stepStatuses[fs.flatIndex] || 'untested'}
+                                      onChange={(e) => handleStepStatusChange(fs.flatIndex, e.target.value)}
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    >
+                                      <option value="untested">Untested</option>
+                                      <option value="passed">Passed</option>
+                                      <option value="failed">Failed</option>
+                                      <option value="blocked">Blocked</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+
                       // Try new JSON array format first
                       let parsed: AnyStep[] | null = null;
                       try {
@@ -3319,6 +3380,7 @@ export default function RunDetail() {
               testCase={selectedTestCase}
               jiraDomain={jiraDomain}
               sharedStepsCache={sharedStepsCache}
+              stepsSnapshot={selectedTestCase ? stepsSnapshot[selectedTestCase.id] : undefined}
               onClose={() => setSelectedResult(null)}
             />
           )}
@@ -3358,10 +3420,11 @@ interface ResultDetailModalProps {
   testCase: TestCase | null;
   jiraDomain: string;
   sharedStepsCache: SharedStepCache;
+  stepsSnapshot?: FlatStep[];
   onClose: () => void;
 }
 
-function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, onClose }: ResultDetailModalProps) {
+function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, stepsSnapshot, onClose }: ResultDetailModalProps) {
   const getJiraIssueUrl = (issueKey: string) => {
     if (!jiraDomain) return '#';
     return `https://${jiraDomain}/browse/${issueKey}`;
@@ -3446,11 +3509,50 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, onC
             </div>
           )}
 
-          {result.stepStatuses && Object.keys(result.stepStatuses).length > 0 && testCase?.steps && (() => {
+          {result.stepStatuses && Object.keys(result.stepStatuses).length > 0 && (stepsSnapshot || testCase?.steps) && (() => {
+            // Prefer snapshot captured at run creation
+            if (stepsSnapshot && stepsSnapshot.length > 0) {
+              return (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
+                  <div className="space-y-1.5">
+                    {stepsSnapshot.map((fs) => {
+                      const status = result.stepStatuses?.[fs.flatIndex] || 'untested';
+                      const statusInfo = getStepStatusInfo(status);
+                      return (
+                        <div key={fs.flatIndex}>
+                          {fs.groupHeader && (
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-t-lg bg-violet-50 border border-violet-200 border-b-0 mt-2">
+                              <i className="ri-links-line text-violet-500 text-xs" />
+                              <span className="text-xs font-semibold text-violet-700">{fs.groupHeader}</span>
+                            </div>
+                          )}
+                          <div className={`flex items-center gap-3 p-3 ${fs.isSubStep ? 'bg-violet-50/40 border border-violet-100 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'bg-gray-50 rounded-lg'}`}>
+                            <div className={`w-6 h-6 ${fs.isSubStep ? 'bg-violet-100' : 'bg-indigo-100'} rounded-lg flex items-center justify-center ${fs.isSubStep ? 'text-violet-700' : 'text-indigo-700'} font-semibold text-xs flex-shrink-0`}>
+                              {fs.flatIndex + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-700 truncate">{fs.step}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
+                              <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>
+                                {statusInfo.label}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+
             // Try new JSON array format first
             let parsed: AnyStep[] | null = null;
             try {
-              const p = JSON.parse(testCase.steps!);
+              const p = JSON.parse(testCase!.steps!);
               if (Array.isArray(p)) parsed = p as AnyStep[];
             } catch {}
 
@@ -3494,7 +3596,8 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, onC
             }
 
             // Fallback: old newline-delimited string format
-            const stepsArray = testCase.steps!.split('\n').filter((s: string) => s.trim());
+            if (!testCase?.steps) return null;
+            const stepsArray = testCase.steps.split('\n').filter((s: string) => s.trim());
             return (
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
