@@ -39,10 +39,10 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
   useEffect(() => {
     if (!openMenuId) return;
     const handler = () => { setOpenMenuId(null); setMenuPos(null); };
-    document.addEventListener('mousedown', handler);
+    document.addEventListener('click', handler);
     document.addEventListener('scroll', handler, true);
     return () => {
-      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('click', handler);
       document.removeEventListener('scroll', handler, true);
     };
   }, [openMenuId]);
@@ -243,13 +243,14 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
                 <>
                   <button
                     type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (openMenuId === step.id) {
                         setOpenMenuId(null);
                         setMenuPos(null);
                       } else {
-                        const rect = e.currentTarget.getBoundingClientRect();
+                        const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
                         setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
                         setOpenMenuId(step.id);
                       }
@@ -264,7 +265,7 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
                     <div
                       style={{ position: 'fixed', top: menuPos.top, right: menuPos.right, zIndex: 9999 }}
                       className="w-52 bg-white border border-slate-200 rounded-lg shadow-lg py-1"
-                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <button
                         type="button"

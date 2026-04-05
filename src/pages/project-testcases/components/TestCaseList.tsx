@@ -1085,6 +1085,17 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       ? ''
       : testSteps.map((step, index) => `${index + 1}. ${(step as TestStep).expectedResult}`).join('\n');
 
+    // Snapshot strings — always plain text so Version Diff displays cleanly
+    // Steps: actions only; Expected Result: expected results only (separate sections)
+    const snapshotStepsString = testSteps.map((s, i) => {
+      if (isSharedStepRef(s)) return `${i + 1}. 🔗 [${s.shared_step_custom_id}] ${s.shared_step_name} (v${s.shared_step_version})`;
+      return `${i + 1}. ${(s as TestStep).step}`;
+    }).join('\n');
+    const snapshotExpectedResultString = testSteps.map((s, i) => {
+      if (isSharedStepRef(s)) return null;
+      return `${i + 1}. ${(s as TestStep).expectedResult}`;
+    }).filter(Boolean).join('\n');
+
     const updatedTestCaseData = {
       ...newTestCase,
       steps: stepsString,
@@ -1095,27 +1106,34 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       // 변경된 필드 추적 및 히스토리 기록
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Normalize old steps/expected_result through the SAME parse→re-serialize
-        // pipeline as the new snapshot to prevent false diffs from format differences.
+        // Build old snapshot strings — always plain text, split into actions and expected
+        // results so Version Diff shows them in separate sections.
         const rawStepsVal = editingTestCase.steps || '';
         const oldRawSteps = Array.isArray(rawStepsVal)
           ? JSON.stringify(rawStepsVal)
           : String(rawStepsVal);
 
-        // If the stored steps are a JSON array (may contain SharedStepRefs), preserve
-        // the JSON string so normalizeStepField can render them correctly in Version Diff.
         let oldStepsString: string;
         let oldExpectedResultString: string;
         try {
           const parsedOld = JSON.parse(oldRawSteps);
-          if (Array.isArray(parsedOld)) {
-            // Preserve JSON — normalizeStepField will format it
-            oldStepsString = oldRawSteps;
-            oldExpectedResultString = '';
-          } else {
-            throw new Error('not array');
-          }
+          if (!Array.isArray(parsedOld)) throw new Error('not array');
+          // JSON format: extract step actions and expected results separately
+          oldStepsString = parsedOld.map((s: any, i: number) => {
+            if (s.type === 'shared_step_ref') {
+              return `${i + 1}. 🔗 [${s.shared_step_custom_id}] ${s.shared_step_name} (v${s.shared_step_version})`;
+            }
+            return `${i + 1}. ${s.step || ''}`;
+          }).join('\n');
+          oldExpectedResultString = parsedOld
+            .map((s: any, i: number) => {
+              if (s.type === 'shared_step_ref') return null;
+              return `${i + 1}. ${s.expectedResult || ''}`;
+            })
+            .filter(Boolean)
+            .join('\n');
         } catch {
+          // Plain text format
           const oldRawER = Array.isArray(rawStepsVal)
             ? (rawStepsVal as any[]).map((s: any) => s.expectedResult).join('\n')
             : (editingTestCase.expected_result || '');
@@ -1151,8 +1169,8 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           priority: newTestCase.priority,
           folder: newTestCase.folder,
           tags: newTestCase.tags,
-          steps: stepsString,
-          expected_result: expectedResultString,
+          steps: snapshotStepsString,
+          expected_result: snapshotExpectedResultString,
           assignee: newTestCase.assignee || '',
           is_automated: newTestCase.is_automated || false,
         };
@@ -2019,9 +2037,10 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
   // Normalize steps/expected_result for comparison: strip "N. " prefix, remove empty lines,
   // re-number, rejoin. Handles legacy data with missing prefixes or trailing empty entries.
+  // For legacy JSON-format snapshots: shows step actions only (no expected result inline).
   const normalizeStepField = (text: string): string => {
     if (!text) return '';
-    // Handle JSON array (steps that include SharedStepRef objects)
+    // Handle legacy JSON array format (old snapshots saved before plain-text split)
     try {
       const parsed = JSON.parse(text);
       if (Array.isArray(parsed)) {
@@ -2029,9 +2048,7 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
           if (s.type === 'shared_step_ref') {
             return `${i + 1}. 🔗 [${s.shared_step_custom_id}] ${s.shared_step_name} (v${s.shared_step_version})`;
           }
-          const action = s.step || '';
-          const expected = s.expectedResult ? ` → ${s.expectedResult}` : '';
-          return `${i + 1}. ${action}${expected}`;
+          return `${i + 1}. ${s.step || ''}`;
         }).join('\n');
       }
     } catch {}
