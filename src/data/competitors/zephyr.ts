@@ -28,7 +28,7 @@ export const zephyrData: CompetitorData = {
     { feature: 'Charges per QA user only', testably: true, competitor: false },
     { feature: 'CI/CD integration', testably: 'All plans', competitor: 'Limited' },
     { feature: 'AI test case generation', testably: true, competitor: false },
-    { feature: 'Discovery Logs', testably: true, competitor: false },
+    { feature: 'Exploratory', testably: true, competitor: false },
     { feature: 'Setup time', testably: '< 5 minutes', competitor: 'Jira setup required' },
   ],
   keyDifferences: [

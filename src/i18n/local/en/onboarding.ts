@@ -69,7 +69,7 @@ export const onboarding = {
   },
   emptySessions: {
     headline: 'No sessions yet',
-    description: 'Discovery Logs let you record findings during testing. Start a log to capture actions, then convert them to test cases.',
+    description: 'Exploratory lets you record findings during testing. Start a session to capture actions, then convert them to test cases.',
     primaryCta: 'Start Session',
     secondaryCta: 'View guide',
   },
