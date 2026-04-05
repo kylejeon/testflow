@@ -146,6 +146,10 @@ const routes: RouteObject[] = [
     element: <ProjectTraceability />,
   },
   {
+    path: '/projects/:id/shared-steps',
+    element: <ProjectSharedSteps />,
+  },
+  {
     path: '/testcases',
     element: <TestCases />,
   },

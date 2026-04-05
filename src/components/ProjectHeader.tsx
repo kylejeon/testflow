@@ -179,6 +179,11 @@ export default function ProjectHeader({ projectId, projectName }: Props) {
       active: path.includes('/discovery-logs') || path.includes('/sessions'),
     },
     {
+      label: 'Shared Steps',
+      to: `/projects/${projectId}/shared-steps`,
+      active: path.includes('/shared-steps'),
+    },
+    {
       label: 'Documents',
       to: `/projects/${projectId}/documentation`,
       active: path.includes('/documentation'),
