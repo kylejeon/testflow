@@ -44,7 +44,7 @@ const content = {
         badge: 'AI-Native',
         badgeIcon: 'ri-sparkling-line',
         title: 'AI Test Generation',
-        description: 'Describe what you want to test in plain language. Testably generates structured test cases, steps, and expected results. Convert Discovery Logs to test cases with one click.',
+        description: 'Describe what you want to test in plain language. Testably generates structured test cases, steps, and expected results. Convert Exploratory findings to test cases with one click.',
         pills: ['Plain text → test cases', 'Jira issue → test cases', 'Discovery → test cases', 'Edge case suggestions'],
       },
       {
@@ -89,7 +89,7 @@ const content = {
       },
       {
         icon: 'ri-search-eye-line',
-        title: 'Discovery Logs',
+        title: 'Exploratory',
         description: 'Capture exploratory testing insights as you go. Log observations with rich text notes, inline screenshots, and real-time log capture. Auto-convert discoveries into formal test cases.',
         color: 'bg-violet-900/20',
         iconColor: 'text-violet-400',
@@ -253,7 +253,7 @@ const content = {
         annualMonthly: 41.58, annualTotal: 499,
         users: 'Up to 5 users',
         description: 'For growing teams that need more power',
-        features: ['Up to 10 projects', 'TC Versioning', 'Export/Import CSV', 'Jira integration', 'Slack & Teams integration', 'RTM (50 entries)', 'Shared Steps (20 steps)', 'Basic reporting', '30 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Email support', 'Export PDF Report'],
+        features: ['Up to 10 projects', 'TC Versioning', 'Export/Import CSV', 'Jira integration', 'Slack & Teams integration', 'RTM (50 entries)', 'Steps Library (20 steps)', 'Basic reporting', '30 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Email support', 'Export PDF Report'],
         cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 6,
         highlighted: false, icon: 'ri-star-line', popular: '',
       },
@@ -262,7 +262,7 @@ const content = {
         annualMonthly: 84.17, annualTotal: 1010,
         users: 'Up to 20 users',
         description: 'Full-featured for professional QA teams',
-        features: ['Unlimited projects', 'TC Versioning', 'Export/Import CSV', 'Jira integration', 'Slack & Teams integration', 'RTM (Unlimited)', 'Shared Steps (Unlimited)', 'Advanced reporting', 'CI/CD Integration', 'Test Automation Framework SDK', '150 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Priority support', 'Export PDF Report'],
+        features: ['Unlimited projects', 'TC Versioning', 'Export/Import CSV', 'Jira integration', 'Slack & Teams integration', 'RTM (Unlimited)', 'Steps Library (Unlimited)', 'Advanced reporting', 'CI/CD Integration', 'Test Automation Framework SDK', '150 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Priority support', 'Export PDF Report'],
         cta: 'Start Free Trial', ctaVariant: 'filled', aiFeatureIdx: 8,
         highlighted: true, icon: 'ri-vip-crown-line', popular: 'Most Popular',
       },
@@ -331,7 +331,7 @@ const content = {
         answer: 'Testably supports five result statuses: Passed, Failed, Blocked, Retest, and Untested. Each status is color-coded and reflected in real-time progress charts. You can also add comments and screenshots when marking a result.',
       },
       {
-        question: 'How do Discovery Logs work?',
+        question: 'How does Exploratory work?',
         answer: 'Start a discovery log by setting a goal and time box. During the session, you can log bugs, observations, and notes with inline screenshots directly in the rich text editor. When you end the session, a structured report is generated automatically that can be shared with the team.',
       },
       {
@@ -446,7 +446,7 @@ const content = {
         badge: 'AI 네이티브',
         badgeIcon: 'ri-sparkling-line',
         title: 'AI 테스트 생성',
-        description: '테스트하고 싶은 것을 일반 언어로 설명하세요. Testably가 구조화된 테스트 케이스, 단계, 예상 결과를 생성합니다. Discovery Logs를 한 번의 클릭으로 테스트 케이스로 변환하세요.',
+        description: '테스트하고 싶은 것을 일반 언어로 설명하세요. Testably가 구조화된 테스트 케이스, 단계, 예상 결과를 생성합니다. Exploratory 발견 사항을 한 번의 클릭으로 테스트 케이스로 변환하세요.',
         pills: ['텍스트 → 테스트 케이스', 'Jira 이슈 → 테스트 케이스', 'Discovery → 테스트 케이스', '엣지 케이스 제안'],
       },
       {
@@ -491,7 +491,7 @@ const content = {
       },
       {
         icon: 'ri-search-eye-line',
-        title: 'Discovery Logs',
+        title: 'Exploratory',
         description: '탐색적 테스트 인사이트를 즉시 기록하세요. 리치 텍스트 메모, 인라인 스크린샷, 실시간 로그 캡처로 관찰 사항을 기록하세요. 발견한 내용을 공식 테스트 케이스로 자동 변환합니다.',
         color: 'bg-violet-900/20',
         iconColor: 'text-violet-400',
@@ -733,7 +733,7 @@ const content = {
         answer: 'Testably는 Passed, Failed, Blocked, Retest, Untested 5가지 결과 상태를 지원합니다. 각 상태는 색상으로 구분되며 실시간 진행률 차트에 반영됩니다. 결과를 표시할 때 댓글과 스크린샷을 추가할 수도 있습니다.',
       },
       {
-        question: 'Discovery Logs는 어떻게 작동하나요?',
+        question: 'Exploratory는 어떻게 작동하나요?',
         answer: '목표와 시간 박스를 설정하여 Discovery Log를 시작하세요. 세션 중에 리치 텍스트 에디터에서 인라인 스크린샷과 함께 버그, 관찰 사항, 메모를 직접 기록할 수 있습니다. 세션이 종료되면 팀과 공유할 수 있는 구조화된 리포트가 자동으로 생성됩니다. 모든 발견 사항은 한 번의 클릭으로 공식 테스트 케이스로 변환할 수 있습니다.',
       },
       {

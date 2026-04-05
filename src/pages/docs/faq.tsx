@@ -37,7 +37,7 @@ function FaqAccordion({ items }: { items: FaqItem[] }) {
 const generalFaqs: FaqItem[] = [
   {
     q: 'Q1. What is Testably?',
-    a: 'Testably is a test management platform for software QA teams. You can write test cases, run tests, track milestones, record exploratory testing with Discovery Logs, integrate with Jira, connect CI/CD pipelines, and automate test case generation with AI — all in one place.',
+    a: 'Testably is a test management platform for software QA teams. You can write test cases, run tests, track milestones, record exploratory testing with Exploratory, integrate with Jira, connect CI/CD pipelines, and automate test case generation with AI — all in one place.',
   },
   {
     q: 'Q2. Can I use Testably for free?',

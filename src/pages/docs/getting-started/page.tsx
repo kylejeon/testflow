@@ -56,7 +56,7 @@ const nextSteps = [
   },
   {
     icon: 'ri-search-eye-line',
-    title: 'Discovery Logs',
+    title: 'Exploratory',
     desc: 'Record exploratory testing sessions and convert to test cases.',
     to: '/docs/discovery-logs',
   },

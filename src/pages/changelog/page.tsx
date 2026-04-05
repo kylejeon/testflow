@@ -23,7 +23,7 @@ const entries = [
     categoryColor: 'bg-green-100 text-green-700',
     description: 'Create a shared library of test steps that can be reused across multiple test cases. Keep your test suite DRY and maintainable.',
     bullets: [
-      'Create named step groups in the Shared Steps library',
+      'Create named step groups in the Steps Library',
       'Embed shared steps into any test case with one click',
       'Changes to shared steps propagate automatically to all referencing test cases',
       'Starter: 20 shared steps · Professional+: Unlimited',
@@ -199,7 +199,7 @@ const entries = [
   },
   {
     date: 'September 2025',
-    title: 'Discovery Logs',
+    title: 'Exploratory',
     category: 'New Feature',
     categoryColor: 'bg-indigo-100 text-indigo-700',
     description: 'Mission-driven discovery testing with rich-text notes, screenshots, and structured entries.',

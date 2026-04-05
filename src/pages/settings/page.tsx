@@ -77,7 +77,7 @@ const TIER_INFO = {
     icon: 'ri-star-line',
     monthlyPrice: 49,
     priceDesc: '/ mo',
-    features: ['Up to 10 projects', 'Up to 5 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (50 entries)', 'Shared Steps (20 steps)', '30 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Basic reporting', 'Export PDF Report'],
+    features: ['Up to 10 projects', 'Up to 5 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (50 entries)', 'Steps Library (20 steps)', '30 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Basic reporting', 'Export PDF Report'],
   },
   3: {
     name: 'Professional',
@@ -85,7 +85,7 @@ const TIER_INFO = {
     icon: 'ri-vip-crown-line',
     monthlyPrice: 99,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', 'Up to 20 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited)', 'Shared Steps (Unlimited)', '150 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'Export PDF Report', 'CI/CD Integration', 'Priority support'],
+    features: ['Unlimited projects', 'Up to 20 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited)', 'Steps Library (Unlimited)', '150 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'Export PDF Report', 'CI/CD Integration', 'Priority support'],
   },
   4: {
     name: 'Enterprise S',
@@ -93,7 +93,7 @@ const TIER_INFO = {
     icon: 'ri-building-2-line',
     monthlyPrice: 249,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', '21–50 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited + Audit Trail + Jira sync)', 'Shared Steps (Unlimited + Full version history)', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
+    features: ['Unlimited projects', '21–50 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited + Audit Trail + Jira sync)', 'Steps Library (Unlimited + Full version history)', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
   },
   5: {
     name: 'Enterprise M',
@@ -101,7 +101,7 @@ const TIER_INFO = {
     icon: 'ri-building-4-line',
     monthlyPrice: 499,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', '51–100 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited + Audit Trail + Jira sync)', 'Shared Steps (Unlimited + Full version history)', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
+    features: ['Unlimited projects', '51–100 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited + Audit Trail + Jira sync)', 'Steps Library (Unlimited + Full version history)', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
   },
   6: {
     name: 'Enterprise L',
@@ -109,7 +109,7 @@ const TIER_INFO = {
     icon: 'ri-government-line',
     monthlyPrice: -1,
     priceDesc: 'Contact Sales',
-    features: ['Unlimited projects', '100+ team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited + Audit Trail + Jira sync)', 'Shared Steps (Unlimited + Full version history)', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee', 'Custom contract & SLA'],
+    features: ['Unlimited projects', '100+ team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited + Audit Trail + Jira sync)', 'Steps Library (Unlimited + Full version history)', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee', 'Custom contract & SLA'],
   },
 };
 

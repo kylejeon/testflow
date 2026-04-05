@@ -25,7 +25,7 @@ const features = [
     icon: 'ri-play-circle-line',
     tag: 'Core',
     tagColor: 'bg-indigo-50 text-indigo-700',
-    title: 'Test Runs & Results',
+    title: 'Runs',
     headline: 'Execute tests and track results in real time',
     description: 'Create test runs tied to milestones, assign to team members, and track execution live.',
     bullets: [
@@ -43,7 +43,7 @@ const features = [
     icon: 'ri-video-line',
     tag: 'Testing',
     tagColor: 'bg-purple-50 text-purple-700',
-    title: 'Discovery Logs',
+    title: 'Exploratory',
     headline: 'Capture what scripted tests miss',
     description: 'Run free-form discovery testing with missions, rich-text notes, inline screenshots, and structured entries.',
     bullets: [

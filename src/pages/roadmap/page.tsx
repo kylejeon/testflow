@@ -68,7 +68,7 @@ const columns = [
         iconColor: 'text-indigo-600',
       },
       {
-        title: 'Discovery Logs',
+        title: 'Exploratory',
         date: 'Q3 2025',
         desc: 'Mission-driven discovery testing with rich-text notes and screenshots.',
         icon: 'ri-video-line',
@@ -114,9 +114,9 @@ const columns = [
         iconColor: 'text-amber-600',
       },
       {
-        title: 'Runs & Results Redesign',
+        title: 'Runs Redesign',
         date: 'Q2–Q3 2026',
-        desc: 'Complete redesign of Runs and Results pages for better workflow and usability.',
+        desc: 'Complete redesign of Runs pages for better workflow and usability.',
         icon: 'ri-layout-3-line',
         iconBg: 'bg-amber-50',
         iconColor: 'text-amber-600',

@@ -342,7 +342,7 @@ export default function DocsRequirementsTraceabilityPage() {
         <section className="bg-indigo-50 border border-indigo-100 rounded-xl p-6">
           <h3 className="font-semibold text-indigo-900 mb-3">Next Steps</h3>
           <p className="text-sm text-indigo-700 mb-4">
-            Now that you understand RTM, learn how to reuse steps across test cases with Shared Steps, or set up your Jira integration.
+            Now that you understand RTM, learn how to reuse steps across test cases with Steps Library, or set up your Jira integration.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
@@ -350,7 +350,7 @@ export default function DocsRequirementsTraceabilityPage() {
               className="inline-flex items-center gap-2 text-sm text-indigo-700 hover:text-indigo-900 font-medium transition-colors"
             >
               <i className="ri-stack-line"></i>
-              Shared Steps →
+              Steps Library →
             </Link>
             <Link
               to="/docs/integrations"
@@ -371,13 +371,13 @@ export default function DocsRequirementsTraceabilityPage() {
           className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 font-medium transition-colors"
         >
           <i className="ri-arrow-left-s-line"></i>
-          Discovery Logs
+          Exploratory
         </Link>
         <Link
           to="/docs/shared-steps"
           className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 font-medium transition-colors"
         >
-          Shared Steps
+          Steps Library
           <i className="ri-arrow-right-s-line"></i>
         </Link>
       </div>

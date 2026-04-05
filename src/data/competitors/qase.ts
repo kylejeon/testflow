@@ -27,7 +27,7 @@ export const qaseData: CompetitorData = {
     { feature: 'CI/CD integration', testably: 'All plans', competitor: 'Business plan only' },
     { feature: 'AI test case generation', testably: true, competitor: 'Add-on cost' },
     { feature: 'Flat-rate pricing', testably: true, competitor: false },
-    { feature: 'Discovery Logs', testably: true, competitor: true },
+    { feature: 'Exploratory', testably: true, competitor: true },
     { feature: 'Slack & Teams notifications', testably: true, competitor: 'Business plan only' },
     { feature: 'Setup time', testably: '< 5 minutes', competitor: '15–30 minutes' },
   ],
@@ -105,7 +105,7 @@ export const qaseData: CompetitorData = {
     {
       question: 'Does Testably support discovery testing like Qase?',
       answer:
-        'Yes. Testably includes Discovery Logs where testers can log findings in real time, attach screenshots, and auto-generate test cases from log sessions.',
+        'Yes. Testably includes Exploratory where testers can log findings in real time, attach screenshots, and auto-generate test cases from log sessions.',
     },
     {
       question: 'What if I need Jira integration?',

@@ -46,11 +46,11 @@ export default function DocsDiscoveryLogsPage() {
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
           <Link to="/docs" className="hover:text-indigo-600 transition-colors">Docs</Link>
           <i className="ri-arrow-right-s-line text-gray-400" />
-          <span className="text-gray-900 font-medium">Discovery Logs</span>
+          <span className="text-gray-900 font-medium">Exploratory</span>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">Discovery Logs</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-3">Exploratory</h1>
         <p className="text-gray-500 text-base leading-relaxed max-w-2xl">
-          Discovery Logs are Testably's tool for exploratory testing. Start a session, freely explore your application, and record observations as you go — notes, bugs, and test steps. Later, convert your findings into formal test cases.
+          Exploratory is Testably's tool for exploratory testing. Start a session, freely explore your application, and record observations as you go — notes, bugs, and test steps. Later, convert your findings into formal test cases.
         </p>
       </div>
 
@@ -229,7 +229,7 @@ export default function DocsDiscoveryLogsPage() {
             <h2 className="text-xl font-bold text-gray-900">Converting to Test Cases</h2>
           </div>
           <p className="text-gray-500 text-sm leading-relaxed mb-4">
-            The most powerful feature of Discovery Logs is the ability to convert exploratory findings directly into formal, structured test cases — either manually or with AI assistance.
+            The most powerful feature of Exploratory is the ability to convert exploratory findings directly into formal, structured test cases — either manually or with AI assistance.
           </p>
 
           <h3 className="text-base font-semibold text-gray-900 mb-2">Manual Conversion</h3>

@@ -63,7 +63,7 @@ const SectionDivider = () => <hr className="my-10 border-gray-200" />;
 export default function DiscoveryLogsApiPage() {
   return (
     <DocsLayout
-      title="Discovery Logs API | Testably"
+      title="Exploratory API | Testably"
       description="Manage discovery sessions and log entries. Capture notes, bugs, observations, and questions during exploratory testing."
     >
       {/* Header */}
@@ -72,7 +72,7 @@ export default function DiscoveryLogsApiPage() {
           <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
             <i className="ri-search-eye-line text-indigo-600 text-lg" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Discovery Logs</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Exploratory</h1>
         </div>
         <p className="text-gray-500 text-lg leading-relaxed">
           Capture findings during exploratory testing sessions. Log notes, bugs, observations, and questions, then convert promising entries into test cases.

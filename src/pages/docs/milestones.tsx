@@ -305,7 +305,7 @@ export default function DocsMilestonesPage() {
         {/* ---- Next Steps ---- */}
         <section className="bg-indigo-50 border border-indigo-100 rounded-xl p-6">
           <h3 className="font-semibold text-indigo-900 mb-3">Next Steps</h3>
-          <p className="text-sm text-indigo-700 mb-4">Explore test runs to understand how progress is generated, or learn about exploratory testing with Discovery Logs.</p>
+          <p className="text-sm text-indigo-700 mb-4">Explore test runs to understand how progress is generated, or learn about exploratory testing with Exploratory.</p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
               to="/docs/test-runs"
@@ -319,7 +319,7 @@ export default function DocsMilestonesPage() {
               className="inline-flex items-center gap-2 text-sm text-indigo-700 hover:text-indigo-900 font-medium transition-colors"
             >
               <i className="ri-search-eye-line"></i>
-              Discovery Logs →
+              Exploratory →
             </Link>
           </div>
         </section>
