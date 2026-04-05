@@ -241,11 +241,11 @@ export function StepEditor({ steps, onChange, onInsertSharedStep, onConvertToSha
                       e.preventDefault();
                       setOpenMenuId(openMenuId === step.id ? null : step.id);
                     }}
-                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                    className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
                     tabIndex={-1}
                     title="More options"
                   >
-                    <i className="ri-more-2-fill text-base" />
+                    <i className="ri-more-2-line text-base" />
                   </button>
                   {openMenuId === step.id && (
                     <div

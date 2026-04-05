@@ -2007,12 +2007,29 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
 
   // Normalize steps/expected_result for comparison: strip "N. " prefix, remove empty lines,
   // re-number, rejoin. Handles legacy data with missing prefixes or trailing empty entries.
-  const normalizeStepField = (text: string): string =>
-    (text || '').split('\n')
+  const normalizeStepField = (text: string): string => {
+    if (!text) return '';
+    // Handle JSON array (steps that include SharedStepRef objects)
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) {
+        return parsed.map((s: any, i: number) => {
+          if (s.type === 'shared_step_ref') {
+            return `${i + 1}. 🔗 [${s.shared_step_custom_id}] ${s.shared_step_name} (v${s.shared_step_version})`;
+          }
+          const action = s.step || '';
+          const expected = s.expectedResult ? ` → ${s.expectedResult}` : '';
+          return `${i + 1}. ${action}${expected}`;
+        }).join('\n');
+      }
+    } catch {}
+    // Plain text fallback
+    return (text || '').split('\n')
       .map(s => s.replace(/^\d+\.\s*/, '').trim())
       .filter(s => s !== '')
       .map((s, i) => `${i + 1}. ${s}`)
       .join('\n');
+  };
 
   // ────────────────────────────────────────────────────────────────────────
 
