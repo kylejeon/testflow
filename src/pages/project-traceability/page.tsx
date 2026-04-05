@@ -342,21 +342,12 @@ export default function ProjectTraceability() {
   const handleExportCSV = () => {
     const tcList = testCases;
 
-    // ── Summary block ──────────────────────────────────────────────────────────
-    const summaryRows = [
-      ['Summary', 'Value'],
-      ['Project', project?.name || projectId || ''],
-      ['Exported', new Date().toLocaleString()],
-      ['Overall Coverage', `${summary.overallPct}%`],
-      ['Total Requirements', String(summary.total)],
-      ['Fully Covered', String(summary.fullyCovered)],
-      ['Partial Coverage', String(summary.partial)],
-      ['No Coverage', String(summary.noCoverage)],
-      [],  // blank separator row
-    ];
+    // ── Summary table (own header + 1 data row) ───────────────────────────────
+    const summaryHeader = ['Overall Coverage', 'Total Requirements', 'Fully Covered', 'Partial Coverage', 'No Coverage', 'Project', 'Exported'];
+    const summaryData   = [`${summary.overallPct}%`, String(summary.total), String(summary.fullyCovered), String(summary.partial), String(summary.noCoverage), project?.name || projectId || '', new Date().toLocaleString()];
 
-    // ── Original matrix (unchanged) ────────────────────────────────────────────
-    const header = ['Requirement ID', 'Requirement', 'Priority', ...tcList.map((tc) => tc.custom_id), 'Coverage %'];
+    // ── Matrix table (own header + data rows) ─────────────────────────────────
+    const matrixHeader = ['Requirement ID', 'Requirement', 'Priority', ...tcList.map((tc) => tc.custom_id), 'Coverage %'];
     const matrixRows = filteredReqs.map((req) => {
       const cells = tcList.map((tc) => {
         const cell = getCell(req.id, tc.id);
@@ -370,7 +361,13 @@ export default function ProjectTraceability() {
       return [req.custom_id, `"${req.title.replace(/"/g, '""')}"`, req.priority, ...cells, String(coverageMap[req.id]?.pct || 0)];
     });
 
-    const allRows = [...summaryRows, header, ...matrixRows];
+    const allRows = [
+      summaryHeader,
+      summaryData,
+      [],                          // blank separator
+      matrixHeader,
+      ...matrixRows,
+    ];
     const csv = allRows.map((r) => r.join(',')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
