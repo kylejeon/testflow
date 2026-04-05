@@ -137,7 +137,8 @@ export default function ProjectRequirements() {
     staleTime: 5 * 60_000,
   });
 
-  const tier = userProfile?.subscription_tier || 1;
+  const isTierLoading = userProfile === undefined;
+  const tier = userProfile?.subscription_tier ?? 1;
 
   // Requirements list
   const { data: requirements = [], isLoading } = useQuery({
@@ -154,7 +155,7 @@ export default function ProjectRequirements() {
       if (error) throw error;
       return (data || []) as Requirement[];
     },
-    enabled: !!projectId && tier >= 2,
+    enabled: !!projectId && !isTierLoading,
     staleTime: 30_000,
   });
 
@@ -269,6 +270,18 @@ export default function ProjectRequirements() {
   };
 
   const starterAtLimit = tier === 2 && requirements.filter((r) => r.status !== 'deprecated').length >= REQ_LIMIT_STARTER;
+
+  if (isTierLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#F8FAFC', display: 'flex', flexDirection: 'column' }}>
+        <ProjectHeader projectId={projectId!} projectName={project?.name || ''} />
+        <div className="flex items-center justify-center py-24 text-slate-400 text-sm gap-2">
+          <i className="ri-loader-4-line animate-spin text-lg" />
+          Loading...
+        </div>
+      </div>
+    );
+  }
 
   if (tier < 2) {
     return (
