@@ -60,7 +60,8 @@ const plans = [
     ai: '30 AI / month',
     basePlan: 'Hobby',
     features: [
-      '10 projects · unlimited test cases',
+      '10 projects · 5 members',
+      'Unlimited test cases',
       'Slack & Teams integration',
       'AI Run Summary',
       'Flaky Detection AI',

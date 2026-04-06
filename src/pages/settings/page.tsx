@@ -88,7 +88,7 @@ const TIER_INFO = {
     monthlyPrice: 49,
     priceDesc: '/ mo',
     basePlan: 'Hobby',
-    features: ['10 projects · unlimited test cases', 'Slack & Teams Integration', 'RTM (50 entries) · Steps Library (20 steps)', 'AI Run Summary · Flaky Detection AI', 'Coverage Gap Analysis · AI Insights Panel', 'Basic reporting · email support', '30 AI generations / month'],
+    features: ['10 projects · 5 members', 'Unlimited test cases', 'Slack & Teams Integration', 'RTM (50 entries) · Steps Library (20 steps)', 'AI Run Summary · Flaky Detection AI', 'Coverage Gap Analysis · AI Insights Panel', 'Basic reporting · email support', '30 AI generations / month'],
   },
   4: {
     name: 'Professional',

@@ -265,8 +265,8 @@ const content = {
         users: 'Up to 5 users',
         description: 'For growing teams that need more power',
         basePlan: 'Hobby',
-        features: ['10 projects · unlimited TCs', 'Slack & Teams integration', 'RTM (50 entries) · Steps Library (20 steps)', 'AI Run Summary · Flaky Detection AI', 'Coverage Gap Analysis · AI Insights Panel', 'Basic reporting · email support', '30 AI generations / month'],
-        cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 6,
+        features: ['10 projects · 5 members', 'Unlimited test cases', 'Slack & Teams integration', 'RTM (50 entries) · Steps Library (20 steps)', 'AI Run Summary · Flaky Detection AI', 'Coverage Gap Analysis · AI Insights Panel', 'Basic reporting · email support', '30 AI generations / month'],
+        cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 7,
         highlighted: false, icon: 'ri-star-line', popular: '',
       },
       {
@@ -683,8 +683,8 @@ const content = {
         users: '최대 5명',
         description: '성장하는 팀을 위한 핵심 기능',
         basePlan: 'Hobby',
-        features: ['프로젝트 10개 · TC 무제한', 'Slack & Teams 연동', 'RTM (50개) · 공유 스텝 (20개)', 'AI 실행 요약 · 플레이키 감지 AI', '커버리지 갭 분석 · AI 인사이트', '기본 리포팅 · 이메일 지원', 'AI 생성 30회/월'],
-        cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: 6,
+        features: ['프로젝트 10개 · 멤버 5명', 'TC 무제한', 'Slack & Teams 연동', 'RTM (50개) · 공유 스텝 (20개)', 'AI 실행 요약 · 플레이키 감지 AI', '커버리지 갭 분석 · AI 인사이트', '기본 리포팅 · 이메일 지원', 'AI 생성 30회/월'],
+        cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: 7,
         highlighted: false, icon: 'ri-star-line', popular: '',
       },
       {
