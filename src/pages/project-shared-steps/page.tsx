@@ -1,10 +1,178 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import ProjectHeader from '../../components/ProjectHeader';
 import SharedStepModal from './components/SharedStepModal';
 import type { SharedTestStep, SharedStepUsage } from '../../types/shared-steps';
+
+// ── Bulk-update dialog (standalone, opened from the library list) ─────────────
+interface BulkUsageTC { test_case_id: string; custom_id: string; title: string; linked_version: number; }
+
+function BulkUpdateDialog({ step, onClose, onDone }: { step: SharedTestStep; onClose: () => void; onDone: () => void }) {
+  const [usageTCs, setUsageTCs] = useState<BulkUsageTC[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [updating, setUpdating] = useState(false);
+
+  // Fetch TCs referencing this shared step
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('shared_step_usage')
+        .select('test_case_id, linked_version, test_cases!inner(custom_id, title)')
+        .eq('shared_step_id', step.id);
+      const seen = new Set<string>();
+      const unique = (data || []).filter((u: any) => {
+        if (seen.has(u.test_case_id)) return false;
+        seen.add(u.test_case_id);
+        return true;
+      });
+      const list: BulkUsageTC[] = unique.map((u: any) => ({
+        test_case_id: u.test_case_id,
+        custom_id: u.test_cases?.custom_id || '',
+        title: u.test_cases?.title || '',
+        linked_version: u.linked_version,
+      }));
+      setUsageTCs(list);
+      // Pre-select TCs with outdated versions
+      setSelectedIds(new Set(list.filter(t => t.linked_version < step.version).map(t => t.test_case_id)));
+      setLoading(false);
+    })();
+  }, [step.id, step.version]);
+
+  const handleUpdate = async () => {
+    setUpdating(true);
+    try {
+      const tcIds = [...selectedIds];
+      const { data: tcs } = await supabase.from('test_cases').select('id, steps').in('id', tcIds);
+      for (const tc of (tcs || [])) {
+        try {
+          const raw = typeof tc.steps === 'string' ? JSON.parse(tc.steps) : (tc.steps || []);
+          const updated = (Array.isArray(raw) ? raw : []).map((s: any) =>
+            s?.type === 'shared_step_ref' && s.shared_step_id === step.id
+              ? { ...s, shared_step_version: step.version }
+              : s
+          );
+          await supabase.from('test_cases').update({ steps: JSON.stringify(updated) }).eq('id', tc.id);
+          await supabase.from('shared_step_usage')
+            .update({ linked_version: step.version })
+            .eq('test_case_id', tc.id)
+            .eq('shared_step_id', step.id);
+        } catch {}
+      }
+    } finally {
+      setUpdating(false);
+      onDone();
+    }
+  };
+
+  const outdatedCount = usageTCs.filter(t => t.linked_version < step.version).length;
+
+  return (
+    <>
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 1100 }} onClick={onClose} />
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        width: '560px', maxWidth: 'calc(100vw - 2rem)', maxHeight: '80vh',
+        background: '#fff', borderRadius: '1rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+        zIndex: 1101, display: 'flex', flexDirection: 'column',
+      }} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ padding: '1.25rem 1.5rem 1rem', borderBottom: '1px solid #F1F5F9' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <i className="ri-refresh-line text-amber-600 text-base" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-800">
+                  Bulk Update — {step.custom_id}
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {usageTCs.length} TC{usageTCs.length !== 1 ? 's' : ''} reference this · {outdatedCount} outdated (pinned to older version)
+                </p>
+              </div>
+            </div>
+            <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
+              <i className="ri-close-line text-lg" />
+            </button>
+          </div>
+        </div>
+
+        {/* TC list */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1.5rem' }}>
+          {loading ? (
+            <div className="flex items-center justify-center py-8 text-slate-400 text-sm gap-2">
+              <i className="ri-loader-4-line animate-spin" /> Loading…
+            </div>
+          ) : usageTCs.length === 0 ? (
+            <div className="text-center py-8 text-slate-400 text-sm">No test cases reference this shared step yet.</div>
+          ) : (
+            <>
+              <label className="flex items-center gap-2 py-2 border-b border-slate-100 cursor-pointer mb-1">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size === usageTCs.length && usageTCs.length > 0}
+                  onChange={e => setSelectedIds(e.target.checked ? new Set(usageTCs.map(t => t.test_case_id)) : new Set())}
+                  className="rounded border-slate-300 text-indigo-600"
+                />
+                <span className="text-xs font-semibold text-slate-600">Select all</span>
+              </label>
+              <div className="space-y-1">
+                {usageTCs.map(tc => {
+                  const outdated = tc.linked_version < step.version;
+                  return (
+                    <label key={tc.test_case_id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(tc.test_case_id)}
+                        onChange={e => {
+                          const next = new Set(selectedIds);
+                          if (e.target.checked) next.add(tc.test_case_id);
+                          else next.delete(tc.test_case_id);
+                          setSelectedIds(next);
+                        }}
+                        className="rounded border-slate-300 text-indigo-600"
+                      />
+                      <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded flex-shrink-0">
+                        {tc.custom_id}
+                      </span>
+                      <span className="text-xs text-slate-700 flex-1 truncate">{tc.title}</span>
+                      {outdated ? (
+                        <span className="text-[0.65rem] text-amber-600 font-semibold flex-shrink-0">
+                          v{tc.linked_version} → v{step.version}
+                        </span>
+                      ) : (
+                        <span className="text-[0.65rem] text-slate-400 flex-shrink-0">v{tc.linked_version} ✓</span>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #F1F5F9' }} className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors">
+            Close
+          </button>
+          <button
+            type="button"
+            onClick={handleUpdate}
+            disabled={updating || selectedIds.size === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50"
+          >
+            {updating ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-refresh-line" />}
+            {updating ? 'Updating…' : `Update ${selectedIds.size} TC${selectedIds.size !== 1 ? 's' : ''} to v${step.version}`}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
 
 // ── Style tokens ──────────────────────────────────────────────────────────────
 const btnPrimary = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer border-0`;
@@ -189,6 +357,7 @@ export default function ProjectSharedSteps() {
   const [deleteUsages, setDeleteUsages] = useState<SharedStepUsage[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [usedByStep, setUsedByStep] = useState<SharedTestStep | null>(null);
+  const [bulkUpdateTarget, setBulkUpdateTarget] = useState<SharedTestStep | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const showToast = (type: 'success' | 'error', message: string) => {
@@ -235,6 +404,25 @@ export default function ProjectSharedSteps() {
       return (data || []) as SharedTestStep[];
     },
     enabled: !!projectId && tier >= 2,
+    staleTime: 30_000,
+  });
+
+  // Live usage counts from shared_step_usage (grouped by shared_step_id)
+  const { data: liveUsageCounts = {} } = useQuery({
+    queryKey: ['shared_step_usage_counts', projectId],
+    queryFn: async () => {
+      if (!sharedSteps.length) return {} as Record<string, number>;
+      const { data } = await supabase
+        .from('shared_step_usage')
+        .select('shared_step_id')
+        .in('shared_step_id', sharedSteps.map(s => s.id));
+      const counts: Record<string, number> = {};
+      for (const row of (data || [])) {
+        counts[row.shared_step_id] = (counts[row.shared_step_id] || 0) + 1;
+      }
+      return counts;
+    },
+    enabled: sharedSteps.length > 0,
     staleTime: 30_000,
   });
 
@@ -558,16 +746,30 @@ export default function ProjectSharedSteps() {
 
                     {/* Used by */}
                     <td style={{ padding: '0.75rem 1rem', whiteSpace: 'nowrap' }}>
-                      {ss.usage_count > 0 ? (
-                        <button
-                          onClick={() => setUsedByStep(ss)}
-                          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline underline-offset-2"
-                        >
-                          {ss.usage_count} TC{ss.usage_count !== 1 ? 's' : ''}
-                        </button>
-                      ) : (
-                        <span className="text-xs text-slate-400">—</span>
-                      )}
+                      {(() => {
+                        const count = liveUsageCounts[ss.id] ?? ss.usage_count;
+                        if (count > 0) {
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => setUsedByStep(ss)}
+                                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline underline-offset-2"
+                              >
+                                {count} TC{count !== 1 ? 's' : ''}
+                              </button>
+                              <button
+                                onClick={() => setBulkUpdateTarget(ss)}
+                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[0.6rem] font-semibold bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200 rounded transition-colors"
+                                title="Bulk update TCs to latest version"
+                              >
+                                <i className="ri-refresh-line text-[0.6rem]" />
+                                Sync
+                              </button>
+                            </div>
+                          );
+                        }
+                        return <span className="text-xs text-slate-400">—</span>;
+                      })()}
                     </td>
 
                     {/* Category */}
@@ -666,6 +868,19 @@ export default function ProjectSharedSteps() {
           step={usedByStep}
           projectId={projectId!}
           onClose={() => setUsedByStep(null)}
+        />
+      )}
+
+      {/* Bulk update dialog */}
+      {bulkUpdateTarget && (
+        <BulkUpdateDialog
+          step={bulkUpdateTarget}
+          onClose={() => setBulkUpdateTarget(null)}
+          onDone={() => {
+            setBulkUpdateTarget(null);
+            queryClient.invalidateQueries({ queryKey: ['shared_step_usage_counts', projectId] });
+            showToast('success', 'Test cases updated to latest version.');
+          }}
         />
       )}
 

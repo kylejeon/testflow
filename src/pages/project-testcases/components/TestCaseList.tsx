@@ -3055,7 +3055,22 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
                       {stepsList.map((s: any, index) => {
                         // SharedStepRef — render expanded read-only view
                         if (isSharedStepRef(s)) {
-                          return <SharedStepRefRow key={s.id || index} step={s} showDelete={false} />;
+                          return (
+                            <SharedStepRefRow
+                              key={s.id || index}
+                              step={s}
+                              showDelete={false}
+                              tcId={selectedTestCase.id}
+                              onVersionUpdated={async () => {
+                                const { data } = await supabase
+                                  .from('test_cases')
+                                  .select('*')
+                                  .eq('id', selectedTestCase.id)
+                                  .single();
+                                if (data) setSelectedTestCase(data as TestCase);
+                              }}
+                            />
+                          );
                         }
                         // Normal step
                         return (

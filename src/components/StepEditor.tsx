@@ -337,9 +337,12 @@ interface SharedStepRefRowProps {
   showDelete?: boolean;
   onDelete?: () => void;
   onUpdateVersion?: (stepId: string, newVersion: number) => void;
+  /** TC id — when provided and onUpdateVersion is absent, clicking "Update to vN" writes directly to DB */
+  tcId?: string;
+  onVersionUpdated?: () => void;
 }
 
-export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion }: SharedStepRefRowProps) {
+export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion, tcId, onVersionUpdated }: SharedStepRefRowProps) {
   const [pinnedSteps, setPinnedSteps] = useState<SubStep[]>([]);
   const [latestSteps, setLatestSteps] = useState<SubStep[]>([]);
   const [latestVersion, setLatestVersion] = useState(step.shared_step_version);
@@ -564,10 +567,40 @@ export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion }
               </button>
               <button
                 type="button"
-                disabled={!onUpdateVersion}
-                onClick={() => { if (onUpdateVersion) { onUpdateVersion(step.id, latestVersion); setShowVersionDiff(false); } }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                title={!onUpdateVersion ? 'Open the TC editor to update the version' : undefined}
+                onClick={async () => {
+                  if (onUpdateVersion) {
+                    onUpdateVersion(step.id, latestVersion);
+                    setShowVersionDiff(false);
+                  } else if (tcId) {
+                    // Detail-panel path: update directly in DB
+                    try {
+                      const { data: tcData } = await supabase
+                        .from('test_cases')
+                        .select('steps')
+                        .eq('id', tcId)
+                        .single();
+                      if (tcData) {
+                        let stepsArr: any[] = [];
+                        try { stepsArr = typeof tcData.steps === 'string' ? JSON.parse(tcData.steps) : (tcData.steps || []); } catch {}
+                        const updated = stepsArr.map((s: any) =>
+                          s.type === 'shared_step_ref' && s.shared_step_id === step.shared_step_id
+                            ? { ...s, shared_step_version: latestVersion }
+                            : s
+                        );
+                        await supabase.from('test_cases').update({ steps: JSON.stringify(updated) }).eq('id', tcId);
+                        await supabase.from('shared_step_usage')
+                          .update({ linked_version: latestVersion })
+                          .eq('test_case_id', tcId)
+                          .eq('shared_step_id', step.shared_step_id);
+                        setShowVersionDiff(false);
+                        onVersionUpdated?.();
+                      }
+                    } catch (err) {
+                      console.error('[SharedStepRefRow] direct version update failed:', err);
+                    }
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
               >
                 <i className="ri-arrow-up-line" />
                 Update to v{latestVersion}
