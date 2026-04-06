@@ -276,7 +276,7 @@ const content = {
         description: 'Full-featured for professional QA teams',
         basePlan: 'Starter',
         features: ['Unlimited projects · up to 20 members', 'RTM: Audit Trail + AI Coverage Gap', 'Steps Library (Unlimited)', 'CI/CD Integration', 'Test Automation Framework SDK', 'Advanced reporting · priority support', '150 AI generations / month'],
-        cta: 'Start Free Trial', ctaVariant: 'filled', aiFeatureIdx: 5,
+        cta: 'Get Started', ctaVariant: 'filled', aiFeatureIdx: 5,
         highlighted: true, icon: 'ri-vip-crown-line', popular: 'Most Popular',
       },
       {
@@ -286,7 +286,7 @@ const content = {
         description: 'For teams scaling beyond 20 members',
         basePlan: 'Professional',
         features: ['21–50 members', 'Unlimited AI generations', 'RTM: Audit Trail + Jira sync', 'Dedicated support · SLA guarantee'],
-        cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 1,
+        cta: 'Get Started', ctaVariant: 'outline', aiFeatureIdx: 1,
         highlighted: false, icon: 'ri-building-2-line', popular: '',
       },
       {
@@ -296,7 +296,7 @@ const content = {
         description: 'For mid-size organizations',
         basePlan: 'Enterprise S',
         features: ['51–100 members'],
-        cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: -1,
+        cta: 'Get Started', ctaVariant: 'outline', aiFeatureIdx: -1,
         highlighted: false, icon: 'ri-building-4-line', popular: '',
       },
       {
@@ -305,7 +305,7 @@ const content = {
         description: 'For large enterprises with custom needs',
         basePlan: 'Enterprise M',
         features: ['100+ members', 'Custom contract & SLA', 'Dedicated infrastructure'],
-        cta: 'Talk to Us', ctaVariant: 'dark', aiFeatureIdx: -1,
+        cta: 'Contact Sales', ctaVariant: 'dark', aiFeatureIdx: -1,
         highlighted: false, icon: 'ri-government-line', popular: '', darkCard: true,
       },
     ],
@@ -694,7 +694,7 @@ const content = {
         description: '전문 QA 팀을 위한 완전한 기능',
         basePlan: 'Starter',
         features: ['프로젝트 무제한 · 멤버 20명', 'RTM: 감사 추적 + AI 커버리지 갭', '공유 스텝 무제한', 'CI/CD 연동', '테스트 자동화 Framework SDK', '고급 리포팅 · 우선 지원', 'AI 생성 150회/월'],
-        cta: '14일 무료 체험', ctaVariant: 'filled', aiFeatureIdx: 5,
+        cta: '시작하기', ctaVariant: 'filled', aiFeatureIdx: 5,
         highlighted: true, icon: 'ri-vip-crown-line', popular: '가장 인기',
       },
       {
@@ -704,7 +704,7 @@ const content = {
         description: '20명 초과 팀을 위한 플랜',
         basePlan: 'Professional',
         features: ['멤버 21–50명', 'AI 생성 무제한', 'RTM: 감사 추적 + Jira 동기화', '전담 지원 · SLA 보장'],
-        cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: 1,
+        cta: '시작하기', ctaVariant: 'outline', aiFeatureIdx: 1,
         highlighted: false, icon: 'ri-building-2-line', popular: '',
       },
       {
@@ -714,7 +714,7 @@ const content = {
         description: '중대형 조직을 위한 플랜',
         basePlan: 'Enterprise S',
         features: ['멤버 51–100명'],
-        cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: -1,
+        cta: '시작하기', ctaVariant: 'outline', aiFeatureIdx: -1,
         highlighted: false, icon: 'ri-building-4-line', popular: '',
       },
       {

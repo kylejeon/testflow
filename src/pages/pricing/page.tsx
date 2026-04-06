@@ -95,7 +95,7 @@ const plans = [
       'Priority support',
       '150 AI generations / month',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     highlighted: true,
     icon: 'ri-vip-crown-line',
     popular: 'Most popular',
@@ -118,7 +118,7 @@ const enterpriseTiers = [
       'Dedicated support',
       'SLA guarantee',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     icon: 'ri-building-2-line',
   },
   {
@@ -131,7 +131,7 @@ const enterpriseTiers = [
     features: [
       '51–100 team members',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     icon: 'ri-building-4-line',
   },
   {
