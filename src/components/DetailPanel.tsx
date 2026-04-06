@@ -1,5 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Avatar } from './Avatar';
+import { supabase } from '../lib/supabase';
+import { type AnyStep, isSharedStepRef } from '../types/shared-steps';
+import { expandFlatSteps, type SharedStepCache } from '../lib/expandSharedSteps';
 
 export type TestStatus = 'passed' | 'failed' | 'blocked' | 'retest' | 'untested';
 
@@ -290,13 +293,45 @@ export function DetailPanel({
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkIssueKey, setLinkIssueKey] = useState('');
   const [linkingIssue, setLinkingIssue] = useState(false);
+  const [sharedStepsCache, setSharedStepsCache] = useState<SharedStepCache>({});
   const detailBodyRef = useRef<HTMLDivElement>(null);
   const stepsAreaRef = useRef<HTMLDivElement>(null);
   const stepsHeightRef = useRef<number | null>(null);
 
+  // Fetch shared step content when TC steps contain SharedStepRefs
+  useEffect(() => {
+    if (!testCase.steps) { setSharedStepsCache({}); return; }
+    let parsed: AnyStep[] | null = null;
+    try {
+      const p = JSON.parse(testCase.steps);
+      if (Array.isArray(p)) parsed = p as AnyStep[];
+    } catch {}
+    if (!parsed) { setSharedStepsCache({}); return; }
+    const refs = parsed.filter(isSharedStepRef);
+    if (refs.length === 0) { setSharedStepsCache({}); return; }
+    const ids = [...new Set(refs.map((r) => r.shared_step_id))];
+    supabase
+      .from('shared_steps')
+      .select('id, name, custom_id, steps')
+      .in('id', ids)
+      .then(({ data }) => {
+        if (!data) return;
+        const cache: SharedStepCache = {};
+        data.forEach((ss: any) => { cache[ss.id] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps }; });
+        setSharedStepsCache(cache);
+      });
+  }, [testCase.id]);
+
   const isRun = context === 'run';
   const effectiveStepResults = Object.keys(stepResults).length > 0 ? stepResults : localStepResults;
-  const steps = parseSteps(testCase.steps, testCase.expected_result);
+  const steps = (() => {
+    if (!testCase.steps) return [] as { step: string; expectedResult: string }[];
+    try {
+      const p = JSON.parse(testCase.steps);
+      if (Array.isArray(p)) return expandFlatSteps(p as AnyStep[], sharedStepsCache);
+    } catch {}
+    return parseSteps(testCase.steps, testCase.expected_result);
+  })();
   const passedCount = Object.values(effectiveStepResults).filter((v) => v === 'passed').length;
 
   const handleStepResult = (index: number, status: 'passed' | 'failed' | null) => {
@@ -625,18 +660,28 @@ export function DetailPanel({
           {/* Steps */}
           {steps.length > 0 ? (
             <div className="space-y-1.5">
-              {steps.map((s, i) => (
-                <StepRow
-                  key={i}
-                  step={s.step}
-                  expectedResult={s.expectedResult}
-                  index={i}
-                  result={effectiveStepResults[i]}
-                  showResultButtons={isRun}
-                  onStepResult={handleStepResult}
-                  onPreviewImage={onPreviewImage}
-                />
-              ))}
+              {steps.map((s, i) => {
+                const fs = s as any;
+                return (
+                  <div key={i}>
+                    {fs.groupHeader && (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-t-md bg-violet-50 border border-violet-200 border-b-0">
+                        <i className="ri-links-line text-violet-500 text-[10px]" />
+                        <span className="text-[10px] font-semibold text-violet-700">{fs.groupHeader}</span>
+                      </div>
+                    )}
+                    <StepRow
+                      step={s.step}
+                      expectedResult={s.expectedResult}
+                      index={i}
+                      result={effectiveStepResults[i]}
+                      showResultButtons={isRun}
+                      onStepResult={handleStepResult}
+                      onPreviewImage={onPreviewImage}
+                    />
+                  </div>
+                );
+              })}
             </div>
           ) : testCase.expected_result ? (
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2.5">

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { type AnyStep, isSharedStepRef } from '../types/shared-steps';
+import { expandFlatSteps, type SharedStepCache } from '../lib/expandSharedSteps';
 
 export type TestStatus = 'passed' | 'failed' | 'blocked' | 'retest' | 'untested';
 
@@ -128,8 +130,10 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarFilter, setSidebarFilter] = useState<'all' | TestStatus>('all');
   const [sidebarSearch, setSidebarSearch] = useState('');
+  const [sharedStepsCaches, setSharedStepsCaches] = useState<Record<string, SharedStepCache>>({});
 
   const noteRef = useRef<HTMLTextAreaElement>(null);
+  const fetchedCacheIds = useRef<Set<string>>(new Set());
   const bodyRef = useRef<HTMLDivElement>(null);
   const sidebarSearchRef = useRef<HTMLInputElement>(null);
   const tcRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -137,8 +141,15 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   const test = tests[index];
   const progress = (index / tests.length) * 100;
 
-  // Parse steps — pass top-level expected_result to zip with plain-text steps
-  const steps = parseSteps(test?.steps, test?.expected_result);
+  // Parse steps — expand SharedStepRefs using cache, fall back to plain-text parse
+  const steps = (() => {
+    if (!test?.steps) return [] as { step: string; expectedResult: string }[];
+    try {
+      const p = JSON.parse(test.steps);
+      if (Array.isArray(p)) return expandFlatSteps(p as AnyStep[], sharedStepsCaches[test.id] || {});
+    } catch {}
+    return parseSteps(test?.steps, test?.expected_result);
+  })();
   const currentStepResults = stepResults[test?.id] || {};
   const passedStepCount = Object.values(currentStepResults).filter((v) => v === 'passed').length;
 
@@ -161,6 +172,32 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
     setFocusToast({ type, message });
     setTimeout(() => setFocusToast(null), type === 'success' ? 3000 : 5000);
   }, []);
+
+  // ── Shared step content fetcher ───────────────────────────────────────────
+  useEffect(() => {
+    if (!test?.id || !test?.steps) return;
+    if (fetchedCacheIds.current.has(test.id)) return;
+    let parsed: AnyStep[] | null = null;
+    try {
+      const p = JSON.parse(test.steps);
+      if (Array.isArray(p)) parsed = p as AnyStep[];
+    } catch {}
+    if (!parsed) return;
+    const refs = parsed.filter(isSharedStepRef);
+    if (refs.length === 0) return;
+    fetchedCacheIds.current.add(test.id);
+    const ids = [...new Set(refs.map((r) => r.shared_step_id))];
+    supabase
+      .from('shared_steps')
+      .select('id, name, custom_id, steps')
+      .in('id', ids)
+      .then(({ data }) => {
+        if (!data) return;
+        const cache: SharedStepCache = {};
+        data.forEach((ss: any) => { cache[ss.id] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps }; });
+        setSharedStepsCaches((prev) => ({ ...prev, [test.id]: cache }));
+      });
+  }, [test?.id]);
 
   // ── Sidebar auto-scroll to active TC ─────────────────────────────────────
   useEffect(() => {
