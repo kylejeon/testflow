@@ -5,7 +5,7 @@ import { LogoMark } from '../../components/Logo';
 import { usePassRateReport, type PeriodFilter } from '../../hooks/usePassRateReport';
 import PageLoader from '../../components/PageLoader';
 import { supabase } from '../../lib/supabase';
-import html2canvas from 'html2canvas';
+import { toCanvas } from 'html-to-image';
 import jsPDF from 'jspdf';
 
 const priorityStyle: Record<string, { color: string; bg: string }> = {
@@ -63,11 +63,9 @@ export default function PassRateReportPage() {
     setExporting(true);
     try {
       const el = pdfContentRef.current;
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
+      const canvas = await toCanvas(el, {
+        pixelRatio: 2,
         backgroundColor: '#F8FAFC',
-        logging: false,
       });
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
