@@ -11,7 +11,12 @@
 --   7 = Enterprise L (was 6 — Custom)
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- Shift all existing paid tiers up by 1 to make room for Hobby (2)
+-- Step 1: Expand the CHECK constraint to allow tier 7 before shifting values
+ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_subscription_tier_check;
+ALTER TABLE profiles ADD CONSTRAINT profiles_subscription_tier_check
+  CHECK (subscription_tier >= 1 AND subscription_tier <= 7);
+
+-- Step 2: Shift all existing paid tiers up by 1 to make room for Hobby (2)
 UPDATE profiles
 SET subscription_tier = subscription_tier + 1
 WHERE subscription_tier >= 2;
