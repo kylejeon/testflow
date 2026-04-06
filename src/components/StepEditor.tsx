@@ -349,6 +349,7 @@ export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion, 
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(true);
   const [showVersionDiff, setShowVersionDiff] = useState(false);
+  const [updatingVersion, setUpdatingVersion] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -567,12 +568,14 @@ export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion, 
               </button>
               <button
                 type="button"
+                disabled={updatingVersion}
                 onClick={async () => {
                   if (onUpdateVersion) {
                     onUpdateVersion(step.id, latestVersion);
                     setShowVersionDiff(false);
                   } else if (tcId) {
                     // Detail-panel path: update directly in DB
+                    setUpdatingVersion(true);
                     try {
                       const { data: tcData } = await supabase
                         .from('test_cases')
@@ -588,22 +591,20 @@ export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion, 
                             : s
                         );
                         await supabase.from('test_cases').update({ steps: JSON.stringify(updated) }).eq('id', tcId);
-                        await supabase.from('shared_step_usage')
-                          .update({ linked_version: latestVersion })
-                          .eq('test_case_id', tcId)
-                          .eq('shared_step_id', step.shared_step_id);
                         setShowVersionDiff(false);
                         onVersionUpdated?.();
                       }
                     } catch (err) {
                       console.error('[SharedStepRefRow] direct version update failed:', err);
+                    } finally {
+                      setUpdatingVersion(false);
                     }
                   }
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50"
               >
-                <i className="ri-arrow-up-line" />
-                Update to v{latestVersion}
+                {updatingVersion ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-arrow-up-line" />}
+                {updatingVersion ? 'Updating…' : `Update to v${latestVersion}`}
               </button>
             </div>
           </div>

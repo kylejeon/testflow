@@ -15,25 +15,31 @@ function BulkUpdateDialog({ step, onClose, onDone }: { step: SharedTestStep; onC
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [updating, setUpdating] = useState(false);
 
-  // Fetch TCs referencing this shared step
+  // Fetch TCs referencing this shared step by scanning test_cases.steps directly
   useEffect(() => {
     (async () => {
       const { data } = await supabase
-        .from('shared_step_usage')
-        .select('test_case_id, linked_version, test_cases!inner(custom_id, title)')
-        .eq('shared_step_id', step.id);
-      const seen = new Set<string>();
-      const unique = (data || []).filter((u: any) => {
-        if (seen.has(u.test_case_id)) return false;
-        seen.add(u.test_case_id);
-        return true;
-      });
-      const list: BulkUsageTC[] = unique.map((u: any) => ({
-        test_case_id: u.test_case_id,
-        custom_id: u.test_cases?.custom_id || '',
-        title: u.test_cases?.title || '',
-        linked_version: u.linked_version,
-      }));
+        .from('test_cases')
+        .select('id, custom_id, title, steps')
+        .ilike('steps', `%${step.id}%`);
+
+      const list: BulkUsageTC[] = [];
+      for (const tc of (data || [])) {
+        try {
+          const steps = typeof tc.steps === 'string' ? JSON.parse(tc.steps) : (tc.steps || []);
+          const ref = Array.isArray(steps)
+            ? steps.find((s: any) => s?.type === 'shared_step_ref' && s.shared_step_id === step.id)
+            : null;
+          if (ref) {
+            list.push({
+              test_case_id: tc.id,
+              custom_id: tc.custom_id || '',
+              title: tc.title || '',
+              linked_version: ref.shared_step_version ?? 1,
+            });
+          }
+        } catch {}
+      }
       setUsageTCs(list);
       // Pre-select TCs with outdated versions
       setSelectedIds(new Set(list.filter(t => t.linked_version < step.version).map(t => t.test_case_id)));
@@ -55,10 +61,6 @@ function BulkUpdateDialog({ step, onClose, onDone }: { step: SharedTestStep; onC
               : s
           );
           await supabase.from('test_cases').update({ steps: JSON.stringify(updated) }).eq('id', tc.id);
-          await supabase.from('shared_step_usage')
-            .update({ linked_version: step.version })
-            .eq('test_case_id', tc.id)
-            .eq('shared_step_id', step.id);
         } catch {}
       }
     } finally {
@@ -407,22 +409,30 @@ export default function ProjectSharedSteps() {
     staleTime: 30_000,
   });
 
-  // Live usage counts from shared_step_usage (grouped by shared_step_id)
+  // Live usage counts by scanning test_cases.steps directly (not shared_step_usage)
   const { data: liveUsageCounts = {} } = useQuery({
-    queryKey: ['shared_step_usage_counts', projectId],
+    queryKey: ['tc_step_counts', projectId],
     queryFn: async () => {
-      if (!sharedSteps.length) return {} as Record<string, number>;
-      const { data } = await supabase
-        .from('shared_step_usage')
-        .select('shared_step_id')
-        .in('shared_step_id', sharedSteps.map(s => s.id));
+      const { data: tcs } = await supabase
+        .from('test_cases')
+        .select('steps')
+        .eq('project_id', projectId!);
       const counts: Record<string, number> = {};
-      for (const row of (data || [])) {
-        counts[row.shared_step_id] = (counts[row.shared_step_id] || 0) + 1;
+      for (const tc of (tcs || [])) {
+        try {
+          const steps = typeof tc.steps === 'string' ? JSON.parse(tc.steps) : (tc.steps || []);
+          const seen = new Set<string>();
+          for (const s of (Array.isArray(steps) ? steps : [])) {
+            if (s?.type === 'shared_step_ref' && s.shared_step_id && !seen.has(s.shared_step_id)) {
+              counts[s.shared_step_id] = (counts[s.shared_step_id] || 0) + 1;
+              seen.add(s.shared_step_id);
+            }
+          }
+        } catch {}
       }
       return counts;
     },
-    enabled: sharedSteps.length > 0,
+    enabled: !!projectId,
     staleTime: 30_000,
   });
 
@@ -812,6 +822,13 @@ export default function ProjectSharedSteps() {
                           <i className="ri-eye-line text-sm" />
                         </button>
                         <button
+                          onClick={() => setBulkUpdateTarget(ss)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                          title="Bulk update TCs to latest version"
+                        >
+                          <i className="ri-refresh-line text-sm" />
+                        </button>
+                        <button
                           onClick={() => { setEditStep(ss); setShowCreateModal(true); }}
                           className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
                           title="Edit"
@@ -878,7 +895,7 @@ export default function ProjectSharedSteps() {
           onClose={() => setBulkUpdateTarget(null)}
           onDone={() => {
             setBulkUpdateTarget(null);
-            queryClient.invalidateQueries({ queryKey: ['shared_step_usage_counts', projectId] });
+            queryClient.invalidateQueries({ queryKey: ['tc_step_counts', projectId] });
             showToast('success', 'Test cases updated to latest version.');
           }}
         />
