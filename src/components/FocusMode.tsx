@@ -132,6 +132,15 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   const [sidebarSearch, setSidebarSearch] = useState('');
   const [sharedStepsCaches, setSharedStepsCaches] = useState<Record<string, SharedStepCache>>({});
 
+  // GitHub / Jira integration state
+  const [githubSettings, setGithubSettings] = useState<{ token: string; owner: string; repo: string; default_labels: string[]; auto_create_enabled: boolean } | null>(null);
+  const [jiraSettings, setJiraSettings] = useState<{ domain: string; email: string; api_token: string; project_key: string; issue_type: string; auto_create_on_failure: string } | null>(null);
+  // Track created GitHub issues per TC: tcId → { number, html_url }
+  const [createdGithubIssues, setCreatedGithubIssues] = useState<Record<string, { number: number; html_url: string }>>({});
+  const [creatingGithubIssue, setCreatingGithubIssue] = useState(false);
+  const [showGithubIssueModal, setShowGithubIssueModal] = useState(false);
+  const [githubIssueTitle, setGithubIssueTitle] = useState('');
+
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const fetchedCacheIds = useRef<Set<string>>(new Set());
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -172,6 +181,55 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
     setFocusToast({ type, message });
     setTimeout(() => setFocusToast(null), type === 'success' ? 3000 : 5000);
   }, []);
+
+  // ── Load GitHub / Jira settings on mount ─────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const [ghResult, jiraResult] = await Promise.all([
+        supabase.from('github_settings')
+          .select('token, owner, repo, default_labels, auto_create_enabled')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        supabase.from('jira_settings')
+          .select('domain, email, api_token, project_key, issue_type, auto_create_on_failure')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+      ]);
+      if (ghResult.data?.token) setGithubSettings(ghResult.data);
+      if (jiraResult.data?.domain) setJiraSettings(jiraResult.data);
+    })();
+  }, []);
+
+  const createGithubIssue = useCallback(async (tc: FocusTestCase, titleOverride?: string) => {
+    if (!githubSettings?.token) return;
+    setCreatingGithubIssue(true);
+    try {
+      const title = titleOverride || `[Test Failed] ${tc.customId ? `${tc.customId} - ` : ''}${tc.title}`;
+      const { data, error } = await supabase.functions.invoke('create-github-issue', {
+        body: {
+          token: githubSettings.token,
+          owner: githubSettings.owner,
+          repo: githubSettings.repo,
+          title,
+          body: `**Auto-created by Testably (Focus Mode)**\n\nTest Case: ${tc.title}\nPriority: ${tc.priority || 'N/A'}\n\n---\n${tc.description || ''}`,
+          labels: githubSettings.default_labels.length > 0 ? githubSettings.default_labels : ['bug'],
+        },
+      });
+      if (error) throw error;
+      if (data?.success && data?.issue?.number) {
+        setCreatedGithubIssues(prev => ({ ...prev, [tc.id]: { number: data.issue.number, html_url: data.issue.html_url } }));
+        showFocusToast('success', `GitHub issue #${data.issue.number} created`);
+      } else {
+        throw new Error(data?.error || 'Failed to create GitHub issue');
+      }
+    } catch (err: any) {
+      showFocusToast('error', `GitHub issue creation failed: ${err.message}`);
+    } finally {
+      setCreatingGithubIssue(false);
+    }
+  }, [githubSettings, showFocusToast]);
 
   // ── Shared step content fetcher ───────────────────────────────────────────
   useEffect(() => {
@@ -297,13 +355,19 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
         setPending(null);
         return; // 실패 시 다음 TC로 이동하지 않음
       }
+
+      // Auto-create GitHub issue on failure
+      if (status === 'failed' && githubSettings?.auto_create_enabled && !createdGithubIssues[test.id]) {
+        createGithubIssue(test);
+      }
+
       setPending(null);
       resetForNavigation();
       setTimeout(() => {
         setIndex((i) => Math.min(i + 1, tests.length - 1));
       }, 300);
     },
-    [test, note, onStatusChange, tests.length, resetForNavigation, showFocusToast]
+    [test, note, onStatusChange, tests.length, resetForNavigation, showFocusToast, githubSettings, createdGithubIssues, createGithubIssue]
   );
 
   const goNext = useCallback(() => {
@@ -1129,8 +1193,124 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                 </div>
               </div>
 
+              {/* GitHub / Jira Issue creation — shown when TC is failed */}
+              {test?.runStatus === 'failed' && (githubSettings?.token || jiraSettings?.domain) && (
+                <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '0.125rem' }}>
+                    Linked Issues
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {/* GitHub issue badge or create button */}
+                    {githubSettings?.token && (
+                      createdGithubIssues[test.id] ? (
+                        <a
+                          href={createdGithubIssues[test.id].html_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                            padding: '0.25rem 0.625rem', borderRadius: '0.375rem',
+                            fontSize: '0.75rem', fontWeight: 600,
+                            background: '#F1F5F9', color: '#0F172A', border: '1px solid #E2E8F0',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          <i className="ri-github-fill" style={{ fontSize: '0.875rem' }} />
+                          #{createdGithubIssues[test.id].number}
+                          <i className="ri-external-link-line" style={{ fontSize: '0.7rem', opacity: 0.6 }} />
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={creatingGithubIssue}
+                          onClick={() => {
+                            const defaultTitle = `[Test Failed] ${test.customId ? `${test.customId} - ` : ''}${test.title}`;
+                            setGithubIssueTitle(defaultTitle);
+                            setShowGithubIssueModal(true);
+                          }}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                            padding: '0.25rem 0.625rem', borderRadius: '0.375rem',
+                            fontSize: '0.75rem', fontWeight: 600,
+                            background: creatingGithubIssue ? '#F1F5F9' : '#fff',
+                            color: '#374151', border: '1px solid #E2E8F0',
+                            cursor: creatingGithubIssue ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {creatingGithubIssue
+                            ? <><i className="ri-loader-4-line animate-spin" /> Creating...</>
+                            : <><i className="ri-github-fill" /> Create GitHub Issue</>
+                          }
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
+
+          {/* GitHub Issue Quick-Create Modal */}
+          {showGithubIssueModal && test && (
+            <div
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70 }}
+              onClick={() => setShowGithubIssueModal(false)}
+            >
+              <div
+                style={{ background: '#fff', borderRadius: '0.75rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', width: '100%', maxWidth: '28rem', padding: '1.5rem' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                  <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <i className="ri-github-fill" /> Create GitHub Issue
+                  </h3>
+                  <button onClick={() => setShowGithubIssueModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '1.25rem' }}>
+                    <i className="ri-close-line" />
+                  </button>
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#334155', marginBottom: '0.375rem' }}>Title</label>
+                  <input
+                    type="text"
+                    value={githubIssueTitle}
+                    onChange={(e) => setGithubIssueTitle(e.target.value)}
+                    style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #E2E8F0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                    autoFocus
+                  />
+                </div>
+                {githubSettings && (
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                    <i className="ri-github-fill" />
+                    Will be created in <strong>{githubSettings.owner}/{githubSettings.repo}</strong>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => setShowGithubIssueModal(false)}
+                    style={{ padding: '0.4375rem 0.875rem', borderRadius: '0.5rem', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', background: '#fff', border: '1px solid #E2E8F0', cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    disabled={creatingGithubIssue || !githubIssueTitle.trim()}
+                    onClick={async () => {
+                      setShowGithubIssueModal(false);
+                      await createGithubIssue(test, githubIssueTitle);
+                    }}
+                    style={{
+                      padding: '0.4375rem 1rem', borderRadius: '0.5rem', fontSize: '0.8125rem', fontWeight: 600,
+                      color: '#fff', background: creatingGithubIssue ? '#94A3B8' : '#1e293b', border: 'none',
+                      cursor: creatingGithubIssue ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '0.375rem',
+                    }}
+                  >
+                    <i className="ri-github-fill" /> Create Issue
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ⑤ Footer — Status Buttons + Nav */}
           <div

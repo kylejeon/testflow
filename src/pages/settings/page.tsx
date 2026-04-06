@@ -25,6 +25,15 @@ interface JiraSettings {
   autoIssueDescriptionTemplate: string;
 }
 
+interface GitHubSettings {
+  token: string;
+  owner: string;
+  repo: string;
+  defaultLabels: string;
+  autoCreateEnabled: boolean;
+  autoAssignEnabled: boolean;
+}
+
 interface JiraFieldMapping {
   testably_field: string;
   jira_field_id: string;
@@ -315,6 +324,23 @@ export default function SettingsPage() {
   const [jiraSavedDomain, setJiraSavedDomain] = useState('');
   const [jiraEditMode, setJiraEditMode] = useState(false);
   const isJiraLocked = !!jiraSavedDomain && !jiraEditMode;
+
+  const [githubSettings, setGithubSettings] = useState<GitHubSettings>({
+    token: '',
+    owner: '',
+    repo: '',
+    defaultLabels: '',
+    autoCreateEnabled: false,
+    autoAssignEnabled: false,
+  });
+  const [githubSavedRepo, setGithubSavedRepo] = useState('');
+  const [githubEditMode, setGithubEditMode] = useState(false);
+  const isGithubLocked = !!githubSavedRepo && !githubEditMode;
+  const [showGithubToken, setShowGithubToken] = useState(false);
+  const [githubTesting, setGithubTesting] = useState(false);
+  const [githubSaving, setGithubSaving] = useState(false);
+  const [githubTestResult, setGithubTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [githubSaveResult, setGithubSaveResult] = useState<{ success: boolean; message: string } | null>(null);
   const [availableJiraFields, setAvailableJiraFields] = useState<JiraField[]>([
 
     { id: 'labels', name: 'Labels', required: false, type: 'array', custom: false },
@@ -427,6 +453,30 @@ export default function SettingsPage() {
       }
     }
   }, [settingsData, settingsInitialized]);
+
+  // Load GitHub settings separately (not in main query to avoid cache invalidation issues)
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('github_settings')
+        .select('token, owner, repo, default_labels, auto_create_enabled, auto_assign_enabled')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data?.token) {
+        setGithubSettings({
+          token: data.token,
+          owner: data.owner || '',
+          repo: data.repo || '',
+          defaultLabels: (data.default_labels || []).join(', '),
+          autoCreateEnabled: data.auto_create_enabled || false,
+          autoAssignEnabled: data.auto_assign_enabled || false,
+        });
+        if (data.owner && data.repo) setGithubSavedRepo(`${data.owner}/${data.repo}`);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -849,6 +899,89 @@ export default function SettingsPage() {
     setJiraSettings({ domain: '', email: '', apiToken: '', issueType: 'Bug', projectKey: '', autoCreateOnFailure: 'disabled', fieldMappings: [], autoIssueSummaryTemplate: DEFAULT_SUMMARY_TEMPLATE, autoIssueDescriptionTemplate: DEFAULT_DESCRIPTION_TEMPLATE });
     setJiraSavedDomain('');
     setJiraEditMode(false);
+  };
+
+  // ── GitHub handlers ───────────────────────────────────────────────────────
+
+  const handleGitHubTestConnection = async () => {
+    if (!githubSettings.token || !githubSettings.owner || !githubSettings.repo) return;
+    setGithubTesting(true);
+    setGithubTestResult(null);
+    try {
+      const url = `https://api.github.com/repos/${githubSettings.owner.trim()}/${githubSettings.repo.trim()}`;
+      const resp = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${githubSettings.token}`,
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        setGithubTestResult({ success: true, message: `Connected! Repository: ${data.full_name} (${data.open_issues_count} open issues)` });
+      } else if (resp.status === 401) {
+        setGithubTestResult({ success: false, message: 'Authentication failed. Please check your token.' });
+      } else if (resp.status === 404) {
+        setGithubTestResult({ success: false, message: 'Repository not found. Check owner and repo name.' });
+      } else {
+        setGithubTestResult({ success: false, message: `GitHub API error (HTTP ${resp.status})` });
+      }
+    } catch (err: any) {
+      setGithubTestResult({ success: false, message: err.message || 'Connection test failed.' });
+    } finally {
+      setGithubTesting(false);
+    }
+  };
+
+  const handleSaveGitHubSettings = async () => {
+    if (!githubSettings.token || !githubSettings.owner || !githubSettings.repo) return;
+    setGithubSaving(true);
+    setGithubSaveResult(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const labelsArray = githubSettings.defaultLabels.split(',').map(l => l.trim()).filter(Boolean);
+      const payload = {
+        user_id: user.id,
+        token: githubSettings.token,
+        owner: githubSettings.owner.trim(),
+        repo: githubSettings.repo.trim(),
+        default_labels: labelsArray,
+        auto_create_enabled: githubSettings.autoCreateEnabled,
+        auto_assign_enabled: githubSettings.autoAssignEnabled,
+      };
+      const { data: existing } = await supabase
+        .from('github_settings')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (existing) {
+        const { error } = await supabase.from('github_settings').update(payload).eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('github_settings').insert(payload);
+        if (error) throw error;
+      }
+      setGithubSavedRepo(`${githubSettings.owner.trim()}/${githubSettings.repo.trim()}`);
+      setGithubEditMode(false);
+      setGithubSaveResult({ success: true, message: 'GitHub settings saved successfully!' });
+    } catch (err: any) {
+      setGithubSaveResult({ success: false, message: err.message || 'Failed to save GitHub settings.' });
+    } finally {
+      setGithubSaving(false);
+    }
+  };
+
+  const handleDisconnectGitHub = async () => {
+    if (!confirm('Disconnect GitHub? This will remove your GitHub credentials.')) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('github_settings').delete().eq('user_id', user.id);
+    setGithubSettings({ token: '', owner: '', repo: '', defaultLabels: '', autoCreateEnabled: false, autoAssignEnabled: false });
+    setGithubSavedRepo('');
+    setGithubEditMode(false);
+    setGithubTestResult(null);
+    setGithubSaveResult(null);
   };
 
   // ── Webhook helpers ───────────────────────────────────────────────────────
@@ -2329,6 +2462,232 @@ def pytest_sessionfinish(session, exitstatus):
                               }`}>
                                 <i className={jiraSaveResult.success ? 'ri-checkbox-circle-fill' : 'ri-error-warning-line'}></i>
                                 {jiraSaveResult.message}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ════════ GitHub Integration ════════ */}
+                      <div className="bg-white border border-[#E2E8F0] rounded-[0.625rem] p-6">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
+                            <i className="ri-github-fill text-[#0F172A]"></i> GitHub Integration
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold">
+                              <i className="ri-seedling-line"></i> Hobby+
+                            </span>
+                          </h3>
+                          {!isHobbyOrHigher && (
+                            <span className="px-2.5 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold flex items-center gap-1">
+                              <i className="ri-star-line"></i> Requires Hobby or above
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[0.8125rem] text-[#64748B] mb-5">Connect GitHub to import issues as requirements and create issues from test failures.</p>
+
+                        {!isHobbyOrHigher && (
+                          <div className="mb-4 p-4 border border-[#FDE68A] rounded-[0.75rem] flex items-start gap-3" style={{ background: 'linear-gradient(to right,#FEF9C3,#FEF3C7)' }}>
+                            <div className="w-10 h-10 bg-[#FEF08A] rounded-[0.5rem] flex items-center justify-center flex-shrink-0">
+                              <i className="ri-lock-line text-[#CA8A04]" style={{ fontSize: '1.25rem' }}></i>
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-1">GitHub Integration is available on Hobby and above</div>
+                              <div className="text-[0.75rem] text-[#64748B] mb-2.5">Create GitHub issues from test failures and import issues as requirements.</div>
+                              <button onClick={() => handleUpgrade('Hobby')} className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#059669' }}>
+                                <i className="ri-arrow-up-circle-line"></i> Upgrade to Hobby
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {loading ? (
+                          <div className="flex justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6366F1]"></div>
+                          </div>
+                        ) : (
+                          <div className={`${!isHobbyOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {/* Connected status card */}
+                            {githubSavedRepo && (
+                              <div className="flex items-center gap-3 p-3 mb-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-[0.625rem]">
+                                <div className="w-9 h-9 bg-[#F1F5F9] rounded-[0.5rem] flex items-center justify-center flex-shrink-0">
+                                  <i className="ri-github-fill text-[#0F172A]" style={{ fontSize: '1.125rem' }}></i>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[0.8125rem] font-semibold text-[#0F172A] truncate">{githubSavedRepo}</div>
+                                  <div className="text-[0.6875rem] text-[#64748B]">
+                                    Auto-create: {githubSettings.autoCreateEnabled ? 'Enabled' : 'Disabled'}
+                                    {githubSettings.autoAssignEnabled ? ' · Auto-assign: On' : ''}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <button
+                                    onClick={() => setGithubEditMode(prev => !prev)}
+                                    className="px-2.5 py-1 text-[0.6875rem] font-semibold border border-[#6366F1] text-[#6366F1] rounded-full hover:bg-indigo-50 cursor-pointer transition-colors"
+                                  >
+                                    {githubEditMode ? 'Cancel Edit' : 'Edit'}
+                                  </button>
+                                  <button
+                                    onClick={handleDisconnectGitHub}
+                                    className="px-2.5 py-1 text-[0.6875rem] font-semibold border border-[#FECACA] text-[#DC2626] rounded-full hover:bg-red-50 cursor-pointer transition-colors"
+                                  >
+                                    Disconnect
+                                  </button>
+                                  <span className="px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded-full text-[0.625rem] font-semibold flex items-center gap-1">
+                                    <i className="ri-checkbox-circle-fill"></i> Connected
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* GitHub Token */}
+                            <div className="mb-4">
+                              <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
+                                GitHub Personal Access Token <span className="text-[#EF4444]">*</span>
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showGithubToken ? 'text' : 'password'}
+                                  value={githubSettings.token}
+                                  onChange={(e) => setGithubSettings({ ...githubSettings, token: e.target.value })}
+                                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                                  className="w-full px-3 py-2 pr-9 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
+                                  disabled={!isHobbyOrHigher || isGithubLocked}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowGithubToken(!showGithubToken)}
+                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] cursor-pointer"
+                                  disabled={!isHobbyOrHigher || isGithubLocked}
+                                >
+                                  <i className={`${showGithubToken ? 'ri-eye-off-line' : 'ri-eye-line'} text-base`}></i>
+                                </button>
+                              </div>
+                              <p className="text-[0.6875rem] text-[#94A3B8] mt-1">
+                                Required scopes: <code className="bg-slate-100 px-1 rounded text-[0.6875rem]">repo</code> (or <code className="bg-slate-100 px-1 rounded text-[0.6875rem]">public_repo</code> for public repos)
+                              </p>
+                            </div>
+
+                            {/* Owner + Repo (2-col) */}
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
+                                  Owner / Org <span className="text-[#EF4444]">*</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  value={githubSettings.owner}
+                                  onChange={(e) => setGithubSettings({ ...githubSettings, owner: e.target.value })}
+                                  placeholder="e.g. your-username"
+                                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
+                                  disabled={!isHobbyOrHigher || isGithubLocked}
+                                />
+                                <p className="text-[0.6875rem] text-[#94A3B8] mt-1">GitHub username or organization</p>
+                              </div>
+                              <div>
+                                <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
+                                  Default Repository <span className="text-[#EF4444]">*</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  value={githubSettings.repo}
+                                  onChange={(e) => setGithubSettings({ ...githubSettings, repo: e.target.value })}
+                                  placeholder="e.g. my-project"
+                                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
+                                  disabled={!isHobbyOrHigher || isGithubLocked}
+                                />
+                                <p className="text-[0.6875rem] text-[#94A3B8] mt-1">Repository name (not the full URL)</p>
+                              </div>
+                            </div>
+
+                            {/* Default Labels + buttons */}
+                            <div className="mb-3">
+                              <label className="block text-[0.8125rem] font-semibold text-[#334155] mb-1.5">
+                                Default Labels
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={githubSettings.defaultLabels}
+                                  onChange={(e) => setGithubSettings({ ...githubSettings, defaultLabels: e.target.value })}
+                                  placeholder="e.g. bug, test-failure"
+                                  className="flex-1 px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
+                                  disabled={!isHobbyOrHigher || isGithubLocked}
+                                />
+                                <button
+                                  onClick={handleGitHubTestConnection}
+                                  disabled={githubTesting || !githubSettings.token || !githubSettings.owner || !githubSettings.repo || !isHobbyOrHigher || isGithubLocked}
+                                  className="inline-flex items-center gap-[0.3125rem] px-4 py-[0.4375rem] border border-[#E2E8F0] bg-white text-[#475569] rounded-md hover:bg-[#F8FAFC] transition-colors text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {githubTesting ? <><i className="ri-loader-4-line animate-spin"></i>Testing...</> : <><i className="ri-link"></i>Test Connection</>}
+                                </button>
+                                <button
+                                  onClick={handleSaveGitHubSettings}
+                                  disabled={githubSaving || !githubSettings.token || !githubSettings.owner || !githubSettings.repo || !isHobbyOrHigher || isGithubLocked}
+                                  className="inline-flex items-center gap-[0.3125rem] px-4 py-[0.4375rem] bg-[#6366F1] text-white rounded-md hover:bg-[#4F46E5] transition-colors text-[0.8125rem] font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                  style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
+                                >
+                                  {githubSaving ? <><i className="ri-loader-4-line animate-spin"></i>Saving...</> : <><i className="ri-save-line"></i>Save Settings</>}
+                                </button>
+                              </div>
+                              <p className="text-[0.6875rem] text-[#94A3B8] mt-1">Comma-separated labels added to every auto-created issue</p>
+                            </div>
+
+                            {/* Auto-create settings */}
+                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+                              <h4 className="text-sm font-semibold text-gray-900">Auto-create GitHub Issue on Failure</h4>
+                              <p className="text-xs text-gray-500">Automatically create a GitHub issue when a test case is marked as Failed.</p>
+                              <div className="flex items-center justify-between">
+                                <span className="text-[0.8125rem] text-[#334155] font-medium">Auto-create Issue</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!isHobbyOrHigher || isGithubLocked) return;
+                                    const updated = { ...githubSettings, autoCreateEnabled: !githubSettings.autoCreateEnabled };
+                                    setGithubSettings(updated);
+                                  }}
+                                  disabled={!isHobbyOrHigher || isGithubLocked}
+                                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${githubSettings.autoCreateEnabled ? 'bg-[#6366F1]' : 'bg-[#CBD5E1]'}`}
+                                >
+                                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${githubSettings.autoCreateEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                </button>
+                              </div>
+                              {githubSettings.autoCreateEnabled && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[0.8125rem] text-[#334155] font-medium">Auto-assign to Issue reporter</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (!isHobbyOrHigher || isGithubLocked) return;
+                                      setGithubSettings({ ...githubSettings, autoAssignEnabled: !githubSettings.autoAssignEnabled });
+                                    }}
+                                    disabled={!isHobbyOrHigher || isGithubLocked}
+                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${githubSettings.autoAssignEnabled ? 'bg-[#6366F1]' : 'bg-[#CBD5E1]'}`}
+                                  >
+                                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${githubSettings.autoAssignEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Test Result */}
+                            {githubTestResult && (
+                              <div className={`px-3 py-2.5 rounded-[0.5rem] border flex items-center gap-1.5 text-[0.8125rem] mt-2 ${
+                                githubTestResult.success
+                                  ? 'bg-[#F0FDF4] border-[#BBF7D0] text-[#166534]'
+                                  : 'bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]'
+                              }`}>
+                                <i className={githubTestResult.success ? 'ri-checkbox-circle-line' : 'ri-error-warning-line'}></i>
+                                {githubTestResult.message}
+                              </div>
+                            )}
+                            {githubSaveResult && (
+                              <div className={`px-3 py-2.5 rounded-[0.5rem] border flex items-center gap-1.5 text-[0.8125rem] mt-2 ${
+                                githubSaveResult.success
+                                  ? 'bg-[#F0FDF4] border-[#BBF7D0] text-[#166534]'
+                                  : 'bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]'
+                              }`}>
+                                <i className={githubSaveResult.success ? 'ri-checkbox-circle-fill' : 'ri-error-warning-line'}></i>
+                                {githubSaveResult.message}
                               </div>
                             )}
                           </div>

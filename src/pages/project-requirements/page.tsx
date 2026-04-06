@@ -6,6 +6,7 @@ import ProjectHeader from '../../components/ProjectHeader';
 import RequirementModal from './components/RequirementModal';
 import LinkTCModal from './components/LinkTCModal';
 import JiraImportModal from './components/JiraImportModal';
+import GitHubImportModal from './components/GitHubImportModal';
 import type { Requirement, RequirementCoverage } from '../../types/rtm';
 
 // ── Style tokens ─────────────────────────────────────────────────────────────
@@ -100,6 +101,7 @@ export default function ProjectRequirements() {
   const [editReq, setEditReq] = useState<Requirement | null>(null);
   const [linkReq, setLinkReq] = useState<Requirement | null>(null);
   const [showJiraImport, setShowJiraImport] = useState(false);
+  const [showGithubImport, setShowGithubImport] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Project info
@@ -306,6 +308,10 @@ export default function ProjectRequirements() {
             <button className={btnSecondary} onClick={() => setShowJiraImport(true)}>
               <i className="ri-jira-line" />
               Import from Jira
+            </button>
+            <button className={btnSecondary} onClick={() => setShowGithubImport(true)}>
+              <i className="ri-github-fill" />
+              Import from GitHub
             </button>
             <button
               className={btnPrimary}
@@ -528,6 +534,20 @@ export default function ProjectRequirements() {
           onImported={(count) => {
             setShowJiraImport(false);
             showToast('success', `${count} requirement${count !== 1 ? 's' : ''} imported from Jira.`);
+            queryClient.invalidateQueries({ queryKey: ['requirements', projectId] });
+          }}
+          tier={tier}
+        />
+      )}
+
+      {showGithubImport && (
+        <GitHubImportModal
+          projectId={projectId!}
+          existingExternalIds={requirements.filter((r) => r.source === 'github').map((r) => r.external_id!).filter(Boolean)}
+          onClose={() => setShowGithubImport(false)}
+          onImported={(count) => {
+            setShowGithubImport(false);
+            showToast('success', `${count} requirement${count !== 1 ? 's' : ''} imported from GitHub.`);
             queryClient.invalidateQueries({ queryKey: ['requirements', projectId] });
           }}
           tier={tier}

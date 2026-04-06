@@ -1,0 +1,154 @@
+/**
+ * create-github-issue Edge Function
+ *
+ * GitHub Issue를 생성합니다.
+ *
+ * POST body:
+ *   {
+ *     token: string,       -- GitHub PAT
+ *     owner: string,       -- GitHub username or org
+ *     repo: string,        -- Repository name
+ *     title: string,       -- Issue title
+ *     body?: string,       -- Issue body (markdown)
+ *     labels?: string[],   -- Label names
+ *     assignee?: string,   -- GitHub username to assign
+ *   }
+ */
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+function jsonResp(body: object, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    // ── Auth ──────────────────────────────────────────────────────────────────
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return jsonResp({ error: 'Missing Authorization header' }, 401);
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: { user }, error: authError } = await userClient.auth.getUser(token);
+    if (authError || !user) {
+      return jsonResp({ error: 'Unauthorized' }, 401);
+    }
+
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    // ── Tier 확인: Hobby(2)+ 만 GitHub Issue 생성 가능 ────────────────────────
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('subscription_tier, is_trial, trial_ends_at')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    let userTier = profile?.subscription_tier || 1;
+    if (profile?.is_trial && profile?.trial_ends_at) {
+      if (new Date() > new Date(profile.trial_ends_at)) userTier = 1;
+    }
+
+    if (userTier < 2) {
+      return jsonResp({
+        error: 'GitHub Issue creation requires Hobby plan or higher.',
+        required_tier: 2,
+        current_tier: userTier,
+      }, 403);
+    }
+
+    // ── 요청 파싱 ──────────────────────────────────────────────────────────────
+    const body = await req.json();
+    const { token: ghToken, owner, repo, title, body: issueBody, labels, assignee } = body as {
+      token: string;
+      owner: string;
+      repo: string;
+      title: string;
+      body?: string;
+      labels?: string[];
+      assignee?: string;
+    };
+
+    if (!ghToken) return jsonResp({ error: 'Missing required field: token' }, 400);
+    if (!owner)   return jsonResp({ error: 'Missing required field: owner' }, 400);
+    if (!repo)    return jsonResp({ error: 'Missing required field: repo' }, 400);
+    if (!title)   return jsonResp({ error: 'Missing required field: title' }, 400);
+
+    // ── GitHub Issue payload ──────────────────────────────────────────────────
+    const payload: Record<string, any> = { title };
+    if (issueBody) payload.body = issueBody;
+    if (Array.isArray(labels) && labels.length > 0) payload.labels = labels;
+    if (assignee) payload.assignees = [assignee];
+
+    console.log('[create-github-issue] sending to GitHub:', JSON.stringify({ owner, repo, title, labelsCount: labels?.length }));
+
+    const ghUrl = `https://api.github.com/repos/${owner}/${repo}/issues`;
+    const response = await fetch(ghUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${ghToken}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text();
+    console.log('[create-github-issue] GitHub response status:', response.status);
+
+    if (response.ok) {
+      let data: any = {};
+      try { data = JSON.parse(responseText); } catch (_) { /* ignore */ }
+      return jsonResp({
+        success: true,
+        issue: {
+          number: data.number,
+          html_url: data.html_url,
+          title: data.title,
+        },
+      });
+    }
+
+    let ghErrorMessage = `GitHub API error (HTTP ${response.status})`;
+    try {
+      const errData = JSON.parse(responseText);
+      if (errData.message) ghErrorMessage = errData.message;
+      if (Array.isArray(errData.errors) && errData.errors.length > 0) {
+        ghErrorMessage += ': ' + errData.errors.map((e: any) => e.message || JSON.stringify(e)).join(', ');
+      }
+    } catch (_) {
+      ghErrorMessage = responseText || ghErrorMessage;
+    }
+
+    console.error('[create-github-issue] GitHub error:', ghErrorMessage);
+
+    return jsonResp({ success: false, error: ghErrorMessage, githubStatus: response.status }, response.status);
+  } catch (err: any) {
+    console.error('[create-github-issue] unhandled error:', err);
+    return jsonResp({ success: false, error: err?.message ?? 'Internal server error' }, 500);
+  }
+});

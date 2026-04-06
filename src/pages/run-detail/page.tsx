@@ -74,6 +74,15 @@ interface JiraSettings {
   auto_issue_description_template?: string;
 }
 
+interface GitHubSettings {
+  token: string;
+  owner: string;
+  repo: string;
+  default_labels: string[];
+  auto_create_enabled: boolean;
+  auto_assign_enabled: boolean;
+}
+
 interface Folder {
   id: string;
   name: string;
@@ -153,6 +162,15 @@ export default function RunDetail() {
   const [showJiraSetupModal, setShowJiraSetupModal] = useState(false);
   const [toast, setToast] = useState<{type: 'success' | 'error'; message: string} | null>(null);
   const [jiraSettings, setJiraSettings] = useState<JiraSettings | null>(null);
+  const [githubSettings, setGithubSettings] = useState<GitHubSettings | null>(null);
+  const [showGithubIssueModal, setShowGithubIssueModal] = useState(false);
+  const [githubIssueFormData, setGithubIssueFormData] = useState({
+    title: '',
+    body: '',
+    labels: '',
+    assignee: '',
+  });
+  const [creatingGithubIssue, setCreatingGithubIssue] = useState(false);
   const [issueFormData, setIssueFormData] = useState({
     summary: '',
     description: '',
@@ -202,6 +220,7 @@ export default function RunDetail() {
     if (projectId && runId) {
       fetchData();  // fetchData 안에서 currentUser도 함께 로드
       fetchJiraSettings();
+      fetchGithubSettings();
       fetchProjectMembers();
     }
   }, [projectId, runId]);
@@ -522,6 +541,31 @@ export default function RunDetail() {
       }
     } catch (error) {
       console.error('Jira 설정 로딩 오류:', error);
+    }
+  };
+
+  const fetchGithubSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('github_settings')
+        .select('token, owner, repo, default_labels, auto_create_enabled, auto_assign_enabled')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') return;
+      if (data?.token) {
+        setGithubSettings({
+          token: data.token,
+          owner: data.owner || '',
+          repo: data.repo || '',
+          default_labels: data.default_labels || [],
+          auto_create_enabled: data.auto_create_enabled || false,
+          auto_assign_enabled: data.auto_assign_enabled || false,
+        });
+      }
+    } catch (error) {
+      console.error('GitHub 설정 로딩 오류:', error);
     }
   };
 
@@ -1013,6 +1057,31 @@ export default function RunDetail() {
         }
       }
 
+      // Auto-create GitHub issue on failure
+      if (newStatus === 'failed' && githubSettings?.auto_create_enabled && githubSettings.token && githubSettings.owner && githubSettings.repo) {
+        const tc = testCases.find(t => t.id === testCaseId);
+        if (tc) {
+          try {
+            const tcId = (tc as any).custom_id || tc.id;
+            const { data: ghData } = await supabase.functions.invoke('create-github-issue', {
+              body: {
+                token: githubSettings.token,
+                owner: githubSettings.owner,
+                repo: githubSettings.repo,
+                title: `[Auto] Test Failed: ${tcId} - ${tc.title}`,
+                body: `**Auto-created by Testably**\n\nTest Case: ${tc.title}\nPriority: ${tc.priority}\n\n---\n${tc.description || ''}`,
+                labels: githubSettings.default_labels.length > 0 ? githubSettings.default_labels : ['bug'],
+              },
+            });
+            if (ghData?.success && ghData?.issue?.number) {
+              showToast('success', `GitHub issue #${ghData.issue.number} created automatically`);
+            }
+          } catch (err) {
+            console.warn('Auto GitHub issue creation failed:', err);
+          }
+        }
+      }
+
       // Refresh results list if this is the currently selected test case
       if (selectedTestCase?.id === testCaseId && newResultData) {
         const newResult: TestResult = {
@@ -1358,6 +1427,31 @@ export default function RunDetail() {
               console.warn('Auto Jira issue creation failed:', err);
               showToast('error', 'Failed to auto-create Jira issue');
             }
+          }
+        }
+      }
+
+      // Auto-create GitHub issue on failure (from Add Result modal)
+      if (resultFormData.status === 'failed' && githubSettings?.auto_create_enabled && githubSettings.token && githubSettings.owner && githubSettings.repo) {
+        const tc = testCases.find(t => t.id === selectedTestCase.id);
+        if (tc) {
+          try {
+            const tcId = (tc as any).custom_id || tc.id;
+            const { data: ghData } = await supabase.functions.invoke('create-github-issue', {
+              body: {
+                token: githubSettings.token,
+                owner: githubSettings.owner,
+                repo: githubSettings.repo,
+                title: `[Auto] Test Failed: ${tcId} - ${tc.title}`,
+                body: `**Auto-created by Testably**\n\nTest Case: ${tc.title}\nPriority: ${tc.priority}\n\n---\n${tc.description || ''}`,
+                labels: githubSettings.default_labels.length > 0 ? githubSettings.default_labels : ['bug'],
+              },
+            });
+            if (ghData?.success && ghData?.issue?.number) {
+              showToast('success', `GitHub issue #${ghData.issue.number} created automatically`);
+            }
+          } catch (err) {
+            console.warn('Auto GitHub issue creation failed:', err);
           }
         }
       }
@@ -1791,6 +1885,45 @@ export default function RunDetail() {
       showToast('error', `Failed to create Jira issue: ${error.message || 'Unknown error'}`);
     } finally {
       setCreatingIssue(false);
+    }
+  };
+
+  const handleCreateGithubIssue = async () => {
+    if (!githubIssueFormData.title.trim() || !githubSettings) return;
+    setCreatingGithubIssue(true);
+    try {
+      const labelsArray = githubIssueFormData.labels
+        .split(',')
+        .map(l => l.trim())
+        .filter(l => l);
+
+      const { data, error } = await supabase.functions.invoke('create-github-issue', {
+        body: {
+          token: githubSettings.token,
+          owner: githubSettings.owner,
+          repo: githubSettings.repo,
+          title: githubIssueFormData.title,
+          body: githubIssueFormData.body || undefined,
+          labels: labelsArray.length > 0 ? labelsArray : (githubSettings.default_labels.length > 0 ? githubSettings.default_labels : undefined),
+          assignee: githubIssueFormData.assignee || undefined,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.success && data?.issue?.number) {
+        showToast('success', `GitHub issue #${data.issue.number} created`);
+        setShowGithubIssueModal(false);
+        setGithubIssueFormData({ title: '', body: '', labels: '', assignee: '' });
+        setActiveTab('issues');
+        await fetchTestResults();
+      } else {
+        throw new Error(data?.error || 'Failed to create GitHub issue.');
+      }
+    } catch (error: any) {
+      console.error('GitHub 이슈 생성 오류:', error);
+      showToast('error', `Failed to create GitHub issue: ${error.message || 'Unknown error'}`);
+    } finally {
+      setCreatingGithubIssue(false);
     }
   };
 
@@ -3075,26 +3208,46 @@ export default function RunDetail() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="block text-sm font-semibold text-gray-700">Linked Issues</label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!isProfessionalOrHigher) {
-                              setShowUpgradeModal(true);
-                              return;
-                            }
-                            if (!jiraSettings || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.api_token) {
-                              if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) {
-                                navigate('/settings');
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!isProfessionalOrHigher) {
+                                setShowUpgradeModal(true);
+                                return;
                               }
-                              return;
-                            }
-                            setShowAddIssueModal(true);
-                          }}
-                          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
-                        >
-                          <i className="ri-add-line"></i>
-                          Create Jira Issue
-                        </button>
+                              if (!jiraSettings || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.api_token) {
+                                if (confirm('Jira 설정이 필요합니다. Settings 페이지로 이동하시겠습니까?')) {
+                                  navigate('/settings');
+                                }
+                                return;
+                              }
+                              setShowAddIssueModal(true);
+                            }}
+                            className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
+                          >
+                            <i className="ri-add-line"></i>
+                            Create Jira Issue
+                          </button>
+                          {githubSettings?.token && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!isProfessionalOrHigher) {
+                                  setShowUpgradeModal(true);
+                                  return;
+                                }
+                                const tcTitle = selectedTestCase ? `[Test Failed] ${selectedTestCase.title}` : '';
+                                setGithubIssueFormData(prev => ({ ...prev, title: tcTitle }));
+                                setShowGithubIssueModal(true);
+                              }}
+                              className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200"
+                            >
+                              <i className="ri-github-fill"></i>
+                              Create GitHub Issue
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <input
                         type="text"
@@ -3370,6 +3523,106 @@ export default function RunDetail() {
                         <i className="ri-add-line"></i>
                         Create Issue
                       </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* GitHub Issue Modal */}
+          {showGithubIssueModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <i className="ri-github-fill"></i> Create GitHub Issue
+                  </h2>
+                  <button
+                    onClick={() => setShowGithubIssueModal(false)}
+                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all cursor-pointer"
+                  >
+                    <i className="ri-close-line text-xl"></i>
+                  </button>
+                </div>
+                <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={githubIssueFormData.title}
+                      onChange={(e) => setGithubIssueFormData({ ...githubIssueFormData, title: e.target.value })}
+                      placeholder="Issue title"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                    <textarea
+                      value={githubIssueFormData.body}
+                      onChange={(e) => setGithubIssueFormData({ ...githubIssueFormData, body: e.target.value })}
+                      placeholder="Describe the issue (Markdown supported)"
+                      rows={5}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Labels</label>
+                      <input
+                        type="text"
+                        value={githubIssueFormData.labels}
+                        onChange={(e) => setGithubIssueFormData({ ...githubIssueFormData, labels: e.target.value })}
+                        placeholder="bug, test-failure"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Comma-separated</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Assignee</label>
+                      <input
+                        type="text"
+                        value={githubIssueFormData.assignee}
+                        onChange={(e) => setGithubIssueFormData({ ...githubIssueFormData, assignee: e.target.value })}
+                        placeholder="GitHub username"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                      />
+                    </div>
+                  </div>
+                  {githubSettings && (
+                    <div className="px-3 py-2 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-500 flex items-center gap-1.5">
+                      <i className="ri-github-fill"></i>
+                      Will be created in <strong>{githubSettings.owner}/{githubSettings.repo}</strong>
+                    </div>
+                  )}
+                  {selectedTestCase && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Related Test Case</h4>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-sm text-gray-900">{selectedTestCase.title}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50">
+                  <button
+                    onClick={() => setShowGithubIssueModal(false)}
+                    disabled={creatingGithubIssue}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreateGithubIssue}
+                    disabled={creatingGithubIssue || !githubIssueFormData.title.trim()}
+                    className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 text-sm font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {creatingGithubIssue ? (
+                      <><i className="ri-loader-4-line animate-spin"></i>Creating...</>
+                    ) : (
+                      <><i className="ri-github-fill"></i>Create Issue</>
                     )}
                   </button>
                 </div>
