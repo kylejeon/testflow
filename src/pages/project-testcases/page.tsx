@@ -54,6 +54,8 @@ export default function ProjectTestCases() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const initialTcId = searchParams.get('tc') || undefined;
+
   useEffect(() => {
     const action = searchParams.get('action');
     if (action === 'ai-generate') {
@@ -61,6 +63,7 @@ export default function ProjectTestCases() {
       setSearchParams({}, { replace: true });
     }
     // 'create' for inline TC creation is handled by TestCaseList
+    // 'tc' param is handled by TestCaseList via initialTcId prop
   }, [searchParams]);
 
   const { data: userProfile } = useQuery({
@@ -538,6 +541,7 @@ export default function ProjectTestCases() {
                 onRefresh={handleRefreshData}
                 projectId={id!}
                 projectName={project?.name || ''}
+                initialTcId={initialTcId}
               />
             )}
           </div>

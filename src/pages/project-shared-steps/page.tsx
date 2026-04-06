@@ -358,7 +358,7 @@ function UsedByPanel({ step, projectId, onClose }: { step: SharedTestStep; proje
                 {usages.map(u => (
                   <Link
                     key={u.id}
-                    to={`/projects/${projectId}/testcases`}
+                    to={`/projects/${projectId}/testcases?tc=${u.id}`}
                     onClick={onClose}
                     className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors group"
                   >

@@ -42,6 +42,8 @@ interface TestCaseListProps {
   onRefresh: () => Promise<void>;
   projectId: string;
   projectName?: string;
+  /** Auto-open detail panel for this TC id on mount (from ?tc= URL param) */
+  initialTcId?: string;
 }
 
 interface Folder {
@@ -175,12 +177,22 @@ const PRIORITY_DOT_COLORS: Record<string, string> = {
 };
 // ────────────────────────────────────────────────────────────────────────────
 
-export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId, projectName: propProjectName }: TestCaseListProps) {
+export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onRefresh, projectId, projectName: propProjectName, initialTcId }: TestCaseListProps) {
   const [projectPrefix, setProjectPrefix] = useState<string>('');
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   const [showNewCaseModal, setShowNewCaseModal] = useState(false);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
+  // Auto-open detail panel when initialTcId is provided (from ?tc= URL param)
+  const initialTcIdHandled = useRef(false);
+  useEffect(() => {
+    if (!initialTcId || initialTcIdHandled.current || !testCases.length) return;
+    const tc = testCases.find(t => t.id === initialTcId);
+    if (tc) {
+      initialTcIdHandled.current = true;
+      setSelectedTestCase(tc);
+    }
+  }, [initialTcId, testCases]);
   // Removed duplicate editingTestCase declaration that caused a conflict.
   const [isFolderPanelOpen, setIsFolderPanelOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'comments' | 'results' | 'issues' | 'history'>('comments');
