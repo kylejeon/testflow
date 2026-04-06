@@ -109,10 +109,14 @@ export default function ProjectDetail() {
   });
 
   // Fetch AI usage count — owner 기준 팀 전체 사용량
+  // queryFn은 supabase.auth.getUser()로 직접 userId를 가져와서
+  // userProfile 클로저에 의존하지 않음 (탭 전환 시 closure stale 문제 방지)
   const { data: aiUsageCount = 0 } = useQuery({
-    queryKey: ['aiUsage', userProfile?.id, id],
+    queryKey: ['aiUsage', id],
     queryFn: async () => {
-      if (!userProfile?.id) return 0;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return 0;
+
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
@@ -124,7 +128,7 @@ export default function ProjectDetail() {
         .eq('id', id)
         .maybeSingle();
 
-      const ownerId: string = projectRow?.created_by || userProfile.id;
+      const ownerId: string = projectRow?.created_by || user.id;
 
       // owner가 소유한 모든 프로젝트 조회
       const { data: ownerProjects } = await supabase
@@ -158,7 +162,7 @@ export default function ProjectDetail() {
         .gte('created_at', startOfMonth.toISOString());
       return count || 0;
     },
-    enabled: !!userProfile?.id && !!id,
+    enabled: !!id,
     staleTime: 0,
     refetchOnMount: 'always',
   });
