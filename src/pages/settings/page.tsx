@@ -1515,7 +1515,6 @@ def pytest_sessionfinish(session, exitstatus):
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO] || TIER_INFO[1];
   // Tier thresholds after adding Hobby (2): Hobby=2, Starter=3, Professional=4, Enterprise=5+
   const isProfessionalOrHigher = currentTier >= 4;
-  const isHobbyOrHigher = currentTier >= 3;
   const isHobbyOrHigher = currentTier >= 2; // Jira full access, CSV export, RTM, Shared Steps
 
   const handleUpgrade = async (planName: string, period: 'monthly' | 'annual' = 'monthly') => {
