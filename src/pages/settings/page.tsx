@@ -69,7 +69,8 @@ const TIER_INFO = {
     icon: 'ri-user-line',
     monthlyPrice: 0,
     priceDesc: 'Free',
-    features: ['1 project', 'Up to 2 team members', 'Up to 100 test cases / project', 'TC Versioning', 'Suggest Edge Cases (AI)', 'Jira Integration (read-only)', '3 AI generations / month', 'Test runs (10 / month)', 'Community support'],
+    basePlan: null,
+    features: ['1 project · 2 members', 'Up to 100 test cases / project', 'Test runs (10 / month)', 'TC Versioning', 'Jira Integration (read-only)', '3 AI generations / month'],
   },
   2: {
     name: 'Hobby',
@@ -77,7 +78,8 @@ const TIER_INFO = {
     icon: 'ri-seedling-line',
     monthlyPrice: 19,
     priceDesc: '/ mo',
-    features: ['Up to 3 projects', 'Up to 5 team members', 'Up to 200 test cases / project', 'TC Versioning', 'Export/Import CSV', 'Jira Integration (full)', 'Suggest Edge Cases (AI)', '15 AI generations / month', 'RTM / Traceability', 'Steps Library (10 steps)', 'Community support'],
+    basePlan: 'Free',
+    features: ['3 projects · 5 members', 'Up to 200 test cases / project · unlimited runs', 'Export/Import CSV', 'Jira Integration (full)', 'RTM / Traceability (30 entries)', 'Steps Library (10 steps)', '15 AI generations / month'],
   },
   3: {
     name: 'Starter',
@@ -85,7 +87,8 @@ const TIER_INFO = {
     icon: 'ri-star-line',
     monthlyPrice: 49,
     priceDesc: '/ mo',
-    features: ['Up to 10 projects', 'Up to 5 team members', 'Unlimited test cases', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (50 entries)', 'Steps Library (20 steps)', '30 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Basic reporting', 'Export PDF Report'],
+    basePlan: 'Hobby',
+    features: ['10 projects · unlimited test cases', 'Slack & Teams Integration', 'RTM (50 entries) · Steps Library (20 steps)', 'AI Run Summary · Flaky Detection AI', 'Coverage Gap Analysis · AI Insights Panel', 'Basic reporting · email support', '30 AI generations / month'],
   },
   4: {
     name: 'Professional',
@@ -93,7 +96,8 @@ const TIER_INFO = {
     icon: 'ri-vip-crown-line',
     monthlyPrice: 99,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', 'Up to 20 team members', 'Unlimited test cases', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited)', 'Steps Library (Unlimited)', '150 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'Export PDF Report', 'CI/CD Integration', 'Priority support'],
+    basePlan: 'Starter',
+    features: ['Unlimited projects · up to 20 members', 'RTM (Unlimited) · Steps Library (Unlimited)', 'CI/CD Integration', 'Test Automation Framework SDK', 'Advanced reporting · priority support', '150 AI generations / month'],
   },
   5: {
     name: 'Enterprise S',
@@ -101,7 +105,8 @@ const TIER_INFO = {
     icon: 'ri-building-2-line',
     monthlyPrice: 249,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', '21–50 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited + Audit Trail + Jira sync)', 'Steps Library (Unlimited + Full version history)', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
+    basePlan: 'Professional',
+    features: ['21–50 team members', 'Unlimited AI generations', 'RTM (Audit Trail + Jira sync)', 'Dedicated support · SLA guarantee'],
   },
   6: {
     name: 'Enterprise M',
@@ -109,7 +114,8 @@ const TIER_INFO = {
     icon: 'ri-building-4-line',
     monthlyPrice: 499,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', '51–100 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited + Audit Trail + Jira sync)', 'Steps Library (Unlimited + Full version history)', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
+    basePlan: 'Enterprise S',
+    features: ['51–100 team members'],
   },
   7: {
     name: 'Enterprise L',
@@ -117,7 +123,8 @@ const TIER_INFO = {
     icon: 'ri-government-line',
     monthlyPrice: -1,
     priceDesc: 'Contact Sales',
-    features: ['Unlimited projects', '100+ team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited + Audit Trail + Jira sync)', 'Steps Library (Unlimited + Full version history)', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee', 'Custom contract & SLA'],
+    basePlan: 'Enterprise M',
+    features: ['100+ team members', 'Custom contract & SLA', 'Dedicated infrastructure'],
   },
 };
 
@@ -3613,33 +3620,36 @@ describe('Login', () => {
                     >
                       <div className="flex items-center gap-2 mb-3">
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                          tierNum === 1 ? 'bg-gray-200' : tierNum === 2 ? 'bg-yellow-100' : tierNum === 3 ? 'bg-indigo-100' : tierNum === 4 ? 'bg-amber-100' : tierNum === 5 ? 'bg-orange-100' : 'bg-rose-100'
+                          tierNum === 1 ? 'bg-gray-200' : tierNum === 2 ? 'bg-emerald-100' : tierNum === 3 ? 'bg-yellow-100' : tierNum === 4 ? 'bg-indigo-100' : tierNum === 5 ? 'bg-amber-100' : tierNum === 6 ? 'bg-orange-100' : 'bg-rose-100'
                         }`}>
                           <i className={`${info.icon} text-xl ${
-                            tierNum === 1 ? 'text-gray-500' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : tierNum === 4 ? 'text-amber-500' : tierNum === 5 ? 'text-orange-500' : 'text-rose-500'
+                            tierNum === 1 ? 'text-gray-500' : tierNum === 2 ? 'text-emerald-500' : tierNum === 3 ? 'text-yellow-500' : tierNum === 4 ? 'text-indigo-500' : tierNum === 5 ? 'text-amber-500' : tierNum === 6 ? 'text-orange-500' : 'text-rose-500'
                           }`}></i>
                         </div>
                         <h4 className="font-bold text-gray-900">{info.name}</h4>
                         {isCurrentTier && <span className="ml-auto px-2 py-0.5 bg-indigo-500 text-white text-xs rounded-full">Current</span>}
                       </div>
                       <div className="mb-4 pb-4 border-b border-gray-200/70">
-                        <span className={`text-2xl font-bold ${tierNum === 1 ? 'text-gray-700' : tierNum === 2 ? 'text-yellow-700' : tierNum === 3 ? 'text-indigo-700' : 'text-amber-700'}`}>
+                        <span className={`text-2xl font-bold ${tierNum === 1 ? 'text-gray-700' : tierNum === 2 ? 'text-emerald-700' : tierNum === 3 ? 'text-yellow-700' : tierNum === 4 ? 'text-indigo-700' : 'text-amber-700'}`}>
                           {info.monthlyPrice === 0 ? '$0' : info.monthlyPrice < 0 ? 'Custom' : `$${info.monthlyPrice}`}
                         </span>
                         {info.monthlyPrice >= 0 && <span className="text-sm text-gray-500 ml-1">{info.priceDesc}</span>}
                       </div>
                       <ul className="space-y-1.5 flex-1 mb-4">
+                        {info.basePlan && (
+                          <li className="text-xs font-semibold text-gray-400 mb-1">Everything in {info.basePlan}, plus:</li>
+                        )}
                         {info.features.map((feature, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
                             <i className={`ri-check-line mt-0.5 ${
-                              tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-yellow-500' : tierNum === 3 ? 'text-indigo-500' : tierNum === 4 ? 'text-amber-500' : tierNum === 5 ? 'text-orange-500' : 'text-rose-500'
+                              tierNum === 1 ? 'text-gray-400' : tierNum === 2 ? 'text-emerald-500' : tierNum === 3 ? 'text-yellow-500' : tierNum === 4 ? 'text-indigo-500' : tierNum === 5 ? 'text-amber-500' : tierNum === 6 ? 'text-orange-500' : 'text-rose-500'
                             }`}></i>
                             <span>{feature}</span>
                           </li>
                         ))}
                       </ul>
                       {!isCurrentTier && tierNum > currentTier && (
-                        tierNum >= 6 ? (
+                        tierNum >= 7 ? (
                           <a
                             href="mailto:hello@testably.app?subject=Enterprise%20Plan%20Inquiry"
                             className="w-full px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer block text-center border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white"
