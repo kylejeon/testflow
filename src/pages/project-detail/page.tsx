@@ -159,7 +159,8 @@ export default function ProjectDetail() {
       return count || 0;
     },
     enabled: !!userProfile?.id && !!id,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Project detail data: React Query
