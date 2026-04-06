@@ -9,8 +9,7 @@ const corsHeaders = {
 //                 5=Enterprise S($249), 6=Enterprise M($499), 7=Enterprise L(Custom)
 function variantToTier(variantId: number): number {
   const map: Record<number, number> = {
-    // Hobby ($19) — set variant IDs after creating in Lemon Squeezy dashboard
-    // 999901: 2, 999902: 2,   // Hobby (placeholder)
+    950531: 2, 950542: 2,   // Hobby
     935688: 3, 935691: 3,   // Starter
     935695: 4, 935696: 4,   // Professional
     935705: 5, 935708: 5,   // Enterprise S
