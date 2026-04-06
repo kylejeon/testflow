@@ -266,20 +266,36 @@ function DeleteModal({
 }
 
 // ── Used-by panel ─────────────────────────────────────────────────────────────
+interface UsedByTC { id: string; custom_id: string; title: string; folder: string | null; }
+
 function UsedByPanel({ step, projectId, onClose }: { step: SharedTestStep; projectId: string; onClose: () => void }) {
-  const { data: usages = [], isLoading } = useQuery({
-    queryKey: ['shared_step_usages', step.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
+  const [usages, setUsages] = useState<UsedByTC[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Client-side scan — same pattern as BulkUpdateDialog / liveUsageCounts
+  // (ilike and .contains() are unreliable when steps is stored as TEXT)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
         .from('test_cases')
-        .select('id, custom_id, title, folder')
-        .eq('project_id', projectId)
-        .contains('steps', JSON.stringify([{ type: 'shared_step_ref', shared_step_id: step.id }]));
-      if (error) throw error;
-      return (data || []) as SharedStepUsage[];
-    },
-    staleTime: 30_000,
-  });
+        .select('id, custom_id, title, folder, steps')
+        .eq('project_id', projectId);
+      if (cancelled) return;
+      const found: UsedByTC[] = [];
+      for (const tc of (data || [])) {
+        try {
+          const steps = typeof tc.steps === 'string' ? JSON.parse(tc.steps) : (tc.steps || []);
+          if (Array.isArray(steps) && steps.some((s: any) => s?.type === 'shared_step_ref' && s.shared_step_id === step.id)) {
+            found.push({ id: tc.id, custom_id: tc.custom_id || '', title: tc.title || '', folder: tc.folder || null });
+          }
+        } catch {}
+      }
+      setUsages(found);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [step.id, projectId]);
 
   return (
     <>
@@ -294,8 +310,8 @@ function UsedByPanel({ step, projectId, onClose }: { step: SharedTestStep; proje
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #F1F5F9', flexShrink: 0 }}>
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-slate-800">Used by — {step.custom_id}: {step.name}</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Test cases that reference this shared step</p>
+              <h3 className="text-sm font-semibold text-slate-800">{step.custom_id}: {step.name}</h3>
+              <p className="text-xs text-slate-400 mt-0.5">v{step.version} · {step.steps.length} steps</p>
             </div>
             <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
               <i className="ri-close-line text-lg" />
@@ -303,44 +319,62 @@ function UsedByPanel({ step, projectId, onClose }: { step: SharedTestStep; proje
           </div>
         </div>
 
-        {/* Step preview */}
-        <div style={{ padding: '1rem 1.5rem 0', flexShrink: 0 }}>
-          <div className="bg-indigo-50 border-l-4 border-indigo-400 rounded-r-lg px-3 py-2 mb-3">
-            <p className="text-xs font-semibold text-indigo-600 mb-1">
-              <i className="ri-links-line mr-1" />{step.custom_id} · v{step.version} · {step.steps.length} steps
-            </p>
-            {step.steps.slice(0, 3).map((s, i) => (
-              <p key={i} className="text-xs text-slate-600 truncate">
-                <span className="font-semibold text-slate-400 mr-1">{i + 1}.</span>{s.step}
-              </p>
-            ))}
-            {step.steps.length > 3 && <p className="text-xs text-slate-400">+{step.steps.length - 3} more…</p>}
-          </div>
-        </div>
-
-        {/* TC list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 1.5rem 1.5rem' }}>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8 text-slate-400 text-sm gap-2">
-              <i className="ri-loader-4-line animate-spin" /> Loading…
-            </div>
-          ) : usages.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 text-sm">No test cases reference this shared step.</div>
-          ) : (
-            <div className="space-y-1">
-              {usages.map(u => (
-                <div key={u.test_case_id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">
-                  <span className="text-[0.65rem] font-mono font-semibold text-indigo-500 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded flex-shrink-0">
-                    {u.custom_id}
-                  </span>
-                  <span className="text-sm text-slate-700 flex-1 truncate">{u.title}</span>
-                  {u.folder_path && (
-                    <span className="text-xs text-slate-400 truncate max-w-[100px]">{u.folder_path}</span>
-                  )}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {/* Step preview with expected results */}
+          <div style={{ padding: '1rem 1.5rem 0' }}>
+            <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-400 mb-2">Steps</p>
+            <div className="space-y-2">
+              {step.steps.map((s, i) => (
+                <div key={i} className="flex gap-2">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-[0.6rem] font-bold flex items-center justify-center mt-0.5">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-700 leading-relaxed">{s.step}</p>
+                    {s.expectedResult && (
+                      <div className="mt-0.5 flex items-start gap-1 pl-1 border-l-2 border-slate-200">
+                        <p className="text-[0.7rem] text-slate-400 leading-relaxed">{s.expectedResult}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
-          )}
+          </div>
+
+          {/* Used by TC list */}
+          <div style={{ padding: '1rem 1.5rem 1.5rem' }}>
+            <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+              Used by {loading ? '…' : `${usages.length} TC${usages.length !== 1 ? 's' : ''}`}
+            </p>
+            {loading ? (
+              <div className="flex items-center gap-2 text-slate-400 text-xs py-2">
+                <i className="ri-loader-4-line animate-spin" /> Loading…
+              </div>
+            ) : usages.length === 0 ? (
+              <p className="text-xs text-slate-400 py-2">No test cases reference this shared step.</p>
+            ) : (
+              <div className="space-y-1">
+                {usages.map(u => (
+                  <Link
+                    key={u.id}
+                    to={`/projects/${projectId}/testcases`}
+                    onClick={onClose}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors group"
+                  >
+                    <span className="text-[0.65rem] font-mono font-semibold text-indigo-500 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded flex-shrink-0">
+                      {u.custom_id}
+                    </span>
+                    <span className="text-xs text-slate-700 flex-1 truncate group-hover:text-indigo-600 transition-colors">{u.title}</span>
+                    {u.folder && (
+                      <span className="text-[0.65rem] text-slate-400 truncate max-w-[90px]">{u.folder}</span>
+                    )}
+                    <i className="ri-arrow-right-s-line text-slate-300 group-hover:text-indigo-400 flex-shrink-0 transition-colors" />
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>
