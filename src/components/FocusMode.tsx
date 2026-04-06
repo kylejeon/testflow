@@ -141,7 +141,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   const [ssDiffData, setSsDiffData] = useState<{ ssId: string; customId: string; name: string; currentVersion: number; latestVersion: number; currentSteps: { step: string; expectedResult: string }[]; latestSteps: { step: string; expectedResult: string }[] } | null>(null);
 
   // GitHub / Jira integration state
-  const [githubSettings, setGithubSettings] = useState<{ token: string; owner: string; repo: string; default_labels: string[]; auto_create_enabled: boolean } | null>(null);
+  const [githubSettings, setGithubSettings] = useState<{ token: string; owner: string; repo: string; default_labels: string[]; auto_create_enabled: boolean; auto_assign_enabled: boolean; assignee_username?: string } | null>(null);
   const [jiraSettings, setJiraSettings] = useState<{ domain: string; email: string; api_token: string; project_key: string; issue_type: string; auto_create_on_failure: string } | null>(null);
   // Track created GitHub issues per TC: tcId → { number, html_url }
   const [createdGithubIssues, setCreatedGithubIssues] = useState<Record<string, { number: number; html_url: string }>>({});
@@ -197,7 +197,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
       if (!user) return;
       const [ghResult, jiraResult] = await Promise.all([
         supabase.from('github_settings')
-          .select('token, owner, repo, default_labels, auto_create_enabled')
+          .select('token, owner, repo, default_labels, auto_create_enabled, auto_assign_enabled, assignee_username')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase.from('jira_settings')
@@ -223,6 +223,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
           title,
           body: `**Auto-created by Testably (Focus Mode)**\n\nTest Case: ${tc.title}\nPriority: ${tc.priority || 'N/A'}\n\n---\n${tc.description || ''}`,
           labels: githubSettings.default_labels.length > 0 ? githubSettings.default_labels : ['bug'],
+          assignee: githubSettings.auto_assign_enabled && githubSettings.assignee_username ? githubSettings.assignee_username : undefined,
         },
       });
       if (error) throw error;

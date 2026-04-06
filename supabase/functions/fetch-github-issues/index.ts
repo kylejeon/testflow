@@ -70,12 +70,14 @@ Deno.serve(async (req) => {
       state = 'open',
       max_results = 100,
       dry_run = false,
+      issue_numbers,
     } = body as {
       project_id: string;
       label_filter?: string;
       state?: string;
       max_results?: number;
       dry_run?: boolean;
+      issue_numbers?: number[];
     };
 
     if (!project_id) {
@@ -180,7 +182,9 @@ Deno.serve(async (req) => {
     const ghIssues: any[] = await ghResp.json();
 
     // GitHub Issues API는 Pull Requests도 반환하므로 PR 제외
-    const issues = ghIssues.filter((i: any) => !i.pull_request);
+    // issue_numbers가 지정된 경우 선택된 이슈만 필터링
+    const issueNumberSet = issue_numbers && issue_numbers.length > 0 ? new Set(issue_numbers) : null;
+    const issues = ghIssues.filter((i: any) => !i.pull_request && (!issueNumberSet || issueNumberSet.has(i.number)));
 
     if (issues.length === 0) {
       return jsonResponse({ success: true, imported: 0, skipped: 0, issues: [] });

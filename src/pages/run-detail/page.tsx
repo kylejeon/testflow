@@ -81,6 +81,7 @@ interface GitHubSettings {
   default_labels: string[];
   auto_create_enabled: boolean;
   auto_assign_enabled: boolean;
+  assignee_username?: string;
 }
 
 interface Folder {
@@ -559,7 +560,7 @@ export default function RunDetail() {
       if (!user) return;
       const { data, error } = await supabase
         .from('github_settings')
-        .select('token, owner, repo, default_labels, auto_create_enabled, auto_assign_enabled')
+        .select('token, owner, repo, default_labels, auto_create_enabled, auto_assign_enabled, assignee_username')
         .eq('user_id', user.id)
         .maybeSingle();
       if (error && error.code !== 'PGRST116') return;
@@ -571,6 +572,7 @@ export default function RunDetail() {
           default_labels: data.default_labels || [],
           auto_create_enabled: data.auto_create_enabled || false,
           auto_assign_enabled: data.auto_assign_enabled || false,
+          assignee_username: data.assignee_username || undefined,
         });
       }
     } catch (error) {
@@ -1107,6 +1109,7 @@ export default function RunDetail() {
                 title: `[Auto] Test Failed: ${tcId} - ${tc.title}`,
                 body: `**Auto-created by Testably**\n\nTest Case: ${tc.title}\nPriority: ${tc.priority}\n\n---\n${tc.description || ''}`,
                 labels: githubSettings.default_labels.length > 0 ? githubSettings.default_labels : ['bug'],
+                assignee: githubSettings.auto_assign_enabled && githubSettings.assignee_username ? githubSettings.assignee_username : undefined,
               },
             });
             if (ghData?.success && ghData?.issue?.number) {
@@ -1481,6 +1484,7 @@ export default function RunDetail() {
                 title: `[Auto] Test Failed: ${tcId} - ${tc.title}`,
                 body: `**Auto-created by Testably**\n\nTest Case: ${tc.title}\nPriority: ${tc.priority}\n\n---\n${tc.description || ''}`,
                 labels: githubSettings.default_labels.length > 0 ? githubSettings.default_labels : ['bug'],
+                assignee: githubSettings.auto_assign_enabled && githubSettings.assignee_username ? githubSettings.assignee_username : undefined,
               },
             });
             if (ghData?.success && ghData?.issue?.number) {
@@ -2720,14 +2724,13 @@ export default function RunDetail() {
                     const outdatedTCs = testCases.filter(tc => getOutdatedRefs(tc).length > 0);
                     const updatableTCs = outdatedTCs.filter(tc => canUpdateTC(tc));
                     if (outdatedTCs.length === 0 || versionBannerDismissed) return null;
+                    const uniqueSsIds = new Set(outdatedTCs.flatMap(tc => getOutdatedRefs(tc).map((r: any) => r.shared_step_id)));
                     return (
                       <div className="flex items-center gap-3 mx-4 my-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg transition-all duration-200">
                         <i className="ri-refresh-line text-amber-500 text-base flex-shrink-0" />
                         <div className="flex-1 text-xs text-amber-800">
-                          <span className="font-semibold">{outdatedTCs.length}개 Shared Step에 새 버전이 있습니다</span>
-                          {updatableTCs.length > 0 && (
-                            <span className="text-amber-600 ml-1">(untested {updatableTCs.length}개 해당)</span>
-                          )}
+                          <span className="font-semibold">{uniqueSsIds.size}개 Shared Step에 새 버전이 있습니다</span>
+                          <span className="text-amber-600 ml-1">({outdatedTCs.length}개 TC 해당{updatableTCs.length > 0 ? `, untested ${updatableTCs.length}개 업데이트 가능` : ''})</span>
                         </div>
                         {updatableTCs.length > 0 && (
                           <button

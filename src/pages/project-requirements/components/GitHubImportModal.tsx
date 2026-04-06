@@ -107,6 +107,7 @@ export default function GitHubImportModal({ projectId, existingExternalIds, onCl
           state: stateFilter,
           max_results: 100,
           dry_run: false,
+          issue_numbers: [...selectedIssueIds].map(Number),
         },
       });
 

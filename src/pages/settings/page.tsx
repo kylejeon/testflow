@@ -32,6 +32,7 @@ interface GitHubSettings {
   defaultLabels: string;
   autoCreateEnabled: boolean;
   autoAssignEnabled: boolean;
+  assigneeUsername: string;
 }
 
 interface JiraFieldMapping {
@@ -332,6 +333,7 @@ export default function SettingsPage() {
     defaultLabels: '',
     autoCreateEnabled: false,
     autoAssignEnabled: false,
+    assigneeUsername: '',
   });
   const [githubSavedRepo, setGithubSavedRepo] = useState('');
   const [githubEditMode, setGithubEditMode] = useState(false);
@@ -461,7 +463,7 @@ export default function SettingsPage() {
       if (!user) return;
       const { data } = await supabase
         .from('github_settings')
-        .select('token, owner, repo, default_labels, auto_create_enabled, auto_assign_enabled')
+        .select('token, owner, repo, default_labels, auto_create_enabled, auto_assign_enabled, assignee_username')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data?.token) {
@@ -472,6 +474,7 @@ export default function SettingsPage() {
           defaultLabels: (data.default_labels || []).join(', '),
           autoCreateEnabled: data.auto_create_enabled || false,
           autoAssignEnabled: data.auto_assign_enabled || false,
+          assigneeUsername: data.assignee_username || '',
         });
         if (data.owner && data.repo) setGithubSavedRepo(`${data.owner}/${data.repo}`);
       }
@@ -949,6 +952,7 @@ export default function SettingsPage() {
         default_labels: labelsArray,
         auto_create_enabled: githubSettings.autoCreateEnabled,
         auto_assign_enabled: githubSettings.autoAssignEnabled,
+        assignee_username: githubSettings.assigneeUsername.trim() || null,
       };
       const { data: existing } = await supabase
         .from('github_settings')
@@ -977,7 +981,7 @@ export default function SettingsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     await supabase.from('github_settings').delete().eq('user_id', user.id);
-    setGithubSettings({ token: '', owner: '', repo: '', defaultLabels: '', autoCreateEnabled: false, autoAssignEnabled: false });
+    setGithubSettings({ token: '', owner: '', repo: '', defaultLabels: '', autoCreateEnabled: false, autoAssignEnabled: false, assigneeUsername: '' });
     setGithubSavedRepo('');
     setGithubEditMode(false);
     setGithubTestResult(null);
@@ -2652,20 +2656,35 @@ def pytest_sessionfinish(session, exitstatus):
                                 </button>
                               </div>
                               {githubSettings.autoCreateEnabled && (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[0.8125rem] text-[#334155] font-medium">Auto-assign to Issue reporter</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (!isHobbyOrHigher || isGithubLocked) return;
-                                      setGithubSettings({ ...githubSettings, autoAssignEnabled: !githubSettings.autoAssignEnabled });
-                                    }}
-                                    disabled={!isHobbyOrHigher || isGithubLocked}
-                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${githubSettings.autoAssignEnabled ? 'bg-[#6366F1]' : 'bg-[#CBD5E1]'}`}
-                                  >
-                                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${githubSettings.autoAssignEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                                  </button>
-                                </div>
+                                <>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[0.8125rem] text-[#334155] font-medium">Auto-assign to Issue reporter</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (!isHobbyOrHigher || isGithubLocked) return;
+                                        setGithubSettings({ ...githubSettings, autoAssignEnabled: !githubSettings.autoAssignEnabled });
+                                      }}
+                                      disabled={!isHobbyOrHigher || isGithubLocked}
+                                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${githubSettings.autoAssignEnabled ? 'bg-[#6366F1]' : 'bg-[#CBD5E1]'}`}
+                                    >
+                                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${githubSettings.autoAssignEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                    </button>
+                                  </div>
+                                  {githubSettings.autoAssignEnabled && (
+                                    <div>
+                                      <label className="block text-[0.75rem] font-medium text-[#64748B] mb-1">Default Assignee (GitHub username)</label>
+                                      <input
+                                        type="text"
+                                        value={githubSettings.assigneeUsername}
+                                        onChange={(e) => setGithubSettings({ ...githubSettings, assigneeUsername: e.target.value })}
+                                        disabled={!isHobbyOrHigher || isGithubLocked}
+                                        placeholder="e.g. octocat"
+                                        className="w-full px-3 py-2 border border-[#E2E8F0] rounded-[0.5rem] text-[0.8125rem] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1] placeholder-[#94A3B8] bg-[#F8FAFC] disabled:opacity-50"
+                                      />
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
 
