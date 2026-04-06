@@ -123,6 +123,18 @@ export default function ExportImportModal({
 }: ExportImportModalProps) {
   const [activeTab, setActiveTab]       = useState<ModalTab>('export');
   const [exportScope, setExportScope]   = useState<ExportScope>('all');
+  const [userTier, setUserTier]         = useState<number>(2); // optimistic default
+
+  // Fetch user tier to gate CSV export for Free plan (tier 1)
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).maybeSingle();
+      setUserTier(data?.subscription_tier ?? 1);
+    });
+  }, []);
+
+  const canExportCsv = userTier >= 2; // Hobby and above
   const [resolvedProjectName, setResolvedProjectName] = useState(projectName || '');
 
   // Columns
@@ -382,8 +394,20 @@ export default function ExportImportModal({
           {/* ══ EXPORT TAB ══════════════════════════════════════════════════ */}
           {activeTab === 'export' && (<>
 
+            {/* Free plan gate */}
+            {!canExportCsv && (
+              <div style={{ margin: '16px 20px', padding: '14px 16px', background: '#FEF9C3', border: '1px solid #FDE68A', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <i className="ri-lock-line" style={{ fontSize: 20, color: '#CA8A04', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#0F172A', margin: 0 }}>CSV Export is not available on the Free plan</p>
+                  <p style={{ fontSize: 12, color: '#64748B', margin: '3px 0 0' }}>Upgrade to Hobby or above to export your test cases.</p>
+                </div>
+                <a href="/settings?tab=billing" style={{ fontSize: 12, fontWeight: 600, color: '#CA8A04', textDecoration: 'underline', whiteSpace: 'nowrap' }}>Upgrade →</a>
+              </div>
+            )}
+
             {/* Title row */}
-            <div style={S.section}>
+            <div style={{ ...S.section, opacity: canExportCsv ? 1 : 0.4, pointerEvents: canExportCsv ? 'auto' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>Export as CSV</span>
                 <span style={{ fontSize: 11, color: '#94A3B8' }}>CSV / Excel format</span>
@@ -744,8 +768,8 @@ export default function ExportImportModal({
             </button>
             {activeTab === 'export' ? (
               <button onClick={handleExport}
-                disabled={selectedColumns.size === 0 || exportTargetCases.length === 0}
-                style={{ padding: '8px 16px', background: '#6366F1', color: 'white', border: '1px solid #6366F1', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: exportTargetCases.length === 0 ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 6, opacity: selectedColumns.size === 0 || exportTargetCases.length === 0 ? 0.5 : 1, transition: 'all .15s' }}>
+                disabled={!canExportCsv || selectedColumns.size === 0 || exportTargetCases.length === 0}
+                style={{ padding: '8px 16px', background: '#6366F1', color: 'white', border: '1px solid #6366F1', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: (!canExportCsv || exportTargetCases.length === 0) ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 6, opacity: (!canExportCsv || selectedColumns.size === 0 || exportTargetCases.length === 0) ? 0.5 : 1, transition: 'all .15s' }}>
                 <i className="ri-download-2-line" style={{ fontSize: 15 }} />
                 Download CSV ({exportTargetCases.length})
               </button>

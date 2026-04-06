@@ -20,9 +20,10 @@ function StepList({ steps }: { steps: { num: number; title: string; desc: string
 }
 
 const plans = [
-  { name: 'Free', price: '$0', projects: 'Up to 3', members: 'Up to 3', ai: '5 / mo', features: 'Basic test management, Jira Link, community support' },
-  { name: 'Starter', price: '$49 / mo', projects: 'Up to 10', members: 'Up to 5', ai: '30 / mo', features: 'Jira integration, Slack & Teams, reporting, Export/Import, PDF reports' },
-  { name: 'Professional', price: '$99 / mo', projects: 'Unlimited', members: 'Up to 20', ai: '150 / mo', features: 'Advanced reporting, CI/CD integration, priority support' },
+  { name: 'Free', price: '$0', projects: '1', members: 'Up to 2', ai: '3 / mo', features: 'Basic test management, Jira read-only, 100 TCs/project, 10 runs/mo, community support' },
+  { name: 'Hobby', price: '$19 / mo', projects: 'Up to 3', members: 'Up to 5', ai: '15 / mo', features: 'CSV export, full Jira, RTM/Traceability, Steps Library (10), 200 TCs/project, unlimited runs' },
+  { name: 'Starter', price: '$49 / mo', projects: 'Up to 10', members: 'Up to 5', ai: '30 / mo', features: 'Jira integration, Slack & Teams, reporting, Export/Import, PDF reports, Steps Library (20)' },
+  { name: 'Professional', price: '$99 / mo', projects: 'Unlimited', members: 'Up to 20', ai: '150 / mo', features: 'Advanced reporting, CI/CD integration, priority support, unlimited Steps Library' },
   { name: 'Enterprise S', price: '$249 / mo', projects: 'Unlimited', members: '21–50', ai: 'Unlimited', features: 'Dedicated support, SLA guarantee' },
   { name: 'Enterprise M', price: '$499 / mo', projects: 'Unlimited', members: '51–100', ai: 'Unlimited', features: 'Dedicated support, SLA guarantee' },
   { name: 'Enterprise L', price: 'Custom', projects: 'Unlimited', members: '100+', ai: 'Unlimited', features: 'Custom contract & SLA, dedicated support' },

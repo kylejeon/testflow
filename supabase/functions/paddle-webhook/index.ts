@@ -6,15 +6,20 @@ const corsHeaders = {
 };
 
 // Price ID → Tier 매핑 (src/lib/paddle.ts 의 PADDLE_PRICE_IDS 역방향)
+// Tier numbering: 1=Free, 2=Hobby($19), 3=Starter($49), 4=Professional($99),
+//                 5=Enterprise S($249), 6=Enterprise M($499), 7=Enterprise L(Custom)
 const PRICE_ID_TO_TIER: Record<string, number> = {
-  'pri_01kmfhvvyvrqzjhbzzmdy27szb': 2, // Starter monthly
-  'pri_01kmfhx9p3qb6m4v3m1zqde7td': 2, // Starter annual
-  'pri_01kmfhrfcww99zkqdmwktgqf3y': 3, // Professional monthly
-  'pri_01kmfht5fwdmamdh375zwwtcca': 3, // Professional annual
-  'pri_01kmfhpz212sdy3tvk7syebkr5': 4, // Enterprise S monthly
-  'pri_01kmfhnynq27f86xsr42hhqmxh': 4, // Enterprise S annual
-  'pri_01kmfgx4n2vvcmbckw9d725hp8': 5, // Enterprise M monthly
-  'pri_01kmfhmgzsje7wdw8thnddzc9k': 5, // Enterprise M annual
+  // Hobby ($19) — set price IDs after creating in Paddle dashboard
+  'PADDLE_HOBBY_MONTHLY_PRICE_ID': 2, // Hobby monthly (placeholder)
+  'PADDLE_HOBBY_ANNUAL_PRICE_ID': 2,  // Hobby annual (placeholder)
+  'pri_01kmfhvvyvrqzjhbzzmdy27szb': 3, // Starter monthly
+  'pri_01kmfhx9p3qb6m4v3m1zqde7td': 3, // Starter annual
+  'pri_01kmfhrfcww99zkqdmwktgqf3y': 4, // Professional monthly
+  'pri_01kmfht5fwdmamdh375zwwtcca': 4, // Professional annual
+  'pri_01kmfhpz212sdy3tvk7syebkr5': 5, // Enterprise S monthly
+  'pri_01kmfhnynq27f86xsr42hhqmxh': 5, // Enterprise S annual
+  'pri_01kmfgx4n2vvcmbckw9d725hp8': 6, // Enterprise M monthly
+  'pri_01kmfhmgzsje7wdw8thnddzc9k': 6, // Enterprise M annual
 };
 
 /** Paddle ts+h1 서명 검증 */

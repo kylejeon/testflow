@@ -2,11 +2,12 @@ import { supabase } from './supabase';
 
 const TIER_PLAN_NAMES: Record<number, string> = {
   1: 'free',
-  2: 'starter',
-  3: 'professional',
-  4: 'enterprise_s',
-  5: 'enterprise_m',
-  6: 'enterprise_l',
+  2: 'hobby',
+  3: 'starter',
+  4: 'professional',
+  5: 'enterprise_s',
+  6: 'enterprise_m',
+  7: 'enterprise_l',
 };
 
 export function tierToPlanName(tier: number): string {

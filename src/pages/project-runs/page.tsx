@@ -679,13 +679,17 @@ export default function ProjectRunsPage() {
   const getTierInfo = (tier: number) => {
     switch (tier) {
       case 2:
-        return { name: 'Starter', icon: 'ri-vip-crown-line', color: 'bg-indigo-50 text-indigo-700 border-indigo-300' };
+        return { name: 'Hobby',        icon: 'ri-seedling-line',    color: 'bg-emerald-50 text-emerald-700 border-emerald-300' };
       case 3:
-        return { name: 'Professional', icon: 'ri-vip-diamond-line', color: 'bg-violet-50 text-violet-700 border-violet-300' };
+        return { name: 'Starter',      icon: 'ri-vip-crown-line',   color: 'bg-indigo-50 text-indigo-700 border-indigo-300' };
       case 4:
-        return { name: 'Enterprise', icon: 'ri-vip-diamond-line', color: 'bg-amber-50 text-amber-700 border-amber-300' };
+        return { name: 'Professional', icon: 'ri-vip-diamond-line', color: 'bg-violet-50 text-violet-700 border-violet-300' };
+      case 5:
+      case 6:
+      case 7:
+        return { name: 'Enterprise',   icon: 'ri-vip-diamond-line', color: 'bg-amber-50 text-amber-700 border-amber-300' };
       default:
-        return { name: 'Free', icon: 'ri-user-line', color: 'bg-gray-100 text-gray-700 border-gray-200' };
+        return { name: 'Free',         icon: 'ri-user-line',        color: 'bg-gray-100 text-gray-700 border-gray-200' };
     }
   };
 

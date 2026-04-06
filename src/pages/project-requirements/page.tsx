@@ -14,7 +14,8 @@ const btnSecondary = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg te
 const fieldCls = `border border-slate-200 rounded-lg text-xs text-slate-700 px-2.5 py-1.5 bg-white focus:outline-none focus:border-indigo-400 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)] transition-colors`;
 
 // ── Tier constants ────────────────────────────────────────────────────────────
-// tier 1 = Free, 2 = Starter, 3 = Professional, 4 = Enterprise
+// tier 1=Free, 2=Hobby, 3=Starter, 4=Professional, 5+=Enterprise
+const REQ_LIMIT_HOBBY   = 30;
 const REQ_LIMIT_STARTER = 50;
 
 function priorityBadge(priority: string) {
@@ -76,15 +77,15 @@ function UpgradePrompt({ tier }: { tier: number }) {
         <div>
           <h3 className="text-base font-semibold text-slate-800 mb-1">Requirements Traceability</h3>
           <p className="text-sm text-slate-500 max-w-sm">
-            Link requirements to test cases and track coverage. Available on Starter and above.
+            Link requirements to test cases and track coverage. Available on Hobby and above.
           </p>
         </div>
         <Link
           to="/settings?tab=billing"
           className={btnPrimary}
         >
-          <i className="ri-vip-crown-line" />
-          Upgrade to Starter
+          <i className="ri-seedling-line" />
+          Upgrade to Hobby
         </Link>
       </div>
     );
@@ -266,7 +267,9 @@ export default function ProjectRequirements() {
     URL.revokeObjectURL(url);
   };
 
-  const starterAtLimit = tier === 2 && requirements.filter((r) => r.status !== 'deprecated').length >= REQ_LIMIT_STARTER;
+  const activeReqCount = requirements.filter((r) => r.status !== 'deprecated').length;
+  const hobbyAtLimit   = tier === 2 && activeReqCount >= REQ_LIMIT_HOBBY;
+  const starterAtLimit = tier === 3 && activeReqCount >= REQ_LIMIT_STARTER;
 
   if (isTierLoading) {
     return (
@@ -300,7 +303,8 @@ export default function ProjectRequirements() {
             <h1 className="text-lg font-semibold text-slate-800">Requirements</h1>
             <p className="text-xs text-slate-500 mt-0.5">
               {requirements.length} requirement{requirements.length !== 1 ? 's' : ''} total
-              {tier === 2 && ` · ${requirements.filter(r => r.status !== 'deprecated').length}/${REQ_LIMIT_STARTER} used`}
+              {tier === 2 && ` · ${activeReqCount}/${REQ_LIMIT_HOBBY} used`}
+              {tier === 3 && ` · ${activeReqCount}/${REQ_LIMIT_STARTER} used`}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -315,8 +319,12 @@ export default function ProjectRequirements() {
             <button
               className={btnPrimary}
               onClick={() => setShowCreateModal(true)}
-              disabled={starterAtLimit}
-              title={starterAtLimit ? `Starter plan limit: ${REQ_LIMIT_STARTER} requirements` : undefined}
+              disabled={hobbyAtLimit || starterAtLimit}
+              title={
+                hobbyAtLimit   ? `Hobby plan limit: ${REQ_LIMIT_HOBBY} requirements` :
+                starterAtLimit ? `Starter plan limit: ${REQ_LIMIT_STARTER} requirements` :
+                undefined
+              }
             >
               <i className="ri-add-line" />
               New Requirement
@@ -324,7 +332,14 @@ export default function ProjectRequirements() {
           </div>
         </div>
 
-        {/* Starter limit warning */}
+        {/* Plan limit warnings */}
+        {hobbyAtLimit && (
+          <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs">
+            <i className="ri-error-warning-line text-sm" />
+            <span>You've reached the Hobby plan limit of {REQ_LIMIT_HOBBY} requirements.</span>
+            <Link to="/settings?tab=billing" className="font-semibold underline">Upgrade to Starter</Link>
+          </div>
+        )}
         {starterAtLimit && (
           <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs">
             <i className="ri-error-warning-line text-sm" />

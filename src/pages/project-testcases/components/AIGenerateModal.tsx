@@ -46,12 +46,13 @@ interface AIGenerateModalProps {
   initialTitles?: string[];
 }
 
-// Plan info
+// Plan info — tier: 1=Free, 2=Hobby, 3=Starter, 4=Professional, 5+=Enterprise
 const PLAN_INFO: Record<number, { name: string; monthlyLimit: number; sessionMode: boolean; jiraMode: boolean }> = {
-  1: { name: 'Free', monthlyLimit: 5, sessionMode: false, jiraMode: false },
-  2: { name: 'Starter', monthlyLimit: 30, sessionMode: false, jiraMode: true },
-  3: { name: 'Professional', monthlyLimit: 150, sessionMode: true, jiraMode: true },
-  4: { name: 'Enterprise', monthlyLimit: -1, sessionMode: true, jiraMode: true },
+  1: { name: 'Free',         monthlyLimit: 3,   sessionMode: false, jiraMode: false },
+  2: { name: 'Hobby',        monthlyLimit: 15,  sessionMode: false, jiraMode: true  },
+  3: { name: 'Starter',      monthlyLimit: 30,  sessionMode: false, jiraMode: true  },
+  4: { name: 'Professional', monthlyLimit: 150, sessionMode: true,  jiraMode: true  },
+  5: { name: 'Enterprise',   monthlyLimit: -1,  sessionMode: true,  jiraMode: true  },
 };
 
 type Mode = 'text' | 'jira' | 'session';

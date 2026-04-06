@@ -69,25 +69,33 @@ const TIER_INFO = {
     icon: 'ri-user-line',
     monthlyPrice: 0,
     priceDesc: 'Free',
-    features: ['Up to 3 projects', 'Up to 3 team members', 'Basic test management', 'TC Versioning', 'Export/Import CSV', 'Suggest Edge Cases (AI)', 'Jira Integration (Link)', '5 AI generations / month', 'Community support'],
+    features: ['1 project', 'Up to 2 team members', 'Up to 100 test cases / project', 'TC Versioning', 'Suggest Edge Cases (AI)', 'Jira Integration (read-only)', '3 AI generations / month', 'Test runs (10 / month)', 'Community support'],
   },
   2: {
+    name: 'Hobby',
+    color: 'bg-emerald-50 text-emerald-700 border-emerald-300',
+    icon: 'ri-seedling-line',
+    monthlyPrice: 19,
+    priceDesc: '/ mo',
+    features: ['Up to 3 projects', 'Up to 5 team members', 'Up to 200 test cases / project', 'TC Versioning', 'Export/Import CSV', 'Jira Integration (full)', 'Suggest Edge Cases (AI)', '15 AI generations / month', 'RTM / Traceability', 'Steps Library (10 steps)', 'Community support'],
+  },
+  3: {
     name: 'Starter',
     color: 'bg-yellow-50 text-yellow-700 border-yellow-300',
     icon: 'ri-star-line',
     monthlyPrice: 49,
     priceDesc: '/ mo',
-    features: ['Up to 10 projects', 'Up to 5 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (50 entries)', 'Steps Library (20 steps)', '30 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Basic reporting', 'Export PDF Report'],
+    features: ['Up to 10 projects', 'Up to 5 team members', 'Unlimited test cases', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (50 entries)', 'Steps Library (20 steps)', '30 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Basic reporting', 'Export PDF Report'],
   },
-  3: {
+  4: {
     name: 'Professional',
     color: 'bg-indigo-50 text-indigo-700 border-indigo-300',
     icon: 'ri-vip-crown-line',
     monthlyPrice: 99,
     priceDesc: '/ mo',
-    features: ['Unlimited projects', 'Up to 20 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited)', 'Steps Library (Unlimited)', '150 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'Export PDF Report', 'CI/CD Integration', 'Priority support'],
+    features: ['Unlimited projects', 'Up to 20 team members', 'Unlimited test cases', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited)', 'Steps Library (Unlimited)', '150 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'Export PDF Report', 'CI/CD Integration', 'Priority support'],
   },
-  4: {
+  5: {
     name: 'Enterprise S',
     color: 'bg-amber-50 text-amber-700 border-amber-300',
     icon: 'ri-building-2-line',
@@ -95,7 +103,7 @@ const TIER_INFO = {
     priceDesc: '/ mo',
     features: ['Unlimited projects', '21–50 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited + Audit Trail + Jira sync)', 'Steps Library (Unlimited + Full version history)', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
   },
-  5: {
+  6: {
     name: 'Enterprise M',
     color: 'bg-orange-50 text-orange-700 border-orange-300',
     icon: 'ri-building-4-line',
@@ -103,7 +111,7 @@ const TIER_INFO = {
     priceDesc: '/ mo',
     features: ['Unlimited projects', '51–100 team members', 'TC Versioning', 'Export/Import CSV', 'Jira Integration', 'Slack & Teams Integration', 'RTM (Unlimited + Audit Trail + Jira sync)', 'Steps Library (Unlimited + Full version history)', 'Unlimited AI generations', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Test Automation Framework SDK', 'Advanced reporting', 'CI/CD Integration', 'Dedicated support', 'SLA guarantee'],
   },
-  6: {
+  7: {
     name: 'Enterprise L',
     color: 'bg-rose-50 text-rose-700 border-rose-300',
     icon: 'ri-government-line',
@@ -150,9 +158,8 @@ async function loadSettingsData(): Promise<{
       const trialEnd = new Date(data.trial_ends_at);
       if (now > trialEnd) {
         tier = 1; isTrial = false;
-      } else {
-        tier = 3;
       }
+      // During trial: preserve whatever tier was set (Starter=3 or Professional=4)
     }
     if (!isTrial && tier > 1 && subscriptionEndsAt) {
       const subEnd = new Date(subscriptionEndsAt);
@@ -515,14 +522,7 @@ export default function SettingsPage() {
             tier = 1;
             isTrial = false;
           } else {
-            // 체험 중이면 반드시 Professional(3) 티어
-            if (tier !== 3) {
-              await supabase
-                .from('profiles')
-                .update({ subscription_tier: 3 })
-                .eq('id', user.id);
-            }
-            tier = 3;
+            // 체험 중: DB에 저장된 tier를 그대로 사용 (Starter=3, Professional=4 등)
           }
         }
 
@@ -1513,13 +1513,69 @@ def pytest_sessionfinish(session, exitstatus):
 
   const currentTier = userProfile?.subscription_tier || 1;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO] || TIER_INFO[1];
-  const isProfessionalOrHigher = currentTier >= 3;
-  const isStarterOrHigher = currentTier >= 2;
+  // Tier thresholds after adding Hobby (2): Hobby=2, Starter=3, Professional=4, Enterprise=5+
+  const isProfessionalOrHigher = currentTier >= 4;
+  const isHobbyOrHigher = currentTier >= 3;
+  const isHobbyOrHigher = currentTier >= 2; // Jira full access, CSV export, RTM, Shared Steps
 
   const handleUpgrade = async (planName: string, period: 'monthly' | 'annual' = 'monthly') => {
     if (!userProfile) return;
     const provider = getPaymentProvider(userProfile);
     await openCheckout(planName, period, provider, userProfile.email, userProfile.id);
+  };
+
+  const [startingStarterTrial, setStartingStarterTrial] = useState(false);
+  const [starterTrialError, setStarterTrialError] = useState<string | null>(null);
+  const [starterTrialStarted, setStarterTrialStarted] = useState(false);
+
+  const handleStartStarterTrial = async () => {
+    if (!userProfile) return;
+    // Only Free users who haven't used a trial yet
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setStartingStarterTrial(true);
+    setStarterTrialError(null);
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('trial_started_at, is_trial, subscription_tier')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile?.trial_started_at) {
+        setStarterTrialError('You have already used your free trial.');
+        return;
+      }
+      if (profile?.is_trial) {
+        setStarterTrialError('A trial is already active.');
+        return;
+      }
+
+      const now = new Date();
+      const trialEndsAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          subscription_tier: 3, // Starter
+          is_trial: true,
+          trial_started_at: now.toISOString(),
+          trial_ends_at: trialEndsAt.toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setStarterTrialStarted(true);
+      // Refresh profile
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (err: any) {
+      setStarterTrialError(err.message || 'Failed to start trial. Please try again.');
+    } finally {
+      setStartingStarterTrial(false);
+    }
   };
 
   // 무료 체험 남은 일수 계산
@@ -1769,9 +1825,12 @@ def pytest_sessionfinish(session, exitstatus):
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <button
-                            onClick={() => handleUpgrade(tierInfo.name === 'Free' ? 'Starter' : tierInfo.name, 'monthly')}
+                            onClick={() => {
+                              const nextPlan = currentTier === 1 ? 'Hobby' : currentTier === 2 ? 'Starter' : tierInfo.name;
+                              handleUpgrade(nextPlan, 'monthly');
+                            }}
                             className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-[0.375rem] bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer"
                             style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
                           >
@@ -1785,6 +1844,41 @@ def pytest_sessionfinish(session, exitstatus):
                             View All Plans
                           </button>
                         </div>
+
+                        {/* Starter 14-day free trial — only for Free users who haven't used a trial */}
+                        {currentTier === 1 && !userProfile?.is_trial && !userProfile?.trial_started_at && (
+                          <div className="mt-4 p-4 rounded-[0.625rem] border border-[#C7D2FE] bg-indigo-50/60 flex items-start gap-3">
+                            <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <i className="ri-star-line text-indigo-600 text-base"></i>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-[0.8125rem] font-semibold text-[#0F172A] mb-0.5">Try Starter free for 14 days</p>
+                              <p className="text-[0.75rem] text-[#64748B] mb-3">
+                                Experience Starter features — AI Run Summary, Slack integration, and more. No credit card required. Returns to Free when the trial ends.
+                              </p>
+                              {starterTrialError && (
+                                <p className="text-[0.75rem] text-red-600 mb-2">{starterTrialError}</p>
+                              )}
+                              {starterTrialStarted ? (
+                                <p className="text-[0.75rem] font-semibold text-indigo-600 flex items-center gap-1">
+                                  <i className="ri-check-circle-line"></i> Trial started! Refreshing…
+                                </p>
+                              ) : (
+                                <button
+                                  onClick={handleStartStarterTrial}
+                                  disabled={startingStarterTrial}
+                                  className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer disabled:opacity-60"
+                                >
+                                  {startingStarterTrial ? (
+                                    <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Starting…</>
+                                  ) : (
+                                    <><i className="ri-play-circle-line"></i> Start 14-day Starter Trial</>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* ── Invoice History ── */}
@@ -1853,27 +1947,27 @@ def pytest_sessionfinish(session, exitstatus):
                           <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
                             <i className="ri-links-fill text-[#1E40AF]"></i> Jira Integration
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold">
-                              <i className="ri-star-line"></i> Starter+
+                              <i className="ri-seedling-line"></i> Hobby+
                             </span>
                           </h3>
-                          {!isStarterOrHigher && (
+                          {!isHobbyOrHigher && (
                             <span className="px-2.5 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold flex items-center gap-1">
-                              <i className="ri-star-line"></i> Requires Starter or above
+                              <i className="ri-star-line"></i> Requires Hobby or above
                             </span>
                           )}
                         </div>
                         <p className="text-[0.8125rem] text-[#64748B] mb-5">Connect your Jira account to create issues directly from test results.</p>
 
-                        {!isStarterOrHigher && (
+                        {!isHobbyOrHigher && (
                           <div className="mb-4 p-4 border border-[#FDE68A] rounded-[0.75rem] flex items-start gap-3" style={{ background: 'linear-gradient(to right,#FEF9C3,#FEF3C7)' }}>
                             <div className="w-10 h-10 bg-[#FEF08A] rounded-[0.5rem] flex items-center justify-center flex-shrink-0">
                               <i className="ri-lock-line text-[#CA8A04]" style={{ fontSize: '1.25rem' }}></i>
                             </div>
                             <div className="flex-1">
-                              <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-1">Jira Integration is available on Starter and above</div>
+                              <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-1">Jira Integration (full) is available on Hobby and above</div>
                               <div className="text-[0.75rem] text-[#64748B] mb-2.5">Create Jira issues directly from test results and enhance team collaboration.</div>
-                              <button onClick={() => handleUpgrade('Starter')} className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#CA8A04' }}>
-                                <i className="ri-arrow-up-circle-line"></i> Upgrade to Starter
+                              <button onClick={() => handleUpgrade('Hobby')} className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#059669' }}>
+                                <i className="ri-arrow-up-circle-line"></i> Upgrade to Hobby
                               </button>
                             </div>
                           </div>
@@ -1884,7 +1978,7 @@ def pytest_sessionfinish(session, exitstatus):
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#6366F1]"></div>
                           </div>
                         ) : (
-                          <div className={`${!isStarterOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
+                          <div className={`${!isHobbyOrHigher ? 'opacity-50 pointer-events-none' : ''}`}>
                             {/* Connected status card */}
                             {jiraSavedDomain && (
                               <div className="flex items-center gap-3 p-3 mb-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-[0.625rem]">
@@ -1931,7 +2025,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   }}
                                   placeholder="your-domain.atlassian.net"
                                   className="flex-1 px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
-                                  disabled={!isStarterOrHigher || isJiraLocked}
+                                  disabled={!isHobbyOrHigher || isJiraLocked}
                                 />
                               </div>
                               <p className="text-[0.6875rem] text-[#94A3B8] mt-1">e.g. your-domain.atlassian.net</p>
@@ -1949,7 +2043,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   onChange={(e) => setJiraSettings({ ...jiraSettings, email: e.target.value })}
                                   placeholder="your-email@example.com"
                                   className="w-full px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
-                                  disabled={!isStarterOrHigher || isJiraLocked}
+                                  disabled={!isHobbyOrHigher || isJiraLocked}
                                 />
                                 <p className="text-[0.6875rem] text-[#94A3B8] mt-1">Your Jira account email address</p>
                               </div>
@@ -1964,13 +2058,13 @@ def pytest_sessionfinish(session, exitstatus):
                                     onChange={(e) => setJiraSettings({ ...jiraSettings, apiToken: e.target.value })}
                                     placeholder="Enter your Jira API token"
                                     className="w-full px-3 py-2 pr-9 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem]"
-                                    disabled={!isStarterOrHigher || isJiraLocked}
+                                    disabled={!isHobbyOrHigher || isJiraLocked}
                                   />
                                   <button
                                     type="button"
                                     onClick={() => setShowApiToken(!showApiToken)}
                                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] cursor-pointer"
-                                    disabled={!isStarterOrHigher || isJiraLocked}
+                                    disabled={!isHobbyOrHigher || isJiraLocked}
                                   >
                                     <i className={`${showApiToken ? 'ri-eye-off-line' : 'ri-eye-line'} text-base`}></i>
                                   </button>
@@ -1996,7 +2090,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   value={jiraSettings.issueType}
                                   onChange={(e) => setJiraSettings({ ...jiraSettings, issueType: e.target.value })}
                                   className="w-[200px] px-3 py-2 border border-[#E2E8F0] rounded-md bg-[#F8FAFC] focus:outline-none focus:border-[#C7D2FE] text-[0.8125rem] cursor-pointer"
-                                  disabled={!isStarterOrHigher || isJiraLocked}
+                                  disabled={!isHobbyOrHigher || isJiraLocked}
                                 >
                                   <option value="Bug">Bug</option>
                                   <option value="Task">Task</option>
@@ -2005,14 +2099,14 @@ def pytest_sessionfinish(session, exitstatus):
                                 </select>
                                 <button
                                   onClick={handleJiraTestConnection}
-                                  disabled={testing || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher || isJiraLocked}
+                                  disabled={testing || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isHobbyOrHigher || isJiraLocked}
                                   className="inline-flex items-center gap-[0.3125rem] px-4 py-[0.4375rem] border border-[#E2E8F0] bg-white text-[#475569] rounded-md hover:bg-[#F8FAFC] transition-colors text-[0.8125rem] font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   {testing ? <><i className="ri-loader-4-line animate-spin"></i>Testing...</> : <><i className="ri-link"></i>Test Connection</>}
                                 </button>
                                 <button
                                   onClick={handleSaveJiraSettings}
-                                  disabled={saving || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isStarterOrHigher || isJiraLocked}
+                                  disabled={saving || !jiraSettings.domain || !jiraSettings.email || !jiraSettings.apiToken || !isHobbyOrHigher || isJiraLocked}
                                   className="inline-flex items-center gap-[0.3125rem] px-4 py-[0.4375rem] bg-[#6366F1] text-white rounded-md hover:bg-[#4F46E5] transition-colors text-[0.8125rem] font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                                   style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
                                 >
@@ -2029,7 +2123,7 @@ def pytest_sessionfinish(session, exitstatus):
                               <select
                                 value={jiraSettings.autoCreateOnFailure}
                                 onChange={(e) => setJiraSettings({ ...jiraSettings, autoCreateOnFailure: e.target.value })}
-                                disabled={!isStarterOrHigher || isJiraLocked}
+                                disabled={!isHobbyOrHigher || isJiraLocked}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <option value="disabled">Disabled (manual only)</option>
@@ -2149,7 +2243,7 @@ def pytest_sessionfinish(session, exitstatus):
                                   <h4 className="text-sm font-semibold text-gray-900">Field Mapping</h4>
                                   <button
                                     onClick={handleFetchJiraFields}
-                                    disabled={fetchingFields || !jiraSettings.apiToken || !isStarterOrHigher}
+                                    disabled={fetchingFields || !jiraSettings.apiToken || !isHobbyOrHigher}
                                     className="text-xs font-medium px-3 py-1.5 rounded-md border border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     {fetchingFields ? <><i className="ri-loader-4-line animate-spin mr-1" />Fetching...</> : <><i className="ri-refresh-line mr-1" />Fetch Jira Fields</>}
@@ -2203,7 +2297,7 @@ def pytest_sessionfinish(session, exitstatus):
                                     </button>
                                   </div>
                                 ))}
-                                <button onClick={addFieldMapping} disabled={!isStarterOrHigher} className="text-xs text-indigo-600 font-medium mt-1 cursor-pointer disabled:opacity-50">
+                                <button onClick={addFieldMapping} disabled={!isHobbyOrHigher} className="text-xs text-indigo-600 font-medium mt-1 cursor-pointer disabled:opacity-50">
                                   + Add Custom Field Mapping
                                 </button>
                               </div>
@@ -2241,18 +2335,18 @@ def pytest_sessionfinish(session, exitstatus):
                           <h3 className="text-[0.9375rem] font-bold text-[#0F172A] flex items-center gap-2">
                             <i className="ri-webhook-fill text-[#F59E0B]"></i> Slack &amp; Teams Webhooks
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold">
-                              <i className="ri-star-line"></i> Starter+
+                              <i className="ri-seedling-line"></i> Hobby+
                             </span>
                           </h3>
-                          {!isStarterOrHigher && (
+                          {!isHobbyOrHigher && (
                             <span className="px-2.5 py-0.5 bg-[#FEF9C3] text-[#854D0E] border border-[#FDE68A] rounded-full text-[0.625rem] font-semibold flex items-center gap-1">
-                              <i className="ri-star-line"></i> Requires Starter or above
+                              <i className="ri-star-line"></i> Requires Hobby or above
                             </span>
                           )}
                         </div>
                         <p className="text-[0.8125rem] text-[#64748B] mb-5">Send real-time notifications to Slack or Microsoft Teams when events occur in your projects.</p>
 
-                        {!isStarterOrHigher && (
+                        {!isHobbyOrHigher && (
                           <div className="mb-4 p-4 border border-[#FDE68A] rounded-[0.75rem] flex items-start gap-3" style={{ background: 'linear-gradient(to right,#FEF9C3,#FEF3C7)' }}>
                             <div className="w-10 h-10 bg-[#FEF08A] rounded-[0.5rem] flex items-center justify-center flex-shrink-0">
                               <i className="ri-lock-line text-[#CA8A04]" style={{ fontSize: '1.25rem' }}></i>
@@ -2260,14 +2354,14 @@ def pytest_sessionfinish(session, exitstatus):
                             <div className="flex-1">
                               <div className="text-[0.8125rem] font-semibold text-[#0F172A] mb-1">Slack &amp; Teams Integration is available on Starter and above</div>
                               <div className="text-[0.75rem] text-[#64748B] mb-2.5">Get real-time notifications in Slack or Microsoft Teams when test runs complete, milestones change, and more.</div>
-                              <button onClick={() => handleUpgrade('Starter')} className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#CA8A04' }}>
-                                <i className="ri-arrow-up-circle-line"></i> Upgrade to Starter
+                              <button onClick={() => handleUpgrade('Hobby')} className="inline-flex items-center gap-1.5 text-[0.75rem] font-semibold px-3.5 py-[0.375rem] rounded-[0.375rem] text-white cursor-pointer" style={{ background: '#059669' }}>
+                                <i className="ri-arrow-up-circle-line"></i> Upgrade to Hobby
                               </button>
                             </div>
                           </div>
                         )}
 
-                        {isStarterOrHigher && (
+                        {isHobbyOrHigher && (
                           <div className={loadingWebhooks ? 'opacity-50 pointer-events-none' : ''}>
                             <div className="flex items-center justify-between mb-4">
                               <span className="text-[0.8125rem] text-[#64748B]">{webhooks.length} webhook{webhooks.length !== 1 ? 's' : ''} configured across all projects</span>

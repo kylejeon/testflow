@@ -7,10 +7,11 @@ interface CreateProjectModalProps {
 }
 
 const TIER_LIMITS = {
-  1: { maxProjects: 3, maxMembers: 3 },
-  2: { maxProjects: 10, maxMembers: 5 },
-  3: { maxProjects: Infinity, maxMembers: 20 },
-  4: { maxProjects: Infinity, maxMembers: Infinity },
+  1: { maxProjects: 1,        maxMembers: 2        }, // Free
+  2: { maxProjects: 3,        maxMembers: 5        }, // Hobby
+  3: { maxProjects: 10,       maxMembers: 5        }, // Starter
+  4: { maxProjects: Infinity, maxMembers: 20       }, // Professional
+  5: { maxProjects: Infinity, maxMembers: Infinity }, // Enterprise
 };
 
 const TEMPLATES = [

@@ -5,12 +5,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Tier numbering: 1=Free, 2=Hobby($19), 3=Starter($49), 4=Professional($99),
+//                 5=Enterprise S($249), 6=Enterprise M($499), 7=Enterprise L(Custom)
 function variantToTier(variantId: number): number {
   const map: Record<number, number> = {
-    935688: 2, 935691: 2,   // Starter
-    935695: 3, 935696: 3,   // Professional
-    935705: 4, 935708: 4,   // Enterprise S
-    935714: 5, 935716: 5,   // Enterprise M
+    // Hobby ($19) — set variant IDs after creating in Lemon Squeezy dashboard
+    // 999901: 2, 999902: 2,   // Hobby (placeholder)
+    935688: 3, 935691: 3,   // Starter
+    935695: 4, 935696: 4,   // Professional
+    935705: 5, 935708: 5,   // Enterprise S
+    935714: 6, 935716: 6,   // Enterprise M
   };
   return map[variantId] ?? 1;
 }

@@ -23,14 +23,16 @@ interface AdminSubscriptionChartProps {
 
 const TIER_COLORS: Record<number, string> = {
   1: '#94a3b8',
-  2: '#fbbf24',
-  3: '#6366F1',
+  2: '#10b981',
+  3: '#fbbf24',
+  4: '#6366F1',
 };
 
 const TIER_BG: Record<number, string> = {
   1: 'bg-slate-100 text-slate-600',
-  2: 'bg-yellow-100 text-yellow-700',
-  3: 'bg-indigo-100 text-indigo-700',
+  2: 'bg-emerald-100 text-emerald-700',
+  3: 'bg-yellow-100 text-yellow-700',
+  4: 'bg-indigo-100 text-indigo-700',
 };
 
 const CustomTooltip = ({ active, payload }: any) => {
@@ -54,9 +56,10 @@ export default function AdminSubscriptionChart({
   loading = false,
 }: AdminSubscriptionChartProps) {
   const allTiers = [
-    { tier: 1, tier_name: 'Free', user_count: 0 },
-    { tier: 2, tier_name: 'Starter', user_count: 0 },
-    { tier: 3, tier_name: 'Professional', user_count: 0 },
+    { tier: 1, tier_name: 'Free',         user_count: 0 },
+    { tier: 2, tier_name: 'Hobby',        user_count: 0 },
+    { tier: 3, tier_name: 'Starter',      user_count: 0 },
+    { tier: 4, tier_name: 'Professional', user_count: 0 },
   ].map((t) => {
     const found = data.find((d) => d.tier === t.tier);
     return found ? { ...t, user_count: found.user_count } : t;
@@ -95,7 +98,7 @@ export default function AdminSubscriptionChart({
           </BarChart>
         </ResponsiveContainer>
       )}
-      <div className="grid grid-cols-3 gap-2 mt-4">
+      <div className="grid grid-cols-4 gap-2 mt-4">
         {allTiers.map((tier) => {
           const pct = totalUsers > 0 ? Math.round((tier.user_count / totalUsers) * 100) : 0;
           return (

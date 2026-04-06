@@ -9,24 +9,51 @@ const plans = [
     name: 'Free',
     price: '$0',
     period: 'forever',
-    description: 'Perfect for solo testers and small evaluation teams',
-    members: '3 members',
-    ai: '5 AI / month',
+    description: 'Perfect for solo testers getting started',
+    members: '2 members',
+    ai: '3 AI / month',
     features: [
-      'Up to 3 projects',
-      'Up to 3 members',
+      '1 project',
+      'Up to 2 members',
+      'Up to 100 test cases / project',
       'Test case management',
-      'Test runs & milestones',
+      'Test runs & milestones (10 / month)',
       'TC Versioning',
-      'Export/Import CSV',
       'Suggest Edge Cases (AI)',
-      'Jira integration',
-      '5 AI generations / month',
+      'Jira integration (read-only)',
+      '3 AI generations / month',
       'Community support',
     ],
     cta: 'Get Started Free',
     highlighted: false,
     icon: 'ri-user-line',
+    popular: '',
+  },
+  {
+    name: 'Hobby',
+    price: '$19',
+    period: '/ month',
+    description: 'For individuals and small teams ramping up',
+    members: '5 members',
+    ai: '15 AI / month',
+    features: [
+      'Up to 3 projects',
+      'Up to 5 members',
+      'Up to 200 test cases / project',
+      'Test case management',
+      'Test runs & milestones',
+      'TC Versioning',
+      'Export/Import CSV',
+      'Jira integration (full)',
+      'Suggest Edge Cases (AI)',
+      '15 AI generations / month',
+      'RTM / Traceability',
+      'Steps Library (10 steps)',
+      'Community support',
+    ],
+    cta: 'Start Free Trial',
+    highlighted: false,
+    icon: 'ri-seedling-line',
     popular: '',
   },
   {
@@ -39,6 +66,7 @@ const plans = [
     features: [
       'Up to 10 projects',
       'Up to 5 members',
+      'Unlimited test cases',
       'Test case management',
       'Test runs & milestones',
       'TC Versioning',
@@ -71,6 +99,7 @@ const plans = [
     features: [
       'Unlimited projects',
       'Up to 20 members',
+      'Unlimited test cases',
       'Test case management',
       'Test runs & milestones',
       'TC Versioning',
@@ -192,29 +221,30 @@ const enterpriseTiers = [
 ];
 
 const comparisonRows = [
-  { feature: 'Projects', free: '3', starter: '10', pro: 'Unlimited', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
-  { feature: 'Team members', free: '3', starter: '5', pro: '20', entS: '21–50', entM: '51–100', entL: '100+' },
-  { feature: 'AI generations / month', free: '5', starter: '30', pro: '150', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
-  { feature: 'Test case management', free: true, starter: true, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'Test runs & milestones', free: true, starter: true, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'TC Versioning', free: true, starter: true, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'Export/Import CSV', free: true, starter: true, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'Suggest Edge Cases (AI)', free: true, starter: true, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'Jira integration', free: true, starter: true, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'Slack & Teams', free: false, starter: true, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'AI Run Summary', free: false, starter: true, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'Flaky Detection AI', free: false, starter: true, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'Coverage Gap Analysis', free: false, starter: true, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'AI Insights Panel', free: false, starter: true, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'RTM', free: false, starter: '50 entries', pro: 'Unlimited', entS: 'Audit + Jira sync', entM: 'Audit + Jira sync', entL: 'Audit + Jira sync' },
-  { feature: 'Steps Library', free: false, starter: '20 steps', pro: 'Unlimited', entS: 'Full history', entM: 'Full history', entL: 'Full history' },
-  { feature: 'CI/CD integration', free: false, starter: false, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'Test Automation Framework SDK', free: false, starter: false, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'Advanced reporting', free: false, starter: false, pro: true, entS: true, entM: true, entL: true },
-  { feature: 'Dedicated support', free: false, starter: false, pro: false, entS: true, entM: true, entL: true },
-  { feature: 'SLA guarantee', free: false, starter: false, pro: false, entS: true, entM: true, entL: true },
-  { feature: 'Custom contract & SLA', free: false, starter: false, pro: false, entS: false, entM: false, entL: true },
-  { feature: 'Dedicated infrastructure', free: false, starter: false, pro: false, entS: false, entM: false, entL: true },
+  { feature: 'Projects', free: '1', hobby: '3', starter: '10', pro: 'Unlimited', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
+  { feature: 'Team members', free: '2', hobby: '5', starter: '5', pro: '20', entS: '21–50', entM: '51–100', entL: '100+' },
+  { feature: 'Test cases / project', free: '100', hobby: '200', starter: 'Unlimited', pro: 'Unlimited', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
+  { feature: 'AI generations / month', free: '3', hobby: '15', starter: '30', pro: '150', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
+  { feature: 'Test runs / month', free: '10', hobby: 'Unlimited', starter: 'Unlimited', pro: 'Unlimited', entS: 'Unlimited', entM: 'Unlimited', entL: 'Unlimited' },
+  { feature: 'Test case management', free: true, hobby: true, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'TC Versioning', free: true, hobby: true, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Suggest Edge Cases (AI)', free: true, hobby: true, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Jira integration', free: 'Read-only', hobby: 'Full', starter: 'Full', pro: 'Full', entS: 'Full', entM: 'Full', entL: 'Full' },
+  { feature: 'Export/Import CSV', free: false, hobby: true, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'RTM / Traceability', free: false, hobby: '30 entries', starter: '50 entries', pro: 'Unlimited', entS: 'Audit + Jira sync', entM: 'Audit + Jira sync', entL: 'Audit + Jira sync' },
+  { feature: 'Steps Library', free: false, hobby: '10 steps', starter: '20 steps', pro: 'Unlimited', entS: 'Full history', entM: 'Full history', entL: 'Full history' },
+  { feature: 'Slack & Teams', free: false, hobby: false, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'AI Run Summary', free: false, hobby: false, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Flaky Detection AI', free: false, hobby: false, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Coverage Gap Analysis', free: false, hobby: false, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'AI Insights Panel', free: false, hobby: false, starter: true, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'CI/CD integration', free: false, hobby: false, starter: false, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Test Automation Framework SDK', free: false, hobby: false, starter: false, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Advanced reporting', free: false, hobby: false, starter: false, pro: true, entS: true, entM: true, entL: true },
+  { feature: 'Dedicated support', free: false, hobby: false, starter: false, pro: false, entS: true, entM: true, entL: true },
+  { feature: 'SLA guarantee', free: false, hobby: false, starter: false, pro: false, entS: true, entM: true, entL: true },
+  { feature: 'Custom contract & SLA', free: false, hobby: false, starter: false, pro: false, entS: false, entM: false, entL: true },
+  { feature: 'Dedicated infrastructure', free: false, hobby: false, starter: false, pro: false, entS: false, entM: false, entL: true },
 ];
 
 const faqs = [
@@ -232,7 +262,7 @@ const faqs = [
   },
   {
     q: 'Is there a free trial?',
-    a: 'Yes. All paid plans include a 14-day free trial with full access to every feature. No credit card required.',
+    a: 'Yes. All paid plans include a 14-day free trial. Free plan users can also try the Starter plan free for 14 days directly from Settings > Billing. No credit card required.',
   },
   {
     q: 'Do you offer annual billing?',
@@ -301,8 +331,8 @@ export default function PricingPage() {
         {/* Plan Cards */}
         <section className="py-16 bg-gray-50">
           <div className="max-w-5xl mx-auto px-6">
-            {/* Free / Starter / Professional */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-5 items-start mb-6">
+            {/* Free / Hobby / Starter / Professional */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 items-start mb-6">
               {plans.map((plan) => (
                 <article
                   key={plan.name}
@@ -449,8 +479,12 @@ export default function PricingPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left px-6 py-4 font-semibold text-gray-700 w-1/4">Feature</th>
+                    <th className="text-left px-6 py-4 font-semibold text-gray-700 w-1/5">Feature</th>
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">Free</th>
+                    <th className="text-center px-4 py-4 font-semibold text-emerald-600">
+                      <div>Hobby</div>
+                      <div className="text-xs font-normal text-emerald-400">$19/mo</div>
+                    </th>
                     <th className="text-center px-4 py-4 font-semibold text-gray-700">
                       <div>Starter</div>
                       <div className="text-xs font-normal text-gray-400">$49/mo · $499/yr</div>
@@ -477,8 +511,8 @@ export default function PricingPage() {
                   {comparisonRows.map((row, i) => (
                     <tr key={row.feature} className={`border-b border-gray-50 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                       <td className="px-6 py-3.5 text-gray-700 font-medium">{row.feature}</td>
-                      {(['free', 'starter', 'pro', 'entS', 'entM', 'entL'] as const).map((col) => {
-                        const val = row[col];
+                      {(['free', 'hobby', 'starter', 'pro', 'entS', 'entM', 'entL'] as const).map((col) => {
+                        const val = (row as any)[col];
                         return (
                           <td key={col} className={`text-center px-4 py-3.5 ${col === 'pro' ? 'bg-indigo-50/50' : ''}`}>
                             {typeof val === 'boolean' ? (

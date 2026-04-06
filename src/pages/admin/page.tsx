@@ -149,16 +149,17 @@ export default function AdminPage() {
       const tierCountMap: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
       const tierNameMap: Record<number, string> = {
         1: 'Free',
-        2: 'Starter',
-        3: 'Professional',
+        2: 'Hobby',
+        3: 'Starter',
+        4: 'Professional',
       };
       (subscriptionRaw || []).forEach((row: any) => {
         const tier = Number(row.subscription_tier) || 1;
-        if (tier >= 1 && tier <= 3) {
+        if (tier >= 1 && tier <= 4) {
           tierCountMap[tier] = (tierCountMap[tier] || 0) + 1;
         }
       });
-      const computedDist: SubscriptionRow[] = [1, 2, 3].map((tier) => ({
+      const computedDist: SubscriptionRow[] = [1, 2, 3, 4].map((tier) => ({
         tier,
         tier_name: tierNameMap[tier],
         user_count: tierCountMap[tier],

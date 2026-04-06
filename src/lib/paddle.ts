@@ -30,7 +30,12 @@ export async function getPaddle(): Promise<Paddle | null> {
 }
 
 // Maps plan name + billing period → Paddle Price ID
+// Hobby price IDs must be created in the Paddle dashboard and set here
 export const PADDLE_PRICE_IDS: Record<string, Record<'monthly' | 'annual', string>> = {
+  Hobby: {
+    monthly: 'PADDLE_HOBBY_MONTHLY_PRICE_ID', // TODO: replace with real Paddle price ID
+    annual:  'PADDLE_HOBBY_ANNUAL_PRICE_ID',  // TODO: replace with real Paddle price ID
+  },
   Starter: {
     monthly: 'pri_01kmfhvvyvrqzjhbzzmdy27szb',
     annual: 'pri_01kmfhx9p3qb6m4v3m1zqde7td',

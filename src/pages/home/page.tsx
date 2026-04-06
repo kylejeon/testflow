@@ -32,7 +32,7 @@ const content = {
       { value: '10x', label: 'Faster test execution' },
       { value: '<5min', label: 'Setup to first test run' },
       { value: 'Jira', label: 'Two-way sync built-in' },
-      { value: 'Free', label: 'Up to 3 projects forever' },
+      { value: 'Free', label: 'Up to 1 project forever' },
     ],
     featuresSection: {
       badge: 'Core Features',
@@ -220,7 +220,7 @@ const content = {
       {
         icon: 'ri-gift-line',
         title: 'Free Forever Plan',
-        content: 'Unlimited test cases, 3 projects, 3 team members. No credit card, no trial expiration.',
+        content: '1 project, 2 team members, 100 TCs/project, 3 AI/month. No credit card, no expiration.',
       },
       {
         icon: 'ri-arrow-left-right-line',
@@ -242,11 +242,20 @@ const content = {
     pricingPlans: [
       {
         name: 'Free', planColor: '#10B981', price: '$0', period: 'forever',
-        users: 'Up to 3 users · forever free',
+        users: 'Up to 2 users · forever free',
         description: 'Perfect for small teams getting started',
-        features: ['Up to 3 projects', 'Test case management', 'Test runs & execution', 'TC Versioning', 'Export/Import CSV', 'Suggest Edge Cases (AI)', 'Jira integration', '5 AI generations / month', 'Community support'],
+        features: ['1 project', 'Up to 100 TCs / project', 'Test case management', 'Test runs (10 / month)', 'TC Versioning', 'Jira (read-only)', '3 AI generations / month', 'Community support'],
         cta: 'Get Started Free', ctaVariant: 'outline', aiFeatureIdx: 6,
         highlighted: false, icon: 'ri-user-line', popular: '',
+      },
+      {
+        name: 'Hobby', planColor: '#10B981', price: '$19', period: '/ month',
+        annualMonthly: 16.15, annualTotal: 194,
+        users: 'Up to 5 users',
+        description: 'For indie devs and small side projects',
+        features: ['3 projects', 'Up to 200 TCs / project', 'Test case management', 'Unlimited test runs', 'TC Versioning', 'Export/Import CSV', 'Jira full integration', 'RTM / Traceability', 'Steps Library (10 steps)', '15 AI generations / month', 'Community support'],
+        cta: 'Get Started', ctaVariant: 'outline', aiFeatureIdx: 9,
+        highlighted: false, icon: 'ri-seedling-line', popular: '',
       },
       {
         name: 'Starter', planColor: '#818CF8', price: '$49', period: '/ month',
@@ -312,7 +321,7 @@ const content = {
     faqs: [
       {
         question: 'What are the limits of the Free plan?',
-        answer: 'The Free plan lets you create up to 3 projects with up to 3 team members. You get access to core features including test case management, test runs, milestones, and Jira integration, plus 5 AI generations per month. There is no limit on the number of test cases within your projects.',
+        answer: 'The Free plan lets you create 1 project with up to 2 team members. You get 100 test cases per project, up to 10 test runs per month, Jira read-only access, and 3 AI generations per month. CSV export and Shared Steps are not available on Free — upgrade to Hobby or higher for those features.',
       },
       {
         question: 'How do I integrate Testably with Jira?',
@@ -336,7 +345,7 @@ const content = {
       },
       {
         question: 'Can I export test results and reports?',
-        answer: 'Yes. You can export test cases to CSV/Excel format and export test run results as detailed reports. The export includes all result statuses, assignee info, comments, and timestamps. This is available on all plans including Free.',
+        answer: 'Yes. You can export test cases to CSV/Excel format and export test run results as detailed reports. The export includes all result statuses, assignee info, comments, and timestamps. CSV export is available on Hobby and above — Free plan users cannot export to CSV.',
       },
       {
         question: 'Can I change or cancel my plan at any time?',
@@ -434,7 +443,7 @@ const content = {
       { value: '10x', label: '빠른 테스트 실행' },
       { value: '<5min', label: '첫 테스트까지 설정 시간' },
       { value: 'Jira', label: '양방향 동기화 기본 내장' },
-      { value: 'Free', label: '프로젝트 3개 영구 무료' },
+      { value: 'Free', label: '프로젝트 1개 영구 무료' },
     ],
     featuresSection: {
       badge: '핵심 기능',
@@ -622,7 +631,7 @@ const content = {
       {
         icon: 'ri-gift-line',
         title: '영구 무료 플랜',
-        content: '무제한 테스트 케이스, 프로젝트 3개, 팀 멤버 3명. 신용카드 없이, 체험 기간 만료 없이 사용하세요.',
+        content: '프로젝트 1개, 팀 멤버 2명, TC 100개/프로젝트, AI 3회/월. 신용카드 없이, 체험 기간 만료 없이 사용하세요.',
       },
       {
         icon: 'ri-arrow-left-right-line',
@@ -644,11 +653,20 @@ const content = {
     pricingPlans: [
       {
         name: 'Free', planColor: '#10B981', price: '$0', period: '영구 무료',
-        users: '최대 3명 · 영구 무료',
+        users: '최대 2명 · 영구 무료',
         description: '소규모 팀을 위한 기본 기능',
-        features: ['프로젝트 3개까지', '기본 테스트 관리', '테스트 실행', 'TC 버전 관리', 'CSV 내보내기/가져오기', '엣지 케이스 제안 (AI)', 'Jira 연동', 'AI 생성 5회/월', '커뮤니티 지원'],
+        features: ['프로젝트 1개', 'TC 최대 100개/프로젝트', '기본 테스트 관리', '테스트 실행 (월 10회)', 'TC 버전 관리', 'Jira 연동 (읽기 전용)', 'AI 생성 3회/월', '커뮤니티 지원'],
         cta: '무료로 시작하기', ctaVariant: 'outline', aiFeatureIdx: 6,
         highlighted: false, icon: 'ri-user-line', popular: '',
+      },
+      {
+        name: 'Hobby', planColor: '#10B981', price: '$19', period: '/ 월',
+        annualMonthly: 16.15, annualTotal: 194,
+        users: '최대 5명',
+        description: '개인 개발자 및 소규모 사이드 프로젝트',
+        features: ['프로젝트 3개', 'TC 최대 200개/프로젝트', '기본 테스트 관리', '테스트 실행 무제한', 'TC 버전 관리', 'CSV 내보내기/가져오기', 'Jira 연동 (전체)', 'RTM / 추적성', '공유 스텝 (10개)', 'AI 생성 15회/월', '커뮤니티 지원'],
+        cta: '시작하기', ctaVariant: 'outline', aiFeatureIdx: 9,
+        highlighted: false, icon: 'ri-seedling-line', popular: '',
       },
       {
         name: 'Starter', planColor: '#818CF8', price: '$49', period: '/ 월',
@@ -714,7 +732,7 @@ const content = {
     faqs: [
       {
         question: '무료 플랜의 제한은 무엇인가요?',
-        answer: '무료 플랜에서는 최대 3개의 프로젝트를 생성하고, 최대 3명의 팀원을 초대할 수 있습니다. 테스트 케이스 관리, 테스트 실행, 마일스톤, Jira 연동 등 핵심 기능과 AI 생성 월 5회가 포함됩니다. 프로젝트 내 테스트 케이스 수에는 제한이 없습니다.',
+        answer: '무료 플랜에서는 프로젝트 1개, 팀원 최대 2명, 프로젝트당 TC 100개, 월 테스트 실행 10회, Jira 읽기 전용 연동, AI 생성 월 3회가 제공됩니다. CSV 내보내기와 Shared Steps는 무료 플랜에서 사용할 수 없으며, Hobby 이상으로 업그레이드하면 이용 가능합니다.',
       },
       {
         question: 'Jira 연동은 어떻게 하나요?',
@@ -738,7 +756,7 @@ const content = {
       },
       {
         question: '테스트 결과와 리포트를 내보낼 수 있나요?',
-        answer: '네. 테스트 케이스를 CSV/Excel 형식으로 내보내고 테스트 실행 결과를 상세 리포트로 내보낼 수 있습니다. 내보내기에는 모든 결과 상태, 담당자 정보, 댓글, 타임스탬프가 포함됩니다. 무료 플랜을 포함한 모든 플랜에서 사용 가능합니다.',
+        answer: '네. 테스트 케이스를 CSV/Excel 형식으로 내보내고 테스트 실행 결과를 상세 리포트로 내보낼 수 있습니다. 내보내기에는 모든 결과 상태, 담당자 정보, 댓글, 타임스탬프가 포함됩니다. CSV 내보내기는 Hobby 이상 플랜에서 사용 가능합니다 (무료 플랜 미지원).',
       },
       {
         question: '언제든지 플랜을 변경하거나 취소할 수 있나요?',

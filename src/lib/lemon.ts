@@ -1,5 +1,7 @@
 // Lemon Squeezy Variant ID 매핑
+// Hobby variant IDs must be created in the Lemon Squeezy dashboard and set here
 export const LEMON_VARIANT_IDS: Record<string, Record<'monthly' | 'annual', number>> = {
+  Hobby:          { monthly: 0, annual: 0 }, // TODO: replace with real Lemon Squeezy variant IDs
   Starter:        { monthly: 935688, annual: 935691 },
   Professional:   { monthly: 935695, annual: 935696 },
   'Enterprise S': { monthly: 935705, annual: 935708 },

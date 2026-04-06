@@ -12,7 +12,7 @@ export default function TierGate({ requiredTier, currentTier, featureName, child
     return <>{children}</>;
   }
 
-  const tierLabel = requiredTier >= 3 ? 'Professional' : 'Starter';
+  const tierLabel = requiredTier >= 4 ? 'Professional' : requiredTier >= 3 ? 'Starter' : 'Hobby';
 
   return (
     <div className="relative rounded-xl overflow-hidden">

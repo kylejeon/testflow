@@ -182,7 +182,8 @@ const btnPrimary = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text
 const btnSecondary = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer`;
 const fieldCls = `border border-slate-200 rounded-lg text-xs text-slate-700 px-2.5 py-1.5 bg-white focus:outline-none focus:border-indigo-400 transition-colors`;
 
-// Tier: 1=Free, 2=Starter, 3=Professional, 4=Enterprise
+// Tier: 1=Free, 2=Hobby, 3=Starter, 4=Professional, 5+=Enterprise
+const SHARED_STEPS_LIMIT_HOBBY   = 10;
 const SHARED_STEPS_LIMIT_STARTER = 20;
 
 // ── Delete confirmation modal ─────────────────────────────────────────────────
@@ -493,7 +494,9 @@ export default function ProjectSharedSteps() {
     return list;
   }, [sharedSteps, categoryFilter, search]);
 
-  const isStarterLimitReached = tier === 2 && sharedSteps.length >= SHARED_STEPS_LIMIT_STARTER;
+  const isHobbyLimitReached   = tier === 2 && sharedSteps.length >= SHARED_STEPS_LIMIT_HOBBY;
+  const isStarterLimitReached = tier === 3 && sharedSteps.length >= SHARED_STEPS_LIMIT_STARTER;
+  const isPlanLimitReached    = isHobbyLimitReached || isStarterLimitReached;
 
   // Delete handler
   const handleDeleteClick = async (step: SharedTestStep) => {
@@ -651,13 +654,17 @@ export default function ProjectSharedSteps() {
             </button>
             <button
               onClick={() => {
-                if (isStarterLimitReached) return;
+                if (isPlanLimitReached) return;
                 setEditStep(null);
                 setShowCreateModal(true);
               }}
-              disabled={isStarterLimitReached}
-              className={`${btnPrimary} ${isStarterLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
-              title={isStarterLimitReached ? `Starter plan limit: ${SHARED_STEPS_LIMIT_STARTER} shared steps` : undefined}
+              disabled={isPlanLimitReached}
+              className={`${btnPrimary} ${isPlanLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={
+                isHobbyLimitReached   ? `Hobby plan limit: ${SHARED_STEPS_LIMIT_HOBBY} shared steps` :
+                isStarterLimitReached ? `Starter plan limit: ${SHARED_STEPS_LIMIT_STARTER} shared steps` :
+                undefined
+              }
             >
               <i className="ri-add-line" />
               New Shared Step
@@ -665,8 +672,26 @@ export default function ProjectSharedSteps() {
           </div>
         </div>
 
-        {/* Starter limit banner */}
-        {tier === 2 && sharedSteps.length >= Math.floor(SHARED_STEPS_LIMIT_STARTER * 0.8) && (
+        {/* Plan limit banners */}
+        {tier === 2 && sharedSteps.length >= Math.floor(SHARED_STEPS_LIMIT_HOBBY * 0.8) && (
+          <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border mb-4 text-sm ${
+            isHobbyLimitReached
+              ? 'bg-red-50 border-red-200 text-red-700'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+          }`}>
+            <i className={`ri-information-line text-lg flex-shrink-0 ${isHobbyLimitReached ? 'text-red-500' : 'text-emerald-500'}`} />
+            <div className="flex-1">
+              {isHobbyLimitReached
+                ? <><strong>Limit reached.</strong> Hobby plan allows up to {SHARED_STEPS_LIMIT_HOBBY} shared steps.</>
+                : <><strong>{sharedSteps.length} / {SHARED_STEPS_LIMIT_HOBBY}</strong> shared steps used on Hobby plan.</>
+              }
+            </div>
+            <Link to="/settings?tab=billing" className={`text-xs font-semibold underline ${isHobbyLimitReached ? 'text-red-700' : 'text-emerald-700'}`}>
+              Upgrade to Starter
+            </Link>
+          </div>
+        )}
+        {tier === 3 && sharedSteps.length >= Math.floor(SHARED_STEPS_LIMIT_STARTER * 0.8) && (
           <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border mb-4 text-sm ${
             isStarterLimitReached
               ? 'bg-red-50 border-red-200 text-red-700'
@@ -680,7 +705,7 @@ export default function ProjectSharedSteps() {
               }
             </div>
             <Link to="/settings?tab=billing" className={`text-xs font-semibold underline ${isStarterLimitReached ? 'text-red-700' : 'text-amber-700'}`}>
-              Upgrade
+              Upgrade to Pro
             </Link>
           </div>
         )}

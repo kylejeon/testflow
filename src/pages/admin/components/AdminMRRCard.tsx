@@ -11,31 +11,36 @@ interface AdminMRRCardProps {
   loading?: boolean;
 }
 
+// Tier: 1=Free, 2=Hobby($19), 3=Starter($49), 4=Professional($99), 5+=Enterprise
 const TIER_PRICES: Record<number, number> = {
   1: 0,
-  2: 20,
-  3: 50,
+  2: 19,
+  3: 49,
+  4: 99,
 };
 
 const TIER_COLORS: Record<number, string> = {
   1: '#94a3b8',
-  2: '#fbbf24',
-  3: '#6366F1',
-  4: '#f59e0b',
+  2: '#10b981',
+  3: '#fbbf24',
+  4: '#6366F1',
+  5: '#f59e0b',
 };
 
 const TIER_BG: Record<number, string> = {
   1: 'bg-slate-100 text-slate-600 border-slate-200',
-  2: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-  3: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  4: 'bg-amber-50 text-amber-700 border-amber-200',
+  2: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  3: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  4: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  5: 'bg-amber-50 text-amber-700 border-amber-200',
 };
 
 const TIER_ICON: Record<number, string> = {
   1: 'ri-user-line',
-  2: 'ri-rocket-line',
-  3: 'ri-award-line',
-  4: 'ri-vip-crown-2-line',
+  2: 'ri-seedling-line',
+  3: 'ri-rocket-line',
+  4: 'ri-award-line',
+  5: 'ri-vip-crown-2-line',
 };
 
 function formatCurrency(value: number): string {
@@ -48,9 +53,10 @@ function formatCurrency(value: number): string {
 export default function AdminMRRCard({ data, loading = false }: AdminMRRCardProps) {
   const allTiers = useMemo(() => {
     return [
-      { tier: 1, tier_name: 'Free', user_count: 0 },
-      { tier: 2, tier_name: 'Starter', user_count: 0 },
-      { tier: 3, tier_name: 'Professional', user_count: 0 },
+      { tier: 1, tier_name: 'Free',         user_count: 0 },
+      { tier: 2, tier_name: 'Hobby',        user_count: 0 },
+      { tier: 3, tier_name: 'Starter',      user_count: 0 },
+      { tier: 4, tier_name: 'Professional', user_count: 0 },
     ].map((t) => {
       const found = data.find((d) => d.tier === t.tier);
       const user_count = found ? found.user_count : 0;
@@ -174,7 +180,7 @@ export default function AdminMRRCard({ data, loading = false }: AdminMRRCardProp
 
           {/* Pricing Note */}
           <p className="text-xs text-gray-400 mt-4 text-center">
-            * Starter $20 · Professional $50 기준 산출
+            * Hobby $19 · Starter $49 · Professional $99 기준 산출
           </p>
         </>
       )}

@@ -125,13 +125,13 @@ function UpgradePrompt({ tier }: { tier: number }) {
         <h3 className="text-base font-semibold text-slate-800 mb-1">Requirements Traceability Matrix</h3>
         <p className="text-sm text-slate-500 max-w-sm">
           {tier === 1
-            ? 'View your full requirements-to-test-case matrix. Available on Starter and above.'
+            ? 'View your full requirements-to-test-case matrix. Available on Hobby and above.'
             : 'Read-only matrix view. Upgrade to Professional for full interactive features and export.'}
         </p>
       </div>
       <Link to="/settings?tab=billing" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
         <i className="ri-vip-crown-line" />
-        {tier === 1 ? 'Upgrade to Starter' : 'Upgrade to Professional'}
+        {tier === 1 ? 'Upgrade to Hobby' : 'Upgrade to Professional'}
       </Link>
     </div>
   );
@@ -491,7 +491,7 @@ export default function ProjectTraceability() {
             <p className="text-xs text-slate-500 mt-0.5">Requirements ↔ Test Cases ↔ Results</p>
           </div>
           <div className="flex items-center gap-2">
-            {tier >= 3 && (
+            {tier >= 4 && (
               <>
                 <button className={btnSecondary} onClick={handleExportCSV}>
                   <i className="ri-file-text-line" />
@@ -503,7 +503,7 @@ export default function ProjectTraceability() {
                 </button>
               </>
             )}
-            {tier < 3 && (
+            {tier < 4 && (
               <Link to="/settings?tab=billing" className={`${btnSecondary} text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100`}>
                 <i className="ri-vip-crown-line" />
                 Upgrade for Export
