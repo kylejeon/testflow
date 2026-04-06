@@ -244,8 +244,9 @@ const content = {
         name: 'Free', planColor: '#10B981', price: '$0', period: 'forever',
         users: 'Up to 2 users · forever free',
         description: 'Perfect for small teams getting started',
-        features: ['1 project', 'Up to 100 TCs / project', 'Test case management', 'Test runs (10 / month)', 'TC Versioning', 'Jira (read-only)', '3 AI generations / month', 'Community support'],
-        cta: 'Get Started Free', ctaVariant: 'outline', aiFeatureIdx: 6,
+        basePlan: null,
+        features: ['1 project · 2 members', 'Up to 100 TCs / project', 'Test runs (10 / month)', 'TC Versioning', 'Jira (read-only)', '3 AI generations / month'],
+        cta: 'Get Started Free', ctaVariant: 'outline', aiFeatureIdx: 5,
         highlighted: false, icon: 'ri-user-line', popular: '',
       },
       {
@@ -253,8 +254,9 @@ const content = {
         annualMonthly: 16.15, annualTotal: 194,
         users: 'Up to 5 users',
         description: 'For indie devs and small side projects',
-        features: ['3 projects', 'Up to 200 TCs / project', 'Test case management', 'Unlimited test runs', 'TC Versioning', 'Export/Import CSV', 'Jira full integration', 'RTM / Traceability', 'Steps Library (10 steps)', '15 AI generations / month', 'Community support'],
-        cta: 'Get Started', ctaVariant: 'outline', aiFeatureIdx: 9,
+        basePlan: 'Free',
+        features: ['3 projects · 5 members', 'Up to 200 TCs / project · unlimited runs', 'Export/Import CSV', 'Jira full integration', 'RTM / Traceability (30 entries)', 'Steps Library (10 steps)', '15 AI generations / month'],
+        cta: 'Get Started', ctaVariant: 'outline', aiFeatureIdx: 6,
         highlighted: false, icon: 'ri-seedling-line', popular: '',
       },
       {
@@ -262,7 +264,8 @@ const content = {
         annualMonthly: 41.58, annualTotal: 499,
         users: 'Up to 5 users',
         description: 'For growing teams that need more power',
-        features: ['Up to 10 projects', 'TC Versioning', 'Export/Import CSV', 'Jira integration', 'Slack & Teams integration', 'RTM (50 entries)', 'Steps Library (20 steps)', 'Basic reporting', '30 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Email support', 'Export PDF Report'],
+        basePlan: 'Hobby',
+        features: ['10 projects · unlimited TCs', 'Slack & Teams integration', 'RTM (50 entries) · Steps Library (20 steps)', 'AI Run Summary · Flaky Detection AI', 'Coverage Gap Analysis · AI Insights Panel', 'Basic reporting · email support', '30 AI generations / month'],
         cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 6,
         highlighted: false, icon: 'ri-star-line', popular: '',
       },
@@ -271,8 +274,9 @@ const content = {
         annualMonthly: 84.17, annualTotal: 1010,
         users: 'Up to 20 users',
         description: 'Full-featured for professional QA teams',
-        features: ['Unlimited projects', 'TC Versioning', 'Export/Import CSV', 'Jira integration', 'Slack & Teams integration', 'RTM (Unlimited)', 'Steps Library (Unlimited)', 'Advanced reporting', 'CI/CD Integration', 'Test Automation Framework SDK', '150 AI generations / month', 'AI Run Summary', 'Flaky Detection AI', 'Coverage Gap Analysis', 'Suggest Edge Cases (AI)', 'AI Insights Panel', 'Priority support', 'Export PDF Report'],
-        cta: 'Start Free Trial', ctaVariant: 'filled', aiFeatureIdx: 8,
+        basePlan: 'Starter',
+        features: ['Unlimited projects · up to 20 members', 'RTM (Unlimited) · Steps Library (Unlimited)', 'CI/CD Integration', 'Test Automation Framework SDK', 'Advanced reporting · priority support', '150 AI generations / month'],
+        cta: 'Start Free Trial', ctaVariant: 'filled', aiFeatureIdx: 5,
         highlighted: true, icon: 'ri-vip-crown-line', popular: 'Most Popular',
       },
       {
@@ -280,8 +284,9 @@ const content = {
         annualMonthly: 211.67, annualTotal: 2540,
         users: '21–50 users',
         description: 'For teams scaling beyond 20 members',
-        features: ['Everything in Professional', 'Dedicated support', 'SLA guarantee', 'Unlimited AI generations'],
-        cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 3,
+        basePlan: 'Professional',
+        features: ['21–50 members', 'Unlimited AI generations', 'RTM (Audit Trail + Jira sync)', 'Dedicated support · SLA guarantee'],
+        cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 1,
         highlighted: false, icon: 'ri-building-2-line', popular: '',
       },
       {
@@ -289,16 +294,18 @@ const content = {
         annualMonthly: 424.17, annualTotal: 5090,
         users: '51–100 users',
         description: 'For mid-size organizations',
-        features: ['Everything in Enterprise S', 'Dedicated support', 'SLA guarantee', 'Unlimited AI generations'],
-        cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: 3,
+        basePlan: 'Enterprise S',
+        features: ['51–100 members'],
+        cta: 'Start Free Trial', ctaVariant: 'outline', aiFeatureIdx: -1,
         highlighted: false, icon: 'ri-building-4-line', popular: '',
       },
       {
         name: 'Enterprise L', planColor: '#94A3B8', price: 'Custom', period: '',
         users: '100+ users · tailored plan',
         description: 'For large enterprises with custom needs',
-        features: ['Everything in Enterprise M', 'Custom contract & SLA', 'Dedicated infrastructure', 'Unlimited AI generations'],
-        cta: 'Talk to Us', ctaVariant: 'dark', aiFeatureIdx: 3,
+        basePlan: 'Enterprise M',
+        features: ['100+ members', 'Custom contract & SLA', 'Dedicated infrastructure'],
+        cta: 'Talk to Us', ctaVariant: 'dark', aiFeatureIdx: -1,
         highlighted: false, icon: 'ri-government-line', popular: '', darkCard: true,
       },
     ],
@@ -655,8 +662,9 @@ const content = {
         name: 'Free', planColor: '#10B981', price: '$0', period: '영구 무료',
         users: '최대 2명 · 영구 무료',
         description: '소규모 팀을 위한 기본 기능',
-        features: ['프로젝트 1개', 'TC 최대 100개/프로젝트', '기본 테스트 관리', '테스트 실행 (월 10회)', 'TC 버전 관리', 'Jira 연동 (읽기 전용)', 'AI 생성 3회/월', '커뮤니티 지원'],
-        cta: '무료로 시작하기', ctaVariant: 'outline', aiFeatureIdx: 6,
+        basePlan: null,
+        features: ['프로젝트 1개 · 멤버 2명', 'TC 최대 100개/프로젝트', '테스트 실행 (월 10회)', 'TC 버전 관리', 'Jira 연동 (읽기 전용)', 'AI 생성 3회/월'],
+        cta: '무료로 시작하기', ctaVariant: 'outline', aiFeatureIdx: 5,
         highlighted: false, icon: 'ri-user-line', popular: '',
       },
       {
@@ -664,8 +672,9 @@ const content = {
         annualMonthly: 16.15, annualTotal: 194,
         users: '최대 5명',
         description: '개인 개발자 및 소규모 사이드 프로젝트',
-        features: ['프로젝트 3개', 'TC 최대 200개/프로젝트', '기본 테스트 관리', '테스트 실행 무제한', 'TC 버전 관리', 'CSV 내보내기/가져오기', 'Jira 연동 (전체)', 'RTM / 추적성', '공유 스텝 (10개)', 'AI 생성 15회/월', '커뮤니티 지원'],
-        cta: '시작하기', ctaVariant: 'outline', aiFeatureIdx: 9,
+        basePlan: 'Free',
+        features: ['프로젝트 3개 · 멤버 5명', 'TC 최대 200개/프로젝트 · 실행 무제한', 'CSV 내보내기/가져오기', 'Jira 연동 (전체)', 'RTM / 추적성 (30개)', '공유 스텝 (10개)', 'AI 생성 15회/월'],
+        cta: '시작하기', ctaVariant: 'outline', aiFeatureIdx: 6,
         highlighted: false, icon: 'ri-seedling-line', popular: '',
       },
       {
@@ -673,7 +682,8 @@ const content = {
         annualMonthly: 41.58, annualTotal: 499,
         users: '최대 5명',
         description: '성장하는 팀을 위한 핵심 기능',
-        features: ['프로젝트 10개까지', 'TC 버전 관리', 'CSV 내보내기/가져오기', 'Jira 연동', 'Slack & Teams 연동', 'RTM (50개)', '공유 스텝 (20개)', '기본 리포팅', 'AI 생성 30회/월', 'AI 실행 요약', '플레이키 테스트 감지 AI', '커버리지 갭 분석', '엣지 케이스 제안 (AI)', 'AI 인사이트 패널', '이메일 지원', 'PDF 리포트 내보내기'],
+        basePlan: 'Hobby',
+        features: ['프로젝트 10개 · TC 무제한', 'Slack & Teams 연동', 'RTM (50개) · 공유 스텝 (20개)', 'AI 실행 요약 · 플레이키 감지 AI', '커버리지 갭 분석 · AI 인사이트', '기본 리포팅 · 이메일 지원', 'AI 생성 30회/월'],
         cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: 6,
         highlighted: false, icon: 'ri-star-line', popular: '',
       },
@@ -682,8 +692,9 @@ const content = {
         annualMonthly: 84.17, annualTotal: 1010,
         users: '최대 20명',
         description: '전문 QA 팀을 위한 완전한 기능',
-        features: ['프로젝트 무제한', 'TC 버전 관리', 'CSV 내보내기/가져오기', 'Jira 연동', 'Slack & Teams 연동', 'RTM (무제한)', '공유 스텝 (무제한)', '고급 리포팅', 'CI/CD 연동', '테스트 자동화 Framework SDK', 'AI 생성 150회/월', 'AI 실행 요약', '플레이키 테스트 감지 AI', '커버리지 갭 분석', '엣지 케이스 제안 (AI)', 'AI 인사이트 패널', '우선 지원', 'PDF 리포트 내보내기'],
-        cta: '14일 무료 체험', ctaVariant: 'filled', aiFeatureIdx: 8,
+        basePlan: 'Starter',
+        features: ['프로젝트 무제한 · 멤버 20명', 'RTM 무제한 · 공유 스텝 무제한', 'CI/CD 연동', '테스트 자동화 Framework SDK', '고급 리포팅 · 우선 지원', 'AI 생성 150회/월'],
+        cta: '14일 무료 체험', ctaVariant: 'filled', aiFeatureIdx: 5,
         highlighted: true, icon: 'ri-vip-crown-line', popular: '가장 인기',
       },
       {
@@ -691,8 +702,9 @@ const content = {
         annualMonthly: 211.67, annualTotal: 2540,
         users: '21–50명',
         description: '20명 초과 팀을 위한 플랜',
-        features: ['Professional 플랜 모든 기능', '전담 지원', 'SLA 보장', 'AI 생성 무제한'],
-        cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: 3,
+        basePlan: 'Professional',
+        features: ['멤버 21–50명', 'AI 생성 무제한', 'RTM (감사 추적 + Jira 동기화)', '전담 지원 · SLA 보장'],
+        cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: 1,
         highlighted: false, icon: 'ri-building-2-line', popular: '',
       },
       {
@@ -700,16 +712,18 @@ const content = {
         annualMonthly: 424.17, annualTotal: 5090,
         users: '51–100명',
         description: '중대형 조직을 위한 플랜',
-        features: ['Enterprise S 모든 기능', '전담 지원', 'SLA 보장', 'AI 생성 무제한'],
-        cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: 3,
+        basePlan: 'Enterprise S',
+        features: ['멤버 51–100명'],
+        cta: '14일 무료 체험', ctaVariant: 'outline', aiFeatureIdx: -1,
         highlighted: false, icon: 'ri-building-4-line', popular: '',
       },
       {
         name: 'Enterprise L', planColor: '#94A3B8', price: '문의', period: '',
         users: '100명+ · 맞춤 플랜',
         description: '100명 이상 대규모 기업을 위한 플랜',
-        features: ['Enterprise M 모든 기능', '맞춤 계약 & SLA', '전용 인프라', 'AI 생성 무제한'],
-        cta: '문의하기', ctaVariant: 'dark', aiFeatureIdx: 3,
+        basePlan: 'Enterprise M',
+        features: ['멤버 100명+', '맞춤 계약 & SLA', '전용 인프라'],
+        cta: '문의하기', ctaVariant: 'dark', aiFeatureIdx: -1,
         highlighted: false, icon: 'ri-government-line', popular: '', darkCard: true,
       },
     ],
@@ -1554,6 +1568,11 @@ export default function HomePage() {
                   <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.125rem' }}>{plan.description}</div>
                   <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '1.25rem 0' }}></div>
                   <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                    {plan.basePlan && (
+                      <li style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.25rem' }}>
+                        Everything in {plan.basePlan}, plus:
+                      </li>
+                    )}
                     {plan.features.map((f, fi) => (
                       <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                         <i className={fi === plan.aiFeatureIdx ? 'ri-sparkling-line' : 'ri-check-line'} style={{ fontSize: '0.875rem', marginTop: '0.125rem', flexShrink: 0, color: fi === plan.aiFeatureIdx ? '#C084FC' : '#6366F1' }}></i>
@@ -1619,6 +1638,11 @@ export default function HomePage() {
                   <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.125rem' }}>{plan.description}</div>
                   <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '1.25rem 0' }}></div>
                   <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                    {plan.basePlan && (
+                      <li style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.25rem' }}>
+                        Everything in {plan.basePlan}, plus:
+                      </li>
+                    )}
                     {plan.features.map((f, fi) => (
                       <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                         <i className={fi === plan.aiFeatureIdx ? 'ri-sparkling-line' : 'ri-check-line'} style={{ fontSize: '0.875rem', marginTop: '0.125rem', flexShrink: 0, color: fi === plan.aiFeatureIdx ? '#C084FC' : '#6366F1' }}></i>
