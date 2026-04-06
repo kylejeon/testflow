@@ -79,7 +79,7 @@ const TIER_INFO = {
     monthlyPrice: 19,
     priceDesc: '/ mo',
     basePlan: 'Free',
-    features: ['3 projects · 5 members', 'Up to 200 test cases / project · unlimited runs', 'Export/Import CSV', 'Jira Integration (full)', 'RTM / Traceability (30 entries)', 'Steps Library (10 steps)', '15 AI generations / month'],
+    features: ['3 projects · 5 members', 'Up to 200 test cases / project · unlimited runs', 'Export/Import CSV', 'Jira Integration (full)', 'Requirements & Traceability', 'Steps Library (10 steps)', '15 AI generations / month'],
   },
   3: {
     name: 'Starter',
@@ -88,7 +88,7 @@ const TIER_INFO = {
     monthlyPrice: 49,
     priceDesc: '/ mo',
     basePlan: 'Hobby',
-    features: ['10 projects · 5 members', 'Unlimited test cases', 'Slack & Teams Integration', 'RTM (50 entries) · Steps Library (20 steps)', 'AI Run Summary · Flaky Detection AI', 'Coverage Gap Analysis · AI Insights Panel', 'Basic reporting · email support', '30 AI generations / month'],
+    features: ['10 projects · 5 members', 'Unlimited test cases', 'Slack & Teams Integration', 'Requirements & Traceability · Steps Library (20 steps)', 'AI Run Summary · Flaky Detection AI', 'Coverage Gap Analysis · AI Insights Panel', 'Basic reporting · email support', '30 AI generations / month'],
   },
   4: {
     name: 'Professional',
@@ -97,7 +97,7 @@ const TIER_INFO = {
     monthlyPrice: 99,
     priceDesc: '/ mo',
     basePlan: 'Starter',
-    features: ['Unlimited projects · up to 20 members', 'RTM (Unlimited) · Steps Library (Unlimited)', 'CI/CD Integration', 'Test Automation Framework SDK', 'Advanced reporting · priority support', '150 AI generations / month'],
+    features: ['Unlimited projects · up to 20 members', 'RTM: Audit Trail + AI Coverage Gap', 'Steps Library (Unlimited)', 'CI/CD Integration', 'Test Automation Framework SDK', 'Advanced reporting · priority support', '150 AI generations / month'],
   },
   5: {
     name: 'Enterprise S',
@@ -106,7 +106,7 @@ const TIER_INFO = {
     monthlyPrice: 249,
     priceDesc: '/ mo',
     basePlan: 'Professional',
-    features: ['21–50 team members', 'Unlimited AI generations', 'RTM (Audit Trail + Jira sync)', 'Dedicated support · SLA guarantee'],
+    features: ['21–50 team members', 'Unlimited AI generations', 'RTM: Audit Trail + Jira sync', 'Dedicated support · SLA guarantee'],
   },
   6: {
     name: 'Enterprise M',
