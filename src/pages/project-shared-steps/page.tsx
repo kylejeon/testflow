@@ -272,7 +272,7 @@ function UsedByPanel({ step, projectId, onClose }: { step: SharedTestStep; proje
     queryFn: async () => {
       const { data, error } = await supabase
         .from('test_cases')
-        .select('id, custom_id, title, folder_path')
+        .select('id, custom_id, title, folder')
         .eq('project_id', projectId)
         .contains('steps', JSON.stringify([{ type: 'shared_step_ref', shared_step_id: step.id }]));
       if (error) throw error;
@@ -466,7 +466,7 @@ export default function ProjectSharedSteps() {
     // Fetch usage count
     const { data: tcs } = await supabase
       .from('test_cases')
-      .select('id, custom_id, title, folder_path')
+      .select('id, custom_id, title, folder')
       .eq('project_id', projectId!);
 
     const usages: SharedStepUsage[] = [];
@@ -474,7 +474,7 @@ export default function ProjectSharedSteps() {
       let steps: any[] = [];
       try { steps = typeof tc.steps === 'string' ? JSON.parse(tc.steps) : (tc.steps || []); } catch {}
       const refs = steps.filter((s: any) => s.type === 'shared_step_ref' && s.shared_step_id === step.id);
-      if (refs.length > 0) usages.push({ test_case_id: tc.id, custom_id: tc.custom_id, title: tc.title, folder_path: tc.folder_path });
+      if (refs.length > 0) usages.push({ test_case_id: tc.id, custom_id: tc.custom_id, title: tc.title, folder_path: tc.folder });
     }
 
     setDeleteUsages(usages);
@@ -761,22 +761,12 @@ export default function ProjectSharedSteps() {
                         const count = liveUsageCounts[ss.id] ?? ss.usage_count;
                         if (count > 0) {
                           return (
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() => setUsedByStep(ss)}
-                                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline underline-offset-2"
-                              >
-                                {count} TC{count !== 1 ? 's' : ''}
-                              </button>
-                              <button
-                                onClick={() => setBulkUpdateTarget(ss)}
-                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[0.6rem] font-semibold bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200 rounded transition-colors"
-                                title="Bulk update TCs to latest version"
-                              >
-                                <i className="ri-refresh-line text-[0.6rem]" />
-                                Sync
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => setBulkUpdateTarget(ss)}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline underline-offset-2"
+                            >
+                              {count} TC{count !== 1 ? 's' : ''}
+                            </button>
                           );
                         }
                         return <span className="text-xs text-slate-400">—</span>;
@@ -821,13 +811,6 @@ export default function ProjectSharedSteps() {
                           title="View usage"
                         >
                           <i className="ri-eye-line text-sm" />
-                        </button>
-                        <button
-                          onClick={() => setBulkUpdateTarget(ss)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
-                          title="Bulk update TCs to latest version"
-                        >
-                          <i className="ri-refresh-line text-sm" />
                         </button>
                         <button
                           onClick={() => { setEditStep(ss); setShowCreateModal(true); }}
