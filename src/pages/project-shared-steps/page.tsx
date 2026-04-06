@@ -15,13 +15,14 @@ function BulkUpdateDialog({ step, onClose, onDone }: { step: SharedTestStep; onC
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [updating, setUpdating] = useState(false);
 
-  // Fetch TCs referencing this shared step by scanning test_cases.steps directly
+  // Fetch TCs referencing this shared step by scanning all TC steps client-side
+  // (ilike does not work on JSONB columns; fetch by project and filter in JS)
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from('test_cases')
         .select('id, custom_id, title, steps')
-        .ilike('steps', `%${step.id}%`);
+        .eq('project_id', step.project_id);
 
       const list: BulkUsageTC[] = [];
       for (const tc of (data || [])) {
@@ -45,7 +46,7 @@ function BulkUpdateDialog({ step, onClose, onDone }: { step: SharedTestStep; onC
       setSelectedIds(new Set(list.filter(t => t.linked_version < step.version).map(t => t.test_case_id)));
       setLoading(false);
     })();
-  }, [step.id, step.version]);
+  }, [step.id, step.version, step.project_id]);
 
   const handleUpdate = async () => {
     setUpdating(true);
