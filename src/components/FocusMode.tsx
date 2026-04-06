@@ -28,6 +28,9 @@ interface FocusModeProps {
   onStatusChange: (testId: string, status: TestStatus, note?: string) => Promise<void>;
   onExit: () => void;
   initialIndex?: number;
+  ssLatestVersions?: Record<string, { version: number; custom_id: string; name: string; steps: { step: string; expectedResult: string }[] }>;
+  runCompleted?: boolean;
+  onUpdateSharedStep?: (tcId: string, ssId: string) => Promise<void>;
 }
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -111,7 +114,7 @@ function formatFileSize(bytes: number) {
  * Keyboard: P/F/B/R/S = status, N = note, C = comments, H = history,
  *           J/K = next/prev, [ = sidebar, / = search, Esc = exit
  */
-export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex = 0 }: FocusModeProps) {
+export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex = 0, ssLatestVersions = {}, runCompleted = false, onUpdateSharedStep }: FocusModeProps) {
   const [index, setIndex] = useState(initialIndex);
   const [note, setNote] = useState('');
   const [pending, setPending] = useState<TestStatus | null>(null);
@@ -131,6 +134,11 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
   const [sidebarFilter, setSidebarFilter] = useState<'all' | TestStatus>('all');
   const [sidebarSearch, setSidebarSearch] = useState('');
   const [sharedStepsCaches, setSharedStepsCaches] = useState<Record<string, SharedStepCache>>({});
+
+  // ── SS version banner state ───────────────────────────────────────────────
+  const [ssBannerDismissedForTc, setSsBannerDismissedForTc] = useState<Set<string>>(new Set());
+  const [showSsDiff, setShowSsDiff] = useState(false);
+  const [ssDiffData, setSsDiffData] = useState<{ ssId: string; customId: string; name: string; currentVersion: number; latestVersion: number; currentSteps: { step: string; expectedResult: string }[]; latestSteps: { step: string; expectedResult: string }[] } | null>(null);
 
   // GitHub / Jira integration state
   const [githubSettings, setGithubSettings] = useState<{ token: string; owner: string; repo: string; default_labels: string[]; auto_create_enabled: boolean } | null>(null);
@@ -268,6 +276,8 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
     setOpenPanel('none');
     setNote('');
     setLightboxUrl(null);
+    setShowSsDiff(false);
+    setSsDiffData(null);
     if (bodyRef.current) bodyRef.current.scrollTop = 0;
   }, []);
 
@@ -387,6 +397,53 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
       else tc[stepIndex] = result;
       return { ...prev, [test.id]: tc };
     });
+  };
+
+  // ── SS version helpers ────────────────────────────────────────────────────
+  // Get outdated SharedStepRefs for the current test
+  const getOutdatedRefsForCurrentTest = () => {
+    if (!test?.steps) return [] as any[];
+    try {
+      const p = JSON.parse(test.steps);
+      if (!Array.isArray(p)) return [];
+      return p.filter((s: any) => {
+        if (s.type !== 'shared_step_ref') return false;
+        const latest = ssLatestVersions[s.shared_step_id];
+        return latest && latest.version > s.shared_step_version;
+      });
+    } catch { return []; }
+  };
+
+  const handleShowSsDiff = async (ref: any) => {
+    const latest = ssLatestVersions[ref.shared_step_id];
+    if (!latest) return;
+    // Fetch old version steps
+    const { data } = await supabase
+      .from('shared_step_versions')
+      .select('steps')
+      .eq('shared_step_id', ref.shared_step_id)
+      .eq('version', ref.shared_step_version)
+      .maybeSingle();
+    setSsDiffData({
+      ssId: ref.shared_step_id,
+      customId: ref.shared_step_custom_id,
+      name: ref.shared_step_name,
+      currentVersion: ref.shared_step_version,
+      latestVersion: latest.version,
+      currentSteps: data?.steps || [],
+      latestSteps: latest.steps,
+    });
+    setShowSsDiff(true);
+  };
+
+  const handleUpdateInFocusMode = async (ref: any) => {
+    if (!test || !onUpdateSharedStep) return;
+    await onUpdateSharedStep(test.id, ref.shared_step_id);
+    setSsBannerDismissedForTc(prev => new Set([...prev, test.id]));
+    setShowSsDiff(false);
+    setSsDiffData(null);
+    // Refresh the shared steps cache for this TC
+    fetchedCacheIds.current.delete(test.id);
   };
 
   const openLightbox = (url: string) => {
@@ -829,6 +886,94 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                   Previously {test.runStatus}
                 </div>
               )}
+
+              {/* SS Version Banner */}
+              {(() => {
+                const outdatedRefs = getOutdatedRefsForCurrentTest();
+                if (outdatedRefs.length === 0) return null;
+                if (ssBannerDismissedForTc.has(test.id)) return null;
+                const ref = outdatedRefs[0];
+                const latest = ssLatestVersions[ref.shared_step_id];
+                if (!latest) return null;
+                const canUp = !runCompleted && (test.runStatus === 'untested' || test.runStatus === 'retest');
+                return (
+                  <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 transition-all duration-200">
+                    <div className="flex items-start gap-2.5">
+                      <i className="ri-refresh-line text-amber-500 text-base flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#92400E' }}>
+                          🔄 {ref.shared_step_custom_id} '{ref.shared_step_name}'에 새 버전(v{latest.version})이 있습니다
+                        </div>
+                        {!canUp && (
+                          <div className="flex items-center gap-1 mt-1" style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                            <i className="ri-lock-line text-slate-400" />
+                            결과 보존을 위해 현재 버전으로 고정됨
+                          </div>
+                        )}
+                        {showSsDiff && ssDiffData && ssDiffData.ssId === ref.shared_step_id && (
+                          <div className="mt-3 rounded-lg overflow-hidden border border-amber-200">
+                            <div className="grid grid-cols-2 divide-x divide-amber-200">
+                              <div className="p-2.5 bg-red-50">
+                                <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">현재 (v{ssDiffData.currentVersion})</div>
+                                {ssDiffData.currentSteps.length > 0
+                                  ? ssDiffData.currentSteps.map((s, i) => (
+                                    <div key={i} className="text-[0.6875rem] text-red-700 mb-1 leading-relaxed">
+                                      <span className="font-semibold text-red-400 mr-1">{i+1}.</span>{s.step}
+                                    </div>
+                                  ))
+                                  : <div className="text-[0.6875rem] text-red-400">기록 없음</div>
+                                }
+                              </div>
+                              <div className="p-2.5 bg-emerald-50">
+                                <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">최신 (v{ssDiffData.latestVersion})</div>
+                                {ssDiffData.latestSteps.map((s, i) => (
+                                  <div key={i} className="text-[0.6875rem] text-emerald-700 mb-1 leading-relaxed">
+                                    <span className="font-semibold text-emerald-400 mr-1">{i+1}.</span>{s.step}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+                        <button
+                          onClick={() => {
+                            if (showSsDiff && ssDiffData?.ssId === ref.shared_step_id) {
+                              setShowSsDiff(false); setSsDiffData(null);
+                            } else {
+                              handleShowSsDiff(ref);
+                            }
+                          }}
+                          style={{ fontSize: '0.75rem', color: '#B45309', fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+                        >
+                          변경사항 {showSsDiff && ssDiffData?.ssId === ref.shared_step_id ? '닫기' : '보기'}
+                        </button>
+                        {canUp && (
+                          <button
+                            onClick={() => handleUpdateInFocusMode(ref)}
+                            style={{
+                              fontSize: '0.75rem', fontWeight: 600, color: '#fff',
+                              background: '#6366F1', padding: '0.25rem 0.625rem', borderRadius: '0.375rem',
+                              border: 'none', cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#4F46E5'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#6366F1'; }}
+                          >
+                            업데이트
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSsBannerDismissedForTc(prev => new Set([...prev, test.id]))}
+                          style={{ fontSize: '0.75rem', color: '#B45309', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+                        >
+                          무시
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* TC Title + Description */}
               <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.5rem', lineHeight: 1.4 }}>

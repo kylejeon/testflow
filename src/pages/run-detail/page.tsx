@@ -199,6 +199,15 @@ export default function RunDetail() {
   });
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
+  // ── Shared Step version tracking ─────────────────────────────────────────
+  // Map: shared_step_id → { version, custom_id, name, steps (latest) }
+  const [ssLatestVersions, setSsLatestVersions] = useState<Record<string, { version: number; custom_id: string; name: string; steps: { step: string; expectedResult: string }[] }>>({});
+  const [versionBannerDismissed, setVersionBannerDismissed] = useState(false);
+  // "tcId:ssId" → true  (expanded diff)
+  const [expandedDiffKey, setExpandedDiffKey] = useState<string | null>(null);
+  // "ssId:version" → steps (fetched on demand for diff display)
+  const [oldVersionStepsCache, setOldVersionStepsCache] = useState<Record<string, { step: string; expectedResult: string }[]>>({});
+
   const selectTestCase = (tc: TestCaseWithRunStatus | null) => {
     setSelectedTestCase(tc);
     if (tc) {
@@ -832,6 +841,33 @@ export default function RunDetail() {
           }
         });
         setRunAssignees(assigneesMap);
+
+        // Fetch latest versions of all Shared Steps referenced in this run's TCs
+        const allSSIds = new Set<string>();
+        for (const tc of testCasesWithStatus) {
+          if (!tc.steps) continue;
+          try {
+            const p = JSON.parse(tc.steps);
+            if (Array.isArray(p)) {
+              (p as any[]).forEach((s: any) => {
+                if (s.type === 'shared_step_ref' && s.shared_step_id) {
+                  allSSIds.add(s.shared_step_id);
+                }
+              });
+            }
+          } catch {}
+        }
+        if (allSSIds.size > 0) {
+          const { data: ssData } = await supabase
+            .from('shared_steps')
+            .select('id, version, custom_id, name, steps')
+            .in('id', [...allSSIds]);
+          if (ssData) {
+            const vmap: Record<string, { version: number; custom_id: string; name: string; steps: any[] }> = {};
+            ssData.forEach((ss: any) => { vmap[ss.id] = { version: ss.version, custom_id: ss.custom_id, name: ss.name, steps: ss.steps || [] }; });
+            setSsLatestVersions(vmap);
+          }
+        }
 
         // URL에서 이전 선택 TC 복원
         const tcIdFromUrl = searchParams.get('tc');
@@ -1499,6 +1535,84 @@ export default function RunDetail() {
     }
   };
 
+  // ── SS version helpers ────────────────────────────────────────────────────
+  // Returns SharedStepRef entries in a TC that have a newer version available
+  const getOutdatedRefs = (tc: TestCaseWithRunStatus) => {
+    if (!tc.steps) return [] as { id: string; type: 'shared_step_ref'; shared_step_id: string; shared_step_custom_id: string; shared_step_name: string; shared_step_version: number }[];
+    try {
+      const p = JSON.parse(tc.steps);
+      if (!Array.isArray(p)) return [];
+      return (p as any[]).filter((s: any) => {
+        if (s.type !== 'shared_step_ref') return false;
+        const latest = ssLatestVersions[s.shared_step_id];
+        return latest && latest.version > s.shared_step_version;
+      });
+    } catch { return []; }
+  };
+
+  const canUpdateTC = (tc: TestCaseWithRunStatus) =>
+    (tc.runStatus === 'untested' || tc.runStatus === 'retest') && run?.status !== 'completed';
+
+  // Fetch old-version steps for diff display (lazy, cached)
+  const fetchOldVersionSteps = async (ssId: string, version: number) => {
+    const key = `${ssId}:${version}`;
+    if (oldVersionStepsCache[key]) return;
+    const { data } = await supabase
+      .from('shared_step_versions')
+      .select('steps')
+      .eq('shared_step_id', ssId)
+      .eq('version', version)
+      .maybeSingle();
+    if (data?.steps) {
+      setOldVersionStepsCache(prev => ({ ...prev, [key]: data.steps }));
+    }
+  };
+
+  const handleUpdateSSVersion = async (tcId: string, ssId: string) => {
+    const latest = ssLatestVersions[ssId];
+    const tc = testCases.find(t => t.id === tcId);
+    if (!latest || !tc || !tc.steps || !canUpdateTC(tc)) return;
+    try {
+      const parsed = JSON.parse(tc.steps) as any[];
+      const updated = parsed.map((s: any) =>
+        s.type === 'shared_step_ref' && s.shared_step_id === ssId
+          ? { ...s, shared_step_version: latest.version }
+          : s
+      );
+      await supabase.from('test_cases').update({ steps: JSON.stringify(updated) }).eq('id', tcId);
+      // Update local TC state
+      setTestCases(prev => prev.map(t => t.id === tcId ? { ...t, steps: JSON.stringify(updated) } : t));
+      if (selectedTestCase?.id === tcId) {
+        setSelectedTestCase(prev => prev ? { ...prev, steps: JSON.stringify(updated) } : prev);
+      }
+      // Re-expand and update snapshot
+      const refIds = [...new Set(updated.filter((s: any) => s.type === 'shared_step_ref').map((s: any) => s.shared_step_id as string))];
+      const { data: ssData } = await supabase.from('shared_steps').select('id, name, custom_id, steps').in('id', refIds);
+      if (ssData) {
+        const cache: SharedStepCache = {};
+        ssData.forEach((ss: any) => { cache[ss.id] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps }; });
+        const newFlat = expandFlatSteps(updated, cache);
+        const newSnapshot = { ...stepsSnapshot, [tcId]: newFlat };
+        setStepsSnapshot(newSnapshot);
+        await supabase.from('test_runs').update({ steps_snapshot: newSnapshot }).eq('id', runId);
+      }
+      setExpandedDiffKey(null);
+      showToast('success', `Shared Step '${latest.name}' updated to v${latest.version}`);
+    } catch {
+      showToast('error', 'Failed to update Shared Step version');
+    }
+  };
+
+  const handleUpdateAllSSVersions = async () => {
+    const updatable = testCases.filter(tc => canUpdateTC(tc) && getOutdatedRefs(tc).length > 0);
+    for (const tc of updatable) {
+      for (const ref of getOutdatedRefs(tc)) {
+        await handleUpdateSSVersion(tc.id, ref.shared_step_id);
+      }
+    }
+    setVersionBannerDismissed(true);
+  };
+
   const filteredTestCases = testCases.filter(testCase => {
     const matchesSearch = testCase.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          testCase.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -2066,6 +2180,9 @@ export default function RunDetail() {
           onStatusChange={handleFocusStatusChange}
           onExit={() => setFocusModeOpen(false)}
           initialIndex={firstUntestedIndex >= 0 ? firstUntestedIndex : 0}
+          ssLatestVersions={ssLatestVersions}
+          runCompleted={run?.status === 'completed'}
+          onUpdateSharedStep={(tcId, ssId) => handleUpdateSSVersion(tcId, ssId)}
         />
       );
     })()}
@@ -2598,6 +2715,38 @@ export default function RunDetail() {
                     </div>
                   )}
 
+                  {/* §SS Version Update Banner */}
+                  {(() => {
+                    const outdatedTCs = testCases.filter(tc => getOutdatedRefs(tc).length > 0);
+                    const updatableTCs = outdatedTCs.filter(tc => canUpdateTC(tc));
+                    if (outdatedTCs.length === 0 || versionBannerDismissed) return null;
+                    return (
+                      <div className="flex items-center gap-3 mx-4 my-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg transition-all duration-200">
+                        <i className="ri-refresh-line text-amber-500 text-base flex-shrink-0" />
+                        <div className="flex-1 text-xs text-amber-800">
+                          <span className="font-semibold">{outdatedTCs.length}개 Shared Step에 새 버전이 있습니다</span>
+                          {updatableTCs.length > 0 && (
+                            <span className="text-amber-600 ml-1">(untested {updatableTCs.length}개 해당)</span>
+                          )}
+                        </div>
+                        {updatableTCs.length > 0 && (
+                          <button
+                            onClick={handleUpdateAllSSVersions}
+                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-md transition-colors duration-200 cursor-pointer flex-shrink-0"
+                          >
+                            모두 업데이트
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setVersionBannerDismissed(true)}
+                          className="text-amber-600 hover:text-amber-700 text-xs font-medium cursor-pointer flex-shrink-0"
+                        >
+                          무시
+                        </button>
+                      </div>
+                    );
+                  })()}
+
                   {/* §11 Deprecated TC Info Banner */}
                   {testCases.some(tc => (tc as any).lifecycle_status === 'deprecated') && (
                     <div className="flex items-start gap-2.5 mx-4 my-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
@@ -2680,10 +2829,31 @@ export default function RunDetail() {
                             </span>
                           )}
                         </div>
-                        <div className="col-span-3 flex items-center">
-                          <span className="text-[0.8125rem] font-semibold text-[#0F172A] truncate block max-w-[260px] hover:text-indigo-600">
+                        <div className="col-span-3 flex items-center gap-1.5 min-w-0">
+                          <span className="text-[0.8125rem] font-semibold text-[#0F172A] truncate hover:text-indigo-600 min-w-0">
                             {testCase.title}
                           </span>
+                          {(() => {
+                            const outdated = getOutdatedRefs(testCase);
+                            if (outdated.length === 0) return null;
+                            const canUp = canUpdateTC(testCase);
+                            const latestVer = ssLatestVersions[outdated[0].shared_step_id]?.version;
+                            return (
+                              <span
+                                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.5625rem] font-bold flex-shrink-0 transition-all duration-200 ${
+                                  canUp
+                                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 cursor-pointer'
+                                    : 'bg-slate-100 text-slate-500 cursor-default'
+                                }`}
+                                title={canUp ? `New version available (v${latestVer})` : 'Locked: test result recorded'}
+                              >
+                                {canUp
+                                  ? <><i className="ri-arrow-up-line text-[0.5rem]" />v{latestVer}</>
+                                  : <><i className="ri-lock-line text-[0.5rem]" />v{latestVer}</>
+                                }
+                              </span>
+                            );
+                          })()}
                         </div>
                         <div className="col-span-1 flex items-center">
                           <span className="inline-flex items-center gap-1.5 text-[0.6875rem] text-[#475569]">
@@ -2827,6 +2997,9 @@ export default function RunDetail() {
               onAssigneeChange={(name) => handleAssigneeChange(selectedTestCase.id, name)}
               onPreviewImage={(url, name) => setPreviewImage({ url, name })}
               folders={folders.map(f => ({ id: f.id, name: f.name, icon: f.icon || 'ri-folder-line', color: f.color || 'indigo' }))}
+              ssLatestVersions={ssLatestVersions}
+              runCompleted={run?.status === 'completed'}
+              onUpdateSharedStep={(ssId) => handleUpdateSSVersion(selectedTestCase.id, ssId)}
             />
           )}
 
@@ -3006,17 +3179,109 @@ export default function RunDetail() {
                       const snapshotSteps = stepsSnapshot[selectedTestCase.id];
                       if (snapshotSteps) {
                         if (snapshotSteps.length === 0) return null;
+                        // Build map: groupHeader → SharedStepRef (for version badge)
+                        const ssRefByHeader: Record<string, any> = {};
+                        try {
+                          const p = JSON.parse(selectedTestCase.steps || '[]');
+                          if (Array.isArray(p)) {
+                            p.filter((s: any) => s.type === 'shared_step_ref').forEach((s: any) => {
+                              ssRefByHeader[`${s.shared_step_custom_id}: ${s.shared_step_name}`] = s;
+                            });
+                          }
+                        } catch {}
                         return (
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-3">Steps</label>
                             <div className="space-y-2">
-                              {snapshotSteps.map((fs) => (
+                              {snapshotSteps.map((fs) => {
+                                const ref = fs.groupHeader ? ssRefByHeader[fs.groupHeader] : null;
+                                const latestInfo = ref ? ssLatestVersions[ref.shared_step_id] : null;
+                                const hasNewVersion = ref && latestInfo && latestInfo.version > ref.shared_step_version;
+                                const canUp = selectedTestCase && canUpdateTC(selectedTestCase);
+                                const diffKey = ref ? `${selectedTestCase.id}:${ref.shared_step_id}` : null;
+                                const isDiffOpen = diffKey && expandedDiffKey === diffKey;
+                                const oldKey = ref ? `${ref.shared_step_id}:${ref.shared_step_version}` : null;
+                                return (
                                 <div key={fs.flatIndex}>
                                   {fs.groupHeader && (
+                                    <>
                                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-t-lg bg-violet-50 border border-violet-200 border-b-0">
                                       <i className="ri-links-line text-violet-500 text-xs" />
                                       <span className="text-xs font-semibold text-violet-700">{fs.groupHeader}</span>
+                                      {hasNewVersion && (
+                                        <span
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (isDiffOpen) {
+                                              setExpandedDiffKey(null);
+                                            } else {
+                                              setExpandedDiffKey(diffKey!);
+                                              if (ref) fetchOldVersionSteps(ref.shared_step_id, ref.shared_step_version);
+                                            }
+                                          }}
+                                          className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.5625rem] font-bold ml-1 cursor-pointer transition-all duration-200 ${
+                                            canUp ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-500'
+                                          }`}
+                                          title={canUp ? `New version available: v${latestInfo!.version}` : 'Locked: test result recorded'}
+                                        >
+                                          {canUp
+                                            ? <><i className="ri-arrow-up-line text-[0.5rem]" /> v{latestInfo!.version}</>
+                                            : <><i className="ri-lock-line text-[0.5rem]" /> v{latestInfo!.version}</>
+                                          }
+                                        </span>
+                                      )}
                                     </div>
+                                    {isDiffOpen && hasNewVersion && (
+                                      <div className="border border-violet-200 border-t-0 rounded-b-lg overflow-hidden mb-1 transition-all duration-200">
+                                        <div className="flex items-center justify-between px-3 py-2 bg-amber-50 border-b border-amber-200">
+                                          <span className="text-xs font-semibold text-amber-700">
+                                            v{ref.shared_step_version} → v{latestInfo!.version} 변경사항
+                                          </span>
+                                          <div className="flex items-center gap-2">
+                                            {canUp && (
+                                              <button
+                                                onClick={() => handleUpdateSSVersion(selectedTestCase.id, ref.shared_step_id)}
+                                                className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[0.625rem] font-bold rounded cursor-pointer transition-colors duration-200"
+                                              >
+                                                업데이트
+                                              </button>
+                                            )}
+                                            {!canUp && (
+                                              <span className="flex items-center gap-1 text-[0.625rem] text-slate-500">
+                                                <i className="ri-lock-line" /> 결과 무결성 보호
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 divide-x divide-gray-200">
+                                          <div className="p-2">
+                                            <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">현재 (v{ref.shared_step_version})</div>
+                                            {oldKey && oldVersionStepsCache[oldKey] ? (
+                                              <div className="space-y-1">
+                                                {(oldVersionStepsCache[oldKey] as any[]).map((step: any, i: number) => (
+                                                  <div key={i} className="text-[0.6875rem] text-red-700 bg-red-50 px-2 py-1 rounded leading-relaxed">
+                                                    <span className="font-semibold text-red-400 mr-1">{i + 1}.</span>{step.step}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              <div className="text-[0.6875rem] text-gray-400 py-2">로딩 중...</div>
+                                            )}
+                                          </div>
+                                          <div className="p-2">
+                                            <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">최신 (v{latestInfo!.version})</div>
+                                            <div className="space-y-1">
+                                              {latestInfo!.steps.map((step: any, i: number) => (
+                                                <div key={i} className="text-[0.6875rem] text-emerald-700 bg-emerald-50 px-2 py-1 rounded leading-relaxed">
+                                                  <span className="font-semibold text-emerald-400 mr-1">{i + 1}.</span>{step.step}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    </>
                                   )}
                                   <div className={`border p-3 ${fs.isSubStep ? 'border-violet-200 bg-violet-50/30 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'border-gray-200 rounded-lg'}`}>
                                     <div className="flex items-start gap-3 mb-2">
@@ -3045,7 +3310,8 @@ export default function RunDetail() {
                                     </select>
                                   </div>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         );
@@ -3061,17 +3327,65 @@ export default function RunDetail() {
                       if (parsed) {
                         const flatSteps = expandFlatSteps(parsed, sharedStepsCache);
                         if (flatSteps.length === 0) return null;
+                        const ssRefByHeader2: Record<string, any> = {};
+                        parsed.filter((s): s is any => (s as any).type === 'shared_step_ref').forEach((s: any) => {
+                          ssRefByHeader2[`${s.shared_step_custom_id}: ${s.shared_step_name}`] = s;
+                        });
                         return (
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-3">Steps</label>
                             <div className="space-y-2">
-                              {flatSteps.map((fs) => (
+                              {flatSteps.map((fs) => {
+                                const ref2 = fs.groupHeader ? ssRefByHeader2[fs.groupHeader] : null;
+                                const latestInfo2 = ref2 ? ssLatestVersions[ref2.shared_step_id] : null;
+                                const hasNew2 = ref2 && latestInfo2 && latestInfo2.version > ref2.shared_step_version;
+                                const canUp2 = selectedTestCase && canUpdateTC(selectedTestCase);
+                                const diffKey2 = ref2 ? `${selectedTestCase.id}:${ref2.shared_step_id}` : null;
+                                const isDiff2 = diffKey2 && expandedDiffKey === diffKey2;
+                                const oldKey2 = ref2 ? `${ref2.shared_step_id}:${ref2.shared_step_version}` : null;
+                                return (
                                 <div key={fs.flatIndex}>
                                   {fs.groupHeader && (
+                                    <>
                                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-t-lg bg-violet-50 border border-violet-200 border-b-0">
                                       <i className="ri-links-line text-violet-500 text-xs" />
                                       <span className="text-xs font-semibold text-violet-700">{fs.groupHeader}</span>
+                                      {hasNew2 && (
+                                        <span
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (isDiff2) { setExpandedDiffKey(null); }
+                                            else { setExpandedDiffKey(diffKey2!); if (ref2) fetchOldVersionSteps(ref2.shared_step_id, ref2.shared_step_version); }
+                                          }}
+                                          className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[0.5625rem] font-bold ml-1 cursor-pointer transition-all duration-200 ${canUp2 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-500'}`}
+                                          title={canUp2 ? `New version: v${latestInfo2!.version}` : 'Locked: test result recorded'}
+                                        >
+                                          {canUp2 ? <><i className="ri-arrow-up-line text-[0.5rem]" /> v{latestInfo2!.version}</> : <><i className="ri-lock-line text-[0.5rem]" /> v{latestInfo2!.version}</>}
+                                        </span>
+                                      )}
                                     </div>
+                                    {isDiff2 && hasNew2 && (
+                                      <div className="border border-violet-200 border-t-0 rounded-b-lg overflow-hidden mb-1 transition-all duration-200">
+                                        <div className="flex items-center justify-between px-3 py-2 bg-amber-50 border-b border-amber-200">
+                                          <span className="text-xs font-semibold text-amber-700">v{ref2.shared_step_version} → v{latestInfo2!.version} 변경사항</span>
+                                          <div className="flex items-center gap-2">
+                                            {canUp2 && <button onClick={() => handleUpdateSSVersion(selectedTestCase.id, ref2.shared_step_id)} className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[0.625rem] font-bold rounded cursor-pointer transition-colors duration-200">업데이트</button>}
+                                            {!canUp2 && <span className="flex items-center gap-1 text-[0.625rem] text-slate-500"><i className="ri-lock-line" /> 결과 무결성 보호</span>}
+                                          </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 divide-x divide-gray-200">
+                                          <div className="p-2">
+                                            <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">현재 (v{ref2.shared_step_version})</div>
+                                            {oldKey2 && oldVersionStepsCache[oldKey2] ? (oldVersionStepsCache[oldKey2] as any[]).map((s: any, i: number) => <div key={i} className="text-[0.6875rem] text-red-700 bg-red-50 px-2 py-1 rounded leading-relaxed mb-1"><span className="font-semibold text-red-400 mr-1">{i+1}.</span>{s.step}</div>) : <div className="text-[0.6875rem] text-gray-400 py-2">로딩 중...</div>}
+                                          </div>
+                                          <div className="p-2">
+                                            <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">최신 (v{latestInfo2!.version})</div>
+                                            {latestInfo2!.steps.map((s: any, i: number) => <div key={i} className="text-[0.6875rem] text-emerald-700 bg-emerald-50 px-2 py-1 rounded leading-relaxed mb-1"><span className="font-semibold text-emerald-400 mr-1">{i+1}.</span>{s.step}</div>)}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    </>
                                   )}
                                   <div className={`border p-3 ${fs.isSubStep ? 'border-violet-200 bg-violet-50/30 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'border-gray-200 rounded-lg'}`}>
                                     <div className="flex items-start gap-3 mb-2">
@@ -3100,7 +3414,8 @@ export default function RunDetail() {
                                     </select>
                                   </div>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         );

@@ -77,6 +77,11 @@ export interface DetailPanelProps {
 
   // Folder metadata for icon+color display
   folders?: Array<{ id: string; name: string; icon: string; color: string }>;
+
+  // Shared Step version tracking
+  ssLatestVersions?: Record<string, { version: number; custom_id: string; name: string; steps: { step: string; expectedResult: string }[] }>;
+  runCompleted?: boolean;
+  onUpdateSharedStep?: (ssId: string) => Promise<void>;
 }
 
 // ── Folder Color Map ─────────────────────────────────────────────────────────
@@ -285,6 +290,9 @@ export function DetailPanel({
   onAssigneeChange,
   onPreviewImage,
   folders = [],
+  ssLatestVersions = {},
+  runCompleted = false,
+  onUpdateSharedStep,
 }: DetailPanelProps) {
   const [activeTab, setActiveTab] = useState<'comments' | 'results' | 'issues' | 'history'>('comments');
   const [stepsCollapsed, setStepsCollapsed] = useState(false);
@@ -294,6 +302,9 @@ export function DetailPanel({
   const [linkIssueKey, setLinkIssueKey] = useState('');
   const [linkingIssue, setLinkingIssue] = useState(false);
   const [sharedStepsCache, setSharedStepsCache] = useState<SharedStepCache>({});
+  // SS version badge inline diff
+  const [expandedSsDiffId, setExpandedSsDiffId] = useState<string | null>(null); // ssId
+  const [oldVersionSteps, setOldVersionSteps] = useState<Record<string, { step: string; expectedResult: string }[]>>({}); // "ssId:version"
   const detailBodyRef = useRef<HTMLDivElement>(null);
   const stepsAreaRef = useRef<HTMLDivElement>(null);
   const stepsHeightRef = useRef<number | null>(null);
@@ -346,6 +357,37 @@ export function DetailPanel({
       });
     }
   };
+
+  // SS version helpers
+  const fetchOldVersionStepsDP = async (ssId: string, version: number) => {
+    const key = `${ssId}:${version}`;
+    if (oldVersionSteps[key]) return;
+    const { data } = await supabase
+      .from('shared_step_versions')
+      .select('steps')
+      .eq('shared_step_id', ssId)
+      .eq('version', version)
+      .maybeSingle();
+    if (data?.steps) setOldVersionSteps(prev => ({ ...prev, [key]: data.steps }));
+  };
+
+  // Build map from groupHeader → SharedStepRef (for version badge lookup in steps)
+  const ssRefByHeader = (() => {
+    const map: Record<string, any> = {};
+    if (!testCase.steps) return map;
+    try {
+      const p = JSON.parse(testCase.steps);
+      if (Array.isArray(p)) {
+        p.filter((s: any) => s.type === 'shared_step_ref').forEach((s: any) => {
+          map[`${s.shared_step_custom_id}: ${s.shared_step_name}`] = s;
+        });
+      }
+    } catch {}
+    return map;
+  })();
+
+  const canUpdateSSInPanel = (ref: any) =>
+    !runCompleted && (runStatus === 'untested' || runStatus === 'retest');
 
   const handleLinkExistingIssue = async () => {
     const key = linkIssueKey.trim();
@@ -662,13 +704,60 @@ export function DetailPanel({
             <div className="space-y-1.5">
               {steps.map((s, i) => {
                 const fs = s as any;
+                const ref = fs.groupHeader ? ssRefByHeader[fs.groupHeader] : null;
+                const latestInfo = ref ? ssLatestVersions[ref.shared_step_id] : null;
+                const hasNewVer = ref && latestInfo && latestInfo.version > ref.shared_step_version;
+                const canUp = ref && canUpdateSSInPanel(ref);
+                const isDiffOpen = ref && expandedSsDiffId === ref.shared_step_id;
+                const oldKey = ref ? `${ref.shared_step_id}:${ref.shared_step_version}` : null;
                 return (
                   <div key={i}>
                     {fs.groupHeader && (
+                      <>
                       <div className="flex items-center gap-1 px-2 py-1 rounded-t-md bg-violet-50 border border-violet-200 border-b-0">
                         <i className="ri-links-line text-violet-500 text-[10px]" />
                         <span className="text-[10px] font-semibold text-violet-700">{fs.groupHeader}</span>
+                        {hasNewVer && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isDiffOpen) { setExpandedSsDiffId(null); }
+                              else { setExpandedSsDiffId(ref.shared_step_id); fetchOldVersionStepsDP(ref.shared_step_id, ref.shared_step_version); }
+                            }}
+                            className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full text-[0.5rem] font-bold ml-1 cursor-pointer transition-all duration-200 ${canUp ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-500'}`}
+                            title={canUp ? `New version: v${latestInfo!.version}` : 'Locked: test result recorded'}
+                          >
+                            {canUp ? <><i className="ri-arrow-up-line" /> v{latestInfo!.version}</> : <><i className="ri-lock-line" /> v{latestInfo!.version}</>}
+                          </span>
+                        )}
                       </div>
+                      {isDiffOpen && hasNewVer && (
+                        <div className="border border-violet-200 border-t-0 overflow-hidden mb-1 transition-all duration-200">
+                          <div className="flex items-center justify-between px-2 py-1.5 bg-amber-50 border-b border-amber-200">
+                            <span className="text-[0.5625rem] font-semibold text-amber-700">v{ref.shared_step_version} → v{latestInfo!.version}</span>
+                            <div className="flex items-center gap-1.5">
+                              {canUp && onUpdateSharedStep && (
+                                <button onClick={() => { onUpdateSharedStep(ref.shared_step_id); setExpandedSsDiffId(null); }} className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[0.5625rem] font-bold rounded cursor-pointer transition-colors">업데이트</button>
+                              )}
+                              {!canUp && <span className="flex items-center gap-0.5 text-[0.5625rem] text-slate-500"><i className="ri-lock-line" /> 결과 무결성 보호</span>}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 divide-x divide-gray-200">
+                            <div className="p-1.5 bg-red-50">
+                              <div className="text-[0.5rem] font-bold text-red-400 uppercase tracking-wider mb-1">현재 v{ref.shared_step_version}</div>
+                              {oldKey && oldVersionSteps[oldKey]
+                                ? oldVersionSteps[oldKey].map((st, si) => <div key={si} className="text-[0.5625rem] text-red-700 mb-0.5 leading-relaxed"><span className="font-semibold text-red-400 mr-0.5">{si+1}.</span>{st.step}</div>)
+                                : <div className="text-[0.5625rem] text-gray-400">로딩 중...</div>
+                              }
+                            </div>
+                            <div className="p-1.5 bg-emerald-50">
+                              <div className="text-[0.5rem] font-bold text-emerald-400 uppercase tracking-wider mb-1">최신 v{latestInfo!.version}</div>
+                              {latestInfo!.steps.map((st, si) => <div key={si} className="text-[0.5625rem] text-emerald-700 mb-0.5 leading-relaxed"><span className="font-semibold text-emerald-400 mr-0.5">{si+1}.</span>{st.step}</div>)}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      </>
                     )}
                     <StepRow
                       step={s.step}
