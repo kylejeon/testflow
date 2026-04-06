@@ -568,7 +568,6 @@ export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion, 
               </button>
               <button
                 type="button"
-                disabled={updatingVersion}
                 onClick={async () => {
                   if (onUpdateVersion) {
                     onUpdateVersion(step.id, latestVersion);
@@ -601,7 +600,7 @@ export function SharedStepRefRow({ step, showDelete, onDelete, onUpdateVersion, 
                     }
                   }
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
               >
                 {updatingVersion ? <i className="ri-loader-4-line animate-spin" /> : <i className="ri-arrow-up-line" />}
                 {updatingVersion ? 'Updating…' : `Update to v${latestVersion}`}
