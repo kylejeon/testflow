@@ -289,7 +289,7 @@ export default function InviteMemberModal({
               </div>
               <h3 className="text-lg font-bold text-amber-800 mb-2">Member Limit Reached</h3>
               <p className="text-amber-700 mb-4">
-                The {subscriptionTier === 1 ? 'Free' : subscriptionTier === 2 ? 'Starter' : subscriptionTier === 3 ? 'Professional' : 'Enterprise'} plan allows
+                The {subscriptionTier === 1 ? 'Free' : subscriptionTier === 2 ? 'Hobby' : subscriptionTier === 3 ? 'Starter' : subscriptionTier === 4 ? 'Professional' : subscriptionTier === 5 ? 'Enterprise S' : subscriptionTier === 6 ? 'Enterprise M' : 'Enterprise L'} plan allows
                 a maximum of {maxMembers} members per project.
                 <br />
                 You currently have {currentMemberCount} members.

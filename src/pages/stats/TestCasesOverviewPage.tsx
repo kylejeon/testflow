@@ -17,10 +17,13 @@ interface UserProfile {
 }
 
 const TIER_INFO = {
-  1: { name: 'Free',         color: 'bg-gray-100 text-gray-700 border-gray-300',     icon: 'ri-user-line' },
-  2: { name: 'Starter',      color: 'bg-indigo-50 text-indigo-700 border-indigo-300', icon: 'ri-vip-crown-line' },
-  3: { name: 'Professional', color: 'bg-violet-50 text-violet-700 border-violet-300', icon: 'ri-vip-diamond-line' },
-  4: { name: 'Enterprise',   color: 'bg-amber-50 text-amber-700 border-amber-300',    icon: 'ri-vip-diamond-line' },
+  1: { name: 'Free',          color: 'bg-gray-100 text-gray-700 border-gray-300',       icon: 'ri-user-line' },
+  2: { name: 'Hobby',         color: 'bg-emerald-50 text-emerald-700 border-emerald-300', icon: 'ri-seedling-line' },
+  3: { name: 'Starter',       color: 'bg-indigo-50 text-indigo-700 border-indigo-300',  icon: 'ri-vip-crown-line' },
+  4: { name: 'Professional',  color: 'bg-violet-50 text-violet-700 border-violet-300',  icon: 'ri-vip-diamond-line' },
+  5: { name: 'Enterprise S',  color: 'bg-amber-50 text-amber-700 border-amber-300',     icon: 'ri-vip-diamond-line' },
+  6: { name: 'Enterprise M',  color: 'bg-orange-50 text-orange-700 border-orange-300',  icon: 'ri-vip-diamond-line' },
+  7: { name: 'Enterprise L',  color: 'bg-rose-50 text-rose-700 border-rose-300',        icon: 'ri-vip-diamond-line' },
 };
 
 /* ── Sparkline ──────────────────────────────────────────── */
@@ -51,9 +54,9 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
 }
 
 /* ── Tier badge ─────────────────────────────────────────── */
-const TIER_BG:     Record<number, string> = { 1: '#F1F5F9', 2: '#EEF2FF', 3: '#F5F3FF', 4: '#FFFBEB' };
-const TIER_COLOR:  Record<number, string> = { 1: '#475569', 2: '#4338CA', 3: '#6D28D9', 4: '#92400E' };
-const TIER_BORDER: Record<number, string> = { 1: '#CBD5E1', 2: '#A5B4FC', 3: '#C4B5FD', 4: '#FCD34D' };
+const TIER_BG:     Record<number, string> = { 1: '#F1F5F9', 2: '#ECFDF5', 3: '#EEF2FF', 4: '#F5F3FF', 5: '#FFFBEB', 6: '#FFF7ED', 7: '#FFF1F2' };
+const TIER_COLOR:  Record<number, string> = { 1: '#475569', 2: '#047857', 3: '#4338CA', 4: '#6D28D9', 5: '#92400E', 6: '#9A3412', 7: '#9F1239' };
+const TIER_BORDER: Record<number, string> = { 1: '#CBD5E1', 2: '#6EE7B7', 3: '#A5B4FC', 4: '#C4B5FD', 5: '#FCD34D', 6: '#FDBA74', 7: '#FDA4AF' };
 
 function TierBadge({ tier }: { tier: number }) {
   const info = TIER_INFO[tier as keyof typeof TIER_INFO] ?? TIER_INFO[1];
