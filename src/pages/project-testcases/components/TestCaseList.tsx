@@ -1124,6 +1124,16 @@ export default function TestCaseList({ testCases, onAdd, onUpdate, onDelete, onR
       return;
     }
 
+    // TC 개수 제한 체크 (신규 생성 시)
+    if (!editingTestCase) {
+      const TC_LIMITS: Record<number, number> = { 1: 100, 2: 200 };
+      const tcLimit = TC_LIMITS[userTier];
+      if (tcLimit !== undefined && testCases.length >= tcLimit) {
+        alert(`현재 플랜에서는 프로젝트당 최대 ${tcLimit}개의 테스트 케이스를 생성할 수 있습니다. 더 많은 TC를 생성하려면 플랜을 업그레이드하세요.`);
+        return;
+      }
+    }
+
     // Serialize steps — use JSON when SharedStepRef present, plain text otherwise.
     // SharedStepRef versions are pinned (user controls updates via ↑ button in editor).
     const hasSharedRef = testSteps.some(s => isSharedStepRef(s));

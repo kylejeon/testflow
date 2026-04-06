@@ -9,8 +9,8 @@ const corsHeaders = {
 
 // 플랜별 월 사용 한도
 const PLAN_LIMITS: Record<number, number> = {
-  1: 5,    // Free
-  2: 30,   // Starter
+  1: 3,    // Free
+  2: 15,   // Hobby
   3: 150,  // Professional
   4: -1,   // Enterprise (무제한)
 };
@@ -1244,6 +1244,21 @@ Respond in valid JSON:
     }
     if (mode === 'jira' && tier < JIRA_MIN_TIER) {
       return jsonResponse({ error: 'Jira mode requires Starter plan or higher.', current_tier: tier, required_tier: JIRA_MIN_TIER }, 403);
+    }
+
+    // TC 개수 제한 체크 (프로젝트당 Free: 100, Hobby: 200, Starter+: 무제한)
+    if (tier < 3) {
+      const TC_LIMITS: Record<number, number> = { 1: 100, 2: 200 };
+      const tcLimit = TC_LIMITS[tier];
+      if (tcLimit !== undefined) {
+        const { count: tcCount } = await adminClient
+          .from('test_cases')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_id', project_id);
+        if ((tcCount ?? 0) >= tcLimit) {
+          return jsonResponse({ error: `프로젝트당 최대 ${tcLimit}개의 테스트 케이스를 생성할 수 있습니다. 플랜을 업그레이드하세요.`, tc_count: tcCount, tc_limit: tcLimit, current_tier: tier }, 403);
+        }
+      }
     }
 
     // Monthly limit check (step 1 only — each flow counts as 1 usage)

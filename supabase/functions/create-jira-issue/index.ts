@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,49 @@ serve(async (req) => {
   }
 
   try {
+    // ── Tier 체크: Hobby(tier=2)+ 만 Jira Issue 생성 가능 ────────
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Missing Authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: { user }, error: authError } = await userClient.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('subscription_tier, is_trial, trial_ends_at')
+      .eq('id', user.id)
+      .maybeSingle();
+    let userTier = profile?.subscription_tier || 1;
+    if (profile?.is_trial && profile?.trial_ends_at) {
+      if (new Date() > new Date(profile.trial_ends_at)) userTier = 1;
+    }
+    if (userTier < 2) {
+      return new Response(
+        JSON.stringify({ error: 'Jira Issue 생성은 Hobby 플랜 이상에서 사용할 수 있습니다.', required_tier: 2, current_tier: userTier }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    // ─────────────────────────────────────────────────────────────
+
     const body = await req.json();
 
     const {

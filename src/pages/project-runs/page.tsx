@@ -898,6 +898,19 @@ export default function ProjectRunsPage() {
           });
         }
       } else {
+        // Test Run 월 생성 제한 체크 (Free tier=1: 10회/월)
+        const runTier = userProfile?.subscription_tier || 1;
+        if (runTier < 2) {
+          const now = new Date();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+          const monthlyRunCount = testRuns.filter(r => r.created_at >= startOfMonth).length;
+          if (monthlyRunCount >= 10) {
+            showToast('이번 달 Test Run 생성 한도(10회)에 도달했습니다. Hobby 플랜 이상으로 업그레이드하면 무제한으로 생성할 수 있습니다.', 'error');
+            setSubmitting(false);
+            return;
+          }
+        }
+
         const newRun = {
           project_id: id,
           milestone_id: formData.milestone_id && formData.milestone_id.trim() !== '' ? formData.milestone_id : null,
