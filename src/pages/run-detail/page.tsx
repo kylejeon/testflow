@@ -153,6 +153,7 @@ export default function RunDetail() {
     snapMajor: number; snapMinor: number;
     liveMajor: number; liveMinor: number;
     snapSteps: FlatStep[]; liveSteps: FlatStep[];
+    loading?: boolean;
   } | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedResult, setSelectedResult] = useState<TestResult | null>(null);
@@ -1643,17 +1644,13 @@ export default function RunDetail() {
     }
   };
 
-  const openTCDiffModal = (tc: TestCase) => {
+  const openTCDiffModal = async (tc: TestCase) => {
     const snapVer = tcVersionsSnapshot[tc.id];
     if (!snapVer) return;
     const liveMajor = (tc as any).version_major ?? 1;
     const liveMinor = (tc as any).version_minor ?? 0;
-    const snapSteps: FlatStep[] = stepsSnapshot[tc.id] ?? [];
-    let liveSteps: FlatStep[] = [];
-    try {
-      const parsed: AnyStep[] = typeof tc.steps === 'string' ? JSON.parse(tc.steps) : (tc.steps ?? []);
-      liveSteps = expandFlatSteps(parsed, sharedStepsCache);
-    } catch { /* ignore parse error */ }
+
+    // Open modal immediately with loading state
     setTcDiffModal({
       tcId: tc.id,
       tcTitle: tc.title,
@@ -1661,9 +1658,33 @@ export default function RunDetail() {
       snapMinor: snapVer.minor,
       liveMajor,
       liveMinor,
-      snapSteps,
-      liveSteps,
+      snapSteps: stepsSnapshot[tc.id] ?? [],
+      liveSteps: [],
+      loading: true,
     });
+
+    // Fetch fresh TC steps from DB (handles cached/stale tc.steps in state)
+    try {
+      const { data: freshTC } = await supabase
+        .from('test_cases')
+        .select('steps')
+        .eq('id', tc.id)
+        .single();
+
+      let liveSteps: FlatStep[] = [];
+      if (freshTC?.steps) {
+        try {
+          const parsed = JSON.parse(freshTC.steps) as AnyStep[];
+          if (Array.isArray(parsed)) {
+            liveSteps = expandFlatSteps(parsed, sharedStepsCache);
+          }
+        } catch { /* non-JSON steps format */ }
+      }
+
+      setTcDiffModal(prev => prev ? { ...prev, liveSteps, loading: false } : null);
+    } catch {
+      setTcDiffModal(prev => prev ? { ...prev, loading: false } : null);
+    }
   };
 
   const filteredTestCases = testCases.filter(testCase => {
@@ -3970,6 +3991,11 @@ export default function RunDetail() {
 
                 {/* Step diff */}
                 <div className="flex-1 overflow-y-auto">
+                  {tcDiffModal.loading ? (
+                    <div className="flex items-center justify-center py-12 text-sm text-gray-400 gap-2">
+                      <i className="ri-loader-4-line animate-spin" /> Loading steps…
+                    </div>
+                  ) : (
                   <div className="grid grid-cols-2 divide-x divide-gray-200">
                     {/* Old version */}
                     <div>
@@ -3978,7 +4004,7 @@ export default function RunDetail() {
                       </div>
                       <div className="divide-y divide-gray-100">
                         {tcDiffModal.snapSteps.length === 0
-                          ? <p className="px-4 py-6 text-xs text-gray-400 text-center">No steps recorded</p>
+                          ? <p className="px-4 py-6 text-xs text-gray-400 text-center">No step snapshot available</p>
                           : tcDiffModal.snapSteps.map((s, i) => {
                               const liveMatch = tcDiffModal.liveSteps[i];
                               const changed = !liveMatch || liveMatch.step !== s.step || liveMatch.expectedResult !== s.expectedResult;
@@ -4022,6 +4048,7 @@ export default function RunDetail() {
                       </div>
                     </div>
                   </div>
+                  )}
                 </div>
 
                 {/* Footer */}
