@@ -432,7 +432,7 @@ export default function PricingPage() {
                     </th>
                     <th className="text-center px-4 py-4 font-semibold text-indigo-600">
                       <div>Professional</div>
-                      <div className="text-xs font-normal text-indigo-400">$99/mo · $1,010/yr</div>
+                      <div className="text-xs font-normal text-indigo-400">$99/mo · $1,009/yr</div>
                     </th>
                     <th className="text-center px-4 py-4 font-semibold text-orange-500">
                       <div>Enterprise S</div>

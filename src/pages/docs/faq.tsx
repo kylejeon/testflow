@@ -41,13 +41,13 @@ const generalFaqs: FaqItem[] = [
   },
   {
     q: 'Q2. Can I use Testably for free?',
-    a: 'Yes. The Free plan is permanently free and supports up to 3 projects, 3 team members, and 5 AI-generated test cases per month. It\'s ideal for small teams or personal projects. Upgrade to Starter ($49/mo) or higher when you need more.',
+    a: 'Yes. The Free plan is permanently free and supports 1 project, up to 2 team members, and 3 AI-generated test cases per month. It\'s ideal for small teams or personal projects. Upgrade to Hobby ($19/mo) or higher when you need more.',
   },
   {
     q: 'Q3. How many team members can I invite?',
     a: (
       <>
-        It depends on your plan: Free (3), Starter (5), Professional (20), Enterprise S (50), Enterprise M (100), Enterprise L (100+). These limits apply to <strong>Admin and Member roles only</strong>. <strong>Viewer role members do not count toward the seat limit</strong> and can be invited for free with no cap. Use the Viewer role for stakeholders who need read-only access.
+        It depends on your plan: Free (2), Hobby (5), Starter (5), Professional (20), Enterprise S (50), Enterprise M (100), Enterprise L (100+). These limits apply to <strong>Admin and Member roles only</strong>. <strong>Viewer role members do not count toward the seat limit</strong> and can be invited for free with no cap. Use the Viewer role for stakeholders who need read-only access.
       </>
     ),
   },

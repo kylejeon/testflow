@@ -71,7 +71,7 @@ const features = [
       'Convert session logs to test cases (unique to Testably)',
       'AI-powered edge case suggestions',
       'Review-before-save workflow',
-      'Free 5/mo · Starter 30/mo · Pro 150/mo · Enterprise unlimited',
+      'Free 3/mo · Hobby 15/mo · Starter 30/mo · Pro 150/mo · Enterprise unlimited',
     ],
     color: 'bg-amber-50',
     iconBg: 'bg-amber-100',
