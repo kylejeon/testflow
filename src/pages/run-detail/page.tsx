@@ -258,16 +258,38 @@ export default function RunDetail() {
     const refs = parsed.filter(isSharedStepRef);
     if (refs.length === 0) { setSharedStepsCache({}); return; }
     const ids = [...new Set(refs.map((r) => r.shared_step_id))];
-    supabase
-      .from('shared_steps')
-      .select('id, name, custom_id, steps')
-      .in('id', ids)
-      .then(({ data }) => {
-        if (!data) return;
-        const cache: SharedStepCache = {};
-        data.forEach((ss) => { cache[ss.id] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps }; });
-        setSharedStepsCache(cache);
+    (async () => {
+      const { data } = await supabase
+        .from('shared_steps')
+        .select('id, name, custom_id, steps, version')
+        .in('id', ids);
+      if (!data) return;
+      const cache: SharedStepCache = {};
+      data.forEach((ss: any) => {
+        cache[ss.id] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps };
+        cache[`${ss.id}:${ss.version}`] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps };
       });
+      const outdatedRefs = refs.filter((r) => {
+        const latest = data.find((ss: any) => ss.id === r.shared_step_id);
+        return latest && r.shared_step_version < latest.version;
+      });
+      if (outdatedRefs.length > 0) {
+        const results = await Promise.all(
+          outdatedRefs.map((r) =>
+            supabase.from('shared_step_versions').select('steps')
+              .eq('shared_step_id', r.shared_step_id).eq('version', r.shared_step_version)
+              .maybeSingle().then(({ data: hist }) => ({ ref: r, steps: hist?.steps ?? null }))
+          )
+        );
+        results.forEach(({ ref, steps }) => {
+          if (steps) {
+            const latest = data.find((ss: any) => ss.id === ref.shared_step_id)!;
+            cache[`${ref.shared_step_id}:${ref.shared_step_version}`] = { name: latest.name, custom_id: latest.custom_id, steps };
+          }
+        });
+      }
+      setSharedStepsCache(cache);
+    })();
   }, [selectedTestCase?.id, stepsSnapshot]);
 
   // Close more menu on outside click
@@ -1535,16 +1557,14 @@ export default function RunDetail() {
   // Fetch old-version steps for diff display (lazy, cached)
   const fetchOldVersionSteps = async (ssId: string, version: number) => {
     const key = `${ssId}:${version}`;
-    if (oldVersionStepsCache[key]) return;
+    if (oldVersionStepsCache[key] !== undefined) return;
     const { data } = await supabase
       .from('shared_step_versions')
       .select('steps')
       .eq('shared_step_id', ssId)
       .eq('version', version)
       .maybeSingle();
-    if (data?.steps) {
-      setOldVersionStepsCache(prev => ({ ...prev, [key]: data.steps }));
-    }
+    setOldVersionStepsCache(prev => ({ ...prev, [key]: data?.steps ?? [] }));
   };
 
   const handleUpdateSSVersion = async (tcId: string, ssId: string) => {
@@ -3234,14 +3254,18 @@ export default function RunDetail() {
                                         <div className="grid grid-cols-2 divide-x divide-gray-200">
                                           <div className="p-2">
                                             <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">Current (v{ref.shared_step_version})</div>
-                                            {oldKey && oldVersionStepsCache[oldKey] ? (
-                                              <div className="space-y-1">
-                                                {(oldVersionStepsCache[oldKey] as any[]).map((step: any, i: number) => (
-                                                  <div key={i} className="text-[0.6875rem] text-red-700 bg-red-50 px-2 py-1 rounded leading-relaxed">
-                                                    <span className="font-semibold text-red-400 mr-1">{i + 1}.</span>{step.step}
-                                                  </div>
-                                                ))}
-                                              </div>
+                                            {oldKey && oldVersionStepsCache[oldKey] !== undefined ? (
+                                              (oldVersionStepsCache[oldKey] as any[]).length > 0 ? (
+                                                <div className="space-y-1">
+                                                  {(oldVersionStepsCache[oldKey] as any[]).map((step: any, i: number) => (
+                                                    <div key={i} className="text-[0.6875rem] text-red-700 bg-red-50 px-2 py-1 rounded leading-relaxed">
+                                                      <span className="font-semibold text-red-400 mr-1">{i + 1}.</span>{step.step}
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              ) : (
+                                                <div className="text-[0.6875rem] text-gray-400 py-2 italic">Version history unavailable</div>
+                                              )
                                             ) : (
                                               <div className="text-[0.6875rem] text-gray-400 py-2">Loading...</div>
                                             )}
@@ -3354,7 +3378,12 @@ export default function RunDetail() {
                                         <div className="grid grid-cols-2 divide-x divide-gray-200">
                                           <div className="p-2">
                                             <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">Current (v{ref2.shared_step_version})</div>
-                                            {oldKey2 && oldVersionStepsCache[oldKey2] ? (oldVersionStepsCache[oldKey2] as any[]).map((s: any, i: number) => <div key={i} className="text-[0.6875rem] text-red-700 bg-red-50 px-2 py-1 rounded leading-relaxed mb-1"><span className="font-semibold text-red-400 mr-1">{i+1}.</span>{s.step}</div>) : <div className="text-[0.6875rem] text-gray-400 py-2">Loading...</div>}
+                                            {oldKey2 && oldVersionStepsCache[oldKey2] !== undefined
+                                              ? (oldVersionStepsCache[oldKey2] as any[]).length > 0
+                                                ? (oldVersionStepsCache[oldKey2] as any[]).map((s: any, i: number) => <div key={i} className="text-[0.6875rem] text-red-700 bg-red-50 px-2 py-1 rounded leading-relaxed mb-1"><span className="font-semibold text-red-400 mr-1">{i+1}.</span>{s.step}</div>)
+                                                : <div className="text-[0.6875rem] text-gray-400 py-2 italic">Version history unavailable</div>
+                                              : <div className="text-[0.6875rem] text-gray-400 py-2">Loading...</div>
+                                            }
                                           </div>
                                           <div className="p-2">
                                             <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">Latest (v{latestInfo2!.version})</div>

@@ -14,7 +14,8 @@ export function expandFlatSteps(steps: AnyStep[], cache: SharedStepCache): FlatS
   const flat: FlatStep[] = [];
   for (const s of steps) {
     if (isSharedStepRef(s)) {
-      const cached = cache[s.shared_step_id];
+      // Prefer pinned-version entry (id:version), fall back to latest (id)
+      const cached = cache[`${s.shared_step_id}:${s.shared_step_version}`] ?? cache[s.shared_step_id];
       const subSteps = cached?.steps ?? [];
       if (subSteps.length === 0) {
         flat.push({

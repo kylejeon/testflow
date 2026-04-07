@@ -254,16 +254,38 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
     if (refs.length === 0) return;
     fetchedCacheIds.current.add(test.id);
     const ids = [...new Set(refs.map((r) => r.shared_step_id))];
-    supabase
-      .from('shared_steps')
-      .select('id, name, custom_id, steps')
-      .in('id', ids)
-      .then(({ data }) => {
-        if (!data) return;
-        const cache: SharedStepCache = {};
-        data.forEach((ss: any) => { cache[ss.id] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps }; });
-        setSharedStepsCaches((prev) => ({ ...prev, [test.id]: cache }));
+    (async () => {
+      const { data } = await supabase
+        .from('shared_steps')
+        .select('id, name, custom_id, steps, version')
+        .in('id', ids);
+      if (!data) return;
+      const cache: SharedStepCache = {};
+      data.forEach((ss: any) => {
+        cache[ss.id] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps };
+        cache[`${ss.id}:${ss.version}`] = { name: ss.name, custom_id: ss.custom_id, steps: ss.steps };
       });
+      const outdatedRefs = refs.filter((r) => {
+        const latest = data.find((ss: any) => ss.id === r.shared_step_id);
+        return latest && r.shared_step_version < latest.version;
+      });
+      if (outdatedRefs.length > 0) {
+        const results = await Promise.all(
+          outdatedRefs.map((r) =>
+            supabase.from('shared_step_versions').select('steps')
+              .eq('shared_step_id', r.shared_step_id).eq('version', r.shared_step_version)
+              .maybeSingle().then(({ data: hist }) => ({ ref: r, steps: hist?.steps ?? null }))
+          )
+        );
+        results.forEach(({ ref, steps }) => {
+          if (steps) {
+            const latest = data.find((ss: any) => ss.id === ref.shared_step_id)!;
+            cache[`${ref.shared_step_id}:${ref.shared_step_version}`] = { name: latest.name, custom_id: latest.custom_id, steps };
+          }
+        });
+      }
+      setSharedStepsCaches((prev) => ({ ...prev, [test.id]: cache }));
+    })();
   }, [test?.id]);
 
   // ── Sidebar auto-scroll to active TC ─────────────────────────────────────
