@@ -147,12 +147,17 @@ export default function RunDetail() {
   // keyed by tc_id → FlatStep[] (SharedStepRefs already expanded at run creation)
   const [stepsSnapshot, setStepsSnapshot] = useState<Record<string, FlatStep[]>>({});
   // tcVersionsSnapshot: TC version at run creation time, keyed by tc_id
-  const [tcVersionsSnapshot, setTcVersionsSnapshot] = useState<Record<string, { major: number; minor: number; status: string }>>({});
+  const [tcVersionsSnapshot, setTcVersionsSnapshot] = useState<Record<string, {
+    major: number; minor: number; status: string;
+    title?: string; description?: string; precondition?: string; tags?: string;
+  }>>({});
   const [tcDiffModal, setTcDiffModal] = useState<{
     tcId: string; tcTitle: string;
     snapMajor: number; snapMinor: number;
     liveMajor: number; liveMinor: number;
     snapSteps: FlatStep[]; liveSteps: FlatStep[];
+    snapTitle?: string; snapDescription?: string; snapPrecondition?: string; snapTags?: string;
+    liveTitle?: string; liveDescription?: string; livePrecondition?: string; liveTags?: string;
     loading?: boolean;
   } | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -1644,13 +1649,32 @@ export default function RunDetail() {
     }
   };
 
+  // Helper: parse steps field — handles JSON array string, plain text, or already-parsed JSONB array
+  const parseStepsField = (raw: unknown): AnyStep[] => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw as AnyStep[];
+    if (typeof raw === 'string') {
+      try {
+        const p = JSON.parse(raw);
+        if (Array.isArray(p)) return p;
+      } catch {}
+      // Plain text format: each line is a step
+      return raw.split('\n').filter(l => l.trim()).map((line, i) => ({
+        id: String(i),
+        step: line.trim(),
+        expectedResult: '',
+      }));
+    }
+    return [];
+  };
+
   const openTCDiffModal = async (tc: TestCase) => {
     const snapVer = tcVersionsSnapshot[tc.id];
     if (!snapVer) return;
     const liveMajor = (tc as any).version_major ?? 1;
     const liveMinor = (tc as any).version_minor ?? 0;
 
-    // Open modal immediately with loading state
+    // Open modal immediately with snapshot metadata + loading state
     setTcDiffModal({
       tcId: tc.id,
       tcTitle: tc.title,
@@ -1660,43 +1684,48 @@ export default function RunDetail() {
       liveMinor,
       snapSteps: stepsSnapshot[tc.id] ?? [],
       liveSteps: [],
+      snapTitle: snapVer.title,
+      snapDescription: snapVer.description,
+      snapPrecondition: snapVer.precondition,
+      snapTags: snapVer.tags,
       loading: true,
     });
 
-    // Fetch fresh TC steps from DB (handles cached/stale tc.steps in state)
-    // Helper: parse steps regardless of whether they are a JSON string or already-parsed JSONB array
-    const parseStepsField = (raw: unknown): AnyStep[] => {
-      if (!raw) return [];
-      if (Array.isArray(raw)) return raw as AnyStep[];
-      if (typeof raw === 'string') {
-        try {
-          const p = JSON.parse(raw);
-          return Array.isArray(p) ? p : [];
-        } catch { return []; }
-      }
-      return [];
-    };
-
     try {
-      // Fetch live steps AND the run's steps_snapshot in one go
+      // Fetch live fields + steps_snapshot in parallel
       const [{ data: freshTC }, { data: freshRun }] = await Promise.all([
-        supabase.from('test_cases').select('steps').eq('id', tc.id).single(),
+        supabase.from('test_cases').select('title, description, precondition, tags, steps').eq('id', tc.id).single(),
         run?.id
           ? supabase.from('test_runs').select('steps_snapshot').eq('id', run.id).single()
           : Promise.resolve({ data: null }),
       ]);
 
-      // Live steps (v_new)
+      // Live steps
       const liveSteps = expandFlatSteps(parseStepsField(freshTC?.steps), sharedStepsCache);
 
-      // Snapshot steps (v_old): prefer in-memory state, fall back to fresh DB fetch
+      // Snapshot steps: prefer in-memory state, fall back to fresh DB fetch
       let snapSteps = stepsSnapshot[tc.id] ?? [];
       if (snapSteps.length === 0 && freshRun?.steps_snapshot) {
         const freshSnap = freshRun.steps_snapshot as Record<string, FlatStep[]>;
         snapSteps = freshSnap[tc.id] ?? [];
       }
+      // If still empty and steps are plain text, show them
+      if (snapSteps.length === 0 && snapVer.title === undefined) {
+        // Older snapshot without field data — try tc state as baseline
+        const baseParsed = parseStepsField((tc as any).steps);
+        if (baseParsed.length > 0) snapSteps = expandFlatSteps(baseParsed, sharedStepsCache);
+      }
 
-      setTcDiffModal(prev => prev ? { ...prev, liveSteps, snapSteps, loading: false } : null);
+      setTcDiffModal(prev => prev ? {
+        ...prev,
+        liveSteps,
+        snapSteps,
+        liveTitle: freshTC?.title ?? undefined,
+        liveDescription: freshTC?.description ?? undefined,
+        livePrecondition: freshTC?.precondition ?? undefined,
+        liveTags: freshTC?.tags ?? undefined,
+        loading: false,
+      } : null);
     } catch {
       setTcDiffModal(prev => prev ? { ...prev, loading: false } : null);
     }
@@ -4004,11 +4033,11 @@ export default function RunDetail() {
                   </button>
                 </div>
 
-                {/* Step diff */}
+                {/* Diff body */}
                 <div className="flex-1 overflow-y-auto">
                   {tcDiffModal.loading ? (
                     <div className="flex items-center justify-center py-12 text-sm text-gray-400 gap-2">
-                      <i className="ri-loader-4-line animate-spin" /> Loading steps…
+                      <i className="ri-loader-4-line animate-spin" /> Loading…
                     </div>
                   ) : (
                   <div className="grid grid-cols-2 divide-x divide-gray-200">
@@ -4017,6 +4046,22 @@ export default function RunDetail() {
                       <div className="sticky top-0 bg-slate-50 px-4 py-2 border-b border-gray-200 text-xs font-semibold text-slate-500 uppercase tracking-wide">
                         v{tcDiffModal.snapMajor}.{tcDiffModal.snapMinor} (current in run)
                       </div>
+                      {/* Metadata fields */}
+                      {[
+                        { label: 'Title',       snap: tcDiffModal.snapTitle,       live: tcDiffModal.liveTitle },
+                        { label: 'Tags',        snap: tcDiffModal.snapTags,        live: tcDiffModal.liveTags },
+                        { label: 'Precondition',snap: tcDiffModal.snapPrecondition,live: tcDiffModal.livePrecondition },
+                        { label: 'Description', snap: tcDiffModal.snapDescription, live: tcDiffModal.liveDescription },
+                      ].map(({ label, snap, live }) => {
+                        const changed = snap !== undefined && snap !== live;
+                        return (
+                          <div key={label} className={`px-4 py-2 border-b border-gray-100 text-xs ${changed ? 'bg-amber-50' : ''}`}>
+                            <span className="text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide block mb-0.5">{label}</span>
+                            <span className={changed ? 'text-amber-700' : 'text-gray-600'}>{snap ?? <span className="text-gray-300 italic">—</span>}</span>
+                          </div>
+                        );
+                      })}
+                      <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-200 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Steps</div>
                       <div className="divide-y divide-gray-100">
                         {tcDiffModal.snapSteps.length === 0
                           ? <p className="px-4 py-6 text-xs text-gray-400 text-center">No step snapshot available</p>
@@ -4042,6 +4087,22 @@ export default function RunDetail() {
                       <div className="sticky top-0 bg-emerald-50 px-4 py-2 border-b border-gray-200 text-xs font-semibold text-emerald-600 uppercase tracking-wide">
                         v{tcDiffModal.liveMajor}.{tcDiffModal.liveMinor} (updated)
                       </div>
+                      {/* Metadata fields */}
+                      {[
+                        { label: 'Title',       snap: tcDiffModal.snapTitle,       live: tcDiffModal.liveTitle },
+                        { label: 'Tags',        snap: tcDiffModal.snapTags,        live: tcDiffModal.liveTags },
+                        { label: 'Precondition',snap: tcDiffModal.snapPrecondition,live: tcDiffModal.livePrecondition },
+                        { label: 'Description', snap: tcDiffModal.snapDescription, live: tcDiffModal.liveDescription },
+                      ].map(({ label, snap, live }) => {
+                        const changed = snap !== undefined && snap !== live;
+                        return (
+                          <div key={label} className={`px-4 py-2 border-b border-gray-100 text-xs ${changed ? 'bg-amber-50' : ''}`}>
+                            <span className="text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide block mb-0.5">{label}</span>
+                            <span className={changed ? 'text-emerald-700 font-medium' : 'text-gray-600'}>{live ?? <span className="text-gray-300 italic">—</span>}</span>
+                          </div>
+                        );
+                      })}
+                      <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-200 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Steps</div>
                       <div className="divide-y divide-gray-100">
                         {tcDiffModal.liveSteps.length === 0
                           ? <p className="px-4 py-6 text-xs text-gray-400 text-center">No steps</p>
