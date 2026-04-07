@@ -7,7 +7,7 @@ const content = {
   en: {
     badge: 'Legal',
     title: 'Refund Policy',
-    updated: 'Last Updated: March 30, 2026',
+    updated: 'Last Updated: April 7, 2026',
     sections: [
       {
         heading: 'Overview',
@@ -21,6 +21,7 @@ const content = {
         heading: 'Subscription Plans and Billing',
         body: 'Testably offers the following paid plans:',
         list: [
+          'Hobby — $19/month (or $190/year)',
           'Starter — $49/month (or $499/year, ~15% discount)',
           'Professional — $99/month (or $1,009/year, ~15% discount)',
           'Enterprise S — $249/month (or $2,540/year)',
@@ -30,17 +31,13 @@ const content = {
         note: 'Subscriptions are billed in advance on a monthly or annual basis. Viewer seats are free and do not incur charges regardless of plan.',
       },
       {
-        heading: 'Refund Eligibility',
-        table: [
-          { scenario: 'Cancel during free trial', refund: 'N/A (no charge)', detail: 'No payment is collected during the trial period.' },
-          { scenario: 'Cancel within 7 days of first payment (no significant usage)', refund: 'Full refund', detail: 'If you have not created any projects or test cases, a full refund is available upon request.' },
-          { scenario: 'Cancel within 7 days of first payment (with usage)', refund: 'Case-by-case', detail: 'If you have actively used the service, refund eligibility will be reviewed on a case-by-case basis.' },
-          { scenario: 'Cancel after 7 days', refund: 'No refund', detail: 'No refund for the current billing period. Your subscription remains active until the end of the billing cycle.' },
-          { scenario: 'Annual plan — cancel mid-term', refund: 'No pro-rata refund', detail: 'Annual subscriptions are not eligible for partial refunds. Service access continues until the end of the annual billing period.' },
-          { scenario: 'Plan downgrade', refund: 'No refund', detail: 'Downgrading takes effect at the next billing cycle. No refund is issued for the difference.' },
-          { scenario: 'Service outage (Company fault)', refund: 'Credit or extension', detail: 'If the Service experiences extended downtime (24+ hours) due to Company fault, service credit or billing extension will be provided.' },
-          { scenario: 'Enterprise L plan', refund: 'Per contract', detail: 'Enterprise L plans are governed by individual contract terms.' },
-        ],
+        heading: '14-Day Refund Guarantee',
+        body: 'We offer a full refund within 14 days of purchase for any reason, no questions asked. This applies to both initial purchases and subscription renewals. To request a refund, contact us at support@testably.app with your order details.',
+        note: 'Refunds will be processed within 5–10 business days via the original payment method.',
+      },
+      {
+        heading: 'Subscription Cancellation',
+        body: 'You can cancel your subscription at any time from your account settings. Cancellation takes effect at the end of the current billing period — you retain full access to the Service until then. Refunds for subscriptions are available within the 14-day refund window from the initial purchase or most recent renewal date.',
       },
       {
         heading: 'How to Request a Refund',
@@ -48,9 +45,9 @@ const content = {
         list: [
           'Your account email address',
           'The date of the transaction',
-          'Reason for the refund request',
+          'Your order or transaction ID (if available)',
         ],
-        note: 'We will review your request and respond within 3 business days. Approved refunds are processed through Paddle and typically appear in your account within 5\u201310 business days, depending on your payment method and financial institution.',
+        note: 'We will respond within 3 business days. Approved refunds are processed through Paddle and typically appear in your account within 5–10 business days, depending on your payment method and financial institution.',
       },
       {
         heading: 'Payment Processing',
@@ -58,7 +55,7 @@ const content = {
       },
       {
         heading: 'Chargebacks',
-        body: 'We encourage you to contact us before initiating a chargeback with your bank or payment provider. Filing a chargeback without contacting us first may result in the suspension of your account. We are committed to resolving payment disputes promptly and fairly.',
+        body: 'We encourage you to contact us before initiating a chargeback with your bank or payment provider. We are committed to resolving payment disputes promptly and fairly.',
       },
       {
         heading: 'Changes to This Policy',
@@ -74,7 +71,7 @@ const content = {
   ko: {
     badge: '법적 정보',
     title: '환불 정책',
-    updated: '최종 수정일: 2026년 3월 30일',
+    updated: '최종 수정일: 2026년 4월 7일',
     sections: [
       {
         heading: '개요',
@@ -88,6 +85,7 @@ const content = {
         heading: '구독 플랜 및 결제',
         body: 'Testably는 다음 유료 플랜을 제공합니다:',
         list: [
+          'Hobby — 월 $19 (연 $190)',
           'Starter — 월 $49 (연 $499, 약 15% 할인)',
           'Professional — 월 $99 (연 $1,009, 약 15% 할인)',
           'Enterprise S — 월 $249 (연 $2,540)',
@@ -97,17 +95,13 @@ const content = {
         note: '구독 요금은 월간 또는 연간 단위로 선결제됩니다. Viewer 시트는 플랜에 관계없이 무료입니다.',
       },
       {
-        heading: '환불 조건',
-        table: [
-          { scenario: '무료 체험 중 취소', refund: '해당 없음 (미청구)', detail: '체험 기간 중에는 결제가 발생하지 않습니다.' },
-          { scenario: '첫 결제 후 7일 이내 취소 (미사용)', refund: '전액 환불', detail: '프로젝트나 테스트 케이스를 생성하지 않은 경우, 요청 시 전액 환불됩니다.' },
-          { scenario: '첫 결제 후 7일 이내 취소 (사용 이력 있음)', refund: '개별 심사', detail: '서비스를 적극적으로 사용한 경우 개별 검토를 통해 환불 여부를 결정합니다.' },
-          { scenario: '7일 초과 후 취소', refund: '환불 불가', detail: '현재 결제 주기에 대한 환불은 제공되지 않으며, 결제 주기 종료까지 서비스를 이용할 수 있습니다.' },
-          { scenario: '연간 플랜 — 중도 취소', refund: '일할 환불 불가', detail: '연간 구독은 부분 환불 대상이 아닙니다. 연간 결제 기간 종료까지 서비스를 계속 이용할 수 있습니다.' },
-          { scenario: '플랜 다운그레이드', refund: '환불 불가', detail: '다운그레이드는 다음 결제 주기부터 적용됩니다. 차액 환불은 제공되지 않습니다.' },
-          { scenario: '서비스 장애 (회사 귀책)', refund: '크레딧 또는 기간 연장', detail: '회사 귀책 사유로 24시간 이상 서비스 중단 시, 서비스 크레딧 또는 결제 기간 연장을 제공합니다.' },
-          { scenario: 'Enterprise L 플랜', refund: '개별 계약 조건', detail: 'Enterprise L 플랜은 개별 계약 조건에 따릅니다.' },
-        ],
+        heading: '14일 환불 보장',
+        body: '구매 후 14일 이내에는 이유를 불문하고 전액 환불을 제공합니다. 이는 최초 구매 및 구독 갱신 모두에 적용됩니다. 환불을 요청하시려면 support@testably.app으로 주문 정보와 함께 연락 주세요.',
+        note: '환불은 영업일 기준 5~10일 이내에 원래 결제 수단으로 처리됩니다.',
+      },
+      {
+        heading: '구독 취소',
+        body: '구독 취소는 계정 설정에서 언제든 가능하며, 현재 결제 주기가 끝난 후 적용됩니다. 취소 이후에도 결제 주기 종료일까지 서비스를 계속 이용할 수 있습니다. 구독 환불은 최초 구매 또는 가장 최근 갱신일로부터 14일 이내에 가능합니다.',
       },
       {
         heading: '환불 요청 방법',
@@ -115,7 +109,7 @@ const content = {
         list: [
           '계정 이메일 주소',
           '결제 일자',
-          '환불 요청 사유',
+          '주문 또는 거래 ID (있는 경우)',
         ],
         note: '요청을 검토하여 영업일 기준 3일 이내 답변드립니다. 승인된 환불은 Paddle을 통해 처리되며, 결제 수단과 금융기관에 따라 5~10 영업일 내에 반영됩니다.',
       },
@@ -125,7 +119,7 @@ const content = {
       },
       {
         heading: '차지백(결제 이의신청)',
-        body: '은행이나 결제사에 차지백을 신청하기 전에 먼저 저희에게 연락해 주시기 바랍니다. 사전 연락 없이 차지백을 신청하면 계정이 정지될 수 있습니다.',
+        body: '은행이나 결제사에 차지백을 신청하기 전에 먼저 저희에게 연락해 주시기 바랍니다. 결제 분쟁을 신속하고 공정하게 해결하기 위해 최선을 다하겠습니다.',
       },
       {
         heading: '정책 변경',
