@@ -9,12 +9,9 @@ const corsHeaders = {
 // Tier numbering: 1=Free, 2=Hobby($19), 3=Starter($49), 4=Professional($99),
 //                 5=Enterprise S($249), 6=Enterprise M($499), 7=Enterprise L(Custom)
 const PRICE_ID_TO_TIER: Record<string, number> = {
-  // Hobby ($19) — production
+  // Hobby ($19)
   'pri_01knjrp6hfh0knkvqman14fnb8': 2, // Hobby monthly
   'pri_01knjrq3r21va7m3f96ybajh9m': 2, // Hobby annual
-  // Hobby ($19) — sandbox (TODO: TEMP SANDBOX — remove after testing)
-  'pri_01knjznb3gk6h8bt22fggzjmk5': 2, // Hobby monthly sandbox
-  'pri_01knjznxg2f75d139mdmendbw0': 2, // Hobby annual sandbox
   'pri_01kmfhvvyvrqzjhbzzmdy27szb': 3, // Starter monthly
   'pri_01kmfhx9p3qb6m4v3m1zqde7td': 3, // Starter annual
   'pri_01kmfhrfcww99zkqdmwktgqf3y': 4, // Professional monthly

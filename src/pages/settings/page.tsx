@@ -90,6 +90,7 @@ const TIER_INFO = {
     color: 'bg-emerald-50 text-emerald-700 border-emerald-300',
     icon: 'ri-seedling-line',
     monthlyPrice: 19,
+    annualPrice: 190,
     priceDesc: '/ mo',
     basePlan: 'Free',
     features: ['3 projects · 5 members', 'Up to 200 test cases / project · unlimited runs', 'Export/Import CSV', 'Jira Integration (full)', 'Requirements & Traceability', 'Steps Library (10 steps)', '15 AI generations / month'],
@@ -99,6 +100,7 @@ const TIER_INFO = {
     color: 'bg-yellow-50 text-yellow-700 border-yellow-300',
     icon: 'ri-star-line',
     monthlyPrice: 49,
+    annualPrice: 499,
     priceDesc: '/ mo',
     basePlan: 'Hobby',
     features: ['10 projects · 5 members', 'Unlimited test cases', 'Slack & Teams Integration', 'Requirements & Traceability · Steps Library (20 steps)', 'AI Run Summary · Flaky Detection AI', 'Coverage Gap Analysis · AI Insights Panel', 'Basic reporting · email support', '30 AI generations / month'],
@@ -108,6 +110,7 @@ const TIER_INFO = {
     color: 'bg-indigo-50 text-indigo-700 border-indigo-300',
     icon: 'ri-vip-crown-line',
     monthlyPrice: 99,
+    annualPrice: 1009,
     priceDesc: '/ mo',
     basePlan: 'Starter',
     features: ['Unlimited projects · up to 20 members', 'RTM: Audit Trail + AI Coverage Gap', 'Steps Library (Unlimited)', 'CI/CD Integration', 'Test Automation Framework SDK', 'Advanced reporting · priority support', '150 AI generations / month'],
@@ -117,6 +120,7 @@ const TIER_INFO = {
     color: 'bg-amber-50 text-amber-700 border-amber-300',
     icon: 'ri-building-2-line',
     monthlyPrice: 249,
+    annualPrice: 2540,
     priceDesc: '/ mo',
     basePlan: 'Professional',
     features: ['21–50 team members', 'Unlimited AI generations', 'RTM: Audit Trail + Jira sync', 'Dedicated support · SLA guarantee'],
@@ -126,6 +130,7 @@ const TIER_INFO = {
     color: 'bg-orange-50 text-orange-700 border-orange-300',
     icon: 'ri-building-4-line',
     monthlyPrice: 499,
+    annualPrice: 5090,
     priceDesc: '/ mo',
     basePlan: 'Enterprise S',
     features: ['51–100 team members'],
@@ -1696,6 +1701,8 @@ def pytest_sessionfinish(session, exitstatus):
 
   const currentTier = userProfile?.subscription_tier || 1;
   const tierInfo = TIER_INFO[currentTier as keyof typeof TIER_INFO] || TIER_INFO[1];
+  const isAnnualBilling = !!(userProfile?.subscription_ends_at && currentTier > 1 &&
+    (new Date(userProfile.subscription_ends_at).getTime() - Date.now()) > 60 * 24 * 60 * 60 * 1000);
   // Tier thresholds after adding Hobby (2): Hobby=2, Starter=3, Professional=4, Enterprise=5+
   const isProfessionalOrHigher = currentTier >= 4;
   const isHobbyOrHigher = currentTier >= 2; // Jira full access, CSV export, RTM, Shared Steps
@@ -1990,7 +1997,9 @@ def pytest_sessionfinish(session, exitstatus):
                             <div className="text-base font-bold text-[#0F172A]">{tierInfo.name}</div>
                             <div className="text-[0.8125rem] text-[#64748B]">
                               {tierInfo.monthlyPrice > 0
-                                ? `$${tierInfo.monthlyPrice} / month`
+                                ? isAnnualBilling && 'annualPrice' in tierInfo
+                                  ? `$${(tierInfo.annualPrice / 12).toFixed(2)} / month, billed annually`
+                                  : `$${tierInfo.monthlyPrice} / month`
                                 : tierInfo.monthlyPrice === 0
                                 ? 'Free'
                                 : 'Custom pricing'}

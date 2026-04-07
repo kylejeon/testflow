@@ -18,9 +18,7 @@ export async function getPaddle(): Promise<Paddle | null> {
   if (paddleInstance) return paddleInstance;
   const token = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
   if (!token) return null;
-  // TODO: TEMP SANDBOX — revert to production after testing
-  // Production: environment = 'production', token = live_7df7f9532712f0d45bf69a6c153
-  const environment = 'sandbox';
+  const environment = 'production';
   paddleInstance = await initializePaddle({
     token,
     environment,
@@ -39,12 +37,10 @@ export async function getPaddle(): Promise<Paddle | null> {
 }
 
 // Maps plan name + billing period → Paddle Price ID
-// TODO: TEMP SANDBOX — revert to production after testing
-// Production Hobby IDs: pri_01knjrp6hfh0knkvqman14fnb8 (monthly), pri_01knjrq3r21va7m3f96ybajh9m (annual)
 export const PADDLE_PRICE_IDS: Record<string, Record<'monthly' | 'annual', string>> = {
   Hobby: {
-    monthly: 'pri_01knjznb3gk6h8bt22fggzjmk5', // SANDBOX (prod: pri_01knjrp6hfh0knkvqman14fnb8)
-    annual:  'pri_01knjznxg2f75d139mdmendbw0',  // SANDBOX (prod: pri_01knjrq3r21va7m3f96ybajh9m)
+    monthly: 'pri_01knjrp6hfh0knkvqman14fnb8',
+    annual:  'pri_01knjrq3r21va7m3f96ybajh9m',
   },
   Starter: {
     monthly: 'pri_01kmfhvvyvrqzjhbzzmdy27szb',
