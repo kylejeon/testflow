@@ -11,12 +11,15 @@ interface AdminMRRCardProps {
   loading?: boolean;
 }
 
-// Tier: 1=Free, 2=Hobby($19), 3=Starter($49), 4=Professional($99), 5+=Enterprise
+// Tier: 1=Free, 2=Hobby($19), 3=Starter($49), 4=Professional($99), 5=Enterprise S($249), 6=Enterprise M($499), 7=Enterprise L(custom)
 const TIER_PRICES: Record<number, number> = {
   1: 0,
   2: 19,
   3: 49,
   4: 99,
+  5: 249,
+  6: 499,
+  7: 0,
 };
 
 const TIER_COLORS: Record<number, string> = {
@@ -25,6 +28,8 @@ const TIER_COLORS: Record<number, string> = {
   3: '#fbbf24',
   4: '#6366F1',
   5: '#f59e0b',
+  6: '#f97316',
+  7: '#f43f5e',
 };
 
 const TIER_BG: Record<number, string> = {
@@ -33,14 +38,18 @@ const TIER_BG: Record<number, string> = {
   3: 'bg-yellow-50 text-yellow-700 border-yellow-200',
   4: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   5: 'bg-amber-50 text-amber-700 border-amber-200',
+  6: 'bg-orange-50 text-orange-700 border-orange-200',
+  7: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
 const TIER_ICON: Record<number, string> = {
   1: 'ri-user-line',
   2: 'ri-seedling-line',
-  3: 'ri-rocket-line',
-  4: 'ri-award-line',
-  5: 'ri-vip-crown-2-line',
+  3: 'ri-star-line',
+  4: 'ri-vip-crown-line',
+  5: 'ri-building-2-line',
+  6: 'ri-building-4-line',
+  7: 'ri-government-line',
 };
 
 function formatCurrency(value: number): string {
@@ -57,6 +66,9 @@ export default function AdminMRRCard({ data, loading = false }: AdminMRRCardProp
       { tier: 2, tier_name: 'Hobby',        user_count: 0 },
       { tier: 3, tier_name: 'Starter',      user_count: 0 },
       { tier: 4, tier_name: 'Professional', user_count: 0 },
+      { tier: 5, tier_name: 'Enterprise S', user_count: 0 },
+      { tier: 6, tier_name: 'Enterprise M', user_count: 0 },
+      { tier: 7, tier_name: 'Enterprise L', user_count: 0 },
     ].map((t) => {
       const found = data.find((d) => d.tier === t.tier);
       const user_count = found ? found.user_count : 0;
@@ -180,7 +192,7 @@ export default function AdminMRRCard({ data, loading = false }: AdminMRRCardProp
 
           {/* Pricing Note */}
           <p className="text-xs text-gray-400 mt-4 text-center">
-            * Hobby $19 · Starter $49 · Professional $99 기준 산출
+            * Hobby $19 · Starter $49 · Professional $99 · Ent.S $249 · Ent.M $499 기준 산출
           </p>
         </>
       )}

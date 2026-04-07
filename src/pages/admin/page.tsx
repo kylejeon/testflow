@@ -146,20 +146,23 @@ export default function AdminPage() {
       })));
 
       // profiles 직접 집계로 구독 분포 계산
-      const tierCountMap: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
+      const tierCountMap: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
       const tierNameMap: Record<number, string> = {
         1: 'Free',
         2: 'Hobby',
         3: 'Starter',
         4: 'Professional',
+        5: 'Enterprise S',
+        6: 'Enterprise M',
+        7: 'Enterprise L',
       };
       (subscriptionRaw || []).forEach((row: any) => {
         const tier = Number(row.subscription_tier) || 1;
-        if (tier >= 1 && tier <= 4) {
+        if (tier >= 1 && tier <= 7) {
           tierCountMap[tier] = (tierCountMap[tier] || 0) + 1;
         }
       });
-      const computedDist: SubscriptionRow[] = [1, 2, 3, 4].map((tier) => ({
+      const computedDist: SubscriptionRow[] = [1, 2, 3, 4, 5, 6, 7].map((tier) => ({
         tier,
         tier_name: tierNameMap[tier],
         user_count: tierCountMap[tier],
