@@ -12,19 +12,27 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "test": "jest"
   },
-  "keywords": ["testably", "playwright", "reporter", "ci", "test-automation"],
+  "keywords": [
+    "testably",
+    "playwright",
+    "reporter",
+    "ci",
+    "test-automation"
+  ],
   "license": "MIT",
   "peerDependencies": {
     "@playwright/test": ">=1.30.0"
   },
   "dependencies": {
-    "@testably.kr/reporter-core": "^1.0.0"
+    "@testably.kr/reporter-core": "file:../core"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
