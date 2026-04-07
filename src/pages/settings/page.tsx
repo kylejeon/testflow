@@ -12,6 +12,8 @@ import ProfileSettingsPanel from './components/ProfileSettingsPanel';
 import ProjectMembersPanel from '../project-detail/components/ProjectMembersPanel';
 import InviteMemberModal from '../project-detail/components/InviteMemberModal';
 import { getPaymentProvider, openCheckout } from '../../lib/payment';
+import { registerPaddleErrorHandler } from '../../lib/paddle';
+import { useToast, ToastContainer } from '../../components/Toast';
 
 interface JiraSettings {
   domain: string;
@@ -302,6 +304,12 @@ function DangerZoneSection({ email }: { email: string }) {
 }
 
 export default function SettingsPage() {
+  const { toasts, showToast, dismiss } = useToast();
+
+  useEffect(() => {
+    registerPaddleErrorHandler((msg) => showToast(msg, 'error'));
+  }, [showToast]);
+
   const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'preferences' | 'members' | 'integrations' | 'api' | 'notifications'>('profile');
   const [userProjects, setUserProjects] = useState<{ id: string; name: string }[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -4051,6 +4059,7 @@ describe('Login', () => {
           </div>
         </div>
       )}
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </>
   );
 }
