@@ -12,19 +12,28 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "test": "jest"
   },
-  "keywords": ["testably", "cypress", "reporter", "plugin", "ci", "test-automation"],
+  "keywords": [
+    "testably",
+    "cypress",
+    "reporter",
+    "plugin",
+    "ci",
+    "test-automation"
+  ],
   "license": "MIT",
   "peerDependencies": {
     "cypress": ">=10.0.0"
   },
   "dependencies": {
-    "@testably.kr/reporter-core": "^1.0.0"
+    "@testably.kr/reporter-core": "file:../core"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

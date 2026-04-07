@@ -51,7 +51,7 @@ const entries = [
     categoryColor: 'bg-sky-100 text-sky-700',
     description: 'Native reporters for Playwright, Cypress, and Jest. Connect your automation suite to Testably in one npm install.',
     bullets: [
-      'npm install @testably.kr/reporter — works out of the box',
+      'npm install @testably.kr/playwright-reporter (or jest / cypress variant)',
       'Playwright, Cypress, and Jest reporters included',
       'Results automatically linked to matching test cases in your runs',
       'Fully compatible with the existing CI/CD REST API and token system',
