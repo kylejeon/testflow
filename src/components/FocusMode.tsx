@@ -410,7 +410,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
       return p.filter((s: any) => {
         if (s.type !== 'shared_step_ref') return false;
         const latest = ssLatestVersions[s.shared_step_id];
-        return latest && latest.version > s.shared_step_version;
+        return latest && s.shared_step_version != null && latest.version > s.shared_step_version;
       });
     } catch { return []; }
   };
@@ -903,30 +903,30 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                       <i className="ri-refresh-line text-amber-500 text-base flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
                         <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#92400E' }}>
-                          🔄 {ref.shared_step_custom_id} '{ref.shared_step_name}'에 새 버전(v{latest.version})이 있습니다
+                          🔄 New version available for {ref.shared_step_custom_id} '{ref.shared_step_name}' (v{latest.version})
                         </div>
                         {!canUp && (
                           <div className="flex items-center gap-1 mt-1" style={{ fontSize: '0.75rem', color: '#64748B' }}>
                             <i className="ri-lock-line text-slate-400" />
-                            결과 보존을 위해 현재 버전으로 고정됨
+                            Locked to preserve test results
                           </div>
                         )}
                         {showSsDiff && ssDiffData && ssDiffData.ssId === ref.shared_step_id && (
                           <div className="mt-3 rounded-lg overflow-hidden border border-amber-200">
                             <div className="grid grid-cols-2 divide-x divide-amber-200">
                               <div className="p-2.5 bg-red-50">
-                                <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">현재 (v{ssDiffData.currentVersion})</div>
+                                <div className="text-[0.5625rem] font-bold text-red-500 uppercase tracking-wider mb-1.5">Current (v{ssDiffData.currentVersion})</div>
                                 {ssDiffData.currentSteps.length > 0
                                   ? ssDiffData.currentSteps.map((s, i) => (
                                     <div key={i} className="text-[0.6875rem] text-red-700 mb-1 leading-relaxed">
                                       <span className="font-semibold text-red-400 mr-1">{i+1}.</span>{s.step}
                                     </div>
                                   ))
-                                  : <div className="text-[0.6875rem] text-red-400">기록 없음</div>
+                                  : <div className="text-[0.6875rem] text-red-400">No history</div>
                                 }
                               </div>
                               <div className="p-2.5 bg-emerald-50">
-                                <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">최신 (v{ssDiffData.latestVersion})</div>
+                                <div className="text-[0.5625rem] font-bold text-emerald-500 uppercase tracking-wider mb-1.5">Latest (v{ssDiffData.latestVersion})</div>
                                 {ssDiffData.latestSteps.map((s, i) => (
                                   <div key={i} className="text-[0.6875rem] text-emerald-700 mb-1 leading-relaxed">
                                     <span className="font-semibold text-emerald-400 mr-1">{i+1}.</span>{s.step}
@@ -948,7 +948,7 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                           }}
                           style={{ fontSize: '0.75rem', color: '#B45309', fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
                         >
-                          변경사항 {showSsDiff && ssDiffData?.ssId === ref.shared_step_id ? '닫기' : '보기'}
+                          {showSsDiff && ssDiffData?.ssId === ref.shared_step_id ? 'Hide changes' : 'View changes'}
                         </button>
                         {canUp && (
                           <button
@@ -961,14 +961,14 @@ export function FocusMode({ tests, runName, onStatusChange, onExit, initialIndex
                             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#4F46E5'; }}
                             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#6366F1'; }}
                           >
-                            업데이트
+                            Update
                           </button>
                         )}
                         <button
                           onClick={() => setSsBannerDismissedForTc(prev => new Set([...prev, test.id]))}
                           style={{ fontSize: '0.75rem', color: '#B45309', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
                         >
-                          무시
+                          Dismiss
                         </button>
                       </div>
                     </div>

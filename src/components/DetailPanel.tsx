@@ -706,7 +706,7 @@ export function DetailPanel({
                 const fs = s as any;
                 const ref = fs.groupHeader ? ssRefByHeader[fs.groupHeader] : null;
                 const latestInfo = ref ? ssLatestVersions[ref.shared_step_id] : null;
-                const hasNewVer = ref && latestInfo && latestInfo.version > ref.shared_step_version;
+                const hasNewVer = ref && latestInfo && ref.shared_step_version != null && latestInfo.version > ref.shared_step_version;
                 const canUp = ref && canUpdateSSInPanel(ref);
                 const isDiffOpen = ref && expandedSsDiffId === ref.shared_step_id;
                 const oldKey = ref ? `${ref.shared_step_id}:${ref.shared_step_version}` : null;
@@ -737,21 +737,21 @@ export function DetailPanel({
                             <span className="text-[0.5625rem] font-semibold text-amber-700">v{ref.shared_step_version} → v{latestInfo!.version}</span>
                             <div className="flex items-center gap-1.5">
                               {canUp && onUpdateSharedStep && (
-                                <button onClick={() => { onUpdateSharedStep(ref.shared_step_id); setExpandedSsDiffId(null); }} className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[0.5625rem] font-bold rounded cursor-pointer transition-colors">업데이트</button>
+                                <button onClick={() => { onUpdateSharedStep(ref.shared_step_id); setExpandedSsDiffId(null); }} className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[0.5625rem] font-bold rounded cursor-pointer transition-colors">Update</button>
                               )}
-                              {!canUp && <span className="flex items-center gap-0.5 text-[0.5625rem] text-slate-500"><i className="ri-lock-line" /> 결과 무결성 보호</span>}
+                              {!canUp && <span className="flex items-center gap-0.5 text-[0.5625rem] text-slate-500"><i className="ri-lock-line" /> Locked to preserve test results</span>}
                             </div>
                           </div>
                           <div className="grid grid-cols-2 divide-x divide-gray-200">
                             <div className="p-1.5 bg-red-50">
-                              <div className="text-[0.5rem] font-bold text-red-400 uppercase tracking-wider mb-1">현재 v{ref.shared_step_version}</div>
+                              <div className="text-[0.5rem] font-bold text-red-400 uppercase tracking-wider mb-1">Current v{ref.shared_step_version}</div>
                               {oldKey && oldVersionSteps[oldKey]
                                 ? oldVersionSteps[oldKey].map((st, si) => <div key={si} className="text-[0.5625rem] text-red-700 mb-0.5 leading-relaxed"><span className="font-semibold text-red-400 mr-0.5">{si+1}.</span>{st.step}</div>)
-                                : <div className="text-[0.5625rem] text-gray-400">로딩 중...</div>
+                                : <div className="text-[0.5625rem] text-gray-400">Loading...</div>
                               }
                             </div>
                             <div className="p-1.5 bg-emerald-50">
-                              <div className="text-[0.5rem] font-bold text-emerald-400 uppercase tracking-wider mb-1">최신 v{latestInfo!.version}</div>
+                              <div className="text-[0.5rem] font-bold text-emerald-400 uppercase tracking-wider mb-1">Latest v{latestInfo!.version}</div>
                               {latestInfo!.steps.map((st, si) => <div key={si} className="text-[0.5625rem] text-emerald-700 mb-0.5 leading-relaxed"><span className="font-semibold text-emerald-400 mr-0.5">{si+1}.</span>{st.step}</div>)}
                             </div>
                           </div>
