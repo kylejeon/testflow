@@ -149,15 +149,15 @@ export default function RunDetail() {
   // tcVersionsSnapshot: TC version at run creation time, keyed by tc_id
   const [tcVersionsSnapshot, setTcVersionsSnapshot] = useState<Record<string, {
     major: number; minor: number; status: string;
-    title?: string; description?: string; precondition?: string; tags?: string;
+    title?: string; description?: string; precondition?: string; expected_result?: string; tags?: string;
   }>>({});
   const [tcDiffModal, setTcDiffModal] = useState<{
     tcId: string; tcTitle: string;
     snapMajor: number; snapMinor: number;
     liveMajor: number; liveMinor: number;
     snapSteps: FlatStep[]; liveSteps: FlatStep[];
-    snapTitle?: string; snapDescription?: string; snapPrecondition?: string; snapTags?: string;
-    liveTitle?: string; liveDescription?: string; livePrecondition?: string; liveTags?: string;
+    snapTitle?: string; snapDescription?: string; snapPrecondition?: string; snapExpectedResult?: string; snapTags?: string;
+    liveTitle?: string; liveDescription?: string; livePrecondition?: string; liveExpectedResult?: string; liveTags?: string;
     loading?: boolean;
   } | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -1687,6 +1687,7 @@ export default function RunDetail() {
       snapTitle: snapVer.title,
       snapDescription: snapVer.description,
       snapPrecondition: snapVer.precondition,
+      snapExpectedResult: snapVer.expected_result,
       snapTags: snapVer.tags,
       loading: true,
     });
@@ -1694,7 +1695,7 @@ export default function RunDetail() {
     try {
       // Fetch live fields + steps_snapshot in parallel
       const [{ data: freshTC }, { data: freshRun }] = await Promise.all([
-        supabase.from('test_cases').select('title, description, precondition, tags, steps').eq('id', tc.id).single(),
+        supabase.from('test_cases').select('title, description, precondition, expected_result, tags, steps').eq('id', tc.id).single(),
         run?.id
           ? supabase.from('test_runs').select('steps_snapshot').eq('id', run.id).single()
           : Promise.resolve({ data: null }),
@@ -1723,6 +1724,7 @@ export default function RunDetail() {
         liveTitle: freshTC?.title ?? undefined,
         liveDescription: freshTC?.description ?? undefined,
         livePrecondition: freshTC?.precondition ?? undefined,
+        liveExpectedResult: (freshTC as any)?.expected_result ?? undefined,
         liveTags: freshTC?.tags ?? undefined,
         loading: false,
       } : null);
@@ -4033,98 +4035,83 @@ export default function RunDetail() {
                   </button>
                 </div>
 
-                {/* Diff body */}
+                {/* Diff body — row-aligned layout */}
                 <div className="flex-1 overflow-y-auto">
                   {tcDiffModal.loading ? (
                     <div className="flex items-center justify-center py-12 text-sm text-gray-400 gap-2">
                       <i className="ri-loader-4-line animate-spin" /> Loading…
                     </div>
-                  ) : (
-                  <div className="grid grid-cols-2 divide-x divide-gray-200">
-                    {/* Old version */}
-                    <div>
-                      <div className="sticky top-0 bg-slate-50 px-4 py-2 border-b border-gray-200 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  ) : (<>
+                    {/* Sticky column headers */}
+                    <div className="sticky top-0 z-10 grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-200">
+                      <div className="bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
                         v{tcDiffModal.snapMajor}.{tcDiffModal.snapMinor} (current in run)
                       </div>
-                      {/* Metadata fields */}
-                      {[
-                        { label: 'Title',       snap: tcDiffModal.snapTitle,       live: tcDiffModal.liveTitle },
-                        { label: 'Tags',        snap: tcDiffModal.snapTags,        live: tcDiffModal.liveTags },
-                        { label: 'Precondition',snap: tcDiffModal.snapPrecondition,live: tcDiffModal.livePrecondition },
-                        { label: 'Description', snap: tcDiffModal.snapDescription, live: tcDiffModal.liveDescription },
-                      ].map(({ label, snap, live }) => {
-                        const changed = snap !== undefined && snap !== live;
-                        return (
-                          <div key={label} className={`px-4 py-2 border-b border-gray-100 text-xs ${changed ? 'bg-amber-50' : ''}`}>
-                            <span className="text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide block mb-0.5">{label}</span>
-                            <span className={changed ? 'text-amber-700' : 'text-gray-600'}>{snap ?? <span className="text-gray-300 italic">—</span>}</span>
-                          </div>
-                        );
-                      })}
-                      <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-200 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Steps</div>
-                      <div className="divide-y divide-gray-100">
-                        {tcDiffModal.snapSteps.length === 0
-                          ? <p className="px-4 py-6 text-xs text-gray-400 text-center">No step snapshot available</p>
-                          : tcDiffModal.snapSteps.map((s, i) => {
-                              const liveMatch = tcDiffModal.liveSteps[i];
-                              const changed = !liveMatch || liveMatch.step !== s.step || liveMatch.expectedResult !== s.expectedResult;
-                              const removed = !liveMatch;
-                              return (
-                                <div key={i} className={`px-4 py-2.5 text-xs ${removed ? 'bg-red-50' : changed ? 'bg-amber-50' : ''}`}>
-                                  {s.groupHeader && (
-                                    <div className="text-[0.625rem] font-semibold text-indigo-500 mb-1">{s.groupHeader}</div>
-                                  )}
-                                  <p className={`font-medium ${removed ? 'text-red-700 line-through' : changed ? 'text-amber-700' : 'text-gray-700'}`}>{s.step || '—'}</p>
-                                  {s.expectedResult && <p className={`mt-0.5 ${removed ? 'text-red-400 line-through' : changed ? 'text-amber-500' : 'text-gray-400'}`}>→ {s.expectedResult}</p>}
-                                </div>
-                              );
-                            })
-                        }
-                      </div>
-                    </div>
-                    {/* New version */}
-                    <div>
-                      <div className="sticky top-0 bg-emerald-50 px-4 py-2 border-b border-gray-200 text-xs font-semibold text-emerald-600 uppercase tracking-wide">
+                      <div className="bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-600 uppercase tracking-wide">
                         v{tcDiffModal.liveMajor}.{tcDiffModal.liveMinor} (updated)
                       </div>
-                      {/* Metadata fields */}
-                      {[
-                        { label: 'Title',       snap: tcDiffModal.snapTitle,       live: tcDiffModal.liveTitle },
-                        { label: 'Tags',        snap: tcDiffModal.snapTags,        live: tcDiffModal.liveTags },
-                        { label: 'Precondition',snap: tcDiffModal.snapPrecondition,live: tcDiffModal.livePrecondition },
-                        { label: 'Description', snap: tcDiffModal.snapDescription, live: tcDiffModal.liveDescription },
-                      ].map(({ label, snap, live }) => {
-                        const changed = snap !== undefined && snap !== live;
-                        return (
-                          <div key={label} className={`px-4 py-2 border-b border-gray-100 text-xs ${changed ? 'bg-amber-50' : ''}`}>
+                    </div>
+
+                    {/* Metadata rows — each field aligned side by side */}
+                    {([
+                      { label: 'Title',           snap: tcDiffModal.snapTitle,          live: tcDiffModal.liveTitle },
+                      { label: 'Tags',            snap: tcDiffModal.snapTags,           live: tcDiffModal.liveTags },
+                      { label: 'Expected Result', snap: tcDiffModal.snapExpectedResult, live: tcDiffModal.liveExpectedResult },
+                      { label: 'Precondition',    snap: tcDiffModal.snapPrecondition,   live: tcDiffModal.livePrecondition },
+                      { label: 'Description',     snap: tcDiffModal.snapDescription,    live: tcDiffModal.liveDescription },
+                    ] as { label: string; snap?: string; live?: string }[]).map(({ label, snap, live }) => {
+                      const changed = snap !== undefined && snap !== live;
+                      return (
+                        <div key={label} className={`grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-100 ${changed ? 'bg-amber-50/40' : ''}`}>
+                          <div className="px-4 py-2 text-xs">
                             <span className="text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide block mb-0.5">{label}</span>
-                            <span className={changed ? 'text-emerald-700 font-medium' : 'text-gray-600'}>{live ?? <span className="text-gray-300 italic">—</span>}</span>
+                            <span className={changed ? 'text-amber-700' : 'text-gray-600'}>{snap || <span className="text-gray-300 italic">—</span>}</span>
+                          </div>
+                          <div className="px-4 py-2 text-xs">
+                            <span className="text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide block mb-0.5">{label}</span>
+                            <span className={changed ? 'text-emerald-700 font-medium' : 'text-gray-600'}>{live || <span className="text-gray-300 italic">—</span>}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Steps separator */}
+                    <div className="grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-200 bg-gray-50">
+                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Steps</div>
+                      <div className="px-4 py-1.5 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Steps</div>
+                    </div>
+
+                    {/* Step rows — each index aligned */}
+                    {tcDiffModal.snapSteps.length === 0 && tcDiffModal.liveSteps.length === 0 ? (
+                      <p className="px-4 py-6 text-xs text-gray-400 text-center">No steps</p>
+                    ) : (
+                      Array.from({ length: Math.max(tcDiffModal.snapSteps.length, tcDiffModal.liveSteps.length) }).map((_, i) => {
+                        const sn = tcDiffModal.snapSteps[i];
+                        const lv = tcDiffModal.liveSteps[i];
+                        const stepChanged = !sn || !lv || sn.step !== lv.step || sn.expectedResult !== lv.expectedResult;
+                        return (
+                          <div key={i} className={`grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-100 ${stepChanged ? (!sn ? 'bg-green-50/40' : !lv ? 'bg-red-50/40' : 'bg-amber-50/40') : ''}`}>
+                            {/* Old step */}
+                            <div className="px-4 py-2.5 text-xs">
+                              {sn ? (<>
+                                {sn.groupHeader && <div className="text-[0.625rem] font-semibold text-indigo-500 mb-1">{sn.groupHeader}</div>}
+                                <p className={`font-medium ${!lv ? 'text-red-600 line-through' : stepChanged ? 'text-amber-700' : 'text-gray-700'}`}>{sn.step}</p>
+                                {sn.expectedResult && <p className={`mt-0.5 ${!lv ? 'text-red-400 line-through' : stepChanged ? 'text-amber-500' : 'text-gray-400'}`}>→ {sn.expectedResult}</p>}
+                              </>) : <span className="text-gray-200">—</span>}
+                            </div>
+                            {/* New step */}
+                            <div className="px-4 py-2.5 text-xs">
+                              {lv ? (<>
+                                {lv.groupHeader && <div className="text-[0.625rem] font-semibold text-indigo-500 mb-1">{lv.groupHeader}</div>}
+                                <p className={`font-medium ${!sn ? 'text-green-700' : stepChanged ? 'text-amber-700' : 'text-gray-700'}`}>{lv.step}</p>
+                                {lv.expectedResult && <p className={`mt-0.5 ${!sn ? 'text-green-500' : stepChanged ? 'text-amber-500' : 'text-gray-400'}`}>→ {lv.expectedResult}</p>}
+                              </>) : <span className="text-gray-200">—</span>}
+                            </div>
                           </div>
                         );
-                      })}
-                      <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-200 text-[0.625rem] font-semibold text-gray-400 uppercase tracking-wide">Steps</div>
-                      <div className="divide-y divide-gray-100">
-                        {tcDiffModal.liveSteps.length === 0
-                          ? <p className="px-4 py-6 text-xs text-gray-400 text-center">No steps</p>
-                          : tcDiffModal.liveSteps.map((s, i) => {
-                              const snapMatch = tcDiffModal.snapSteps[i];
-                              const changed = !snapMatch || snapMatch.step !== s.step || snapMatch.expectedResult !== s.expectedResult;
-                              const added = !snapMatch;
-                              return (
-                                <div key={i} className={`px-4 py-2.5 text-xs ${added ? 'bg-green-50' : changed ? 'bg-amber-50' : ''}`}>
-                                  {s.groupHeader && (
-                                    <div className="text-[0.625rem] font-semibold text-indigo-500 mb-1">{s.groupHeader}</div>
-                                  )}
-                                  <p className={`font-medium ${added ? 'text-green-700' : changed ? 'text-amber-700' : 'text-gray-700'}`}>{s.step || '—'}</p>
-                                  {s.expectedResult && <p className={`mt-0.5 ${added ? 'text-green-500' : changed ? 'text-amber-500' : 'text-gray-400'}`}>→ {s.expectedResult}</p>}
-                                </div>
-                              );
-                            })
-                        }
-                      </div>
-                    </div>
-                  </div>
-                  )}
+                      })
+                    )}
+                  </>)}
                 </div>
 
                 {/* Footer */}

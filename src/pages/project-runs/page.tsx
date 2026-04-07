@@ -999,10 +999,10 @@ export default function ProjectRunsPage() {
           // Capture current TC versions so Run shows the version at creation time.
           const { data: tcVerData } = await supabase
             .from('test_cases')
-            .select('id, title, description, precondition, tags, version_major, version_minor, version_status')
+            .select('id, title, description, precondition, expected_result, tags, version_major, version_minor, version_status')
             .in('id', testCaseIds);
           if (tcVerData && tcVerData.length > 0) {
-            const tcVersionSnapshot: Record<string, { major: number; minor: number; status: string; title?: string; description?: string; precondition?: string; tags?: string }> = {};
+            const tcVersionSnapshot: Record<string, { major: number; minor: number; status: string; title?: string; description?: string; precondition?: string; expected_result?: string; tags?: string }> = {};
             tcVerData.forEach((tc: any) => {
               tcVersionSnapshot[tc.id] = {
                 major: tc.version_major ?? 1,
@@ -1011,6 +1011,7 @@ export default function ProjectRunsPage() {
                 title: tc.title ?? undefined,
                 description: tc.description ?? undefined,
                 precondition: tc.precondition ?? undefined,
+                expected_result: tc.expected_result ?? undefined,
                 tags: tc.tags ?? undefined,
               };
             });
