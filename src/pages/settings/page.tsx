@@ -57,6 +57,7 @@ interface UserProfile {
   full_name: string;
   subscription_tier: number;
   payment_provider?: string | null;
+  provider_customer_id?: string | null;
   trial_started_at: string | null;
   trial_ends_at: string | null;
   is_trial: boolean;
@@ -157,7 +158,7 @@ async function loadSettingsData(): Promise<{
 
   const [profileResult, jiraResult, memberResult] = await Promise.all([
     supabase.from('profiles')
-      .select('id, email, full_name, subscription_tier, payment_provider, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji')
+      .select('id, email, full_name, subscription_tier, payment_provider, provider_customer_id, trial_started_at, trial_ends_at, is_trial, subscription_ends_at, avatar_emoji')
       .eq('id', user.id)
       .maybeSingle(),
     supabase.from('jira_settings').select('*').eq('user_id', user.id).maybeSingle(),
@@ -193,6 +194,7 @@ async function loadSettingsData(): Promise<{
       full_name: data.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
       subscription_tier: tier,
       payment_provider: data.payment_provider || null,
+      provider_customer_id: data.provider_customer_id || null,
       trial_started_at: data.trial_started_at || null,
       trial_ends_at: data.trial_ends_at || null,
       is_trial: isTrial,
@@ -430,6 +432,8 @@ export default function SettingsPage() {
   const [prefsError, setPrefsError] = useState<string | null>(null);
   const [showAllPlansModal, setShowAllPlansModal] = useState(false);
   const [allPlansBillingPeriod, setAllPlansBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
+  const [invoices, setInvoices] = useState<{ id: string; date: string; description: string; amount: string; currency: string; status: string; invoice_pdf: string | null }[] | null>(null);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
 
   // Slack / Teams webhook management
   const [webhooks, setWebhooks] = useState<any[]>([]);
@@ -497,6 +501,24 @@ export default function SettingsPage() {
       }
     })();
   }, []);
+
+  // Fetch Paddle invoices once userProfile with provider_customer_id is available
+  useEffect(() => {
+    if (!userProfile?.provider_customer_id || userProfile.payment_provider !== 'paddle') return;
+    if (invoices !== null) return; // already loaded
+    (async () => {
+      setLoadingInvoices(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('fetch-paddle-invoices');
+        if (!error && data?.invoices) setInvoices(data.invoices);
+        else setInvoices([]);
+      } catch {
+        setInvoices([]);
+      } finally {
+        setLoadingInvoices(false);
+      }
+    })();
+  }, [userProfile?.provider_customer_id, userProfile?.payment_provider, invoices]);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -2037,11 +2059,60 @@ def pytest_sessionfinish(session, exitstatus):
                         <h3 className="text-[0.9375rem] font-bold text-[#0F172A] mb-1">Invoice History</h3>
                         <p className="text-[0.8125rem] text-[#64748B] mb-5">View and download your past invoices.</p>
 
-                        {/* TODO: Fetch real invoices from Paddle API or invoices table */}
-                        <div className="text-center py-10 text-[0.8125rem] text-[#94A3B8]">
-                          <i className="ri-file-list-3-line text-3xl block mb-2 text-[#CBD5E1]"></i>
-                          No invoices yet. Your invoices will appear here after your first payment.
-                        </div>
+                        {loadingInvoices ? (
+                          <div className="text-center py-10 text-[0.8125rem] text-[#94A3B8]">
+                            <i className="ri-loader-4-line animate-spin text-2xl block mb-2 text-[#CBD5E1]"></i>
+                            Loading invoices...
+                          </div>
+                        ) : invoices && invoices.length > 0 ? (
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr>
+                                {['Date', 'Description', 'Amount', 'Status', ''].map((h, i) => (
+                                  <th
+                                    key={i}
+                                    className="bg-[#F8FAFC] text-[0.6875rem] font-semibold uppercase tracking-[0.04em] text-[#94A3B8] px-3 py-[0.625rem] text-left border-b border-[#E2E8F0]"
+                                    style={i === 4 ? { textAlign: 'right' } : {}}
+                                  >
+                                    {h}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {invoices.map((inv) => (
+                                <tr key={inv.id} className="hover:bg-[#FAFAFF] transition-colors">
+                                  <td className="px-3 py-[0.625rem] text-[0.75rem] text-[#94A3B8] border-b border-[#F1F5F9]">{inv.date}</td>
+                                  <td className="px-3 py-[0.625rem] text-[0.8125rem] text-[#334155] border-b border-[#F1F5F9]">{inv.description}</td>
+                                  <td className="px-3 py-[0.625rem] text-[0.8125rem] font-semibold text-[#334155] border-b border-[#F1F5F9]">{inv.amount}</td>
+                                  <td className="px-3 py-[0.625rem] border-b border-[#F1F5F9]">
+                                    <span className="text-[0.625rem] font-bold px-[0.4375rem] py-0.5 rounded-full bg-[#DCFCE7] text-[#166534]">Paid</span>
+                                  </td>
+                                  <td className="px-3 py-[0.625rem] text-right border-b border-[#F1F5F9]">
+                                    {inv.invoice_pdf ? (
+                                      <a
+                                        href={inv.invoice_pdf}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Download PDF"
+                                        className="w-7 h-7 rounded flex items-center justify-center border border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#475569] transition-colors text-sm inline-flex ml-auto"
+                                      >
+                                        <i className="ri-download-2-line"></i>
+                                      </a>
+                                    ) : (
+                                      <span className="text-[0.75rem] text-[#CBD5E1]">—</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        ) : (
+                          <div className="text-center py-10 text-[0.8125rem] text-[#94A3B8]">
+                            <i className="ri-file-list-3-line text-3xl block mb-2 text-[#CBD5E1]"></i>
+                            No invoices yet. Your invoices will appear here after your first payment.
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
