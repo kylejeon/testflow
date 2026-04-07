@@ -421,6 +421,7 @@ export default function SettingsPage() {
   const [savingPreferences, setSavingPreferences] = useState(false);
   const [prefsError, setPrefsError] = useState<string | null>(null);
   const [showAllPlansModal, setShowAllPlansModal] = useState(false);
+  const [allPlansBillingPeriod, setAllPlansBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
 
   // Slack / Teams webhook management
   const [webhooks, setWebhooks] = useState<any[]>([]);
@@ -3981,9 +3982,26 @@ describe('Login', () => {
                 <h2 className="text-xl font-bold text-gray-900">Compare All Plans</h2>
                 <p className="text-sm text-gray-500 mt-0.5">Choose the plan that fits your team size and needs.</p>
               </div>
-              <button onClick={() => setShowAllPlansModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                <i className="ri-close-line text-xl text-gray-500"></i>
-              </button>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5 text-sm">
+                  <button
+                    onClick={() => setAllPlansBillingPeriod('monthly')}
+                    className={`px-3 py-1 rounded-md font-medium transition-all cursor-pointer ${allPlansBillingPeriod === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    onClick={() => setAllPlansBillingPeriod('annual')}
+                    className={`px-3 py-1 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${allPlansBillingPeriod === 'annual' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Annual
+                    <span className="text-[0.65rem] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">Save 15%</span>
+                  </button>
+                </div>
+                <button onClick={() => setShowAllPlansModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                  <i className="ri-close-line text-xl text-gray-500"></i>
+                </button>
+              </div>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -4008,9 +4026,13 @@ describe('Login', () => {
                       </div>
                       <div className="mb-4 pb-4 border-b border-gray-200/70">
                         <span className={`text-2xl font-bold ${tierNum === 1 ? 'text-gray-700' : tierNum === 2 ? 'text-emerald-700' : tierNum === 3 ? 'text-yellow-700' : tierNum === 4 ? 'text-indigo-700' : 'text-amber-700'}`}>
-                          {info.monthlyPrice === 0 ? '$0' : info.monthlyPrice < 0 ? 'Custom' : `$${info.monthlyPrice}`}
+                          {formatPrice(info.monthlyPrice, allPlansBillingPeriod === 'annual')}
                         </span>
-                        {info.monthlyPrice >= 0 && <span className="text-sm text-gray-500 ml-1">{info.priceDesc}</span>}
+                        {info.monthlyPrice > 0 && <span className="text-sm text-gray-500 ml-1">/ mo</span>}
+                        {info.monthlyPrice === 0 && <span className="text-sm text-gray-500 ml-1">Free</span>}
+                        {allPlansBillingPeriod === 'annual' && info.monthlyPrice > 0 && (
+                          <div className="text-xs text-gray-400 mt-0.5">billed annually</div>
+                        )}
                       </div>
                       <ul className="space-y-1.5 flex-1 mb-4">
                         {info.basePlan && (
@@ -4035,7 +4057,7 @@ describe('Login', () => {
                           </a>
                         ) : (
                           <button
-                            onClick={() => handleUpgrade(TIER_INFO[tierNum as keyof typeof TIER_INFO]?.name ?? 'Starter')}
+                            onClick={() => handleUpgrade(TIER_INFO[tierNum as keyof typeof TIER_INFO]?.name ?? 'Starter', allPlansBillingPeriod)}
                             className="w-full px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer block text-center bg-indigo-500 text-white hover:bg-indigo-600"
                           >
                             Upgrade
