@@ -4019,7 +4019,7 @@ export default function RunDetail() {
           {/* TC Version Diff Modal */}
           {tcDiffModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
+              <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[75vh] flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 flex-shrink-0">
                   <div>
@@ -4122,16 +4122,34 @@ export default function RunDetail() {
                       const snap = tcDiffModal.snapExpectedResult;
                       const live = tcDiffModal.liveExpectedResult;
                       const changed = snap !== undefined && snap !== live;
-                      return (
-                        <div className={`grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-100 ${changed ? 'bg-amber-50/40' : ''}`}>
-                          <div className="px-4 py-2.5 text-xs">
-                            <span className={changed ? 'text-amber-700' : 'text-gray-600'}>{snap || <span className="text-gray-300 italic">—</span>}</span>
+                      const snapLines = snap ? snap.split(/\n/).map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean) : [];
+                      const liveLines = live ? live.split(/\n/).map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean) : [];
+                      const maxLines = Math.max(snapLines.length, liveLines.length, 1);
+                      return Array.from({ length: maxLines }).map((_, i) => {
+                        const sl = snapLines[i];
+                        const ll = liveLines[i];
+                        const lineChanged = sl !== ll;
+                        return (
+                          <div key={i} className={`grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-100 ${changed && lineChanged ? (!sl ? 'bg-green-50/40' : !ll ? 'bg-red-50/40' : 'bg-amber-50/40') : ''}`}>
+                            <div className="px-4 py-2 text-xs flex items-start gap-1.5">
+                              {sl ? (
+                                <>
+                                  <span className="flex-shrink-0 w-4 h-4 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[0.6rem] font-bold mt-0.5">{i + 1}</span>
+                                  <span className={!ll ? 'text-red-600 line-through' : lineChanged ? 'text-amber-700' : 'text-gray-600'}>{sl}</span>
+                                </>
+                              ) : <span className="text-gray-200 italic">—</span>}
+                            </div>
+                            <div className="px-4 py-2 text-xs flex items-start gap-1.5">
+                              {ll ? (
+                                <>
+                                  <span className="flex-shrink-0 w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[0.6rem] font-bold mt-0.5">{i + 1}</span>
+                                  <span className={!sl ? 'text-green-700 font-medium' : lineChanged ? 'text-emerald-700 font-medium' : 'text-gray-600'}>{ll}</span>
+                                </>
+                              ) : <span className="text-gray-200 italic">—</span>}
+                            </div>
                           </div>
-                          <div className="px-4 py-2.5 text-xs">
-                            <span className={changed ? 'text-emerald-700 font-medium' : 'text-gray-600'}>{live || <span className="text-gray-300 italic">—</span>}</span>
-                          </div>
-                        </div>
-                      );
+                        );
+                      });
                     })()}
                   </>)}
                 </div>
