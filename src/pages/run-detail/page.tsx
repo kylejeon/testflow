@@ -3951,6 +3951,15 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
           {result.stepStatuses && Object.keys(result.stepStatuses).length > 0 && (stepsSnapshot || testCase?.steps) && (() => {
             // Prefer snapshot captured at run creation
             if (stepsSnapshot && stepsSnapshot.length > 0) {
+              const ssRefByHeaderSnap: Record<string, any> = {};
+              if (testCase?.steps) {
+                try {
+                  const p = JSON.parse(testCase.steps);
+                  if (Array.isArray(p)) (p as any[]).filter((s: any) => s.type === 'shared_step_ref').forEach((s: any) => {
+                    ssRefByHeaderSnap[`${s.shared_step_custom_id}: ${s.shared_step_name}`] = s;
+                  });
+                } catch {}
+              }
               return (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
@@ -3963,29 +3972,39 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
                           {fs.groupHeader && (() => {
                             const [ssCustomIdR, ...ssNamePartsR] = (fs.groupHeader ?? '').split(': ');
                             const ssNameR = ssNamePartsR.join(': ');
+                            const refSnap = ssRefByHeaderSnap[fs.groupHeader!];
                             return (
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-t-lg bg-indigo-50 border border-indigo-200 border-b-0 mt-2">
+                              <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-indigo-50 border border-indigo-200 border-b-0 mt-2">
                                 <div className="flex-shrink-0 w-4 h-4 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center">
                                   <i className="ri-links-line text-[0.55rem]" />
                                 </div>
                                 <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded">{ssCustomIdR}</span>
                                 <span className="text-xs font-medium text-slate-700 truncate flex-1 min-w-0">{ssNameR}</span>
+                                {refSnap?.shared_step_version != null && <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{refSnap.shared_step_version}</span>}
                                 <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">Shared</span>
                               </div>
                             );
                           })()}
-                          <div className={`flex items-center gap-3 p-3 ${fs.isSubStep ? 'bg-indigo-50/40 border border-indigo-100 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'bg-gray-50 rounded-lg'}`}>
-                            <div className={`w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-semibold text-xs flex-shrink-0`}>
-                              {fs.flatIndex + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-700 truncate">{fs.step}</p>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
-                              <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>
-                                {statusInfo.label}
-                              </span>
+                          <div className={`border p-3 ${fs.isSubStep ? 'border-indigo-200 bg-indigo-50/30 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'border-gray-200 rounded-lg'}`}>
+                            <div className="flex items-start gap-3">
+                              <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <span className="text-indigo-700 text-xs font-bold">{fs.flatIndex + 1}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
+                                {fs.expectedResult && (
+                                  <div className="mt-1 flex items-start gap-1">
+                                    <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                    <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
+                                <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>
+                                  {statusInfo.label}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -4005,6 +4024,10 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
 
             if (parsed) {
               const flatSteps = expandFlatSteps(parsed, sharedStepsCache);
+              const ssRefByHeaderP: Record<string, any> = {};
+              (parsed as any[]).filter((s: any) => s.type === 'shared_step_ref').forEach((s: any) => {
+                ssRefByHeaderP[`${s.shared_step_custom_id}: ${s.shared_step_name}`] = s;
+              });
               return (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-3">Step Results</label>
@@ -4017,29 +4040,39 @@ function ResultDetailModal({ result, testCase, jiraDomain, sharedStepsCache, ste
                           {fs.groupHeader && (() => {
                             const [ssCustomIdP, ...ssNamePartsP] = (fs.groupHeader ?? '').split(': ');
                             const ssNameP = ssNamePartsP.join(': ');
+                            const refP = ssRefByHeaderP[fs.groupHeader!];
                             return (
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-t-lg bg-indigo-50 border border-indigo-200 border-b-0 mt-2">
+                              <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-indigo-50 border border-indigo-200 border-b-0 mt-2">
                                 <div className="flex-shrink-0 w-4 h-4 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center">
                                   <i className="ri-links-line text-[0.55rem]" />
                                 </div>
                                 <span className="text-[0.65rem] font-mono font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded">{ssCustomIdP}</span>
                                 <span className="text-xs font-medium text-slate-700 truncate flex-1 min-w-0">{ssNameP}</span>
+                                {refP?.shared_step_version != null && <span className="text-[0.65rem] text-indigo-400 flex-shrink-0">v{refP.shared_step_version}</span>}
                                 <span className="text-[0.6rem] font-bold text-indigo-500 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0">Shared</span>
                               </div>
                             );
                           })()}
-                          <div className={`flex items-center gap-3 p-3 ${fs.isSubStep ? 'bg-indigo-50/40 border border-indigo-100 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'bg-gray-50 rounded-lg'}`}>
-                            <div className={`w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-semibold text-xs flex-shrink-0`}>
-                              {fs.flatIndex + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-700 truncate">{fs.step}</p>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
-                              <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>
-                                {statusInfo.label}
-                              </span>
+                          <div className={`border p-3 ${fs.isSubStep ? 'border-indigo-200 bg-indigo-50/30 ml-3' + (fs.groupHeader ? ' rounded-b-lg rounded-tr-lg' : ' rounded-lg') : 'border-gray-200 rounded-lg'}`}>
+                            <div className="flex items-start gap-3">
+                              <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <span className="text-indigo-700 text-xs font-bold">{fs.flatIndex + 1}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{fs.step}</p>
+                                {fs.expectedResult && (
+                                  <div className="mt-1 flex items-start gap-1">
+                                    <i className="ri-checkbox-circle-line text-green-500 text-sm flex-shrink-0 mt-[0.05rem]" />
+                                    <p className="text-sm text-green-600 leading-relaxed">{fs.expectedResult}</p>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <i className={`${statusInfo.icon} ${statusInfo.color}`}></i>
+                                <span className={`px-2 py-1 text-xs font-semibold rounded ${statusInfo.bgColor}`}>
+                                  {statusInfo.label}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
