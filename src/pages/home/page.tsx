@@ -162,7 +162,7 @@ const content = {
       {
         icon: 'ri-terminal-box-line',
         title: 'Test Automation SDK',
-        description: 'Connect Playwright, Cypress, and Jest to Testably in one command: npm install @testably/reporter. Results flow into your runs automatically — no manual uploads, no config headaches. Fully compatible with the existing CI/CD API.',
+        description: 'Connect Playwright, Cypress, and Jest to Testably in one command: npm install @testably.kr/reporter. Results flow into your runs automatically — no manual uploads, no config headaches. Fully compatible with the existing CI/CD API.',
         color: 'bg-sky-50',
         iconColor: 'text-sky-600',
         tag: 'SDK',
@@ -580,7 +580,7 @@ const content = {
       {
         icon: 'ri-terminal-box-line',
         title: '자동화 테스트 SDK',
-        description: 'npm install @testably/reporter 한 줄로 Playwright, Cypress, Jest를 연결하세요. 결과가 자동으로 Run에 반영되며 기존 CI/CD API와 완전히 호환됩니다.',
+        description: 'npm install @testably.kr/reporter 한 줄로 Playwright, Cypress, Jest를 연결하세요. 결과가 자동으로 Run에 반영되며 기존 CI/CD API와 완전히 호환됩니다.',
         color: 'bg-sky-50',
         iconColor: 'text-sky-600',
         tag: 'SDK',

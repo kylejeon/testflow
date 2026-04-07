@@ -155,7 +155,7 @@ def pytest_sessionfinish(session, exitstatus):
 # def test_dashboard_loads():
 #     assert dashboard.status_code == 200`;
 
-const playwrightInstall = `npm install --save-dev @testably/playwright-reporter`;
+const playwrightInstall = `npm install --save-dev @testably.kr/playwright-reporter`;
 
 const playwrightConfig = `// playwright.config.ts
 import { defineConfig } from '@playwright/test';
@@ -163,7 +163,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     ['html'],
-    ['@testably/playwright-reporter', {
+    ['@testably.kr/playwright-reporter', {
       // Options (all optional — env vars are used by default)
       testCaseIdSource: 'annotation', // 'annotation' | 'tag' | 'title' | 'custom'
       failOnUploadError: false,
@@ -191,11 +191,11 @@ test('[TC-010] dashboard loads correctly', async ({ page }) => {
   // ...
 });`;
 
-const cypressInstall = `npm install --save-dev @testably/cypress-reporter`;
+const cypressInstall = `npm install --save-dev @testably.kr/cypress-reporter`;
 
 const cypressConfig = `// cypress.config.ts
 import { defineConfig } from 'cypress';
-import { setupTestablyReporter } from '@testably/cypress-reporter';
+import { setupTestablyReporter } from '@testably.kr/cypress-reporter';
 
 export default defineConfig({
   e2e: {
@@ -221,13 +221,13 @@ describe('Login', () => {
   });
 });`;
 
-const jestInstall = `npm install --save-dev @testably/jest-reporter`;
+const jestInstall = `npm install --save-dev @testably.kr/jest-reporter`;
 
 const jestConfig = `// jest.config.ts
 export default {
   reporters: [
     'default',
-    ['@testably/jest-reporter', {
+    ['@testably.kr/jest-reporter', {
       // Options (all optional — env vars are used by default)
       testCaseIdSource: 'title', // 'title' | 'custom'
       failOnUploadError: false,
@@ -356,7 +356,7 @@ export default function CICDPage() {
               <div className="flex items-start gap-2">
                 <i className="ri-information-line text-indigo-500 mt-0.5" />
                 <p className="text-sm text-indigo-800">
-                  <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">@testably/playwright-reporter</code> hooks into Playwright's native reporter API. No wrappers or config changes to your test files are required.
+                  <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">@testably.kr/playwright-reporter</code> hooks into Playwright's native reporter API. No wrappers or config changes to your test files are required.
                 </p>
               </div>
             </div>
@@ -457,7 +457,7 @@ export default function CICDPage() {
               <div className="flex items-start gap-2">
                 <i className="ri-information-line text-indigo-500 mt-0.5" />
                 <p className="text-sm text-indigo-800">
-                  <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">@testably/cypress-reporter</code> uses Cypress's <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">after:run</code> plugin event to collect and upload results after the full run completes.
+                  <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">@testably.kr/cypress-reporter</code> uses Cypress's <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">after:run</code> plugin event to collect and upload results after the full run completes.
                 </p>
               </div>
             </div>
@@ -553,7 +553,7 @@ export default function CICDPage() {
               <div className="flex items-start gap-2">
                 <i className="ri-information-line text-indigo-500 mt-0.5" />
                 <p className="text-sm text-indigo-800">
-                  <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">@testably/jest-reporter</code> implements Jest's Custom Reporter interface. Results are uploaded once after the entire test suite completes via <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">onRunComplete</code>.
+                  <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">@testably.kr/jest-reporter</code> implements Jest's Custom Reporter interface. Results are uploaded once after the entire test suite completes via <code className="bg-indigo-100 px-1 py-0.5 rounded font-mono text-xs">onRunComplete</code>.
                 </p>
               </div>
             </div>

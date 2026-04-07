@@ -276,19 +276,19 @@ export default function IntegrationsPage() {
               {
                 icon: 'ri-code-s-slash-line',
                 name: 'Playwright',
-                pkg: '@testably/playwright-reporter',
+                pkg: '@testably.kr/playwright-reporter',
                 desc: 'Auto-uploads results after playwright test completes.',
               },
               {
                 icon: 'ri-test-tube-line',
                 name: 'Cypress',
-                pkg: '@testably/cypress-reporter',
+                pkg: '@testably.kr/cypress-reporter',
                 desc: 'Hooks into after:run to push results at the end of your Cypress suite.',
               },
               {
                 icon: 'ri-javascript-line',
                 name: 'Jest',
-                pkg: '@testably/jest-reporter',
+                pkg: '@testably.kr/jest-reporter',
                 desc: 'Implements onRunComplete to bulk upload Jest results.',
               },
             ].map((sdk) => (
@@ -309,13 +309,13 @@ export default function IntegrationsPage() {
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Quick Install</span>
             </div>
             <pre className="p-5 text-sm font-mono text-gray-300 leading-relaxed overflow-x-auto whitespace-pre">{`# Playwright
-npm install --save-dev @testably/playwright-reporter
+npm install --save-dev @testably.kr/playwright-reporter
 
 # Cypress
-npm install --save-dev @testably/cypress-reporter
+npm install --save-dev @testably.kr/cypress-reporter
 
 # Jest
-npm install --save-dev @testably/jest-reporter`}</pre>
+npm install --save-dev @testably.kr/jest-reporter`}</pre>
           </div>
 
           <Link

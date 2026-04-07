@@ -3256,12 +3256,12 @@ def pytest_sessionfinish(session, exitstatus):
                             <div>
                               <div className="text-[0.6875rem] font-bold text-[#6366F1] uppercase tracking-wide mb-1.5">Step 1 — Install</div>
                               <div className="relative">
-                                <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-[0.5rem] px-4 py-3 text-[0.75rem] font-mono overflow-x-auto">{`npm install @testably/${sdkQuickStartTab}-reporter`}</pre>
+                                <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-[0.5rem] px-4 py-3 text-[0.75rem] font-mono overflow-x-auto">{`npm install @testably.kr/${sdkQuickStartTab}-reporter`}</pre>
                                 <button
-                                  onClick={() => handleCopyToken(`npm install @testably/${sdkQuickStartTab}-reporter`)}
+                                  onClick={() => handleCopyToken(`npm install @testably.kr/${sdkQuickStartTab}-reporter`)}
                                   className="absolute top-2 right-2 px-2 py-1 text-[0.6875rem] font-semibold rounded bg-white/10 hover:bg-white/20 text-[#94A3B8] transition-colors cursor-pointer"
                                 >
-                                  {copiedToken === `npm install @testably/${sdkQuickStartTab}-reporter` ? <><i className="ri-check-line text-[#86EFAC]"></i> Copied</> : <><i className="ri-file-copy-line"></i> Copy</>}
+                                  {copiedToken === `npm install @testably.kr/${sdkQuickStartTab}-reporter` ? <><i className="ri-check-line text-[#86EFAC]"></i> Copied</> : <><i className="ri-file-copy-line"></i> Copy</>}
                                 </button>
                               </div>
                             </div>
@@ -3277,7 +3277,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   reporter: [
     ['html'],
-    ['@testably/playwright-reporter', {
+    ['@testably.kr/playwright-reporter', {
       testCaseIdSource: 'annotation',  // default
       failOnUploadError: false,
     }],
@@ -3287,7 +3287,7 @@ export default defineConfig({
                                 {sdkQuickStartTab === 'cypress' && (
                                   <pre className="bg-[#0F172A] text-[#E2E8F0] rounded-[0.5rem] px-4 py-3 text-[0.75rem] font-mono overflow-x-auto whitespace-pre">{`// cypress.config.ts
 import { defineConfig } from 'cypress';
-import { setupTestablyReporter } from '@testably/cypress-reporter';
+import { setupTestablyReporter } from '@testably.kr/cypress-reporter';
 
 export default defineConfig({
   e2e: {
@@ -3304,7 +3304,7 @@ export default defineConfig({
 export default {
   reporters: [
     'default',
-    ['@testably/jest-reporter', {
+    ['@testably.kr/jest-reporter', {
       testCaseIdSource: 'title',
       failOnUploadError: false,
     }],
@@ -3314,9 +3314,9 @@ export default {
                                 <button
                                   onClick={() => {
                                     const snippets: Record<string, string> = {
-                                      playwright: `// playwright.config.ts\nimport { defineConfig } from '@playwright/test';\n\nexport default defineConfig({\n  reporter: [\n    ['html'],\n    ['@testably/playwright-reporter', {\n      testCaseIdSource: 'annotation',\n      failOnUploadError: false,\n    }],\n  ],\n});`,
-                                      cypress: `// cypress.config.ts\nimport { defineConfig } from 'cypress';\nimport { setupTestablyReporter } from '@testably/cypress-reporter';\n\nexport default defineConfig({\n  e2e: {\n    setupNodeEvents(on, config) {\n      setupTestablyReporter(on, config, {\n        testCaseIdSource: 'title',\n      });\n    },\n  },\n});`,
-                                      jest: `// jest.config.ts\nexport default {\n  reporters: [\n    'default',\n    ['@testably/jest-reporter', {\n      testCaseIdSource: 'title',\n      failOnUploadError: false,\n    }],\n  ],\n};`,
+                                      playwright: `// playwright.config.ts\nimport { defineConfig } from '@playwright/test';\n\nexport default defineConfig({\n  reporter: [\n    ['html'],\n    ['@testably.kr/playwright-reporter', {\n      testCaseIdSource: 'annotation',\n      failOnUploadError: false,\n    }],\n  ],\n});`,
+                                      cypress: `// cypress.config.ts\nimport { defineConfig } from 'cypress';\nimport { setupTestablyReporter } from '@testably.kr/cypress-reporter';\n\nexport default defineConfig({\n  e2e: {\n    setupNodeEvents(on, config) {\n      setupTestablyReporter(on, config, {\n        testCaseIdSource: 'title',\n      });\n    },\n  },\n});`,
+                                      jest: `// jest.config.ts\nexport default {\n  reporters: [\n    'default',\n    ['@testably.kr/jest-reporter', {\n      testCaseIdSource: 'title',\n      failOnUploadError: false,\n    }],\n  ],\n};`,
                                     };
                                     handleCopyToken(snippets[sdkQuickStartTab] ?? '');
                                   }}

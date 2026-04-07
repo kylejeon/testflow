@@ -6,9 +6,9 @@ import type {
   TestResult as PWTestResult,
   FullResult,
 } from '@playwright/test/reporter';
-import { TestablyClient, TestResult, TestablyConfig } from '@testably/reporter-core';
+import { TestablyClient, TestResult, TestablyConfig } from '@testably.kr/reporter-core';
 
-const SDK_AGENT = '@testably/playwright-reporter/1.0.0';
+const SDK_AGENT = '@testably.kr/playwright-reporter/1.0.0';
 
 export interface PlaywrightReporterOptions extends Partial<TestablyConfig> {
   /**

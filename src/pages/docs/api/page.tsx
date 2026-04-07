@@ -55,7 +55,7 @@ const endpoints = [
     title: 'CI/CD Results Upload',
     badge: 'POST',
     badgeColor: 'bg-blue-100 text-blue-700',
-    desc: 'Upload test results from CI/CD pipelines. Supports JSON and JUnit XML formats. Used by @testably/playwright-reporter, cypress-reporter, jest-reporter SDKs.',
+    desc: 'Upload test results from CI/CD pipelines. Supports JSON and JUnit XML formats. Used by @testably.kr/playwright-reporter, cypress-reporter, jest-reporter SDKs.',
     href: '/docs/api/ci-upload',
   },
   {

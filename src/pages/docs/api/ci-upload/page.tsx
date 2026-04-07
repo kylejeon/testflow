@@ -91,7 +91,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   reporter: [
-    ['@testably/playwright-reporter', {
+    ['@testably.kr/playwright-reporter', {
       token: process.env.TESTABLY_TOKEN,
       runId: process.env.TESTABLY_RUN_ID,
     }]
@@ -102,7 +102,7 @@ const sdkSnippetJest = `// jest.config.ts
 export default {
   reporters: [
     'default',
-    ['@testably/jest-reporter', {
+    ['@testably.kr/jest-reporter', {
       token: process.env.TESTABLY_TOKEN,
       runId: process.env.TESTABLY_RUN_ID,
     }]
@@ -124,7 +124,7 @@ export default function CiUploadApiPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-3">CI/CD Results Upload</h1>
         <p className="text-gray-500 text-lg leading-relaxed">
-          Push automated test results from your CI/CD pipeline into a Testably run. Supports JSON and JUnit XML formats. This endpoint is called automatically by the <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">@testably/playwright-reporter</code>, <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">@testably/cypress-reporter</code>, and <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">@testably/jest-reporter</code> SDKs.
+          Push automated test results from your CI/CD pipeline into a Testably run. Supports JSON and JUnit XML formats. This endpoint is called automatically by the <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">@testably.kr/playwright-reporter</code>, <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">@testably.kr/cypress-reporter</code>, and <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">@testably.kr/jest-reporter</code> SDKs.
         </p>
         <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 inline-flex items-center gap-2">
           <i className="ri-link text-gray-400 text-sm" />
@@ -315,7 +315,7 @@ export default function CiUploadApiPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Playwright</span>
-                <code className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">@testably/playwright-reporter</code>
+                <code className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">@testably.kr/playwright-reporter</code>
               </div>
               <div className="bg-gray-900 rounded-lg overflow-hidden">
                 <pre className="p-4 text-xs font-mono text-gray-300 leading-relaxed overflow-x-auto whitespace-pre">{sdkSnippetPlaywright}</pre>
@@ -324,7 +324,7 @@ export default function CiUploadApiPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Jest</span>
-                <code className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">@testably/jest-reporter</code>
+                <code className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">@testably.kr/jest-reporter</code>
               </div>
               <div className="bg-gray-900 rounded-lg overflow-hidden">
                 <pre className="p-4 text-xs font-mono text-gray-300 leading-relaxed overflow-x-auto whitespace-pre">{sdkSnippetJest}</pre>

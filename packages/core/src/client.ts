@@ -3,7 +3,7 @@ import { resolveConfig, ResolvedConfig } from './config';
 import { Logger } from './logger';
 import { withRetry, RateLimitError, UploadError } from './retry';
 
-const SDK_NAME = '@testably/reporter-core';
+const SDK_NAME = '@testably.kr/reporter-core';
 const SDK_VERSION = '1.0.0';
 
 export class TestablyClient {

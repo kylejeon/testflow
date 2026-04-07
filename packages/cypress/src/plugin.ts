@@ -1,6 +1,6 @@
-import { TestablyClient, TestResult, TestablyConfig } from '@testably/reporter-core';
+import { TestablyClient, TestResult, TestablyConfig } from '@testably.kr/reporter-core';
 
-const SDK_AGENT = '@testably/cypress-reporter/1.0.0';
+const SDK_AGENT = '@testably.kr/cypress-reporter/1.0.0';
 
 export interface CypressReporterOptions extends Partial<TestablyConfig> {
   /**

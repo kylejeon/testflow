@@ -1,5 +1,5 @@
 {
-  "name": "@testably/cypress-reporter",
+  "name": "@testably.kr/cypress-reporter",
   "version": "1.0.0",
   "description": "Cypress plugin for Testably — automatically uploads test results to your Testably runs via after:run event",
   "main": "dist/index.js",
@@ -24,7 +24,7 @@
     "cypress": ">=10.0.0"
   },
   "dependencies": {
-    "@testably/reporter-core": "workspace:*"
+    "@testably.kr/reporter-core": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

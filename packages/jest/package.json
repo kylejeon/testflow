@@ -1,5 +1,5 @@
 {
-  "name": "@testably/jest-reporter",
+  "name": "@testably.kr/jest-reporter",
   "version": "1.0.0",
   "description": "Jest custom reporter for Testably — automatically uploads test results to your Testably runs",
   "main": "dist/index.js",
@@ -24,7 +24,7 @@
     "jest": ">=27.0.0"
   },
   "dependencies": {
-    "@testably/reporter-core": "workspace:*"
+    "@testably.kr/reporter-core": "^1.0.0"
   },
   "devDependencies": {
     "@jest/reporters": "^29.0.0",
