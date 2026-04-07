@@ -737,21 +737,48 @@ export function DetailPanel({
           {/* Steps */}
           {steps.length > 0 ? (
             <div className="space-y-1.5">
-              {steps.map((s, i) => {
-                const fs = s as any;
-                const ref = fs.groupHeader ? ssRefByHeader[fs.groupHeader] : null;
-                const latestInfo = ref ? ssLatestVersions[ref.shared_step_id] : null;
-                const hasNewVer = ref && latestInfo && ref.shared_step_version != null && latestInfo.version > ref.shared_step_version;
-                const canUp = ref && canUpdateSSInPanel(ref);
-                const isDiffOpen = ref && expandedSsDiffId === ref.shared_step_id;
-                const oldKey = ref ? `${ref.shared_step_id}:${ref.shared_step_version}` : null;
-                return (
-                  <div key={i}>
-                    {fs.groupHeader && (
-                      <>
-                      <div className="flex items-center gap-1 px-2 py-1 rounded-t-md bg-violet-50 border border-violet-200 border-b-0">
+              {(() => {
+                const dpGroups: any[] = [];
+                let curDpGroup: any = null;
+                for (let i = 0; i < steps.length; i++) {
+                  const fs = steps[i] as any;
+                  if (fs.groupHeader) {
+                    if (curDpGroup) dpGroups.push(curDpGroup);
+                    curDpGroup = { isShared: true, header: fs.groupHeader, entries: [{ s: steps[i], i }] };
+                  } else if (fs.isSubStep && curDpGroup) {
+                    curDpGroup.entries.push({ s: steps[i], i });
+                  } else {
+                    if (curDpGroup) { dpGroups.push(curDpGroup); curDpGroup = null; }
+                    dpGroups.push({ isShared: false, s: steps[i], i });
+                  }
+                }
+                if (curDpGroup) dpGroups.push(curDpGroup);
+                return dpGroups.map((group, gi) => {
+                  if (!group.isShared) {
+                    return (
+                      <StepRow
+                        key={group.i}
+                        step={group.s.step}
+                        expectedResult={group.s.expectedResult}
+                        index={group.i}
+                        result={effectiveStepResults[group.i]}
+                        showResultButtons={isRun}
+                        onStepResult={handleStepResult}
+                        onPreviewImage={onPreviewImage}
+                      />
+                    );
+                  }
+                  const ref = ssRefByHeader[group.header];
+                  const latestInfo = ref ? ssLatestVersions[ref.shared_step_id] : null;
+                  const hasNewVer = ref && latestInfo && ref.shared_step_version != null && latestInfo.version > ref.shared_step_version;
+                  const canUp = ref && canUpdateSSInPanel(ref);
+                  const isDiffOpen = ref && expandedSsDiffId === ref.shared_step_id;
+                  const oldKey = ref ? `${ref.shared_step_id}:${ref.shared_step_version}` : null;
+                  return (
+                    <div key={`ss-dp-${gi}`} className="border border-violet-200 rounded-lg overflow-hidden">
+                      <div className="flex items-center gap-1 px-2 py-1 bg-violet-50 border-b border-violet-100">
                         <i className="ri-links-line text-violet-500 text-[10px]" />
-                        <span className="text-[10px] font-semibold text-violet-700">{fs.groupHeader}</span>
+                        <span className="text-[10px] font-semibold text-violet-700">{group.header}</span>
                         {hasNewVer && (
                           <span
                             onClick={(e) => {
@@ -767,7 +794,7 @@ export function DetailPanel({
                         )}
                       </div>
                       {isDiffOpen && hasNewVer && (
-                        <div className="border border-violet-200 border-t-0 overflow-hidden mb-1 transition-all duration-200">
+                        <div className="border-b border-violet-200 overflow-hidden">
                           <div className="flex items-center justify-between px-2 py-1.5 bg-amber-50 border-b border-amber-200">
                             <span className="text-[0.5625rem] font-semibold text-amber-700">v{ref.shared_step_version} → v{latestInfo!.version}</span>
                             <div className="flex items-center gap-1.5">
@@ -794,20 +821,25 @@ export function DetailPanel({
                           </div>
                         </div>
                       )}
-                      </>
-                    )}
-                    <StepRow
-                      step={s.step}
-                      expectedResult={s.expectedResult}
-                      index={i}
-                      result={effectiveStepResults[i]}
-                      showResultButtons={isRun}
-                      onStepResult={handleStepResult}
-                      onPreviewImage={onPreviewImage}
-                    />
-                  </div>
-                );
-              })}
+                      <div>
+                        {group.entries.map(({ s, i }: { s: any; i: number }, ei: number) => (
+                          <div key={i} className={ei > 0 ? 'border-t border-violet-100' : ''}>
+                            <StepRow
+                              step={s.step}
+                              expectedResult={s.expectedResult}
+                              index={i}
+                              result={effectiveStepResults[i]}
+                              showResultButtons={isRun}
+                              onStepResult={handleStepResult}
+                              onPreviewImage={onPreviewImage}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           ) : testCase.expected_result ? (
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2.5">
