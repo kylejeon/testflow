@@ -310,11 +310,11 @@ export default function SettingsPage() {
     registerPaddleErrorHandler((msg) => showToast(msg, 'error'));
     registerPaddleSuccessHandler(() => {
       setShowAllPlansModal(false);
-      // Delay refetch slightly to give webhook time to update tier
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['settings'] });
-      }, 2000);
       showToast('Your subscription is now active. Welcome to your new plan!', 'success');
+      // Reload after 2s to give webhook time to update tier in DB
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     });
   }, [showToast]);
 
