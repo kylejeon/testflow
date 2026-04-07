@@ -107,19 +107,19 @@ export default function AdminSubscriptionChart({
           </BarChart>
         </ResponsiveContainer>
       )}
-      <div className="grid grid-cols-4 gap-2 mt-4 sm:grid-cols-7">
+      <div className="flex flex-col gap-1.5 mt-4">
         {allTiers.map((tier) => {
           const pct = totalUsers > 0 ? Math.round((tier.user_count / totalUsers) * 100) : 0;
+          const barWidth = totalUsers > 0 ? Math.max((tier.user_count / totalUsers) * 100, tier.user_count > 0 ? 2 : 0) : 0;
           return (
-            <div key={tier.tier} className="flex flex-col gap-1.5 p-3 rounded-lg bg-gray-50">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: TIER_COLORS[tier.tier] }}></div>
-                <span className="text-xs font-semibold text-gray-600 truncate">{tier.tier_name}</span>
+            <div key={tier.tier} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-50">
+              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: TIER_COLORS[tier.tier] }}></div>
+              <span className="text-xs font-semibold text-gray-600 w-24 flex-shrink-0">{tier.tier_name}</span>
+              <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${barWidth}%`, backgroundColor: TIER_COLORS[tier.tier] }}></div>
               </div>
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-base font-bold text-gray-900">{tier.user_count.toLocaleString()}</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded font-semibold flex-shrink-0 ${TIER_BG[tier.tier]}`}>{pct}%</span>
-              </div>
+              <span className="text-sm font-bold text-gray-900 w-6 text-right flex-shrink-0">{tier.user_count}</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded font-semibold flex-shrink-0 w-10 text-center ${TIER_BG[tier.tier]}`}>{pct}%</span>
             </div>
           );
         })}
