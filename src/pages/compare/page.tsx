@@ -224,7 +224,7 @@ export default function ComparePage() {
       <section className="py-16 px-4 bg-gray-900">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-2xl font-bold text-white mb-4">Start free today</h2>
-          <p className="text-gray-400 mb-8">No credit card required. Free plan includes 3 projects and 3 team members.</p>
+          <p className="text-gray-400 mb-8">No credit card required. Free plan includes 1 project, 2 members, and 100 test cases — plus a 14-day Starter trial.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="https://app.testably.io/signup"
