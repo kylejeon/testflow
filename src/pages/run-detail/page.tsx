@@ -755,31 +755,6 @@ export default function RunDetail() {
           }
         });
 
-        console.log('[fetchData] statusMap 결과 | runId:', runId, '| 결과:', testResultsData?.length, '건 | statusMap 크기:', statusMap.size);
-        if (testResultsData && testResultsData.length > 0) {
-          console.log('[fetchData] 첫 번째 결과 run_id 샘플:', (testResultsData[0] as any).run_id);
-        }
-
-        if (statusMap.size === 0 && runData.test_case_ids && runData.test_case_ids.length > 0) {
-          console.warn('[fetchData] ⚠️ statusMap 비어있음! run_id 없이 fallback 조회 시작');
-          const { data: fallbackData } = await supabase
-            .from('test_results')
-            .select('test_case_id, status, run_id')
-            .in('test_case_id', runData.test_case_ids)
-            .order('created_at', { ascending: false });
-
-          if (fallbackData && fallbackData.length > 0) {
-            console.error('[fetchData] 🔴 test_results 존재하지만 run_id 불일치!',
-              'DB run_id:', (fallbackData[0] as any).run_id,
-              'URL runId:', runId);
-            fallbackData.forEach((result: any) => {
-              if (!statusMap.has(result.test_case_id)) {
-                statusMap.set(result.test_case_id, result.status);
-              }
-            });
-          }
-        }
-
         const testCasesWithStatus: TestCaseWithRunStatus[] = (testCasesData || []).map((tc: any) => ({
           ...tc,
           runStatus: statusMap.get(tc.id) || 'untested',
