@@ -121,6 +121,7 @@ export default function ProjectRunsPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [deleteRunId, setDeleteRunId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -1300,23 +1301,26 @@ export default function ProjectRunsPage() {
     };
   }, []);
 
-  const handleDeleteRun = async (runId: string) => {
-    if (!confirm('Are you sure you want to delete this test run?')) {
-      return;
-    }
+  const handleDeleteRun = (runId: string) => {
+    setDeleteRunId(runId);
+    setOpenMenuId(null);
+  };
 
+  const confirmDeleteRun = async () => {
+    if (!deleteRunId) return;
     try {
       const { error } = await supabase
         .from('test_runs')
         .delete()
-        .eq('id', runId);
+        .eq('id', deleteRunId);
 
       if (error) throw error;
 
+      setDeleteRunId(null);
       await fetchData();
-      setOpenMenuId(null);
     } catch (error) {
       console.error('Error deleting test run:', error);
+      setDeleteRunId(null);
       showToast('Failed to delete test run.', 'error');
     }
   };
@@ -1597,6 +1601,38 @@ export default function ProjectRunsPage() {
   return (
     <div className="flex h-screen bg-white">
       <ToastContainer toasts={toasts} dismiss={dismiss} />
+
+      {/* ── Delete Run Confirmation Modal ── */}
+      {deleteRunId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i className="ri-delete-bin-line text-2xl text-red-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Delete Test Run</h2>
+              <p className="text-gray-600 text-center mb-6">
+                Are you sure you want to delete this test run?<br />
+                <span className="text-sm text-gray-500">This action cannot be undone.</span>
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setDeleteRunId(null)}
+                  className="flex-1 px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteRun}
+                  className="flex-1 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-all cursor-pointer"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex-1 flex flex-col overflow-hidden">
         <ProjectHeader projectId={id || ''} projectName={project?.name || ''} />
         

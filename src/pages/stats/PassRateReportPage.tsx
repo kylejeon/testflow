@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { usePassRateReport, type PeriodFilter } from '../../hooks/usePassRateReport';
 import PageLoader from '../../components/PageLoader';
@@ -8,6 +8,8 @@ import { supabase } from '../../lib/supabase';
 import { Avatar } from '../../components/Avatar';
 import { toCanvas } from 'html-to-image';
 import jsPDF from 'jspdf';
+import NotificationBell from '../../components/feature/NotificationBell';
+import { queryClient } from '../../lib/queryClient';
 
 const priorityStyle: Record<string, { color: string; bg: string }> = {
   critical: { color: '#DC2626', bg: '#FEF2F2' },
@@ -30,6 +32,7 @@ function fmt(n: number): string {
 }
 
 export default function PassRateReportPage() {
+  const navigate = useNavigate();
   const [period, setPeriod] = useState<PeriodFilter>(
     () => (localStorage.getItem(LS_KEY) as PeriodFilter | null) ?? 'active_run'
   );
@@ -40,9 +43,11 @@ export default function PassRateReportPage() {
   const [userAvatarId, setUserAvatarId] = useState<string | undefined>();
   const [userAvatarName, setUserAvatarName] = useState<string | undefined>();
   const [userAvatarEmail, setUserAvatarEmail] = useState<string | undefined>();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [exporting, setExporting] = useState(false);
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   // Persist period selection
   useEffect(() => {
@@ -55,10 +60,21 @@ export default function PassRateReportPage() {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
+      }
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      queryClient.clear();
+      navigate('/auth');
+    } catch {}
+  };
 
   const selectedOption = PERIOD_OPTIONS.find(o => o.value === period) ?? PERIOD_OPTIONS[0];
   const periodLabel = selectedOption.label;
@@ -198,11 +214,30 @@ export default function PassRateReportPage() {
             </Link>
           ))}
         </nav>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-          <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-            <i className="ri-notification-3-line" />
-          </button>
-          <Avatar userId={userAvatarId} name={userAvatarName} email={userAvatarEmail} photoUrl={userAvatarUrl} size="sm" style={{ cursor: 'pointer' }} />
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <NotificationBell />
+          <div ref={profileMenuRef} style={{ position: 'relative' }}>
+            <div onClick={() => setShowProfileMenu(v => !v)} style={{ cursor: 'pointer' }}>
+              <Avatar userId={userAvatarId} name={userAvatarName} email={userAvatarEmail} photoUrl={userAvatarUrl} size="sm" />
+            </div>
+            {showProfileMenu && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowProfileMenu(false)} />
+                <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 0.5rem)', width: '14rem', background: '#fff', borderRadius: '0.625rem', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', border: '1px solid #E2E8F0', zIndex: 20, overflow: 'hidden' }}>
+                  <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #F1F5F9' }}>
+                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0F172A' }}>{userAvatarName || userAvatarEmail || 'User'}</p>
+                    <p style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{userAvatarEmail}</p>
+                  </div>
+                  <Link to="/settings" onClick={() => setShowProfileMenu(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#374151', textDecoration: 'none', borderBottom: '1px solid #F1F5F9' }} className="hover:bg-gray-50">
+                    <i className="ri-settings-3-line text-lg" /><span>Settings</span>
+                  </Link>
+                  <button onClick={handleLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#374151', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }} className="hover:bg-gray-50">
+                    <i className="ri-logout-box-line text-lg" /><span>Log out</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 

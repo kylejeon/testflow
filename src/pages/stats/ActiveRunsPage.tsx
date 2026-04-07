@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { LogoMark } from '../../components/Logo';
 import { useActiveRuns, type RunStatus } from '../../hooks/useActiveRuns';
 import PageLoader from '../../components/PageLoader';
 import { supabase } from '../../lib/supabase';
 import { Avatar } from '../../components/Avatar';
+import NotificationBell from '../../components/feature/NotificationBell';
+import { queryClient } from '../../lib/queryClient';
 
 const statusMeta: Record<RunStatus, { label: string; bg: string; color: string; dotColor: string; pulse: boolean }> = {
   'new':          { label: 'New',        bg: '#F0FDF4', color: '#16A34A', dotColor: '#16A34A', pulse: false },
@@ -25,8 +27,12 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function ActiveRunsPage() {
+  const navigate = useNavigate();
   const { data, loading, error } = useActiveRuns();
   const [avatarProps, setAvatarProps] = useState<{ userId?: string; name?: string; email?: string; photoUrl?: string }>({});
+  const [userProfile, setUserProfile] = useState<{ full_name?: string; email?: string } | null>(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -34,9 +40,28 @@ export default function ActiveRunsPage() {
       supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).maybeSingle()
         .then(({ data: profile }) => {
           setAvatarProps({ userId: user.id, name: profile?.full_name || undefined, email: user.email || undefined, photoUrl: profile?.avatar_url || undefined });
+          setUserProfile({ full_name: profile?.full_name || undefined, email: user.email || undefined });
         });
     });
   }, []);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      queryClient.clear();
+      navigate('/auth');
+    } catch {}
+  };
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: '#F8FAFC', color: '#1E293B', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -72,11 +97,30 @@ export default function ActiveRunsPage() {
             </Link>
           ))}
         </nav>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-          <button style={{ fontSize: '0.75rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-            <i className="ri-notification-3-line" />
-          </button>
-          <Avatar {...avatarProps} size="sm" />
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <NotificationBell />
+          <div ref={profileMenuRef} style={{ position: 'relative' }}>
+            <div onClick={() => setShowProfileMenu(v => !v)} style={{ cursor: 'pointer' }}>
+              <Avatar {...avatarProps} size="sm" />
+            </div>
+            {showProfileMenu && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowProfileMenu(false)} />
+                <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 0.5rem)', width: '14rem', background: '#fff', borderRadius: '0.625rem', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', border: '1px solid #E2E8F0', zIndex: 20, overflow: 'hidden' }}>
+                  <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #F1F5F9' }}>
+                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0F172A' }}>{userProfile?.full_name || userProfile?.email || 'User'}</p>
+                    <p style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{userProfile?.email}</p>
+                  </div>
+                  <Link to="/settings" onClick={() => setShowProfileMenu(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#374151', textDecoration: 'none', borderBottom: '1px solid #F1F5F9' }} className="hover:bg-gray-50">
+                    <i className="ri-settings-3-line text-lg" /><span>Settings</span>
+                  </Link>
+                  <button onClick={handleLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#374151', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }} className="hover:bg-gray-50">
+                    <i className="ri-logout-box-line text-lg" /><span>Log out</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
