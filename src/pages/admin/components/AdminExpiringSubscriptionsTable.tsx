@@ -16,9 +16,13 @@ interface AdminExpiringSubscriptionsTableProps {
 }
 
 const TIER_LABELS: Record<number, { label: string; color: string }> = {
-  1: { label: 'Free', color: 'bg-gray-100 text-gray-600' },
-  2: { label: 'Starter', color: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
-  3: { label: 'Professional', color: 'bg-indigo-50 text-indigo-700 border border-indigo-200' },
+  1: { label: 'Free',         color: 'bg-gray-100 text-gray-600' },
+  2: { label: 'Hobby',        color: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
+  3: { label: 'Starter',      color: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
+  4: { label: 'Professional', color: 'bg-indigo-50 text-indigo-700 border border-indigo-200' },
+  5: { label: 'Enterprise S', color: 'bg-amber-50 text-amber-700 border border-amber-200' },
+  6: { label: 'Enterprise M', color: 'bg-orange-50 text-orange-700 border border-orange-200' },
+  7: { label: 'Enterprise L', color: 'bg-rose-50 text-rose-700 border border-rose-200' },
 };
 
 function getDaysLeft(dateStr: string | null): number | null {
