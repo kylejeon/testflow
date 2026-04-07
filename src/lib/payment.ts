@@ -5,20 +5,20 @@ export type PaymentProvider = 'paddle' | 'lemon';
 
 /**
  * 유저 프로필에 따라 결제 제공자를 결정합니다.
- * - 기존 Paddle 유료 유저 → Paddle 유지
- * - 그 외 모든 유저 → Lemon Squeezy
+ * - 기존 Lemon Squeezy 유료 유저 → Lemon Squeezy 유지
+ * - 그 외 모든 유저 → Paddle (기본)
  */
 export function getPaymentProvider(userProfile: {
   payment_provider?: string | null;
   subscription_tier?: number | null;
 }): PaymentProvider {
   if (
-    userProfile.payment_provider === 'paddle' &&
+    userProfile.payment_provider === 'lemon' &&
     (userProfile.subscription_tier ?? 1) > 1
   ) {
-    return 'paddle';
+    return 'lemon';
   }
-  return 'lemon';
+  return 'paddle';
 }
 
 /**
