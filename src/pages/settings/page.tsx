@@ -1978,21 +1978,12 @@ def pytest_sessionfinish(session, exitstatus):
 
                         <div className="flex items-center gap-2 flex-wrap">
                           <button
-                            onClick={() => {
-                              const nextPlan = currentTier === 1 ? 'Hobby' : currentTier === 2 ? 'Starter' : tierInfo.name;
-                              handleUpgrade(nextPlan, 'monthly');
-                            }}
+                            onClick={() => setShowAllPlansModal(true)}
                             className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold px-4 py-[0.4375rem] rounded-[0.375rem] bg-[#6366F1] text-white hover:bg-[#4F46E5] transition-colors cursor-pointer"
                             style={{ boxShadow: '0 1px 3px rgba(99,102,241,0.3)' }}
                           >
                             <i className="ri-arrow-up-circle-line text-sm"></i>
                             Upgrade
-                          </button>
-                          <button
-                            onClick={() => setShowAllPlansModal(true)}
-                            className="inline-flex items-center gap-1.5 text-[0.8125rem] font-medium px-[0.875rem] py-[0.4375rem] rounded-[0.375rem] border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC] hover:border-[#CBD5E1] transition-colors cursor-pointer"
-                          >
-                            View All Plans
                           </button>
                         </div>
 

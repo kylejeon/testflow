@@ -59,6 +59,7 @@ export const PADDLE_PRICE_IDS: Record<string, Record<'monthly' | 'annual', strin
 export async function openPaddleCheckout(
   planName: string,
   billingPeriod: 'monthly' | 'annual',
+  userId?: string,
 ): Promise<boolean> {
   const priceId = PADDLE_PRICE_IDS[planName]?.[billingPeriod];
   if (!priceId) {
@@ -80,7 +81,10 @@ export async function openPaddleCheckout(
   }
 
   try {
-    paddle.Checkout.open({ items: [{ priceId, quantity: 1 }] });
+    paddle.Checkout.open({
+      items: [{ priceId, quantity: 1 }],
+      customData: userId ? { user_id: userId } : undefined,
+    });
     return true;
   } catch {
     _onError?.('Payment processing is temporarily unavailable. Please try again later.');

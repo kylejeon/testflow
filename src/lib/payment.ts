@@ -32,7 +32,7 @@ export async function openCheckout(
   userId: string,
 ): Promise<boolean> {
   if (provider === 'paddle') {
-    return openPaddleCheckout(planName, billingPeriod);
+    return openPaddleCheckout(planName, billingPeriod, userId);
   }
   return openLemonCheckout(planName, billingPeriod, userEmail, userId);
 }
